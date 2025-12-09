@@ -49,7 +49,6 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
-    minimal_parameters: bool = False
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -136,18 +135,11 @@ class OpenAIChatGPT:
                     "type": "object",
                     "properties": {},
                     "required": [],
+                    "additionalProperties": False,
                 },
             },
+            "strict": True,
         }
-
-        # NOTE: OpenAI-specific "Structured Outputs" fields (strict, additionalProperties) are
-        # commented out for better cross-provider compatibility. These optional fields work with
-        # OpenAI but break Groq and other providers. Tools work reliably without them across all
-        # providers tested (OpenAI GPT-4, Groq llama-3.3-70b, Groq gpt-oss-20b).
-        # Uncomment only if you specifically need strict schema enforcement and only use OpenAI.
-        #
-        # json_dict["function"]["parameters"]["additionalProperties"] = False
-        # json_dict["strict"] = True
 
         for param in tool.parameters:
             json_dict["function"]["parameters"]["properties"][param.name] = {
@@ -171,7 +163,7 @@ class OpenAIChatGPT:
         messages = request_input.messages
         tools = None
         parsed_messages = []
-        system_prompt = self.config.prompt
+        system_prompt = request_input.prompt or self.config.prompt
 
         self.ten_env.log_info(
             f"get_chat_completions: {len(messages)} messages, streaming: {request_input.streaming}"
@@ -239,7 +231,6 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
-        # Build base request with minimal universally supported parameters
         req = {
             "model": self.config.model,
             "messages": [
@@ -247,74 +238,24 @@ class OpenAIChatGPT:
                 *parsed_messages,
             ],
             "tools": tools,
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "presence_penalty": self.config.presence_penalty,
+            "frequency_penalty": self.config.frequency_penalty,
+            "max_tokens": self.config.max_tokens,
+            "seed": self.config.seed,
             "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
 
-        # Add parameters based on minimal_parameters flag
-        if self.config.minimal_parameters:
-            # Minimal mode: only max_completion_tokens (for GPT-5+ models)
-            # Uses default temperature=1.0, top_p=1.0
-            req["max_completion_tokens"] = self.config.max_tokens
-        else:
-            # Standard mode: all parameters (for GPT-4, GPT-3, Groq, etc.)
-            req["max_tokens"] = self.config.max_tokens
-            req["temperature"] = self.config.temperature
-            req["top_p"] = self.config.top_p
-            req["presence_penalty"] = self.config.presence_penalty
-            req["frequency_penalty"] = self.config.frequency_penalty
-            req["seed"] = self.config.seed
-
         # Add additional parameters if they are not in the black list
-        # In minimal mode, also exclude unsupported parameters
-        minimal_unsupported_params = {
-            "temperature",
-            "top_p",
-            "presence_penalty",
-            "frequency_penalty",
-            "seed",
-            "max_tokens",
-        }
-
         for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
-            if self.config.is_black_list_params(key):
-                continue
+            if not self.config.is_black_list_params(key):
+                self.ten_env.log_debug(f"set openai param: {key} = {value}")
+                req[key] = value
 
-            # In minimal mode, skip unsupported parameters
-            if (
-                self.config.minimal_parameters
-                and key in minimal_unsupported_params
-            ):
-                self.ten_env.log_debug(
-                    f"Skipping minimal mode unsupported param: {key} = {value}"
-                )
-                continue
-
-            self.ten_env.log_debug(f"set openai param: {key} = {value}")
-            req[key] = value
-
-        # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
-        # Adds I/O latency and pollutes logs. Enable only for deep debugging.
-        # self.ten_env.log_info(f"Requesting chat completions with: {req}")
-        max_tokens_param = (
-            "max_completion_tokens"
-            if self.config.minimal_parameters
-            else "max_tokens"
-        )
-        max_tokens_value = req.get("max_tokens") or req.get(
-            "max_completion_tokens"
-        )
-        param_mode = "minimal" if self.config.minimal_parameters else "standard"
-        self.ten_env.log_debug(
-            f"Requesting chat completions: model={req.get('model')} ({param_mode}), stream={req.get('stream')}, "
-            f"messages={len(req.get('messages', []))} msgs, {max_tokens_param}={max_tokens_value}"
-        )
-        # Log tools for debugging tool call issues
-        if req.get("tools"):
-            self.ten_env.log_debug(
-                f"Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}"
-            )
+        self.ten_env.log_info(f"Requesting chat completions with: {req}")
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
@@ -477,55 +418,4 @@ class OpenAIChatGPT:
                 created=last_chat_completion.created,
             )
         except Exception as e:
-            # Log request details on error for debugging
-            self.ten_env.log_error(
-                f"[TOOL_DEBUG] LLM API call failed with error: {e}"
-            )
-            self.ten_env.log_error(
-                f"[TOOL_DEBUG] Error type: {type(e).__name__}"
-            )
-
-            # Try to extract additional error details from Groq/OpenAI response
-            if hasattr(e, "response"):
-                self.ten_env.log_error(
-                    f"[TOOL_DEBUG] Error response: {e.response}"
-                )
-            if hasattr(e, "body"):
-                self.ten_env.log_error(f"[TOOL_DEBUG] Error body: {e.body}")
-            if hasattr(e, "__dict__"):
-                self.ten_env.log_error(
-                    f"[TOOL_DEBUG] Error attributes: {e.__dict__}"
-                )
-
-            self.ten_env.log_error(f"[TOOL_DEBUG] Model: {req.get('model')}")
-            self.ten_env.log_error(
-                f"[TOOL_DEBUG] Messages count: {len(req.get('messages', []))}"
-            )
-            if req.get("tools"):
-                self.ten_env.log_error(
-                    f"[TOOL_DEBUG] Tools sent: {json.dumps(req.get('tools'), indent=2)}"
-                )
-            self.ten_env.log_error(
-                f"[TOOL_DEBUG] Last 2 messages: {json.dumps(req.get('messages', [])[-2:], indent=2)}"
-            )
-
-            # Dump full request to temp file for debugging
-            try:
-                import tempfile
-
-                with tempfile.NamedTemporaryFile(
-                    mode="w",
-                    prefix="llm_request_",
-                    suffix=".json",
-                    delete=False,
-                ) as f:
-                    json.dump(req, f, indent=2)
-                    self.ten_env.log_error(
-                        f"[TOOL_DEBUG] Full request saved to: {f.name}"
-                    )
-            except Exception as dump_err:
-                self.ten_env.log_error(
-                    f"[TOOL_DEBUG] Failed to dump request: {dump_err}"
-                )
-
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
