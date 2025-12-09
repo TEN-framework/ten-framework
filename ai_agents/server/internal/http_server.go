@@ -16,7 +16,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -532,37 +531,6 @@ func mergeProperties(original, newProps map[string]interface{}) map[string]inter
 	return original
 }
 
-// convertToString converts a value of any type to string using strconv package
-func convertToString(val interface{}) string {
-	if val == nil {
-		return ""
-	}
-
-	switch v := val.(type) {
-	case string:
-		return v
-	case bool:
-		return strconv.FormatBool(v)
-	case int:
-		return strconv.FormatInt(int64(v), 10)
-	case int32:
-		return strconv.FormatInt(int64(v), 10)
-	case int64:
-		return strconv.FormatInt(v, 10)
-	case uint32:
-		return strconv.FormatUint(uint64(v), 10)
-	case uint64:
-		return strconv.FormatUint(v, 10)
-	case float32:
-		return strconv.FormatFloat(float64(v), 'f', -1, 32)
-	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64)
-	default:
-		// Fallback for unsupported types
-		return fmt.Sprintf("%v", val)
-	}
-}
-
 func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJsonFile string, logFile string, err error) {
 	// Debug logging
 	slog.Info("processProperty called", "requestId", req.RequestId, "tenappDir", tenappDir, "logPath", s.config.LogPath, logTag)
@@ -680,12 +648,6 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 		val := getFieldValue(req, key)
 		if val != "" {
 			for _, prop := range props {
-				// Convert value type if specified
-				var finalVal interface{} = val
-				if prop.ConvertType == "string" {
-					finalVal = convertToString(val)
-				}
-
 				// Set each start parameter to the appropriate graph and property
 				for _, graph := range newGraphs {
 					graphMap, _ := graph.(map[string]interface{})
@@ -695,8 +657,29 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 						nodeMap, _ := node.(map[string]interface{})
 						if nodeMap["name"] == prop.ExtensionName {
 							properties := nodeMap["property"].(map[string]interface{})
-							properties[prop.Property] = finalVal
+							properties[prop.Property] = val
 						}
+					}
+				}
+			}
+		}
+	}
+
+	// Property-based channel auto-injection: inject channel into ANY node that has a "channel" property
+	// This is additive to the startPropMap above and enables dynamic channel for extensions like
+	// heygen_avatar_python, anam_avatar_python, etc. without needing to add them to startPropMap
+	if req.ChannelName != "" {
+		for _, graph := range newGraphs {
+			graphMap, _ := graph.(map[string]interface{})
+			graphData, _ := graphMap["graph"].(map[string]interface{})
+			nodes, _ := graphData["nodes"].([]interface{})
+			for _, node := range nodes {
+				nodeMap, _ := node.(map[string]interface{})
+				if properties, ok := nodeMap["property"].(map[string]interface{}); ok {
+					// If this node has a "channel" property defined, inject the dynamic value
+					if _, hasChannel := properties["channel"]; hasChannel {
+						properties["channel"] = req.ChannelName
+						slog.Debug("Auto-injected channel into node", "node", nodeMap["name"], "channel", req.ChannelName, "requestId", req.RequestId, logTag)
 					}
 				}
 			}

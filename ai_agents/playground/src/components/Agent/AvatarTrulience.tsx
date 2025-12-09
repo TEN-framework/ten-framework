@@ -1,7 +1,7 @@
 "use client";
 
 import { TrulienceAvatar } from "@trulience/react-sdk";
-import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
 import { Maximize, Minimize } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Progress, ProgressIndicator } from "../ui/progress";
 
 interface AvatarProps {
-  audioTrack?: IMicrophoneAudioTrack;
+  audioTrack?: IMicrophoneAudioTrack | IRemoteAudioTrack;
   localAudioTrack?: IMicrophoneAudioTrack;
 }
 
