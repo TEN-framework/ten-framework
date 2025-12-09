@@ -77,12 +77,12 @@ class CustomWebSocketClient:
                     # Parse JSON message
                     message_obj = json.loads(message)
 
+
                     # Trigger Transcript event (adjust according to your message format)
                     if "transcript" in self.event_handlers:
                         await self.event_handlers["transcript"](
                             self, message_obj
                         )
-
                 except json.JSONDecodeError:
                     # If not JSON, it may be binary data
                     pass
@@ -108,9 +108,10 @@ class CustomWebSocketClient:
 
     async def finalize(self):
         """Finalize connection (optional, depending on your needs)"""
-        if self.websocket:
-            # Send finalize signal or special message
-            pass
+        # Actively trigger the transcript event with final=True
+        if "transcript" in self.event_handlers:
+            message = {"type": "fullSentence", "text": "<END>", "final": True}
+            await self.event_handlers["transcript"](self, message)
 
     async def finish(self):
         """Close connection"""
@@ -284,6 +285,10 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     final=False,
                     language=self.config.language,
                 )
+        elif message_obj.get("status") == "error":
+            await self._custom_event_handler_on_error(
+                _, message_obj
+            )
 
     async def _custom_event_handler_on_error(self, _, error):
         """Handle error event"""
