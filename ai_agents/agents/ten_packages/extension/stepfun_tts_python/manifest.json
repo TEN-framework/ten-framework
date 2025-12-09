@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "stepfun_tts_python",
-  "version": "0.3.1",
+  "version": "0.4.2",
   "dependencies": [
     {
       "type": "system",
@@ -18,13 +18,9 @@
     "include": [
       "manifest.json",
       "property.json",
-      "BUILD.gn",
-      "**.tent",
       "**.py",
       "README.md",
-      "requirements.txt",
-      "tests/**.py",
-      "tests/bin/*"
+      "requirements.txt"
     ]
   },
   "api": {

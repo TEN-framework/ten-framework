@@ -6,6 +6,7 @@
 #
 import multiprocessing as mp
 import os
+import sys
 import time
 from ten_runtime import (
     Extension,
@@ -24,7 +25,18 @@ class DefaultExtension(Extension):
         self.name = name
 
         mp.set_start_method("spawn", force=True)
-        print("start method", mp.get_start_method())
+
+        # Set the Python interpreter path for child processes when embedded.
+        # When Python is embedded in a C++ application, sys.executable points
+        # to the C++ executable instead of python.exe. This causes
+        # multiprocessing.Process() to restart the entire C++ application
+        # instead of just spawning a Python subprocess on Windows.
+        # See: https://docs.python.org/3/library/multiprocessing.html#multiprocessing.set_executable
+        if sys.platform == "win32":
+            python_exe = os.path.join(sys.exec_prefix, "python.exe")
+            if os.path.exists(python_exe):
+                mp.set_executable(python_exe)
+
         self.ready = mp.Value("b", False)
 
     def on_configure(self, ten_env: TenEnv) -> None:

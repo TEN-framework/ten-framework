@@ -89,7 +89,6 @@ def test_params_passthrough(MockStepFunTTSWebsocket):
         "voice_label": {"gender": "male", "age": "adult"},
     }
     passthrough_params = {
-        "model": "step-tts-mini",
         "voice_id": "cixingnansheng",
         "sample_rate": 24000,
         "speed_ratio": 1.0,

@@ -519,7 +519,13 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     for (int i = 0; default_libs[i] != nullptr; i++) {
       path_to_load = ten_string_create_formatted("%s", default_libs[i]);
+#if defined(_WIN32)
+      // Fallback to LoadLibraryA instead of the safer LoadLibraryExA because
+      // on Windows we need to search PATH to find "python310.dll".
+      handle = ten_module_load_with_path_search(path_to_load, 0);
+#else
       handle = ten_module_load(path_to_load, 0);  // RTLD_GLOBAL
+#endif
       if (handle != nullptr) {
         TEN_LOGI(
             "[Python addon loader] Successfully loaded libpython from %s "
@@ -596,25 +602,46 @@ class python_addon_loader_t : public ten::addon_loader_t {
     ten_string_destroy(addon_loader_path);
 
     // Normalize the path (resolve .. and .)
-    if (ten_path_to_system_flavor(python_lib_dir) != 0) {
-      TEN_LOGE("[Python addon loader] Failed to normalize path: %s",
-               ten_string_get_raw_str(python_lib_dir));
-      ten_string_destroy(python_lib_dir);
+    ten_string_t *normalized_python_lib_dir = ten_path_realpath(python_lib_dir);
+    ten_string_destroy(python_lib_dir);
+    if (!normalized_python_lib_dir) {
+      TEN_LOGE("[Python addon loader] Failed to normalize path");
       return false;
     }
 
+    // Convert to system flavor (e.g., convert '/' to '\' on Windows)
+    if (ten_path_to_system_flavor(normalized_python_lib_dir) != 0) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to convert path to system flavor: %s",
+          ten_string_get_raw_str(normalized_python_lib_dir));
+      ten_string_destroy(normalized_python_lib_dir);
+      return false;
+    }
+
+    // According to https://docs.python.org/3/whatsnew/2.5.html, on Windows,
+    // .dll is no longer supported as a filename extension for extension
+    // modules. .pyd is now the only filename extension that will be searched
+    // for.
     ten_string_t *python_lib_path = ten_string_create_formatted(
-        "%s/libten_runtime_python.so", ten_string_get_raw_str(python_lib_dir));
-    ten_string_destroy(python_lib_dir);
+#if defined(_WIN32)
+        "%s\\libten_runtime_python.pyd",
+#else
+        "%s/libten_runtime_python.so",
+#endif
+        ten_string_get_raw_str(normalized_python_lib_dir));
+    ten_string_destroy(normalized_python_lib_dir);
 
     TEN_LOGI("[Python addon loader] Attempting to load: %s",
              ten_string_get_raw_str(python_lib_path));
 
-    // The libten_runtime_python.so must be loaded globally using dlopen, and
-    // cannot be a regular shared library dependency. Note that the 2nd
-    // parameter must be 0 (as_local = false).
+    // The libten_runtime_python library must be loaded with global symbol
+    // visibility to ensure Python C extension modules can find its symbols,
+    // and cannot be a regular shared library dependency.
     //
-    // Refer to
+    // On Unix-like systems (Linux, macOS):
+    //   - Uses dlopen() with RTLD_GLOBAL flag (as_local = 0)
+    //   - This makes symbols globally visible to subsequently loaded libraries
+    // Refer to:
     // https://mail.python.org/pipermail/new-bugs-announce/2008-November/003322.html
     void *handle = ten_module_load(python_lib_path, 0);
     if (handle == nullptr) {

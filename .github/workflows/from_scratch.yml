@@ -4,7 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - "tools/tman/install_tman.sh"
       - ".github/workflows/from_scratch.yml"
 
 permissions:
@@ -16,7 +15,7 @@ concurrency:
 
 jobs:
   from_scratch:
-    name: From Scratch - ${{ matrix.platform_name }}
+    name: From Scratch - ${{ matrix.platform_name }} - Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -25,15 +24,19 @@ jobs:
           - runs-on: macos-15-intel
             platform_name: "macOS x64"
             arch: "x64"
+            python-version: "3.10"
           - runs-on: macos-latest
             platform_name: "macOS ARM64"
             arch: "arm64"
+            python-version: "3.10"
           - runs-on: ubuntu-22.04
             platform_name: "Linux x64"
             arch: "x64"
+            python-version: "3.10"
           - runs-on: ubuntu-22.04-arm
             platform_name: "Linux ARM64"
             arch: "arm64"
+            python-version: "3.10"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +52,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -62,17 +65,26 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install tman using the install script
+      - name: Install tman using package manager
         run: |
           echo "================================================"
-          echo "Testing tman installation script on ${{ matrix.platform_name }}"
-          echo "Script: tools/tman/install_tman.sh"
+          echo "Installing tman on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
-          # Since the script prompts for confirmation if tman is already installed,
-          # we need to pipe 'y' to automatically confirm the reinstallation.
-          # For CI environment, we'll use 'yes' command to auto-answer.
-          yes y | bash tools/tman/install_tman.sh || true
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            echo "Installing tman via Homebrew..."
+            brew install TEN-framework/ten-framework/tman
+          elif [[ "${{ runner.os }}" == "Linux" ]]; then
+            echo "Installing tman via apt..."
+            sudo add-apt-repository -y ppa:ten-framework/ten-framework
+            sudo apt update
+            sudo apt install -y tman
+          else
+            echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
+            exit 1
+          fi
+
+          echo "✓ tman installation completed"
 
       - name: Verify tman installation
         run: |
@@ -90,6 +102,12 @@ jobs:
           echo "✓ tman is installed successfully"
           echo "  Version: $(tman --version 2>&1 || tman -v 2>&1)"
           echo "  Location: $(which tman)"
+
+          # Display Python version being used
+          echo ""
+          echo "Python configuration:"
+          echo "  Version: $(python3 --version)"
+          echo "  Location: $(which python3)"
 
           # Verify tman can run basic commands
           echo ""
@@ -254,7 +272,7 @@ jobs:
       - name: Run app with tman
         run: |
           echo "================================================"
-          echo "Running transcriber_demo app on ${{ matrix.platform_name }}"
+          echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
           cd /tmp/transcriber_demo
@@ -321,7 +339,7 @@ jobs:
 
           echo ""
           echo "================================================"
-          echo "✅ All verifications completed successfully on ${{ matrix.platform_name }}"
+          echo "✅ All verifications completed successfully on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
       - name: Install C++ extension webrtc_vad_cpp
@@ -430,5 +448,5 @@ jobs:
 
           echo ""
           echo "================================================"
-          echo "✅ C++ development environment verification completed on ${{ matrix.platform_name }}"
+          echo "✅ C++ development environment verification completed on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"

@@ -150,6 +150,23 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.sent_ts).total_seconds() * 1000
             )
             duration_ms = self._calculate_audio_duration_ms()
+
+            # Flush PCMWriter for current request before sending audio_end (INTERRUPTED case)
+            if (
+                self.config
+                and self.config.dump
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_info(
+                        f"Flushed PCMWriter for interrupted request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for interrupted request_id {self.current_request_id}: {e}"
+                    )
+
             await self.send_tts_audio_end(
                 request_id=self.current_request_id,
                 request_event_interval_ms=request_event_interval,
@@ -191,9 +208,24 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
             )
             if self.client is None:
-                self.ten_env.log_info(
+                self.ten_env.log_error(
                     "TTS client is not initialized, something is wrong. It should have been re-created after flush."
                 )
+                await self.send_tts_error(
+                    t.request_id,
+                    ModuleError(
+                        message="TTS client is not initialized",
+                        module=ModuleType.TTS,
+                        code=int(ModuleErrorCode.FATAL_ERROR),
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    ),
+                )
+                # Only finish if input_end received
+                if t.text_input_end:
+                    await self.finish_request(
+                        t.request_id,
+                        reason=TTSAudioEndReason.ERROR,
+                    )
                 return
 
             self.ten_env.log_info(
@@ -245,6 +277,16 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             elif self.current_request_finished:
                 error_msg = f"Received a message for a finished request_id '{t.request_id}' skip processing."
                 self.ten_env.log_error(error_msg)
+                # This shouldn't happen in normal flow, but if it does and it's input_end,
+                # we should still finish_request to avoid deadlock
+                if t.text_input_end:
+                    self.ten_env.log_warn(
+                        f"Received input_end for already finished request {t.request_id}, calling finish_request to release lock"
+                    )
+                    await self.finish_request(
+                        t.request_id,
+                        reason=TTSAudioEndReason.ERROR,
+                    )
                 return
 
             if t.text_input_end:
@@ -267,7 +309,24 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 f"StepFunTTSTaskFailedException in request_tts: {e.error_msg} (code: {e.error_code}). text: {t.text}"
             )
             # Use the same error handling logic as the callback mechanism
-            await self._send_tts_error_for_exception(e)
+            if t.text_input_end:
+                await self._send_tts_error_for_exception(e)
+            else:
+                error_code = self._get_error_type_from_code(e.error_code)
+                await self.send_tts_error(
+                    self.current_request_id or "",
+                    ModuleError(
+                        message=e.error_msg,
+                        module=ModuleType.TTS,
+                        code=int(error_code),
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code=str(e.error_code),
+                            message=e.error_msg,
+                        ),
+                    ),
+                )
+
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
@@ -281,6 +340,12 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=e.error,
                 ),
             )
+            if t.text_input_end:
+                await self.finish_request(
+                    self.current_request_id or "",
+                    reason=TTSAudioEndReason.ERROR,
+                )
+
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
@@ -294,6 +359,12 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
+            if t.text_input_end:
+                await self.finish_request(
+                    self.current_request_id or "",
+                    reason=TTSAudioEndReason.ERROR,
+                )
+
             # When a connection error occurs, destroy the client instance.
             # It will be recreated on the next request.
             if isinstance(e, ConnectionRefusedError) and self.client:
@@ -386,12 +457,36 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                         (datetime.now() - self.sent_ts).total_seconds() * 1000
                     )
                     duration_ms = self._calculate_audio_duration_ms()
+
+                    # Flush PCMWriter for current request to ensure dump file is written before sending audio_end
+                    if (
+                        self.config
+                        and self.config.dump
+                        and self.current_request_id in self.recorder_map
+                    ):
+                        try:
+                            await self.recorder_map[
+                                self.current_request_id
+                            ].flush()
+                            self.ten_env.log_info(
+                                f"Flushed PCMWriter for request_id: {self.current_request_id}"
+                            )
+                        except Exception as e:
+                            self.ten_env.log_error(
+                                f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                            )
+
                     await self.send_tts_audio_end(
                         request_id=self.current_request_id,
                         request_event_interval_ms=request_event_interval,
                         request_total_audio_duration_ms=duration_ms,
                     )
                     await self.client.cancel()
+
+                    # Notify base class
+                    if self.current_request_id:
+                        await self.finish_request(self.current_request_id)
+
                     # Reset state for the next request
                     self.current_request_id = None
                     self.sent_ts = None
@@ -403,6 +498,18 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(f"Error in _handle_audio_data: {e}")
+            # Ensure we release the lock if the request was fully sent but processing failed
+            if self.current_request_id and self.current_request_finished:
+                await self.finish_request(
+                    self.current_request_id,
+                    reason=TTSAudioEndReason.ERROR,
+                    error=ModuleError(
+                        message=f"Error in audio data handler: {str(e)}",
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        vendor_info=ModuleErrorVendorInfo(),
+                    ),
+                )
 
     async def _handle_transcription(self, transcription: TTSTextResult) -> None:
         """Handle transcription data callback"""
@@ -437,20 +544,28 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
         # Create appropriate error based on error code
         error_code = self._get_error_type_from_code(exception.error_code)
 
-        # Send TTS error with vendor info
-        await self.send_tts_error(
-            self.current_request_id or "",
-            ModuleError(
+        error = ModuleError(
+            message=exception.error_msg,
+            module=ModuleType.TTS,
+            code=int(error_code),
+            vendor_info=ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(exception.error_code),
                 message=exception.error_msg,
-                module=ModuleType.TTS,
-                code=int(error_code),
-                vendor_info=ModuleErrorVendorInfo(
-                    vendor=self.vendor(),
-                    code=str(exception.error_code),
-                    message=exception.error_msg,
-                ),
             ),
         )
+
+        # Send error first
+        await self.send_tts_error(self.current_request_id or "", error)
+
+        # Only finish_request if we've received input_end
+        # This is critical to avoid premature lock release
+        if self.current_request_finished:
+            await self.finish_request(
+                self.current_request_id or "",
+                reason=TTSAudioEndReason.ERROR,
+                error=error,
+            )
 
     def _handle_tts_error(
         self, exception: StepFunTTSTaskFailedException

@@ -79,18 +79,36 @@ def test_standalone_ollama_async_python():
 
     # Launch virtual environment.
     my_env["VIRTUAL_ENV"] = venv_dir
-    my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
+    if sys.platform == "win32":
+        venv_bin_dir = os.path.join(venv_dir, "Scripts")
+    else:
+        venv_bin_dir = os.path.join(venv_dir, "bin")
+    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
-    bootstrap_cmd = os.path.join(extension_root_path, "tests/bin/bootstrap")
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(
+            extension_root_path, "tests/bin/bootstrap.py"
+        )
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(extension_root_path, "tests/bin/bootstrap")
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     # Step 4:
     #
@@ -147,12 +165,24 @@ def test_standalone_ollama_async_python():
     # Step 5:
     #
     # Run the test.
-    tester_process = subprocess.Popen(
-        "tests/bin/start",
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
+    if sys.platform == "win32":
+        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
+        tester_process = subprocess.Popen(
+            [sys.executable, start_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash start script
+        tester_process = subprocess.Popen(
+            "tests/bin/start",
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+
     tester_rc = tester_process.wait()
     assert tester_rc == 0
