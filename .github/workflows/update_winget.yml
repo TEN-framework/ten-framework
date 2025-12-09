@@ -3,7 +3,7 @@ name: Update Winget Package
 # This workflow automatically updates the winget package manifest
 # and submits a PR to microsoft/winget-pkgs repository when:
 # - A new tman Windows binary is released
-# - This workflow file is modified (for testing purposes)
+# - Manually triggered for testing or emergency updates
 
 on:
   # Triggered when Windows build workflow completes
@@ -14,14 +14,7 @@ on:
       - completed
     # Note: We don't filter by branches here because release events run on tags, not branches
 
-  # Triggered when this workflow file or tools/winget directory changes
-  # (for testing - runs in DRY RUN mode, won't create actual PR)
-  push:
-    paths:
-      - ".github/workflows/update_winget.yml"
-      - "tools/winget/**"
-
-  # Allow manual trigger for testing or emergency updates
+  # Manual trigger for testing or emergency updates
   workflow_dispatch:
     inputs:
       version:
@@ -35,10 +28,9 @@ permissions:
 
 jobs:
   update-winget:
-    # Only run on successful workflow completion, manual trigger, or file changes
+    # Only run on successful workflow completion or manual trigger
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'release')
     runs-on: windows-latest
@@ -84,18 +76,7 @@ jobs:
             if ($env:EVENT_NAME -eq "workflow_dispatch") {
               # Manual trigger - use input version
               $VERSION = $env:INPUT_VERSION
-            } elseif ($env:EVENT_NAME -eq "push") {
-              # File change trigger - use latest release for testing
-              Write-Host "📡 Fetching latest release from GitHub API..."
-
-              # Use authenticated request to avoid rate limiting
-              $headers = @{
-                Authorization = "Bearer $env:GITHUB_TOKEN"
-                Accept = "application/vnd.github+json"
-              }
-              $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest" -Headers $headers
-              $VERSION = $response.tag_name
-              Write-Host "📋 Testing mode: using latest release version"
+              Write-Host "📋 Manual trigger: using version $VERSION"
             } else {
               # Workflow completion - fetch latest release
               Write-Host "📡 Fetching latest release from GitHub API..."
@@ -107,6 +88,7 @@ jobs:
               }
               $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest" -Headers $headers
               $VERSION = $response.tag_name
+              Write-Host "📦 Workflow trigger: using latest release version $VERSION"
             }
 
             # Validate version
