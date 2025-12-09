@@ -24,6 +24,16 @@ class BytedanceASRConfig(BaseModel):
     language: str = "zh-CN"
     workflow: str = DEFAULT_WORKFLOW  # ASR processing workflow
     auth_method: str = "token"  # "token" or "signature" or "api_key"
+    uid: str = "default_user"
+    device: str = "default_device"
+    platform: str = "Linux"
+    network: str = "WiFi"
+    nation: str = "CN"
+    province: str = "default_province"
+    city: str = "default_city"
+    confidence: int = 0
+    boosting_table_name: str = ""
+    correct_table_name: str = ""
 
     # Business configuration
     finalize_mode: str = FINALIZE_MODE_MUTE_PKG  # "disconnect" or "mute_pkg"

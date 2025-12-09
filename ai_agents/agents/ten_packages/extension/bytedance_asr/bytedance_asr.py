@@ -162,7 +162,14 @@ class AsrWsClient:
         self.ws_url = kwargs.get(
             "ws_url", "wss://openspeech.bytedance.com/api/v2/asr"
         )
-        self.uid = kwargs.get("uid", "streaming_asr_demo")
+        self.uid = kwargs.get("uid", "default_user")
+        self.device = kwargs.get("device", "default_device")
+        self.platform = kwargs.get("platform", "Linux")
+        self.network = kwargs.get("network", "WiFi")
+        self.nation = kwargs.get("nation", "CN")
+        self.province = kwargs.get("province", "default_province")
+        self.city = kwargs.get("city", "default_city")
+        self.confidence = kwargs.get("confidence", 0)
         self.workflow = kwargs.get(
             "workflow",
             "audio_in,resample,partition,vad,fe,decode,itn,nlu_punctuate",
@@ -171,6 +178,8 @@ class AsrWsClient:
         self.show_utterances = kwargs.get(
             "show_utterances", True
         )  # Ensure complete utterances information is returned
+        self.boosting_table_name = kwargs.get("boosting_table_name", "")
+        self.correct_table_name = kwargs.get("correct_table_name", "")
         self.result_type = kwargs.get(
             "result_type", "single"
         )  # Set appropriate result_type
@@ -546,13 +555,24 @@ class AsrWsClient:
                 "cluster": self.cluster,
                 "token": self.token,
             },
-            "user": {"uid": self.uid},
+            "user": {
+                "uid": self.uid,
+                "device": self.device,
+                "platform": self.platform,
+                "network": self.network,
+                "nation": self.nation,
+                "province": self.province,
+                "city": self.city,
+            },
             "request": {
                 "reqid": reqid,
                 "nbest": self.nbest,
+                "confidence": self.confidence,
                 "workflow": self.workflow,
                 "show_language": self.show_language,
                 "show_utterances": self.show_utterances,
+                "boosting_table_name": self.boosting_table_name,
+                "correct_table_name": self.correct_table_name,
                 "result_type": self.result_type,
                 "sequence": 1,
                 "vad_signal": self.vad_signal,
