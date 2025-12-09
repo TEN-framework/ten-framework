@@ -290,7 +290,10 @@ gpt51_llm_with_tools = {
         "proxy_url": "${env:OPENAI_PROXY_URL|}",
         "greeting": apollo_greeting,
         "max_memory_length": 10,
-        "minimal_parameters": True,
+        # GPT-5/o1 models require use_max_completion_tokens=True to use
+        # max_completion_tokens instead of max_tokens, and to exclude
+        # unsupported params (temperature, frequency_penalty, etc.)
+        "use_max_completion_tokens": True,
         "reasoning_effort": "none",
         "verbosity": "low",
     },
@@ -785,6 +788,17 @@ new_graphs = []
 
 # Group 4: GPT-5.1 graphs (ONLY THESE 3 ACTIVE)
 print("Creating GPT-5.1 apollo graphs...")
+
+# 0. GPT-4o test graph (for regression testing - no new params)
+new_graphs.append(
+    create_apollo_graph(
+        "flux_apollo_gpt_4o_cartesia",
+        gpt4o_llm_with_tools,
+        flux_stt,
+        has_avatar=False,
+    )
+)
+
 # 1. No avatar version
 new_graphs.append(
     create_apollo_graph(

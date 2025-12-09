@@ -49,6 +49,7 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    use_max_completion_tokens: bool = False  # For GPT-5/o1 models
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -231,6 +232,9 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
+        # Build request - use max_completion_tokens for GPT-5/o1 models
+        # When use_max_completion_tokens=True, exclude parameters unsupported by GPT-5/o1:
+        # temperature, top_p, presence_penalty, frequency_penalty, seed
         req = {
             "model": self.config.model,
             "messages": [
@@ -238,15 +242,18 @@ class OpenAIChatGPT:
                 *parsed_messages,
             ],
             "tools": tools,
-            "temperature": self.config.temperature,
-            "top_p": self.config.top_p,
-            "presence_penalty": self.config.presence_penalty,
-            "frequency_penalty": self.config.frequency_penalty,
-            "max_tokens": self.config.max_tokens,
-            "seed": self.config.seed,
             "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
+        if self.config.use_max_completion_tokens:
+            req["max_completion_tokens"] = self.config.max_tokens
+        else:
+            req["max_tokens"] = self.config.max_tokens
+            req["temperature"] = self.config.temperature
+            req["top_p"] = self.config.top_p
+            req["presence_penalty"] = self.config.presence_penalty
+            req["frequency_penalty"] = self.config.frequency_penalty
+            req["seed"] = self.config.seed
 
         # Add additional parameters if they are not in the black list
         for key, value in (request_input.parameters or {}).items():
