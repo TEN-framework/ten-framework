@@ -51,7 +51,7 @@ PackageName: tman
 PackageUrl: https://github.com/TEN-framework/ten-framework
 
 # Software license type
-License: Apache-2.0
+License: Apache 2.0 with certain conditions
 
 # URL to the full license text
 LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
