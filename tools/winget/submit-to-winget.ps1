@@ -31,6 +31,7 @@
 
 .PARAMETER DryRun
     If specified, will prepare manifests but not submit the PR.
+    Only performs steps 1-3.
     Useful for testing and verification.
 
 .EXAMPLE
@@ -145,7 +146,7 @@ if (-not $DryRun) {
 Write-Success "All prerequisites met"
 
 # ==============================================================================
-# Step 1: Determine Version
+# Determine Version
 # ==============================================================================
 
 Write-Info "Determining version to submit..."
@@ -164,7 +165,7 @@ $VersionClean = $Version -replace '^v', ''
 Write-Success "Version to submit: $VersionClean (tag: $Version)"
 
 # ==============================================================================
-# Step 2: Download Release Asset
+# Step 1: Download Release Asset
 # ==============================================================================
 
 Write-Info "Downloading Windows release asset..."
@@ -185,7 +186,7 @@ try {
 }
 
 # ==============================================================================
-# Step 3: Get or Calculate SHA256 Checksum
+# Step 2: Get or Calculate SHA256 Checksum
 # ==============================================================================
 
 if ([string]::IsNullOrEmpty($Sha256)) {
@@ -211,7 +212,7 @@ if ([string]::IsNullOrEmpty($Sha256)) {
 }
 
 # ==============================================================================
-# Step 4: Generate Manifest Files from Templates
+# Step 3: Generate Manifest Files from Templates
 # ==============================================================================
 
 Write-Info "Generating winget manifest files..."
@@ -293,7 +294,7 @@ Get-Content "$manifestDir\ten-framework.tman.locale.en-US.yaml"
 Write-Host ""
 
 # ==============================================================================
-# Step 5: Dry Run Check
+# Dry Run Check
 # ==============================================================================
 
 if ($DryRun) {
@@ -304,7 +305,7 @@ if ($DryRun) {
 }
 
 # ==============================================================================
-# Step 6: Fork and Clone winget-pkgs Repository
+# Step 4: Fork and Clone winget-pkgs Repository
 # ==============================================================================
 
 Write-Info "Preparing winget-pkgs repository..."
@@ -349,7 +350,7 @@ git push origin master
 Write-Success "Repository prepared"
 
 # ==============================================================================
-# Step 7: Create Branch and Add Manifests
+# Step 5: Create Branch and Add Manifests
 # ==============================================================================
 
 $branchName = "tman-$VersionClean"
@@ -384,7 +385,7 @@ git push origin $branchName
 Write-Success "Branch pushed successfully"
 
 # ==============================================================================
-# Step 8: Create Pull Request
+# Step 6: Create Pull Request
 # ==============================================================================
 
 Write-Info "Creating Pull Request to microsoft/winget-pkgs..."
