@@ -53,6 +53,9 @@
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/minimax_tts_websocket_python"
     }
   ],
   "scripts": {
