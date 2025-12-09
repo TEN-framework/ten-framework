@@ -324,7 +324,7 @@ def collect_and_update_version_of_system_packages(
         os.path.join(
             repo_base_dir,
             "packages",
-            "core_system",
+            "core_systems",
             "pytest_ten",
             MANIFEST_JSON_FILE,
         ),
