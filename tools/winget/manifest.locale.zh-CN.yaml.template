@@ -10,7 +10,7 @@
 # Documentation: https://learn.microsoft.com/zh-cn/windows/package-manager/package/manifest
 # ==============================================================================
 
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 

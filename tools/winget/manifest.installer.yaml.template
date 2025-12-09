@@ -19,7 +19,7 @@
 # https://github.com/microsoft/winget-cli/blob/master/schemas/JSON/manifests/v1.6.0/manifest.installer.1.6.0.json
 # ==============================================================================
 
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 

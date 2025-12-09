@@ -1,10 +1,9 @@
 name: Update Winget Package
 
-# This workflow automatically updates the winget package manifest when:
-# 1. A new tman Windows binary is released
-# 2. This workflow file is modified (for testing purposes)
-#
-# The workflow submits a PR to microsoft/winget-pkgs repository.
+# This workflow automatically updates the winget package manifest
+# and submits a PR to microsoft/winget-pkgs repository when:
+# - A new tman Windows binary is released
+# - This workflow file is modified (for testing purposes)
 
 on:
   # Triggered when Windows build workflow completes
@@ -312,13 +311,13 @@ jobs:
           ### 📦 Generated Files
 
           The following manifest files were generated (but not submitted):
-          - ``TENFramework.tman.yaml`` (version manifest)
-          - ``TENFramework.tman.installer.yaml`` (installer manifest)
-          - ``TENFramework.tman.locale.en-US.yaml`` (English)
-          - ``TENFramework.tman.locale.zh-CN.yaml`` (简体中文)
-          - ``TENFramework.tman.locale.zh-TW.yaml`` (繁體中文)
-          - ``TENFramework.tman.locale.ja-JP.yaml`` (日本語)
-          - ``TENFramework.tman.locale.ko-KR.yaml`` (한국어)
+          - ``ten-framework.tman.yaml`` (version manifest)
+          - ``ten-framework.tman.installer.yaml`` (installer manifest)
+          - ``ten-framework.tman.locale.en-US.yaml`` (English)
+          - ``ten-framework.tman.locale.zh-CN.yaml`` (简体中文)
+          - ``ten-framework.tman.locale.zh-TW.yaml`` (繁體中文)
+          - ``ten-framework.tman.locale.ja-JP.yaml`` (日本語)
+          - ``ten-framework.tman.locale.ko-KR.yaml`` (한국어)
 
           ### ℹ️ This was a test run
 
@@ -339,13 +338,13 @@ jobs:
           ### 📦 Submitted Files
 
           The following manifest files were submitted to microsoft/winget-pkgs:
-          - ``TENFramework.tman.yaml`` (version manifest)
-          - ``TENFramework.tman.installer.yaml`` (installer manifest)
-          - ``TENFramework.tman.locale.en-US.yaml`` (English)
-          - ``TENFramework.tman.locale.zh-CN.yaml`` (简体中文)
-          - ``TENFramework.tman.locale.zh-TW.yaml`` (繁體中文)
-          - ``TENFramework.tman.locale.ja-JP.yaml`` (日本語)
-          - ``TENFramework.tman.locale.ko-KR.yaml`` (한国어)
+          - ``ten-framework.tman.yaml`` (version manifest)
+          - ``ten-framework.tman.installer.yaml`` (installer manifest)
+          - ``ten-framework.tman.locale.en-US.yaml`` (English)
+          - ``ten-framework.tman.locale.zh-CN.yaml`` (简体中文)
+          - ``ten-framework.tman.locale.zh-TW.yaml`` (繁體中文)
+          - ``ten-framework.tman.locale.ja-JP.yaml`` (日本語)
+          - ``ten-framework.tman.locale.ko-KR.yaml`` (한国어)
 
           ### 📦 What happens next?
 
@@ -355,13 +354,13 @@ jobs:
           4. **Available to Users**: After merge, users can install via:
 
           ````powershell
-          winget install TENFramework.tman
+          winget install ten-framework.tman
           ````
 
           Or upgrade existing installation:
 
           ````powershell
-          winget upgrade TENFramework.tman
+          winget upgrade ten-framework.tman
           ````
 
           ### 🔗 Links
@@ -423,7 +422,7 @@ jobs:
             ${manualStepsVersion}
             2. Calculate SHA256 checksum: \`Get-FileHash -Path tman-win-release-x64.zip -Algorithm SHA256\`
             3. Fork microsoft/winget-pkgs repository
-            4. Create manifests in \`manifests/t/TENFramework/tman/<version>/\`
+            4. Create manifests in \`manifests/t/ten-framework/tman/<version>/\`
             5. Submit PR to microsoft/winget-pkgs
 
             ### Resources:

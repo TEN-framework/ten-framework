@@ -209,7 +209,7 @@ if ($templatesAvailable) {
         $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
     }) -join "`n"
     $versionContent = $versionContent -replace '__VERSION__', $VersionClean
-    $versionContent | Out-File -FilePath "$manifestDir\TENFramework.tman.yaml" -Encoding utf8 -NoNewline
+    $versionContent | Out-File -FilePath "$manifestDir\ten-framework.tman.yaml" -Encoding utf8 -NoNewline
 
     # Installer Manifest
     $installerTemplate = Get-Content "$scriptDir\manifest.installer.yaml.template" -Raw
@@ -218,7 +218,7 @@ if ($templatesAvailable) {
     }) -join "`n"
     $installerContent = $installerContent -replace '__VERSION__', $Version
     $installerContent = $installerContent -replace '__WIN_X64_SHA256__', $sha256
-    $installerContent | Out-File -FilePath "$manifestDir\TENFramework.tman.installer.yaml" -Encoding utf8 -NoNewline
+    $installerContent | Out-File -FilePath "$manifestDir\ten-framework.tman.installer.yaml" -Encoding utf8 -NoNewline
 
     # Locale Manifests (multiple languages)
     $locales = @("en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR")
@@ -231,7 +231,7 @@ if ($templatesAvailable) {
                 $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
             }) -join "`n"
             $localeContent = $localeContent -replace '__VERSION__', $VersionClean
-            $localeContent | Out-File -FilePath "$manifestDir\TENFramework.tman.locale.$locale.yaml" -Encoding utf8 -NoNewline
+            $localeContent | Out-File -FilePath "$manifestDir\ten-framework.tman.locale.$locale.yaml" -Encoding utf8 -NoNewline
         }
     }
 } else {
@@ -243,18 +243,18 @@ if ($templatesAvailable) {
 
     # Version Manifest
     $versionManifest = @"
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 PackageVersion: $VersionClean
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.6.0
 "@
 
-    $versionManifest | Out-File -FilePath "$manifestDir\TENFramework.tman.yaml" -Encoding utf8 -NoNewline
+    $versionManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.yaml" -Encoding utf8 -NoNewline
 
     # Installer Manifest
     $installerManifest = @"
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 PackageVersion: $VersionClean
 InstallerType: zip
 Installers:
@@ -269,11 +269,11 @@ ManifestType: installer
 ManifestVersion: 1.6.0
 "@
 
-    $installerManifest | Out-File -FilePath "$manifestDir\TENFramework.tman.installer.yaml" -Encoding utf8 -NoNewline
+    $installerManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.installer.yaml" -Encoding utf8 -NoNewline
 
     # Locale Manifest (en-US only in standalone mode)
     $localeManifest = @"
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 PackageVersion: $VersionClean
 PackageLocale: en-US
 Publisher: TEN Framework Team
@@ -297,7 +297,7 @@ ManifestType: defaultLocale
 ManifestVersion: 1.6.0
 "@
 
-    $localeManifest | Out-File -FilePath "$manifestDir\TENFramework.tman.locale.en-US.yaml" -Encoding utf8 -NoNewline
+    $localeManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.locale.en-US.yaml" -Encoding utf8 -NoNewline
 }
 
 Write-Success "Generated manifest files:"
@@ -306,11 +306,11 @@ Get-ChildItem -Path $manifestDir | ForEach-Object { Write-Host "   - $($_.Name)"
 # Display manifest contents for verification
 Write-Info "`nManifest contents:"
 Write-Host "==================== Version Manifest ====================" -ForegroundColor Gray
-Get-Content "$manifestDir\TENFramework.tman.yaml"
+Get-Content "$manifestDir\ten-framework.tman.yaml"
 Write-Host "`n==================== Installer Manifest ====================" -ForegroundColor Gray
-Get-Content "$manifestDir\TENFramework.tman.installer.yaml"
+Get-Content "$manifestDir\ten-framework.tman.installer.yaml"
 Write-Host "`n==================== Locale Manifest ====================" -ForegroundColor Gray
-Get-Content "$manifestDir\TENFramework.tman.locale.en-US.yaml"
+Get-Content "$manifestDir\ten-framework.tman.locale.en-US.yaml"
 Write-Host ""
 
 # ==============================================================================
@@ -380,7 +380,7 @@ git checkout -b $branchName
 
 # Create manifest directory structure
 # Winget uses: manifests/<first-letter>/<Publisher>/<Package>/<Version>/
-$manifestPath = "manifests/t/TENFramework/tman/$VersionClean"
+$manifestPath = "manifests/t/ten-framework/tman/$VersionClean"
 Write-Info "Creating manifest directory: $manifestPath"
 New-Item -ItemType Directory -Force -Path $manifestPath | Out-Null
 
@@ -394,7 +394,7 @@ Get-ChildItem -Path $manifestPath | ForEach-Object { Write-Host "   - $($_.Name)
 # Stage and commit changes
 git add $manifestPath
 
-$commitMsg = "Add TENFramework.tman version $VersionClean"
+$commitMsg = "Add ten-framework.tman version $VersionClean"
 Write-Info "Committing changes: $commitMsg"
 git commit -m $commitMsg
 
@@ -411,12 +411,12 @@ Write-Success "Branch pushed successfully"
 Write-Info "Creating Pull Request to microsoft/winget-pkgs..."
 
 $prBody = @"
-## Update TENFramework.tman to version $VersionClean
+## Update ten-framework.tman to version $VersionClean
 
 This PR updates the tman package to version $VersionClean.
 
 ### Package Information
-- **Package**: TENFramework.tman
+- **Package**: ten-framework.tman
 - **Version**: $VersionClean
 - **Release URL**: https://github.com/$Repository/releases/tag/$Version
 
@@ -438,7 +438,7 @@ tman is the official package manager for the TEN Framework. It helps developers 
 try {
     gh pr create `
         --repo microsoft/winget-pkgs `
-        --title "Update TENFramework.tman to $VersionClean" `
+        --title "Update ten-framework.tman to $VersionClean" `
         --body $prBody `
         --head "${forkOwner}:${branchName}" `
         --base master
@@ -447,7 +447,7 @@ try {
     Write-Info "`nNext steps:"
     Write-Info "   1. Microsoft's automated validation will check the PR"
     Write-Info "   2. If validation passes, maintainers will review"
-    Write-Info "   3. Once merged, users can install via: winget install TENFramework.tman"
+    Write-Info "   3. Once merged, users can install via: winget install ten-framework.tman"
 } catch {
     Write-Error "Failed to create Pull Request: $_"
     Write-Info "You may need to create the PR manually at:"

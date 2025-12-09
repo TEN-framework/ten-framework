@@ -18,7 +18,7 @@
 # ==============================================================================
 
 # Unique identifier for the package (must match version manifest)
-PackageIdentifier: TENFramework.tman
+PackageIdentifier: ten-framework.tman
 
 # Package version (must match version manifest)
 PackageVersion: __VERSION__
