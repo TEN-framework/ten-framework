@@ -1,32 +1,14 @@
-# ==============================================================================
-# This template is used by .github/workflows/update_winget.yml to generate
-# the Korean locale manifest.
-#
-# Placeholders:
-#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
-#
-# Documentation: https://learn.microsoft.com/ko-kr/windows/package-manager/package/manifest
-# ==============================================================================
-
 PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 
 PackageLocale: ko-KR
 
-# ==============================================================================
-# 게시자 정보
-# ==============================================================================
-
 Publisher: TEN Framework 팀
 
 PublisherUrl: https://github.com/TEN-framework
 
 PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
-
-# ==============================================================================
-# 패키지 정보
-# ==============================================================================
 
 PackageName: tman
 
@@ -35,10 +17,6 @@ PackageUrl: https://github.com/TEN-framework/ten-framework
 License: Apache-2.0
 
 LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
-
-# ==============================================================================
-# 패키지 설명
-# ==============================================================================
 
 ShortDescription: TEN Framework 패키지 관리자
 
@@ -56,13 +34,6 @@ Description: |-
   TEN Framework는 실시간 통신 애플리케이션 구축을 위한 강력한 프레임워크이며,
   tman을 사용하면 커뮤니티 패키지로 애플리케이션을 쉽게 확장하고 사용자 지정할 수 있습니다.
 
-# ==============================================================================
-# 검색 태그
-# ==============================================================================
-
-# 참고: 태그는 검색 가능성을 위해 영어로 유지해야 합니다
-# 사용자는 일반적으로 영어 키워드로 검색합니다(예: "package-manager", "cli")
-# 번역된 태그는 패키지를 찾기 어렵게 만듭니다
 Tags:
   - package-manager
   - ten-framework

@@ -1,34 +1,14 @@
-# ==============================================================================
-# Winget 日文本地化清单模板（日本語 - 日本）
-# ==============================================================================
-# This template is used by .github/workflows/update_winget.yml to generate
-# the Japanese locale manifest.
-#
-# Placeholders:
-#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
-#
-# Documentation: https://learn.microsoft.com/ja-jp/windows/package-manager/package/manifest
-# ==============================================================================
-
 PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 
 PackageLocale: ja-JP
 
-# ==============================================================================
-# 発行者情報
-# ==============================================================================
-
 Publisher: TEN Framework チーム
 
 PublisherUrl: https://github.com/TEN-framework
 
 PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
-
-# ==============================================================================
-# パッケージ情報
-# ==============================================================================
 
 PackageName: tman
 
@@ -37,10 +17,6 @@ PackageUrl: https://github.com/TEN-framework/ten-framework
 License: Apache-2.0
 
 LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
-
-# ==============================================================================
-# パッケージの説明
-# ==============================================================================
 
 ShortDescription: TEN Framework パッケージマネージャー
 
@@ -57,10 +33,6 @@ Description: |-
 
   TEN Frameworkはリアルタイム通信アプリケーションを構築するための強力なフレームワークであり、
   tmanを使用すると、コミュニティパッケージでアプリケーションを簡単に拡張およびカスタマイズできます。
-
-# ==============================================================================
-# 検索タグ
-# ==============================================================================
 
 Tags:
   - package-manager

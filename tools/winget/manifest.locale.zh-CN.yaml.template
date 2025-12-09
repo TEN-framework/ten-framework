@@ -1,34 +1,14 @@
-# ==============================================================================
-# Winget 中文本地化清单模板（简体中文 - 中国）
-# ==============================================================================
-# This template is used by .github/workflows/update_winget.yml to generate
-# the Chinese (Simplified) locale manifest.
-#
-# Placeholders:
-#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
-#
-# Documentation: https://learn.microsoft.com/zh-cn/windows/package-manager/package/manifest
-# ==============================================================================
-
 PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 
 PackageLocale: zh-CN
 
-# ==============================================================================
-# 发布者信息
-# ==============================================================================
-
 Publisher: TEN Framework 团队
 
 PublisherUrl: https://github.com/TEN-framework
 
 PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
-
-# ==============================================================================
-# 软件包信息
-# ==============================================================================
 
 PackageName: tman
 
@@ -37,10 +17,6 @@ PackageUrl: https://github.com/TEN-framework/ten-framework
 License: Apache-2.0
 
 LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
-
-# ==============================================================================
-# 软件包描述
-# ==============================================================================
 
 ShortDescription: TEN Framework 包管理器
 
@@ -58,13 +34,6 @@ Description: |-
   TEN Framework 是一个强大的实时通信应用框架，
   tman 让您可以轻松扩展和定制应用程序。
 
-# ==============================================================================
-# 搜索标签
-# ==============================================================================
-
-# NOTE: Tags should remain in English for better searchability
-# Users search using English keywords (e.g., "package-manager", "cli")
-# Translated tags would make the package harder to find
 Tags:
   - package-manager
   - ten-framework

@@ -14,6 +14,7 @@
 # To modify package descriptions, tags, or metadata, edit this file.
 # The workflow will automatically use your changes on the next release.
 #
+# Schema: https://github.com/microsoft/winget-cli/blob/master/schemas/JSON/manifests/v1.6.0/manifest.locale.1.6.0.json
 # Documentation: https://learn.microsoft.com/en-us/windows/package-manager/package/manifest
 # ==============================================================================
 

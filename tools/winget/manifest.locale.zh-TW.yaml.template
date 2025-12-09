@@ -1,34 +1,14 @@
-# ==============================================================================
-# Winget 繁體中文本地化清單模板（繁體中文 - 台灣）
-# ==============================================================================
-# This template is used by .github/workflows/update_winget.yml to generate
-# the Traditional Chinese (Taiwan) locale manifest.
-#
-# Placeholders:
-#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
-#
-# Documentation: https://learn.microsoft.com/zh-tw/windows/package-manager/package/manifest
-# ==============================================================================
-
 PackageIdentifier: ten-framework.tman
 
 PackageVersion: __VERSION__
 
 PackageLocale: zh-TW
 
-# ==============================================================================
-# 發佈者資訊
-# ==============================================================================
-
 Publisher: TEN Framework 團隊
 
 PublisherUrl: https://github.com/TEN-framework
 
 PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
-
-# ==============================================================================
-# 軟體包資訊
-# ==============================================================================
 
 PackageName: tman
 
@@ -37,10 +17,6 @@ PackageUrl: https://github.com/TEN-framework/ten-framework
 License: Apache-2.0
 
 LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
-
-# ==============================================================================
-# 軟體包描述
-# ==============================================================================
 
 ShortDescription: TEN Framework 套件管理器
 
@@ -58,13 +34,6 @@ Description: |-
   TEN Framework 是一個強大的即時通訊應用程式框架，
   tman 讓您可以輕鬆擴充和客製化應用程式。
 
-# ==============================================================================
-# 搜尋標籤
-# ==============================================================================
-
-# 注意：Tags 應保持英文以利搜尋
-# 使用者通常使用英文關鍵字搜尋（如 "package-manager", "cli"）
-# 翻譯的標籤會讓套件更難被找到
 Tags:
   - package-manager
   - ten-framework
