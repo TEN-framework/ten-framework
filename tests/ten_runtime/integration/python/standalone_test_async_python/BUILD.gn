@@ -54,6 +54,7 @@ ten_package_test_prepare_auxiliary_resources(
 group("standalone_test_async_python") {
   deps = [
     ":standalone_test_async_python_test_files",
+    "//packages/core_systems/pytest_ten:upload_pytest_ten_to_server",
     "//tests/ten_runtime/integration/python:copy_pytest_ini_for_ten_runtime_python_integration_test",
   ]
 }

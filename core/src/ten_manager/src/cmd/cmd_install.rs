@@ -38,6 +38,7 @@ use crate::{
         APP_DIR_IN_DOT_TEN_DIR, DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL,
         DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL, DOT_TEN_DIR,
     },
+    create::create_pkg_in_path,
     dep_and_candidate::get_all_candidates_from_deps,
     designer::storage::in_memory::TmanStorageInMemory,
     fs::find_nearest_app_dir,
@@ -221,7 +222,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
 
             // Check if PACKAGE_TYPE is an allowed value.
             let allowed_package_types: &[&str] =
-                &["system", "protocol", "addon_loader", "extension"];
+                &["system", "protocol", "addon_loader", "extension", "app"];
             if !allowed_package_types.contains(&first_arg_str.to_lowercase().as_str()) {
                 return Err(anyhow::anyhow!(
                     "Invalid PACKAGE_TYPE: {}. Allowed values are: {}",
@@ -482,6 +483,53 @@ pub async fn execute_cmd(
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Executing install command");
+    }
+
+    // Special handling for `tman install app <app_name>`:
+    // This should be equivalent to `tman create app <app_name> --template
+    // <app_name>`.
+    if let Some(package_type_str) = command_data.package_type.as_ref() {
+        let pkg_type: PkgType = package_type_str.parse()?;
+
+        if pkg_type == PkgType::App {
+            if let Some(app_name) = command_data.package_name.as_ref() {
+                let started = Instant::now();
+
+                // Parse app name and version requirement.
+                let (parsed_app_name, parsed_version_req) = parse_pkg_name_version_req(app_name)?;
+
+                // Get the current working directory.
+                let cwd = if Path::new(&command_data.cwd).is_absolute() {
+                    PathBuf::from(&command_data.cwd)
+                } else {
+                    std::env::current_dir().context("Failed to get current working directory")?
+                };
+
+                // Use create_pkg_in_path to create the app using the app name as the template.
+                create_pkg_in_path(
+                    tman_config.clone(),
+                    &cwd,
+                    &PkgType::App,
+                    &parsed_app_name,
+                    &parsed_app_name, // Use app name as template name
+                    &parsed_version_req,
+                    None,
+                    &out,
+                )
+                .await
+                .context("Failed to install app")?;
+
+                out.normal_line(&format!(
+                    "{}  App '{}' installed successfully in '{}' in {}",
+                    Emoji("🏆", ":-)"),
+                    parsed_app_name,
+                    cwd.display(),
+                    HumanDuration(started.elapsed())
+                ));
+
+                return Ok(());
+            }
+        }
     }
 
     let started = Instant::now();
@@ -920,15 +968,15 @@ pub async fn execute_cmd(
         if command_data.local_path.is_some() {
             // tman install <local_path>
 
-            if installing_pkg_type.is_some() && installing_pkg_name.is_some() {
+            if let (Some(pkg_type), Some(pkg_name)) = (&installing_pkg_type, &installing_pkg_name) {
                 let mut origin_cwd_pkg =
                     get_pkg_info_from_path(&specified_cwd, true, false, &mut None, None).await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
                     &solver_results,
-                    &installing_pkg_type.unwrap(),
-                    &installing_pkg_name.unwrap(),
+                    pkg_type,
+                    pkg_name,
                     Some(command_data.local_path.clone().unwrap()),
                 )
                 .await?;
@@ -936,15 +984,15 @@ pub async fn execute_cmd(
         } else {
             // tman install <package_type> <package_name>
 
-            if installing_pkg_type.is_some() && installing_pkg_name.is_some() {
+            if let (Some(pkg_type), Some(pkg_name)) = (&installing_pkg_type, &installing_pkg_name) {
                 let mut origin_cwd_pkg =
                     get_pkg_info_from_path(&specified_cwd, true, false, &mut None, None).await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
                     &solver_results,
-                    &installing_pkg_type.unwrap(),
-                    &installing_pkg_name.unwrap(),
+                    pkg_type,
+                    pkg_name,
                     None,
                 )
                 .await?;

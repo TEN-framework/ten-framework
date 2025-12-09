@@ -12,8 +12,17 @@ from ten_runtime import (
     StatusCode,
 )
 
+from pytest_ten import (
+    TenTestContext,
+    ten_test,
+)
+
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):
+    def __init__(self):
+        super().__init__()
+        self.recv_flush_cmd: bool = False
+
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         flush_cmd = Cmd.create("flush")
 
@@ -37,6 +46,16 @@ def test_basic():
     tester = AsyncExtensionTesterBasic()
     tester.set_test_mode_single("default_async_extension_python")
     tester.run()
+
+
+@ten_test("default_async_extension_python")
+async def test_recv_msg_during_starting(ctx: TenTestContext):
+    flush_cmd = Cmd.create("flush")
+
+    await ctx.send_cmd(flush_cmd)
+
+    received_cmd = await ctx.expect_cmd("flush")
+    assert received_cmd.get_name() == "flush"
 
 
 if __name__ == "__main__":

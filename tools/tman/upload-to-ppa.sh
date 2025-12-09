@@ -177,24 +177,15 @@ Upstream-Contact: ${MAINTAINER_NAME} <${MAINTAINER_EMAIL}>
 Source: https://github.com/TEN-framework/ten-framework
 
 Files: *
-Copyright: 2025 TEN Framework Team
-License: Apache-2.0
+Copyright: 2025 Agora
+License: Apache-2.0-with-TEN-Additional-Conditions
 
-License: Apache-2.0
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+License: Apache-2.0-with-TEN-Additional-Conditions
+ The TEN Framework is licensed pursuant to the Apache License v2.0
+ with additional conditions.
  .
- http://www.apache.org/licenses/LICENSE-2.0
- .
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- .
- On Debian systems, the complete text of the Apache License 2.0
- can be found in "/usr/share/common-licenses/Apache-2.0".
+ For the complete license text, please see:
+ https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
 EOF
 
     cat > "$PACKAGE_DIR/debian/install" << EOF

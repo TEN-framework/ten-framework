@@ -1,0 +1,100 @@
+# ==============================================================================
+# Winget Locale Manifest Template (English - United States)
+# ==============================================================================
+# This template is used by .github/workflows/update_winget.yml to generate
+# the locale manifest. It contains localized package information including:
+# - Package descriptions and metadata
+# - Publisher information
+# - License details
+# - Tags for searchability
+#
+# Placeholders:
+#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
+#
+# To modify package descriptions, tags, or metadata, edit this file.
+# The workflow will automatically use your changes on the next release.
+#
+# Schema: https://github.com/microsoft/winget-cli/blob/master/schemas/JSON/manifests/v1.6.0/manifest.locale.1.6.0.json
+# Documentation: https://learn.microsoft.com/en-us/windows/package-manager/package/manifest
+# ==============================================================================
+
+# Unique identifier for the package (must match version manifest)
+PackageIdentifier: ten-framework.tman
+
+# Package version (must match version manifest)
+PackageVersion: __VERSION__
+
+# Locale code for this manifest (en-US = English - United States)
+PackageLocale: en-US
+
+# ==============================================================================
+# Publisher Information
+# ==============================================================================
+
+# Name of the publisher/organization
+Publisher: TEN Framework Team
+
+# Publisher's website
+PublisherUrl: https://github.com/TEN-framework
+
+# URL for support and bug reports
+PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
+
+# ==============================================================================
+# Package Information
+# ==============================================================================
+
+# Display name of the package (shown in winget search results)
+PackageName: tman
+
+# Package homepage/website
+PackageUrl: https://github.com/TEN-framework/ten-framework
+
+# Software license type
+License: Apache 2.0 with certain conditions
+
+# URL to the full license text
+LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
+
+# ==============================================================================
+# Package Description
+# ==============================================================================
+
+# Short description (one-line summary, max 256 characters)
+ShortDescription: TEN Framework Package Manager
+
+# Detailed description (multi-line, markdown supported)
+# The '|-' means literal block scalar with stripped trailing newlines
+Description: |-
+  tman is the official package manager for the TEN Framework.
+  It helps developers manage extensions, protocols, and other TEN framework components.
+
+  Key Features:
+  - Install and manage TEN packages with ease
+  - Automatic dependency resolution
+  - Package version control and updates
+  - Support for multiple package types (extensions, protocols, etc.)
+  - Seamless integration with TEN Framework projects
+
+  The TEN Framework is a powerful framework for building real-time communication applications,
+  and tman makes it easy to extend and customize your applications with community packages.
+
+# ==============================================================================
+# Search Tags
+# ==============================================================================
+
+# Tags for improved discoverability in winget search
+# Users can search using these keywords
+Tags:
+  - package-manager
+  - ten-framework
+  - extension-manager
+  - developer-tools
+  - cli
+  - ten
+
+# Type of manifest - this is a default locale manifest
+ManifestType: defaultLocale
+
+# Version of the manifest schema being used
+ManifestVersion: 1.6.0

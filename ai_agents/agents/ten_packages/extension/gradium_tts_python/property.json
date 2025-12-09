@@ -1,0 +1,9 @@
+{
+    "params": {
+        "api_key": "${env:GRADIUM_API_KEY}",
+        "region": "us",
+        "model_name": "default",
+        "voice_id": "YTpq7expH9539ERJ",
+        "output_format": "pcm"
+    }
+}

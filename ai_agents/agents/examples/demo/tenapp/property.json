@@ -1673,7 +1673,7 @@
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
-                "max_tokens": 512,
+                "max_completion_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "TEN Agent connected. How can I help you today?",
@@ -2441,7 +2441,7 @@
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "TEN Agent connected. How can I help you today?",
+                "greeting": "TEN connected. How can I help you today?",
                 "max_memory_length": 10
               }
             },
@@ -2459,7 +2459,7 @@
                     "sample_rate": 16000
                   },
                   "voice_setting": {
-                    "voice_id": "English_Jovialman"
+                    "voice_id": ""
                   },
                   "url": "wss://api.minimaxi.com/ws/v1/t2a_v2"
                 },
