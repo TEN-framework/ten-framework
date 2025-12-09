@@ -24,7 +24,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write  # Needed to create PR to winget-pkgs
+  pull-requests: write # Needed to create PR to winget-pkgs
 
 jobs:
   update-winget:
@@ -34,7 +34,6 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'release')
     runs-on: windows-latest
-
     steps:
       - name: Debug workflow_run event
         if: github.event_name == 'workflow_run'
