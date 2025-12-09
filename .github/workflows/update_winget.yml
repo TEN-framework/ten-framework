@@ -215,27 +215,19 @@ jobs:
       # - Download Windows release asset
       # - Verify/calculate SHA256 checksum
       # - Generate manifest files
-      # - Fork and clone winget-pkgs (production mode only)
-      # - Create branch and commit (production mode only)
-      # - Submit PR to microsoft/winget-pkgs (production mode only)
+      # - Fork and clone winget-pkgs
+      # - Create branch and commit
+      # - Submit PR to microsoft/winget-pkgs
       - name: Submit to winget-pkgs using PowerShell script
         if: steps.verify_assets.outputs.all_ready == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_SUBMIT_TOKEN }}
-          EVENT_NAME: ${{ github.event_name }}
           REPO: ${{ github.repository }}
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
           $SHA256_FROM_GITHUB = "${{ steps.verify_assets.outputs.asset_sha256 }}"
 
-          # Determine if this is a test run (push event = dry run)
-          $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
-
-          if ($IS_DRY_RUN) {
-            Write-Host "🧪 TEST MODE: Running in DRY RUN (will not create PR to winget-pkgs)"
-          } else {
-            Write-Host "🚀 PRODUCTION MODE: Will create actual PR to microsoft/winget-pkgs"
-          }
+          Write-Host "🚀 Submitting to microsoft/winget-pkgs..."
           Write-Host "📦 Version: $VERSION"
 
           if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
@@ -255,11 +247,7 @@ jobs:
             $scriptParams['Sha256'] = $SHA256_FROM_GITHUB
           }
 
-          if ($IS_DRY_RUN) {
-            $scriptParams['DryRun'] = $true
-          }
-
-          # Run the submission script with splatting
+          # Run the submission script
           & ten-framework\tools\winget\submit-to-winget.ps1 @scriptParams
 
           if ($LASTEXITCODE -ne 0) {
@@ -268,61 +256,19 @@ jobs:
           }
 
           Write-Host ""
-          if ($IS_DRY_RUN) {
-            Write-Host "✅ Dry run completed successfully (no PR created)"
-          } else {
-            Write-Host "✅ Successfully submitted to winget-pkgs!"
-          }
+          Write-Host "✅ Successfully submitted to winget-pkgs!"
         shell: pwsh
 
       - name: Create summary
         if: steps.verify_assets.outputs.all_ready == 'true'
         env:
-          EVENT_NAME: ${{ github.event_name }}
           REPO: ${{ github.repository }}
           ASSET_URL: ${{ steps.verify_assets.outputs.asset_url }}
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
           $VERSION_CLEAN = $VERSION -replace '^v', ''
-          $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
 
-          if ($IS_DRY_RUN) {
-            $summary = @"
-          ## 🧪 Winget Package Test (DRY RUN)
-
-          **Version**: $VERSION_CLEAN
-          **Mode**: Test mode - No PR was created
-
-          ### ✅ What was tested:
-
-          - ✅ Downloaded Windows release asset
-          - ✅ Calculated SHA256 checksum
-          - ✅ Generated manifest files from templates
-          - ✅ Validated manifest structure
-
-          ### 📦 Generated Files
-
-          The following manifest files were generated (but not submitted):
-          - ``ten-framework.tman.yaml`` (version manifest)
-          - ``ten-framework.tman.installer.yaml`` (installer manifest)
-          - ``ten-framework.tman.locale.en-US.yaml`` (English)
-          - ``ten-framework.tman.locale.zh-CN.yaml`` (简体中文)
-          - ``ten-framework.tman.locale.zh-TW.yaml`` (繁體中文)
-          - ``ten-framework.tman.locale.ja-JP.yaml`` (日本語)
-          - ``ten-framework.tman.locale.ko-KR.yaml`` (한국어)
-
-          ### ℹ️ This was a test run
-
-          To submit for real, trigger this workflow via:
-          - **Automatic**: Create a new release (workflow_run trigger)
-          - **Manual**: Use workflow_dispatch on GitHub Actions page
-
-          ### 🔗 Links
-
-          - [Release $VERSION](https://github.com/$env:REPO/releases/tag/$VERSION)
-          "@
-          } else {
-            $summary = @"
+          $summary = @"
           ## 🪟 Winget Package Update Submitted
 
           **Version**: $VERSION_CLEAN
@@ -336,7 +282,7 @@ jobs:
           - ``ten-framework.tman.locale.zh-CN.yaml`` (简体中文)
           - ``ten-framework.tman.locale.zh-TW.yaml`` (繁體中文)
           - ``ten-framework.tman.locale.ja-JP.yaml`` (日本語)
-          - ``ten-framework.tman.locale.ko-KR.yaml`` (한国어)
+          - ``ten-framework.tman.locale.ko-KR.yaml`` (한국어)
 
           ### 📦 What happens next?
 
@@ -365,7 +311,6 @@ jobs:
 
           Typically, winget PRs are reviewed and merged within 1-3 business days.
           "@
-          }
 
           $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
         shell: pwsh
@@ -419,8 +364,9 @@ jobs:
 
             ### Resources:
 
-            - [Winget Package Submission Guide](https://github.com/microsoft/winget-pkgs/blob/master/AUTHORING_MANIFESTS.md)
-            - [Winget Manifest Schema](https://github.com/microsoft/winget-cli/tree/master/schemas/JSON/manifests)
+            - [Winget Package Submission Guide](https://github.com/microsoft/winget-pkgs/blob/master/CONTRIBUTING.md)
+            - [Winget Manifest Documentation](https://learn.microsoft.com/en-us/windows/package-manager/package/manifest)
+            - [Winget-pkgs Repository](https://github.com/microsoft/winget-pkgs)
 
             cc: @${actor}
             `;
