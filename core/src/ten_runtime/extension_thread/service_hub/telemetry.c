@@ -11,6 +11,7 @@
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/app/service_hub/service_hub.h"
 #include "include_internal/ten_runtime/engine/engine.h"
+#include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
@@ -78,6 +79,58 @@ void ten_extension_thread_record_extension_thread_msg_queue_stay_time(
 
     ten_metric_gauge_set(extension_thread_msg_queue_stay_time,
                          (double)duration_us, label_values, 3);
+  }
+}
+
+void ten_extension_record_lifecycle_duration(ten_extension_t *self,
+                                             const char *stage,
+                                             int64_t duration_us) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true),
+             "Invalid use of extension %p.", self);
+  TEN_ASSERT(stage, "Invalid argument.");
+
+  ten_extension_thread_t *extension_thread = self->extension_thread;
+  if (!extension_thread) {
+    return;
+  }
+  TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, false),
+             "Should not happen.");
+
+  ten_extension_context_t *extension_context =
+      extension_thread->extension_context;
+  if (!extension_context) {
+    return;
+  }
+  TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
+             "Should not happen.");
+
+  ten_engine_t *engine = extension_context->engine;
+  if (!engine) {
+    return;
+  }
+  TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
+
+  ten_app_t *app = engine->app;
+  if (!app) {
+    return;
+  }
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
+  MetricHandle *metric_lifecycle =
+      app->service_hub.metric_extension_lifecycle_duration_us;
+  if (metric_lifecycle) {
+    const char *app_uri = ten_app_get_uri(app);
+    const char *graph_id = ten_engine_get_id(engine, false);
+    const char *extension_group_name =
+        ten_extension_group_get_name(extension_thread->extension_group, true);
+    const char *extension_name = ten_extension_get_name(self, true);
+
+    const char *label_values[] = {app_uri, graph_id, extension_group_name,
+                                  extension_name, stage};
+
+    ten_metric_gauge_set(metric_lifecycle, (double)duration_us, label_values,
+                         5);
   }
 }
 

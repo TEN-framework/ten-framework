@@ -20,6 +20,7 @@
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
 #include "include_internal/ten_runtime/extension_thread/on_xxx.h"
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
@@ -96,6 +97,24 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   }
 
   TEN_LOGI("[%s] on_configure() done", ten_extension_get_name(extension, true));
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the duration from on_configure to on_configure_done
+  if (extension->lifecycle_on_configure_start_time_us > 0) {
+    int64_t duration_us =
+        ten_current_time_us() - extension->lifecycle_on_configure_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_configure",
+                                            duration_us);
+
+    // Warn if the lifecycle stage took too long
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+      TEN_LOGW("[%s] on_configure() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+
+    extension->lifecycle_on_configure_start_time_us = 0;
+  }
+#endif
 
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
@@ -267,6 +286,23 @@ bool ten_extension_on_init_done(ten_env_t *self) {
 
   TEN_LOGI("[%s] on_init() done", ten_extension_get_name(extension, true));
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the duration from on_init to on_init_done
+  if (extension->lifecycle_on_init_start_time_us > 0) {
+    int64_t duration_us =
+        ten_current_time_us() - extension->lifecycle_on_init_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_init", duration_us);
+
+    // Warn if the lifecycle stage took too long
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+      TEN_LOGW("[%s] on_init() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+
+    extension->lifecycle_on_init_start_time_us = 0;
+  }
+#endif
+
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
@@ -351,6 +387,23 @@ bool ten_extension_on_start_done(ten_env_t *self) {
 
   TEN_LOGI("[%s] on_start() done", ten_extension_get_name(extension, true));
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the duration from on_start to on_start_done
+  if (extension->lifecycle_on_start_start_time_us > 0) {
+    int64_t duration_us =
+        ten_current_time_us() - extension->lifecycle_on_start_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_start", duration_us);
+
+    // Warn if the lifecycle stage took too long
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+      TEN_LOGW("[%s] on_start() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+
+    extension->lifecycle_on_start_start_time_us = 0;
+  }
+#endif
+
   extension->state = TEN_EXTENSION_STATE_ON_START_DONE;
 
   // Reply to all pending trigger_life_cycle start commands
@@ -393,6 +446,23 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
              ten_extension_get_name(extension, true), extension->state);
     return false;
   }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the duration from on_stop to on_stop_done
+  if (extension->lifecycle_on_stop_start_time_us > 0) {
+    int64_t duration_us =
+        ten_current_time_us() - extension->lifecycle_on_stop_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_stop", duration_us);
+
+    // Warn if the lifecycle stage took too long
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+      TEN_LOGW("[%s] on_stop() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+
+    extension->lifecycle_on_stop_start_time_us = 0;
+  }
+#endif
 
   extension->state = TEN_EXTENSION_STATE_ON_STOP_DONE;
 
@@ -503,6 +573,24 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
   extension->state = TEN_EXTENSION_STATE_ON_DEINIT_DONE;
 
   TEN_LOGI("[%s] on_deinit() done", ten_extension_get_name(extension, true));
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the duration from on_deinit to on_deinit_done
+  if (extension->lifecycle_on_deinit_start_time_us > 0) {
+    int64_t duration_us =
+        ten_current_time_us() - extension->lifecycle_on_deinit_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_deinit",
+                                            duration_us);
+
+    // Warn if the lifecycle stage took too long
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+      TEN_LOGW("[%s] on_deinit() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+
+    extension->lifecycle_on_deinit_start_time_us = 0;
+  }
+#endif
 
   // Close the ten_env so that any apis called on the ten_env will return
   // TEN_ERROR_ENV_CLOSED.

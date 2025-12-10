@@ -27,6 +27,7 @@
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_result/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -140,6 +141,13 @@ ten_extension_t *ten_extension_create(
   }
 
   ten_list_init(&self->pending_trigger_life_cycle_cmds);
+
+  // Initialize lifecycle timestamps
+  self->lifecycle_on_configure_start_time_us = 0;
+  self->lifecycle_on_init_start_time_us = 0;
+  self->lifecycle_on_start_start_time_us = 0;
+  self->lifecycle_on_stop_start_time_us = 0;
+  self->lifecycle_on_deinit_start_time_us = 0;
 
   self->user_data = user_data;
 
@@ -674,16 +682,11 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
 
   self->state = TEN_EXTENSION_STATE_ON_CONFIGURE;
 
+  // Record the start time of on_configure
+  self->lifecycle_on_configure_start_time_us = ten_current_time_us();
+
   if (self->on_configure) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_configure(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_configure() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_configure_done(self->ten_env);
   }
@@ -706,16 +709,11 @@ void ten_extension_on_init(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_INIT;
 
+  // Record the start time of on_init
+  self->lifecycle_on_init_start_time_us = ten_current_time_us();
+
   if (self->on_init) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_init(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_init() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     (void)ten_extension_on_init_done(self->ten_env);
   }
@@ -738,16 +736,11 @@ void ten_extension_on_start(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_START;
 
+  // Record the start time of on_start
+  self->lifecycle_on_start_start_time_us = ten_current_time_us();
+
   if (self->on_start) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_start(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_start() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_start_done(self->ten_env);
   }
@@ -775,16 +768,11 @@ void ten_extension_on_stop(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_STOP;
 
+  // Record the start time of on_stop
+  self->lifecycle_on_stop_start_time_us = ten_current_time_us();
+
   if (self->on_stop) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_stop(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_stop() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_stop_done(self->ten_env);
   }
@@ -799,16 +787,11 @@ void ten_extension_on_deinit(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_DEINIT;
 
+  // Record the start time of on_deinit
+  self->lifecycle_on_deinit_start_time_us = ten_current_time_us();
+
   if (self->on_deinit) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_deinit(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_deinit() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_deinit_done(self->ten_env);
   }

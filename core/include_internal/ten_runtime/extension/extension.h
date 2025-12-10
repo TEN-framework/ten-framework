@@ -261,6 +261,13 @@ struct ten_extension_t {
   // Contains ten_shared_ptr_t* of trigger_life_cycle commands
   ten_list_t pending_trigger_life_cycle_cmds;
 
+  // Timestamps for lifecycle stage start times (in microseconds)
+  int64_t lifecycle_on_configure_start_time_us;
+  int64_t lifecycle_on_init_start_time_us;
+  int64_t lifecycle_on_start_start_time_us;
+  int64_t lifecycle_on_stop_start_time_us;
+  int64_t lifecycle_on_deinit_start_time_us;
+
   void *user_data;
 };
 

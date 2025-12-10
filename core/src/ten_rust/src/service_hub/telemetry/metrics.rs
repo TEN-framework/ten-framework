@@ -57,6 +57,7 @@ pub fn record_histogram(name: &str, value: f64, labels: &[(&str, &str)]) {
 pub struct MetricHandle {
     name: String,
     metric_type: MetricType,
+    label_names: Vec<String>,
 }
 
 #[repr(C)]
@@ -81,8 +82,8 @@ pub unsafe extern "C" fn ten_metric_create(
     metric_type: u32,
     name: *const c_char,
     _help: *const c_char,
-    _label_names_ptr: *const *const c_char,
-    _label_names_len: usize,
+    label_names_ptr: *const *const c_char,
+    label_names_len: usize,
 ) -> *mut MetricHandle {
     if name.is_null() {
         return std::ptr::null_mut();
@@ -100,9 +101,24 @@ pub unsafe extern "C" fn ten_metric_create(
         _ => return std::ptr::null_mut(),
     };
 
+    // Parse label names from C
+    let mut label_names = Vec::new();
+    if !label_names_ptr.is_null() && label_names_len > 0 {
+        let label_names_slice = std::slice::from_raw_parts(label_names_ptr, label_names_len);
+
+        for &label_name_ptr in label_names_slice {
+            if !label_name_ptr.is_null() {
+                if let Ok(name_str) = CStr::from_ptr(label_name_ptr).to_str() {
+                    label_names.push(name_str.to_string());
+                }
+            }
+        }
+    }
+
     let handle = MetricHandle {
         name: name_str,
         metric_type,
+        label_names,
     };
 
     Box::into_raw(Box::new(handle))
@@ -205,8 +221,8 @@ pub unsafe extern "C" fn ten_metric_counter_add(
 pub unsafe extern "C" fn ten_metric_gauge_set(
     metric_ptr: *mut MetricHandle,
     value: f64,
-    _label_values_ptr: *const *const c_char,
-    _label_values_len: usize,
+    label_values_ptr: *const *const c_char,
+    label_values_len: usize,
 ) {
     if metric_ptr.is_null() {
         return;
@@ -216,8 +232,23 @@ pub unsafe extern "C" fn ten_metric_gauge_set(
     let meter = global::meter("ten-framework");
     let gauge = meter.f64_up_down_counter(metric.name.clone()).build();
 
-    // TODO: Support labels
-    gauge.add(value, &[]);
+    // Parse label values from C and match with label names
+    let mut attributes = Vec::new();
+    if !label_values_ptr.is_null() && label_values_len > 0 {
+        let label_values_slice = std::slice::from_raw_parts(label_values_ptr, label_values_len);
+
+        // Match label names with label values
+        for (i, &label_value_ptr) in label_values_slice.iter().enumerate() {
+            if !label_value_ptr.is_null() && i < metric.label_names.len() {
+                if let Ok(value_str) = CStr::from_ptr(label_value_ptr).to_str() {
+                    attributes
+                        .push(KeyValue::new(metric.label_names[i].clone(), value_str.to_string()));
+                }
+            }
+        }
+    }
+
+    gauge.add(value, &attributes);
 }
 
 /// Increment gauge by 1
