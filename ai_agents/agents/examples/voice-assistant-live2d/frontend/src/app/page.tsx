@@ -59,6 +59,7 @@ type CharacterProfile = Live2DModel & {
   description: string;
   quote: string;
   voiceType: "male" | "female";
+  voiceId?: string;
   mouthConfig: MouthConfig;
   expressions?: ExpressionConfig[];
   motions?: MotionConfig[];
@@ -400,6 +401,7 @@ const characterOptions: CharacterProfile[] = [
       "Kei is a friendly guide who lights up every conversation. Connect with her for thoughtful answers, gentle encouragement, and a dash of anime sparkle whenever you need it.",
     quote: "Hi! I’m Kei. Let me know how I can make your day easier.",
     voiceType: "female",
+    voiceId: process.env.NEXT_PUBLIC_VOICE_ID_KEI || "English_Joyfulgirl",
     mouthConfig: {
       type: "open",
       openId: "ParamMouthOpenY",
@@ -426,8 +428,7 @@ const characterOptions: CharacterProfile[] = [
       },
     },
     connectionGreeting: "My name is Kei.",
-    agentGreeting:
-      "My name is Kei, nice to meet you! I’m your anime assistant. What’s your name?",
+    agentGreeting: "Hi! I’m Kei. Let me know how I can make your day easier.",
   },
   {
     id: "chubbie",
@@ -442,6 +443,7 @@ const characterOptions: CharacterProfile[] = [
       "Chubbie the Capybara brings spa-day calm, steady encouragement, and snack-time strategy. Settle in for mellow vibes, gentle guidance, and the coziest companion energy around.",
     quote: "Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?",
     voiceType: "male",
+    voiceId: process.env.NEXT_PUBLIC_VOICE_ID_CHUBBIE || "English_Deep-VoicedGentleman",
     mouthConfig: {
       type: "open",
       openId: "ParamMouthOpenY",
@@ -468,8 +470,7 @@ const characterOptions: CharacterProfile[] = [
       },
     },
     connectionGreeting: "My name is Chubbie.",
-    agentGreeting:
-      "I’m Chubbie the Capybara. Let’s take it easy—what can I help you relax or focus on today?",
+    agentGreeting: "Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?",
     floatingElements: chubbieFloatingElements,
     immersiveStage: true,
     expressions: [
@@ -1326,6 +1327,13 @@ export default function Home() {
                 graphName: process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
                 language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
                 voiceType: selectedModel.voiceType,
+                greeting: selectedModel.agentGreeting,
+                properties: selectedModel.voiceId
+                  ? {
+                      voice_id: selectedModel.voiceId,
+                      greeting: selectedModel.agentGreeting,
+                    }
+                  : { greeting: selectedModel.agentGreeting },
               });
 
               console.log("Agent started:", startResult);
