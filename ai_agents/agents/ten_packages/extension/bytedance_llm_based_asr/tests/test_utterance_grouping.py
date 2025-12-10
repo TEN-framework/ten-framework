@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Test file for Utterance Grouping Logic
-验证 utterances 分组处理逻辑：definite=true 单独发送，相邻的 definite=false 拼接发送
+Test file for Utterance Processing Logic
+验证 utterances 处理逻辑：每个 utterance 单独发送，不再进行分组拼接
 """
 
 import asyncio
@@ -22,7 +22,7 @@ from .mock import patch_volcengine_ws_grouping  # noqa: F401  # type: ignore
 
 
 class UtteranceGroupingTester(AsyncExtensionTester):
-    """Extension tester for testing utterance grouping logic."""
+    """Extension tester for testing utterance processing logic."""
 
     def __init__(self):
         super().__init__()
@@ -72,7 +72,7 @@ class UtteranceGroupingTester(AsyncExtensionTester):
     async def on_data(
         self, ten_env_tester: AsyncTenEnvTester, data: Data
     ) -> None:
-        """Handle ASR result data and verify grouping logic."""
+        """Handle ASR result data and verify processing logic."""
         data_name = data.get_name()
         if data_name == "asr_result":
             # Parse the data
@@ -107,7 +107,7 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 f"metadata is not in data_dict: {data_dict}",
             )
 
-            # Verify grouping logic
+            # Verify processing logic
             # If final=False, metadata should not contain utterance additions fields
             # (but may contain framework-added fields like session_id)
             if not data_dict["final"]:
@@ -196,7 +196,7 @@ class UtteranceGroupingTester(AsyncExtensionTester):
 
 
 def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
-    """Test utterance grouping logic: [true, true, false, false, true, false]"""
+    """Test utterance processing logic: each utterance is sent individually [true, true, false, false, true, false]"""
 
     property_json = {
         "params": {
@@ -209,14 +209,15 @@ def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
 
     tester = UtteranceGroupingTester()
 
-    # Set expected results based on the grouping logic:
+    # Set expected results based on the simplified processing logic:
     # [true, true, false, false, true, false]
-    # Should send:
+    # Each utterance is sent individually:
     # 1. "你好" (final=True, metadata may contain speech_rate, volume)
     # 2. "世界" (final=True, metadata may contain speech_rate)
-    # 3. "这是 一个" (final=False, metadata={})
-    # 4. "测试" (final=True, metadata may contain speech_rate, emotion)
-    # 5. "示例" (final=False, metadata={})
+    # 3. "这是" (final=False, metadata={})
+    # 4. "一个" (final=False, metadata={})
+    # 5. "测试" (final=True, metadata may contain speech_rate, emotion)
+    # 6. "示例" (final=False, metadata={})
     tester.expected_results = [
         {
             "text": "你好",
@@ -224,7 +225,8 @@ def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
             "metadata": {},
         },  # Will check text and final only
         {"text": "世界", "final": True, "metadata": {}},
-        {"text": "这是 一个", "final": False, "metadata": {}},
+        {"text": "这是", "final": False, "metadata": {}},
+        {"text": "一个", "final": False, "metadata": {}},
         {"text": "测试", "final": True, "metadata": {}},
         {"text": "示例", "final": False, "metadata": {}},
     ]

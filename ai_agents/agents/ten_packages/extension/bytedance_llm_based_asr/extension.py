@@ -4,13 +4,11 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-import itertools
 import json
-import uuid
 import os
 import websockets
-from dataclasses import asdict
-
+from dataclasses import asdict, dataclass
+from ten_ai_base.message import ModuleMetrics
 from typing import Any
 from typing_extensions import override
 
@@ -51,6 +49,40 @@ from .const import (
 )
 
 
+@dataclass
+class TwoPassDelayTracker:
+    """Track two-pass delay metrics timestamps"""
+
+    stream: int | None = None
+    soft_vad: int | None = None
+
+    def record_stream(self, timestamp: int) -> None:
+        """Record stream result timestamp (always use the latest one)"""
+        self.stream = timestamp
+
+    def record_soft_vad(self, timestamp: int) -> None:
+        """Record soft_vad two_pass result timestamp"""
+        self.soft_vad = timestamp
+
+    def calculate_metrics(self, current_timestamp: int) -> dict[str, int]:
+        return {
+            "two_pass_delay": (
+                current_timestamp - self.stream
+                if self.stream is not None
+                else -1
+            ),
+            "soft_two_pass_delay": (
+                self.soft_vad - self.stream
+                if (self.stream is not None and self.soft_vad is not None)
+                else -1
+            ),
+        }
+
+    def reset(self) -> None:
+        self.stream = None
+        self.soft_vad = None
+
+
 class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -61,6 +93,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.config: BytedanceASRLLMConfig | None = None
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
+        self.vendor_result_dumper: Any = (
+            None  # File handle for asr_vendor_result.jsonl
+        )
         self.ten_env: AsyncTenEnv = None  # type: ignore
 
         # Reconnection parameters
@@ -77,6 +112,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Audio timeline tracking (persists across reconnections)
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
+
+        # Two-pass delay metrics tracking
+        self.two_pass_delay_tracker: TwoPassDelayTracker = TwoPassDelayTracker()
 
     @override
     def vendor(self) -> str:
@@ -108,6 +146,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
+
+                # Initialize vendor result dumper
+                vendor_result_dump_path = os.path.join(
+                    self.config.dump_path, "asr_vendor_result.jsonl"
+                )
+                self.vendor_result_dumper = open(
+                    vendor_result_dump_path, "a", encoding="utf-8"
+                )
 
             self.audio_timeline.reset()
 
@@ -188,14 +234,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     @override
     async def stop_connection(self) -> None:
         """Stop connection to Volcengine ASR service."""
-        if self.audio_dumper:
-            try:
-                await self.audio_dumper.stop()
-            except Exception as e:
-                self.ten_env.log_error(f"Error stopping audio dumper: {e}")
-            finally:
-                self.audio_dumper = None
-
         if self.client:
             try:
                 await self.client.disconnect()
@@ -204,6 +242,27 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             finally:
                 self.client = None
                 self.connected = False
+
+    @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        """Clean up resources when extension is deinitialized."""
+        await super().on_deinit(ten_env)
+
+        if self.audio_dumper:
+            try:
+                await self.audio_dumper.stop()
+            except Exception as e:
+                ten_env.log_error(f"Error stopping audio dumper: {e}")
+            finally:
+                self.audio_dumper = None
+
+        if self.vendor_result_dumper:
+            try:
+                self.vendor_result_dumper.close()
+            except Exception as e:
+                ten_env.log_error(f"Error closing vendor result dumper: {e}")
+            finally:
+                self.vendor_result_dumper = None
 
     @override
     def is_connected(self) -> bool:
@@ -363,31 +422,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
     def _extract_metadata(self, utterance: Utterance) -> dict[str, Any]:
         """Extract metadata from utterance additions."""
-        metadata: dict[str, Any] = {}
         if not utterance.additions:
-            return metadata
+            return {}
 
         additions = utterance.additions
         if not isinstance(additions, dict):
-            return metadata
+            return {}
 
-        try:
-            metadata_fields = [
-                "speech_rate",
-                "volume",
-                "emotion",
-                "gender",
-                "lid_lang",
-            ]
-            for field in metadata_fields:
-                if field in additions:
-                    metadata[field] = additions[field]
-        except (TypeError, ValueError) as e:
-            self.ten_env.log_warn(
-                f"Failed to extract metadata from additions: {e}"
-            )
-
-        return metadata
+        # Return additions as metadata directly
+        return additions
 
     def _calculate_utterance_start_ms(
         self, utterance_start_time_ms: int
@@ -398,6 +441,27 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 utterance_start_time_ms
             )
             + self.sent_user_audio_duration_ms_before_last_reset
+        )
+
+    async def _send_two_pass_delay_metrics(
+        self, current_timestamp: int
+    ) -> None:
+        """Send two-pass delay metrics via ModuleMetrics.
+
+        Calculates and sends:
+        - two_pass_delay: delay from stream result to hard_vad two_pass result
+        - soft_two_pass_delay: delay from stream result to soft_vad two_pass result
+        """
+        vendor_metrics = self.two_pass_delay_tracker.calculate_metrics(
+            current_timestamp
+        )
+
+        await self._send_asr_metrics(
+            ModuleMetrics(
+                module=ModuleType.ASR,
+                vendor=self.vendor(),
+                metrics=vendor_metrics,
+            )
         )
 
     async def _send_asr_result_from_text(
@@ -411,7 +475,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     ) -> None:
         """Send ASR result with given text and metadata."""
         asr_result = ASRResult(
-            id=str(uuid.uuid4()),
             text=text,
             final=is_final,
             start_ms=start_ms,
@@ -425,6 +488,24 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def _on_asr_result(self, result: ASRResponse) -> None:
         """Handle ASR result from client."""
         try:
+            # Dump vendor result if enabled
+            if self.vendor_result_dumper:
+                try:
+                    # Get original JSON from payload_msg or construct from result
+                    if result.payload_msg:
+                        vendor_result_json = json.dumps(
+                            result.payload_msg, ensure_ascii=False
+                        )
+                    else:
+                        # Fallback: construct from ASRResponse
+                        vendor_result_json = json.dumps(
+                            asdict(result), ensure_ascii=False
+                        )
+                    self.vendor_result_dumper.write(vendor_result_json + "\n")
+                    self.vendor_result_dumper.flush()
+                except Exception as e:
+                    self.ten_env.log_error(f"Error dumping vendor result: {e}")
+
             # Check if this is an error response
             if result.code != 0:
                 # This is an ASR error response, handle it through send_asr_error
@@ -470,69 +551,66 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
                 return
 
-            # Group utterances: process each definite=true individually,
-            # and concatenate adjacent definite=false utterances
+            # Process each utterance individually
             has_final_result = False
-            for is_definite, group in itertools.groupby(
-                result.utterances, key=lambda utt: utt.definite
-            ):
-                utterances_in_group = list(group)
+            current_timestamp = int(asyncio.get_event_loop().time() * 1000)
 
-                if is_definite:
-                    # definite=true: send each individually with its own metadata
-                    has_final_result = True
-                    for utterance in utterances_in_group:
-                        # Calculate start_ms and duration_ms for this utterance
-                        actual_start_ms = self._calculate_utterance_start_ms(
-                            utterance.start_time
-                        )
-                        duration_ms = utterance.end_time - utterance.start_time
-
-                        metadata = self._extract_metadata(utterance)
-                        await self._send_asr_result_from_text(
-                            text=utterance.text,
-                            is_final=True,
-                            start_ms=actual_start_ms,
-                            duration_ms=duration_ms,
-                            language=result.language,
-                            metadata=metadata,
-                        )
-                else:
-                    # definite=false: concatenate all utterances in group (no metadata)
-                    # Filter out utterances with invalid timestamps
-                    valid_utterances = [
-                        utt
-                        for utt in utterances_in_group
-                        if utt.start_time != -1 and utt.end_time != -1
-                    ]
-
-                    if not valid_utterances:
-                        self.ten_env.log_warn(
-                            "Skipping definite=false group: all utterances have invalid timestamps"
-                        )
-                        continue
-
-                    concatenated_text = " ".join(
-                        utt.text for utt in valid_utterances
+            for utterance in result.utterances:
+                # Skip utterances with invalid timestamps
+                if utterance.start_time == -1 or utterance.end_time == -1:
+                    self.ten_env.log_warn(
+                        f"Skipping utterance with invalid timestamps: {utterance.text}"
                     )
-                    # Skip sending if concatenated text is empty
-                    if concatenated_text.strip():
-                        # Use first utterance's start_time and last utterance's end_time
-                        first_utt = valid_utterances[0]
-                        last_utt = valid_utterances[-1]
-                        actual_start_ms = self._calculate_utterance_start_ms(
-                            first_utt.start_time
-                        )
-                        duration_ms = last_utt.end_time - first_utt.start_time
+                    continue
 
-                        await self._send_asr_result_from_text(
-                            text=concatenated_text,
-                            is_final=False,
-                            start_ms=actual_start_ms,
-                            duration_ms=duration_ms,
-                            language=result.language,
-                            metadata={},
+                # Skip empty utterances
+                if not utterance.text.strip():
+                    continue
+
+                # Identify result type and record timestamps
+                additions = utterance.additions if utterance.additions else {}
+                source = additions.get("source", "")
+                invoke_type = additions.get("invoke_type", "")
+                is_final = utterance.definite
+
+                # Record timestamps using tracker
+                match (source, invoke_type, is_final):
+                    case ("stream", _, _):
+                        self.two_pass_delay_tracker.record_stream(
+                            current_timestamp
                         )
+                    case ("two_pass", "soft_vad", _):
+                        self.two_pass_delay_tracker.record_soft_vad(
+                            current_timestamp
+                        )
+                    case ("two_pass", "hard_vad", True):
+                        await self._send_two_pass_delay_metrics(
+                            current_timestamp
+                        )
+                    case _:
+                        pass  # Other combinations don't need timestamp recording
+
+                # Calculate start_ms and duration_ms for this utterance
+                actual_start_ms = self._calculate_utterance_start_ms(
+                    utterance.start_time
+                )
+                duration_ms = utterance.end_time - utterance.start_time
+
+                # Determine is_final and metadata based on utterance.definite
+                if is_final:
+                    has_final_result = True
+                    metadata = self._extract_metadata(utterance)
+                else:
+                    metadata = {}
+
+                await self._send_asr_result_from_text(
+                    text=utterance.text,
+                    is_final=is_final,
+                    start_ms=actual_start_ms,
+                    duration_ms=duration_ms,
+                    language=result.language,
+                    metadata=metadata,
+                )
 
             # finalize end signal if there was any final result
             if has_final_result:
@@ -547,6 +625,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.last_finalize_timestamp = 0
             # Send asr_finalize_end signal
             await self.send_asr_finalize_end()
+
+            # Reset two-pass delay metrics tracking for next recognition
+            self.two_pass_delay_tracker.reset()
 
             # After finalize end, connection is expected to be closed by server
             # This is normal behavior, so we don't need to reconnect
