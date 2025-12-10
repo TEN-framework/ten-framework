@@ -33,6 +33,7 @@ class Utterance:
     start_time: int = 0
     end_time: int = 0
     definite: bool = False
+    additions: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -320,12 +321,16 @@ class ResponseParser:
 
                         # Parse utterances
                         utterances_data = result_data.get("utterances", [])
+                        # Ensure utterances list is initialized (handled by __post_init__ but check for type safety)
+                        if response.utterances is None:
+                            response.utterances = []
                         for utterance_data in utterances_data:
                             utterance = Utterance(
                                 text=utterance_data.get("text", ""),
                                 start_time=utterance_data.get("start_time", 0),
                                 end_time=utterance_data.get("end_time", 0),
                                 definite=utterance_data.get("definite", False),
+                                additions=utterance_data.get("additions"),
                             )
                             response.utterances.append(utterance)
 
@@ -529,12 +534,12 @@ class VolcengineASRClient:
             self.audio_buffer.clear()
 
         # For 16kHz, 16-bit, mono: 800ms = 0.8 * 16000 * 2 = 25600 bytes
-        silence_duration_ms = self.config.silence_duration_ms
+        mute_pkg_duration_ms = self.config.mute_pkg_duration_ms
         bytes_per_sample = self.config.get_bits() // 8  # bits to bytes
         samples_per_ms = (
             self.config.get_sample_rate() // 1000
         )  # samples per millisecond
-        silence_bytes = silence_duration_ms * samples_per_ms * bytes_per_sample
+        silence_bytes = mute_pkg_duration_ms * samples_per_ms * bytes_per_sample
 
         # Generate silence (zeros)
         silence_data = bytes(silence_bytes)

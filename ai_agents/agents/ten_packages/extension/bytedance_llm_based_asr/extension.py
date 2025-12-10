@@ -4,11 +4,14 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import itertools
+import json
 import uuid
 import os
 import websockets
+from dataclasses import asdict
 
-# from typing import Any  # Not used
+from typing import Any
 from typing_extensions import override
 
 from ten_ai_base.asr import (
@@ -41,7 +44,7 @@ from ten_runtime import (
 )
 
 from .config import BytedanceASRLLMConfig
-from .volcengine_asr_client import VolcengineASRClient, ASRResponse
+from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
 from .const import (
     DUMP_FILE_NAME,
     is_reconnectable_error,
@@ -282,7 +285,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Record silence audio in timeline (client sends silence data)
             if self.config:
                 self.audio_timeline.add_silence_audio(
-                    self.config.silence_duration_ms
+                    self.config.mute_pkg_duration_ms
                 )
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
@@ -358,6 +361,67 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
+    def _extract_metadata(self, utterance: Utterance) -> dict[str, Any]:
+        """Extract metadata from utterance additions."""
+        metadata: dict[str, Any] = {}
+        if not utterance.additions:
+            return metadata
+
+        additions = utterance.additions
+        if not isinstance(additions, dict):
+            return metadata
+
+        try:
+            metadata_fields = [
+                "speech_rate",
+                "volume",
+                "emotion",
+                "gender",
+                "lid_lang",
+            ]
+            for field in metadata_fields:
+                if field in additions:
+                    metadata[field] = additions[field]
+        except (TypeError, ValueError) as e:
+            self.ten_env.log_warn(
+                f"Failed to extract metadata from additions: {e}"
+            )
+
+        return metadata
+
+    def _calculate_utterance_start_ms(
+        self, utterance_start_time_ms: int
+    ) -> int:
+        """Calculate actual start_ms for an utterance based on its start_time."""
+        return int(
+            self.audio_timeline.get_audio_duration_before_time(
+                utterance_start_time_ms
+            )
+            + self.sent_user_audio_duration_ms_before_last_reset
+        )
+
+    async def _send_asr_result_from_text(
+        self,
+        text: str,
+        is_final: bool,
+        start_ms: int,
+        duration_ms: int,
+        language: str,
+        metadata: dict[str, Any],
+    ) -> None:
+        """Send ASR result with given text and metadata."""
+        asr_result = ASRResult(
+            id=str(uuid.uuid4()),
+            text=text,
+            final=is_final,
+            start_ms=start_ms,
+            duration_ms=duration_ms,
+            language=language,
+            words=[],
+            metadata=metadata,
+        )
+        await self.send_asr_result(asr_result)
+
     async def _on_asr_result(self, result: ASRResponse) -> None:
         """Handle ASR result from client."""
         try:
@@ -383,39 +447,96 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 return
 
             # Create ASR result data for successful response
-            # Use utterances[0].definite to determine if this is the final result
-            # If no utterances, default to false (non-final)
             self.ten_env.log_debug(
-                f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {result}",
+                f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {json.dumps(asdict(result), ensure_ascii=False)}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            is_final = False
-            if result.utterances and len(result.utterances) > 0:
-                is_final = result.utterances[0].definite
 
-            # finalize end signal if this is a final result
-            if is_final:
-                await self._finalize_end()
-
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(
+            # Process utterances: send definite=true individually,
+            # and concatenate adjacent definite=false utterances together
+            if not result.utterances:
+                # No utterances, send result.text as fallback (non-final)
+                # Use result.start_ms for fallback case
+                actual_start_ms = self._calculate_utterance_start_ms(
                     result.start_ms
                 )
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
+                await self._send_asr_result_from_text(
+                    text=result.text,
+                    is_final=False,
+                    start_ms=actual_start_ms,
+                    duration_ms=result.duration_ms,
+                    language=result.language,
+                    metadata={},
+                )
+                return
 
-            asr_result = ASRResult(
-                id=str(uuid.uuid4()),  # Generate unique ID for each result
-                text=result.text,
-                final=is_final,
-                start_ms=actual_start_ms,
-                duration_ms=result.duration_ms,
-                language=result.language,
-                words=[],  # Empty list instead of None
-            )
+            # Group utterances: process each definite=true individually,
+            # and concatenate adjacent definite=false utterances
+            has_final_result = False
+            for is_definite, group in itertools.groupby(
+                result.utterances, key=lambda utt: utt.definite
+            ):
+                utterances_in_group = list(group)
 
-            # Send result to TEN environment
-            await self.send_asr_result(asr_result)
+                if is_definite:
+                    # definite=true: send each individually with its own metadata
+                    has_final_result = True
+                    for utterance in utterances_in_group:
+                        # Calculate start_ms and duration_ms for this utterance
+                        actual_start_ms = self._calculate_utterance_start_ms(
+                            utterance.start_time
+                        )
+                        duration_ms = utterance.end_time - utterance.start_time
+
+                        metadata = self._extract_metadata(utterance)
+                        await self._send_asr_result_from_text(
+                            text=utterance.text,
+                            is_final=True,
+                            start_ms=actual_start_ms,
+                            duration_ms=duration_ms,
+                            language=result.language,
+                            metadata=metadata,
+                        )
+                else:
+                    # definite=false: concatenate all utterances in group (no metadata)
+                    # Filter out utterances with invalid timestamps
+                    valid_utterances = [
+                        utt
+                        for utt in utterances_in_group
+                        if utt.start_time != -1 and utt.end_time != -1
+                    ]
+
+                    if not valid_utterances:
+                        self.ten_env.log_warn(
+                            "Skipping definite=false group: all utterances have invalid timestamps"
+                        )
+                        continue
+
+                    concatenated_text = " ".join(
+                        utt.text for utt in valid_utterances
+                    )
+                    # Skip sending if concatenated text is empty
+                    if concatenated_text.strip():
+                        # Use first utterance's start_time and last utterance's end_time
+                        first_utt = valid_utterances[0]
+                        last_utt = valid_utterances[-1]
+                        actual_start_ms = self._calculate_utterance_start_ms(
+                            first_utt.start_time
+                        )
+                        duration_ms = last_utt.end_time - first_utt.start_time
+
+                        await self._send_asr_result_from_text(
+                            text=concatenated_text,
+                            is_final=False,
+                            start_ms=actual_start_ms,
+                            duration_ms=duration_ms,
+                            language=result.language,
+                            metadata={},
+                        )
+
+            # finalize end signal if there was any final result
+            if has_final_result:
+                await self._finalize_end()
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling ASR result: {e}")

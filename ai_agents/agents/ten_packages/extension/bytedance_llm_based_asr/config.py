@@ -53,8 +53,8 @@ class BytedanceASRLLMConfig(BaseModel):
     end_window_size: int = (
         800  # End window size in milliseconds for voice activity detection
     )
-    silence_duration_ms: int = (
-        800  # Silence duration in milliseconds for finalization
+    mute_pkg_duration_ms: int = (
+        800  # Mute package duration in milliseconds for finalization
     )
 
     # Extension Configuration
