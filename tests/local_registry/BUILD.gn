@@ -6,7 +6,6 @@
 #
 group("local_registry") {
   deps = [
-    "app",
     "extension",
     "system",
   ]

@@ -33,7 +33,8 @@
   "cursorpyright.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
     "./core/ten_gn/.gnfiles",
-    "./packages/core_systems/pytest_ten"
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/interface",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/lib"
   ],
   "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,
@@ -91,8 +92,7 @@
   "python.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
     "./tests/ten_runtime/integration",
-    "./core/ten_gn/.gnfiles",
-    "./packages/core_systems/pytest_ten"
+    "./core/ten_gn/.gnfiles"
   ],
   "python.analysis.typeCheckingMode": "basic",
   "python.formatting.provider": "black",
