@@ -19,13 +19,14 @@ export default function AgentView(props: AgentViewProps) {
 
   useEffect(() => {
     if (videoTrack) {
-      videoTrack.play(`remote-video-${videoTrack.getUserId()}`, { fit: "cover" });
+      const currentTrack = videoTrack;
+      currentTrack.play(`remote-video-${currentTrack.getUserId()}`, { fit: "cover" });
 
       return () => {
-        videoTrack.stop();
+        currentTrack.stop();
       };
     }
-  }, [videoTrack]);
+  }, [videoTrack?.getUserId()]);
 
   return (
     videoTrack ? (

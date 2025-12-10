@@ -717,7 +717,7 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 					// If this node has a "channel" property defined, inject the dynamic value
 					if _, hasChannel := properties["channel"]; hasChannel {
 						properties["channel"] = req.ChannelName
-						slog.Debug("Auto-injected channel into node", "node", nodeMap["name"], "channel", req.ChannelName, "requestId", req.RequestId, logTag)
+						slog.Info("Auto-injected channel into node", "node", nodeMap["name"], "channel", req.ChannelName, "requestId", req.RequestId, logTag)
 					}
 				}
 			}
