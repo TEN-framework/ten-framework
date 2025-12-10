@@ -49,7 +49,6 @@ pythonpath_parts = [
     ".ten/app/ten_packages/system/ten_runtime_python/lib",
     ".ten/app/ten_packages/system/ten_runtime_python/interface",
     ".ten/app",
-    ".ten/app/ten_packages/system/pytest_ten",
 ]
 
 # If running in a virtual environment, add its site-packages to PYTHONPATH
