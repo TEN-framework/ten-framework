@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 # COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN task clean && cd ${USE_AGENT} && \
+RUN cd ${USE_AGENT} && \
   task install && task release
 
 RUN mv ${USE_AGENT}/tenapp/.release/ agents/

@@ -9,6 +9,6 @@
         "voice_setting": {
             "voice_id": "female-shaonv"
         },
-        "url": "wss://api.minimaxi.com/ws/v1/t2a_v2"
+        "url": "wss://api.minimax.io/ws/v1/t2a_v2"
     }
 }

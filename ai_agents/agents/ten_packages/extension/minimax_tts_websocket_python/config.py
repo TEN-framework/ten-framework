@@ -9,7 +9,7 @@ class MinimaxTTSWebsocketConfig(BaseModel):
 
     key: str = ""
     group_id: str = ""
-    url: str = "wss://api.minimaxi.com/ws/v1/t2a_v2"
+    url: str = "wss://api.minimax.io/ws/v1/t2a_v2"
     sample_rate: int = 16000
     channels: int = 1
     dump: bool = False
