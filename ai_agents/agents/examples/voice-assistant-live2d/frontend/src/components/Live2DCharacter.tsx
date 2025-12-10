@@ -674,7 +674,17 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                 if (!resizeTarget) {
                     throw new Error('Resize target not ready');
                 }
+                const ensureCanvas = () => {
+                    if (!canvasRef.current) {
+                        const c = document.createElement('canvas');
+                        c.style.display = 'block';
+                        containerRef.current?.appendChild(c);
+                        canvasRef.current = c;
+                    }
+                };
+
                 const createPixiApp = async () => {
+                    ensureCanvas();
                     const baseOptions = {
                         view: canvasRef.current!,
                         autoStart: true,
@@ -692,19 +702,29 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                         powerPreference: 'default' as const,
                     };
 
+                    const attemptOptions = [baseOptions, fallbackOptions];
                     let lastError: unknown;
-                    for (const [idx, opts] of [baseOptions, fallbackOptions].entries()) {
-                        try {
-                            const instance = new PIXI.Application(opts);
-                            if (idx > 0) {
-                                console.warn('[Live2DCharacter] PIXI initialized using fallback renderer options');
+
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        for (const [idx, opts] of attemptOptions.entries()) {
+                            try {
+                                const instance = new PIXI.Application(opts);
+                                if (attempt > 0 || idx > 0) {
+                                    console.warn('[Live2DCharacter] PIXI initialized after retry with fallback renderer options');
+                                }
+                                return instance;
+                            } catch (err) {
+                                lastError = err;
+                                console.warn('[Live2DCharacter] PIXI Application creation failed, will retry...', err);
+                                await new Promise(resolve => setTimeout(resolve, 200));
                             }
-                            return instance;
-                        } catch (err) {
-                            lastError = err;
-                            console.warn('[Live2DCharacter] PIXI Application creation failed, retrying with fallback...', err);
-                            await new Promise(resolve => setTimeout(resolve, 150));
                         }
+                        // Recreate canvas between attempts to avoid a bad context
+                        if (canvasRef.current && canvasRef.current.parentElement) {
+                            canvasRef.current.parentElement.removeChild(canvasRef.current);
+                        }
+                        canvasRef.current = null;
+                        ensureCanvas();
                     }
                     throw lastError;
                 };
@@ -1045,6 +1065,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
             <canvas
                 ref={canvasRef}
                 key={`live2d-canvas-${modelPath}`} // Force canvas recreation when model changes
+                className="absolute inset-0 h-full w-full"
                 style={{ display: 'block' }}
             />
             {!isModelLoaded && (
