@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import dynamicImport from "next/dynamic";
 import { Baloo_2, Quicksand } from "next/font/google";
@@ -788,6 +788,12 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<CharacterProfile>(
     characterOptions[0]
   );
+  const channelName = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_CHANNEL_NAME ||
+      `ten_live2d_${Math.random().toString(36).slice(2, 10)}`,
+    []
+  );
   const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null);
   const [agoraService, setAgoraService] = useState<any>(null);
   const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -1165,7 +1171,6 @@ export default function Home() {
       stopPing();
     }
     const interval = setInterval(() => {
-      const channelName = process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test";
       apiPing(channelName);
     }, 3000);
     setPingInterval(interval);
@@ -1201,7 +1206,6 @@ export default function Home() {
           setIsConnecting(true);
           // Stop the agent service first
           try {
-            const channelName = process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test";
             await apiStopService(channelName);
             console.log("Agent stopped");
           } catch (error) {
@@ -1222,7 +1226,7 @@ export default function Home() {
               request_id: Math.random().toString(36).substring(2, 15),
               uid: Math.floor(Math.random() * 100000),
               // Default to the same channel as the property.json graph so agent and client stay in sync.
-              channel_name: process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test",
+              channel_name: channelName,
             });
 
             const primaryUrl = apiBase ? `${apiBase}/token/generate` : "/api/token/generate";
@@ -1296,6 +1300,8 @@ export default function Home() {
 
           // Handle the response structure from agent server
           const credentials = responseData.data || responseData;
+          // Ensure we honor our chosen channel if backend echoes differently
+          credentials.channel_name = credentials.channel_name || channelName;
 
           const agoraConfig: AgoraConfig = {
             appId: credentials.appId || credentials.app_id,
@@ -1411,7 +1417,7 @@ export default function Home() {
       style={{ backgroundColor: backgroundTheme.baseColor }}
     >
       <div
-        className="absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-white/60 bg-white/85 px-3 py-1 shadow-sm backdrop-blur"
+        className="absolute z-30 flex items-center gap-2 md:gap-3 rounded-full border border-white/60 bg-white/85 px-4 py-2 md:px-5 md:py-2 shadow-sm backdrop-blur whitespace-nowrap left-1/2 -translate-x-1/2 md:left-6 md:-translate-x-0"
         style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
       >
         <a
@@ -1423,11 +1429,11 @@ export default function Home() {
           <img
             src="/images/logo-w-title.png"
             alt="TEN logo"
-            className="h-6 w-auto mix-blend-multiply"
+            className="h-7 w-auto shrink-0 mix-blend-multiply md:h-8"
             loading="lazy"
           />
         </a>
-        <span className="text-[11px] font-semibold text-[#6b6685]">×</span>
+        <span className="shrink-0 text-[11px] font-semibold text-[#6b6685]">×</span>
         <a
           href="https://www.minimax.io/"
           target="_blank"
@@ -1437,7 +1443,7 @@ export default function Home() {
           <img
             src="/images/minimax.webp"
             alt="Minimax logo"
-            className="h-6 w-auto mix-blend-multiply"
+            className="h-7 w-auto shrink-0 mix-blend-multiply md:h-8"
             loading="lazy"
           />
         </a>
