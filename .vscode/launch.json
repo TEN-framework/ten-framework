@@ -137,7 +137,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/standalone/ten_runtime_smoke_test",
       "args": [
-        "--gtest_filter=GraphCommunicationTest.GraphCommunicationBasic3"
+        "--gtest_filter=TelemetryTest.SingleAppExportToOtlp"
       ],
       "cwd": "${workspaceFolder}/out/linux/x64/tests/standalone/",
       "env": {
