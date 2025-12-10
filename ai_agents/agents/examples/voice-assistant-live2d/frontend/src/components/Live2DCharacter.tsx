@@ -718,11 +718,6 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
 
                 const createPixiApp = async () => {
                     ensureCanvas();
-                    const glContext = createGlContext();
-                    if (!glContext) {
-                        throw new Error('WebGL context unavailable (mobile GPU rejected).');
-                    }
-
                     const baseOptions = {
                         view: canvasRef.current!,
                         autoStart: true,
@@ -733,7 +728,6 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                         powerPreference: 'high-performance' as const,
                         failIfMajorPerformanceCaveat: false, // allow contexts on lower-end/mobile GPUs
                         resolution: 1,
-                        context: glContext,
                     };
 
                     const fallbackOptions = {
@@ -749,7 +743,11 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                     for (let attempt = 0; attempt < 3; attempt++) {
                         for (const [idx, opts] of attemptOptions.entries()) {
                             try {
-                                const instance = new PIXI.Application(opts);
+                                // Try to attach a pre-created GL context if available to avoid expensive retries
+                                const glContext = createGlContext();
+                                const instance = glContext
+                                    ? new PIXI.Application({ ...opts, context: glContext as unknown as WebGLRenderingContext })
+                                    : new PIXI.Application(opts as PIXI.IApplicationOptions);
                                 if (attempt > 0 || idx > 0) {
                                     console.warn('[Live2DCharacter] PIXI initialized after retry with fallback renderer options');
                                 }
