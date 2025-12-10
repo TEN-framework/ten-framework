@@ -6,6 +6,7 @@
 #
 group("install") {
   deps = [
+    "install_app",
     "mock_app",
     "mock_app_with_dev_deps",
     "mock_extension",

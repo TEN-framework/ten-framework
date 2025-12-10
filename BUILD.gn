@@ -23,6 +23,7 @@ group("ten_framework_all") {
     "//packages/core_apps",
     "//packages/core_extensions",
     "//packages/core_protocols",
+    "//packages/core_systems",
     "//packages/example_apps",
     "//packages/example_extensions",
     "//third_party",

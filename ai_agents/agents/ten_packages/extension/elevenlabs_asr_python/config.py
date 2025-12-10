@@ -43,6 +43,9 @@ class ElevenLabsASRConfig(BaseModel):
             "es": "es-ES",
             "pt": "pt-PT",
             "it": "it-IT",
+            "hi": "hi-IN",
+            "ar": "ar-AE",
         }
         params_dict = self.params if isinstance(self.params, dict) else {}
-        return language_map.get(params_dict.get("language_code", ""), "en-US")
+        language_code = params_dict.get("language_code", "") or ""
+        return language_map.get(language_code, language_code)
