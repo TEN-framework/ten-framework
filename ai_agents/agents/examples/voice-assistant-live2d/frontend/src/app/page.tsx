@@ -1405,8 +1405,8 @@ export default function Home() {
     ? "relative mt-2 w-full"
     : "relative mt-4";
   const live2dClassName = isImmersiveStage
-    ? "w-full aspect-[3/4] max-h-[72vh] min-h-[20rem] md:aspect-[2/3] md:max-h-[78vh] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]"
-    : "w-full aspect-[3/4] max-h-[68vh] min-h-[18rem] rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:aspect-[5/7] md:max-h-[75vh]";
+    ? "h-[34rem] w-full md:h-[48rem] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]"
+    : "h-[26rem] w-full rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]";
   const quoteClass = isImmersiveStage
     ? "mt-6 text-center text-[#5b4635] text-sm md:text-base font-medium"
     : "mt-4 text-center text-[#6f6a92] text-xs md:text-sm";
@@ -1417,7 +1417,7 @@ export default function Home() {
       style={{ backgroundColor: backgroundTheme.baseColor }}
     >
       <div
-        className="absolute z-30 flex items-center gap-2 md:gap-3 rounded-full border border-white/60 bg-white/85 px-4 py-2 md:px-5 md:py-2 shadow-sm backdrop-blur whitespace-nowrap left-1/2 -translate-x-1/2 md:left-6 md:-translate-x-0"
+        className="absolute z-30 flex items-center gap-2 md:gap-3 px-2 py-1 whitespace-nowrap left-1/2 -translate-x-1/2 md:left-6 md:-translate-x-0"
         style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
       >
         <a
@@ -1429,7 +1429,7 @@ export default function Home() {
           <img
             src="/images/logo-w-title.png"
             alt="TEN logo"
-            className="h-7 w-auto shrink-0 mix-blend-multiply md:h-8"
+            className="h-6 w-auto shrink-0 mix-blend-multiply md:h-7"
             loading="lazy"
           />
         </a>
@@ -1443,7 +1443,7 @@ export default function Home() {
           <img
             src="/images/minimax.webp"
             alt="Minimax logo"
-            className="h-7 w-auto shrink-0 mix-blend-multiply md:h-8"
+            className="h-6 w-auto shrink-0 mix-blend-multiply md:h-7"
             loading="lazy"
           />
         </a>
@@ -1498,7 +1498,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-4 pb-8 pt-32 md:px-6 md:pb-10 md:pt-36 lg:gap-10 lg:pt-40">
+      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-4 pb-8 pt-28 md:px-6 md:pb-10 md:pt-32 lg:gap-10 lg:pt-36">
         <header className="max-w-xl space-y-3 text-center lg:max-w-2xl">
           <span className="inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
             Say hello to {selectedModel.name}
