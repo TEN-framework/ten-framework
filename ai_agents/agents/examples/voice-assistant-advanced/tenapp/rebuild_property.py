@@ -411,6 +411,166 @@ anam_avatar_apollo = {
     },
 }
 
+# ============ TURKISH CONFIGURATIONS ============
+
+# Turkish STT - Nova-3 with Turkish language
+nova3_stt_turkish = {
+    "type": "extension",
+    "name": "stt",
+    "addon": "deepgram_ws_asr_python",
+    "extension_group": "stt",
+    "property": {
+        "params": {
+            "api_key": "${env:DEEPGRAM_API_KEY}",
+            "url": "wss://api.deepgram.com/v1/listen",
+            "model": "nova-3",
+            "language": "tr",
+            "interim_results": True,
+            "endpointing": 300,
+            "utterance_end_ms": 1000,
+        }
+    },
+}
+
+# Turkish TTS - Cartesia with Turkish voice (Ersel)
+cartesia_tts_turkish = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "cartesia_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:CARTESIA_TTS_KEY}",
+            "model_id": "sonic-3",
+            "voice": {
+                "mode": "id",
+                "id": "c1cfee3d-532d-47f8-8dd2-8e5b2b66bf1d",
+            },
+            "generation_config": {"speed": 1},
+            "output_format": {"container": "raw", "sample_rate": 44100},
+            "language": "tr",
+        },
+    },
+}
+
+# Turkish Anam avatar
+anam_avatar_turkish = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "0631404a-eb5b-4fbf-a97d-40abd2ffddbc",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Turkish GPT-5.1 LLM - simple sales assistant
+turkish_prompt = "Sen agora.io'da yardımsever bir satıcısın."
+turkish_greeting = "Merhaba, benim adım Ersel."
+
+gpt51_llm_turkish = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": turkish_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": turkish_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Turkish main_control
+main_control_turkish = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": turkish_greeting},
+}
+
+# ============ END TURKISH CONFIGURATIONS ============
+
+# ============ ELIZA CONFIGURATION ============
+
+# Eliza Anam avatar
+anam_avatar_eliza = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "dab3f691-6231-455f-9128-9a47e7a967c1",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Eliza GPT-5.1 LLM - simple assistant
+eliza_prompt = "You are Eliza, a friendly and helpful voice assistant."
+eliza_greeting = "Hello! I'm Eliza. How can I help you today?"
+
+gpt51_llm_eliza = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": eliza_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": eliza_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Eliza main_control
+main_control_eliza = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": eliza_greeting},
+}
+
+# ============ END ELIZA CONFIGURATION ============
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -470,17 +630,30 @@ basic_connections = [
 
 # Helper function to create basic voice assistant graph (no tools)
 def create_basic_voice_assistant(
-    name, has_avatar=False, avatar_type=None, tts_config=None
+    name,
+    has_avatar=False,
+    avatar_type=None,
+    tts_config=None,
+    stt_config=None,
+    llm_config=None,
+    main_control_config=None,
+    avatar_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
+    if stt_config is None:
+        stt_config = nova3_stt_100ms
+    if llm_config is None:
+        llm_config = llama_llm_no_tools
+    if main_control_config is None:
+        main_control_config = main_control_base
     # Standard architecture with TTS and main_control
     nodes = [
         copy.deepcopy(agora_rtc_base),
-        copy.deepcopy(nova3_stt_100ms),
-        copy.deepcopy(llama_llm_no_tools),
+        copy.deepcopy(stt_config),
+        copy.deepcopy(llm_config),
         copy.deepcopy(tts_config),
-        copy.deepcopy(main_control_base),
+        copy.deepcopy(main_control_config),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
     ]
@@ -488,8 +661,10 @@ def create_basic_voice_assistant(
     connections = copy.deepcopy(basic_connections)
 
     if has_avatar and avatar_type in ["heygen", "anam"]:
-        # Add appropriate avatar node
-        if avatar_type == "heygen":
+        # Add appropriate avatar node (use custom config if provided)
+        if avatar_config is not None:
+            nodes.append(copy.deepcopy(avatar_config))
+        elif avatar_type == "heygen":
             nodes.append(copy.deepcopy(heygen_avatar))
         else:  # anam
             nodes.append(copy.deepcopy(anam_avatar))
@@ -828,6 +1003,39 @@ new_graphs.append(
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,
         avatar_config=anam_avatar_apollo,
+    )
+)
+
+# Group 5: Turkish graphs (simple voice assistant, no thymia tools)
+print("Creating Turkish graphs...")
+
+# Turkish voice assistant with Anam avatar (Nova-3 STT, GPT-5.1, Cartesia TTS)
+new_graphs.append(
+    create_basic_voice_assistant(
+        "nova3_gpt_5_1_cartesia_anam_turkish",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=nova3_stt_turkish,
+        llm_config=gpt51_llm_turkish,
+        tts_config=cartesia_tts_turkish,
+        main_control_config=main_control_turkish,
+        avatar_config=anam_avatar_turkish,
+    )
+)
+
+# Group 6: Eliza graph (Flux STT, GPT-5.1, Cartesia English, Anam avatar)
+print("Creating Eliza graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "eliza",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_eliza,
+        tts_config=cartesia_tts_sonic3,
+        main_control_config=main_control_eliza,
+        avatar_config=anam_avatar_eliza,
     )
 )
 
