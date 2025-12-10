@@ -232,7 +232,9 @@ class OpenAIChatGPT:
             tools.append(self._convert_tools_to_dict(tool))
 
         # Check if model is a reasoning model (gpt-5.x) that requires different parameters
-        is_reasoning_model = self.config.model and self.config.model.lower().startswith("gpt-5")
+        is_reasoning_model = (
+            self.config.model and self.config.model.lower().startswith("gpt-5")
+        )
 
         # Build request
         req = {
