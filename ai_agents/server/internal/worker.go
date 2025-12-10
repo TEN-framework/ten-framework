@@ -129,6 +129,7 @@ func (w *Worker) start(req *StartReq) (err error) {
 	// Use separate arguments to avoid shell injection
 	slog.Info("Worker start", "requestId", req.RequestId, "property", w.PropertyJsonFile, "tenappDir", w.TenappDir, logTag)
 	cmd := exec.Command("tman", "run", "start", "--", "--property", w.PropertyJsonFile)
+	var shell string // Used for pgrep commands below
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Start a new process group
 	}
