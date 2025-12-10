@@ -22,8 +22,6 @@ void ten_service_hub_init(ten_service_hub_t *self) {
   self->metric_extension_thread_msg_queue_stay_time_us = NULL;
 }
 
-#endif
-
 static bool is_telemetry_metrics_enabled(ten_value_t *value) {
   TEN_ASSERT(value, "Should not happen.");
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
@@ -54,6 +52,8 @@ static bool is_telemetry_metrics_enabled(ten_value_t *value) {
 
   return false;
 }
+
+#endif
 
 bool ten_app_init_service_hub(ten_app_t *self, ten_value_t *value) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
