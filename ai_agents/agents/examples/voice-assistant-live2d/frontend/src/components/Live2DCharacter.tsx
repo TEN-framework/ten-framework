@@ -683,8 +683,46 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                     }
                 };
 
+                const createGlContext = () => {
+                    ensureCanvas();
+                    const view = canvasRef.current!;
+                    const attrsList: WebGLContextAttributes[] = [
+                        {
+                            alpha: true,
+                            antialias: false,
+                            stencil: false,
+                            preserveDrawingBuffer: false,
+                            powerPreference: 'low-power',
+                            failIfMajorPerformanceCaveat: false,
+                        },
+                        {
+                            alpha: true,
+                            antialias: false,
+                            stencil: false,
+                            preserveDrawingBuffer: false,
+                            powerPreference: 'default',
+                            failIfMajorPerformanceCaveat: false,
+                        },
+                    ];
+
+                    for (const attrs of attrsList) {
+                        const gl =
+                            view.getContext('webgl', attrs) ||
+                            view.getContext('experimental-webgl', attrs as WebGLContextAttributes);
+                        if (gl) {
+                            return gl as WebGLRenderingContext;
+                        }
+                    }
+                    return null;
+                };
+
                 const createPixiApp = async () => {
                     ensureCanvas();
+                    const glContext = createGlContext();
+                    if (!glContext) {
+                        throw new Error('WebGL context unavailable (mobile GPU rejected).');
+                    }
+
                     const baseOptions = {
                         view: canvasRef.current!,
                         autoStart: true,
@@ -694,12 +732,15 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                         antialias: true,
                         powerPreference: 'high-performance' as const,
                         failIfMajorPerformanceCaveat: false, // allow contexts on lower-end/mobile GPUs
+                        resolution: 1,
+                        context: glContext,
                     };
 
                     const fallbackOptions = {
                         ...baseOptions,
                         antialias: false,
                         powerPreference: 'default' as const,
+                        resolution: 1,
                     };
 
                     const attemptOptions = [baseOptions, fallbackOptions];
