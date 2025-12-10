@@ -674,15 +674,42 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                 if (!resizeTarget) {
                     throw new Error('Resize target not ready');
                 }
-                const app = new PIXI.Application({
-                    view: canvasRef.current!,
-                    autoStart: true,
-                    resizeTo: resizeTarget as HTMLElement,
-                    backgroundColor: 0x000000,
-                    backgroundAlpha: 0,
-                    antialias: true,
-                    powerPreference: 'high-performance',
-                });
+                const createPixiApp = async () => {
+                    const baseOptions = {
+                        view: canvasRef.current!,
+                        autoStart: true,
+                        resizeTo: resizeTarget as HTMLElement,
+                        backgroundColor: 0x000000,
+                        backgroundAlpha: 0,
+                        antialias: true,
+                        powerPreference: 'high-performance' as const,
+                        failIfMajorPerformanceCaveat: false, // allow contexts on lower-end/mobile GPUs
+                    };
+
+                    const fallbackOptions = {
+                        ...baseOptions,
+                        antialias: false,
+                        powerPreference: 'default' as const,
+                    };
+
+                    let lastError: unknown;
+                    for (const [idx, opts] of [baseOptions, fallbackOptions].entries()) {
+                        try {
+                            const instance = new PIXI.Application(opts);
+                            if (idx > 0) {
+                                console.warn('[Live2DCharacter] PIXI initialized using fallback renderer options');
+                            }
+                            return instance;
+                        } catch (err) {
+                            lastError = err;
+                            console.warn('[Live2DCharacter] PIXI Application creation failed, retrying with fallback...', err);
+                            await new Promise(resolve => setTimeout(resolve, 150));
+                        }
+                    }
+                    throw lastError;
+                };
+
+                const app = await createPixiApp();
                 console.log('[Live2DCharacter] PIXI Application created successfully:', app);
 
                 appRef.current = app;
