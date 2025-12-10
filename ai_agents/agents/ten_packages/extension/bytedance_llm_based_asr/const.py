@@ -13,10 +13,7 @@ MESSAGE_TYPE_SERVER_FULL_RESPONSE = 0b1001
 MESSAGE_TYPE_SERVER_ERROR_RESPONSE = 0b1111
 
 # Message type specific flags
-MESSAGE_TYPE_SPECIFIC_FLAGS_NO_SEQUENCE = 0b0000
 MESSAGE_TYPE_SPECIFIC_FLAGS_POS_SEQUENCE = 0b0001
-MESSAGE_TYPE_SPECIFIC_FLAGS_NEG_SEQUENCE = 0b0010
-MESSAGE_TYPE_SPECIFIC_FLAGS_NEG_WITH_SEQUENCE = 0b0011
 MESSAGE_TYPE_SPECIFIC_FLAGS_LAST_AUDIO = 0b0010  # Last audio packet flag
 
 # Serialization types
@@ -24,7 +21,6 @@ SERIALIZATION_TYPE_NO_SERIALIZATION = 0b0000
 SERIALIZATION_TYPE_JSON = 0b0001
 
 # Compression types
-COMPRESSION_TYPE_NO_COMPRESSION = 0b0000
 COMPRESSION_TYPE_GZIP = 0b0001
 
 # Error codes - Official Volcengine ASR LLM error codes
@@ -63,20 +59,6 @@ RECONNECTABLE_ERROR_CODES = {
         "SERVER_BUSY"
     ],  # Server busy - temporary overload, retryable
 }
-
-# Fatal error codes - errors that should not be retried
-FATAL_ERROR_CODES = {
-    VOLCENGINE_ERROR_CODES[
-        "INVALID_PARAMETER"
-    ],  # Invalid parameters - configuration issue, retry won't help
-}
-
-# Default values
-DEFAULT_SAMPLE_RATE = 16000
-DEFAULT_SEGMENT_DURATION_MS = 100
-DEFAULT_END_WINDOW_SIZE_MS = 300
-DEFAULT_MAX_RETRIES = 5
-DEFAULT_BASE_DELAY = 0.3
 
 
 def is_reconnectable_error(error_code: int) -> bool:

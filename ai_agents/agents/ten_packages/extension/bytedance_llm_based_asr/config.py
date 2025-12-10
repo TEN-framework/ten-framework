@@ -23,36 +23,12 @@ class BytedanceASRLLMConfig(BaseModel):
     api_url: str = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async"
     resource_id: str = "volc.bigasr.sauc.duration"
 
-    # Audio Configuration
-    sample_rate: int = 16000
-    audio_format: str = "pcm"  # Use PCM format for raw audio data
-    codec: str = "raw"  # Raw PCM data (default for PCM format)
-    bits: int = 16
-    channel: int = 1
-
-    # ASR Model Configuration
-    model_name: str = "bigmodel"
-    model_version: str = (
-        "400"  # Model version: "310" (default) or "400" (better ITN performance)
-    )
-    enable_itn: bool = True  # Enable Inverse Text Normalization
-    enable_punc: bool = True  # Enable punctuation
-    enable_ddc: bool = True  # Enable speaker diarization
-    show_utterances: bool = True
-    enable_nonstream: bool = True
-
-    # User Configuration
-    user_uid: str = "default_user"
-
     # Reconnection Configuration
     max_retries: int = 5
     base_delay: float = 0.3
 
     # Audio Processing
     segment_duration_ms: int = 100  # Audio segment duration in milliseconds
-    end_window_size: int = (
-        800  # End window size in milliseconds for voice activity detection
-    )
     mute_pkg_duration_ms: int = (
         800  # Mute package duration in milliseconds for finalization
     )
@@ -100,7 +76,6 @@ class BytedanceASRLLMConfig(BaseModel):
         """Get user configuration for ASR.
 
         If params.user is set, use it directly.
-        Otherwise, build from user_uid field.
         Returns None if user config should not be included in request.
         """
         # Use params.user if provided

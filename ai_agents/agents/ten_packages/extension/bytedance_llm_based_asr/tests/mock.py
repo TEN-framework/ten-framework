@@ -265,10 +265,11 @@ def patch_volcengine_ws():
 
 @pytest.fixture(scope="function")
 def patch_volcengine_ws_grouping():
-    """Mock Volcengine ASR WebSocket client for utterance grouping tests.
+    """Mock Volcengine ASR WebSocket client for utterance processing tests.
 
     This fixture emits a single ASRResponse with multiple utterances:
     [true, true, false, false, true, false]
+    Each utterance will be sent individually (no grouping/concatenation).
     """
 
     patch_target = "ten_packages.extension.bytedance_llm_based_asr.extension.VolcengineASRClient"
