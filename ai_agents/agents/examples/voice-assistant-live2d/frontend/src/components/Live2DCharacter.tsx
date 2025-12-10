@@ -683,7 +683,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                     }
                 };
 
-                const createGlContext = () => {
+                const createGlContext = (): WebGLRenderingContext | WebGL2RenderingContext | null => {
                     ensureCanvas();
                     const view = canvasRef.current!;
                     const attrsList: WebGLContextAttributes[] = [
@@ -707,10 +707,11 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
 
                     for (const attrs of attrsList) {
                         const gl =
-                            view.getContext('webgl', attrs) ||
-                            view.getContext('experimental-webgl', attrs as WebGLContextAttributes);
+                            (view.getContext('webgl2', attrs) as WebGL2RenderingContext | null) ||
+                            (view.getContext('webgl', attrs) as WebGLRenderingContext | null) ||
+                            (view.getContext('experimental-webgl', attrs) as WebGLRenderingContext | null);
                         if (gl) {
-                            return gl as WebGLRenderingContext;
+                            return gl;
                         }
                     }
                     return null;
@@ -746,7 +747,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                                 // Try to attach a pre-created GL context if available to avoid expensive retries
                                 const glContext = createGlContext();
                                 const instance = glContext
-                                    ? new PIXI.Application({ ...opts, context: glContext as unknown as WebGLRenderingContext })
+                                    ? new PIXI.Application({ ...opts, context: glContext as unknown as PIXI.IRenderingContext })
                                     : new PIXI.Application(opts as PIXI.IApplicationOptions);
                                 if (attempt > 0 || idx > 0) {
                                     console.warn('[Live2DCharacter] PIXI initialized after retry with fallback renderer options');
