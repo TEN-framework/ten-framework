@@ -290,10 +290,6 @@ gpt51_llm_with_tools = {
         "proxy_url": "${env:OPENAI_PROXY_URL|}",
         "greeting": apollo_greeting,
         "max_memory_length": 10,
-        # GPT-5/o1 models require use_max_completion_tokens=True to use
-        # max_completion_tokens instead of max_tokens, and to exclude
-        # unsupported params (temperature, frequency_penalty, etc.)
-        "use_max_completion_tokens": True,
         "reasoning_effort": "none",
         "verbosity": "low",
     },

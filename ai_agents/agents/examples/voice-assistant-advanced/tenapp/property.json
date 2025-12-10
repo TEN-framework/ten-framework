@@ -350,7 +350,6 @@
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
                 "max_memory_length": 10,
-                "use_max_completion_tokens": true,
                 "reasoning_effort": "none",
                 "verbosity": "low"
               }
@@ -626,7 +625,6 @@
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
                 "max_memory_length": 10,
-                "use_max_completion_tokens": true,
                 "reasoning_effort": "none",
                 "verbosity": "low"
               }
@@ -958,7 +956,6 @@
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
                 "max_memory_length": 10,
-                "use_max_completion_tokens": true,
                 "reasoning_effort": "none",
                 "verbosity": "low"
               }
