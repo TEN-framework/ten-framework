@@ -77,7 +77,6 @@ class CustomWebSocketClient:
                     # Parse JSON message
                     message_obj = json.loads(message)
 
-
                     # Trigger Transcript event (adjust according to your message format)
                     if "transcript" in self.event_handlers:
                         await self.event_handlers["transcript"](
@@ -286,9 +285,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     language=self.config.language,
                 )
         elif message_obj.get("status") == "error":
-            await self._custom_event_handler_on_error(
-                _, message_obj
-            )
+            await self._custom_event_handler_on_error(_, message_obj)
 
     async def _custom_event_handler_on_error(self, _, error):
         """Handle error event"""
