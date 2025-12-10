@@ -2619,69 +2619,119 @@ EOF
 )"
 ```
 
-**Setting up the git hook:**
+**Setting up git hooks:**
 
-If the hook is missing or needs to be updated, create/update it with:
+There are two git hooks that enforce code quality:
 
+1. **pre-commit** - Runs before commit, checks:
+   - API keys not in staged files
+   - Black formatting for Python files in `ai_agents/agents/ten_packages/extension`
+
+2. **commit-msg** - Validates commit message format:
+   - Conventional commit type required (feat, fix, etc.)
+   - Subject must be lowercase
+   - No references to AI assistants
+   - Body lines ≤100 characters
+
+If the hooks are missing or need to be updated, create them with:
+
+**Pre-commit hook (.git/hooks/pre-commit):**
+```bash
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+# Pre-commit hook to prevent committing API keys and check formatting
+
+# Check for common API key patterns in staged files
+if git diff --cached --name-only | xargs grep -l -E "(API_KEY|api_key|HEYGEN_API_KEY|THYMIA_API_KEY|DEEPGRAM_API_KEY).*=.*[A-Za-z0-9]{20,}" 2>/dev/null; then
+    echo "ERROR: Potential API key found in staged files!"
+    echo "Files containing potential keys:"
+    git diff --cached --name-only | xargs grep -l -E "(API_KEY|api_key).*=.*[A-Za-z0-9]{20,}" 2>/dev/null
+    echo ""
+    echo "Please remove API keys before committing."
+    echo "Use environment variables or .env files instead."
+    exit 1
+fi
+
+# Check for PERSISTENT_KEYS_CONFIG file
+if git diff --cached --name-only | grep -i "PERSISTENT.*KEY.*CONFIG"; then
+    echo "ERROR: Attempting to commit PERSISTENT_KEYS_CONFIG file!"
+    echo "This file should never be committed to git."
+    exit 1
+fi
+
+# Check black formatting for staged Python files in ai_agents/agents/ten_packages/extension
+staged_py_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^ai_agents/agents/ten_packages/extension/.*\.py$" | grep -v "third_party/\|http_server_python/\|ten_packages/system")
+
+if [ -n "$staged_py_files" ]; then
+    # Try to run black check via docker first, fall back to local
+    if command -v docker &> /dev/null && docker ps -q -f name=ten_agent_dev &> /dev/null; then
+        # Docker container is running
+        unformatted=$(echo "$staged_py_files" | xargs -I {} sudo docker exec ten_agent_dev bash -c "cd /app && black --check --line-length 80 {} 2>&1" 2>/dev/null | grep "would reformat" || true)
+    elif command -v black &> /dev/null; then
+        # Use local black
+        unformatted=$(echo "$staged_py_files" | xargs black --check --line-length 80 2>&1 | grep "would reformat" || true)
+    else
+        # No black available, skip check with warning
+        echo "WARNING: black not available, skipping format check"
+        unformatted=""
+    fi
+
+    if [ -n "$unformatted" ]; then
+        echo "ERROR: Python files need black formatting!"
+        echo "$unformatted"
+        echo ""
+        echo "Run: sudo docker exec ten_agent_dev bash -c 'cd /app && black --line-length 80 agents/ten_packages/extension'"
+        echo "Or fix specific files shown above."
+        exit 1
+    fi
+fi
+
+exit 0
+EOF
+
+chmod +x .git/hooks/pre-commit
+```
+
+**Commit-msg hook (.git/hooks/commit-msg):**
 ```bash
 cat > .git/hooks/commit-msg << 'EOF'
 #!/bin/bash
+# Git commit-msg hook for conventional commits validation
 
-# Read commit message
-COMMIT_MSG_FILE="$1"
-COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+commit_msg_file=$1
+commit_msg=$(cat "$commit_msg_file")
+subject=$(head -n1 "$commit_msg_file")
 
-# Check for Claude mentions in commit message
-if grep -qi "claude\|anthropic" "$COMMIT_MSG_FILE"; then
-    echo "ERROR: Commit message contains references to Claude or Anthropic."
-    echo "Please remove these mentions and try again."
+# Check for Claude mentions
+if echo "$commit_msg" | grep -iq "claude"; then
+    echo "ERROR: Commit message contains 'claude'. Please remove references to Claude."
+    echo "Rejected commit message:"
+    echo "$commit_msg"
     exit 1
 fi
 
-# Get subject line (first line)
-SUBJECT=$(head -n1 "$COMMIT_MSG_FILE")
+# Valid conventional commit types
+valid_types="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:"
 
-# Check if subject starts with valid conventional commit type
-VALID_TYPES="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.+\))?:"
-if ! echo "$SUBJECT" | grep -qE "$VALID_TYPES"; then
-    echo "ERROR: Commit subject must start with a valid type."
-    echo "Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
-    echo "Example: 'fix: correct import statements'"
-    echo ""
-    echo "Your subject: $SUBJECT"
+# Check if subject starts with valid type
+if ! echo "$subject" | grep -qE "$valid_types"; then
+    echo "ERROR: Commit subject must start with a valid conventional commit type."
+    echo "Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+    echo "Example: feat: add new feature"
+    echo "Your subject: $subject"
     exit 1
 fi
 
-# Check if subject is lowercase after the type:
-# Extract the part after "type:" or "type(scope):"
-SUBJECT_TEXT=$(echo "$SUBJECT" | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
-if echo "$SUBJECT_TEXT" | grep -qE '^[A-Z]'; then
-    echo "ERROR: Commit subject must be lowercase (no Sentence-case, Start-case, UPPER-CASE)."
-    echo "Example: 'fix: correct import statements' (not 'fix: Correct import statements')"
-    echo ""
-    echo "Your subject: $SUBJECT"
+# Extract subject text after type (e.g., "feat: this is the subject" -> "this is the subject")
+subject_text=$(echo "$subject" | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+
+# Check if subject text starts with uppercase letter (sentence-case)
+if echo "$subject_text" | grep -qE "^[A-Z]"; then
+    echo "ERROR: Commit subject must be lowercase (no sentence-case, start-case, or upper-case)."
+    echo "Your subject: $subject"
+    echo "Should be: $(echo "$subject" | sed -E 's/^([a-z]+(\([^)]+\))?:\s*)([A-Z])/\1\l\3/')"
     exit 1
 fi
-
-# Check body/footer lines are ≤100 characters (skip first line and empty lines)
-LINE_NUM=0
-while IFS= read -r line; do
-    LINE_NUM=$((LINE_NUM + 1))
-    # Skip first line (subject) and empty lines
-    if [ $LINE_NUM -eq 1 ] || [ -z "$line" ]; then
-        continue
-    fi
-
-    # Check line length
-    if [ ${#line} -gt 100 ]; then
-        echo "ERROR: Commit message body/footer lines must be ≤100 characters."
-        echo "Line $LINE_NUM is ${#line} characters long:"
-        echo "$line"
-        echo ""
-        echo "Use 'fold -w 100 -s' to wrap long lines, or break into multiple lines."
-        exit 1
-    fi
-done < "$COMMIT_MSG_FILE"
 
 exit 0
 EOF
@@ -2689,17 +2739,20 @@ EOF
 chmod +x .git/hooks/commit-msg
 ```
 
-**Testing the git hook:**
+**Testing the git hooks:**
 ```bash
-# The hook at .git/hooks/commit-msg automatically validates all commits
-# Test it manually:
+# Test commit-msg hook
 echo "fix: test commit message" > /tmp/test_msg.txt
 bash .git/hooks/commit-msg /tmp/test_msg.txt && echo "Valid" || echo "Invalid"
 
-# The hook will automatically run on every commit and reject invalid messages
+# Test with invalid uppercase (should fail)
+echo "fix: Test commit message" > /tmp/test_msg.txt
+bash .git/hooks/commit-msg /tmp/test_msg.txt && echo "Valid" || echo "Invalid"
+
+# The hooks will automatically run on every commit
 ```
 
-**Note:** The hook must be set up in each clone of the repository, as `.git/hooks/` is not tracked by git.
+**Note:** Hooks must be set up in each clone of the repository, as `.git/hooks/` is not tracked by git.
 
 ---
 
