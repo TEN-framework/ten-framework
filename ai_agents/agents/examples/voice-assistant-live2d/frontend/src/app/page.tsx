@@ -1328,12 +1328,13 @@ export default function Home() {
                 language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
                 voiceType: selectedModel.voiceType,
                 greeting: selectedModel.agentGreeting,
-                properties: selectedModel.voiceId
-                  ? {
-                      voice_id: selectedModel.voiceId,
-                      greeting: selectedModel.agentGreeting,
-                    }
-                  : { greeting: selectedModel.agentGreeting },
+                properties: {
+                  main_control: { greeting: selectedModel.agentGreeting },
+                  llm: { greeting: selectedModel.agentGreeting },
+                  tts: selectedModel.voiceId
+                    ? { params: { voice_setting: { voice_id: selectedModel.voiceId } } }
+                    : undefined,
+                },
               });
 
               console.log("Agent started:", startResult);
