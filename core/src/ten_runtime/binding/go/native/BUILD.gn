@@ -25,6 +25,10 @@ ten_shared_library("ten_runtime_go") {
     cflags += [ "-fPIC" ]
   }
 
+  # For Go binding, we need to export TEN_RUNTIME_PRIVATE_API functions
+  # because they will be called by Go code (CGO) at runtime.
+  defines = [ "TEN_RUNTIME_GO_BINDING_BUILD" ]
+
   if (!defined(ldflags)) {
     ldflags = []
   }
