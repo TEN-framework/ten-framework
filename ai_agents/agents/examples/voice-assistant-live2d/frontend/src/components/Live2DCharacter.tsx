@@ -79,7 +79,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
     onModelLoaded,
     onModelError
 }, ref) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const motionSyncRef = useRef<MotionSync | null>(null);
     const appRef = useRef<any>(null);
