@@ -34,6 +34,15 @@ ten_shared_library("ten_runtime_go") {
     ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
   } else if (is_linux) {
     ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  } else if (is_win) {
+    # On Windows, allow unresolved symbols as they will be provided by Go runtime
+    # at link time when building the final Go application.
+    # /FORCE:UNRESOLVED allows DLL to be created with unresolved external symbols.
+    ldflags += [
+      "/FORCE:UNRESOLVED",
+      # Suppress the LNK4088 warning about image being generated with /FORCE
+      "/IGNORE:4088",
+    ]
   }
 
   # Only export "ten" relevant symbols.
