@@ -63,6 +63,7 @@ class AudioBuffer:
         self.channels = channels
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
+        self.speech_buffer_bytes = 0  # Track memory usage
         self.speech_duration = (
             0.0  # Total duration including pre-speech padding
         )
@@ -70,6 +71,7 @@ class AudioBuffer:
             0.0  # Only frames where volume > threshold
         )
         self.max_speech_duration = 300.0  # 5 minutes safety limit
+        self.max_buffer_bytes = 5 * 1024 * 1024  # 5MB memory limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
         # Using deque for O(1) popleft() performance
@@ -112,8 +114,9 @@ class AudioBuffer:
             if is_speech:
                 # Speech detected! Add circular buffer contents (pre-speech context)
                 for buffered_frame in self.circular_buffer:
-                    if self.speech_duration < self.max_speech_duration:
+                    if self._can_add_frame(len(buffered_frame)):
                         self.speech_buffer.append(buffered_frame)
+                        self.speech_buffer_bytes += len(buffered_frame)
                         self.speech_duration += len(buffered_frame) / (
                             self.sample_rate * self.channels * 2
                         )
@@ -126,20 +129,23 @@ class AudioBuffer:
             # Currently speaking
             if is_speech:
                 # Continue speaking - add frame to speech buffer
-                # Check max duration to prevent unbounded memory growth
-                if self.speech_duration < self.max_speech_duration:
+                # Check max duration and memory to prevent unbounded growth
+                if self._can_add_frame(len(pcm_data)):
                     # Also flush any accumulated silence frames (they were part of speech)
                     for silence_frame in self.silence_frames:
-                        self.speech_buffer.append(silence_frame)
-                        self.speech_duration += len(silence_frame) / (
-                            self.sample_rate * self.channels * 2
-                        )
+                        if self._can_add_frame(len(silence_frame)):
+                            self.speech_buffer.append(silence_frame)
+                            self.speech_buffer_bytes += len(silence_frame)
+                            self.speech_duration += len(silence_frame) / (
+                                self.sample_rate * self.channels * 2
+                            )
                         # NOTE: Brief silence during speech NOT counted in actual_speech_duration
                     self.silence_frames.clear()
                     self.silence_duration = 0.0
 
                     # Add current frame (THIS IS ACTUAL SPEECH)
                     self.speech_buffer.append(pcm_data)
+                    self.speech_buffer_bytes += len(pcm_data)
                     self.speech_duration += frame_duration
                     self.actual_speech_duration += (
                         frame_duration  # Count actual speech!
@@ -173,6 +179,13 @@ class AudioBuffer:
         total_bytes = sum(len(frame) for frame in self.circular_buffer)
         return total_bytes / (self.sample_rate * self.channels * 2)
 
+    def _can_add_frame(self, frame_bytes: int) -> bool:
+        """Check if we can add more frames (time and memory limits)"""
+        return (
+            self.speech_duration < self.max_speech_duration
+            and self.speech_buffer_bytes + frame_bytes <= self.max_buffer_bytes
+        )
+
     def _calculate_rms(self, pcm_data: bytes) -> float:
         """Calculate RMS volume of PCM audio"""
         if not pcm_data:
@@ -204,6 +217,7 @@ class AudioBuffer:
     def clear_buffer(self):
         """Clear speech buffer after audio has been sent to APIs"""
         self.speech_buffer.clear()
+        self.speech_buffer_bytes = 0
         self.speech_duration = 0.0
         self.actual_speech_duration = 0.0
         print(

@@ -91,6 +91,9 @@ class AgoraAnamRecorder:
             asyncio.Event()
         )  # Signal when WebSocket is connected
         self._ready_for_audio = False  # Only true after full initialization
+        self._connection_lock = (
+            asyncio.Lock()
+        )  # Prevent concurrent session creation
 
     def _validate_config(self, app_id: str, api_key: str, avatar_id: str):
         """Validate required configuration parameters."""
@@ -180,7 +183,10 @@ class AgoraAnamRecorder:
             payload["pod"] = self.pod
 
         self.ten_env.log_info(f"Creating session token: {endpoint}")
-        self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
+        safe_payload = (
+            {**payload, "token": "***"} if "token" in payload else payload
+        )
+        self.ten_env.log_info(f"Payload: {json.dumps(safe_payload, indent=2)}")
 
         response = requests.post(
             endpoint, json=payload, headers=headers, timeout=30
@@ -195,63 +201,68 @@ class AgoraAnamRecorder:
         self.ten_env.log_info("Session token created successfully")
 
     async def connect(self):
-        # Step 1: Create session token (Anam-specific two-step auth)
-        try:
-            await self._create_session_token()
-        except Exception as e:
-            await self._handle_error(
-                f"Failed to create session token: {e}",
-                code=ERROR_CODE_FAILED_TO_CREATE_SESSION,
-            )
-            raise
-
-        # Check and stop old session if needed
-        old_session_id = self._load_cached_session_id()
-        if old_session_id:
+        async with self._connection_lock:
+            # Step 1: Create session token (Anam-specific two-step auth)
             try:
-                self.ten_env.log_info(
-                    f"Found previous session id: {old_session_id}, attempting to stop it."
-                )
-                await self._stop_session(old_session_id)
-                self.ten_env.log_info("Previous session stopped.")
-                self._clear_session_id_cache()
+                await self._create_session_token()
             except Exception as e:
-                self.ten_env.log_error(f"Failed to stop old session: {e}")
-
-        try:
-            await self._create_session()
-            self._save_session_id(self.session_id)
-
-            # Start WebSocket connection
-            self.websocket_task = asyncio.create_task(
-                self._connect_websocket_loop()
-            )
-
-            # Wait for WebSocket to actually connect before returning
-            try:
-                await asyncio.wait_for(
-                    self._connected_event.wait(), timeout=10.0
-                )
-                self.ten_env.log_info("WebSocket connection confirmed ready")
-                # Wait for Anam to process init payload
-                await asyncio.sleep(0.5)
-                self._ready_for_audio = True
-            except asyncio.TimeoutError as exc:
                 await self._handle_error(
-                    "WebSocket connection timeout after 10 seconds",
+                    f"Failed to create session token: {e}",
+                    code=ERROR_CODE_FAILED_TO_CREATE_SESSION,
+                )
+                raise
+
+            # Check and stop old session if needed
+            old_session_id = self._load_cached_session_id()
+            if old_session_id:
+                try:
+                    self.ten_env.log_info(
+                        f"Found previous session id: {old_session_id}, attempting to stop it."
+                    )
+                    await self._stop_session(old_session_id)
+                    self.ten_env.log_info("Previous session stopped.")
+                    self._clear_session_id_cache()
+                except Exception as e:
+                    self.ten_env.log_error(f"Failed to stop old session: {e}")
+
+            try:
+                await self._create_session()
+                self._save_session_id(self.session_id)
+
+                # Start WebSocket connection
+                self.websocket_task = asyncio.create_task(
+                    self._connect_websocket_loop()
+                )
+
+                # Wait for WebSocket to actually connect before returning
+                try:
+                    await asyncio.wait_for(
+                        self._connected_event.wait(), timeout=10.0
+                    )
+                    self.ten_env.log_info(
+                        "WebSocket connection confirmed ready"
+                    )
+                    # Wait for Anam to process init payload
+                    await asyncio.sleep(0.5)
+                    self._ready_for_audio = True
+                except asyncio.TimeoutError as exc:
+                    await self._handle_error(
+                        "WebSocket connection timeout after 10 seconds",
+                        code=ERROR_CODE_FAILED_TO_CONNECT_TO_SERVICE,
+                    )
+                    raise RuntimeError("WebSocket connection timeout") from exc
+
+                # Start heartbeat task
+                self.heartbeat_task = asyncio.create_task(
+                    self._start_heartbeat()
+                )
+
+            except Exception as e:
+                await self._handle_error(
+                    f"Failed to connect to service: {e}",
                     code=ERROR_CODE_FAILED_TO_CONNECT_TO_SERVICE,
                 )
-                raise RuntimeError("WebSocket connection timeout") from exc
-
-            # Start heartbeat task
-            self.heartbeat_task = asyncio.create_task(self._start_heartbeat())
-
-        except Exception as e:
-            await self._handle_error(
-                f"Failed to connect to service: {e}",
-                code=ERROR_CODE_FAILED_TO_CONNECT_TO_SERVICE,
-            )
-            raise
+                raise
 
     async def disconnect(self):
         self.ten_env.log_info("Starting disconnection from service")

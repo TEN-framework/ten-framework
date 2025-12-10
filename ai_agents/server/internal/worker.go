@@ -126,9 +126,9 @@ func isInProcessGroup(pid, pgid int) bool {
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("tman run start -- --property %s", w.PropertyJsonFile)
-	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, "tenappDir", w.TenappDir, logTag)
-	cmd := exec.Command("sh", "-c", shell)
+	// Use separate arguments to avoid shell injection
+	slog.Info("Worker start", "requestId", req.RequestId, "property", w.PropertyJsonFile, "tenappDir", w.TenappDir, logTag)
+	cmd := exec.Command("tman", "run", "start", "--", "--property", w.PropertyJsonFile)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Start a new process group
 	}

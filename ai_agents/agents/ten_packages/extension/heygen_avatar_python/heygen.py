@@ -54,6 +54,9 @@ class AgoraHeygenRecorder:
         # Legacy timer task variable (kept for safety, but no longer created)
         # speak_end is now triggered by tts_audio_end event
         self._speak_end_timer_task: asyncio.Task | None = None
+        self._connection_lock = (
+            asyncio.Lock()
+        )  # Prevent concurrent session creation
 
     def _generate_token(self, uid, role):
         # if the app_cert is not required, return an empty string
@@ -86,27 +89,28 @@ class AgoraHeygenRecorder:
             os.remove(self.SESSION_CACHE_PATH)
 
     async def connect(self):
-        await self._create_token()
+        async with self._connection_lock:
+            await self._create_token()
 
-        # Check and stop old session if needed
-        old_session_id = self._load_cached_session_id()
-        if old_session_id:
-            try:
-                self.ten_env.log_info(
-                    f"Found previous session id: {old_session_id}, attempting to stop it."
-                )
-                await self._stop_session(old_session_id)
-                self.ten_env.log_info("Previous session stopped.")
-                self._clear_session_id_cache()
-            except Exception as e:
-                self.ten_env.log_error(f"Failed to stop old session: {e}")
+            # Check and stop old session if needed
+            old_session_id = self._load_cached_session_id()
+            if old_session_id:
+                try:
+                    self.ten_env.log_info(
+                        f"Found previous session id: {old_session_id}, attempting to stop it."
+                    )
+                    await self._stop_session(old_session_id)
+                    self.ten_env.log_info("Previous session stopped.")
+                    self._clear_session_id_cache()
+                except Exception as e:
+                    self.ten_env.log_error(f"Failed to stop old session: {e}")
 
-        await self._create_session()
-        await self._start_session()
-        self._save_session_id(self.session_id)
-        self.websocket_task = asyncio.create_task(
-            self._connect_websocket_loop()
-        )
+            await self._create_session()
+            await self._start_session()
+            self._save_session_id(self.session_id)
+            self.websocket_task = asyncio.create_task(
+                self._connect_websocket_loop()
+            )
 
     async def disconnect(self):
         self.ten_env.log_info(
@@ -162,13 +166,19 @@ class AgoraHeygenRecorder:
             "namespace": "demo",
         }
 
-        # Log the request details using existing logging mechanism
+        # Log the request details (mask sensitive data)
         self.ten_env.log_info("Creating new session with details:")
         self.ten_env.log_info("URL: https://api.heygen.com/v1/streaming.new")
-        self.ten_env.log_info(
-            f"Headers: {json.dumps(self.session_headers, indent=2)}"
-        )
-        self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
+        safe_headers = {
+            k: "***" if k == "authorization" else v
+            for k, v in self.session_headers.items()
+        }
+        self.ten_env.log_info(f"Headers: {json.dumps(safe_headers, indent=2)}")
+        safe_payload = {
+            **payload,
+            "agora_settings": {**payload["agora_settings"], "token": "***"},
+        }
+        self.ten_env.log_info(f"Payload: {json.dumps(safe_payload, indent=2)}")
 
         response = requests.post(
             "https://api.heygen.com/v1/streaming.new",
