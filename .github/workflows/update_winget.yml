@@ -193,9 +193,13 @@ jobs:
                   const crypto = require('crypto');
                   const fs = require('fs');
                   const url = require('url');
+                  const os = require('os');
+                  const path = require('path');
 
                   const downloadUrl = asset.browser_download_url;
-                  const tempFile = `/tmp/tman-verify-${Date.now()}.zip`;
+                  // Use OS-specific temp directory
+                  const tempDir = os.tmpdir();
+                  const tempFile = path.join(tempDir, `tman-verify-${Date.now()}.zip`);
 
                   // Download file
                   const downloadFile = () => {
