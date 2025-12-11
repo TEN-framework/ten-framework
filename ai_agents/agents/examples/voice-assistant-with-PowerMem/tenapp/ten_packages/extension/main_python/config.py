@@ -6,8 +6,8 @@ class MainControlConfig(BaseModel):
     # Memory configuration
     agent_id: str = "voice_assistant_agent"
     user_id: str = "user"
-    enable_memorization: bool = False
-    enable_user_memory: bool = False
+    enable_memorization: bool = True
+    enable_user_memory: bool = True
     # Memory save rules
     memory_save_interval_turns: int = 5  # Save memory every N turns of conversation
     # Save memory after N seconds of inactivity
