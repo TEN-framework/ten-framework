@@ -189,26 +189,28 @@ try {
 # Step 2: Get or Calculate SHA256 Checksum
 # ==============================================================================
 
-if ([string]::IsNullOrEmpty($Sha256)) {
-    # SHA256 not provided, calculate it from downloaded file
-    Write-Info "Calculating SHA256 checksum..."
-    $sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
-    Write-Success "SHA256 calculated: $sha256"
-} else {
-    # SHA256 provided (from GitHub API or elsewhere)
+if ($PSBoundParameters.ContainsKey('Sha256')) {
+    # SHA256 parameter was provided, verify it matches the downloaded file
     $sha256 = $Sha256.ToLower()
-    Write-Success "SHA256 provided: $sha256"
+    Write-Info "SHA256 provided: $sha256"
+    Write-Info "Verifying provided SHA256 matches downloaded file..."
 
-    # Optional: Verify the provided SHA256 matches the file
-    Write-Info "Verifying provided SHA256..."
     $calculatedSha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+
     if ($sha256 -ne $calculatedSha256) {
         Write-Error "SHA256 mismatch!"
         Write-Info "Provided:   $sha256"
         Write-Info "Calculated: $calculatedSha256"
+        Write-Info "This indicates the downloaded file does not match the expected hash."
         exit 1
     }
+
     Write-Success "SHA256 verified ✓"
+} else {
+    # SHA256 not provided, calculate it from downloaded file
+    Write-Info "Calculating SHA256 checksum..."
+    $sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+    Write-Success "SHA256 calculated: $sha256"
 }
 
 # ==============================================================================
