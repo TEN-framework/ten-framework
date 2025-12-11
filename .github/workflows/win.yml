@@ -21,7 +21,7 @@ on:
 # 1. Python 3.5+ binding compatibility (officially supports MSVC-compiled extensions only)
 # 2. Consistent C++ ABI and calling conventions across all components
 # 3. Go binding support (CGO is incompatible with MSVC, thus Go binding is disabled on Windows)
-# For details: core/src/ten_runtime/binding/go/tools/build/main.go
+# For details: build/ten_runtime/options.gni
 
 permissions:
   contents: write
