@@ -268,7 +268,6 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
         try:
             profile = self.client.profile(
                 user_id=user_id,
-                agent_id=agent_id,
             )
 
             if profile is not None:
