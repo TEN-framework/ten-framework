@@ -38,6 +38,7 @@ interface StartRequestConfig {
     graphName: string;
     language: string;
     voiceType: "male" | "female";
+    characterId?: string;
     greeting?: string;
     prompt?: string;
     properties?: Record<string, unknown>;
@@ -46,7 +47,7 @@ interface StartRequestConfig {
 export const apiStartService = async (config: StartRequestConfig): Promise<any> => {
     const base = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
     const primary = base ? `${base}/start` : `/api/agents/start`;
-    const { channel, userId, graphName, language, voiceType, greeting, prompt, properties } = config;
+    const { channel, userId, graphName, language, voiceType, greeting, prompt, properties, characterId } = config;
     const data: Record<string, unknown> = {
         request_id: genUUID(),
         channel_name: channel,
@@ -54,9 +55,16 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
         graph_name: graphName,
         language,
         voice_type: voiceType,
-        greeting: greeting || '',
-        prompt: prompt || ''
     };
+    if (greeting) {
+        data.greeting = greeting;
+    }
+    if (prompt) {
+        data.prompt = prompt;
+    }
+    if (characterId) {
+        data.character_id = characterId;
+    }
     if (properties) {
         data.properties = properties;
     }

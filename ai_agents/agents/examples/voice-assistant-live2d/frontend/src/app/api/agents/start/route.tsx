@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
+import { getGraphProperties } from './graph';
 
 /**
  * Handles the POST request to start an agent.
@@ -24,18 +25,39 @@ export async function POST(request: NextRequest) {
             graph_name,
             language,
             voice_type,
-            properties
+            character_id,
+            greeting,
+            prompt,
+            properties,
         } = body;
 
-        // Send a POST request to start the agent
-        const response = await axios.post(`${AGENT_SERVER_URL}/start`, {
+        const computedProperties = getGraphProperties(
+            graph_name,
+            language,
+            voice_type,
+            character_id,
+            prompt,
+            greeting,
+        );
+
+        const mergedProperties = {
+            ...computedProperties,
+            ...(properties || {}),
+        };
+
+        const payload: Record<string, unknown> = {
             request_id,
             channel_name,
             user_uid,
             graph_name,
-            // Get the graph properties based on the graph name, language, and voice type
-            properties: properties,
-        });
+        };
+
+        if (Object.keys(mergedProperties).length > 0) {
+            payload.properties = mergedProperties;
+        }
+
+        // Send a POST request to start the agent
+        const response = await axios.post(`${AGENT_SERVER_URL}/start`, payload);
 
         const responseData = response.data;
 
