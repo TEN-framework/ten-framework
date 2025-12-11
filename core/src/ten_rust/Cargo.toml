@@ -40,6 +40,12 @@ opentelemetry-prometheus = "0.29" # Prometheus exporter (for /metrics endpoint)
 opentelemetry-stdout = { version = "0.29", features = [
   "metrics",
 ] } # Console exporter (for debugging)
+opentelemetry-otlp = { version = "0.29", features = [
+  "metrics",
+  "grpc-tonic",
+  "http-proto",
+  "reqwest-blocking-client",
+] } # OTLP exporter (for pushing to collectors)
 opentelemetry-semantic-conventions = "0.29"
 prometheus = "0.14" # Prometheus client library for Registry and metrics export
 regex = { version = "1.11" }

@@ -5,9 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-use ten_rust::service_hub::telemetry::config::{
-    ExporterType, OtlpProtocol, TelemetryConfig,
-};
+use ten_rust::service_hub::telemetry::config::{ExporterType, OtlpProtocol, TelemetryConfig};
 
 #[test]
 fn test_parse_prometheus_config() {
@@ -17,7 +15,7 @@ fn test_parse_prometheus_config() {
             "enabled": true,
             "exporter": {
                 "type": "prometheus",
-                "prometheus": {
+                "config": {
                     "host": "0.0.0.0",
                     "port": 49483,
                     "path": "/metrics"
@@ -45,7 +43,7 @@ fn test_parse_otlp_config() {
             "enabled": true,
             "exporter": {
                 "type": "otlp",
-                "otlp": {
+                "config": {
                     "endpoint": "http://localhost:4317",
                     "protocol": "grpc",
                     "headers": {
@@ -67,6 +65,7 @@ fn test_parse_otlp_config() {
 
 #[test]
 fn test_parse_console_config() {
+    // Test without config field (should work since config is optional)
     let json = serde_json::json!({
         "enabled": true,
         "metrics": {
@@ -78,6 +77,20 @@ fn test_parse_console_config() {
 
     let config = TelemetryConfig::from_json(&json).unwrap();
     assert_eq!(config.get_exporter_type(), ExporterType::Console);
+
+    // Test with empty config object
+    let json_with_config = serde_json::json!({
+        "enabled": true,
+        "metrics": {
+            "exporter": {
+                "type": "console",
+                "config": {}
+            }
+        }
+    });
+
+    let config_with_config = TelemetryConfig::from_json(&json_with_config).unwrap();
+    assert_eq!(config_with_config.get_exporter_type(), ExporterType::Console);
 }
 
 #[test]
@@ -121,8 +134,9 @@ fn test_missing_prometheus_config() {
         "enabled": true,
         "metrics": {
             "exporter": {
-                "type": "prometheus"
-                // Missing prometheus config
+                "type": "prometheus",
+                "config": {}
+                // Empty config for prometheus
             }
         }
     });
@@ -130,8 +144,8 @@ fn test_missing_prometheus_config() {
     let config = TelemetryConfig::from_json(&json).unwrap();
     assert_eq!(config.get_exporter_type(), ExporterType::Prometheus);
 
-    // When prometheus config is missing, it should be None
-    // The default values are used in the exporter initialization
+    // When prometheus config is empty, it should be None (deserialized as Empty
+    // variant) The default values are used in the exporter initialization
     assert!(config.get_prometheus_config().is_none());
 }
 
@@ -158,7 +172,7 @@ fn test_otlp_http_protocol() {
         "metrics": {
             "exporter": {
                 "type": "otlp",
-                "otlp": {
+                "config": {
                     "endpoint": "http://localhost:4318",
                     "protocol": "http"
                 }
@@ -178,7 +192,7 @@ fn test_otlp_without_headers() {
         "metrics": {
             "exporter": {
                 "type": "otlp",
-                "otlp": {
+                "config": {
                     "endpoint": "http://localhost:4317",
                     "protocol": "grpc"
                 }

@@ -68,7 +68,7 @@ class test_app : public ten::app_t {
                               "enabled": true,
                               "exporter": {
                                 "type": "otlp",
-                                "otlp": {
+                                "config": {
                                   "endpoint": "http://localhost:4317",
                                   "protocol": "grpc"
                                 }

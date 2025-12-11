@@ -842,6 +842,9 @@
                     "exporter": {
                       "type": "object",
                       "additionalProperties": false,
+                      "required": [
+                        "type"
+                      ],
                       "properties": {
                         "type": {
                           "type": "string",
@@ -851,51 +854,97 @@
                             "console"
                           ]
                         },
-                        "prometheus": {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "host": {
-                              "type": "string"
-                            },
-                            "port": {
-                              "type": "integer",
-                              "minimum": 1,
-                              "maximum": 65535
-                            },
-                            "path": {
-                              "type": "string",
-                              "pattern": "^/.*$"
+                        "config": {
+                          "type": "object"
+                        }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "prometheus"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "host": {
+                                    "type": "string"
+                                  },
+                                  "port": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 65535
+                                  },
+                                  "path": {
+                                    "type": "string",
+                                    "pattern": "^/.*$"
+                                  }
+                                }
+                              }
                             }
                           }
                         },
-                        "otlp": {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "properties": {
-                            "endpoint": {
-                              "type": "string",
-                              "minLength": 1
-                            },
-                            "protocol": {
-                              "type": "string",
-                              "enum": [
-                                "grpc",
-                                "http"
-                              ]
-                            },
-                            "headers": {
-                              "type": "object",
-                              "patternProperties": {
-                                "^[A-Za-z0-9_-]+$": {
-                                  "type": "string"
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "otlp"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "endpoint": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocol": {
+                                    "type": "string",
+                                    "enum": [
+                                      "grpc",
+                                      "http"
+                                    ]
+                                  },
+                                  "headers": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^[A-Za-z0-9_-]+$": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
                                 }
-                              },
-                              "additionalProperties": false
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "console"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {}
+                              }
                             }
                           }
                         }
-                      }
+                      ]
                     }
                   }
                 }

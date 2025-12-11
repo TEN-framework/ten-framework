@@ -35,7 +35,7 @@
 //!
 //! ### From Rust:
 //!
-//! ```rust
+//! ```rust,ignore
 //! use service_hub::telemetry::{record_counter, record_histogram};
 //!
 //! record_counter("requests_total", 1, &[("method", "GET")]);
@@ -50,10 +50,10 @@
 //! ten_metric_destroy(counter);
 //! ```
 
+pub mod config;
 pub mod exporter;
 pub mod http_endpoint;
 pub mod metrics;
-pub mod config;
 
 // Re-export commonly used items
 pub use config::{
@@ -61,11 +61,9 @@ pub use config::{
 };
 pub use exporter::{ExporterType, MetricsExporter};
 pub use http_endpoint::configure_metrics_endpoint;
-
 // Allow unused imports for public API exports
 #[allow(unused_imports)]
 pub use metrics::{record_counter, record_gauge, record_histogram, MetricHandle, MetricType};
-
 // Re-export C FFI functions (already exported by metrics module)
 #[allow(unused_imports)]
 pub use metrics::{

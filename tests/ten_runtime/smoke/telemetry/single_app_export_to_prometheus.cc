@@ -68,7 +68,7 @@ class test_app : public ten::app_t {
                               "enabled": true,
                               "exporter": {
                                 "type": "prometheus",
-                                "prometheus": {
+                                "config": {
                                   "host": "0.0.0.0",
                                   "port": 49484,
                                   "path": "/metrics"

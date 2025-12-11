@@ -567,9 +567,9 @@
       "name": "app (c/c++) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app/bin/import_graph_app",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/long_running/long_running_app/bin/long_running_app",
       "args": [],
-      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app",
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/long_running/long_running_app",
       "env": {
         "ASAN_OPTIONS": "use_sigaltstack=0"
       }

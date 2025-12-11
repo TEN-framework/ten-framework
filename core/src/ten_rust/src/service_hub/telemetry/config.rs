@@ -13,7 +13,7 @@
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::constants::METRICS;
 
@@ -38,16 +38,72 @@ pub struct MetricsConfig {
 }
 
 /// Exporter configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExporterConfig {
     #[serde(rename = "type")]
     pub exporter_type: ExporterType,
 
-    #[serde(default)]
-    pub prometheus: Option<PrometheusConfig>,
+    pub config: ExporterSpecificConfig,
+}
 
-    #[serde(default)]
-    pub otlp: Option<OtlpConfig>,
+// Custom deserialization for ExporterConfig
+impl<'de> Deserialize<'de> for ExporterConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct RawExporterConfig {
+            #[serde(rename = "type")]
+            exporter_type: ExporterType,
+            #[serde(default)]
+            config: serde_json::Value,
+        }
+
+        let raw = RawExporterConfig::deserialize(deserializer)?;
+
+        let config = match raw.exporter_type {
+            ExporterType::Prometheus => {
+                if raw.config.is_null()
+                    || (raw.config.is_object() && raw.config.as_object().unwrap().is_empty())
+                {
+                    ExporterSpecificConfig::Empty
+                } else {
+                    ExporterSpecificConfig::Prometheus(
+                        serde_json::from_value(raw.config).map_err(serde::de::Error::custom)?,
+                    )
+                }
+            }
+            ExporterType::Otlp => {
+                if raw.config.is_null()
+                    || (raw.config.is_object() && raw.config.as_object().unwrap().is_empty())
+                {
+                    ExporterSpecificConfig::Empty
+                } else {
+                    ExporterSpecificConfig::Otlp(
+                        serde_json::from_value(raw.config).map_err(serde::de::Error::custom)?,
+                    )
+                }
+            }
+            ExporterType::Console => ExporterSpecificConfig::Console(ConsoleConfig {}),
+        };
+
+        Ok(ExporterConfig {
+            exporter_type: raw.exporter_type,
+            config,
+        })
+    }
+}
+
+/// Exporter-specific configuration (polymorphic based on type)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(untagged)]
+pub enum ExporterSpecificConfig {
+    #[default]
+    Empty,
+    Prometheus(PrometheusConfig),
+    Otlp(OtlpConfig),
+    Console(ConsoleConfig),
 }
 
 /// Exporter type
@@ -98,6 +154,10 @@ pub enum OtlpProtocol {
     Http,
 }
 
+/// Console exporter configuration (currently empty, for future extensibility)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ConsoleConfig {}
+
 // Default value functions
 fn default_true() -> bool {
     true
@@ -123,8 +183,7 @@ impl Default for ExporterConfig {
     fn default() -> Self {
         Self {
             exporter_type: ExporterType::Prometheus,
-            prometheus: Some(PrometheusConfig::default()),
-            otlp: None,
+            config: ExporterSpecificConfig::Prometheus(PrometheusConfig::default()),
         }
     }
 }
@@ -166,12 +225,18 @@ impl TelemetryConfig {
 
     /// Get Prometheus configuration (if applicable)
     pub fn get_prometheus_config(&self) -> Option<&PrometheusConfig> {
-        self.metrics.as_ref().and_then(|m| m.exporter.as_ref()).and_then(|e| e.prometheus.as_ref())
+        self.metrics.as_ref().and_then(|m| m.exporter.as_ref()).and_then(|e| match &e.config {
+            ExporterSpecificConfig::Prometheus(config) => Some(config),
+            _ => None,
+        })
     }
 
     /// Get OTLP configuration (if applicable)
     pub fn get_otlp_config(&self) -> Option<&OtlpConfig> {
-        self.metrics.as_ref().and_then(|m| m.exporter.as_ref()).and_then(|e| e.otlp.as_ref())
+        self.metrics.as_ref().and_then(|m| m.exporter.as_ref()).and_then(|e| match &e.config {
+            ExporterSpecificConfig::Otlp(config) => Some(config),
+            _ => None,
+        })
     }
 
     /// Check if metrics are enabled

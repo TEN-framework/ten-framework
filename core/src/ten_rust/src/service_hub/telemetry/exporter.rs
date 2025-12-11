@@ -41,13 +41,13 @@ impl ExporterType {
     ///     "services": {
     ///       "telemetry": {
     ///         "enabled": true,
-    ///         "host": "0.0.0.0",
-    ///         "port": 49483,
     ///         "metrics": {
     ///           "enabled": true,
     ///           "exporter": {
     ///             "type": "prometheus",
-    ///             "prometheus": {
+    ///             "config": {
+    ///               "host": "0.0.0.0",
+    ///               "port": 49483,
     ///               "path": "/metrics"
     ///             }
     ///           }
@@ -66,19 +66,38 @@ impl ExporterType {
     ///     "services": {
     ///       "telemetry": {
     ///         "enabled": true,
-    ///         "host": "0.0.0.0",
-    ///         "port": 49483,
     ///         "metrics": {
     ///           "enabled": true,
     ///           "exporter": {
     ///             "type": "otlp",
-    ///             "otlp": {
+    ///             "config": {
     ///               "endpoint": "http://localhost:4317",
     ///               "protocol": "grpc",
     ///               "headers": {
     ///                 "x-api-key": "your-api-key"
     ///               }
     ///             }
+    ///           }
+    ///         }
+    ///       }
+    ///     }
+    ///   }
+    /// }
+    /// ```
+    ///
+    /// For Console exporter (debugging):
+    ///
+    /// ```json
+    /// {
+    ///   "_ten": {
+    ///     "services": {
+    ///       "telemetry": {
+    ///         "enabled": true,
+    ///         "metrics": {
+    ///           "enabled": true,
+    ///           "exporter": {
+    ///             "type": "console",
+    ///             "config": {}
     ///           }
     ///         }
     ///       }
@@ -93,16 +112,16 @@ impl ExporterType {
 
         match exporter_type {
             ConfigExporterType::Prometheus => {
-                tracing::info!("📊 Telemetry: Using Prometheus exporter (Pull mode)");
+                tracing::info!("Telemetry: Using Prometheus exporter (Pull mode)");
                 ExporterType::Prometheus
             }
             ConfigExporterType::Otlp => {
                 if let Some(otlp_config) = config.get_otlp_config() {
-                    tracing::info!("📊 Telemetry: Using OTLP exporter (Push mode)");
-                    tracing::info!("   Endpoint: {}", otlp_config.endpoint);
-                    tracing::info!("   Protocol: {:?}", otlp_config.protocol);
+                    tracing::info!("Telemetry: Using OTLP exporter (Push mode)");
+                    tracing::info!("Endpoint: {}", otlp_config.endpoint);
+                    tracing::info!("Protocol: {:?}", otlp_config.protocol);
                     if !otlp_config.headers.is_empty() {
-                        tracing::info!("   Headers: {} configured", otlp_config.headers.len());
+                        tracing::info!("Headers: {} configured", otlp_config.headers.len());
                     }
 
                     ExporterType::Otlp {
@@ -112,14 +131,14 @@ impl ExporterType {
                     }
                 } else {
                     tracing::warn!(
-                        "⚠️  Warning: OTLP exporter selected but no config provided, falling back \
-                         to Prometheus"
+                        "Warning: OTLP exporter selected but no config provided, falling back to \
+                         Prometheus"
                     );
                     ExporterType::Prometheus
                 }
             }
             ConfigExporterType::Console => {
-                tracing::info!("📊 Telemetry: Using Console exporter (Debug mode)");
+                tracing::info!("Telemetry: Using Console exporter (Debug mode)");
                 ExporterType::Console
             }
         }
@@ -133,6 +152,9 @@ pub struct MetricsExporter {
 
     // Only used for Prometheus exporter
     prometheus_registry: Arc<Mutex<Option<prometheus::Registry>>>,
+
+    // Runtime handle for OTLP exporter (kept alive for the entire lifecycle)
+    _runtime_handle: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
 }
 
 impl MetricsExporter {
@@ -141,6 +163,7 @@ impl MetricsExporter {
             meter_provider: Arc::new(Mutex::new(None)),
             exporter_type,
             prometheus_registry: Arc::new(Mutex::new(None)),
+            _runtime_handle: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -190,29 +213,119 @@ impl MetricsExporter {
     ) -> Result<()> {
         let resource = Self::create_resource(service_name);
 
-        // TODO: Implement OTLP exporter
-        // This will be used for pushing to Collector/Langfuse/Datadog/etc
+        tracing::info!("Telemetry: Pushing metrics to collector");
+        tracing::info!("  Service: {}", service_name);
+        tracing::info!("  Endpoint: {}", endpoint);
+        tracing::info!("  Protocol: {:?}", protocol);
+        if !headers.is_empty() {
+            tracing::info!("  Headers: {:?}", headers);
+        }
 
-        tracing::warn!("OTLP exporter not yet implemented");
-        tracing::info!("  endpoint: {}", endpoint);
-        tracing::info!("  protocol: {:?}", protocol);
-        tracing::info!("  headers: {:?}", headers);
+        // Create a dedicated runtime thread for OTLP exporter
+        // This runtime will stay alive for the entire application lifecycle
+        let endpoint_clone = endpoint.to_string();
+        let protocol_clone = protocol.clone();
+        let resource_clone = resource.clone();
+        let meter_provider_clone = self.meter_provider.clone();
 
-        // Placeholder
-        let provider = SdkMeterProvider::builder().with_resource(resource).build();
+        // Channel to signal when initialization is complete
+        let (init_tx, init_rx) = std::sync::mpsc::channel::<Result<()>>();
 
-        opentelemetry::global::set_meter_provider(provider.clone());
-        *self.meter_provider.lock().unwrap() = Some(provider);
+        let runtime_handle = std::thread::spawn(move || {
+            tracing::debug!("Starting dedicated OTLP runtime thread");
 
-        Ok(())
+            // Create a new Tokio runtime for this thread
+            let rt = match tokio::runtime::Runtime::new() {
+                Ok(rt) => rt,
+                Err(e) => {
+                    let _ =
+                        init_tx.send(Err(anyhow::anyhow!("Failed to create Tokio runtime: {}", e)));
+                    return;
+                }
+            };
+
+            rt.block_on(async {
+                // Build OTLP exporter
+                let exporter = match &protocol_clone {
+                    OtlpProtocol::Grpc => {
+                        use opentelemetry_otlp::WithExportConfig;
+                        opentelemetry_otlp::MetricExporter::builder()
+                            .with_tonic()
+                            .with_endpoint(&endpoint_clone)
+                            .build()
+                    }
+                    OtlpProtocol::Http => {
+                        use opentelemetry_otlp::WithExportConfig;
+                        opentelemetry_otlp::MetricExporter::builder()
+                            .with_http()
+                            .with_endpoint(&endpoint_clone)
+                            .build()
+                    }
+                };
+
+                let exporter = match exporter {
+                    Ok(exp) => exp,
+                    Err(e) => {
+                        let _ = init_tx
+                            .send(Err(anyhow::anyhow!("Failed to build OTLP exporter: {}", e)));
+                        return;
+                    }
+                };
+
+                // Create periodic reader to export metrics every 10 seconds
+                let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
+                    .with_interval(std::time::Duration::from_secs(10))
+                    .build();
+
+                // Create meter provider
+                let provider = SdkMeterProvider::builder()
+                    .with_reader(reader)
+                    .with_resource(resource_clone)
+                    .build();
+
+                // Set global meter provider
+                opentelemetry::global::set_meter_provider(provider.clone());
+                *meter_provider_clone.lock().unwrap() = Some(provider);
+
+                // Signal that initialization is complete
+                let _ = init_tx.send(Ok(()));
+
+                tracing::info!(
+                    "OTLP exporter initialized successfully, runtime thread will keep running"
+                );
+
+                // Keep the runtime alive indefinitely
+                // The PeriodicReader will continue to export metrics in the background
+                loop {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+                }
+            });
+        });
+
+        // Wait for initialization to complete (with timeout)
+        match init_rx.recv_timeout(std::time::Duration::from_secs(5)) {
+            Ok(Ok(())) => {
+                tracing::info!("OTLP exporter initialization confirmed");
+                *self._runtime_handle.lock().unwrap() = Some(runtime_handle);
+                Ok(())
+            }
+            Ok(Err(e)) => {
+                tracing::error!("OTLP exporter initialization failed: {}", e);
+                Err(e)
+            }
+            Err(_) => {
+                tracing::error!("OTLP exporter initialization timed out");
+                Err(anyhow::anyhow!("OTLP exporter initialization timed out"))
+            }
+        }
     }
 
     /// Initialize with Console exporter (for debugging)
     fn init_console_exporter(&self, service_name: &str) -> Result<()> {
         let resource = Self::create_resource(service_name);
 
-        tracing::info!("🖥️  Console exporter: Metrics will be printed to stdout");
-        tracing::info!("   Service: {}", service_name);
+        tracing::info!("Console exporter: Metrics will be printed to stdout");
+        tracing::info!("  Service: {}", service_name);
 
         // Create stdout exporter
         let exporter = opentelemetry_stdout::MetricExporterBuilder::default().build();
@@ -232,7 +345,7 @@ impl MetricsExporter {
         // Store provider
         *self.meter_provider.lock().unwrap() = Some(provider);
 
-        tracing::info!("✅ Console exporter initialized (export interval: 30s)");
+        tracing::info!("Console exporter initialized (export interval: 30s)");
 
         Ok(())
     }
@@ -242,9 +355,7 @@ impl MetricsExporter {
         // Use builder pattern which is public API
         Resource::builder()
             .with_service_name(service_name.to_string())
-            .with_attributes(vec![
-                KeyValue::new("service.namespace", "ten-framework"),
-            ])
+            .with_attributes(vec![KeyValue::new("service.namespace", "ten-framework")])
             .build()
     }
 
