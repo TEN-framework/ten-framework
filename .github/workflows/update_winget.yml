@@ -154,24 +154,166 @@ jobs:
               console.log(`⏳ Attempt ${attempt}/${maxAttempts}:`);
 
               if (found) {
-                console.log(`   ✅ Found: ${expectedFile}`);
-              } else {
-                console.log(`   ❌ Missing: ${expectedFile}`);
-                console.log(`   📝 Available assets:`, assetNames);
-              }
-
-              // Check if file is present
-              if (found) {
-                console.log('');
-                console.log('🎉 Windows tman release asset is present!');
-                console.log('✅ Ready to update Winget package');
-
-                // Get asset URL for download
+                // Get asset details
                 const asset = currentRelease.data.assets.find(a => a.name === expectedFile);
+                const fileSize = asset.size;
+                const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+
+                console.log(`   ✅ Found: ${expectedFile}`);
+                console.log(`   📊 File size: ${fileSize} bytes (${fileSizeMB} MB)`);
+
+                // Check if digest (SHA256) is available and matches file
+                if (!asset.digest) {
+                  console.log(`   ⚠️  Digest not available yet - upload may still be in progress`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds for upload to complete...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                // Extract SHA256 from digest
+                // digest format: "sha256:abc123..."
+                const match = asset.digest.match(/sha256:([a-f0-9]+)/i);
+                if (!match) {
+                  console.log(`   ❌ Unable to extract SHA256 from digest: ${asset.digest}`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                const sha256FromGitHub = match[1];
+                console.log(`   🔐 SHA256 from GitHub: ${sha256FromGitHub}`);
+
+                // Download file and verify SHA256 matches
+                console.log(`   ⬇️  Downloading file to verify integrity...`);
+                let sha256Verified = false;
+                try {
+                  const https = require('https');
+                  const crypto = require('crypto');
+                  const fs = require('fs');
+                  const url = require('url');
+                  const os = require('os');
+                  const path = require('path');
+
+                  const downloadUrl = asset.browser_download_url;
+                  // Use OS-specific temp directory
+                  const tempDir = os.tmpdir();
+                  const tempFile = path.join(tempDir, `tman-verify-${Date.now()}.zip`);
+
+                  // Download file
+                  const downloadFile = () => {
+                    return new Promise((resolve, reject) => {
+                      const file = fs.createWriteStream(tempFile);
+                      const parsedUrl = url.parse(downloadUrl);
+
+                      https.get({
+                        hostname: parsedUrl.hostname,
+                        path: parsedUrl.path,
+                        headers: {
+                          'User-Agent': 'GitHub-Actions'
+                        }
+                      }, (response) => {
+                        // Handle redirects
+                        if (response.statusCode === 302 || response.statusCode === 301) {
+                          https.get(response.headers.location, (redirectResponse) => {
+                            redirectResponse.pipe(file);
+                            file.on('finish', () => {
+                              file.close();
+                              resolve();
+                            });
+                          }).on('error', (err) => {
+                            fs.unlink(tempFile, () => {});
+                            reject(err);
+                          });
+                        } else {
+                          response.pipe(file);
+                          file.on('finish', () => {
+                            file.close();
+                            resolve();
+                          });
+                        }
+                      }).on('error', (err) => {
+                        fs.unlink(tempFile, () => {});
+                        reject(err);
+                      });
+                    });
+                  };
+
+                  // Calculate SHA256
+                  const calculateSHA256 = (filePath) => {
+                    return new Promise((resolve, reject) => {
+                      const hash = crypto.createHash('sha256');
+                      const stream = fs.createReadStream(filePath);
+                      stream.on('data', (data) => hash.update(data));
+                      stream.on('end', () => resolve(hash.digest('hex')));
+                      stream.on('error', reject);
+                    });
+                  };
+
+                  // Download and verify
+                  await downloadFile();
+                  const downloadedFileSize = fs.statSync(tempFile).size;
+                  console.log(`   📦 Downloaded: ${(downloadedFileSize / (1024 * 1024)).toFixed(2)} MB`);
+
+                  console.log(`   🔐 Calculating SHA256...`);
+                  const sha256FromFile = await calculateSHA256(tempFile);
+                  console.log(`   📊 SHA256 calculated: ${sha256FromFile}`);
+
+                  // Clean up temp file
+                  fs.unlinkSync(tempFile);
+
+                  // Compare SHA256 values
+                  if (sha256FromFile !== sha256FromGitHub) {
+                    console.log(`   ❌ SHA256 mismatch!`);
+                    console.log(`      GitHub:     ${sha256FromGitHub}`);
+                    console.log(`      Downloaded: ${sha256FromFile}`);
+                    console.log(`   ⚠️  File may be corrupted!`);
+                    console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                    console.log('');
+                    await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                    continue;
+                  }
+
+                  console.log(`   ✅ SHA256 verification passed!`);
+                  sha256Verified = true;
+                } catch (error) {
+                  console.log(`   ⚠️  Failed to download and verify file: ${error.message}`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                // Only proceed if SHA256 was verified
+                if (!sha256Verified) {
+                  console.log(`   ❌ SHA256 verification failed`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                const sha256 = sha256FromGitHub;
+
+                // File is complete and digest is available
+                console.log('');
+                console.log('🎉 Windows tman release asset is complete and ready!');
+                console.log('📦 Asset details:');
+                console.log(`   - Name: ${asset.name}`);
+                console.log(`   - Size: ${fileSize} bytes (${fileSizeMB} MB)`);
+                console.log(`   - SHA256: ${sha256}`);
+                console.log(`   - URL: ${asset.browser_download_url}`);
+                console.log('✅ Ready to update Winget package');
 
                 core.setOutput('all_ready', 'true');
                 core.setOutput('asset_url', asset.browser_download_url);
+                core.setOutput('asset_size', fileSize.toString());
+                core.setOutput('asset_sha256', sha256);
                 return;
+              } else {
+                console.log(`   ❌ Missing: ${expectedFile}`);
+                console.log(`   📝 Available assets:`, assetNames);
               }
 
               // Not ready yet, wait and retry
@@ -232,18 +374,21 @@ jobs:
           if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
             Write-Host "🔐 SHA256 from GitHub: $SHA256_FROM_GITHUB"
           }
+          else{
+            Write-Host "❌ SHA256 from GitHub is missing!" -ForegroundColor Red
+            Write-Host "⚠️  This indicates the verify_assets step did not output the SHA256." -ForegroundColor Yellow
+            Write-Host "⚠️  Aborting to prevent submitting incorrect hash values." -ForegroundColor Yellow
+            exit 1
+          }
           Write-Host ""
 
           # Build command arguments using hashtable for proper splatting
           # Note: GitHubToken is automatically read from $env:GITHUB_TOKEN by the script
+          # SHA256 is mandatory - we verified it exists above
           $scriptParams = @{
             Version = $VERSION
             Repository = $env:REPO
-          }
-
-          # Pass SHA256 if available from GitHub API
-          if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
-            $scriptParams['Sha256'] = $SHA256_FROM_GITHUB
+            Sha256 = $SHA256_FROM_GITHUB
           }
 
           # Run the submission script
