@@ -79,7 +79,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
     onModelLoaded,
     onModelError
 }, ref) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const motionSyncRef = useRef<MotionSync | null>(null);
     const appRef = useRef<any>(null);
@@ -674,15 +674,102 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                 if (!resizeTarget) {
                     throw new Error('Resize target not ready');
                 }
-                const app = new PIXI.Application({
-                    view: canvasRef.current!,
-                    autoStart: true,
-                    resizeTo: resizeTarget as HTMLElement,
-                    backgroundColor: 0x000000,
-                    backgroundAlpha: 0,
-                    antialias: true,
-                    powerPreference: 'high-performance',
-                });
+                const ensureCanvas = () => {
+                    if (!canvasRef.current) {
+                        const c = document.createElement('canvas');
+                        c.style.display = 'block';
+                        containerRef.current?.appendChild(c);
+                        canvasRef.current = c;
+                    }
+                };
+
+                const createGlContext = (): WebGLRenderingContext | WebGL2RenderingContext | null => {
+                    ensureCanvas();
+                    const view = canvasRef.current!;
+                    const attrsList: WebGLContextAttributes[] = [
+                        {
+                            alpha: true,
+                            antialias: false,
+                            stencil: false,
+                            preserveDrawingBuffer: false,
+                            powerPreference: 'low-power',
+                            failIfMajorPerformanceCaveat: false,
+                        },
+                        {
+                            alpha: true,
+                            antialias: false,
+                            stencil: false,
+                            preserveDrawingBuffer: false,
+                            powerPreference: 'default',
+                            failIfMajorPerformanceCaveat: false,
+                        },
+                    ];
+
+                    for (const attrs of attrsList) {
+                        const gl =
+                            (view.getContext('webgl2', attrs) as WebGL2RenderingContext | null) ||
+                            (view.getContext('webgl', attrs) as WebGLRenderingContext | null) ||
+                            (view.getContext('experimental-webgl', attrs) as WebGLRenderingContext | null);
+                        if (gl) {
+                            return gl;
+                        }
+                    }
+                    return null;
+                };
+
+                const createPixiApp = async () => {
+                    ensureCanvas();
+                    const baseOptions = {
+                        view: canvasRef.current!,
+                        autoStart: true,
+                        resizeTo: resizeTarget as HTMLElement,
+                        backgroundColor: 0x000000,
+                        backgroundAlpha: 0,
+                        antialias: true,
+                        powerPreference: 'high-performance' as const,
+                        failIfMajorPerformanceCaveat: false, // allow contexts on lower-end/mobile GPUs
+                        resolution: 1,
+                    };
+
+                    const fallbackOptions = {
+                        ...baseOptions,
+                        antialias: false,
+                        powerPreference: 'default' as const,
+                        resolution: 1,
+                    };
+
+                    const attemptOptions = [baseOptions, fallbackOptions];
+                    let lastError: unknown;
+
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        for (const [idx, opts] of attemptOptions.entries()) {
+                            try {
+                                // Try to attach a pre-created GL context if available to avoid expensive retries
+                                const glContext = createGlContext();
+                                const instance = glContext
+                                    ? new PIXI.Application({ ...opts, context: glContext as unknown as PIXI.IRenderingContext })
+                                    : new PIXI.Application(opts as PIXI.IApplicationOptions);
+                                if (attempt > 0 || idx > 0) {
+                                    console.warn('[Live2DCharacter] PIXI initialized after retry with fallback renderer options');
+                                }
+                                return instance;
+                            } catch (err) {
+                                lastError = err;
+                                console.warn('[Live2DCharacter] PIXI Application creation failed, will retry...', err);
+                                await new Promise(resolve => setTimeout(resolve, 200));
+                            }
+                        }
+                        // Recreate canvas between attempts to avoid a bad context
+                        if (canvasRef.current && canvasRef.current.parentElement) {
+                            canvasRef.current.parentElement.removeChild(canvasRef.current);
+                        }
+                        canvasRef.current = null;
+                        ensureCanvas();
+                    }
+                    throw lastError;
+                };
+
+                const app = await createPixiApp();
                 console.log('[Live2DCharacter] PIXI Application created successfully:', app);
 
                 appRef.current = app;
@@ -1018,6 +1105,7 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
             <canvas
                 ref={canvasRef}
                 key={`live2d-canvas-${modelPath}`} // Force canvas recreation when model changes
+                className="absolute inset-0 h-full w-full"
                 style={{ display: 'block' }}
             />
             {!isModelLoaded && (
