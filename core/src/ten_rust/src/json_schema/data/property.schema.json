@@ -295,35 +295,29 @@
         },
         "property": {
           "type": "object",
-          "propertyNames": { // The property name should be alphanumericCharacters.
-            "$ref": "#/$defs/alphanumericCharacters"
-          },
-          "patternProperties": {
-            "^[A-Za-z_][A-Za-z0-9_]*$": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "object",
-                  "$ref": "#/$defs/validPropertyObject"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/$defs/validPropertyArrayItem"
-                  }
-                },
-                {
-                  "type": "boolean"
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "$ref": "#/$defs/validPropertyObject"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/validPropertyArrayItem"
                 }
-              ]
-            }
-          },
-          "additionalProperties": false
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
         }
       },
       "allOf": [
@@ -733,35 +727,29 @@
     },
     "validPropertyObject": {
       "type": "object",
-      "propertyNames": { // The property name should be alphanumericCharacters.
-        "$ref": "#/$defs/alphanumericCharacters"
-      },
-      "patternProperties": {
-        "^[A-Za-z_][A-Za-z0-9_]*$": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "number"
-            },
-            {
-              "type": "object",
-              "$ref": "#/$defs/validPropertyObject"
-            },
-            {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/validPropertyArrayItem"
-              }
-            },
-            {
-              "type": "boolean"
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "object",
+            "$ref": "#/$defs/validPropertyObject"
+          },
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/validPropertyArrayItem"
             }
-          ]
-        }
-      },
-      "additionalProperties": false
+          },
+          {
+            "type": "boolean"
+          }
+        ]
+      }
     },
     "validPropertyArrayItem": {
       "anyOf": [
@@ -1334,30 +1322,27 @@
     }
     // @}
   },
-  "patternProperties": {
-    "^[A-Za-z_][A-Za-z0-9_]*$": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "number"
-        },
-        {
-          "type": "object",
-          "$ref": "#/$defs/validPropertyObject"
-        },
-        {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/validPropertyArrayItem"
-          }
-        },
-        {
-          "type": "boolean"
+  "additionalProperties": {
+    "anyOf": [
+      {
+        "type": "string"
+      },
+      {
+        "type": "number"
+      },
+      {
+        "type": "object",
+        "$ref": "#/$defs/validPropertyObject"
+      },
+      {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/validPropertyArrayItem"
         }
-      ]
-    }
-  },
-  "additionalProperties": false
+      },
+      {
+        "type": "boolean"
+      }
+    ]
+  }
 }

@@ -18,6 +18,7 @@ import json
 import logging
 import uuid
 from hashlib import sha256
+from typing import Any
 from urllib.parse import urlparse
 import websockets
 
@@ -147,47 +148,26 @@ def parse_response(res):
 class AsrWsClient:
     def __init__(self, ten_env: AsyncTenEnv, cluster, **kwargs):
         """
-        :param config: config
+        :param ten_env: AsyncTenEnv instance
+        :param cluster: cluster name
+        :param kwargs: Additional parameters including appid, token, ws_url, workflow, auth_method, api_key, handle_received_message, on_finalize_complete, on_error, pass_through_params, vad_silence_time, secret
         """
         self.cluster = cluster
         self.success_code = 1000  # success code, default is 1000
-        # Optimized defaults to support fast finalize
-        self.seg_duration = int(
-            kwargs.get("seg_duration", 3000)
-        )  # Reduce segment duration for faster results
-        self.nbest = int(kwargs.get("nbest", 1))
         self.appid = kwargs.get("appid", "")
         self.token = kwargs.get("token", "")
         self.api_key = kwargs.get("api_key", "")
         self.ws_url = kwargs.get(
             "ws_url", "wss://openspeech.bytedance.com/api/v2/asr"
         )
-        self.uid = kwargs.get("uid", "streaming_asr_demo")
-        self.workflow = kwargs.get(
-            "workflow",
-            "audio_in,resample,partition,vad,fe,decode,itn,nlu_punctuate",
-        )
-        self.show_language = kwargs.get("show_language", False)
-        self.show_utterances = kwargs.get(
-            "show_utterances", True
-        )  # Ensure complete utterances information is returned
-        self.result_type = kwargs.get(
-            "result_type", "single"
-        )  # Set appropriate result_type
-        self.format = kwargs.get("format", "raw")
-        self.rate = kwargs.get("sample_rate", 16000)
-        self.language = kwargs.get("language", "zh-CN")
-        self.bits = kwargs.get("bits", 16)
-        self.channel = kwargs.get("channel", 1)
-        self.codec = kwargs.get("codec", "raw")
         self.secret = kwargs.get("secret", "access_secret")
         self.auth_method = kwargs.get("auth_method", "token")
-        self.mp3_seg_size = int(kwargs.get("mp3_seg_size", 10000))
+        # vad_silence_time is used directly in finalize() method, so it needs to be kept
+        self.vad_silence_time = kwargs.get("silence_pkg_length_ms", "800")
 
-        # Add missing VAD-related attributes
-        self.vad_signal = kwargs.get("vad_signal", True)
-        self.start_silence_time = kwargs.get("start_silence_time", "5000")
-        self.vad_silence_time = kwargs.get("vad_silence_time", "800")
+        # Store pass-through params for flexible parameter configuration
+        # This allows vendor parameters to be changed without code modification
+        self.pass_through_params = kwargs.get("pass_through_params", {})
 
         self.websocket = None
         self.handle_received_message = kwargs.get(
@@ -200,11 +180,6 @@ class AsrWsClient:
         self._neg_sequence_sent = False
         self._finalize_completed = False
         self._finalize_event = asyncio.Event()
-
-        # Finalize-related configuration
-        self.send_empty_audio_on_finalize = kwargs.get(
-            "send_empty_audio_on_finalize", True
-        )
 
         # Add finalize completion callback
         self.on_finalize_complete = kwargs.get("on_finalize_complete", None)
@@ -546,29 +521,87 @@ class AsrWsClient:
                 "cluster": self.cluster,
                 "token": self.token,
             },
-            "user": {"uid": self.uid},
             "request": {
                 "reqid": reqid,
-                "nbest": self.nbest,
-                "workflow": self.workflow,
-                "show_language": self.show_language,
-                "show_utterances": self.show_utterances,
-                "result_type": self.result_type,
                 "sequence": 1,
-                "vad_signal": self.vad_signal,
-                "start_silence_time": self.start_silence_time,
-                "vad_silence_time": self.vad_silence_time,
             },
-            "audio": {
-                "format": self.format,
-                "rate": self.rate,
-                "language": self.language,
-                "bits": self.bits,
-                "channel": self.channel,
-                "codec": self.codec,
-            },
+            "user": {},
+            "audio": {},
         }
+
+        # Add request parameters from pass_through_params (except reqid and sequence)
+        # Only add parameters that are explicitly provided in pass_through_params
+        if self.pass_through_params and "request" in self.pass_through_params:
+            request_params = self.pass_through_params["request"]
+            if isinstance(request_params, dict):
+                for key, value in request_params.items():
+                    # Skip reqid and sequence as they are already set
+                    if key not in ("reqid", "sequence"):
+                        req["request"][key] = value
+
+        # Add user parameters from pass_through_params (uid is already set above, but will be overridden if provided)
+        # Only add parameters that are explicitly provided in pass_through_params
+        if self.pass_through_params and "user" in self.pass_through_params:
+            user_params = self.pass_through_params["user"]
+            if isinstance(user_params, dict):
+                for key, value in user_params.items():
+                    # Include all parameters including uid (uid will override the default if provided)
+                    req["user"][key] = value
+
+        # Add audio parameters from pass_through_params (format is already set above, but will be overridden if provided)
+        # Only add parameters that are explicitly provided in pass_through_params
+        if self.pass_through_params and "audio" in self.pass_through_params:
+            audio_params = self.pass_through_params["audio"]
+            if isinstance(audio_params, dict):
+                for key, value in audio_params.items():
+                    # Include all parameters including format (format will override the default if provided)
+                    req["audio"][key] = value
+
+        # Deep merge pass-through params for app field only
+        # This allows parameters to be changed through configuration without code modification
+        if self.pass_through_params:
+            if "app" in self.pass_through_params:
+                if isinstance(self.pass_through_params["app"], dict):
+                    # Deep merge nested dictionaries
+                    req["app"] = self._deep_merge_dict(
+                        req["app"], self.pass_through_params["app"]
+                    )
+                else:
+                    # If not a dict, override directly
+                    req["app"] = self.pass_through_params["app"]
+
+        self.ten_env.log_info(
+            f"Final request: {json.dumps(req, indent=2, ensure_ascii=False)}"
+        )
+
         return req
+
+    def _deep_merge_dict(
+        self, base: dict[str, Any], override: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Deep merge override dict into base dict.
+        Override values take precedence over base values.
+
+        :param base: Base dictionary
+        :param override: Override dictionary (values from this dict take precedence)
+        :return: Merged dictionary
+        """
+        result = base.copy()
+
+        for key, value in override.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
+                # Recursively merge nested dictionaries
+                result[key] = self._deep_merge_dict(result[key], value)
+            else:
+                # Override value (or add new key)
+                result[key] = value
+
+        return result
 
     def token_auth(self):
         self.ten_env.log_info(f"token_auth: {self.token}")

@@ -69,6 +69,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
 
         # Session tracking
         self.session_id: str | None = None
+        self.sent_user_audio_duration_ms_before_last_reset = 0
 
     @override
     def vendor(self) -> str:
@@ -85,6 +86,13 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
         try:
             self.config = BytedanceASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
+            # Ensure user field exists in params with required uid field
+            default_uid = getattr(self.config, "uid", "default_user")
+            self.config.ensure_user_field(default_uid)
+            # Ensure request field exists in params with required sequence field
+            self.config.ensure_request_field()
+            # Ensure audio field exists in params with required format field
+            self.config.ensure_audio_field()
             ten_env.log_info(
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -225,11 +233,16 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             # This ensures asr_aggregator can process the results
             is_final = is_definite
 
+            actual_start_ms = int(
+                self.audio_timeline.get_audio_duration_before_time(start_ms)
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+
             # Convert to ASRResult
             asr_result = ASRResult(
                 text=sentence,
                 final=is_final,
-                start_ms=start_ms,
+                start_ms=actual_start_ms,
                 duration_ms=end_ms - start_ms,
                 language=language,
                 words=[],
@@ -313,16 +326,14 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 cluster=self.config.cluster,
                 appid=self.config.appid,
                 token=self.config.token,
-                api_url=self.config.api_url,
-                workflow=self.config.workflow,
-                vad_signal=self.config.vad_signal,
-                start_silence_time=self.config.start_silence_time,
-                vad_silence_time=self.config.vad_silence_time,
+                ws_url=self.config.api_url,
                 auth_method=self.config.auth_method,
                 api_key=self.config.api_key,
+                silence_pkg_length_ms=self.config.silence_pkg_length_ms,
                 handle_received_message=on_message,
                 on_finalize_complete=self.on_finalize_complete_callback,
                 on_error=on_error,
+                pass_through_params=self.config.params,  # Support pass-through parameters
             )
 
             # connect to websocket
@@ -330,6 +341,10 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             self.connected = True
             # Clear fatal error flag on successful connection
             self.last_fatal_error = None
+            self.sent_user_audio_duration_ms_before_last_reset += (
+                self.audio_timeline.get_total_user_audio_duration()
+            )
+            self.audio_timeline.reset()
 
             # Initialize audio buffer manager with balanced threshold for optimal performance
             # 4800 bytes = 150ms at 16kHz (16000 * 2 bytes per sample * 0.15s)
@@ -501,6 +516,11 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 "Calling client finalize method to send NEG_SEQUENCE"
             )
             await self.client.finalize()
+
+            # add silence audio to audio timeline
+            # Use silence_pkg_length_ms from config (distinct from volcano ASR vad_silence_time)
+            silence_pkg_length_ms = self.config.silence_pkg_length_ms
+            self.audio_timeline.add_silence_audio(int(silence_pkg_length_ms))
 
             # Use timeout from configuration
             finalize_timeout = self.config.finalize_timeout

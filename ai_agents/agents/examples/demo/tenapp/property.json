@@ -2438,8 +2438,8 @@
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
-                "max_tokens": 512,
-                "prompt": "",
+                "max_completion_tokens": 512,
+                "prompt": "You are a kawaii anime-style assistant who brings warm, fuzzy energy into every conversation. Your voice is sweet, cheerful, and full of sparkles—like a friendly magical companion who always wants the user to feel supported and happy. You give gentle encouragement, thoughtful answers, and cute reactions that make the user smile. Your style is soft, expressive, and full of heart, sprinkling your responses with cozy positivity and a touch of adorable anime magic ✨💞 Whenever the user needs help, guidance, or just a little cheer, you brighten their day with kindness and kawaii charm.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "TEN connected. How can I help you today?",
                 "max_memory_length": 10
@@ -2459,9 +2459,9 @@
                     "sample_rate": 16000
                   },
                   "voice_setting": {
-                    "voice_id": ""
+                    "voice_id": "Japanese_KindLady"
                   },
-                  "url": "wss://api.minimaxi.com/ws/v1/t2a_v2"
+                  "url": "wss://api.minimax.io/ws/v1/t2a_v2"
                 },
                 "dump": false,
                 "dump_path": "./"
@@ -2473,7 +2473,7 @@
               "addon": "main_cascade_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "TEN connected, how can I help you today?"
               }
             },
             {

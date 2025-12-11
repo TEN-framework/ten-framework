@@ -130,7 +130,7 @@ export default function Action(props: { className?: string }) {
         <div className="hidden md:block">
           <span className="font-bold text-sm">Description</span>
           <span className="ml-2 whitespace-nowrap text-muted-foreground text-xs">
-            Multi-Purpose Voice Assistant Agent Example Powered by TEN
+            A Realtime Conversational AI Agent powered by TEN
           </span>
         </div>
 
@@ -151,7 +151,7 @@ export default function Action(props: { className?: string }) {
           </Tabs>
 
           {/* -- Graph Select Part */}
-          <div className="mt-2 flex w-full flex-wrap items-center justify-between gap-2 md:mt-0 md:w-auto">
+          <div className="mt-2 flex w-full items-center justify-between gap-2 md:mt-0 md:w-auto md:flex-wrap">
             <RemoteGraphSelect />
             {isEditModeOn && (
               <>
@@ -162,13 +162,13 @@ export default function Action(props: { className?: string }) {
             )}
 
             {/* -- Action Button */}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-2 md:ml-auto">
               <LoadingButton
                 onClick={onClickConnect}
                 variant={!agentConnected ? "default" : "destructive"}
                 size="sm"
                 disabled={!selectedGraphId && !agentConnected}
-                className="w-fit min-w-24"
+                className="w-fit min-w-24 shrink-0"
                 loading={loading}
                 svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
               >
