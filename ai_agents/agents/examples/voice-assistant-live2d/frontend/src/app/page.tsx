@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import dynamicImport from "next/dynamic";
 import { Baloo_2, Quicksand } from "next/font/google";
@@ -788,6 +788,12 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<CharacterProfile>(
     characterOptions[0]
   );
+  const channelName = useMemo(
+    () =>
+      process.env.NEXT_PUBLIC_CHANNEL_NAME ||
+      `ten_live2d_${Math.random().toString(36).slice(2, 10)}`,
+    [],
+  );
   const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null);
   const [agoraService, setAgoraService] = useState<any>(null);
   const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
@@ -1165,7 +1171,6 @@ export default function Home() {
       stopPing();
     }
     const interval = setInterval(() => {
-      const channelName = process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test";
       apiPing(channelName);
     }, 3000);
     setPingInterval(interval);
@@ -1201,7 +1206,6 @@ export default function Home() {
           setIsConnecting(true);
           // Stop the agent service first
           try {
-            const channelName = process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test";
             await apiStopService(channelName);
             console.log("Agent stopped");
           } catch (error) {
@@ -1222,7 +1226,7 @@ export default function Home() {
               request_id: Math.random().toString(36).substring(2, 15),
               uid: Math.floor(Math.random() * 100000),
               // Default to the same channel as the property.json graph so agent and client stay in sync.
-              channel_name: process.env.NEXT_PUBLIC_CHANNEL_NAME || "ten_agent_test",
+              channel_name: channelName,
             });
 
             const primaryUrl = apiBase ? `${apiBase}/token/generate` : "/api/token/generate";
@@ -1296,10 +1300,11 @@ export default function Home() {
 
           // Handle the response structure from agent server
           const credentials = responseData.data || responseData;
+          credentials.channel_name = credentials.channel_name || channelName;
 
           const agoraConfig: AgoraConfig = {
             appId: credentials.appId || credentials.app_id,
-            channel: credentials.channel_name,
+            channel: credentials.channel_name || channelName,
             token: (credentials.token && (credentials.token !== (credentials.appId || credentials.app_id))) ? credentials.token : null,
             uid: credentials.uid,
           };
