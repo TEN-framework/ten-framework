@@ -68,6 +68,35 @@ func getAppPkgName(appDir string) string {
 }
 
 func main() {
+	// Check if running on Windows - Go binding is not supported
+	if runtime.GOOS == "windows" {
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "╔═══════════════════════════════════════════════════════════════════════╗")
+		fmt.Fprintln(os.Stderr, "║  ERROR: Go binding is NOT supported on Windows                        ║")
+		fmt.Fprintln(os.Stderr, "╚═══════════════════════════════════════════════════════════════════════╝")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "TEN Framework uses MSVC as the unified compiler on Windows, but Go's")
+		fmt.Fprintln(os.Stderr, "CGO tool is incompatible with MSVC (designed for GCC/MinGW only).")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Reason:")
+		fmt.Fprintln(os.Stderr, "  • Python 3.5+ requires MSVC-compiled extensions on Windows")
+		fmt.Fprintln(os.Stderr, "    https://wiki.python.org/moin/WindowsCompilers")
+		fmt.Fprintln(os.Stderr, "  • Mixing MSVC and MinGW causes ABI conflicts")
+		fmt.Fprintln(os.Stderr, "    (name mangling, calling conventions, vtable layout)")
+		fmt.Fprintln(os.Stderr, "  • CGO-MSVC incompatibility is a known issue")
+		fmt.Fprintln(os.Stderr, "    https://github.com/golang/go/issues/75683")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Supported language bindings on Windows:")
+		fmt.Fprintln(os.Stderr, "  ✅ C/C++ (native, compiled with MSVC)")
+		fmt.Fprintln(os.Stderr, "  ✅ Python (compiled with MSVC)")
+		fmt.Fprintln(os.Stderr, "  ❌ Go (not supported)")
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "Solution:")
+		fmt.Fprintln(os.Stderr, "  For Go development with TEN Framework, please use Linux or macOS.")
+		fmt.Fprintln(os.Stderr, "")
+		os.Exit(1)
+	}
+
 	// Setup logging.
 	log.SetFlags(log.Ltime)
 
