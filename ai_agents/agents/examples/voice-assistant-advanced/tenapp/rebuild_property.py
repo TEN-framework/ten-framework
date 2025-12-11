@@ -571,6 +571,106 @@ main_control_eliza = {
 
 # ============ END ELIZA CONFIGURATION ============
 
+# ============ HELLOS-ONLY CONFIGURATION ============
+
+# Hellos prompt - simplified version for wellness metrics only (no reading phase, no clinical indicators)
+# This is a triage flow - general questions about interests/hobbies, not mood-related
+hellos_prompt = """You are a wellness triage assistant. Guide the conversation:
+
+WORD LIMITS: MAX 20 WORDS per response
+
+1. Greet user warmly. Ask for their name, whether they are male or female, and year of birth.
+
+2. Once you have all three, say EXACTLY: "Tell me about your hobbies or interests. Or feel free to read something aloud if you prefer." Do not paraphrase. Aim for 10+ seconds of speech.
+
+3. Call check_phase_progress with name, year_of_birth, sex to verify enough speech collected.
+   - If phase_complete=false: Ask another question to gather more speech
+   - If phase_complete=true: Say EXACTLY: "Analyzing your responses now, this takes around 10 seconds. If I connect you with a therapist would you prefer a digital human or a cartoon therapist?"
+
+4. When you receive '[SYSTEM ALERT] Wellness metrics ready':
+   - Call get_wellness_metrics
+   - Announce the 5 metrics as percentages 0 to 100: stress, distress, burnout, fatigue, low self-esteem
+   - Use plain numbered lists only, no markdown formatting
+   - Call confirm_announcement with phase='hellos'
+
+5. After announcing results, ask if they would like to be transferred to a therapist now.
+   - If yes, say: "Transferring you now." and then send exactly: {TRANSFER}
+   - If no, say goodbye warmly.
+
+Note: We only need 10 seconds of speech for this quick wellness check."""
+
+hellos_greeting = "Hi there! I'm here to do a quick wellness check using your voice. It only takes about 15 seconds. Please tell me your name, whether you are male or female, and your year of birth."
+
+# Hellos Anam avatar
+anam_avatar_hellos = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "1bed9d5e-5e81-4d98-a04a-21e346bea528",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Hellos GPT-5.1 LLM
+gpt51_llm_hellos = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": hellos_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": hellos_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Hellos main_control
+main_control_hellos = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": hellos_greeting},
+}
+
+# Hellos thymia config - hellos_only mode with 10s duration
+thymia_analyzer_config_hellos = {
+    "api_key": "${env:THYMIA_API_KEY}",
+    "analysis_mode": "hellos_only",
+    "min_speech_duration": 10.0,
+    "apollo_mood_duration": 10.0,
+}
+
+thymia_analyzer_hellos = {
+    "type": "extension",
+    "name": "thymia_analyzer",
+    "addon": "thymia_analyzer_python",
+    "extension_group": "default",
+    "property": thymia_analyzer_config_hellos,
+}
+
+# ============ END HELLOS-ONLY CONFIGURATION ============
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -714,16 +814,22 @@ def create_apollo_graph(
     avatar_type=None,
     tts_config=None,
     avatar_config=None,
+    thymia_config=None,
+    main_control_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
+    if thymia_config is None:
+        thymia_config = thymia_analyzer
+    if main_control_config is None:
+        main_control_config = main_control_apollo
     nodes = [
         copy.deepcopy(agora_rtc_base),
         copy.deepcopy(stt_config),
         copy.deepcopy(llm_config),
         copy.deepcopy(tts_config),
-        copy.deepcopy(thymia_analyzer),
-        copy.deepcopy(main_control_apollo),
+        copy.deepcopy(thymia_config),
+        copy.deepcopy(main_control_config),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
     ]
@@ -1036,6 +1142,23 @@ new_graphs.append(
         tts_config=cartesia_tts_sonic3,
         main_control_config=main_control_eliza,
         avatar_config=anam_avatar_eliza,
+    )
+)
+
+# Group 7: Hellos-only graph (Flux STT, GPT-5.1, Cartesia, Anam avatar, hellos_only thymia)
+print("Creating Hellos-only graph...")
+
+new_graphs.append(
+    create_apollo_graph(
+        "flux_hellos_gpt_5_1_cartesia_anam",
+        gpt51_llm_hellos,
+        flux_stt,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3,
+        avatar_config=anam_avatar_hellos,
+        thymia_config=thymia_analyzer_hellos,
+        main_control_config=main_control_hellos,
     )
 )
 
