@@ -445,7 +445,8 @@ tman is the official package manager for the TEN Framework. It helps developers 
 
 # Check if PR already exists for this branch
 Write-Info "Checking if PR already exists..."
-$existingPR = gh pr list --repo microsoft/winget-pkgs --head "${forkOwner}:${branchName}" --state open --json number,title 2>&1
+# Note: --head parameter only needs branch name, not "owner:branch" format
+$existingPR = gh pr list --repo microsoft/winget-pkgs --head "${branchName}" --state open --json number,title 2>&1
 
 if ($LASTEXITCODE -eq 0 -and $existingPR -and $existingPR -ne '[]') {
     $prInfo = $existingPR | ConvertFrom-Json
@@ -487,25 +488,26 @@ $prBody
     }
 }
 
-try {
-    gh pr create `
-        --repo microsoft/winget-pkgs `
-        --title "Update ten-framework.tman to $VersionClean" `
-        --body $prBody `
-        --head "${forkOwner}:${branchName}" `
-        --base master
+# Create new PR
+gh pr create `
+    --repo microsoft/winget-pkgs `
+    --title "Update ten-framework.tman to $VersionClean" `
+    --body $prBody `
+    --head "${forkOwner}:${branchName}" `
+    --base master
 
-    Write-Success "Pull Request created successfully!"
-    Write-Info "`nNext steps:"
-    Write-Info "   1. Microsoft's automated validation will check the PR"
-    Write-Info "   2. If validation passes, maintainers will review"
-    Write-Info "   3. Once merged, users can install via: winget install ten-framework.tman"
-} catch {
-    Write-Error "Failed to create Pull Request: $_"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to create Pull Request"
     Write-Info "You may need to create the PR manually at:"
     Write-Info "https://github.com/microsoft/winget-pkgs/compare/master...${forkOwner}:${branchName}"
     exit 1
 }
+
+Write-Success "Pull Request created successfully!"
+Write-Info "`nNext steps:"
+Write-Info "   1. Microsoft's automated validation will check the PR"
+Write-Info "   2. If validation passes, maintainers will review"
+Write-Info "   3. Once merged, users can install via: winget install ten-framework.tman"
 
 # ==============================================================================
 # Cleanup
