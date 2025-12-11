@@ -32,6 +32,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   appId: string | null = null;
   token: string | null = null;
   userId: number | null = null;
+  muteRemoteAudio: boolean = false; // When true, don't auto-play remote audio (Trulience handles it)
 
   constructor() {
     super();
@@ -276,6 +277,14 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
           }
         }
 
+        // Detect {TRANSFER} command in text
+        if (text.includes("{TRANSFER}")) {
+          console.log("[RTC] *** TRANSFER DETECTED *** text:", text);
+          this.emit("transferRequested", {
+            targetGraph: "flux_octopus_gpt_5_1_elevenlabs",
+          });
+        }
+
         if (text.trim().length > 0) {
           this.emit("textChanged", textItem);
         }
@@ -321,3 +330,8 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 }
 
 export const rtcManager = new RtcManager();
+
+// Expose to window for debugging
+if (typeof window !== "undefined") {
+  (window as any).__rtcManager = rtcManager;
+}

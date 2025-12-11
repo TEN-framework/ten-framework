@@ -18,11 +18,16 @@ export interface IRtcUser {
   audioTrack?: IRemoteAudioTrack;
 }
 
+export interface TransferRequest {
+  targetGraph: string;
+}
+
 export interface RtcEvents {
   remoteUserChanged: (user: IRtcUser) => void;
   localTracksChanged: (tracks: IUserTracks) => void;
   networkQuality: (quality: NetworkQuality) => void;
   textChanged: (text: IChatItem) => void;
+  transferRequested: (request: TransferRequest) => void;
 }
 
 export interface IUserTracks {

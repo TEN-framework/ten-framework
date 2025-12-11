@@ -16,7 +16,7 @@ export default function Header(props: { className?: string }) {
         <div className="flex items-center space-x-2">
           {/* <LogoIcon className="hidden h-5 md:block" />
           <SmallLogoIcon className="block h-4 md:hidden" /> */}
-          <h1 className="font-bold text-sm md:text-xl">TEN Agent</h1>
+          <h1 className="font-bold text-sm md:text-xl">Elevenlabs Worldwide Hackathon</h1>
         </div>
         <HeaderRoomInfo />
         <HeaderActions />
