@@ -78,10 +78,24 @@ class MainControlExtension(AsyncExtension):
 
         # Initialize memory store
         if self.config and self.config.enable_memorization:
-            if not self.config.enable_user_memory:
-                self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
-            else:
-                self.memory_store = PowerMemSdkUserMemoryStore(env=ten_env)
+            try:
+                if not self.config.enable_user_memory:
+                    self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
+                else:
+                    self.memory_store = PowerMemSdkUserMemoryStore(env=ten_env)
+                ten_env.log_info(
+                    "[MainControlExtension] PowerMem memory store initialized successfully"
+                )
+            except Exception as e:
+                ten_env.log_error(
+                    f"[MainControlExtension] Failed to initialize PowerMem memory store: {e}. "
+                    "The extension will continue without memory functionality."
+                )
+                import traceback
+                ten_env.log_error(
+                    f"[MainControlExtension] PowerMem initialization traceback: {traceback.format_exc()}"
+                )
+                self.memory_store = None
 
         self.agent = Agent(ten_env)
 
