@@ -97,28 +97,51 @@ class PowerMemSdkMemoryStore(MemoryStore):
     async def get_user_profile(
         self, user_id: str, agent_id: str
     ) -> str:
-        user_profile = self.search(
-            user_id=user_id,
-            agent_id=agent_id,
-            query="User Profile",
+        self.env.log_info(
+            f"[PowerMemSdkMemoryStore] get_user_profile called with: "
+            f"user_id='{user_id}', agent_id='{agent_id}'"
         )
+        try:
+            user_profile = await self.search(
+                user_id=user_id,
+                agent_id=agent_id,
+                query="User Profile",
+            )
 
-        # Extract memory content from results using list comprehension
-        results = user_profile.get("results", [])
-        memorise = [
-            result["memory"]
-            for result in results
-            if isinstance(result, dict) and result.get("memory")
-        ]
+            # Extract memory content from results using list comprehension
+            results = user_profile.get("results", [])
+            self.env.log_info(
+                f"[PowerMemSdkMemoryStore] get_user_profile found {len(results)} results"
+            )
+            memorise = [
+                result["memory"]
+                for result in results
+                if isinstance(result, dict) and result.get("memory")
+            ]
 
-        # Format memory text using join for better performance
-        if memorise:
-            profile_content = "User Profile:\n" + \
-                "\n".join(f"- {memory}" for memory in memorise) + "\n"
-        else:
-            profile_content = ""
+            # Format memory text using join for better performance
+            if memorise:
+                profile_content = "User Profile:\n" + \
+                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] get_user_profile formatted {len(memorise)} memories into profile"
+                )
+            else:
+                profile_content = ""
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] get_user_profile found no memories, returning empty profile"
+                )
 
-        return profile_content
+            return profile_content
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Failed to get user profile: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] get_user_profile traceback: {traceback.format_exc()}"
+            )
+            raise
 
 
 class PowerMemSdkUserMemoryStore(MemoryStore):
@@ -189,43 +212,97 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
     async def get_user_profile_by_query(
         self, user_id: str, agent_id: str
     ) -> str:
-        user_profile = self.search(
-            user_id=user_id,
-            agent_id=agent_id,
-            query="User Profile",
+        self.env.log_info(
+            f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query called with: "
+            f"user_id='{user_id}', agent_id='{agent_id}'"
         )
+        try:
+            user_profile = await self.search(
+                user_id=user_id,
+                agent_id=agent_id,
+                query="User Profile",
+            )
 
-        # Extract memory content from results using list comprehension
-        results = user_profile.get("results", [])
-        memorise = [
-            result["memory"]
-            for result in results
-            if isinstance(result, dict) and result.get("memory")
-        ]
+            # Extract memory content from results using list comprehension
+            results = user_profile.get("results", [])
+            self.env.log_info(
+                f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query found {len(results)} results"
+            )
+            memorise = [
+                result["memory"]
+                for result in results
+                if isinstance(result, dict) and result.get("memory")
+            ]
 
-        # Format memory text using join for better performance
-        if memorise:
-            profile_content = "User Profile:\n" + \
-                "\n".join(f"- {memory}" for memory in memorise) + "\n"
-        else:
-            profile_content = ""
+            # Format memory text using join for better performance
+            if memorise:
+                profile_content = "User Profile:\n" + \
+                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                self.env.log_info(
+                    f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query formatted {len(memorise)} memories into profile"
+                )
+            else:
+                profile_content = ""
+                self.env.log_info(
+                    f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query found no memories, returning empty profile"
+                )
 
-        return profile_content
+            return profile_content
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkUserMemoryStore] Failed to get user profile by query: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query traceback: {traceback.format_exc()}"
+            )
+            raise
 
     async def get_user_profile(
         self, user_id: str, agent_id: str
     ) -> str:
-        profile = self.client.profile(
-            user_id=user_id,
-            agent_id=agent_id,
+        self.env.log_info(
+            f"[PowerMemSdkUserMemoryStore] get_user_profile called with: "
+            f"user_id='{user_id}', agent_id='{agent_id}'"
         )
-
-        if profile is not None:
-            profile_content = profile.get("profile_content", None)
-
-        if profile_content is None:
-            profile_content = self.get_user_profile_by_query(
-                user_id=user_id, agent_id=agent_id,
+        try:
+            profile = self.client.profile(
+                user_id=user_id,
+                agent_id=agent_id,
             )
 
-        return profile_content
+            if profile is not None:
+                profile_content = profile.get("profile_content", None)
+                self.env.log_info(
+                    f"[PowerMemSdkUserMemoryStore] get_user_profile retrieved profile from client.profile: "
+                    f"profile_content={'present' if profile_content else 'None'}"
+                )
+            else:
+                profile_content = None
+                self.env.log_info(
+                    f"[PowerMemSdkUserMemoryStore] get_user_profile client.profile returned None"
+                )
+
+            if profile_content is None:
+                self.env.log_info(
+                    f"[PowerMemSdkUserMemoryStore] get_user_profile profile_content is None, "
+                    f"falling back to get_user_profile_by_query"
+                )
+                profile_content = await self.get_user_profile_by_query(
+                    user_id=user_id, agent_id=agent_id,
+                )
+
+            self.env.log_info(
+                f"[PowerMemSdkUserMemoryStore] get_user_profile returning profile_content "
+                f"(length={len(profile_content) if profile_content else 0})"
+            )
+            return profile_content
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkUserMemoryStore] Failed to get user profile: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkUserMemoryStore] get_user_profile traceback: {traceback.format_exc()}"
+            )
+            raise
