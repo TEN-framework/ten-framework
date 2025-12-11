@@ -239,6 +239,7 @@ class _TenEnv:
         line_no: int,
         category: str | None,
         msg: str,
+        sync: bool,
     ) -> TenError | None: ...
 
 class _App:
@@ -293,6 +294,7 @@ class _TenEnvTester:
         line_no: int,
         category: str | None,
         msg: str,
+        sync: bool,
     ) -> TenError | None: ...
 
 class _ExtensionTester:

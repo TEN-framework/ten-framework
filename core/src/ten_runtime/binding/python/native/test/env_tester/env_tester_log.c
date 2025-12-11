@@ -21,16 +21,23 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   size_t line_no;
   ten_string_t msg;
   ten_string_t category;
+  ten_event_t *completed;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     int32_t level, const char *func_name, const char *file_name, size_t line_no,
-    const char *msg, const char *category) {
+    const char *msg, const char *category, bool sync) {
   ten_env_tester_notify_log_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_env_tester_notify_log_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->level = level;
+
+  if (sync) {
+    ctx->completed = ten_event_create(0, 1);
+  } else {
+    ctx->completed = NULL;
+  }
 
   if (func_name) {
     ten_string_init_from_c_str_with_size(&ctx->func_name, func_name,
@@ -73,6 +80,11 @@ static void ten_env_tester_notify_log_ctx_destroy(
   ten_string_deinit(&ctx->msg);
   ten_string_deinit(&ctx->category);
 
+  if (ctx->completed) {
+    ten_event_destroy(ctx->completed);
+    ctx->completed = NULL;
+  }
+
   TEN_FREE(ctx);
 }
 
@@ -87,7 +99,11 @@ static void ten_py_ten_env_tester_log_proxy_notify(
                      ten_string_get_raw_str(&ctx->msg),
                      ten_string_get_raw_str(&ctx->category), NULL, NULL);
 
-  ten_env_tester_notify_log_ctx_destroy(ctx);
+  if (ctx->completed) {
+    ten_event_set(ctx->completed);
+  } else {
+    ten_env_tester_notify_log_ctx_destroy(ctx);
+  }
 }
 
 PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
@@ -96,7 +112,7 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
                  ten_py_ten_env_tester_check_integrity(py_ten_env_tester),
              "Invalid argument.");
 
-  if (PyTuple_GET_SIZE(args) != 6) {
+  if (PyTuple_GET_SIZE(args) != 7) {
     return ten_py_raise_py_value_error_exception(
         "Invalid argument count when ten_env.log.");
   }
@@ -107,9 +123,10 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
   size_t line_no = 0;
   const char *category = NULL;
   const char *msg = NULL;
+  bool sync = false;
 
-  if (!PyArg_ParseTuple(args, "izzizs", &level, &func_name, &file_name,
-                        &line_no, &category, &msg)) {
+  if (!PyArg_ParseTuple(args, "izzizsb", &level, &func_name, &file_name,
+                        &line_no, &category, &msg, &sync)) {
     return ten_py_raise_py_value_error_exception(
         "Failed to parse argument when ten_env.log.");
   }
@@ -126,7 +143,7 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
   }
 
   ten_env_tester_notify_log_ctx_t *ctx = ten_env_tester_notify_log_ctx_create(
-      level, func_name, file_name, line_no, msg, category);
+      level, func_name, file_name, line_no, msg, category, sync);
 
   if (!ten_env_tester_proxy_notify(py_ten_env_tester->c_ten_env_tester_proxy,
                                    ten_py_ten_env_tester_log_proxy_notify, ctx,
@@ -135,6 +152,11 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
     ten_error_deinit(&err);
     ten_env_tester_notify_log_ctx_destroy(ctx);
     return result;
+  }
+
+  if (sync) {
+    ten_event_wait(ctx->completed, -1);
+    ten_env_tester_notify_log_ctx_destroy(ctx);
   }
 
   ten_error_deinit(&err);

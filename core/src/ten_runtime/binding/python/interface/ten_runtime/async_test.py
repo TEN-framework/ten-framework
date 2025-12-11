@@ -25,6 +25,7 @@ from .error import TenError
 from .test import TenEnvTester
 from .test_base import TenEnvTesterBase
 from .send_options import SendOptions
+from .log_option import LogOption
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
 
@@ -246,8 +247,11 @@ class AsyncExtensionTester(_ExtensionTester):
     ):
         traceback_info = traceback.format_exc()
 
-        err = async_ten_env_tester.log_error(
-            f"Uncaught exception: {e} \ntraceback: {traceback_info}"
+        err = (
+            async_ten_env_tester.log_error(
+                f"Uncaught exception: {e} \ntraceback: {traceback_info}",
+                option=LogOption(sync=True),
+            ),
         )
         if err is not None:
             # If the log_error API fails, print the error message to the
