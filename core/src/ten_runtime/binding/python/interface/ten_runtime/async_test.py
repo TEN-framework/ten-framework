@@ -67,9 +67,15 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
     async def send_cmd(self, cmd: Cmd) -> CmdResultTuple:
         q = asyncio.Queue[tuple[CmdResult | None, TenError | None]](maxsize=1)
+
+        def cmd_callback(
+            _: TenEnvTester, result: CmdResult | None, error: TenError | None
+        ) -> None:
+            self._result_handler(result, error, q)
+
         err = self._internal.send_cmd(
             cmd,
-            lambda _, result, error: self._result_handler(result, error, q),
+            cmd_callback,
             False,
         )
         if err is not None:
@@ -86,9 +92,15 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         self, cmd: Cmd
     ) -> AsyncGenerator[CmdResultTuple, None]:
         q = asyncio.Queue[tuple[CmdResult | None, TenError | None]](maxsize=10)
+
+        def cmd_ex_callback(
+            _: TenEnvTester, result: CmdResult | None, error: TenError | None
+        ) -> None:
+            self._result_handler(result, error, q)
+
         err = self._internal.send_cmd(
             cmd,
-            lambda _, result, error: self._result_handler(result, error, q),
+            cmd_ex_callback,
             True,
         )
         if err is not None:
@@ -116,9 +128,13 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
+
+        def data_callback(_: TenEnvTester, error: TenError | None) -> None:
+            self._error_handler(error, q)
+
         err = self._internal.send_data(
             data,
-            lambda _, error: self._error_handler(error, q),
+            data_callback,
         )
         if err is not None:
             return err
@@ -137,9 +153,15 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
+
+        def audio_frame_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
+            self._error_handler(error, q)
+
         err = self._internal.send_audio_frame(
             audio_frame,
-            lambda _, error: self._error_handler(error, q),
+            audio_frame_callback,
         )
         if err is not None:
             return err
@@ -158,9 +180,15 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
+
+        def video_frame_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
+            self._error_handler(error, q)
+
         err = self._internal.send_video_frame(
             video_frame,
-            lambda _, error: self._error_handler(error, q),
+            video_frame_callback,
         )
         if err is not None:
             return err
@@ -181,9 +209,15 @@ class AsyncTenEnvTester(TenEnvTesterBase):
 
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
+
+        def return_result_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
+            self._error_handler(error, q)
+
         err = self._internal.return_result(
             cmd_result,
-            lambda _, error: self._error_handler(error, q),
+            return_result_callback,
         )
         if err is not None:
             return err

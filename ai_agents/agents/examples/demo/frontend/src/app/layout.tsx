@@ -16,7 +16,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "TEN Agent",
   description:
-    "A Realtime Conversational AI Agent powered by TEN",
+    "Multi-Purpose Voice Assistant Agent Example Powered by TEN",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",

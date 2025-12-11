@@ -703,6 +703,27 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 		}
 	}
 
+	// Property-based channel auto-injection: inject channel into ANY node that has a "channel" property
+	// This is additive to the startPropMap above and enables dynamic channel for extensions like
+	// heygen_avatar_python, anam_avatar_python, etc. without needing to add them to startPropMap
+	if req.ChannelName != "" {
+		for _, graph := range newGraphs {
+			graphMap, _ := graph.(map[string]interface{})
+			graphData, _ := graphMap["graph"].(map[string]interface{})
+			nodes, _ := graphData["nodes"].([]interface{})
+			for _, node := range nodes {
+				nodeMap, _ := node.(map[string]interface{})
+				if properties, ok := nodeMap["property"].(map[string]interface{}); ok {
+					// If this node has a "channel" property defined, inject the dynamic value
+					if _, hasChannel := properties["channel"]; hasChannel {
+						properties["channel"] = req.ChannelName
+						slog.Info("Auto-injected channel into node", "node", nodeMap["name"], "channel", req.ChannelName, "requestId", req.RequestId, logTag)
+					}
+				}
+			}
+		}
+	}
+
 	// Validate environment variables in the "nodes" section
 	// Support optional env placeholder with default: ${env:VAR|default}
 	// Capture groups:

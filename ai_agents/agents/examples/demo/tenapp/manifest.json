@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     },
     {
       "type": "extension",
@@ -53,6 +53,9 @@
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/minimax_tts_websocket_python"
     }
   ],
   "scripts": {

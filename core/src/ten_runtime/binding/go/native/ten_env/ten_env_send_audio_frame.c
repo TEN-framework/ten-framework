@@ -99,7 +99,7 @@ static void ten_env_proxy_notify_send_audio_frame(ten_env_t *ten_env,
         ten_go_callback_ctx_create(notify_info->callback_handle);
 
     res = ten_env_send_audio_frame(ten_env, notify_info->c_audio_frame,
-                                   proxy_handle_audio_frame_error, notify_info,
+                                   proxy_handle_audio_frame_error, ctx,
                                    &err);
 
     if (!res) {

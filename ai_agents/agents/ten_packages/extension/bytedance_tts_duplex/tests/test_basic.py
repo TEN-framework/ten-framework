@@ -132,7 +132,15 @@ def test_dump_functionality(MockBytedanceV3Client):
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
 
@@ -329,7 +337,15 @@ def test_flush_logic(MockBytedanceV3Client):
     mock_instance.cancel = AsyncMock(side_effect=mock_cancel)
 
     # Mock the client constructor
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():

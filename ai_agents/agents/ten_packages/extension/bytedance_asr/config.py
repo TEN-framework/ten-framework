@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 from .const import (
     FINALIZE_MODE_MUTE_PKG,
-    DEFAULT_WORKFLOW,
 )
 
 
@@ -22,9 +21,7 @@ class BytedanceASRConfig(BaseModel):
     api_url: str = "wss://openspeech.bytedance.com/api/v2/asr"
     cluster: str = "volcengine_streaming_common"
     language: str = "zh-CN"
-    workflow: str = DEFAULT_WORKFLOW  # ASR processing workflow
     auth_method: str = "token"  # "token" or "signature" or "api_key"
-
     # Business configuration
     finalize_mode: str = FINALIZE_MODE_MUTE_PKG  # "disconnect" or "mute_pkg"
     finalize_timeout: float = 10.0  # Finalize timeout in seconds
@@ -39,13 +36,9 @@ class BytedanceASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "."
 
-    # VAD configuration
-    vad_signal: bool = True
-    start_silence_time: str = (
-        "5000"  # Start silence time in milliseconds (string format)
-    )
-    vad_silence_time: str = (
-        "800"  # VAD silence time in milliseconds (string format)
+    # Finalize configuration (distinct from volcano ASR VAD parameters)
+    silence_pkg_length_ms: str = (
+        "800"  # Length of silence audio packet to add during finalize (milliseconds, string format)
     )
 
     def is_black_list_params(self, key: str) -> bool:
@@ -57,6 +50,65 @@ class BytedanceASRConfig(BaseModel):
         for key, value in params.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+
+    def ensure_user_field(self, default_uid: str = "default_user") -> None:
+        # Ensure user field exists in params with required uid field.
+
+        # Ensure params is a dict
+        if not isinstance(self.params, dict):
+            self.params = {}
+
+        if "user" not in self.params:
+            self.params["user"] = {"uid": default_uid}
+            return
+
+        if not isinstance(self.params["user"], dict):
+            self.params["user"] = {"uid": default_uid}
+            return
+
+        if "uid" not in self.params["user"]:
+            self.params["user"]["uid"] = default_uid
+            return
+
+    def ensure_request_field(self) -> None:
+        # Ensure request field exists in params with required sequence field.
+        # Ensure params is a dict
+        if not isinstance(self.params, dict):
+            self.params = {}
+
+        # Default value for required field
+        default_sequence = 1  # Required field, default value
+
+        if "request" not in self.params:
+            self.params["request"] = {"sequence": default_sequence}
+            return
+
+        if not isinstance(self.params["request"], dict):
+            self.params["request"] = {"sequence": default_sequence}
+            return
+
+        if "sequence" not in self.params["request"]:
+            self.params["request"]["sequence"] = default_sequence
+
+    def ensure_audio_field(self) -> None:
+        # Ensure audio field exists in params with required format field.
+        # Ensure params is a dict
+        if not isinstance(self.params, dict):
+            self.params = {}
+
+        # Default value for required field
+        default_format = "raw"  # Required field, default value
+
+        if "audio" not in self.params:
+            self.params["audio"] = {"format": default_format}
+            return
+
+        if not isinstance(self.params["audio"], dict):
+            self.params["audio"] = {"format": default_format}
+            return
+
+        if "format" not in self.params["audio"]:
+            self.params["audio"]["format"] = default_format
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         """Convert configuration to JSON string with optional sensitive data handling."""

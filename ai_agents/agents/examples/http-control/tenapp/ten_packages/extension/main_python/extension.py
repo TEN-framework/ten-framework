@@ -66,7 +66,9 @@ class MainControlExtension(AsyncExtension):
     # === Register handlers with decorators ===
     @agent_event_handler(HTTPRequestEvent)
     async def _on_http_request(self, event: HTTPRequestEvent):
-        self.ten_env.log_info(f"[MainControlExtension] HTTP request: {event.body}")
+        self.ten_env.log_info(
+            f"[MainControlExtension] HTTP request: {event.body}"
+        )
         if event.type == "cmd":
             name = event.body.get("name", "")
             payload = event.body.get("payload", {})

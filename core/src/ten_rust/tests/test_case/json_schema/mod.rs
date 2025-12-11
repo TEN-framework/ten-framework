@@ -1302,7 +1302,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_property_key_must_be_alphanumeric() {
+    fn test_validate_property_key_can_be_any_string() {
+        // Test that property keys with hyphens are now allowed
         let property = r#"
         {
           "invalid-key": 1
@@ -1310,7 +1311,174 @@ mod tests {
         "#;
 
         let result = ten_validate_property_json_string(property);
-        assert!(result.is_err());
+        if let Err(e) = &result {
+            println!("Error: {}", e);
+        }
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_property_key_with_special_characters() {
+        // Test property key with hyphens and special characters
+        let property = r#"
+        {
+          "x-amzn-sagemaker-custom-attributes": "X-Path:/v1/chat/completions",
+          "api-key": "test-value",
+          "content-type": "application/json"
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_property_key_starting_with_number() {
+        // Test property key starting with a number
+        let property = r#"
+        {
+          "123": "value",
+          "456abc": "another-value"
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_property_nested_object_with_non_alphanumeric_keys() {
+        // Test nested objects with non-alphanumeric keys
+        let property = r#"
+        {
+          "outer-key": {
+            "inner-key": "value",
+            "123": 456,
+            "kebab-case-key": {
+              "deep-nested-key": "deep-value"
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_graph_node_property_with_non_alphanumeric_keys() {
+        // Test that graphNode property can have non-alphanumeric keys
+        let property = r#"
+        {
+          "ten": {
+            "predefined_graphs": [{
+              "name": "default",
+              "auto_start": true,
+              "graph": {
+                "nodes": [{
+                  "type": "extension",
+                  "name": "test_extension",
+                  "addon": "test_addon",
+                  "property": {
+                    "server-port": 8080,
+                    "x-custom-header": "header-value",
+                    "123": "numeric-key",
+                    "nested-object": {
+                      "inner-key": "inner-value",
+                      "456": 789
+                    }
+                  }
+                }]
+              }
+            }]
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_real_world_property_example() {
+        // Test the actual property.json from the example directory
+        let property = r#"
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "aio_http_server_python",
+              "addon": "aio_http_server_python",
+              "extension_group": "test",
+              "property": {
+                "server_port": 8002,
+                "header": {
+                  "x-amzn-sagemaker-custom-attributes": "X-Path:/v1/chat/completions"
+                },
+                "123": "ahfiaos"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "aio_http_server_python",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        if let Err(e) = &result {
+            println!("Error: {}", e);
+        }
+        assert!(result.is_ok());
     }
 
     #[test]

@@ -13,15 +13,9 @@ import {
   useAppDispatch,
   LANGUAGE_OPTIONS,
   useAppSelector,
-  GRAPH_OPTIONS,
   GROUPED_GRAPH_OPTIONS,
 } from "@/common"
 import {
-  ChainedAIIcon,
-  MultimodalIcon,
-  SpeechToSpeechIcon,
-  PlatformIntegrationIcon,
-  SpecializedAgentIcon,
   OpenAIIcon,
   GeminiIcon,
   AzureIcon,
@@ -36,23 +30,6 @@ import {
 } from "@/components/Icon"
 import type { Language } from "@/types"
 import { setGraphName, setLanguage } from "@/store/reducers/global"
-
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "Chained Voice AI":
-      return ChainedAIIcon
-    case "Multimodal Voice AI":
-      return MultimodalIcon
-    case "Speech to Speech Voice AI":
-      return SpeechToSpeechIcon
-    case "AI Platform Integrations":
-      return PlatformIntegrationIcon
-    case "Specialized Agents":
-      return SpecializedAgentIcon
-    default:
-      return ChainedAIIcon
-  }
-}
 
 const getBrandIcon = (label: string) => {
   if (label.includes("OpenAI")) return OpenAIIcon
@@ -90,11 +67,9 @@ export function GraphSelect() {
         </SelectTrigger>
         <SelectContent>
           {Object.entries(GROUPED_GRAPH_OPTIONS).map(([category, options]) => {
-            const CategoryIcon = getCategoryIcon(category)
             return (
               <SelectGroup key={category}>
                 <SelectLabel className="text-base font-bold text-foreground px-2 py-2 flex items-center gap-2">
-                  <CategoryIcon className="h-4 w-4" />
                   {category}
                 </SelectLabel>
                 {options.map((item) => {

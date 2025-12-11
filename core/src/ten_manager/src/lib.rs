@@ -22,6 +22,7 @@
 // as the allocator below should be added to the `lib.rs` file.
 #![cfg_attr(target_os = "windows", feature(windows_by_handle))]
 
+pub mod check_env;
 pub mod cmd;
 pub mod cmd_line;
 pub mod constants;

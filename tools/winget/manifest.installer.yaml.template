@@ -1,0 +1,50 @@
+# ==============================================================================
+# Winget Installer Manifest Template
+# ==============================================================================
+# This template is used by .github/workflows/update_winget.yml to generate
+# the installer manifest. It contains installer-specific information including:
+# - Download URLs for each architecture
+# - SHA256 checksums for security verification
+# - Installer type and installation behavior
+#
+# Placeholders:
+#   __VERSION__ - Will be replaced with release version (e.g., v0.11.35)
+#   __WIN_X64_SHA256__ - Will be replaced with SHA256 checksum
+#
+# To modify the installer configuration, edit this file.
+# The workflow will automatically use your changes on the next release.
+#
+# Documentation: https://learn.microsoft.com/en-us/windows/package-manager/package/manifest
+# Schema Reference:
+# https://github.com/microsoft/winget-cli/blob/master/schemas/JSON/manifests/v1.6.0/manifest.installer.1.6.0.json
+# ==============================================================================
+
+PackageIdentifier: ten-framework.tman
+
+PackageVersion: __VERSION__
+
+InstallerType: zip
+
+Installers:
+  - Architecture: x64
+
+    InstallerUrl: https://github.com/TEN-framework/ten-framework/releases/download/__VERSION__/tman-win-release-x64.zip
+
+    InstallerSha256: __WIN_X64_SHA256__
+
+    NestedInstallerType: portable
+
+    # Files to extract from the zip archive
+    NestedInstallerFiles:
+      # Path to the tman.exe inside the zip file
+      - RelativeFilePath: ten_manager\bin\tman.exe
+
+        # Command alias that users can type in terminal
+        # After installation, users can run 'tman' from any directory
+        PortableCommandAlias: tman
+
+# Type of manifest - this is an installer manifest
+ManifestType: installer
+
+# Version of the manifest schema being used
+ManifestVersion: 1.6.0

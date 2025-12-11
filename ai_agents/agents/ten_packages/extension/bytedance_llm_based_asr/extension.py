@@ -72,6 +72,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.session_id: str | None = None
         self.finalize_id: str | None = None
 
+        # Audio timeline tracking (persists across reconnections)
+        self.sent_user_audio_duration_ms_before_last_reset: int = 0
+
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
@@ -144,7 +147,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 auth_method=self.config.auth_method,
                 config=self.config,
                 ten_env=self.ten_env,
-                audio_timeline=self.audio_timeline,
             )
 
             # Set up callbacks
@@ -160,6 +162,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             await self.client.connect()
             self.connected = True
+            self.sent_user_audio_duration_ms_before_last_reset += (
+                self.audio_timeline.get_total_user_audio_duration()
+            )
+            self.audio_timeline.reset()
+            self.ten_env.log_info(
+                f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
+            )
+
             self.attempts = 0  # Reset retry attempts on successful connection
 
             self.ten_env.log_info(
@@ -268,6 +278,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
 
             await self.client.finalize()
+
+            # Record silence audio in timeline (client sends silence data)
+            if self.config:
+                self.audio_timeline.add_silence_audio(
+                    self.config.silence_duration_ms
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
 
@@ -381,11 +397,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             if is_final:
                 await self._finalize_end()
 
+            actual_start_ms = int(
+                self.audio_timeline.get_audio_duration_before_time(
+                    result.start_ms
+                )
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+
             asr_result = ASRResult(
                 id=str(uuid.uuid4()),  # Generate unique ID for each result
                 text=result.text,
                 final=is_final,
-                start_ms=result.start_ms,
+                start_ms=actual_start_ms,
                 duration_ms=result.duration_ms,
                 language=result.language,
                 words=[],  # Empty list instead of None

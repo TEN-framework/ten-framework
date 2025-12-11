@@ -246,6 +246,8 @@ class DepsManager:
         # Create 'requirements.in' file under root dir.
         with open(self.requirements_in_file, "w", encoding="utf-8") as f:
             for file in requirements_files:
+                # Convert Windows path separators to forward slashes
+                file = file.replace(os.sep, "/")
                 f.write(f"-r {file}\n")
 
     def __delete_requirements_in(self):

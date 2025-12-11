@@ -80,7 +80,15 @@ def test_params_passthrough(MockBytedanceV3Client):
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
         return mock_instance

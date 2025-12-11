@@ -54,6 +54,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
@@ -171,7 +172,15 @@ def test_reconnect_after_connection_drop(MockBytedanceV3Client):
     mock_instance.send_text = AsyncMock(side_effect=mock_send_text_stateful)
 
     # Mock the client constructor
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         mock_instance.response_msgs = response_msgs
         return mock_instance
 

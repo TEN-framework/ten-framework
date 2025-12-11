@@ -126,9 +126,10 @@ func isInProcessGroup(pid, pgid int) bool {
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("tman run start -- --property %s", w.PropertyJsonFile)
-	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, "tenappDir", w.TenappDir, logTag)
-	cmd := exec.Command("sh", "-c", shell)
+	// Use separate arguments to avoid shell injection
+	slog.Info("Worker start", "requestId", req.RequestId, "property", w.PropertyJsonFile, "tenappDir", w.TenappDir, logTag)
+	cmd := exec.Command("tman", "run", "start", "--", "--property", w.PropertyJsonFile)
+	var shell string // Used for pgrep commands below
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Start a new process group
 	}
@@ -214,8 +215,10 @@ func (w *Worker) start(req *StartReq) (err error) {
 			logFile.Close()
 		}
 
-		// Remove the worker from the map
-		workers.Remove(w.ChannelName)
+		// Remove the worker from the map (defensive check for concurrent stop)
+		if workers.Contains(w.ChannelName) {
+			workers.Remove(w.ChannelName)
+		}
 
 	}()
 
@@ -225,17 +228,50 @@ func (w *Worker) start(req *StartReq) (err error) {
 func (w *Worker) stop(requestId string, channelName string) (err error) {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 
-	// TODO: SIGTERM is somehow ignored by subprocess before agent is fully initialized
-	// use SIGKILL for now
-	err = syscall.Kill(-w.Pid, syscall.SIGKILL)
+	// First try graceful shutdown with SIGTERM
+	err = syscall.Kill(-w.Pid, syscall.SIGTERM)
 	if err != nil {
-		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		slog.Error("Worker SIGTERM failed, trying SIGKILL", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		// Fall back to SIGKILL
+		err = syscall.Kill(-w.Pid, syscall.SIGKILL)
+		if err != nil {
+			slog.Error("Worker SIGKILL failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return
+		}
+		if workers.Contains(channelName) {
+			workers.Remove(channelName)
+		}
+		slog.Info("Worker stop end (forced)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return
 	}
 
-	workers.Remove(channelName)
+	// Wait up to 2 seconds for graceful shutdown
+	for i := 0; i < 20; i++ {
+		// Check if process is still running
+		err = syscall.Kill(-w.Pid, 0)
+		if err != nil {
+			// Process no longer exists - graceful shutdown succeeded
+			if workers.Contains(channelName) {
+				workers.Remove(channelName)
+			}
+			slog.Info("Worker stop end (graceful)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 
-	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+	// Graceful shutdown timed out, force kill
+	slog.Warn("Worker graceful shutdown timed out, using SIGKILL", "channelName", channelName, "requestId", requestId, logTag)
+	err = syscall.Kill(-w.Pid, syscall.SIGKILL)
+	if err != nil {
+		slog.Error("Worker SIGKILL failed after timeout", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		return
+	}
+
+	if workers.Contains(channelName) {
+		workers.Remove(channelName)
+	}
+	slog.Info("Worker stop end (forced after timeout)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 	return
 }
 

@@ -296,18 +296,17 @@ class _StepFunTTSInstance:
         # Update audio sample rate from config
         self.audio_sample_rate = self.config.get_sample_rate()
 
+        # Use params passthrough principle: start with config.params
+        data = copy.deepcopy(self.config.params)
+
+        # Hardcode required fields
+        data["session_id"] = self.session_id
+        data["response_format"] = "wav"
+        data["mode"] = "default"
+
         create_msg = {
             "type": "tts.create",
-            "data": {
-                "session_id": self.session_id,
-                "voice_id": self.config.get_voice(),
-                "response_format": "wav",
-                "sample_rate": self.audio_sample_rate,
-                "speed_ratio": self.config.get_speed(),
-                "volume_ratio": self.config.get_volume(),
-                "voice_label": self.config.params.get("voice_label", {}),
-                "mode": "default",  # Use default mode for streaming text chunks
-            },
+            "data": data,
         }
 
         if self.ten_env:

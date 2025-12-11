@@ -31,6 +31,18 @@ class TestExtension1(AsyncExtension):
         self.new_graph_id = ""
         self.test_cmd = None
 
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        # Check the property of the extension.
+        property, _ = await ten_env.get_property_to_json()
+        property_obj = json.loads(property)
+        ten_env.log(LogLevel.INFO, f"property_obj: {property_obj}")
+        assert (
+            property_obj["header"]["x-sagemaker-custom-attributes"]
+            == "X-Path:/v1/chat/completions"
+        )
+        assert property_obj["123"] == "aaa"
+        assert property_obj["aaa-bbb"] == "ccc"
+
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         # Start a new graph
         start_graph_cmd = StartGraphCmd.create()
@@ -46,6 +58,13 @@ class TestExtension1(AsyncExtension):
                     "type": "extension",
                     "name": "test_extension_2",
                     "addon": "test_extension_2",
+                    "property": {
+                        "header": {
+                            "x-sagemaker-custom-attributes": "X-Path:/v1/chat/completions"
+                        },
+                        "123": "aaa",
+                        "aaa-bbb": "ccc",
+                    },
                 },
                 {
                     "type": "extension",

@@ -27,7 +27,11 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         self.config = config
         self.ten_env = ten_env
         api_key = config.params.get("key", "")
-        self.connection = AsyncHumeClient(api_key=api_key)
+        # Extract base_url from params if provided
+        init_params = {"api_key": api_key}
+        if "base_url" in config.params:
+            init_params["base_url"] = config.params["base_url"]
+        self.connection = AsyncHumeClient(**init_params)
         self._is_cancelled = False
 
     async def get(
@@ -43,7 +47,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         self._is_cancelled = False
 
         if len(text.strip()) == 0:
-            self.ten_env.log_warning(
+            self.ten_env.log_warn(
                 f"HumeAiTTS: empty text for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )

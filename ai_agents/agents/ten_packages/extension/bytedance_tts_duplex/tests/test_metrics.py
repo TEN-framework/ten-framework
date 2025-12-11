@@ -107,25 +107,24 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to handle the response queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():
-            # Import event constants used in the mock
             from bytedance_tts_duplex.bytedance_tts import (
                 EVENT_TTSResponse,
                 EVENT_SessionFinished,
-                EVENT_TTS_TTFB_METRIC,
             )
 
-            # Simulate network latency before the first byte
             await asyncio.sleep(0.2)
-            mock_ttfb_value = 250  # Mocked TTFB value in ms
-
-            # Simulate the client sending the pre-calculated TTFB metric first
-            await response_msgs.put((EVENT_TTS_TTFB_METRIC, mock_ttfb_value))
-
-            # Then send the actual audio data and session end event
             await response_msgs.put((EVENT_TTSResponse, b"\x11\x22\x33"))
             await response_msgs.put((EVENT_SessionFinished, b""))
 
@@ -157,10 +156,10 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
 
-    # Check if the TTFB value is exactly what the mock sent.
+    # Allow reasonable timing variance around the mocked delay
     print(f"TTFB value: {tester.ttfb_value}")
     assert (
-        tester.ttfb_value == 250
-    ), f"Expected TTFB to be exactly 250ms, but got {tester.ttfb_value}ms."
+        180 <= tester.ttfb_value <= 300
+    ), f"Expected TTFB to be within [180, 300] ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

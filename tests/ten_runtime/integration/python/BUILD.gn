@@ -38,13 +38,11 @@ group("python") {
         "async_io_basic_python",
         "call_api_after_closing_python",
         "call_api_during_closing_python",
-        "cpp_app_multi_process_python",
+        "cpp_app_mproc_python",
         "cpp_app_python",
         "env_var_1_python",
         "get_set_prop_1_python",
         "get_set_prop_2_python",
-        "go_app_async_extension_python",
-        "go_app_log_rotate_python",
         "large_json_python",
         "msg_clone_python",
         "multi_process_python",
@@ -75,14 +73,18 @@ group("python") {
 
       if (ten_enable_python_binding && ten_enable_go_binding) {
         deps += [
+          "go_app_async_extension_python",
           "go_app_cythonize",
+          "go_app_log_rotate_python",
           "go_app_partially_cythonize",
           "go_app_python",
           "unused_addon_python",
         ]
       }
 
-      if (is_debug) {
+      if (is_debug && !is_win) {
+        # Leak check Python test is disabled on Windows due to DLL loading
+        # complexity and memory tracking limitations with embedded Python.
         deps += [ "leak_check_python" ]
       }
     }
