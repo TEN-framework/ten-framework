@@ -119,10 +119,14 @@ export default function Home() {
         }
         dispatch(setSelectedGraphId(octopusGraph.graph_id));
 
-        // 3. Small delay to let things settle
+        // 3. Mute RTC audio - Trulience will handle playback via lip-sync
+        rtcManager.muteRemoteAudio = true;
+        console.log("[Page] Set muteRemoteAudio = true for Trulience");
+
+        // 4. Small delay to let things settle
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // 4. Start new graph
+        // 5. Start new graph
         console.log("[Page] Starting octopus graph...");
         const res = await apiStartService({
           channel,
@@ -143,6 +147,8 @@ export default function Home() {
       } catch (error: any) {
         console.error("[Page] Transfer failed:", error);
         toast.error(`Transfer failed: ${error.message}`);
+        // Reset mute on failure
+        rtcManager.muteRemoteAudio = false;
       } finally {
         setIsTransferring(false);
       }

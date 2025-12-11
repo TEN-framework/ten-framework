@@ -318,6 +318,11 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   _playAudio(
     audioTrack: IMicrophoneAudioTrack | IRemoteAudioTrack | undefined
   ) {
+    // When muteRemoteAudio is true, don't auto-play - let Trulience handle the audio
+    if (this.muteRemoteAudio) {
+      console.log("[RTC] Audio muted for Trulience - not auto-playing");
+      return;
+    }
     if (audioTrack && !audioTrack.isPlaying) {
       audioTrack.play();
     }

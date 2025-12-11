@@ -75,22 +75,6 @@ export default function AvatarLargeWindow({
     };
   }, []);
 
-  // Always create TrulienceAvatar instance to preload it (hidden until needed)
-  const trulienceAvatarInstance = useMemo(() => {
-    if (!finalAvatarId) return null;
-    return (
-      <TrulienceAvatar
-        url={trulienceSettings.trulienceSDK}
-        ref={trulienceAvatarRef}
-        avatarId={finalAvatarId}
-        token={trulienceSettings.avatarToken}
-        eventCallbacks={eventCallbacks}
-        width="100%"
-        height="100%"
-      />
-    );
-  }, [finalAvatarId, eventCallbacks, trulienceSettings]);
-
   // Update Trulience Avatar's audio stream and stop RTC playback
   useEffect(() => {
     console.log("[AvatarLargeWindow] useEffect triggered:", {
@@ -133,100 +117,20 @@ export default function AvatarLargeWindow({
     }
   }, [mode, audioTrack, agentConnected, loadProgress]);
 
-  // Hidden preload container for Trulience - always render but hide when not in trulience mode
-  const hiddenTruliencePreload = mode !== "trulience" && trulienceAvatarInstance && (
-    <div style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", overflow: "hidden" }}>
-      {trulienceAvatarInstance}
-    </div>
-  );
+  const showTrulience = mode === "trulience";
+  const showAnam = mode === "anam";
+  const showBlank = mode === "blank";
+  const showTransferring = mode === "transferring";
 
-  // Blank mode - show empty dark background
-  if (mode === "blank") {
-    return (
-      <div
-        className={cn(
-          "relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-[#0F0F11]",
-          {
-            ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
-          }
-        )}
-      >
-        {hiddenTruliencePreload}
-        <div className="text-center text-gray-500">
-          <p className="text-lg">Press connect to begin</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Transferring mode - show loading state
-  if (mode === "transferring") {
-    return (
-      <div
-        className={cn(
-          "relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-[#0F0F11]",
-          {
-            ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
-          }
-        )}
-      >
-        {hiddenTruliencePreload}
-        <div className="text-center text-white">
-          <p className="text-lg animate-pulse">Transferring...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Anam mode - show RTC video
-  if (mode === "anam") {
-    return (
-      <div
-        className={cn(
-          "relative h-full w-full overflow-hidden rounded-lg bg-[#0F0F11]",
-          {
-            ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
-          }
-        )}
-      >
-        {hiddenTruliencePreload}
-        <button
-          className="absolute top-2 right-2 z-10 rounded-lg bg-black/50 p-2 transition hover:bg-black/70"
-          onClick={() => setFullscreen((prevValue) => !prevValue)}
-        >
-          {fullscreen ? (
-            <Minimize className="text-white" size={24} />
-          ) : (
-            <Maximize className="text-white" size={24} />
-          )}
-        </button>
-
-        {/* Anam video container */}
-        <div
-          id="avatar-large-window-video"
-          className="h-full w-full"
-          style={{ minHeight: "100%" }}
-        />
-
-        {/* Show placeholder if no video */}
-        {!videoTrack && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-gray-500">Waiting for avatar video...</p>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Trulience mode
   return (
     <div
-      className={cn("relative h-full w-full overflow-hidden rounded-lg", {
+      className={cn("relative h-full w-full overflow-hidden rounded-lg bg-[#0F0F11]", {
         ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
       })}
     >
+      {/* Fullscreen toggle button */}
       <button
-        className="absolute top-2 right-2 z-10 rounded-lg bg-black/50 p-2 transition hover:bg-black/70"
+        className="absolute top-2 right-2 z-20 rounded-lg bg-black/50 p-2 transition hover:bg-black/70"
         onClick={() => setFullscreen((prevValue) => !prevValue)}
       >
         {fullscreen ? (
@@ -236,33 +140,81 @@ export default function AvatarLargeWindow({
         )}
       </button>
 
-      {/* Render the TrulienceAvatar */}
-      {trulienceAvatarInstance}
+      {/* Trulience Avatar - always rendered, moved off-screen when not active to preload */}
+      <div
+        className={cn("absolute inset-0", {
+          ["-translate-x-[200%]"]: !showTrulience,
+        })}
+      >
+        {finalAvatarId && (
+          <TrulienceAvatar
+            url={trulienceSettings.trulienceSDK}
+            ref={trulienceAvatarRef}
+            avatarId={finalAvatarId}
+            token={trulienceSettings.avatarToken}
+            eventCallbacks={eventCallbacks}
+            width="100%"
+            height="100%"
+          />
+        )}
 
-      {/* Show a loader overlay while progress < 1 */}
-      {errorMessage ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-500 bg-opacity-80 text-white">
-          <div>{errorMessage}</div>
-        </div>
-      ) : (
-        loadProgress < 1 && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-80">
-            <Progress
-              className="relative h-[15px] w-[200px] overflow-hidden rounded-full bg-blackA6"
-              style={{
-                transform: "translateZ(0)",
-              }}
-              value={loadProgress * 100}
-            >
-              <ProgressIndicator
-                className="0, 0.35, 1)] size-full bg-white transition-transform duration-660 ease-[cubic-bezier(0.65,"
-                style={{
-                  transform: `translateX(-${100 - loadProgress * 100}%)`,
-                }}
-              />
-            </Progress>
+        {/* Trulience loader overlay */}
+        {showTrulience && errorMessage ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-500 bg-opacity-80 text-white">
+            <div>{errorMessage}</div>
           </div>
-        )
+        ) : (
+          showTrulience && loadProgress < 1 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-80">
+              <Progress
+                className="relative h-[15px] w-[200px] overflow-hidden rounded-full bg-blackA6"
+                style={{ transform: "translateZ(0)" }}
+                value={loadProgress * 100}
+              >
+                <ProgressIndicator
+                  className="size-full bg-white transition-transform duration-660 ease-[cubic-bezier(0.65,0,0.35,1)]"
+                  style={{ transform: `translateX(-${100 - loadProgress * 100}%)` }}
+                />
+              </Progress>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Anam video container */}
+      <div
+        className={cn("absolute inset-0", {
+          ["invisible"]: !showAnam,
+        })}
+      >
+        <div
+          id="avatar-large-window-video"
+          className="h-full w-full"
+          style={{ minHeight: "100%" }}
+        />
+        {showAnam && !videoTrack && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-gray-500">Waiting for avatar video...</p>
+          </div>
+        )}
+      </div>
+
+      {/* Blank mode overlay */}
+      {showBlank && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <p className="text-lg">Press connect to begin</p>
+          </div>
+        </div>
+      )}
+
+      {/* Transferring mode overlay */}
+      {showTransferring && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-white">
+            <p className="text-lg animate-pulse">Transferring...</p>
+          </div>
+        </div>
       )}
     </div>
   );
