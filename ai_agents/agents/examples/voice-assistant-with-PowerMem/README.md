@@ -16,6 +16,8 @@ Set the environment variable:
 # Optional Configuration: Agent, Intelligent Memory, Performance, Security, etc.
 # =============================================================================
 
+# For a complete list of timezones, see: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+TIMEZONE=Asia/Shanghai
 
 # =============================================================================
 # 1. Database Configuration (Required)
@@ -26,42 +28,45 @@ DATABASE_PROVIDER=sqlite
 # -----------------------------------------------------------------------------
 # SQLite Configuration (Default - Recommended for development)
 # -----------------------------------------------------------------------------
-DATABASE_PATH=./data/powermem_dev.db
-DATABASE_ENABLE_WAL=true
-DATABASE_TIMEOUT=30
+SQLITE_PATH=./data/powermem_dev.db
+SQLITE_ENABLE_WAL=true
+SQLITE_TIMEOUT=30
+SQLITE_COLLECTION=memories
 
 # -----------------------------------------------------------------------------
-# OceanBase Configuration (Uncomment if using OceanBase)
+# OceanBase Configuration
 # -----------------------------------------------------------------------------
-# DATABASE_PROVIDER=oceanbase
-# DATABASE_HOST=localhost
-# DATABASE_PORT=2881
-# DATABASE_USER=root
-# DATABASE_PASSWORD=your_password
-# DATABASE_NAME=powermem
-# DATABASE_COLLECTION_NAME=memories
-
-## Keep the default settings, as modifications are generally not needed.
-# DATABASE_INDEX_TYPE=IVF_FLAT
-# DATABASE_VECTOR_METRIC_TYPE=cosine
-# DATABASE_TEXT_FIELD=document
-# DATABASE_VECTOR_FIELD=embedding
-# DATABASE_EMBEDDING_MODEL_DIMS=1536
-# DATABASE_PRIMARY_FIELD=id
-# DATABASE_METADATA_FIELD=metadata
-# DATABASE_VIDX_NAME=memories_vidx
-
-# -----------------------------------------------------------------------------
-# PostgreSQL Configuration (Uncomment if using PostgreSQL)
-# -----------------------------------------------------------------------------
-# DATABASE_PROVIDER=postgres
-# DATABASE_HOST=localhost
-# DATABASE_PORT=5432
-# DATABASE_USER=postgres
-# DATABASE_PASSWORD=your_password
-# DATABASE_NAME=powermem
+OCEANBASE_HOST=127.0.0.1
+OCEANBASE_PORT=2881
+OCEANBASE_USER=root@sys
+OCEANBASE_PASSWORD=password
+OCEANBASE_DATABASE=powermem
+OCEANBASE_COLLECTION=memories
 
 ## Keep the default settings, as modifications are generally not needed.
+OCEANBASE_INDEX_TYPE=IVF_FLAT
+OCEANBASE_VECTOR_METRIC_TYPE=cosine
+OCEANBASE_TEXT_FIELD=document
+OCEANBASE_VECTOR_FIELD=embedding
+OCEANBASE_EMBEDDING_MODEL_DIMS=1536
+OCEANBASE_PRIMARY_FIELD=id
+OCEANBASE_METADATA_FIELD=metadata
+OCEANBASE_VIDX_NAME=memories_vidx
+
+# -----------------------------------------------------------------------------
+# PostgreSQL Configuration
+# -----------------------------------------------------------------------------
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DATABASE=powermem
+POSTGRES_COLLECTION=memories
+
+## Keep the default settings, as modifications are generally not needed.
+POSTGRES_EMBEDDING_MODEL_DIMS=1536
+POSTGRES_DISKANN=true
+POSTGRES_HNSW=true
 # DATABASE_SSLMODE=prefer
 # DATABASE_POOL_SIZE=10
 # DATABASE_MAX_OVERFLOW=20
@@ -70,7 +75,7 @@ DATABASE_TIMEOUT=30
 # =============================================================================
 # 2. LLM Configuration (Required)
 # =============================================================================
-# Choose your LLM provider: qwen, openai, mock
+# Choose your LLM provider: qwen, openai, siliconflow
 LLM_PROVIDER=qwen
 
 # -----------------------------------------------------------------------------
@@ -99,7 +104,6 @@ LLM_ENABLE_SEARCH=false
 # LLM_TEMPERATURE=0.7
 # LLM_MAX_TOKENS=1000
 # LLM_TOP_P=1.0
-
 
 # =============================================================================
 # 3. Embedding Configuration (Required)
@@ -230,6 +234,37 @@ LOGGING_COMPRESS_BACKUPS=true
 LOGGING_CONSOLE_ENABLED=true
 LOGGING_CONSOLE_LEVEL=INFO
 LOGGING_CONSOLE_FORMAT=%(levelname)s - %(message)s
+
+
+# =============================================================================
+# 11. Graph Store Configuration (Optional)
+# =============================================================================
+# Graph store for knowledge graph storage and retrieval
+# Enable graph store functionality
+GRAPH_STORE_ENABLED=false
+
+# Graph store provider (currently supports: oceanbase)
+GRAPH_STORE_PROVIDER=oceanbase
+
+# OceanBase Graph Configuration
+GRAPH_STORE_HOST=127.0.0.1
+GRAPH_STORE_PORT=2881
+GRAPH_STORE_USER=root@sys
+GRAPH_STORE_PASSWORD=password
+GRAPH_STORE_DB_NAME=powermem
+
+# Optional: Graph traversal settings
+GRAPH_STORE_MAX_HOPS=3
+
+# Optional: Graph store vector and index settings
+# GRAPH_STORE_VECTOR_METRIC_TYPE=l2
+# GRAPH_STORE_INDEX_TYPE=HNSW
+
+# Optional: Custom prompts for graph operations
+# GRAPH_STORE_CUSTOM_PROMPT=
+# GRAPH_STORE_CUSTOM_EXTRACT_RELATIONS_PROMPT=
+# GRAPH_STORE_CUSTOM_UPDATE_GRAPH_PROMPT=
+# GRAPH_STORE_CUSTOM_DELETE_RELATIONS_PROMPT=
 ```
 
 ## Quick Start
