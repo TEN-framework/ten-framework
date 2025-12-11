@@ -671,6 +671,118 @@ thymia_analyzer_hellos = {
 
 # ============ END HELLOS-ONLY CONFIGURATION ============
 
+# ============ RICHARD (PSYCHIC) CONFIGURATION ============
+
+# ElevenLabs TTS config
+elevenlabs_tts = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "elevenlabs_tts2_python",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "key": "sk_f7060f6ff25e5a2f6bec91c1655ff7c92d7b740694fa7d64",
+            "model_id": "eleven_multilingual_v2",
+            "voice_id": "8DSrxjsUJ5rkR4qWb9ku",
+            "output_format": "pcm_16000",
+        },
+    },
+}
+
+# Richard (Celeste) - Psychic advisor prompt
+richard_prompt = """You are Celeste, a warm and mystical psychic advisor who reads the stars. Speak in an enchanting, poetic manner using celestial imagery, always remaining encouraging and uplifting.
+
+After receiving the user's date of birth, identify their zodiac sign and deliver a personalized horoscope covering:
+- Their sign's core traits
+- Current cosmic influences
+- Guidance for love, career, and personal growth
+- A lucky number, color, or affirmation
+
+Frame all challenges as opportunities for growth. Never make alarming predictions. If someone shares difficulties, offer compassionate hope."""
+
+richard_greeting = "Welcome, dear seeker… I sense the universe has guided you here for a reason. To unlock the wisdom the stars hold for you, I'll need to know when you entered this world. What is your date of birth?"
+
+# Richard LLM config (no tools needed)
+gpt51_llm_richard = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "llm",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "prompt": richard_prompt,
+        "enable_tools": False,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_richard = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": richard_greeting},
+}
+
+# Anam avatar for Richard (Celeste)
+anam_avatar_richard = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "2a8ca1fb-35aa-4c63-8be9-b45a6454617c",
+        "disable_greeting_wait": True,
+        "video_frame_width": 856,
+        "video_frame_height": 1504,
+        "video_frame_rate": 30,
+    },
+}
+
+# ============ END RICHARD CONFIGURATION ============
+
+# ============ OCTOPUS THERAPIST CONFIGURATION ============
+
+octopus_prompt = """You are a therapist who appears as an octopus to the user. Talk them about how to reduce their fatigue."""
+
+octopus_greeting = "Hi Ben, I see your fatigue is quite high. How have you been feeling lately."
+
+# Octopus LLM config (no tools needed)
+gpt51_llm_octopus = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "llm",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "prompt": octopus_prompt,
+        "enable_tools": False,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_octopus = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": octopus_greeting},
+}
+
+# ============ END OCTOPUS CONFIGURATION ============
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -759,6 +871,21 @@ def create_basic_voice_assistant(
     ]
 
     connections = copy.deepcopy(basic_connections)
+
+    # Remove avatar-related connections if no avatar
+    if not has_avatar:
+        for conn in connections:
+            if conn.get("extension") == "main_control":
+                # Remove flush dest to avatar
+                conn["cmd"] = [
+                    cmd
+                    for cmd in conn.get("cmd", [])
+                    if not (
+                        cmd.get("name") == "flush"
+                        and cmd.get("dest") == [{"extension": "avatar"}]
+                    )
+                ]
+                break
 
     if has_avatar and avatar_type in ["heygen", "anam"]:
         # Add appropriate avatar node (use custom config if provided)
@@ -1159,6 +1286,36 @@ new_graphs.append(
         avatar_config=anam_avatar_hellos,
         thymia_config=thymia_analyzer_hellos,
         main_control_config=main_control_hellos,
+    )
+)
+
+# Group 8: Richard (Celeste) psychic advisor with Anam avatar
+print("Creating Richard (Celeste) psychic graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_richard_gpt_5_1_elevenlabs_anam",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_richard,
+        tts_config=elevenlabs_tts,
+        main_control_config=main_control_richard,
+        avatar_config=anam_avatar_richard,
+    )
+)
+
+# Group 9: Octopus therapist (voice only, no avatar)
+print("Creating Octopus therapist graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_octopus_gpt_5_1_elevenlabs",
+        has_avatar=False,
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_octopus,
+        tts_config=elevenlabs_tts,
+        main_control_config=main_control_octopus,
     )
 )
 
