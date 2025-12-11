@@ -231,6 +231,12 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
+        # Check if model is a reasoning model (gpt-5.x) that requires different parameters
+        is_reasoning_model = (
+            self.config.model and self.config.model.lower().startswith("gpt-5")
+        )
+
+        # Build request
         req = {
             "model": self.config.model,
             "messages": [
@@ -238,15 +244,20 @@ class OpenAIChatGPT:
                 *parsed_messages,
             ],
             "tools": tools,
-            "temperature": self.config.temperature,
-            "top_p": self.config.top_p,
-            "presence_penalty": self.config.presence_penalty,
-            "frequency_penalty": self.config.frequency_penalty,
-            "max_tokens": self.config.max_tokens,
-            "seed": self.config.seed,
             "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
+
+        # GPT-5.x models use max_completion_tokens and don't support sampling parameters
+        if is_reasoning_model:
+            req["max_completion_tokens"] = self.config.max_tokens
+        else:
+            req["max_tokens"] = self.config.max_tokens
+            req["temperature"] = self.config.temperature
+            req["top_p"] = self.config.top_p
+            req["presence_penalty"] = self.config.presence_penalty
+            req["frequency_penalty"] = self.config.frequency_penalty
+            req["seed"] = self.config.seed
 
         # Add additional parameters if they are not in the black list
         for key, value in (request_input.parameters or {}).items():
