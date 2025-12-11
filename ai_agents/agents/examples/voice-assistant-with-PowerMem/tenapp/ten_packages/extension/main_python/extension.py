@@ -404,7 +404,10 @@ class MainControlExtension(AsyncExtension):
 
         try:
             # Retrieve user memory summary
-            memory_summary = await self.memory_store.get_user_profile()
+            memory_summary = await self.memory_store.get_user_profile(
+                user_id=self.config.user_id,
+                agent_id=self.config.agent_id,
+            )
 
             if not memory_summary or not memory_summary.strip():
                 # No memories found, return empty to use default greeting
