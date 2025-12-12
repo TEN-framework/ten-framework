@@ -51,6 +51,10 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
+# Copy requirements.txt and install Python dependencies
+COPY ${USE_AGENT}/tenapp/ten_packages/extension/main_python/requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
 # Install Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
