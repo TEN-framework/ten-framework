@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       voice_type,
       prompt,
       greeting,
+      properties: clientProperties,
       coze_token,
       coze_bot_id,
       coze_base_url,
@@ -34,7 +35,24 @@ export async function POST(request: NextRequest) {
       oceanbase_settings
     } = body;
 
-    let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting, oceanbase_settings);
+    // Build graph overrides (server-side defaults), then merge any client-provided overrides.
+    // This enables clients (e.g. the Live2D voice-assistant) to override TTS voice_id,
+    // greetings, prompts, etc. even when the graph isn't explicitly handled in graph.ts.
+    let properties: any = getGraphProperties(
+      graph_name,
+      language,
+      voice_type,
+      prompt,
+      greeting,
+      oceanbase_settings
+    );
+
+    if (clientProperties && typeof clientProperties === "object") {
+      properties = {
+        ...properties,
+        ...(clientProperties as Record<string, unknown>),
+      };
+    }
     if (graph_name.includes("coze")) {
       properties["llm"]["token"] = coze_token;
       properties["llm"]["bot_id"] = coze_bot_id;

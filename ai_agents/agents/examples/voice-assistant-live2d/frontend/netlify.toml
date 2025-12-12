@@ -4,13 +4,15 @@
 
 [[redirects]]
   from = "/api/token/*"
-  to = "https://agent.theten.ai/api/token/:splat"
+  to = "https://agent.theten.ai/token/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/api/agents/*"
-  to = "https://agent.theten.ai/api/agents/:splat"
+  # TEN agent server exposes /start, /stop, /ping. We keep the frontend calling /api/agents/*
+  # and rewrite to the correct backend paths.
+  to = "https://agent.theten.ai/:splat"
   status = 200
   force = true
 
@@ -94,13 +96,20 @@
   force = true
 
 [context.production.environment]
-  NEXT_PUBLIC_API_BASE_URL = "/api/agents"
+  # Leave empty so the frontend uses local /api/* paths, which Netlify rewrites above.
+  NEXT_PUBLIC_API_BASE_URL = ""
   NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL = "/live2d/models"
+  NEXT_PUBLIC_KEI_VOICE_ID = ""
+  NEXT_PUBLIC_CHUBBIE_VOICE_ID = "English_Jovialman"
 
 [context.deploy-preview.environment]
-  NEXT_PUBLIC_API_BASE_URL = "/api/agents"
+  NEXT_PUBLIC_API_BASE_URL = ""
   NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL = "/live2d/models"
+  NEXT_PUBLIC_KEI_VOICE_ID = ""
+  NEXT_PUBLIC_CHUBBIE_VOICE_ID = "English_Jovialman"
 
 [context.branch-deploy.environment]
-  NEXT_PUBLIC_API_BASE_URL = "/api/agents"
+  NEXT_PUBLIC_API_BASE_URL = ""
   NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL = "/live2d/models"
+  NEXT_PUBLIC_KEI_VOICE_ID = ""
+  NEXT_PUBLIC_CHUBBIE_VOICE_ID = "English_Jovialman"

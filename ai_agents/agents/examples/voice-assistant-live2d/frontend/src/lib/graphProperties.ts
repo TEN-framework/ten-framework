@@ -44,9 +44,11 @@ export const getGraphProperties = (
   fallbackPrompt?: string,
   fallbackGreeting?: string,
 ) => {
-  if (graphName !== DEFAULT_GRAPH_NAME) {
-    return {};
-  }
+  // NOTE:
+  // This helper is used by the Live2D example to build runtime `properties` overrides.
+  // Historically it only applied to `voice_assistant_live2d`, but different deployments
+  // can rename the graph; we still want the same override behavior.
+  // Keep `DEFAULT_GRAPH_NAME` for documentation but don't gate on it.
 
   const characterConfig = characterOverrides[characterId ?? ""] ?? {};
   const resolvedVoiceType =

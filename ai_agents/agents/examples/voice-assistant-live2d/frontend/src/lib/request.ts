@@ -82,6 +82,24 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
         data.properties = mergedProperties;
     }
 
+    // Debug helper to verify what we actually send to the backend.
+    // Enable with NEXT_PUBLIC_DEBUG_AGENT_START=1
+    if (process.env.NEXT_PUBLIC_DEBUG_AGENT_START === "1") {
+        // eslint-disable-next-line no-console
+        console.log("[API] Start payload (debug)", {
+            primary,
+            graphName,
+            channel,
+            userId,
+            voiceType,
+            characterId,
+            greeting,
+            prompt,
+            computedProperties,
+            mergedProperties,
+        });
+    }
+
     return retryWithBackoff(async () => {
         try {
             console.log(`[API] Starting service with graph: ${graphName}, channel: ${channel}`);
