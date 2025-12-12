@@ -119,12 +119,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
 
 ### Step 3: Start the Services
 
-1. Navigate to the example directory:
-   ```bash
-   cd ai_agents/agents/examples/voice-assistant-with-PowerMem
-   ```
-
-2. Start all services with Docker Compose:
+1. Start all services with Docker Compose:
    ```bash
    docker-compose up -d
    ```
@@ -135,7 +130,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    - Initialize PowerMem database schema
    - Start the API server and frontend
 
-3. Check container status:
+2. Check container status:
    ```bash
    docker-compose ps
    ```
