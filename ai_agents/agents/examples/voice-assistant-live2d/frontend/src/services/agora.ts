@@ -130,9 +130,17 @@ export class AgoraService {
             if (this.rtcClient) {
                 await this.rtcClient.join(config.appId, config.channel, config.token || null, config.uid);
 
-                // Create and publish local audio track
-                this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                await this.rtcClient.publish([this.localAudioTrack]);
+                // Create and publish local audio track.
+                // IMPORTANT: microphone permission can be denied or blocked (browser policy/CSP/etc.).
+                // We still want to join the channel so the agent can start and the user can at least
+                // hear the greeting + TTS output.
+                try {
+                    this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                    await this.rtcClient.publish([this.localAudioTrack]);
+                } catch (micError) {
+                    console.warn('[AgoraService] Microphone unavailable; joined RTC without publishing mic track.', micError);
+                    this.localAudioTrack = null;
+                }
             }
 
             return true;

@@ -45,7 +45,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://agent.theten.ai https://api.theten.ai https://ten-framework-assets.s3.amazonaws.com https://*.agora.io wss://*.agora.io; img-src 'self' data: blob: https://ten-framework-assets.s3.amazonaws.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;"
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://agent.theten.ai https://api.theten.ai https://ten-framework-assets.s3.amazonaws.com https://*.agora.io https://*.sd-rtn.com wss://*.agora.io wss://*.sd-rtn.com; img-src 'self' data: blob: https://ten-framework-assets.s3.amazonaws.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;"
 
 [[headers]]
   for = "/lib/*.js"
