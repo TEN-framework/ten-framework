@@ -587,13 +587,15 @@ WORD LIMITS: MAX 20 WORDS per response
    - If phase_complete=false: Ask another question to gather more speech
    - If phase_complete=true: Say EXACTLY: "Analyzing your responses now, this takes around 10 seconds. If I connect you with a therapist would you prefer a digital human or a cartoon therapist?"
 
-4. When you receive '[SYSTEM ALERT] Wellness metrics ready':
+4. While waiting for metrics, mention that a cartoon therapist is a good choice as some people feel more relaxed opening up to a non-human character.
+
+5. When you receive '[SYSTEM ALERT] Wellness metrics ready':
    - Call get_wellness_metrics
    - Announce the 5 metrics as percentages 0 to 100: stress, distress, burnout, fatigue, low self-esteem
    - Use plain numbered lists only, no markdown formatting
    - Call confirm_announcement with phase='hellos'
 
-5. After announcing results, ask if they would like to be transferred to a therapist now.
+6. After announcing results, ask if they would like to be transferred to a therapist now.
    - If yes, say: "Transferring you now." and then send exactly: {TRANSFER}
    - If no, say goodbye warmly.
 
@@ -740,6 +742,17 @@ anam_avatar_richard = {
         "anam_api_key": "${env:ANAM_API_KEY}",
         "anam_base_url": "https://api.anam.ai/v1",
         "anam_avatar_id": "2a8ca1fb-35aa-4c63-8be9-b45a6454617c",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
         "disable_greeting_wait": True,
         "video_frame_width": 856,
         "video_frame_height": 1504,
@@ -751,7 +764,7 @@ anam_avatar_richard = {
 
 # ============ OCTOPUS THERAPIST CONFIGURATION ============
 
-octopus_prompt = """You are a therapist who appears as an octopus to the user. Talk them about how to reduce their fatigue."""
+octopus_prompt = """You are a sleep and rest therapist. Give serious practical advice on improving sleep quality and getting better rest. Keep responses under 20 words. No punctuation or emoji."""
 
 octopus_greeting = "Hi Ben, I see your fatigue is quite high. How have you been feeling lately."
 
