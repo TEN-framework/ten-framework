@@ -189,26 +189,28 @@ try {
 # Step 2: Get or Calculate SHA256 Checksum
 # ==============================================================================
 
-if ([string]::IsNullOrEmpty($Sha256)) {
-    # SHA256 not provided, calculate it from downloaded file
-    Write-Info "Calculating SHA256 checksum..."
-    $sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
-    Write-Success "SHA256 calculated: $sha256"
-} else {
-    # SHA256 provided (from GitHub API or elsewhere)
+if ($PSBoundParameters.ContainsKey('Sha256')) {
+    # SHA256 parameter was provided, verify it matches the downloaded file
     $sha256 = $Sha256.ToLower()
-    Write-Success "SHA256 provided: $sha256"
+    Write-Info "SHA256 provided: $sha256"
+    Write-Info "Verifying provided SHA256 matches downloaded file..."
 
-    # Optional: Verify the provided SHA256 matches the file
-    Write-Info "Verifying provided SHA256..."
     $calculatedSha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+
     if ($sha256 -ne $calculatedSha256) {
         Write-Error "SHA256 mismatch!"
         Write-Info "Provided:   $sha256"
         Write-Info "Calculated: $calculatedSha256"
+        Write-Info "This indicates the downloaded file does not match the expected hash."
         exit 1
     }
+
     Write-Success "SHA256 verified ✓"
+} else {
+    # SHA256 not provided, calculate it from downloaded file
+    Write-Info "Calculating SHA256 checksum..."
+    $sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+    Write-Success "SHA256 calculated: $sha256"
 }
 
 # ==============================================================================
@@ -354,9 +356,27 @@ Write-Success "Repository prepared"
 # ==============================================================================
 
 $branchName = "tman-$VersionClean"
-Write-Info "Creating branch: $branchName"
+Write-Info "Preparing branch: $branchName"
 
-git checkout -b $branchName
+# Check if branch already exists on remote
+$remoteBranchExists = git ls-remote --heads origin $branchName
+if ($remoteBranchExists) {
+    Write-Warning "Branch $branchName already exists on remote fork"
+    Write-Info "This indicates a previous submission for this version"
+    Write-Info "Will update the existing branch (and PR if it exists)"
+}
+
+# Check if branch exists locally
+$branchExists = git branch --list $branchName
+if ($branchExists) {
+    Write-Info "Switching to existing local branch: $branchName"
+    git checkout $branchName
+    # Reset to upstream master to get a clean state
+    git reset --hard upstream/master
+} else {
+    Write-Info "Creating new branch: $branchName"
+    git checkout -b $branchName
+}
 
 # Create manifest directory structure
 # Winget uses: manifests/<first-letter>/<Publisher>/<Package>/<Version>/
@@ -380,7 +400,14 @@ git commit -m $commitMsg
 
 # Push to fork
 Write-Info "Pushing to fork..."
-git push origin $branchName
+if ($remoteBranchExists) {
+    # Branch exists on remote, force push to update
+    Write-Info "Force pushing to update existing branch..."
+    git push --force origin $branchName
+} else {
+    # New branch, normal push
+    git push origin $branchName
+}
 
 Write-Success "Branch pushed successfully"
 
@@ -388,8 +415,9 @@ Write-Success "Branch pushed successfully"
 # Step 6: Create Pull Request
 # ==============================================================================
 
-Write-Info "Creating Pull Request to microsoft/winget-pkgs..."
+Write-Info "Preparing Pull Request to microsoft/winget-pkgs..."
 
+# Prepare PR body (used for both new PR and update comment)
 $prBody = @"
 ## Update ten-framework.tman to version $VersionClean
 
@@ -415,25 +443,71 @@ tman is the official package manager for the TEN Framework. It helps developers 
 *This PR was generated using [submit-to-winget.ps1](https://github.com/$Repository/blob/main/tools/winget/submit-to-winget.ps1)*
 "@
 
-try {
-    gh pr create `
-        --repo microsoft/winget-pkgs `
-        --title "Update ten-framework.tman to $VersionClean" `
-        --body $prBody `
-        --head "${forkOwner}:${branchName}" `
-        --base master
+# Check if PR already exists for this branch
+Write-Info "Checking if PR already exists..."
+# Note: --head parameter only needs branch name, not "owner:branch" format
+$existingPR = gh pr list --repo microsoft/winget-pkgs --head "${branchName}" --state open --json number,title 2>&1
 
-    Write-Success "Pull Request created successfully!"
-    Write-Info "`nNext steps:"
-    Write-Info "   1. Microsoft's automated validation will check the PR"
-    Write-Info "   2. If validation passes, maintainers will review"
-    Write-Info "   3. Once merged, users can install via: winget install ten-framework.tman"
-} catch {
-    Write-Error "Failed to create Pull Request: $_"
+if ($LASTEXITCODE -eq 0 -and $existingPR -and $existingPR -ne '[]') {
+    $prInfo = $existingPR | ConvertFrom-Json
+    if ($prInfo.Count -gt 0) {
+        $prNumber = $prInfo[0].number
+        Write-Warning "PR already exists for branch ${branchName}"
+        Write-Info "Existing PR #${prNumber}: $($prInfo[0].title)"
+        Write-Info "URL: https://github.com/microsoft/winget-pkgs/pull/${prNumber}"
+        Write-Info ""
+        Write-Info "Branch was force-pushed with updates. Adding comment to PR..."
+
+        # Prepare update comment
+        $updateComment = @"
+## 🔄 Branch Updated
+
+The branch has been updated with the following information:
+
+$prBody
+
+---
+**Note**: The PR has been automatically updated by re-running the submission script.
+"@
+
+        # Add comment to existing PR
+        try {
+            gh pr comment $prNumber --repo microsoft/winget-pkgs --body $updateComment
+            Write-Success "Comment added to PR #${prNumber}"
+        } catch {
+            Write-Warning "Failed to add comment to PR: $_"
+            Write-Info "You may need to add the update information manually"
+        }
+
+        Write-Success "PR #${prNumber} has been updated with new commits"
+        Write-Info "`nNext steps:"
+        Write-Info "   1. Check the PR for validation results"
+        Write-Info "   2. The new commit should trigger re-validation"
+        Write-Info "   3. Review the PR at: https://github.com/microsoft/winget-pkgs/pull/${prNumber}"
+        exit 0
+    }
+}
+
+# Create new PR
+gh pr create `
+    --repo microsoft/winget-pkgs `
+    --title "Update ten-framework.tman to $VersionClean" `
+    --body $prBody `
+    --head "${forkOwner}:${branchName}" `
+    --base master
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to create Pull Request"
     Write-Info "You may need to create the PR manually at:"
     Write-Info "https://github.com/microsoft/winget-pkgs/compare/master...${forkOwner}:${branchName}"
     exit 1
 }
+
+Write-Success "Pull Request created successfully!"
+Write-Info "`nNext steps:"
+Write-Info "   1. Microsoft's automated validation will check the PR"
+Write-Info "   2. If validation passes, maintainers will review"
+Write-Info "   3. Once merged, users can install via: winget install ten-framework.tman"
 
 # ==============================================================================
 # Cleanup
