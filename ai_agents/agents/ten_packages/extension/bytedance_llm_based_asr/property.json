@@ -11,6 +11,7 @@
             "format": "pcm"
         },
         "request": {
+            "show_utterances": true,
             "model_name": "bigmodel",
             "result_type": "single",
             "enable_nonstream": true
