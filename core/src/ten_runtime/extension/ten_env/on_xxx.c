@@ -111,8 +111,6 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
       TEN_LOGW("[%s] on_configure() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
-
-    extension->lifecycle_on_configure_start_time_us = 0;
   }
 #endif
 
@@ -298,8 +296,6 @@ bool ten_extension_on_init_done(ten_env_t *self) {
       TEN_LOGW("[%s] on_init() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
-
-    extension->lifecycle_on_init_start_time_us = 0;
   }
 #endif
 
@@ -399,8 +395,6 @@ bool ten_extension_on_start_done(ten_env_t *self) {
       TEN_LOGW("[%s] on_start() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
-
-    extension->lifecycle_on_start_start_time_us = 0;
   }
 #endif
 
@@ -459,8 +453,6 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
       TEN_LOGW("[%s] on_stop() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
-
-    extension->lifecycle_on_stop_start_time_us = 0;
   }
 #endif
 
@@ -587,8 +579,6 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
       TEN_LOGW("[%s] on_deinit() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
-
-    extension->lifecycle_on_deinit_start_time_us = 0;
   }
 #endif
 
