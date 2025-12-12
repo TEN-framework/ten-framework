@@ -53,10 +53,14 @@ export const getGraphProperties = (
     characterConfig.voiceType ?? voiceType ?? ("female" as VoiceType);
   const resolvedVoiceId =
     characterConfig.voiceId ?? voiceTypeDefaults[resolvedVoiceType] ?? "";
+  // IMPORTANT:
+  // Prefer the caller-provided greeting/prompt (e.g. the selected character profile in the UI),
+  // and only fall back to character defaults if the caller didn't provide one.
   const greeting =
+    fallbackGreeting ??
     characterConfig.greeting ??
-    (fallbackGreeting || "TEN Agent connected. How can I help you today?");
-  const prompt = characterConfig.prompt ?? fallbackPrompt;
+    "TEN Agent connected. How can I help you today?";
+  const prompt = fallbackPrompt ?? characterConfig.prompt;
 
   const properties: Record<string, any> = {};
 
