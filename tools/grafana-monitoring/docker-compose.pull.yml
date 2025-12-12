@@ -1,3 +1,19 @@
+# TEN Framework - Pull Mode Monitoring Configuration
+# Use Case: Application uses Prometheus exporter, simple deployment
+#
+# Usage:
+#   docker-compose -f docker-compose.pull.yml up -d
+#
+# Application configuration example (property.json):
+#   {
+#     "type": "prometheus",
+#     "config": {
+#       "host": "0.0.0.0",
+#       "port": 49484,
+#       "path": "/metrics"
+#     }
+#   }
+
 networks:
   monitoring:
     driver: bridge
@@ -5,11 +21,11 @@ networks:
 services:
   prometheus:
     image: prom/prometheus:latest
-    container_name: ten_prometheus
+    container_name: ten_prometheus_pull
     ports:
       - "9091:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/pull/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -24,7 +40,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: ten_grafana
+    container_name: ten_grafana_pull
     ports:
       - "3001:3000"
     volumes:
@@ -34,7 +50,6 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=
     networks:
       - monitoring
     depends_on:

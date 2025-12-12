@@ -37,7 +37,7 @@ impl ExporterType {
     ///
     /// ```json
     /// {
-    ///   "_ten": {
+    ///   "ten": {
     ///     "services": {
     ///       "telemetry": {
     ///         "enabled": true,
@@ -62,7 +62,7 @@ impl ExporterType {
     ///
     /// ```json
     /// {
-    ///   "_ten": {
+    ///   "ten": {
     ///     "services": {
     ///       "telemetry": {
     ///         "enabled": true,
@@ -89,7 +89,7 @@ impl ExporterType {
     ///
     /// ```json
     /// {
-    ///   "_ten": {
+    ///   "ten": {
     ///     "services": {
     ///       "telemetry": {
     ///         "enabled": true,
