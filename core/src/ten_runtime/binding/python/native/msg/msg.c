@@ -60,7 +60,6 @@ PyObject *ten_py_msg_get_name(PyObject *self, TEN_UNUSED PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -79,7 +78,6 @@ PyObject *ten_py_msg_set_name(PyObject *self, TEN_UNUSED PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -113,7 +111,6 @@ PyObject *ten_py_msg_get_source(PyObject *self, TEN_UNUSED PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -180,7 +177,6 @@ PyObject *ten_py_msg_set_dests(PyObject *self, TEN_UNUSED PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -275,7 +271,6 @@ PyObject *ten_py_msg_set_property_string(PyObject *self, PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -316,7 +311,6 @@ PyObject *ten_py_msg_get_property_string(PyObject *self, PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -555,7 +549,6 @@ PyObject *ten_py_msg_get_property_bool(PyObject *self, PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -607,7 +600,6 @@ PyObject *ten_py_msg_set_property_bool(PyObject *self, PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
@@ -647,7 +639,6 @@ PyObject *ten_py_msg_get_property_float(PyObject *self, PyObject *args) {
 
   ten_shared_ptr_t *c_msg = py_msg->c_msg;
   if (!c_msg) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Msg is invalidated.");
   }
 
