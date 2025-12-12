@@ -65,18 +65,17 @@ class TwoPassDelayTracker:
         self.soft_vad = timestamp
 
     def calculate_metrics(self, current_timestamp: int) -> dict[str, int]:
-        return {
+        metrics: dict[str, int] = {
             "two_pass_delay": (
                 current_timestamp - self.stream
                 if self.stream is not None
                 else -1
             ),
-            "soft_two_pass_delay": (
-                self.soft_vad - self.stream
-                if (self.stream is not None and self.soft_vad is not None)
-                else -1
-            ),
         }
+        # Only include soft_two_pass_delay if soft_vad was recorded
+        if self.soft_vad is not None and self.stream is not None:
+            metrics["soft_two_pass_delay"] = self.soft_vad - self.stream
+        return metrics
 
     def reset(self) -> None:
         self.stream = None
@@ -528,8 +527,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 return
 
             # Create ASR result data for successful response
+            if result.payload_msg:
+                full_json = json.dumps(result.payload_msg, ensure_ascii=False)
+            else:
+                full_json = "{}"
             self.ten_env.log_debug(
-                f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {json.dumps(asdict(result), ensure_ascii=False)}",
+                f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {full_json}",
                 category=LOG_CATEGORY_VENDOR,
             )
 
