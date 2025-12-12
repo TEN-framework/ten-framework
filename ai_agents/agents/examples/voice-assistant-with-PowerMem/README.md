@@ -49,7 +49,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
 2. Copy the .env file and add PowerMem-related environment configuration:
    ```bash
    cp ../../../.env.example .env
-   curl 'https://raw.githubusercontent.com/oceanbase/powermem/refs/heads/main/.env.example' >> .env
+   cat .env.example >> .env
    ```
 
 3. Configure the following **required** variables:
@@ -73,7 +73,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    ELEVENLABS_TTS_KEY=your_elevenlabs_api_key
    ```
 
-   **PowerMem Minimal Configuration:**
+   **PowerMem Minimal Configuration (See the full configuration at https://github.com/oceanbase/powermem/blob/main/.env.example):**
    ```bash
    # Timezone
    TIMEZONE=Asia/Shanghai  # Adjust to your timezone
@@ -107,17 +107,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    WEATHERAPI_API_KEY=  # Optional: For weather tool functionality
    ```
 
-### Step 2: Configure SeekDB Container Environment Variables
-
-1. SeekDB's database name and password configuration should match the previous configuration:
-   ```bash
-   echo "ROOT_PASSWORD=\$OCEANBASE_PASSWORD" >> .env
-   echo "SEEKDB_DATABASE=\$OCEANBASE_DATABASE" >> .env
-   ```
-
-2. For more details (such as CPU, memory, disk limits, etc.), please refer to https://github.com/oceanbase/docker-images/blob/main/seekdb/README.md#supported-environment-variables
-
-### Step 3: Start the Services
+### Step 2: Start the Services
 
 1. Start all services with Docker Compose:
    ```bash
@@ -139,7 +129,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    - `voice-assistant-with-powermem` (main application)
    - `seekdb` (OceanBase database)
 
-### Step 4: Verify Deployment
+### Step 3: Verify Deployment
 
 1. **Check logs** to ensure everything started correctly:
    ```bash
@@ -159,7 +149,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    curl http://localhost:8080/ping
    ```
 
-### Step 5: Stop Services (when needed)
+### Step 4: Stop Services (when needed)
 
 ```bash
 docker-compose down
