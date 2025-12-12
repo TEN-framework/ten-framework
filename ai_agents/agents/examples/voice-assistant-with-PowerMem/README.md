@@ -2,6 +2,8 @@
 
 A voice assistant enhanced with [PowerMem](https://github.com/oceanbase/powermem/) memory management capabilities for persistent conversation context.
 
+> 📖 **中文文档**: [README_CN.md](./README_CN.md)
+
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
