@@ -5,7 +5,7 @@ A voice assistant enhanced with [PowerMem](https://github.com/oceanbase/powermem
 ## 📋 Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Quick Start (Docker)](#quick-start-docker-recommended)
+- [Quick Start (Docker)](#quick-start-docker---recommended)
 - [Local Development](#local-development)
 - [Configuration Guide](#configuration-guide)
 - [Verification](#verification)
