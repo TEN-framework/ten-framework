@@ -341,8 +341,8 @@ pub unsafe extern "C" fn ten_metric_gauge_sub(
 pub unsafe extern "C" fn ten_metric_histogram_observe(
     metric_ptr: *mut MetricHandle,
     value: f64,
-    _label_values_ptr: *const *const c_char,
-    _label_values_len: usize,
+    label_values_ptr: *const *const c_char,
+    label_values_len: usize,
 ) {
     if metric_ptr.is_null() {
         return;
@@ -352,6 +352,20 @@ pub unsafe extern "C" fn ten_metric_histogram_observe(
     let meter = global::meter("ten-framework");
     let histogram = meter.f64_histogram(metric.name.clone()).build();
 
-    // TODO: Support labels
-    histogram.record(value, &[]);
+    // Convert label values from C strings to Rust
+    let mut attributes = Vec::new();
+    if !label_values_ptr.is_null() && label_values_len > 0 {
+        let label_values = std::slice::from_raw_parts(label_values_ptr, label_values_len);
+
+        for (i, &label_value_ptr) in label_values.iter().enumerate() {
+            if i < metric.label_names.len() && !label_value_ptr.is_null() {
+                let label_name = &metric.label_names[i];
+                let label_value = CStr::from_ptr(label_value_ptr).to_str().unwrap_or("");
+
+                attributes.push(KeyValue::new(label_name.clone(), label_value.to_string()));
+            }
+        }
+    }
+
+    histogram.record(value, &attributes);
 }

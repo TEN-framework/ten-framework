@@ -22,27 +22,28 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
              "Should not happen.");
 
   if (self->service_hub.service_hub) {
-    const char *label_names[] = {"app", "graph", "extension_group"};
+    const char *label_names[] = {"app_uri", "graph_id", "extension_group"};
 
     self->service_hub.metric_extension_thread_msg_queue_stay_time_us =
-        ten_metric_create(self->service_hub.service_hub, 1,
-                          "extension_thread_msg_queue_stay_time",
-                          "The duration (in micro-seconds) that a message "
-                          "instance stays in the message queue of extension "
-                          "thread before being processed.",
-                          label_names, 3);
+        ten_metric_create(
+            self->service_hub.service_hub, 2,
+            "extension_thread_msg_queue_stay_time",
+            "The duration (in micro-seconds) that messages stay "
+            "in the message queue of extension thread before being "
+            "processed. Use this to identify overloaded extension threads.",
+            label_names, 3);
     TEN_ASSERT(self->service_hub.metric_extension_thread_msg_queue_stay_time_us,
                "Should not happen.");
 
-    const char *lifecycle_label_names[] = {"app", "graph", "extension_group",
-                                           "extension", "stage"};
+    const char *lifecycle_label_names[] = {
+        "app_uri", "graph_id", "extension_group", "extension", "stage"};
 
     self->service_hub.metric_extension_lifecycle_duration_us =
         ten_metric_create(self->service_hub.service_hub, 1,
                           "extension_lifecycle_duration",
                           "The duration (in micro-seconds) of each extension "
-                          "lifecycle stage (on_init, on_start, on_stop, "
-                          "on_deinit).",
+                          "lifecycle stage (on_configure, on_init, on_start, "
+                          "on_stop, on_deinit).",
                           lifecycle_label_names, 5);
     TEN_ASSERT(self->service_hub.metric_extension_lifecycle_duration_us,
                "Should not happen.");

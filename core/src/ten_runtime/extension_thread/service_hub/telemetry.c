@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd_result/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_rust/ten_rust.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
@@ -79,8 +80,8 @@ void ten_extension_thread_record_extension_thread_msg_queue_stay_time(
 
     const char *label_values[] = {app_uri, graph_id, extension_group_name};
 
-    ten_metric_gauge_set(extension_thread_msg_queue_stay_time,
-                         (double)duration_us, label_values, 3);
+    ten_metric_histogram_observe(extension_thread_msg_queue_stay_time,
+                                 (double)duration_us, label_values, 3);
   }
 }
 
@@ -114,7 +115,10 @@ void ten_extension_record_lifecycle_duration(ten_extension_t *self,
 
   MetricHandle *metric_lifecycle =
       app->service_hub.metric_extension_lifecycle_duration_us;
-  TEN_ASSERT(metric_lifecycle, "Should not happen.");
+  if (!metric_lifecycle) {
+    // Metrics not enabled or not created, skip recording.
+    return;
+  }
 
   const char *app_uri = ten_app_get_uri(app);
   const char *graph_id = ten_engine_get_id(engine, false);
@@ -165,7 +169,10 @@ void ten_extension_record_cmd_processing_duration(ten_extension_t *self,
 
   MetricHandle *metric =
       app->service_hub.metric_extension_cmd_processing_duration_us;
-  TEN_ASSERT(metric, "Should not happen.");
+  if (!metric) {
+    // Metrics not enabled or not created, skip recording.
+    return;
+  }
 
   int64_t return_result_us = ten_current_time_us();
   int64_t duration_us = return_result_us - on_cmd_start_us;
@@ -175,10 +182,14 @@ void ten_extension_record_cmd_processing_duration(ten_extension_t *self,
   const char *graph_id = ten_engine_get_id(engine, false);
   const char *extension_name = ten_extension_get_name(self, true);
 
-  // Get cmd name from the result.
-  const char *msg_name = ten_msg_get_name(cmd_result);
+  // Get original cmd name from the cmd_result.
+  ten_cmd_result_t *raw_cmd_result =
+      (ten_cmd_result_t *)ten_msg_get_raw_msg(cmd_result);
+  const char *original_cmd_name =
+      ten_value_peek_raw_str(&raw_cmd_result->original_cmd_name, NULL);
 
-  const char *label_values[] = {app_uri, graph_id, extension_name, msg_name};
+  const char *label_values[] = {app_uri, graph_id, extension_name,
+                                original_cmd_name};
 
   ten_metric_histogram_observe(metric, (double)duration_us, label_values, 4);
 }
