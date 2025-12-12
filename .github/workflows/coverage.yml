@@ -251,7 +251,7 @@ jobs:
 
           echo $EXTRA_ARGS
 
-          tgn gen linux x64 release -- $EXTRA_ARGS
+          tgn gen linux x64 debug -- $EXTRA_ARGS
 
           echo "=== Disk space after tgn gen ==="
           df -h .
@@ -269,7 +269,7 @@ jobs:
           ) &
           CLEANUP_PID=$!
 
-          tgn build linux x64 release
+          tgn build linux x64 debug
 
           # Stop the cleanup background process
           kill $CLEANUP_PID 2>/dev/null || true
