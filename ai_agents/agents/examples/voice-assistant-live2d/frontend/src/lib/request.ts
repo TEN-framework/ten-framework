@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { getGraphProperties } from './graphProperties';
 
 // Generate a simple UUID-like string
 function genUUID(): string {
@@ -48,6 +49,14 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     const base = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
     const primary = base ? `${base}/start` : `/api/agents/start`;
     const { channel, userId, graphName, language, voiceType, greeting, prompt, properties, characterId } = config;
+    const computedProperties = getGraphProperties(
+        graphName,
+        language,
+        voiceType,
+        characterId,
+        prompt,
+        greeting,
+    );
     const data: Record<string, unknown> = {
         request_id: genUUID(),
         channel_name: channel,
@@ -65,8 +74,12 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
     if (characterId) {
         data.character_id = characterId;
     }
-    if (properties) {
-        data.properties = properties;
+    const mergedProperties = {
+        ...computedProperties,
+        ...(properties || {}),
+    };
+    if (Object.keys(mergedProperties).length > 0) {
+        data.properties = mergedProperties;
     }
 
     return retryWithBackoff(async () => {

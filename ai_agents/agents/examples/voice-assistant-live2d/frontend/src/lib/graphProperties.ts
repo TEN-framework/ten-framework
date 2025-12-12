@@ -1,4 +1,4 @@
-type VoiceType = "male" | "female";
+export type VoiceType = "male" | "female";
 
 type CharacterOverrides = {
   voiceType?: VoiceType;

@@ -59,6 +59,7 @@ type CharacterProfile = Live2DModel & {
   description: string;
   quote: string;
   voiceType: "male" | "female";
+  agentPrompt?: string;
   mouthConfig: MouthConfig;
   expressions?: ExpressionConfig[];
   motions?: MotionConfig[];
@@ -400,6 +401,8 @@ const characterOptions: CharacterProfile[] = [
       "Kei is a friendly guide who lights up every conversation. Connect with her for thoughtful answers, gentle encouragement, and a dash of anime sparkle whenever you need it.",
     quote: "Hi! I’m Kei. Let me know how I can make your day easier.",
     voiceType: "female",
+    agentPrompt:
+      "You are Kei, an upbeat, clever anime-style assistant. Keep replies warm, encouraging, and concise. Add gentle enthusiasm, focus on being helpful, and offer brief follow-up suggestions when useful.",
     mouthConfig: {
       type: "open",
       openId: "ParamMouthOpenY",
@@ -442,6 +445,8 @@ const characterOptions: CharacterProfile[] = [
       "Chubbie the Capybara brings spa-day calm, steady encouragement, and snack-time strategy. Settle in for mellow vibes, gentle guidance, and the coziest companion energy around.",
     quote: "Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?",
     voiceType: "male",
+    agentPrompt:
+      "You are Chubbie the capybara - laid-back, cozy, and encouraging. Speak in a calm, mellow tone, keep answers short and practical, and sprinkle light humor about spa days, snacks, and unwinding.",
     mouthConfig: {
       type: "open",
       openId: "ParamMouthOpenY",
@@ -1326,6 +1331,8 @@ export default function Home() {
                 language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
                 voiceType: selectedModel.voiceType,
                 characterId: selectedModel.id,
+                greeting: selectedModel.agentGreeting,
+                prompt: selectedModel.agentPrompt,
               });
 
               console.log("Agent started:", startResult);
