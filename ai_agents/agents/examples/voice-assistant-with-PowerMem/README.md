@@ -86,6 +86,18 @@ EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/api/v1
 
 ## Quick Start
 
+### Docker (Recommand)
+
+1. Start container
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Access the application:**
+   - http://localhost:3000
+
+### Local
+
 1. **Install dependencies:**
    ```bash
    task install
