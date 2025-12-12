@@ -24,7 +24,13 @@
     },
     "services": {
       "telemetry": {
-        "enabled": true
+        "enabled": true,
+        "metrics": {
+          "enabled": true,
+          "exporter": {
+            "type": "console"
+          }
+        }
       }
     },
     "predefined_graphs": [

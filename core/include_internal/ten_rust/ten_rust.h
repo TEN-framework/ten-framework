@@ -170,8 +170,7 @@ TEN_RUST_PRIVATE_API bool ten_validate_property_json_file(
     const char *property_file, const char **out_err_msg);
 
 TEN_RUST_PRIVATE_API ServiceHub *ten_service_hub_create(
-    const char *telemetry_host, uint32_t telemetry_port, const char *api_host,
-    uint32_t api_port, ten_app_t *app);
+    const char *services_config_json);
 
 TEN_RUST_PRIVATE_API void ten_service_hub_shutdown(ServiceHub *service_hub_ptr);
 

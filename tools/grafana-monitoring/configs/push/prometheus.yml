@@ -1,0 +1,18 @@
+# Prometheus Configuration - Push Mode Only
+# Scrapes metrics from OTEL Collector only
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ten-framework-monitor'
+    mode: 'push'
+
+scrape_configs:
+  - job_name: 'ten-framework'
+    static_configs:
+      - targets: ['otel-collector:8889']
+        labels:
+          group: 'ten_runtime'
+    scrape_interval: 5s
+    scrape_timeout: 5s

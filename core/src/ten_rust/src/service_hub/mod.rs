@@ -6,22 +6,22 @@
 //
 mod api;
 mod bindings;
-mod telemetry;
+pub mod telemetry; // OpenTelemetry-based telemetry (public for testing)
 
 use std::{ffi::CStr, os::raw::c_char, ptr, thread};
 
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
 use futures::{channel::oneshot, future::select, FutureExt};
-use prometheus::Registry;
+use prometheus::Registry; // Still using prometheus::Registry for compatibility
 
 use crate::constants::{
-    SERVICE_HUB_SERVER_BIND_MAX_RETRIES, SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
+    METRICS, SERVICE_HUB_SERVER_BIND_MAX_RETRIES, SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
 };
 
 pub struct ServiceHub {
-    /// The Prometheus registry.
-    registry: Registry,
+    /// The OpenTelemetry metrics exporter.
+    metrics_exporter: telemetry::MetricsExporter,
 
     /// The server thread handle.
     server_thread_handle: Option<thread::JoinHandle<()>>,
@@ -37,13 +37,21 @@ pub struct ServiceHub {
 /// endpoints, or both depending on which endpoint is being bound.
 fn configure_routes(
     cfg: &mut web::ServiceConfig,
-    registry: Registry,
+    registry: Option<Registry>,
+    metrics_path: Option<String>,
     is_telemetry_endpoint: bool,
     is_api_endpoint: bool,
 ) {
     if is_telemetry_endpoint {
-        // Configure telemetry endpoint.
-        telemetry::configure_telemetry_route(cfg, registry.clone());
+        if let Some(reg) = registry {
+            // Configure telemetry endpoint (OpenTelemetry metrics).
+            let path = metrics_path.unwrap_or_else(|| METRICS.to_string());
+            telemetry::configure_metrics_endpoint(cfg, reg, path);
+        } else {
+            tracing::error!(
+                "Warning: Telemetry endpoint requested but no Prometheus registry available"
+            );
+        }
     }
 
     if is_api_endpoint {
@@ -83,7 +91,8 @@ fn determine_binding_addresses(
 /// This function configures routes for the App based on whether the telemetry
 /// and API endpoints are provided, and whether they are the same or different.
 fn create_server_app(
-    registry: Registry,
+    registry: Option<Registry>,
+    metrics_path: Option<String>,
     telemetry_endpoint: &Option<String>,
     api_endpoint: &Option<String>,
 ) -> App<
@@ -109,6 +118,10 @@ fn create_server_app(
         let api_port =
             api_endpoint.as_ref().and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
 
+        let metrics_path_clone = metrics_path.clone();
+        let registry_clone_for_telemetry = registry.clone();
+        let registry_clone_for_api = registry.clone();
+
         app_builder
             // Add telemetry routes with guard.
             .service(
@@ -125,7 +138,15 @@ fn create_server_app(
                             false
                         }
                     }))
-                    .configure(|cfg| configure_routes(cfg, registry.clone(), true, false)),
+                    .configure(move |cfg| {
+                        configure_routes(
+                            cfg,
+                            registry_clone_for_telemetry.clone(),
+                            metrics_path_clone.clone(),
+                            true,
+                            false,
+                        )
+                    }),
             )
             // Add API routes with guard.
             .service(
@@ -142,7 +163,9 @@ fn create_server_app(
                             false
                         }
                     }))
-                    .configure(|cfg| configure_routes(cfg, registry.clone(), false, true)),
+                    .configure(move |cfg| {
+                        configure_routes(cfg, registry_clone_for_api.clone(), None, false, true)
+                    }),
             )
     } else {
         // Either single endpoint or both endpoints are the same.
@@ -150,7 +173,9 @@ fn create_server_app(
         let is_telemetry = telemetry_endpoint.is_some();
         let is_api = api_endpoint.is_some();
 
-        app_builder.configure(|cfg| configure_routes(cfg, registry.clone(), is_telemetry, is_api))
+        app_builder.configure(|cfg| {
+            configure_routes(cfg, registry.clone(), metrics_path, is_telemetry, is_api)
+        })
     }
 }
 
@@ -161,7 +186,8 @@ fn create_server_app(
 /// - A vector of error messages if binding failed
 fn create_server_and_bind_to_addresses(
     binding_addresses: &[String],
-    registry: Registry,
+    registry: Option<Registry>,
+    metrics_path: Option<String>,
     telemetry_endpoint: &Option<String>,
     api_endpoint: &Option<String>,
 ) -> (Option<actix_web::dev::Server>, Vec<String>) {
@@ -169,13 +195,19 @@ fn create_server_and_bind_to_addresses(
 
     // Create the necessary parameters for the server factory
     let registry_clone = registry.clone();
+    let metrics_path_clone = metrics_path.clone();
     let telemetry_endpoint_clone = telemetry_endpoint.clone();
     let api_endpoint_clone = api_endpoint.clone();
 
     // Create a new server with a factory that uses the create_server_app
     // function
     let server = HttpServer::new(move || {
-        create_server_app(registry_clone.clone(), &telemetry_endpoint_clone, &api_endpoint_clone)
+        create_server_app(
+            registry_clone.clone(),
+            metrics_path_clone.clone(),
+            &telemetry_endpoint_clone,
+            &api_endpoint_clone,
+        )
     })
     .shutdown_timeout(0)
     .backlog(1024);
@@ -184,13 +216,13 @@ fn create_server_and_bind_to_addresses(
         // Single address binding is simple.
         match server.bind(&binding_addresses[0]) {
             Ok(server) => {
-                eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
+                tracing::info!("Successfully bound to endpoint: {}", binding_addresses[0]);
                 Some(server.run())
             }
             Err(e) => {
                 let error_msg =
                     format!("Failed to bind to address {}: {:?}", binding_addresses[0], e);
-                eprintln!("{error_msg}");
+                tracing::error!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
             }
@@ -198,7 +230,7 @@ fn create_server_and_bind_to_addresses(
     } else if binding_addresses.len() == 2 {
         // For two addresses, try binding to both.
         let result = server.bind(&binding_addresses[0]).and_then(|server| {
-            eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
+            tracing::info!("Successfully bound to endpoint: {}", binding_addresses[0]);
             // Try binding to second address.
             server.bind(&binding_addresses[1])
         });
@@ -206,13 +238,13 @@ fn create_server_and_bind_to_addresses(
         match result {
             Ok(server) => {
                 // Successfully bound to both addresses.
-                eprintln!("Successfully bound to endpoint: {}", binding_addresses[1]);
+                tracing::info!("Successfully bound to endpoint: {}", binding_addresses[1]);
                 Some(server.run())
             }
             Err(e) => {
                 // Failed to bind to at least one address.
                 let error_msg = format!("Failed to bind to addresses: {e:?}");
-                eprintln!("{error_msg}");
+                tracing::error!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
             }
@@ -239,7 +271,8 @@ fn create_server_and_bind_to_addresses(
 fn create_service_hub_server_with_retry(
     telemetry_endpoint: &Option<String>,
     api_endpoint: &Option<String>,
-    registry: Registry,
+    registry: Option<Registry>,
+    metrics_path: Option<String>,
 ) -> Option<actix_web::dev::Server> {
     // If both endpoints are None, return None early.
     if telemetry_endpoint.is_none() && api_endpoint.is_none() {
@@ -254,6 +287,7 @@ fn create_service_hub_server_with_retry(
         let (server, errors) = create_server_and_bind_to_addresses(
             &binding_addresses,
             registry.clone(),
+            metrics_path.clone(),
             telemetry_endpoint,
             api_endpoint,
         );
@@ -267,7 +301,7 @@ fn create_service_hub_server_with_retry(
         // If we've reached the maximum number of attempts, log the error and
         // return None.
         if i >= SERVICE_HUB_SERVER_BIND_MAX_RETRIES - 1 {
-            eprintln!(
+            tracing::error!(
                 "Error binding to addresses: {:?} after {} attempts. Errors: {:?}",
                 binding_addresses,
                 i + 1,
@@ -275,7 +309,7 @@ fn create_service_hub_server_with_retry(
             );
 
             // Provide a helpful message for common issues.
-            eprintln!(
+            tracing::error!(
                 "Check if another process is using these ports or if you have permission to bind \
                  to these addresses."
             );
@@ -284,7 +318,7 @@ fn create_service_hub_server_with_retry(
         }
 
         // Otherwise, log the error and retry after a delay.
-        eprintln!(
+        tracing::error!(
             "Failed to bind to endpoints. Attempt {} of {}. Retrying in {} second{}...",
             i + 1,
             SERVICE_HUB_SERVER_BIND_MAX_RETRIES,
@@ -327,11 +361,11 @@ fn create_service_hub_server_thread(
                 match server.await {
                     Ok(_) => {
                         // Server completed normally (unlikely).
-                        eprintln!("Endpoint server completed normally");
+                        tracing::info!("Endpoint server completed normally");
                     }
                     Err(e) => {
                         // Server encountered an error.
-                        eprintln!("Endpoint server error: {e}");
+                        tracing::error!("Endpoint server error: {e}");
                         // Force the entire process to exit immediately.
                         std::process::exit(-1);
                     }
@@ -345,7 +379,7 @@ fn create_service_hub_server_thread(
                 // Wait for shutdown signal.
                 let _ = shutdown_rx.await;
 
-                eprintln!("Shutting down endpoint server (graceful stop)...");
+                tracing::info!("Shutting down endpoint server (graceful stop)...");
 
                 // Gracefully stop the server.
                 server_handle.stop(true).await;
@@ -360,13 +394,13 @@ fn create_service_hub_server_thread(
             futures::pin_mut!(server_future, shutdown_future);
             select(server_future, shutdown_future).await;
 
-            eprintln!("Endpoint server shut down.");
+            tracing::info!("Endpoint server shut down.");
             Ok(())
         });
 
         // Handle any errors from the actix system.
         if let Err(e) = result {
-            eprintln!("Fatal error in endpoint server thread: {e:?}");
+            tracing::error!("Fatal error in endpoint server thread: {e:?}");
             std::process::exit(-1);
         }
     });
@@ -378,179 +412,137 @@ fn create_service_hub_server_thread(
 ///
 /// # Safety
 ///
-/// This function takes raw C string pointers and port values.
-/// The pointers must be valid and point to properly null-terminated strings or
-/// be NULL. The returned pointer must be freed with `ten_service_hub_shutdown`
-/// to avoid memory leaks.
+/// This function takes a raw C string pointer to the services configuration
+/// JSON. The pointer must be valid and point to a properly null-terminated
+/// string or be NULL. The returned pointer must be freed with
+/// `ten_service_hub_shutdown` to avoid memory leaks.
 #[no_mangle]
 pub unsafe extern "C" fn ten_service_hub_create(
-    telemetry_host: *const c_char,
-    telemetry_port: u32,
-    api_host: *const c_char,
-    api_port: u32,
+    services_config_json: *const c_char,
 ) -> *mut ServiceHub {
-    // Check if both hosts are NULL, if so, return null.
-    if telemetry_host.is_null() && api_host.is_null() {
-        eprintln!("Both telemetry and API hosts are NULL, not starting service hub");
+    // Check if config is NULL.
+    if services_config_json.is_null() {
+        tracing::error!("Warning: services_config_json is NULL, service hub not created");
         return ptr::null_mut();
     }
 
-    // Create a new Prometheus registry.
-    let registry = Registry::new();
-
-    // Convert C strings to Rust strings if not NULL.
-    let telemetry_host_str = if !telemetry_host.is_null() {
-        match CStr::from_ptr(telemetry_host).to_str() {
-            Ok(s) if !s.trim().is_empty() => Some(s.to_string()),
-            _ => None,
+    // Parse the JSON configuration.
+    let config_str = match CStr::from_ptr(services_config_json).to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::error!("Error: Failed to parse services config JSON as UTF-8: {e}");
+            return ptr::null_mut();
         }
-    } else {
-        None
     };
 
-    let api_host_str = if !api_host.is_null() {
-        match CStr::from_ptr(api_host).to_str() {
-            Ok(s) if !s.trim().is_empty() => Some(s.to_string()),
-            _ => None,
+    let config: serde_json::Value = match serde_json::from_str(config_str) {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!("Error: Failed to parse services config JSON: {e}");
+            return ptr::null_mut();
         }
-    } else {
-        None
     };
 
-    // Format the endpoints if hosts are available.
-    let telemetry_endpoint =
-        telemetry_host_str.as_ref().map(|host| format!("{host}:{telemetry_port}"));
-    let api_endpoint = api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
+    // Extract telemetry configuration.
+    let telemetry_config =
+        config.get("telemetry").and_then(|v| telemetry::TelemetryConfig::from_json(v).ok());
 
-    // If both endpoints are the same and not None, use a single server.
-    if telemetry_endpoint.is_some() && api_endpoint.is_some() {
-        if telemetry_endpoint == api_endpoint {
-            if let Some(endpoint) = telemetry_endpoint.as_ref() {
-                eprintln!("Creating combined telemetry/API server at {endpoint}");
-
-                // Create a server with both routes.
-                let registry_clone = registry.clone();
-
-                let server = match create_service_hub_server_with_retry(
-                    &telemetry_endpoint,
-                    &api_endpoint,
-                    registry_clone,
-                ) {
-                    Some(server) => server,
-                    None => {
-                        eprintln!("Failed to bind server to {endpoint}");
-                        return ptr::null_mut();
-                    }
-                };
-
-                let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
-
-                return Box::into_raw(Box::new(ServiceHub {
-                    registry,
-                    server_thread_handle: Some(thread_handle),
-                    server_thread_shutdown_tx: Some(shutdown_tx),
-                }));
-            } else {
-                eprintln!("Unexpected error in service hub creation");
-                return ptr::null_mut();
-            }
+    // Extract API configuration.
+    let api_config = config.get("api").and_then(|v| {
+        if v.get("enabled")?.as_bool()? {
+            let host = v.get("host")?.as_str()?.to_string();
+            let port = v.get("port")?.as_u64()? as u16;
+            Some((host, port))
         } else {
-            // Both endpoints are different - we'll handle this with one HTTP
-            // server instance that uses guards to route based on endpoint.
-            eprintln!(
-                "Creating service with telemetry at {} and API at {}",
-                telemetry_endpoint.as_ref().unwrap(),
-                api_endpoint.as_ref().unwrap()
-            );
+            None
+        }
+    });
 
-            let registry_clone = registry.clone();
+    // Determine the exporter type from telemetry config.
+    let exporter_type = telemetry_config
+        .as_ref()
+        .map(telemetry::ExporterType::from_config)
+        .unwrap_or(telemetry::ExporterType::Prometheus);
 
-            let server = match create_service_hub_server_with_retry(
+    // Initialize metrics exporter.
+    let metrics_exporter = telemetry::MetricsExporter::new(exporter_type);
+    if let Err(e) = metrics_exporter.init("ten-framework") {
+        tracing::error!("Error: Failed to initialize metrics exporter: {e}");
+        return ptr::null_mut();
+    }
+
+    // Determine telemetry endpoint (for Prometheus pull mode).
+    let telemetry_endpoint = telemetry_config.as_ref().and_then(|c| c.get_prometheus_endpoint());
+
+    // Get Prometheus metrics path (for Prometheus pull mode).
+    let metrics_path = telemetry_config.as_ref().and_then(|c| c.get_prometheus_path());
+
+    // Determine API endpoint.
+    let api_endpoint = api_config.map(|(host, port)| format!("{host}:{port}"));
+
+    // Get Prometheus registry only if we need it (when telemetry endpoint exists).
+    // This avoids creating unnecessary Registry for Console/OTLP exporters.
+    let registry = if telemetry_endpoint.is_some() {
+        match metrics_exporter.get_prometheus_registry() {
+            Some(reg) => Some(reg),
+            None => {
+                tracing::error!(
+                    "Warning: Telemetry endpoint configured but no Prometheus registry available"
+                );
+                None
+            }
+        }
+    } else {
+        // No telemetry endpoint, no need for registry
+        None
+    };
+
+    // Log configuration.
+    if let Some(ref te) = telemetry_endpoint {
+        tracing::info!("Telemetry endpoint: {te}");
+    }
+    if let Some(ref mp) = metrics_path {
+        tracing::info!("Metrics path: {mp}");
+    }
+    if let Some(ref ae) = api_endpoint {
+        tracing::info!("API endpoint: {ae}");
+    }
+
+    // Create the HTTP server with retry mechanism (only if we have endpoints).
+    // For Console/OTLP exporters without HTTP endpoints, we can skip the server.
+    let (server_thread_handle, server_thread_shutdown_tx) =
+        if telemetry_endpoint.is_some() || api_endpoint.is_some() {
+            match create_service_hub_server_with_retry(
                 &telemetry_endpoint,
                 &api_endpoint,
-                registry_clone,
+                registry,
+                metrics_path,
             ) {
-                Some(server) => server,
+                Some(server) => {
+                    // Start the server in a separate thread.
+                    let (handle, tx) = create_service_hub_server_thread(server);
+                    (Some(handle), Some(tx))
+                }
                 None => {
-                    eprintln!(
-                        "Failed to bind server to endpoints {} and {}",
-                        telemetry_endpoint.as_ref().unwrap(),
-                        api_endpoint.as_ref().unwrap()
-                    );
+                    tracing::error!("Error: Failed to create service hub server");
                     return ptr::null_mut();
                 }
-            };
+            }
+        } else {
+            // No HTTP endpoints needed (e.g., Console or OTLP exporter).
+            tracing::info!("No HTTP endpoints configured (using push-based or console exporter)");
+            (None, None)
+        };
 
-            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
+    // Create the ServiceHub struct.
+    let service_hub = ServiceHub {
+        metrics_exporter,
+        server_thread_handle,
+        server_thread_shutdown_tx,
+    };
 
-            return Box::into_raw(Box::new(ServiceHub {
-                registry,
-                server_thread_handle: Some(thread_handle),
-                server_thread_shutdown_tx: Some(shutdown_tx),
-            }));
-        }
-    }
-
-    if telemetry_endpoint.is_some() && api_endpoint.is_none() {
-        // Telemetry only.
-        if let Some(endpoint) = telemetry_endpoint.as_ref() {
-            eprintln!("Creating telemetry-only server at {endpoint}");
-
-            // Create telemetry server with retry mechanism.
-            let registry_clone = registry.clone();
-
-            let server = match create_service_hub_server_with_retry(
-                &telemetry_endpoint,
-                &None,
-                registry_clone,
-            ) {
-                Some(server) => server,
-                None => {
-                    eprintln!("Failed to bind telemetry server to {endpoint}");
-                    return ptr::null_mut();
-                }
-            };
-
-            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
-
-            return Box::into_raw(Box::new(ServiceHub {
-                registry,
-                server_thread_handle: Some(thread_handle),
-                server_thread_shutdown_tx: Some(shutdown_tx),
-            }));
-        }
-    }
-
-    if api_endpoint.is_some() && telemetry_endpoint.is_none() {
-        // API only.
-        if let Some(endpoint) = api_endpoint.as_ref() {
-            eprintln!("Creating API-only server at {endpoint}");
-
-            // Create API server with retry mechanism.
-            let registry_clone = registry.clone();
-
-            let server =
-                match create_service_hub_server_with_retry(&None, &api_endpoint, registry_clone) {
-                    Some(server) => server,
-                    None => {
-                        eprintln!("Failed to bind API server to {endpoint}");
-                        return ptr::null_mut();
-                    }
-                };
-
-            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
-
-            return Box::into_raw(Box::new(ServiceHub {
-                registry,
-                server_thread_handle: Some(thread_handle),
-                server_thread_shutdown_tx: Some(shutdown_tx),
-            }));
-        }
-    }
-
-    // This should never happen due to the checks above.
-    eprintln!("Unexpected error in service hub creation");
-    ptr::null_mut()
+    // Return a pointer to the ServiceHub.
+    Box::into_raw(Box::new(service_hub))
 }
 
 /// Shut down the endpoint system, stop the server, and clean up all resources.
@@ -571,7 +563,7 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceH
     debug_assert!(!service_hub_ptr.is_null(), "System pointer is null");
     // Early return for null pointers.
     if service_hub_ptr.is_null() {
-        eprintln!("Warning: Attempt to shut down null ServiceHub pointer");
+        tracing::error!("Warning: Attempt to shut down null ServiceHub pointer");
         return;
     }
 
@@ -580,21 +572,26 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceH
     // scope.
     let service_hub = Box::from_raw(service_hub_ptr);
 
+    // Shutdown OpenTelemetry metrics exporter
+    if let Err(e) = service_hub.metrics_exporter.shutdown() {
+        tracing::error!("Warning: Failed to shutdown metrics exporter: {e}");
+    }
+
     // Notify the actix system to shut down through the `oneshot` channel.
     if let Some(shutdown_tx) = service_hub.server_thread_shutdown_tx {
-        eprintln!("Shutting down service hub...");
+        tracing::info!("Shutting down service hub...");
         if let Err(e) = shutdown_tx.send(()) {
-            eprintln!("Failed to send shutdown signal: {e:?}");
+            tracing::error!("Failed to send shutdown signal: {e:?}");
             // Don't panic, just continue with cleanup.
-            eprintln!("Continuing with cleanup despite shutdown signal failure");
+            tracing::error!("Continuing with cleanup despite shutdown signal failure");
         }
     } else {
-        eprintln!("No shutdown channel available for the service hub");
+        tracing::info!("No shutdown channel available for the service hub");
     }
 
     // Wait for the server thread to complete with a timeout.
     if let Some(server_thread_handle) = service_hub.server_thread_handle {
-        eprintln!("Waiting for service hub to shut down...");
+        tracing::info!("Waiting for service hub to shut down...");
 
         // Define a timeout for the join operation.
         const SHUTDOWN_TIMEOUT_SECS: u64 = 10;
@@ -617,19 +614,21 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceH
             match rx.recv_timeout(std::time::Duration::from_secs(SHUTDOWN_TIMEOUT_SECS)) {
                 Ok(join_result) => match join_result {
                     Ok(_) => {
-                        eprintln!("Service hub server thread joined successfully")
+                        tracing::info!("Service hub server thread joined successfully")
                     }
-                    Err(e) => eprintln!("Error joining service hub server thread: {e:?}"),
+                    Err(e) => tracing::error!("Error joining service hub server thread: {e:?}"),
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
-                    eprintln!(
+                    tracing::error!(
                         "WARNING: Service hub server thread did not shut down within timeout \
                          ({SHUTDOWN_TIMEOUT_SECS}s)"
                     );
-                    eprintln!("The thread may still be running, potentially leaking resources");
+                    tracing::error!(
+                        "The thread may still be running, potentially leaking resources"
+                    );
                 }
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
-                    eprintln!(
+                    tracing::error!(
                         "ERROR: Channel disconnected while waiting for server thread to join"
                     );
                 }
@@ -639,9 +638,9 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceH
             // scope.
         });
     } else {
-        eprintln!("No thread handle available for the service hub");
+        tracing::info!("No thread handle available for the service hub");
     }
 
     // The system will be automatically dropped here, cleaning up all resources.
-    eprintln!("Service hub resources cleaned up");
+    tracing::info!("Service hub resources cleaned up");
 }

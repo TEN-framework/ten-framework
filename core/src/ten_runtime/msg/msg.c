@@ -76,6 +76,7 @@ void ten_raw_msg_init(ten_msg_t *self, TEN_MSG_TYPE type) {
   ten_list_init(&self->locked_res);
 
   self->timestamp = 0;
+  self->processing_start_timestamp_us = 0;
 }
 
 void ten_raw_msg_deinit(ten_msg_t *self) {

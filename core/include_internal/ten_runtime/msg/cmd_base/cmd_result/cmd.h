@@ -33,6 +33,11 @@ typedef struct ten_cmd_result_t {
 
   ten_value_t is_final;      // bool
   ten_value_t is_completed;  // bool
+
+  // The timestamp (in microseconds) when on_cmd was called for the original
+  // cmd. This is copied from the original cmd's processing_start_timestamp_us
+  // and used to measure cmd processing duration.
+  int64_t origin_cmd_processing_start_timestamp_us;
 } ten_cmd_result_t;
 
 TEN_RUNTIME_PRIVATE_API bool ten_raw_cmd_result_validate_schema(

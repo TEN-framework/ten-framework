@@ -1,0 +1,91 @@
+# TEN Framework - Hybrid Mode Monitoring Configuration
+# Use Case: Supports both Pull and Push modes simultaneously for comparison testing
+#
+# Usage:
+#   docker-compose -f docker-compose.hybrid.yml up -d
+#
+# Applications can use either exporter type, or run multiple app instances with different exporters
+#
+# Pull Mode configuration (property.json):
+#   {
+#     "type": "prometheus",
+#     "config": {
+#       "host": "0.0.0.0",
+#       "port": 49484,
+#       "path": "/metrics"
+#     }
+#   }
+#
+# Push Mode configuration (property.json):
+#   {
+#     "type": "otlp",
+#     "config": {
+#       "endpoint": "http://localhost:4317",
+#       "protocol": "grpc"
+#     }
+#   }
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  # OpenTelemetry Collector - Receives OTLP metrics
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: ten_otel_collector_hybrid
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus exporter
+    volumes:
+      - ./configs/hybrid/otel-collector-config.yml:/etc/otelcol-contrib/config.yaml
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ten_prometheus_hybrid
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./configs/hybrid/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ten_grafana_hybrid
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
