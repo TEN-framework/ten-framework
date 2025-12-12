@@ -91,14 +91,12 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    LLM_PROVIDER=qwen  # Options: qwen, openai, siliconflow
    LLM_API_KEY=your_qwen_api_key
    LLM_MODEL=qwen-plus
-   LLM_BASE_URL=https://dashscope.aliyuncs.com/api/v1
 
    # Embedding Provider (for PowerMem)
    EMBEDDING_PROVIDER=qwen  # Options: qwen, openai, mock
    EMBEDDING_API_KEY=your_qwen_api_key  # Can be same as LLM_API_KEY
    EMBEDDING_MODEL=text-embedding-v4
    EMBEDDING_DIMS=1536
-   EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/api/v1
    ```
 
    **Optional Variables:**
