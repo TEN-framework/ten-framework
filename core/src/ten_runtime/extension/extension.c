@@ -805,6 +805,14 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_LOGD("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the timestamp when on_cmd is called for cmd processing duration
+  // tracking.
+  int64_t on_cmd_start_us = ten_current_time_us();
+  ten_msg_t *raw_msg = ten_shared_ptr_get_data(msg);
+  raw_msg->processing_start_timestamp_us = on_cmd_start_us;
+#endif
+
   if (self->on_cmd) {
     int64_t begin = ten_current_time_ms();
 

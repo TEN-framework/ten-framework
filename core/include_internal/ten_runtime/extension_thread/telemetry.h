@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "ten_utils/lib/smart_ptr.h"
+
 typedef struct ten_extension_thread_t ten_extension_thread_t;
 typedef struct ten_extension_t ten_extension_t;
 
@@ -21,5 +23,9 @@ ten_extension_thread_record_extension_thread_msg_queue_stay_time(
 
 TEN_RUNTIME_PRIVATE_API void ten_extension_record_lifecycle_duration(
     ten_extension_t *self, const char *stage, int64_t duration_us);
+
+TEN_RUNTIME_PRIVATE_API void ten_extension_record_cmd_processing_duration(
+    ten_extension_t *self, ten_shared_ptr_t *cmd_result,
+    int64_t on_cmd_start_us);
 
 #endif

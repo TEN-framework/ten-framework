@@ -15,7 +15,9 @@
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
+#include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_rust/ten_rust.h"
+#include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_utils/lib/time.h"
 
 static MetricHandle *
@@ -99,39 +101,86 @@ void ten_extension_record_lifecycle_duration(ten_extension_t *self,
 
   ten_extension_context_t *extension_context =
       extension_thread->extension_context;
-  if (!extension_context) {
-    return;
-  }
-  TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
+  TEN_ASSERT(extension_context && ten_extension_context_check_integrity(
+                                      extension_context, false),
              "Should not happen.");
 
   ten_engine_t *engine = extension_context->engine;
-  if (!engine) {
-    return;
-  }
-  TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
+  TEN_ASSERT(engine && ten_engine_check_integrity(engine, false),
+             "Should not happen.");
 
   ten_app_t *app = engine->app;
-  if (!app) {
-    return;
-  }
-  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
 
   MetricHandle *metric_lifecycle =
       app->service_hub.metric_extension_lifecycle_duration_us;
-  if (metric_lifecycle) {
-    const char *app_uri = ten_app_get_uri(app);
-    const char *graph_id = ten_engine_get_id(engine, false);
-    const char *extension_group_name =
-        ten_extension_group_get_name(extension_thread->extension_group, true);
-    const char *extension_name = ten_extension_get_name(self, true);
+  TEN_ASSERT(metric_lifecycle, "Should not happen.");
 
-    const char *label_values[] = {app_uri, graph_id, extension_group_name,
-                                  extension_name, stage};
+  const char *app_uri = ten_app_get_uri(app);
+  const char *graph_id = ten_engine_get_id(engine, false);
+  const char *extension_group_name =
+      ten_extension_group_get_name(extension_thread->extension_group, true);
+  const char *extension_name = ten_extension_get_name(self, true);
 
-    ten_metric_gauge_set(metric_lifecycle, (double)duration_us, label_values,
-                         5);
+  const char *label_values[] = {app_uri, graph_id, extension_group_name,
+                                extension_name, stage};
+
+  ten_metric_gauge_set(metric_lifecycle, (double)duration_us, label_values, 5);
+}
+
+void ten_extension_record_cmd_processing_duration(ten_extension_t *self,
+                                                  ten_shared_ptr_t *cmd_result,
+                                                  int64_t on_cmd_start_us) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(cmd_result, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd_result), "Invalid argument.");
+  TEN_ASSERT(ten_msg_get_type(cmd_result) == TEN_MSG_TYPE_CMD_RESULT,
+             "Should be cmd_result.");
+
+  // Check if this is the final result.
+  if (!ten_cmd_result_is_final(cmd_result, NULL)) {
+    // Only record metrics for final results.
+    return;
   }
+
+  // Get app instance to access the metric.
+  ten_extension_thread_t *extension_thread = self->extension_thread;
+  TEN_ASSERT(extension_thread &&
+                 ten_extension_thread_check_integrity(extension_thread, false),
+             "Should not happen.");
+
+  ten_extension_context_t *extension_context =
+      extension_thread->extension_context;
+  TEN_ASSERT(extension_context && ten_extension_context_check_integrity(
+                                      extension_context, false),
+             "Should not happen.");
+
+  ten_engine_t *engine = extension_context->engine;
+  TEN_ASSERT(engine && ten_engine_check_integrity(engine, false),
+             "Should not happen.");
+
+  ten_app_t *app = engine->app;
+  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
+
+  MetricHandle *metric =
+      app->service_hub.metric_extension_cmd_processing_duration_us;
+  TEN_ASSERT(metric, "Should not happen.");
+
+  int64_t return_result_us = ten_current_time_us();
+  int64_t duration_us = return_result_us - on_cmd_start_us;
+
+  // Get extension location (app_uri, graph_id, extension_name).
+  const char *app_uri = ten_app_get_uri(app);
+  const char *graph_id = ten_engine_get_id(engine, false);
+  const char *extension_name = ten_extension_get_name(self, true);
+
+  // Get cmd name from the result.
+  const char *msg_name = ten_msg_get_name(cmd_result);
+
+  const char *label_values[] = {app_uri, graph_id, extension_name, msg_name};
+
+  ten_metric_histogram_observe(metric, (double)duration_us, label_values, 4);
 }
 
 #endif
