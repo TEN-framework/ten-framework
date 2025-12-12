@@ -790,6 +790,7 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectedUserId, setConnectedUserId] = useState<number | null>(null);
   const [selectedModel, setSelectedModel] = useState<CharacterProfile>(
     characterOptions[0]
   );
@@ -867,6 +868,34 @@ export default function Home() {
     if (candidate && candidate.id !== selectedModel.id) {
       prevSpeakingRef.current = false;
       setSelectedModel(candidate);
+      // If we're already connected, restart the agent with the newly selected character
+      // so that voice/greeting/personality updates take effect immediately.
+      if (isConnected && connectedUserId !== null) {
+        void (async () => {
+          setIsConnecting(true);
+          try {
+            await apiStopService(channelName);
+          } catch (error) {
+            console.warn("[Agent] Failed to stop agent while switching character:", error);
+          }
+          try {
+            await apiStartService({
+              channel: channelName,
+              userId: connectedUserId,
+              graphName: process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
+              language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
+              voiceType: candidate.voiceType,
+              characterId: candidate.id,
+              greeting: candidate.agentGreeting,
+              prompt: candidate.agentPrompt,
+            });
+          } catch (error) {
+            console.error("[Agent] Failed to restart agent after character switch:", error);
+          } finally {
+            setIsConnecting(false);
+          }
+        })();
+      }
     }
   };
 
@@ -1219,6 +1248,7 @@ export default function Home() {
 
           await agoraService.disconnect();
           setIsConnected(false);
+          setConnectedUserId(null);
           stopPing(); // Stop ping when disconnecting
           setIsConnecting(false);
         } else {
@@ -1318,6 +1348,7 @@ export default function Home() {
           const success = await agoraService.connect(agoraConfig);
           if (success) {
             setIsConnected(true);
+            setConnectedUserId(agoraConfig.uid ?? 0);
 
             // Sync microphone state with Agora service
             setIsMuted(agoraService.isMicrophoneMuted());

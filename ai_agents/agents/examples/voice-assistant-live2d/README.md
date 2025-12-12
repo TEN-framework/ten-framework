@@ -342,6 +342,10 @@ Use TMAN Designer (http://localhost:49483) to modify the graph: swap STT/LLM/TTS
 - Kei: Minimax TTS `voice_id` is set to empty (default voice). This is applied when starting a session with Kei and persists for the session.
 - Chubbie: Uses the backend default Minimax TTS voice `English_Jovialman`.
 
+You can override these in the frontend by setting:
+- `NEXT_PUBLIC_KEI_VOICE_ID`
+- `NEXT_PUBLIC_CHUBBIE_VOICE_ID`
+
 ## Release as Docker Image
 
 > Run the following commands from the `ai_agents` directory after populating `.env`.

@@ -17,7 +17,9 @@ const voiceTypeDefaults: Record<VoiceType, string> = {
 const characterOverrides: Record<string, CharacterOverrides> = {
   kei: {
     voiceType: "female",
-    voiceId: "",
+    // Set `NEXT_PUBLIC_KEI_VOICE_ID` to force a specific Minimax TTS voice for Kei.
+    // Leaving it empty uses the backend/provider default voice.
+    voiceId: process.env.NEXT_PUBLIC_KEI_VOICE_ID || "",
     greeting:
       "My name is Kei, nice to meet you! I'm your anime assistant. What's your name?",
     prompt:
@@ -25,7 +27,8 @@ const characterOverrides: Record<string, CharacterOverrides> = {
   },
   chubbie: {
     voiceType: "male",
-    voiceId: "English_Jovialman",
+    // Set `NEXT_PUBLIC_CHUBBIE_VOICE_ID` to override Chubbie's voice. Defaults to "English_Jovialman".
+    voiceId: process.env.NEXT_PUBLIC_CHUBBIE_VOICE_ID || "English_Jovialman",
     greeting:
       "I'm Chubbie the Capybara. Let's take it easy - what can I help you relax or focus on today?",
     prompt:
