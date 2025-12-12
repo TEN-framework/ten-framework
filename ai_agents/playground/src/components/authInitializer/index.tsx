@@ -14,7 +14,6 @@ import {
   fetchGraphDetails,
   reset,
   setOptions,
-  setSelectedGraphId,
   setTrulienceSettings,
 } from "@/store/reducers/global";
 
@@ -51,24 +50,6 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       }
     }
   }, [dispatch]);
-
-  // Check URL for ?graph= parameter and auto-select graph
-  useEffect(() => {
-    if (typeof window !== "undefined" && graphList.length > 0 && !selectedGraphId) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const graphParam = urlParams.get("graph");
-
-      if (graphParam) {
-        // Find graph by name or graph_id
-        const matchingGraph = graphList.find(
-          (g) => g.name === graphParam || g.graph_id === graphParam
-        );
-        if (matchingGraph) {
-          dispatch(setSelectedGraphId(matchingGraph.graph_id));
-        }
-      }
-    }
-  }, [graphList, dispatch, selectedGraphId]);
 
   useEffect(() => {
     if (selectedGraphId) {
