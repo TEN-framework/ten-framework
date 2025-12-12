@@ -130,7 +130,7 @@ export default function Action(props: { className?: string }) {
         <div className="hidden md:block">
           <span className="font-bold text-sm">Description</span>
           <span className="ml-2 whitespace-nowrap text-muted-foreground text-xs">
-            ElevenLabs, Anam, Thymia, Trulience
+            A Realtime Conversational AI Agent powered by TEN
           </span>
         </div>
 

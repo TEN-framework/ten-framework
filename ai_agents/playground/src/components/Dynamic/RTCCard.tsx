@@ -109,8 +109,10 @@ export default function RTCCard(props: { className?: string }) {
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user);
-    // Note: Audio muting for Trulience is now handled in page.tsx based on avatarMode
-    // Don't stop audio here - let page.tsx decide based on current avatar mode
+    if (useTrulienceAvatar) {
+      // trulience SDK will play audio in synch with mouth
+      user.audioTrack?.stop();
+    }
     if (user.audioTrack || user.videoTrack) {
       setRemoteUser(user);
     } else {
