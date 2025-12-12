@@ -726,16 +726,35 @@ jobs:
           Write-Output "[Ollama] PowerShell: $($PSVersionTable.PSVersion)"
           Write-Output "[Ollama] Runner Temp: $env:RUNNER_TEMP"
 
-          # Download Ollama CLI zip
+          # Download Ollama CLI zip with retry
           $zipUrl = "https://ollama.com/download/ollama-windows-amd64.zip"
           $zipPath = Join-Path $env:RUNNER_TEMP "ollama-windows-amd64.zip"
           Write-Output "[Ollama] Downloading: $zipUrl"
           Write-Output "[Ollama] To: $zipPath"
-          try {
-            Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
-          } catch {
-            Write-Error "[Ollama] Download failed: $($_.Exception.Message)"
-            exit 1
+
+          $maxRetries = 5
+          $retryDelay = 10
+
+          for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+            try {
+              Write-Output "[Ollama] Download attempt $attempt of $maxRetries..."
+              Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
+              Write-Output "[Ollama] Download successful"
+              break
+            } catch {
+              $errorMsg = $_.Exception.Message
+              Write-Warning "[Ollama] Download attempt $attempt failed: $errorMsg"
+
+              if ($attempt -lt $maxRetries) {
+                Write-Output "[Ollama] Waiting $retryDelay seconds before retry..."
+                Start-Sleep -Seconds $retryDelay
+              } else {
+                Write-Error "[Ollama] All download attempts failed. Last error: $errorMsg"
+                Write-Output "[Ollama] This may be a temporary issue with Ollama's download servers."
+                Write-Output "[Ollama] You can try re-running the workflow later."
+                exit 1
+              }
+            }
           }
           if (-not (Test-Path $zipPath)) {
             Write-Error "[Ollama] Zip file not found after download: $zipPath"
