@@ -1,1 +1,5 @@
+# seekdb data
 data/
+
+# env file
+.env

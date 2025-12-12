@@ -41,20 +41,20 @@ This is the easiest way to get started. Docker will handle all dependencies auto
 
 ### Step 1: Configure Environment Variables
 
-> 💡 **Need help?** For detailed configuration options and alternative providers, see [CONFIGURATION.md](./CONFIGURATION.md).
-
-1. Navigate to the project root:
+1. Make sure you are in the same directory as this README.md file:
    ```bash
-   cd /path/to/ten-framework/ai_agents
+   pwd # /path/to/ten-framework/ai_agents/agents/examples/voice-assistant-with-PowerMem
    ```
 
-2. Edit the `.env` file (create it if it doesn't exist):
+2. Copy the .env file and add PowerMem-related environment configuration:
    ```bash
-   # The .env file is located at: ai_agents/.env
-   # You can copy from .env.example if available
+   cp ../../../.env.example .env
+   curl 'https://raw.githubusercontent.com/oceanbase/powermem/refs/heads/main/.env.example' >> .env
    ```
 
 3. Configure the following **required** variables:
+
+> 💡 **Need help?** For detailed configuration options and alternative providers, see [CONFIGURATION.md](./CONFIGURATION.md).
 
    **Voice Assistant Services:**
    ```bash
@@ -73,7 +73,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    ELEVENLABS_TTS_KEY=your_elevenlabs_api_key
    ```
 
-   **PowerMem Configuration:**
+   **PowerMem Minimal Configuration:**
    ```bash
    # Timezone
    TIMEZONE=Asia/Shanghai  # Adjust to your timezone
@@ -83,7 +83,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    OCEANBASE_HOST=seekdb  # Use 'seekdb' for Docker, '127.0.0.1' for local
    OCEANBASE_PORT=2881
    OCEANBASE_USER=root
-   OCEANBASE_PASSWORD=  # Leave empty for SeekDB default
+   OCEANBASE_PASSWORD=password
    OCEANBASE_DATABASE=powermem
    OCEANBASE_COLLECTION=memories
 
@@ -107,7 +107,17 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    WEATHERAPI_API_KEY=  # Optional: For weather tool functionality
    ```
 
-### Step 2: Start the Services
+### Step 2: Configure SeekDB Container Environment Variables
+
+1. SeekDB's database name and password configuration should match the previous configuration:
+   ```bash
+   echo "ROOT_PASSWORD=\$OCEANBASE_PASSWORD" >> .env
+   echo "SEEKDB_DATABASE=\$OCEANBASE_DATABASE" >> .env
+   ```
+
+2. For more details (such as CPU, memory, disk limits, etc.), please refer to https://github.com/oceanbase/docker-images/blob/main/seekdb/README.md#supported-environment-variables
+
+### Step 3: Start the Services
 
 1. Navigate to the example directory:
    ```bash
@@ -134,7 +144,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    - `voice-assistant-with-powermem` (main application)
    - `seekdb` (OceanBase database)
 
-### Step 3: Verify Deployment
+### Step 4: Verify Deployment
 
 1. **Check logs** to ensure everything started correctly:
    ```bash
@@ -154,7 +164,7 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    curl http://localhost:8080/ping
    ```
 
-### Step 4: Stop Services (when needed)
+### Step 5: Stop Services (when needed)
 
 ```bash
 docker-compose down

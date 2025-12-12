@@ -9,15 +9,7 @@ services:
       - "8080:8080"
       - "3000:3000"
     env_file:
-      - ../../../.env
-    environment:
-      - DATABASE_PROVIDER=oceanbase
-      - OCEANBASE_HOST=seekdb
-      - OCEANBASE_PORT=2881
-      - OCEANBASE_USER=root
-      - OCEANBASE_PASSWORD=
-      - OCEANBASE_DATABASE=powermem
-      - OCEANBASE_COLLECTION=memories
+      - .env
     networks:
       - powermem_network
     depends_on:
@@ -32,8 +24,8 @@ services:
       - "2886:2886"
     volumes:
       - ./data:/var/lib/oceanbase
-    environment:
-      - SEEKDB_DATABASE=powermem
+    env_file:
+      - .env
     networks:
       - powermem_network
 

@@ -1,6 +1,6 @@
 version: "3"
 
-dotenv: ["../../../.env"]
+dotenv: [".env"]
 
 tasks:  # install scripts
   install-frontend:
