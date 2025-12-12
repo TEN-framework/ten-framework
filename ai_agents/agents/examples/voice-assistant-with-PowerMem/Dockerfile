@@ -4,7 +4,6 @@ ARG USE_AGENT=agents/examples/voice-assistant-with-PowerMem
 
 WORKDIR /app
 
-COPY .env.example .env
 COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
