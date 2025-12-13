@@ -15,6 +15,11 @@ on:
       - "**.md"
       - "ai_agents/**"
 
+# Windows Compiler Choice:
+# TEN Framework uses MSVC (Microsoft Visual C++) as the default compiler for C/C++ code on Windows.
+# This is required for:
+# 1. Python 3.5+ binding compatibility (officially supports MSVC-compiled extensions only)
+
 permissions:
   contents: write
   discussions: write

@@ -25,7 +25,17 @@
 #endif
 
 #if !defined(TEN_RUNTIME_PRIVATE_API)
+// For Go binding DLL, we need to export private API functions so that
+// Go code can call them via CGO at runtime.
+#if defined(TEN_RUNTIME_GO_BINDING_BUILD)
+#if defined(TEN_RUNTIME_EXPORT)
+#define TEN_RUNTIME_PRIVATE_API TEN_EXTERN_C __declspec(dllexport)
+#else
+#define TEN_RUNTIME_PRIVATE_API TEN_EXTERN_C __declspec(dllimport)
+#endif
+#else
 #define TEN_RUNTIME_PRIVATE_API TEN_EXTERN_C
+#endif
 #endif
 
 #elif defined(__APPLE__)
