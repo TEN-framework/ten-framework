@@ -16,12 +16,9 @@ on:
       - "ai_agents/**"
 
 # Windows Compiler Choice:
-# TEN Framework uses MSVC (Microsoft Visual C++) as the unified compiler on Windows.
+# TEN Framework uses MSVC (Microsoft Visual C++) as the default compiler for C/C++ code on Windows.
 # This is required for:
 # 1. Python 3.5+ binding compatibility (officially supports MSVC-compiled extensions only)
-# 2. Consistent C++ ABI and calling conventions across all components
-# 3. Go binding support (CGO is incompatible with MSVC, thus Go binding is disabled on Windows)
-# For details: build/ten_runtime/options.gni
 
 permissions:
   contents: write

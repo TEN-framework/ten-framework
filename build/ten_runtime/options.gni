@@ -28,35 +28,40 @@ declare_args() {
 # Check if Go binding is enabled on Windows - this is not supported
 if (ten_enable_go_binding && is_win) {
   print("")
-  print("=======================================================================")
-  print("             ERROR: Go binding is NOT supported on Windows             ")
-  print("=======================================================================")
+  print(
+      "=======================================================================")
+  print(
+      "             ERROR: Go binding is NOT supported on Windows             ")
+  print(
+      "=======================================================================")
   print("")
-  print("TEN Framework uses MSVC as the unified compiler on Windows, but Go's")
+  print(
+      "TEN Framework uses MSVC as the default compiler for C/C++ code on Windows, but Go's")
   print("CGO tool is incompatible with MSVC (designed for GCC/MinGW only).")
   print("")
-  print("Reason:")
-  print("  1.Python 3.5+ requires MSVC-compiled extensions on Windows")
-  print("    https://wiki.python.org/moin/WindowsCompilers")
-  print("  2.Mixing MSVC and MinGW causes ABI conflicts")
-  print("    (name mangling, calling conventions, vtable layout)")
-  print("  3.CGO-MSVC incompatibility is a known issue")
-  print("    https://github.com/golang/go/issues/75683")
+  print("Details:")
+  print("  1. CGO-MSVC incompatibility is a known issue")
+  print("     https://github.com/golang/go/issues/75683")
+  print("  2. Python 3.5+ requires MSVC-compiled extensions on Windows")
+  print("     https://wiki.python.org/moin/WindowsCompilers")
+  print("  3. Mixing MSVC and MinGW causes ABI conflicts")
+  print("     (name mangling, calling conventions, vtable layout)")
   print("")
-  print("Supported language bindings on Windows:")
+  print(
+      "So we decided to only support the following language bindings on Windows:")
   print("  C/C++ (native, compiled with MSVC)")
   print("  Python (compiled with MSVC)")
   print("")
-  print("Not supported:")
+  print("Unsupported language bindings:")
   print("  go")
-  print("  nodejs(for now)")
   print("")
   print("Solution:")
   print("  1. For Go development, use Linux or macOS")
   print("  2. Or disable Go binding on Windows:")
   print("     tgn gen win x64 debug -- ten_enable_go_binding=false ...")
   print("")
-  print("=======================================================================")
+  print(
+      "=======================================================================")
   assert(false,
          "Go binding cannot be enabled on Windows. " +
              "Use Linux/macOS or set ten_enable_go_binding=false")
