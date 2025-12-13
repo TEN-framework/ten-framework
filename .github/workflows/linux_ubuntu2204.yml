@@ -32,7 +32,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -432,7 +432,7 @@ jobs:
 
   test-standalone:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -664,7 +664,7 @@ jobs:
 
   test-integration-ten-manager:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -832,7 +832,7 @@ jobs:
 
   test-integration-cpp:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: self-hosted
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -996,7 +996,7 @@ jobs:
 
   test-integration-go:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1153,7 +1153,7 @@ jobs:
 
   test-integration-python:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1330,7 +1330,7 @@ jobs:
 
   test-integration-nodejs:
     needs: build
-    runs-on: self-hosted, ubuntu-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         compiler: [gcc, clang]
