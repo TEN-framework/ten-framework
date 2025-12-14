@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
 import dynamicImport from "next/dynamic";
 import { Baloo_2, Quicksand } from "next/font/google";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ExpressionConfig,
   Live2DHandle,
-  MouthConfig,
   MotionConfig,
+  MouthConfig,
 } from "@/components/Live2DCharacter";
 
 // Dynamically import Live2D component to prevent SSR issues
@@ -291,7 +291,6 @@ const defaultFloatingElements: FloatingElement[] = [
   },
 ];
 
-
 const chubbieFloatingElements: FloatingElement[] = [
   {
     type: "hot_spring_steam",
@@ -394,7 +393,10 @@ const characterOptions: CharacterProfile[] = [
   {
     id: "kei",
     name: "Kei",
-    path: buildRemoteModelAssetPath("kei_vowels_pro", "kei_vowels_pro.model3.json"),
+    path: buildRemoteModelAssetPath(
+      "kei_vowels_pro",
+      "kei_vowels_pro.model3.json"
+    ),
     preview: buildRemoteModelAssetPath("kei_vowels_pro", "preview.svg"),
     headline: "Your Charming Clever Companion",
     description:
@@ -681,13 +683,32 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "snow_cookie":
       return (
         <svg viewBox="0 0 160 160" className="h-full w-full">
-          <circle cx="80" cy="80" r="70" fill="#fff5da" stroke="#f3b27a" strokeWidth={5} />
+          <circle
+            cx="80"
+            cy="80"
+            r="70"
+            fill="#fff5da"
+            stroke="#f3b27a"
+            strokeWidth={5}
+          />
           <circle cx="80" cy="80" r="46" fill="#ffe9bc" opacity="0.85" />
-          {[{ x: 80, y: 32 }, { x: 104, y: 52 }, { x: 116, y: 84 }, { x: 56, y: 52 }, { x: 40, y: 88 }, { x: 84, y: 122 }].map(
-            (dot, idx) => (
-              <circle key={idx} cx={dot.x} cy={dot.y} r="6" fill="#f0c072" opacity="0.8" />
-            )
-          )}
+          {[
+            { x: 80, y: 32 },
+            { x: 104, y: 52 },
+            { x: 116, y: 84 },
+            { x: 56, y: 52 },
+            { x: 40, y: 88 },
+            { x: 84, y: 122 },
+          ].map((dot, idx) => (
+            <circle
+              key={idx}
+              cx={dot.x}
+              cy={dot.y}
+              r="6"
+              fill="#f0c072"
+              opacity="0.8"
+            />
+          ))}
           <path
             d="M80 46 L88 74 L118 80 L88 88 L80 114 L72 88 L42 80 L72 74 Z"
             fill="#fff9e8"
@@ -739,7 +760,14 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "citrus_slice":
       return (
         <svg viewBox="0 0 180 180" className="h-full w-full">
-          <circle cx="90" cy="90" r="80" fill="#ffe4b8" stroke="#f6aa66" strokeWidth={8} />
+          <circle
+            cx="90"
+            cy="90"
+            r="80"
+            fill="#ffe4b8"
+            stroke="#f6aa66"
+            strokeWidth={8}
+          />
           {[0, 60, 120].map((angle) => (
             <path
               key={angle}
@@ -776,8 +804,22 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "water_ripple":
       return (
         <svg viewBox="0 0 220 220" className="h-full w-full">
-          <circle cx="110" cy="110" r="90" fill="none" stroke="rgba(168,214,233,0.55)" strokeWidth={8} />
-          <circle cx="110" cy="110" r="60" fill="none" stroke="rgba(168,214,233,0.4)" strokeWidth={6} />
+          <circle
+            cx="110"
+            cy="110"
+            r="90"
+            fill="none"
+            stroke="rgba(168,214,233,0.55)"
+            strokeWidth={8}
+          />
+          <circle
+            cx="110"
+            cy="110"
+            r="60"
+            fill="none"
+            stroke="rgba(168,214,233,0.4)"
+            strokeWidth={6}
+          />
           <circle cx="110" cy="110" r="32" fill="rgba(196,238,255,0.35)" />
         </svg>
       );
@@ -798,7 +840,7 @@ export default function Home() {
     () =>
       process.env.NEXT_PUBLIC_CHANNEL_NAME ||
       `ten_live2d_${Math.random().toString(36).slice(2, 10)}`,
-    [],
+    []
   );
   const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null);
   const [agoraService, setAgoraService] = useState<any>(null);
@@ -824,7 +866,9 @@ export default function Home() {
       }
       const expressions = rule.expressions ?? [];
       const shouldResetFirst =
-        rule.resetFirst !== undefined ? rule.resetFirst : expressions.length > 0;
+        rule.resetFirst !== undefined
+          ? rule.resetFirst
+          : expressions.length > 0;
       if (shouldResetFirst) {
         await controller.setExpression(undefined);
       }
@@ -832,7 +876,10 @@ export default function Home() {
         await controller.setExpression(expression);
       }
     } catch (error) {
-      console.warn("[VoiceCommand] Failed to apply voice-triggered expression", error);
+      console.warn(
+        "[VoiceCommand] Failed to apply voice-triggered expression",
+        error
+      );
     }
   }, []);
 
@@ -876,13 +923,17 @@ export default function Home() {
           try {
             await apiStopService(channelName);
           } catch (error) {
-            console.warn("[Agent] Failed to stop agent while switching character:", error);
+            console.warn(
+              "[Agent] Failed to stop agent while switching character:",
+              error
+            );
           }
           try {
             await apiStartService({
               channel: channelName,
               userId: connectedUserId,
-              graphName: process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
+              graphName:
+                process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
               language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
               voiceType: candidate.voiceType,
               characterId: candidate.id,
@@ -890,7 +941,10 @@ export default function Home() {
               prompt: candidate.agentPrompt,
             });
           } catch (error) {
-            console.error("[Agent] Failed to restart agent after character switch:", error);
+            console.error(
+              "[Agent] Failed to restart agent after character switch:",
+              error
+            );
           } finally {
             setIsConnecting(false);
           }
@@ -951,7 +1005,9 @@ export default function Home() {
     if (!controller) {
       return;
     }
-    const defaultExpression = selectedModel.expressions?.find((expression) => expression.default);
+    const defaultExpression = selectedModel.expressions?.find(
+      (expression) => expression.default
+    );
     if (defaultExpression) {
       void controller.setExpression(defaultExpression.name);
     } else {
@@ -959,7 +1015,9 @@ export default function Home() {
     }
     const idleMotion = selectedModel.motions?.find((motion) => motion.autoPlay);
     if (idleMotion) {
-      void controller.playMotion(idleMotion.name, { priority: idleMotion.priority });
+      void controller.playMotion(idleMotion.name, {
+        priority: idleMotion.priority,
+      });
     }
   }, [selectedModel, modelLoadedTick]);
 
@@ -971,16 +1029,24 @@ export default function Home() {
       return;
     }
     if (isAssistantSpeaking && !wasSpeaking) {
-      const speakingExpression = selectedModel.expressions?.find((expression) => expression.onSpeaking);
+      const speakingExpression = selectedModel.expressions?.find(
+        (expression) => expression.onSpeaking
+      );
       if (speakingExpression) {
         void controller.setExpression(speakingExpression.name);
       }
-      const speakingMotion = selectedModel.motions?.find((motion) => motion.onSpeakingStart);
+      const speakingMotion = selectedModel.motions?.find(
+        (motion) => motion.onSpeakingStart
+      );
       if (speakingMotion) {
-        void controller.playMotion(speakingMotion.name, { priority: speakingMotion.priority });
+        void controller.playMotion(speakingMotion.name, {
+          priority: speakingMotion.priority,
+        });
       }
     } else if (!isAssistantSpeaking && wasSpeaking) {
-      const defaultExpression = selectedModel.expressions?.find((expression) => expression.default);
+      const defaultExpression = selectedModel.expressions?.find(
+        (expression) => expression.default
+      );
       if (defaultExpression) {
         void controller.setExpression(defaultExpression.name);
       } else {
@@ -997,63 +1063,67 @@ export default function Home() {
     const rules: VoiceCommandRule[] =
       selectedModel.id === "chubbie"
         ? [
-          {
-            triggers: [
-              "change your outfit",
-              "change outfit",
-              "can you change your outfit",
-              "switch your outfit",
-            ],
-            expressions: ["toggle_black_dress_m_2"],
-            resetFirst: true,
-          },
-          {
-            triggers: [
-              "default outfit",
-              "back to normal outfit",
-              "regular outfit",
-              "original outfit",
-            ],
-            reset: true,
-          },
-          {
-            triggers: [
-              "remove your outfit",
-              "take off your outfit",
-              "outfit off",
-              "clothes off",
-            ],
-            reset: true,
-          },
-          {
-            triggers: ["wear the apron", "put on the apron", "apron on"],
-            expressions: ["toggle_apron_m_3"],
-            resetFirst: true,
-          },
-          {
-            triggers: ["take off the apron", "remove the apron", "apron off"],
-            reset: true,
-          },
-          {
-            triggers: ["wear your sunglasses", "put on sunglasses", "sunglasses on"],
-            expressions: ["toggle_sunglasses_g_2"],
-            resetFirst: true,
-          },
-          {
-            triggers: [
-              "wear your glasses",
-              "wear glasses",
-              "put on glasses",
-              "put glasses on",
-              "put your glasses",
-              "put your glasses on",
-              "glasses on",
-              "reading glasses"
-            ],
-            expressions: ["toggle_glasses_g_1"],
-            resetFirst: true,
-          },
-        ]
+            {
+              triggers: [
+                "change your outfit",
+                "change outfit",
+                "can you change your outfit",
+                "switch your outfit",
+              ],
+              expressions: ["toggle_black_dress_m_2"],
+              resetFirst: true,
+            },
+            {
+              triggers: [
+                "default outfit",
+                "back to normal outfit",
+                "regular outfit",
+                "original outfit",
+              ],
+              reset: true,
+            },
+            {
+              triggers: [
+                "remove your outfit",
+                "take off your outfit",
+                "outfit off",
+                "clothes off",
+              ],
+              reset: true,
+            },
+            {
+              triggers: ["wear the apron", "put on the apron", "apron on"],
+              expressions: ["toggle_apron_m_3"],
+              resetFirst: true,
+            },
+            {
+              triggers: ["take off the apron", "remove the apron", "apron off"],
+              reset: true,
+            },
+            {
+              triggers: [
+                "wear your sunglasses",
+                "put on sunglasses",
+                "sunglasses on",
+              ],
+              expressions: ["toggle_sunglasses_g_2"],
+              resetFirst: true,
+            },
+            {
+              triggers: [
+                "wear your glasses",
+                "wear glasses",
+                "put on glasses",
+                "put glasses on",
+                "put your glasses",
+                "put your glasses on",
+                "glasses on",
+                "reading glasses",
+              ],
+              expressions: ["toggle_glasses_g_1"],
+              resetFirst: true,
+            },
+          ]
         : [];
 
     if (rules.length === 0) {
@@ -1062,20 +1132,29 @@ export default function Home() {
 
     const targetModelId = selectedModel.id;
 
-    const buildDynamicGlassesRule = (haystacks: Set<string>): VoiceCommandRule | null => {
+    const buildDynamicGlassesRule = (
+      haystacks: Set<string>
+    ): VoiceCommandRule | null => {
       const controller = live2dRef.current;
       if (!controller) {
         return null;
       }
-      const expressions = controller.getAvailableExpressions ? controller.getAvailableExpressions() : [];
-      const hasOff = Array.from(haystacks).some((h) =>
-        h.includes("glasses off") || h.includes("remove glasses") || h.includes("take off")
+      const expressions = controller.getAvailableExpressions
+        ? controller.getAvailableExpressions()
+        : [];
+      const hasOff = Array.from(haystacks).some(
+        (h) =>
+          h.includes("glasses off") ||
+          h.includes("remove glasses") ||
+          h.includes("take off")
       );
       if (hasOff) {
         return { triggers: [], reset: true };
       }
       const keywords = ["glasses", "sunglasses", "shades", "monocle"];
-      const needOn = Array.from(haystacks).some((h) => keywords.some((k) => h.includes(k)));
+      const needOn = Array.from(haystacks).some((h) =>
+        keywords.some((k) => h.includes(k))
+      );
       if (!needOn) {
         return null;
       }
@@ -1083,7 +1162,11 @@ export default function Home() {
         .filter((e) => keywords.some((k) => e.name.toLowerCase().includes(k)))
         .sort((a, b) => {
           const rank = (name: string) =>
-            name.toLowerCase().includes("glasses") ? 0 : name.toLowerCase().includes("sunglasses") ? 1 : 2;
+            name.toLowerCase().includes("glasses")
+              ? 0
+              : name.toLowerCase().includes("sunglasses")
+                ? 1
+                : 2;
           return rank(a.name) - rank(b.name);
         })
         .map((e) => e.name);
@@ -1093,109 +1176,126 @@ export default function Home() {
       return { triggers: [], expressions: [candidates[0]], resetFirst: true };
     };
 
-    const cleanup = agoraService.addTranscriptListener((message: TranscriptMessage) => {
-      if (selectedModel.id !== targetModelId) {
-        return;
-      }
-      if (message?.isUser === false) {
-        return;
-      }
-      if (message.isFinal === false) {
-        return;
-      }
-      const base = message.text?.toLowerCase() ?? "";
-      if (!base.trim()) {
-        return;
-      }
-
-      const clean = (value: string) =>
-        value
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const removeStopWords = (value: string) =>
-        value
-          .replace(/\b(can|you|could|would|will|please|your|the|a|to)\b/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const primary = clean(base);
-      const simplified = removeStopWords(primary);
-
-      const haystacks = new Set<string>();
-      if (primary) {
-        haystacks.add(primary);
-      }
-      if (simplified) {
-        haystacks.add(simplified);
-      }
-      if (haystacks.size === 0) {
-        return;
-      }
-
-      const editDistance = (a: string, b: string) => {
-        const dp: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-        for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-        for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-        for (let i = 1; i <= a.length; i++) {
-          for (let j = 1; j <= b.length; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-              dp[i - 1][j] + 1,
-              dp[i][j - 1] + 1,
-              dp[i - 1][j - 1] + cost
-            );
-          }
-        }
-        return dp[a.length][b.length];
-      };
-
-      const matchesTrigger = (trigger: string) => {
-        const normalizedTrigger = clean(trigger);
-        if (!normalizedTrigger) {
-          return false;
-        }
-        const triggerWords = normalizedTrigger.split(" ");
-        for (const hay of haystacks) {
-          if (hay.includes(normalizedTrigger)) {
-            return true;
-          }
-          const hayWords = hay.split(" ");
-          if (triggerWords.every((word) => hayWords.includes(word) || hayWords.some((hw) => editDistance(hw, word) <= 1))) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      console.debug("[VoiceCommand] Transcript received", { base, primary, simplified });
-
-      let matchedRule = rules.find((rule) =>
-        rule.triggers.some((trigger) => matchesTrigger(trigger))
-      );
-      if (!matchedRule) {
-        const dynamicRule = buildDynamicGlassesRule(haystacks);
-        if (!dynamicRule) {
+    const cleanup = agoraService.addTranscriptListener(
+      (message: TranscriptMessage) => {
+        if (selectedModel.id !== targetModelId) {
           return;
         }
-        matchedRule = dynamicRule;
-        console.debug("[VoiceCommand] Using dynamic glasses rule");
-      } else {
-        console.debug("[VoiceCommand] Matched static rule", matchedRule);
+        if (message?.isUser === false) {
+          return;
+        }
+        if (message.isFinal === false) {
+          return;
+        }
+        const base = message.text?.toLowerCase() ?? "";
+        if (!base.trim()) {
+          return;
+        }
+
+        const clean = (value: string) =>
+          value
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const removeStopWords = (value: string) =>
+          value
+            .replace(
+              /\b(can|you|could|would|will|please|your|the|a|to)\b/g,
+              " "
+            )
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const primary = clean(base);
+        const simplified = removeStopWords(primary);
+
+        const haystacks = new Set<string>();
+        if (primary) {
+          haystacks.add(primary);
+        }
+        if (simplified) {
+          haystacks.add(simplified);
+        }
+        if (haystacks.size === 0) {
+          return;
+        }
+
+        const editDistance = (a: string, b: string) => {
+          const dp: number[][] = Array.from({ length: a.length + 1 }, () =>
+            Array(b.length + 1).fill(0)
+          );
+          for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+          for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+          for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+              dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost
+              );
+            }
+          }
+          return dp[a.length][b.length];
+        };
+
+        const matchesTrigger = (trigger: string) => {
+          const normalizedTrigger = clean(trigger);
+          if (!normalizedTrigger) {
+            return false;
+          }
+          const triggerWords = normalizedTrigger.split(" ");
+          for (const hay of haystacks) {
+            if (hay.includes(normalizedTrigger)) {
+              return true;
+            }
+            const hayWords = hay.split(" ");
+            if (
+              triggerWords.every(
+                (word) =>
+                  hayWords.includes(word) ||
+                  hayWords.some((hw) => editDistance(hw, word) <= 1)
+              )
+            ) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        console.debug("[VoiceCommand] Transcript received", {
+          base,
+          primary,
+          simplified,
+        });
+
+        let matchedRule = rules.find((rule) =>
+          rule.triggers.some((trigger) => matchesTrigger(trigger))
+        );
+        if (!matchedRule) {
+          const dynamicRule = buildDynamicGlassesRule(haystacks);
+          if (!dynamicRule) {
+            return;
+          }
+          matchedRule = dynamicRule;
+          console.debug("[VoiceCommand] Using dynamic glasses rule");
+        } else {
+          console.debug("[VoiceCommand] Matched static rule", matchedRule);
+        }
+        const processed = processedVoiceCommandIdsRef.current;
+        if (processed.includes(message.id)) {
+          return;
+        }
+        processed.push(message.id);
+        if (processed.length > 200) {
+          processed.shift();
+        }
+        console.debug("[VoiceCommand] Applying rule", matchedRule);
+        void applyVoiceRule(matchedRule);
       }
-      const processed = processedVoiceCommandIdsRef.current;
-      if (processed.includes(message.id)) {
-        return;
-      }
-      processed.push(message.id);
-      if (processed.length > 200) {
-        processed.shift();
-      }
-      console.debug("[VoiceCommand] Applying rule", matchedRule);
-      void applyVoiceRule(matchedRule);
-    });
+    );
 
     return cleanup;
   }, [agoraService, selectedModel.id, applyVoiceRule]);
@@ -1255,8 +1355,13 @@ export default function Home() {
           setIsConnecting(true);
 
           // Token generation with retry logic
-          const generateToken = async (retryCount = 0, maxRetries = 3): Promise<any> => {
-            const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
+          const generateToken = async (
+            retryCount = 0,
+            maxRetries = 3
+          ): Promise<any> => {
+            const apiBase = (
+              process.env.NEXT_PUBLIC_API_BASE_URL || ""
+            ).replace(/\/$/, "");
             const body = JSON.stringify({
               request_id: Math.random().toString(36).substring(2, 15),
               uid: Math.floor(Math.random() * 100000),
@@ -1264,10 +1369,14 @@ export default function Home() {
               channel_name: channelName,
             });
 
-            const primaryUrl = apiBase ? `${apiBase}/token/generate` : "/api/token/generate";
+            const primaryUrl = apiBase
+              ? `${apiBase}/token/generate`
+              : "/api/token/generate";
             const fallbackUrl = "/api/token/generate";
 
-            console.log(`[Token] Attempting to generate token (attempt ${retryCount + 1}/${maxRetries + 1})`);
+            console.log(
+              `[Token] Attempting to generate token (attempt ${retryCount + 1}/${maxRetries + 1})`
+            );
 
             try {
               // Try primary endpoint with timeout
@@ -1282,7 +1391,11 @@ export default function Home() {
                 cache: "no-store",
                 signal: controller.signal,
               }).catch((err) => {
-                console.error('[Token] Primary endpoint error:', primaryUrl, err.message);
+                console.error(
+                  "[Token] Primary endpoint error:",
+                  primaryUrl,
+                  err.message
+                );
                 return undefined as any;
               });
 
@@ -1290,9 +1403,12 @@ export default function Home() {
 
               // Try fallback if primary failed
               if (!response || !response.ok) {
-                console.log('[Token] Trying fallback endpoint:', fallbackUrl);
+                console.log("[Token] Trying fallback endpoint:", fallbackUrl);
                 const fallbackController = new AbortController();
-                const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 10000);
+                const fallbackTimeoutId = setTimeout(
+                  () => fallbackController.abort(),
+                  10000
+                );
 
                 response = await fetch(fallbackUrl, {
                   method: "POST",
@@ -1302,7 +1418,11 @@ export default function Home() {
                   cache: "no-store",
                   signal: fallbackController.signal,
                 }).catch((err) => {
-                  console.error('[Token] Fallback endpoint error:', fallbackUrl, err.message);
+                  console.error(
+                    "[Token] Fallback endpoint error:",
+                    fallbackUrl,
+                    err.message
+                  );
                   throw err;
                 });
 
@@ -1310,24 +1430,27 @@ export default function Home() {
               }
 
               if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                throw new Error(
+                  `HTTP ${response.status}: ${response.statusText}`
+                );
               }
 
               const responseData = await response.json();
-              console.log('[Token] Token generation success:', responseData);
+              console.log("[Token] Token generation success:", responseData);
               return responseData;
-
             } catch (error: any) {
-              console.error('[Token] Generation failed:', error.message);
+              console.error("[Token] Generation failed:", error.message);
 
               if (retryCount < maxRetries) {
-                const delay = 1000 * Math.pow(2, retryCount); // Exponential backoff
+                const delay = 1000 * 2 ** retryCount; // Exponential backoff
                 console.log(`[Token] Retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                await new Promise((resolve) => setTimeout(resolve, delay));
                 return generateToken(retryCount + 1, maxRetries);
               }
 
-              throw new Error(`Failed to get Agora credentials after ${maxRetries + 1} attempts: ${error.message}`);
+              throw new Error(
+                `Failed to get Agora credentials after ${maxRetries + 1} attempts: ${error.message}`
+              );
             }
           };
 
@@ -1340,7 +1463,11 @@ export default function Home() {
           const agoraConfig: AgoraConfig = {
             appId: credentials.appId || credentials.app_id,
             channel: credentials.channel_name || channelName,
-            token: (credentials.token && (credentials.token !== (credentials.appId || credentials.app_id))) ? credentials.token : null,
+            token:
+              credentials.token &&
+              credentials.token !== (credentials.appId || credentials.app_id)
+                ? credentials.token
+                : null,
             uid: credentials.uid,
           };
 
@@ -1358,7 +1485,9 @@ export default function Home() {
               const startResult = await apiStartService({
                 channel: agoraConfig.channel,
                 userId: agoraConfig.uid || 0,
-                graphName: process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
+                graphName:
+                  process.env.NEXT_PUBLIC_GRAPH_NAME ||
+                  "voice_assistant_live2d",
                 language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
                 voiceType: selectedModel.voiceType,
                 characterId: selectedModel.id,
@@ -1393,10 +1522,11 @@ export default function Home() {
             key={model.id}
             type="button"
             onClick={() => handleModelSelect(model.id)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${isActive
-              ? "bg-[#2f3dbd] text-white"
-              : "bg-white/85 text-[#586094] hover:bg-white"
-              }`}
+            className={`rounded-full px-5 py-2 font-semibold text-sm transition ${
+              isActive
+                ? "bg-[#2f3dbd] text-white"
+                : "bg-white/85 text-[#586094] hover:bg-white"
+            }`}
           >
             {model.name}
           </button>
@@ -1421,10 +1551,10 @@ export default function Home() {
     : "-inset-5 absolute -z-10 rounded-[40px] bg-gradient-to-br from-[#ffe1f1]/60 via-[#d8ecff]/60 to-[#fff6d9]/60 blur-3xl pointer-events-none";
   const stageGlowStyle: React.CSSProperties | undefined = isImmersiveStage
     ? {
-      background:
-        "radial-gradient(circle at 50% 30%, rgba(255,206,164,0.48) 0%, rgba(170,126,88,0.26) 50%, transparent 78%)",
-      opacity: 0.7,
-    }
+        background:
+          "radial-gradient(circle at 50% 30%, rgba(255,206,164,0.48) 0%, rgba(170,126,88,0.26) 50%, transparent 78%)",
+        opacity: 0.7,
+      }
     : undefined;
   const stageInnerClass = isImmersiveStage
     ? "relative z-10 flex flex-col items-center gap-6 px-2 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12"
@@ -1454,35 +1584,6 @@ export default function Home() {
       className="relative min-h-[100svh] overflow-hidden text-[#2f2d4b]"
       style={{ backgroundColor: backgroundTheme.baseColor }}
     >
-      <div className="absolute left-4 top-6 z-30 flex items-center gap-3 px-2 py-1">
-        <a
-          href="https://github.com/ten-framework/ten-framework"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center"
-        >
-          <img
-            src="/images/logo-w-title.png"
-            alt="TEN logo"
-            className="h-6 w-auto mix-blend-multiply"
-            loading="lazy"
-          />
-        </a>
-        <span className="text-[11px] font-semibold text-[#6b6685]">×</span>
-        <a
-          href="https://www.minimax.io/"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center"
-        >
-          <img
-            src="/images/minimax.webp"
-            alt="Minimax logo"
-            className="h-6 w-auto mix-blend-multiply"
-            loading="lazy"
-          />
-        </a>
-      </div>
       <div className="absolute inset-0">
         <div
           className="absolute inset-0"
@@ -1534,7 +1635,38 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-4 py-6 md:px-6 lg:gap-10">
-        <header className="max-w-xl space-y-3 text-center lg:max-w-2xl">
+        <header className="mt-4 w-full px-4">
+          <div className="flex w-full items-center justify-center gap-3 md:justify-start">
+            <a
+              href="https://github.com/ten-framework/ten-framework"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center"
+            >
+              <img
+                src="/images/logo-w-title.png"
+                alt="TEN logo"
+                className="h-6 w-auto mix-blend-multiply"
+                loading="lazy"
+              />
+            </a>
+            <span className="font-semibold text-[#6b6685] text-[11px]">×</span>
+            <a
+              href="https://www.minimax.io/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center"
+            >
+              <img
+                src="/images/minimax.webp"
+                alt="Minimax logo"
+                className="h-6 w-auto mix-blend-multiply"
+                loading="lazy"
+              />
+            </a>
+          </div>
+        </header>
+        <header className="mt-8 max-w-xl space-y-3 text-center lg:max-w-2xl">
           <span className="inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
             Say hello to {selectedModel.name}
           </span>
@@ -1576,38 +1708,40 @@ export default function Home() {
                   className={live2dClassName}
                 />
               </div>
-              <p className={quoteClass}>
-                “{selectedModel.quote}”
-              </p>
+              <p className={quoteClass}>“{selectedModel.quote}”</p>
             </div>
           </div>
 
           <div className="flex w-full max-w-3xl flex-col items-center gap-4">
             <div className="flex flex-wrap items-center justify-center gap-2 font-medium text-[0.7rem] md:text-xs">
               <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${isConnected
-                  ? "bg-[#e6f8ff] text-[#236d94]"
-                  : "bg-[#ffe8ef] text-[#b34f6a]"
-                  }`}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
+                  isConnected
+                    ? "bg-[#e6f8ff] text-[#236d94]"
+                    : "bg-[#ffe8ef] text-[#b34f6a]"
+                }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
-                    }`}
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
+                  }`}
                 />
                 {isConnected
-                  ? selectedModel.connectionGreeting ??
-                  `My name is ${selectedModel.name}.`
+                  ? (selectedModel.connectionGreeting ??
+                    `My name is ${selectedModel.name}.`)
                   : "Not connected"}
               </span>
               <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${isMuted
-                  ? "bg-[#ffe8ef] text-[#b34f6a]"
-                  : "bg-[#ecfce1] text-[#2f7d3e]"
-                  }`}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
+                  isMuted
+                    ? "bg-[#ffe8ef] text-[#b34f6a]"
+                    : "bg-[#ecfce1] text-[#2f7d3e]"
+                }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${isMuted ? "bg-[#f0708f]" : "bg-[#4cc073]"
-                    }`}
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    isMuted ? "bg-[#f0708f]" : "bg-[#4cc073]"
+                  }`}
                 />
                 {isMuted ? "Mic muted" : "Mic open"}
               </span>
@@ -1617,15 +1751,20 @@ export default function Home() {
               <button
                 onClick={handleMicToggle}
                 disabled={!isConnected}
-                className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${!isConnected
-                  ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
-                  : isMuted
-                    ? "border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]"
-                    : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
-                  }`}
+                className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${
+                  !isConnected
+                    ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
+                    : isMuted
+                      ? "border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]"
+                      : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
+                }`}
               >
                 {isMuted ? (
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     <path
@@ -1636,7 +1775,11 @@ export default function Home() {
                     />
                   </svg>
                 ) : (
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                   </svg>
@@ -1646,12 +1789,13 @@ export default function Home() {
               <button
                 onClick={handleConnectToggle}
                 disabled={isConnecting}
-                className={`relative flex h-14 w-60 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${isConnecting
-                  ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
-                  : isConnected
-                    ? "border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]"
-                    : "border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]"
-                  }`}
+                className={`relative flex h-14 w-60 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${
+                  isConnecting
+                    ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
+                    : isConnected
+                      ? "border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]"
+                      : "border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]"
+                }`}
               >
                 {isConnecting ? (
                   <>
@@ -1680,14 +1824,22 @@ export default function Home() {
                   </>
                 ) : isConnected ? (
                   <>
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <rect x="6" y="6" width="12" height="12" rx="2" />
                     </svg>
                     <span className="text-center text-sm">End session</span>
                   </>
                 ) : (
                   <>
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M8 5v14l11-7z" />
                     </svg>
                     <span className="text-center text-sm">
@@ -1698,10 +1850,11 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="mt-10 px-6 pb-8 text-center text-[11px] leading-relaxed text-[#7a7694] max-w-3xl mx-auto">
-            This content uses sample data owned and copyrighted by Live2D Inc. The sample data
-            are utilized in accordance with terms and conditions set by Live2D Inc. This
-            content itself is created at the author’s sole discretion.
+          <div className="mx-auto mt-10 max-w-3xl px-6 pb-8 text-center text-[#7a7694] text-[11px] leading-relaxed">
+            This content uses sample data owned and copyrighted by Live2D Inc.
+            The sample data are utilized in accordance with terms and conditions
+            set by Live2D Inc. This content itself is created at the author’s
+            sole discretion.
           </div>
         </main>
       </div>
