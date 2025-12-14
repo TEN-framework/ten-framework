@@ -43,6 +43,7 @@ from ten_runtime import (
 
 from .config import BytedanceASRLLMConfig
 from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
+from .log_id_dumper_manager import LogIdDumperManager
 from .const import (
     DUMP_FILE_NAME,
     is_reconnectable_error,
@@ -64,17 +65,28 @@ class TwoPassDelayTracker:
         """Record soft_vad two_pass result timestamp"""
         self.soft_vad = timestamp
 
-    def calculate_metrics(self, current_timestamp: int) -> dict[str, int]:
-        metrics: dict[str, int] = {
-            "two_pass_delay": (
+    def calculate_metrics(
+        self,
+        current_timestamp: int,
+        enable_nonstream: bool = False,
+        enable_soft_vad: bool = False,
+    ) -> dict[str, int]:
+        metrics: dict[str, int] = {}
+        # Only include two_pass_delay if enable_nonstream is True
+        if enable_nonstream:
+            metrics["two_pass_delay"] = (
                 current_timestamp - self.stream
                 if self.stream is not None
                 else -1
-            ),
-        }
-        # Only include soft_two_pass_delay if soft_vad was recorded
-        if self.soft_vad is not None and self.stream is not None:
-            metrics["soft_two_pass_delay"] = self.soft_vad - self.stream
+            )
+        # Only include soft_two_pass_delay if soft_vad is enabled
+        # Send even if value is -1 (when soft_vad or stream is None)
+        if enable_nonstream and enable_soft_vad:
+            metrics["soft_two_pass_delay"] = (
+                self.soft_vad - self.stream
+                if self.soft_vad is not None and self.stream is not None
+                else -1
+            )
         return metrics
 
     def reset(self) -> None:
@@ -91,7 +103,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.client: VolcengineASRClient | None = None
         self.config: BytedanceASRLLMConfig | None = None
         self.last_finalize_timestamp: int = 0
-        self.audio_dumper: Dumper | None = None
+        self.audio_dumper: Dumper | None = (
+            None  # Original dumper, keep unchanged
+        )
         self.vendor_result_dumper: Any = (
             None  # File handle for asr_vendor_result.jsonl
         )
@@ -114,6 +128,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Two-pass delay metrics tracking
         self.two_pass_delay_tracker: TwoPassDelayTracker = TwoPassDelayTracker()
+
+        # Log ID dumper manager
+        self.log_id_dumper_manager: LogIdDumperManager | None = None
 
     @override
     def vendor(self) -> str:
@@ -140,6 +157,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.base_delay = self.config.base_delay
 
             if self.config.dump:
+                # Initialize original audio dumper (unchanged logic)
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
@@ -152,6 +170,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
                 self.vendor_result_dumper = open(
                     vendor_result_dump_path, "a", encoding="utf-8"
+                )
+                # Initialize log_id_dumper_manager
+                self.log_id_dumper_manager = LogIdDumperManager(
+                    self.config, ten_env
                 )
 
             self.audio_timeline.reset()
@@ -208,6 +230,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
 
+            # Create temporary log_id_dumper for new connection
+            if self.log_id_dumper_manager:
+                await self.log_id_dumper_manager.create_temp_dumper()
+
             await self.client.connect()
             self.connected = True
             self.sent_user_audio_duration_ms_before_last_reset += (
@@ -242,6 +268,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 self.client = None
                 self.connected = False
 
+        # Stop log_id_dumper_manager if exists
+        if self.log_id_dumper_manager:
+            await self.log_id_dumper_manager.stop_all()
+
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         """Clean up resources when extension is deinitialized."""
@@ -254,6 +284,11 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 ten_env.log_error(f"Error stopping audio dumper: {e}")
             finally:
                 self.audio_dumper = None
+
+        # Stop log_id_dumper_manager if exists
+        if self.log_id_dumper_manager:
+            await self.log_id_dumper_manager.stop_all()
+            # Keep temp file if not renamed (as per requirement)
 
         if self.vendor_result_dumper:
             try:
@@ -305,9 +340,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Get audio data from frame
             audio_data = bytes(buf)
 
-            # Dump audio if enabled
+            # Dump audio if enabled (original audio_dumper, unchanged)
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
+
+            # Dump audio to log_id_dumper if enabled (manager handles rename if needed)
+            if self.log_id_dumper_manager:
+                await self.log_id_dumper_manager.push_bytes(audio_data)
 
             self.audio_timeline.add_user_audio(
                 int(len(buf) / (self.input_audio_sample_rate() / 1000 * 2))
@@ -419,7 +458,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
-    def _extract_metadata(self, utterance: Utterance) -> dict[str, Any]:
+    def _extract_final_result_metadata(
+        self, utterance: Utterance
+    ) -> dict[str, Any]:
         """Extract metadata from utterance additions."""
         if not utterance.additions:
             return {}
@@ -430,6 +471,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Return additions as metadata directly
         return additions
+
+    def _extract_non_final_result_metadata(
+        self, utterance: Utterance
+    ) -> dict[str, Any]:
+        """Extract metadata from utterance additions for non-final results.
+
+        For non-final results (stream results), only extract invoke_type and source
+        to distinguish between soft_vad, hard_vad, and stream.
+        """
+        metadata = {}
+        if utterance.additions and isinstance(utterance.additions, dict):
+            additions = utterance.additions
+            if "invoke_type" in additions:
+                metadata["invoke_type"] = additions["invoke_type"]
+            if "source" in additions:
+                metadata["source"] = additions["source"]
+        return metadata
 
     def _calculate_utterance_start_ms(
         self, utterance_start_time_ms: int
@@ -451,8 +509,21 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         - two_pass_delay: delay from stream result to hard_vad two_pass result
         - soft_two_pass_delay: delay from stream result to soft_vad two_pass result
         """
+        # Check if enable_nonstream and soft_vad are enabled in request config
+        enable_nonstream = False
+        enable_soft_vad = False
+        if self.config and self.config.request:
+            # Check if enable_nonstream is True in request params
+            enable_nonstream = self.config.request.get(
+                "enable_nonstream", False
+            )
+            # Check if soft_vad_window_size exists in request params
+            enable_soft_vad = "soft_vad_window_size" in self.config.request
+
         vendor_metrics = self.two_pass_delay_tracker.calculate_metrics(
-            current_timestamp
+            current_timestamp,
+            enable_nonstream=enable_nonstream,
+            enable_soft_vad=enable_soft_vad,
         )
 
         await self._send_asr_metrics(
@@ -487,6 +558,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def _on_asr_result(self, result: ASRResponse) -> None:
         """Handle ASR result from client."""
         try:
+            # Extract log_id from result.additions.log_id (only process the first one)
+            if (
+                result.result
+                and isinstance(result.result, dict)
+                and self.log_id_dumper_manager
+            ):
+                additions = result.result.get("additions")
+                if additions and isinstance(additions, dict):
+                    log_id = additions.get("log_id")
+                    if log_id and isinstance(log_id, str):
+                        self.log_id_dumper_manager.update_log_id(log_id)
+
             # Dump vendor result if enabled
             if self.vendor_result_dumper:
                 try:
@@ -599,12 +682,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
                 duration_ms = utterance.end_time - utterance.start_time
 
-                # Determine is_final and metadata based on utterance.definite
+                # Extract metadata (always include invoke_type and source for all results)
                 if is_final:
                     has_final_result = True
-                    metadata = self._extract_metadata(utterance)
+                    metadata = self._extract_final_result_metadata(utterance)
                 else:
-                    metadata = {}
+                    metadata = self._extract_non_final_result_metadata(
+                        utterance
+                    )
 
                 await self._send_asr_result_from_text(
                     text=utterance.text,
