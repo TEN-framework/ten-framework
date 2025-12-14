@@ -1514,7 +1514,7 @@ export default function Home() {
   };
 
   const renderCharacterSwitch = () => (
-    <div className="flex w-full max-w-md flex-wrap items-center justify-center gap-3 rounded-full bg-white/60 p-2 shadow-sm backdrop-blur">
+    <div className="flex w-full max-w-md items-center justify-center gap-2 overflow-x-auto rounded-full bg-white/60 p-2 shadow-sm backdrop-blur">
       {characterOptions.map((model) => {
         const isActive = model.id === selectedModel.id;
         return (
@@ -1522,7 +1522,7 @@ export default function Home() {
             key={model.id}
             type="button"
             onClick={() => handleModelSelect(model.id)}
-            className={`rounded-full px-5 py-2 font-semibold text-sm transition ${
+            className={`rounded-full px-5 py-2.5 font-semibold text-base transition md:text-sm ${
               isActive
                 ? "bg-[#2f3dbd] text-white"
                 : "bg-white/85 text-[#586094] hover:bg-white"
@@ -1558,7 +1558,7 @@ export default function Home() {
     : undefined;
   const stageInnerClass = isImmersiveStage
     ? "relative z-10 flex flex-col items-center gap-6 px-2 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12"
-    : "relative z-10 overflow-hidden rounded-[32px] border border-white/80 bg-white/80 px-5 pt-6 pb-8 shadow-[0_24px_60px_rgba(200,208,255,0.35)] backdrop-blur-xl md:px-8";
+    : "relative z-10 overflow-hidden rounded-2xl border border-white/60 bg-white/80 px-4 pt-5 pb-7 shadow-[0_18px_48px_rgba(200,208,255,0.28)] backdrop-blur-md md:rounded-[32px] md:border-white/80 md:px-8 md:pt-6 md:pb-8 md:backdrop-blur-xl";
   const stageHeaderClass = isImmersiveStage
     ? "flex w-full items-center justify-between font-semibold text-[#594434] text-[0.62rem] uppercase tracking-[0.32em]"
     : "flex w-full items-center justify-between font-semibold text-[#87a0ff] text-[0.6rem] uppercase tracking-[0.3em]";
@@ -1573,8 +1573,8 @@ export default function Home() {
     ? "relative mt-2 w-full"
     : "relative mt-4";
   const live2dClassName = isImmersiveStage
-    ? "h-[34rem] w-full md:h-[48rem] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]"
-    : "h-[26rem] w-full rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]";
+    ? "h-[28rem] w-full md:h-[48rem] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]"
+    : "h-[22rem] w-full rounded-[22px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]";
   const quoteClass = isImmersiveStage
     ? "mt-6 text-center text-[#5b4635] text-sm md:text-base font-medium"
     : "mt-4 text-center text-[#6f6a92] text-xs md:text-sm";
@@ -1612,7 +1612,7 @@ export default function Home() {
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 hidden overflow-hidden sm:block">
         {floatingElements.map((item, idx) => (
           <div
             key={`${item.type}-${idx}`}
@@ -1634,7 +1634,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-4 py-6 md:px-6 lg:gap-10">
+      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:px-6 lg:gap-10">
         <header className="mt-4 w-full px-4">
           <div className="flex w-full items-center justify-center gap-3 md:justify-start">
             <a
@@ -1666,17 +1666,17 @@ export default function Home() {
             </a>
           </div>
         </header>
-        <header className="mt-8 max-w-xl space-y-3 text-center lg:max-w-2xl">
+        <header className="mt-8 max-w-sm space-y-3 text-center md:max-w-2xl">
           <span className="inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
             Say hello to {selectedModel.name}
           </span>
           <h1
-            className={`${headlineFont.className} text-3xl text-[#2f2d4b] leading-snug tracking-tight md:text-[2.75rem] md:leading-tight`}
+            className={`${headlineFont.className} text-[#2f2d4b] text-[clamp(1.6rem,5.5vw,2.75rem)] leading-tight tracking-tight md:text-[2.75rem] md:leading-tight`}
           >
             {selectedModel.headline}
           </h1>
           <p
-            className={`${subtitleFont.className} text-[#6f6a92] text-sm md:text-base`}
+            className={`${subtitleFont.className} text-[#6f6a92] text-[clamp(0.9rem,3.8vw,1rem)] md:text-base`}
           >
             {selectedModel.description}
           </p>
@@ -1747,11 +1747,11 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="flex items-center justify-center gap-4">
+            <div className="fixed right-0 bottom-4 left-0 z-30 mx-auto flex max-w-sm items-center justify-center gap-4 px-4 md:static md:mx-0 md:px-0">
               <button
                 onClick={handleMicToggle}
                 disabled={!isConnected}
-                className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${
+                className={`relative flex h-12 w-12 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${
                   !isConnected
                     ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
                     : isMuted
@@ -1789,7 +1789,7 @@ export default function Home() {
               <button
                 onClick={handleConnectToggle}
                 disabled={isConnecting}
-                className={`relative flex h-14 w-60 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${
+                className={`relative flex h-12 w-full items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 md:w-60 ${
                   isConnecting
                     ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
                     : isConnected
