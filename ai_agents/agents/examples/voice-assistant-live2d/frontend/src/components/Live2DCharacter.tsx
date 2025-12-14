@@ -786,6 +786,23 @@ const Live2DCharacter = forwardRef<Live2DHandle, Live2DCharacterProps>(function 
                 }
                 console.log('[Live2DCharacter] PIXI Application validation passed');
 
+                // Ensure PIXI doesn't block default touch gestures (allow page pan/scroll)
+                try {
+                    // Allow browser to handle touch gestures (e.g. vertical pan)
+                    (app.renderer.view as HTMLCanvasElement).style.touchAction = 'auto';
+                    if (app.renderer?.plugins?.interaction) {
+                        // Avoid preventDefault calls on touch events
+                        (app.renderer.plugins.interaction as any).autoPreventDefault = false;
+                    }
+                    // Disable stage-wide interaction unless explicitly needed
+                    if (app.stage) {
+                        (app.stage as any).interactive = false;
+                    }
+                    console.log('[Live2DCharacter] Applied touch gesture settings to PIXI renderer');
+                } catch (gestureErr) {
+                    console.warn('[Live2DCharacter] Unable to apply touch gesture settings', gestureErr);
+                }
+
                 // Load Live2D with proper PIXI setup
                 const { Live2DModel } = await import('@/lib/live2d-loader').then(loader => loader.loadLive2DModel());
                 let model: any;

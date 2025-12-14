@@ -72,6 +72,7 @@
   left: 0;
   width: 100%;
   height: 100%;
+  touch-action: pan-y;
 }
 
 /* Custom scrollbar */
@@ -118,6 +119,14 @@
   opacity: 0;
   filter: drop-shadow(0 6px 12px rgba(255, 102, 140, 0.32));
   will-change: transform, opacity;
+}
+
+/* Mobile-friendly truncation without Tailwind line-clamp plugin */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 @keyframes heartFloat {

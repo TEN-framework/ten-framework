@@ -1634,7 +1634,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:px-6 lg:gap-10">
+      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-4 md:gap-6 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:px-6 lg:gap-10">
         <header className="mt-4 w-full px-4">
           <div className="flex w-full items-center justify-center gap-3 md:justify-start">
             <a
@@ -1666,17 +1666,17 @@ export default function Home() {
             </a>
           </div>
         </header>
-        <header className="mt-8 max-w-sm space-y-3 text-center md:max-w-2xl">
-          <span className="inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
+        <header className="mt-4 md:mt-8 max-w-sm space-y-2 md:space-y-3 text-center md:max-w-2xl">
+          <span className="hidden md:inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
             Say hello to {selectedModel.name}
           </span>
           <h1
-            className={`${headlineFont.className} text-[#2f2d4b] text-[clamp(1.6rem,5.5vw,2.75rem)] leading-tight tracking-tight md:text-[2.75rem] md:leading-tight`}
+            className={`${headlineFont.className} text-[#2f2d4b] text-[clamp(1.4rem,5vw,2.5rem)] leading-tight tracking-tight md:text-[2.75rem] md:leading-tight`}
           >
             {selectedModel.headline}
           </h1>
           <p
-            className={`${subtitleFont.className} text-[#6f6a92] text-[clamp(0.9rem,3.8vw,1rem)] md:text-base`}
+            className={`${subtitleFont.className} text-[#6f6a92] text-[clamp(0.85rem,3.6vw,0.95rem)] md:text-base line-clamp-2`}
           >
             {selectedModel.description}
           </p>

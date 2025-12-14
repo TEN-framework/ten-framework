@@ -48,7 +48,7 @@
                 "max_completion_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "This is Kei, how can I help you?",
+                "greeting": "Welcome to Kei — how can I help?",
                 "max_memory_length": 10
               }
             },
@@ -66,7 +66,7 @@
                     "sample_rate": 16000
                   },
                   "voice_setting": {
-                    "voice_id": ""
+                    "voice_id": "female-shaonv"
                   },
                   "url": "wss://api.minimaxi.com/ws/v1/t2a_v2"
                 },
@@ -80,7 +80,7 @@
               "addon": "main_cascade_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "Welcome to Kei — how can I help?"
               }
             },
             {

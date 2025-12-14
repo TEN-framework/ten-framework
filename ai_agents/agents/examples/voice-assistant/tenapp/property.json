@@ -49,7 +49,7 @@
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "TEN Agent connected. How can I help you today?",
+                "greeting": "Hi there, I'm TEN — how can I help?",
                 "max_memory_length": 10
               }
             },
@@ -64,7 +64,7 @@
                 "params": {
                   "key": "${env:ELEVENLABS_TTS_KEY}",
                   "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "voice_id": "NHRgOEwqx5WZNClv5sat",
                   "output_format": "pcm_16000"
                 }
               }
@@ -75,7 +75,7 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "Hi there, I'm TEN — how can I help?"
               }
             },
             {
