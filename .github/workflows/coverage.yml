@@ -156,7 +156,9 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -447,7 +449,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -826,7 +836,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1047,7 +1065,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1269,7 +1295,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1491,7 +1525,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1733,7 +1775,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21 \
+            clang-tools-21 \
+            libclang-rt-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1747,6 +1797,24 @@ jobs:
           # Verify installation
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Install Go for building Go apps
+        run: |
+          # Install Go 1.24.3 for building Go applications with nodejs extensions
+          export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          go1.24.3 download
+          go1.24.3 version
+
+          # Create symlink so 'go' points to go1.24.3
+          # This is needed because build scripts use 'go' command
+          GO_BIN_DIR=$(go env GOPATH)/bin
+          sudo ln -sf $GO_BIN_DIR/go1.24.3 /usr/local/bin/go
+
+          # Verify
+          which go
+          go version
 
       - name: Clean profraw files before tests
         run: |
@@ -1824,7 +1892,17 @@ jobs:
         run: |
           df -h .
 
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          # Add tgn and Go to PATH for building C++/Go apps with nodejs extensions
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$PATH
+
+          # Verify required tools are available
+          echo "=== Verifying build tools ==="
+          which tgn
+          which go
+          go version
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/
           pytest -s tests/ten_runtime/integration/nodejs/
 
