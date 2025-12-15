@@ -101,6 +101,7 @@ class TenEnvBase:
                         line_no,
                         category,
                         msg,
+                        option.sync,
                     )
             finally:
                 # A defensive programming practice to ensure immediate cleanup
@@ -108,4 +109,6 @@ class TenEnvBase:
                 del frame
 
         # Fallback in case of failure to get caller information.
-        return self._internal.log(level, None, None, 0, category, msg)
+        return self._internal.log(
+            level, None, None, 0, category, msg, option.sync
+        )

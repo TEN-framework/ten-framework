@@ -16,6 +16,7 @@ from libten_runtime_python import (
 )
 
 from .log_level import LogLevel
+from .log_option import LogOption
 from .ten_env import TenEnv
 from .async_ten_env import AsyncTenEnv
 from .global_thread_manager import GlobalThreadManager
@@ -450,6 +451,7 @@ class AsyncExtension(_Extension):
         err = async_ten_env.log(
             LogLevel.ERROR,
             f"Uncaught exception: {e} \ntraceback: {traceback_info}",
+            option=LogOption(sync=True),
         )
         if err is not None:
             # If the log_error API fails, print the error message to the
