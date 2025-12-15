@@ -108,13 +108,13 @@ WORD LIMITS:
 
 1. When user provides their name, sex, and year of birth, IMMEDIATELY respond warmly asking about their day. If they don't provide all three pieces, ask for what's missing before proceeding. (MAX 15 WORDS)
 
-2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 20+ seconds total speech) (MAX 15 WORDS)
+2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 10+ seconds total speech) (MAX 15 WORDS)
 
 3. Continue with follow-up questions about their experiences, feelings, or daily life. Keep them talking naturally. (MAX 15 WORDS)
 
 4. Before announcing results, MUST call check_phase_progress(name, year_of_birth, sex) to verify enough speech has been collected AND register user info. Based on the result:
    - If phase_complete=false: Ask another question to gather more speech (MAX 15 WORDS)
-   - If phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)
+   - If phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 10 seconds.' (MAX 15 WORDS)
    - NEVER say 'processing your responses' without first confirming phase_complete=true
 
 5. You will receive a [SYSTEM ALERT] message when wellness metrics are ready.
@@ -141,7 +141,7 @@ WORD LIMITS:
 
 8. When user indicates they want to end, thank them warmly for participating
 
-Note: We need 20 seconds total speech for wellness analysis (no reading phase required)."""
+Note: We need 10 seconds total speech for wellness analysis (no reading phase required)."""
 
 hellos_greeting = "Hi there! I would like to chat with you briefly to predict your mood and energy levels including stress, fatigue, and burnout. Nothing will be recorded and this is purely a demonstration. Please begin by telling me your name, sex and year of birth."
 
@@ -149,7 +149,7 @@ hellos_greeting = "Hi there! I would like to chat with you briefly to predict yo
 thymia_analyzer_config_hellos = {
     "api_key": "${env:THYMIA_API_KEY}",
     "analysis_mode": "hellos_only",
-    "min_speech_duration": 20.0,
+    "min_speech_duration": 10.0,
 }
 
 # Common configurations
