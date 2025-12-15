@@ -230,9 +230,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
 
-            # Create temporary log_id_dumper for new connection
+            # Create init dumper for new connection (before first log_id)
             if self.log_id_dumper_manager:
-                await self.log_id_dumper_manager.create_temp_dumper()
+                await self.log_id_dumper_manager.create_init_dumper()
 
             await self.client.connect()
             self.connected = True
@@ -568,7 +568,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 if additions and isinstance(additions, dict):
                     log_id = additions.get("log_id")
                     if log_id and isinstance(log_id, str):
-                        self.log_id_dumper_manager.update_log_id(log_id)
+                        await self.log_id_dumper_manager.update_log_id(log_id)
 
             # Dump vendor result if enabled
             if self.vendor_result_dumper:
