@@ -268,7 +268,6 @@ jobs:
         with:
           tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
           files: |
-            out/win/x64/tman-win-${{ matrix.build_type }}-x64.zip
             out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip
 
       - name: Clean up
