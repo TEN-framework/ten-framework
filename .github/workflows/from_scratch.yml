@@ -44,10 +44,29 @@ jobs:
           fetch-depth: 1
 
       # This step is not necessary for the build, but it is useful for debugging.
-      - name: Install tools and dependencies
+      - name: Install tools and dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install tree
+
+      - name: Install tools and dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "================================================"
+          echo "Installing Linux build dependencies"
+          echo "================================================"
+
+          # Update package lists
+          sudo apt-get update
+
+          # Install C++ build essentials and libc++ for C++ extension compilation
+          sudo apt-get install -y \
+            build-essential \
+            libc++-dev \
+            libc++abi-dev \
+            tree
+
+          echo "✓ Linux build dependencies installed successfully"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -631,15 +650,31 @@ jobs:
 
           cd /tmp/test_ext_python
 
-          # Install dependencies in standalone mode
+          # Install TEN framework dependencies in standalone mode
           tman install --standalone
 
-          if [ $? -eq 0 ]; then
-            echo "✓ Python extension dependencies installed successfully"
-          else
-            echo "❌ ERROR: Failed to install Python extension dependencies"
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Failed to install TEN framework dependencies"
             exit 1
           fi
+
+          # Install Python pip dependencies (pytest, etc.)
+          if [ -f "requirements.txt" ]; then
+            echo ""
+            echo "Installing Python pip dependencies from requirements.txt..."
+            python3 -m pip install -r requirements.txt
+
+            if [ $? -eq 0 ]; then
+              echo "✓ Python pip dependencies installed successfully"
+            else
+              echo "❌ ERROR: Failed to install Python pip dependencies"
+              exit 1
+            fi
+          else
+            echo "⚠ WARNING: requirements.txt not found, skipping pip install"
+          fi
+
+          echo "✓ All Python extension dependencies installed successfully"
 
       - name: Test Python extension
         run: |
