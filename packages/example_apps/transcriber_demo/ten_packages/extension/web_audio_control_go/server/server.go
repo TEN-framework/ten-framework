@@ -30,6 +30,7 @@ var (
 )
 
 type WebServer struct {
+	host             string
 	port             int
 	tenEnv           ten.TenEnv
 	clients          map[*websocket.Conn]bool
@@ -55,7 +56,7 @@ type WebSocketMessage struct {
 	SamplesPerChannel int    `json:"samples_per_channel"`
 }
 
-func NewWebServer(port int, tenEnv ten.TenEnv) *WebServer {
+func NewWebServer(host string, port int, tenEnv ten.TenEnv) *WebServer {
 	// Create upload directory
 	uploadDir := filepath.Join(os.TempDir(), "audio_uploads")
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
@@ -65,6 +66,7 @@ func NewWebServer(port int, tenEnv ten.TenEnv) *WebServer {
 	}
 
 	return &WebServer{
+		host:      host,
 		port:      port,
 		tenEnv:    tenEnv,
 		clients:   make(map[*websocket.Conn]bool),
@@ -118,11 +120,11 @@ func (s *WebServer) Start() {
 	})
 
 	s.server = &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.port),
+		Addr:    fmt.Sprintf("%s:%d", s.host, s.port),
 		Handler: mux,
 	}
 
-	s.tenEnv.LogInfo(fmt.Sprintf("Starting HTTP server on :%d", s.port))
+	s.tenEnv.LogInfo(fmt.Sprintf("Starting HTTP server on %s:%d", s.host, s.port))
 	if err := s.server.ListenAndServe(); err != nil &&
 		err != http.ErrServerClosed {
 		s.tenEnv.LogError(fmt.Sprintf("HTTP server error: %v", err))

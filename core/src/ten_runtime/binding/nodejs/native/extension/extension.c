@@ -828,8 +828,6 @@ static void proxy_on_deinit(ten_extension_t *self, ten_env_t *ten_env) {
 
 static void proxy_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
                          ten_shared_ptr_t *cmd) {
-  TEN_LOGI("extension proxy_on_cmd");
-
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
@@ -865,8 +863,6 @@ static void proxy_on_cmd(ten_extension_t *self, ten_env_t *ten_env,
 }
 static void proxy_on_data(ten_extension_t *self, ten_env_t *ten_env,
                           ten_shared_ptr_t *data) {
-  TEN_LOGI("extension proxy_on_data");
-
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
@@ -902,8 +898,6 @@ static void proxy_on_data(ten_extension_t *self, ten_env_t *ten_env,
 }
 static void proxy_on_audio_frame(ten_extension_t *self, ten_env_t *ten_env,
                                  ten_shared_ptr_t *frame) {
-  TEN_LOGI("extension proxy_on_audio_frame");
-
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
@@ -938,8 +932,6 @@ static void proxy_on_audio_frame(ten_extension_t *self, ten_env_t *ten_env,
 }
 static void proxy_on_video_frame(ten_extension_t *self, ten_env_t *ten_env,
                                  ten_shared_ptr_t *frame) {
-  TEN_LOGI("extension proxy_on_video_frame");
-
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(ten_env, "Should not happen.");
