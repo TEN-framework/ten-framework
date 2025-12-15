@@ -129,6 +129,10 @@
   overflow: hidden;
 }
 
+.no-overscroll {
+  overscroll-behavior-y: contain;
+}
+
 @keyframes heartFloat {
   0% {
     transform: translate3d(var(--heart-base-x, 0px), 0, 0) scale(0.6) rotate(0deg);

@@ -1634,8 +1634,8 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-4 md:gap-6 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:px-6 lg:gap-10">
-        <header className="mt-4 w-full px-4">
+      <div className="no-overscroll relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-4 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:gap-6 md:px-6 lg:gap-10">
+        <header className="mt-6 w-full px-4">
           <div className="flex w-full items-center justify-center gap-3 md:justify-start">
             <a
               href="https://github.com/ten-framework/ten-framework"
@@ -1646,7 +1646,7 @@ export default function Home() {
               <img
                 src="/images/logo-w-title.png"
                 alt="TEN logo"
-                className="h-6 w-auto mix-blend-multiply"
+                className="h-7 w-auto mix-blend-multiply"
                 loading="lazy"
               />
             </a>
@@ -1660,14 +1660,14 @@ export default function Home() {
               <img
                 src="/images/minimax.webp"
                 alt="Minimax logo"
-                className="h-6 w-auto mix-blend-multiply"
+                className="h-7 w-auto mix-blend-multiply"
                 loading="lazy"
               />
             </a>
           </div>
         </header>
-        <header className="mt-4 md:mt-8 max-w-sm space-y-2 md:space-y-3 text-center md:max-w-2xl">
-          <span className="hidden md:inline-flex items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm">
+        <header className="mt-4 max-w-sm space-y-2 text-center md:mt-8 md:max-w-2xl md:space-y-3">
+          <span className="hidden items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm md:inline-flex">
             Say hello to {selectedModel.name}
           </span>
           <h1
@@ -1676,7 +1676,7 @@ export default function Home() {
             {selectedModel.headline}
           </h1>
           <p
-            className={`${subtitleFont.className} text-[#6f6a92] text-[clamp(0.85rem,3.6vw,0.95rem)] md:text-base line-clamp-2`}
+            className={`${subtitleFont.className} hidden text-[#6f6a92] md:block md:text-base`}
           >
             {selectedModel.description}
           </p>
@@ -1708,12 +1708,14 @@ export default function Home() {
                   className={live2dClassName}
                 />
               </div>
-              <p className={quoteClass}>“{selectedModel.quote}”</p>
+              <p className={`${quoteClass} hidden md:block`}>
+                “{selectedModel.quote}”
+              </p>
             </div>
           </div>
 
           <div className="flex w-full max-w-3xl flex-col items-center gap-4">
-            <div className="flex flex-wrap items-center justify-center gap-2 font-medium text-[0.7rem] md:text-xs">
+            <div className="hidden flex-wrap items-center justify-center gap-2 font-medium text-[0.7rem] md:flex md:text-xs">
               <span
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
                   isConnected
@@ -1748,6 +1750,12 @@ export default function Home() {
             </div>
 
             <div className="fixed right-0 bottom-4 left-0 z-30 mx-auto flex max-w-sm items-center justify-center gap-4 px-4 md:static md:mx-0 md:px-0">
+              <span className="hidden items-center gap-2 rounded-full px-3 py-2 text-xs md:inline-flex">
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"}`}
+                />
+                {isConnected ? "Online" : "Waiting"}
+              </span>
               <button
                 onClick={handleMicToggle}
                 disabled={!isConnected}
@@ -1850,7 +1858,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="mx-auto mt-10 max-w-3xl px-6 pb-8 text-center text-[#7a7694] text-[11px] leading-relaxed">
+          <div className="mx-auto mt-1 max-w-sm px-3 pb-[env(safe-area-inset-bottom)] text-center text-[#7a7694] text-[10px] leading-tight opacity-75 md:mt-10 md:max-w-3xl md:px-6 md:pb-8 md:text-[11px] md:leading-relaxed md:opacity-100">
             This content uses sample data owned and copyrighted by Live2D Inc.
             The sample data are utilized in accordance with terms and conditions
             set by Live2D Inc. This content itself is created at the author’s
