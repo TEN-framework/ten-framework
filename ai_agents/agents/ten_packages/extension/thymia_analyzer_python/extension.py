@@ -63,7 +63,6 @@ class AudioBuffer:
         self.channels = channels
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
-        self.speech_buffer_bytes = 0  # Track memory usage
         self.speech_duration = (
             0.0  # Total duration including pre-speech padding
         )
@@ -71,7 +70,6 @@ class AudioBuffer:
             0.0  # Only frames where volume > threshold
         )
         self.max_speech_duration = 300.0  # 5 minutes safety limit
-        self.max_buffer_bytes = 5 * 1024 * 1024  # 5MB memory limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
         # Using deque for O(1) popleft() performance
@@ -114,9 +112,8 @@ class AudioBuffer:
             if is_speech:
                 # Speech detected! Add circular buffer contents (pre-speech context)
                 for buffered_frame in self.circular_buffer:
-                    if self._can_add_frame(len(buffered_frame)):
+                    if self.speech_duration < self.max_speech_duration:
                         self.speech_buffer.append(buffered_frame)
-                        self.speech_buffer_bytes += len(buffered_frame)
                         self.speech_duration += len(buffered_frame) / (
                             self.sample_rate * self.channels * 2
                         )
@@ -129,23 +126,20 @@ class AudioBuffer:
             # Currently speaking
             if is_speech:
                 # Continue speaking - add frame to speech buffer
-                # Check max duration and memory to prevent unbounded growth
-                if self._can_add_frame(len(pcm_data)):
+                # Check max duration to prevent unbounded memory growth
+                if self.speech_duration < self.max_speech_duration:
                     # Also flush any accumulated silence frames (they were part of speech)
                     for silence_frame in self.silence_frames:
-                        if self._can_add_frame(len(silence_frame)):
-                            self.speech_buffer.append(silence_frame)
-                            self.speech_buffer_bytes += len(silence_frame)
-                            self.speech_duration += len(silence_frame) / (
-                                self.sample_rate * self.channels * 2
-                            )
+                        self.speech_buffer.append(silence_frame)
+                        self.speech_duration += len(silence_frame) / (
+                            self.sample_rate * self.channels * 2
+                        )
                         # NOTE: Brief silence during speech NOT counted in actual_speech_duration
                     self.silence_frames.clear()
                     self.silence_duration = 0.0
 
                     # Add current frame (THIS IS ACTUAL SPEECH)
                     self.speech_buffer.append(pcm_data)
-                    self.speech_buffer_bytes += len(pcm_data)
                     self.speech_duration += frame_duration
                     self.actual_speech_duration += (
                         frame_duration  # Count actual speech!
@@ -179,13 +173,6 @@ class AudioBuffer:
         total_bytes = sum(len(frame) for frame in self.circular_buffer)
         return total_bytes / (self.sample_rate * self.channels * 2)
 
-    def _can_add_frame(self, frame_bytes: int) -> bool:
-        """Check if we can add more frames (time and memory limits)"""
-        return (
-            self.speech_duration < self.max_speech_duration
-            and self.speech_buffer_bytes + frame_bytes <= self.max_buffer_bytes
-        )
-
     def _calculate_rms(self, pcm_data: bytes) -> float:
         """Calculate RMS volume of PCM audio"""
         if not pcm_data:
@@ -217,7 +204,6 @@ class AudioBuffer:
     def clear_buffer(self):
         """Clear speech buffer after audio has been sent to APIs"""
         self.speech_buffer.clear()
-        self.speech_buffer_bytes = 0
         self.speech_duration = 0.0
         self.actual_speech_duration = 0.0
         print(
@@ -1051,49 +1037,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             # === SEPARATE LOGIC FOR EACH MODE ===
 
-            if self.analysis_mode == "hellos_only":
-                # ============ HELLOS_ONLY MODE ============
-                required_duration = self.min_speech_duration
-
-                if self._audio_frame_count % 500 == 1:
-                    ten_env.log_info(
-                        f"[THYMIA_BUFFER] Actual speech: {actual_speech_duration:.1f}s/{required_duration:.1f}s "
-                        f"(need {max(0, required_duration - actual_speech_duration):.1f}s, total with padding: {speech_duration:.1f}s)"
-                    )
-
-                # Check if we have enough speech to analyze
-                if self.audio_buffer.has_enough_speech(required_duration):
-                    should_analyze = (
-                        not self.active_analysis
-                        and self.analysis_count < self.max_analyses_per_session
-                        and (time.time() - self.last_analysis_time)
-                        >= self.min_interval_seconds
-                    )
-
-                    if should_analyze:
-                        # Validate user info before starting
-                        if (
-                            not self.user_name
-                            or not self.user_dob
-                            or not self.user_sex
-                        ):
-                            if (
-                                self._audio_frame_count % 100 == 1
-                            ):  # Log every 1 second
-                                ten_env.log_warn(
-                                    f"[THYMIA_USERINFO] Waiting for user info before analysis "
-                                    f"(have: name={self.user_name}, dob={self.user_dob}, sex={self.user_sex})"
-                                )
-                        else:
-                            ten_env.log_info(
-                                f"[THYMIA_ANALYSIS_START] Starting Hellos analysis "
-                                f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
-                            )
-                            asyncio.create_task(
-                                self._run_hellos_only_analysis(ten_env)
-                            )
-
-            elif self.analysis_mode == "demo_dual":
+            if self.analysis_mode in ("hellos_only", "demo_dual"):
                 # ============ DEMO_DUAL MODE (PARALLEL PHASES) ============
                 # Hellos: Triggered at 30s mood speech
                 # Apollo: Triggered at 52s total speech (30s mood + 22s reading)
@@ -1173,8 +1117,25 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                 )
                             )
 
-                # Check Apollo phase - INDEPENDENT of Hellos
-                if not self.apollo_complete:
+                # Check Apollo phase - INDEPENDENT of Hellos (skip in hellos_only mode)
+                if self.analysis_mode == "hellos_only":
+                    # In hellos_only mode, mark Apollo and reading phase as complete
+                    # so we don't wait for them or send reading phase reminders
+                    # Also mark apollo_trigger_sent and apollo_shared_with_user to prevent
+                    # any Apollo announcements or retries
+                    if not self.apollo_complete:
+                        self.apollo_complete = True
+                        self.reading_phase_complete = True
+                        self.apollo_trigger_sent = (
+                            True  # Prevent Apollo trigger
+                        )
+                        self.apollo_shared_with_user = (
+                            True  # Prevent Apollo retries
+                        )
+                        ten_env.log_info(
+                            "[THYMIA_MODE] hellos_only mode - skipping Apollo and reading phase"
+                        )
+                elif not self.apollo_complete:
                     required_duration = (
                         self.apollo_mood_duration + self.apollo_read_duration
                     )  # mood + read durations
@@ -1771,30 +1732,50 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         """Register wellness analysis tools"""
         ten_env.log_info(
-            "[THYMIA_TOOL_METADATA] get_tool_metadata called - defining wellness analysis tools"
+            f"[THYMIA_TOOL_METADATA] get_tool_metadata called - defining wellness analysis tools (mode={self.analysis_mode})"
         )
+
+        # Different tool description based on analysis mode
+        if self.analysis_mode == "hellos_only":
+            get_wellness_description = (
+                "Get user's mental wellness metrics from voice analysis. "
+                "Returns wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES from 0-100. "
+                "Values are integers (e.g., stress: 27%). "
+                "The analysis is based on speech patterns and provides insight into the user's emotional and mental health state. "
+                "IMPORTANT: Call this when the [SYSTEM ALERT] indicates wellness metrics are ready. "
+                "Response status field indicates results: "
+                "- 'insufficient_data': Still collecting - only mention if user asks about progress. "
+                "- 'available': Wellness metrics ready. Announce all 5 metrics to the user. "
+                "- 'analyzing': Analysis in progress - wait for results. "
+                "CRITICAL: Do NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists or paragraphs only. "
+                "CRITICAL: After announcing results, IMMEDIATELY call confirm_announcement tool with phase='hellos'. "
+                "NOTE: User information must be set first using check_phase_progress with name, year_of_birth, and sex."
+            )
+        else:
+            get_wellness_description = (
+                "Get user's mental wellness and clinical indicators from voice analysis. "
+                "Returns wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES from 0-100. "
+                "May also return clinical indicators (depression, anxiety) if available, as probabilities from 0-100 with severity levels. "
+                "Values are integers (e.g., stress: 27%, depression: 15%). "
+                "The analysis is based on speech patterns and provides insight into the user's emotional and mental health state. "
+                "IMPORTANT: Call this periodically to check if analysis has completed. "
+                "Response status field indicates results: "
+                "- 'insufficient_data': Still collecting - only mention if user asks about progress. "
+                "- 'available': Wellness metrics ready. If 'clinical_indicators' field is PRESENT, announce all 7 metrics. If 'clinical_indicators' field is MISSING, Apollo isn't ready yet - announce ONLY wellness metrics and WAIT for [SYSTEM ALERT] about clinical indicators. DO NOT make up values when field is missing. "
+                "- 'partial': WELLNESS METRICS UNAVAILABLE (API failed). ONLY clinical indicators available. "
+                "  When status='partial', you MUST tell user: 'Wellness metrics (stress, distress, burnout, fatigue, low self-esteem) are currently unavailable due to API limitations.' "
+                "  Then announce ONLY the clinical indicators (depression, anxiety) that ARE available. "
+                "  DO NOT make up or infer wellness metric values - if status='partial' and wellness_metrics is null, they are UNAVAILABLE. "
+                "Frame clinical indicators (depression/anxiety) as research indicators, not clinical diagnosis. "
+                "CRITICAL: Do NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists or paragraphs only. "
+                "CRITICAL: After announcing results, IMMEDIATELY call confirm_announcement tool with appropriate phase. "
+                "NOTE: User information must be set first using set_user_info."
+            )
+
         return [
             LLMToolMetadata(
                 name="get_wellness_metrics",
-                description=(
-                    "Get user's mental wellness and clinical indicators from voice analysis. "
-                    "Returns wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES from 0-100. "
-                    "May also return clinical indicators (depression, anxiety) if available, as probabilities from 0-100 with severity levels. "
-                    "Values are integers (e.g., stress: 27%, depression: 15%). "
-                    "The analysis is based on speech patterns and provides insight into the user's emotional and mental health state. "
-                    "IMPORTANT: Call this periodically to check if analysis has completed. "
-                    "Response status field indicates results: "
-                    "- 'insufficient_data': Still collecting - only mention if user asks about progress. "
-                    "- 'available': Wellness metrics ready. If 'clinical_indicators' field is PRESENT, announce all 7 metrics. If 'clinical_indicators' field is MISSING, Apollo isn't ready yet - announce ONLY wellness metrics and WAIT for [SYSTEM ALERT] about clinical indicators. DO NOT make up values when field is missing. "
-                    "- 'partial': WELLNESS METRICS UNAVAILABLE (API failed). ONLY clinical indicators available. "
-                    "  When status='partial', you MUST tell user: 'Wellness metrics (stress, distress, burnout, fatigue, low self-esteem) are currently unavailable due to API limitations.' "
-                    "  Then announce ONLY the clinical indicators (depression, anxiety) that ARE available. "
-                    "  DO NOT make up or infer wellness metric values - if status='partial' and wellness_metrics is null, they are UNAVAILABLE. "
-                    "Frame clinical indicators (depression/anxiety) as research indicators, not clinical diagnosis. "
-                    "CRITICAL: Do NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists or paragraphs only. "
-                    "CRITICAL: After announcing results, IMMEDIATELY call confirm_announcement tool with appropriate phase. "
-                    "NOTE: User information must be set first using set_user_info."
-                ),
+                description=get_wellness_description,
                 parameters=[],
             ),
             LLMToolMetadata(
@@ -2222,6 +2203,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             await ten_env.send_data(text_data)
 
                         # Check if reading phase is incomplete (mood phase done)
+                        # Note: In hellos_only mode, reading_phase_complete is set to True early,
+                        # so this block won't execute for hellos_only
                         elif (
                             self.mood_phase_complete
                             and not self.reading_phase_complete
@@ -2367,8 +2350,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Trigger Apollo if ready and not yet triggered
         # Use consistent spacing between any announcements
+        # Skip Apollo trigger in hellos_only mode - there's no Apollo analysis
         if (
-            self.apollo_complete
+            self.analysis_mode != "hellos_only"
+            and self.apollo_complete
             and self.reading_phase_complete
             and not self.apollo_trigger_sent
         ):
@@ -2652,14 +2637,26 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 # Determine current phase and requirements
                 if self.analysis_mode == "hellos_only":
-                    current_phase = "collection"
                     required_duration = self.min_speech_duration
                     speech_collected = (
                         self.audio_buffer.actual_speech_duration
                         if self.audio_buffer
                         else 0.0
                     )
-                    phase_complete = speech_collected >= required_duration
+
+                    # Check if analysis already started (buffer may be cleared)
+                    if self.hellos_analysis_running or self.mood_phase_complete:
+                        current_phase = "analyzing"
+                        phase_complete = True
+                        message = "Analysis in progress - wait for results"
+                    elif speech_collected >= required_duration:
+                        current_phase = "collection"
+                        phase_complete = True
+                        message = "Phase complete - ready for analysis"
+                    else:
+                        current_phase = "collection"
+                        phase_complete = False
+                        message = f"Need {round(required_duration - speech_collected, 1)} more seconds of speech"
 
                     response = {
                         "mode": "hellos_only",
@@ -2670,11 +2667,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             max(0, required_duration - speech_collected), 1
                         ),
                         "phase_complete": phase_complete,
-                        "message": (
-                            f"Need {round(required_duration - speech_collected, 1)} more seconds of speech"
-                            if not phase_complete
-                            else "Phase complete - ready for analysis"
-                        ),
+                        "message": message,
                     }
 
                 elif self.analysis_mode == "demo_dual":

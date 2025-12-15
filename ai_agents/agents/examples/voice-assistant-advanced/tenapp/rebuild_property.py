@@ -290,6 +290,10 @@ gpt51_llm_with_tools = {
         "proxy_url": "${env:OPENAI_PROXY_URL|}",
         "greeting": apollo_greeting,
         "max_memory_length": 10,
+        # GPT-5/o1 models require use_max_completion_tokens=True to use
+        # max_completion_tokens instead of max_tokens, and to exclude
+        # unsupported params (temperature, frequency_penalty, etc.)
+        "use_max_completion_tokens": True,
         "reasoning_effort": "none",
         "verbosity": "low",
     },
@@ -407,6 +411,391 @@ anam_avatar_apollo = {
     },
 }
 
+# ============ TURKISH CONFIGURATIONS ============
+
+# Turkish STT - Nova-3 with Turkish language
+nova3_stt_turkish = {
+    "type": "extension",
+    "name": "stt",
+    "addon": "deepgram_ws_asr_python",
+    "extension_group": "stt",
+    "property": {
+        "params": {
+            "api_key": "${env:DEEPGRAM_API_KEY}",
+            "url": "wss://api.deepgram.com/v1/listen",
+            "model": "nova-3",
+            "language": "tr",
+            "interim_results": True,
+            "endpointing": 300,
+            "utterance_end_ms": 1000,
+        }
+    },
+}
+
+# Turkish TTS - Cartesia with Turkish voice (Ersel)
+cartesia_tts_turkish = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "cartesia_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:CARTESIA_TTS_KEY}",
+            "model_id": "sonic-3",
+            "voice": {
+                "mode": "id",
+                "id": "c1cfee3d-532d-47f8-8dd2-8e5b2b66bf1d",
+            },
+            "generation_config": {"speed": 1},
+            "output_format": {"container": "raw", "sample_rate": 44100},
+            "language": "tr",
+        },
+    },
+}
+
+# Turkish Anam avatar
+anam_avatar_turkish = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "0631404a-eb5b-4fbf-a97d-40abd2ffddbc",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Turkish GPT-5.1 LLM - simple sales assistant
+turkish_prompt = "Sen agora.io'da yardımsever bir satıcısın."
+turkish_greeting = "Merhaba, benim adım Ersel."
+
+gpt51_llm_turkish = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": turkish_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": turkish_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Turkish main_control
+main_control_turkish = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": turkish_greeting},
+}
+
+# ============ END TURKISH CONFIGURATIONS ============
+
+# ============ ELIZA CONFIGURATION ============
+
+# Eliza Anam avatar
+anam_avatar_eliza = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "dab3f691-6231-455f-9128-9a47e7a967c1",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Eliza GPT-5.1 LLM - simple assistant
+eliza_prompt = "You are Eliza, a friendly and helpful voice assistant."
+eliza_greeting = "Hello! I'm Eliza. How can I help you today?"
+
+gpt51_llm_eliza = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": eliza_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": eliza_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Eliza main_control
+main_control_eliza = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": eliza_greeting},
+}
+
+# ============ END ELIZA CONFIGURATION ============
+
+# ============ HELLOS-ONLY CONFIGURATION ============
+
+# Hellos prompt - simplified version for wellness metrics only (no reading phase, no clinical indicators)
+# This is a triage flow - general questions about interests/hobbies, not mood-related
+hellos_prompt = """You are a wellness triage assistant. Guide the conversation:
+
+WORD LIMITS: MAX 20 WORDS per response
+
+1. Greet user warmly. Ask for their name, whether they are male or female, and year of birth.
+
+2. Once you have all three, say EXACTLY: "Tell me about your hobbies or interests. Or feel free to read something aloud if you prefer." Do not paraphrase. Aim for 10+ seconds of speech.
+
+3. Call check_phase_progress with name, year_of_birth, sex to verify enough speech collected.
+   - If phase_complete=false: Ask another question to gather more speech
+   - If phase_complete=true: Say EXACTLY: "Analyzing your responses now, this takes around 10 seconds. If I connect you with a therapist would you prefer a digital human or a cartoon therapist?"
+
+4. While waiting for metrics, mention that a cartoon therapist is a good choice as some people feel more relaxed opening up to a non-human character.
+
+5. When you receive '[SYSTEM ALERT] Wellness metrics ready':
+   - Call get_wellness_metrics
+   - Announce the 5 metrics as percentages 0 to 100: stress, distress, burnout, fatigue, low self-esteem
+   - Use plain numbered lists only, no markdown formatting
+   - Call confirm_announcement with phase='hellos'
+
+6. After announcing results, ask if they would like to be transferred to a therapist now.
+   - If yes, say: "Transferring you now." and then send exactly: {TRANSFER}
+   - If no, say goodbye warmly.
+
+Note: We only need 10 seconds of speech for this quick wellness check."""
+
+hellos_greeting = "Hi there! I'm here to do a quick wellness check using your voice. It only takes about 15 seconds. Please tell me your name, whether you are male or female, and your year of birth."
+
+# Hellos Anam avatar
+anam_avatar_hellos = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "1bed9d5e-5e81-4d98-a04a-21e346bea528",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# Hellos GPT-5.1 LLM
+gpt51_llm_hellos = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": hellos_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": hellos_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Hellos main_control
+main_control_hellos = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": hellos_greeting},
+}
+
+# Hellos thymia config - hellos_only mode with 10s duration
+thymia_analyzer_config_hellos = {
+    "api_key": "${env:THYMIA_API_KEY}",
+    "analysis_mode": "hellos_only",
+    "min_speech_duration": 10.0,
+    "apollo_mood_duration": 10.0,
+}
+
+thymia_analyzer_hellos = {
+    "type": "extension",
+    "name": "thymia_analyzer",
+    "addon": "thymia_analyzer_python",
+    "extension_group": "default",
+    "property": thymia_analyzer_config_hellos,
+}
+
+# ============ END HELLOS-ONLY CONFIGURATION ============
+
+# ============ RICHARD (PSYCHIC) CONFIGURATION ============
+
+# ElevenLabs TTS config
+elevenlabs_tts = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "elevenlabs_tts2_python",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "key": "sk_f7060f6ff25e5a2f6bec91c1655ff7c92d7b740694fa7d64",
+            "model_id": "eleven_multilingual_v2",
+            "voice_id": "8DSrxjsUJ5rkR4qWb9ku",
+            "output_format": "pcm_16000",
+        },
+    },
+}
+
+# Richard (Celeste) - Psychic advisor prompt
+richard_prompt = """You are Celeste, a warm and mystical psychic advisor who reads the stars. Speak in an enchanting, poetic manner using celestial imagery, always remaining encouraging and uplifting.
+
+After receiving the user's date of birth, identify their zodiac sign and deliver a personalized horoscope covering:
+- Their sign's core traits
+- Current cosmic influences
+- Guidance for love, career, and personal growth
+- A lucky number, color, or affirmation
+
+Frame all challenges as opportunities for growth. Never make alarming predictions. If someone shares difficulties, offer compassionate hope."""
+
+richard_greeting = "Welcome, dear seeker… I sense the universe has guided you here for a reason. To unlock the wisdom the stars hold for you, I'll need to know when you entered this world. What is your date of birth?"
+
+# Richard LLM config (no tools needed)
+gpt51_llm_richard = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "llm",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "prompt": richard_prompt,
+        "enable_tools": False,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_richard = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": richard_greeting},
+}
+
+# Anam avatar for Richard (Celeste)
+anam_avatar_richard = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "2a8ca1fb-35aa-4c63-8be9-b45a6454617c",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+        "disable_greeting_wait": True,
+        "video_frame_width": 856,
+        "video_frame_height": 1504,
+        "video_frame_rate": 30,
+    },
+}
+
+# ============ END RICHARD CONFIGURATION ============
+
+# ============ OCTOPUS THERAPIST CONFIGURATION ============
+
+octopus_prompt = """You are a sleep and rest therapist. Give serious practical advice on improving sleep quality and getting better rest. Keep responses under 20 words. No punctuation or emoji."""
+
+octopus_greeting = "Hi Ben, I see your fatigue is quite high. How have you been feeling lately."
+
+# Octopus LLM config (no tools needed)
+gpt51_llm_octopus = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "llm",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "prompt": octopus_prompt,
+        "enable_tools": False,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_octopus = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": octopus_greeting},
+}
+
+# ============ END OCTOPUS CONFIGURATION ============
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -466,26 +855,56 @@ basic_connections = [
 
 # Helper function to create basic voice assistant graph (no tools)
 def create_basic_voice_assistant(
-    name, has_avatar=False, avatar_type=None, tts_config=None
+    name,
+    has_avatar=False,
+    avatar_type=None,
+    tts_config=None,
+    stt_config=None,
+    llm_config=None,
+    main_control_config=None,
+    avatar_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
+    if stt_config is None:
+        stt_config = nova3_stt_100ms
+    if llm_config is None:
+        llm_config = llama_llm_no_tools
+    if main_control_config is None:
+        main_control_config = main_control_base
     # Standard architecture with TTS and main_control
     nodes = [
         copy.deepcopy(agora_rtc_base),
-        copy.deepcopy(nova3_stt_100ms),
-        copy.deepcopy(llama_llm_no_tools),
+        copy.deepcopy(stt_config),
+        copy.deepcopy(llm_config),
         copy.deepcopy(tts_config),
-        copy.deepcopy(main_control_base),
+        copy.deepcopy(main_control_config),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
     ]
 
     connections = copy.deepcopy(basic_connections)
 
+    # Remove avatar-related connections if no avatar
+    if not has_avatar:
+        for conn in connections:
+            if conn.get("extension") == "main_control":
+                # Remove flush dest to avatar
+                conn["cmd"] = [
+                    cmd
+                    for cmd in conn.get("cmd", [])
+                    if not (
+                        cmd.get("name") == "flush"
+                        and cmd.get("dest") == [{"extension": "avatar"}]
+                    )
+                ]
+                break
+
     if has_avatar and avatar_type in ["heygen", "anam"]:
-        # Add appropriate avatar node
-        if avatar_type == "heygen":
+        # Add appropriate avatar node (use custom config if provided)
+        if avatar_config is not None:
+            nodes.append(copy.deepcopy(avatar_config))
+        elif avatar_type == "heygen":
             nodes.append(copy.deepcopy(heygen_avatar))
         else:  # anam
             nodes.append(copy.deepcopy(anam_avatar))
@@ -535,16 +954,22 @@ def create_apollo_graph(
     avatar_type=None,
     tts_config=None,
     avatar_config=None,
+    thymia_config=None,
+    main_control_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
+    if thymia_config is None:
+        thymia_config = thymia_analyzer
+    if main_control_config is None:
+        main_control_config = main_control_apollo
     nodes = [
         copy.deepcopy(agora_rtc_base),
         copy.deepcopy(stt_config),
         copy.deepcopy(llm_config),
         copy.deepcopy(tts_config),
-        copy.deepcopy(thymia_analyzer),
-        copy.deepcopy(main_control_apollo),
+        copy.deepcopy(thymia_config),
+        copy.deepcopy(main_control_config),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
     ]
@@ -610,8 +1035,8 @@ def create_apollo_graph(
         },
     ]
 
-    # Add TTS connection - route tts_audio messages to thymia_analyzer and avatar
-    # Avatar needs tts_audio_end to send voice_end signal to avatar service
+    # Add TTS connection - route tts_audio messages directly to thymia_analyzer
+    # Avatar doesn't need to see these messages, only thymia needs them for timing tracking
     if has_avatar:
         tts_conn = {
             "extension": "tts",
@@ -619,11 +1044,11 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "thymia_analyzer"}],
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}, {"extension": "avatar"}],
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
             ],
             "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "avatar"}]}],
@@ -824,6 +1249,86 @@ new_graphs.append(
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,
         avatar_config=anam_avatar_apollo,
+    )
+)
+
+# Group 5: Turkish graphs (simple voice assistant, no thymia tools)
+print("Creating Turkish graphs...")
+
+# Turkish voice assistant with Anam avatar (Nova-3 STT, GPT-5.1, Cartesia TTS)
+new_graphs.append(
+    create_basic_voice_assistant(
+        "nova3_gpt_5_1_cartesia_anam_turkish",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=nova3_stt_turkish,
+        llm_config=gpt51_llm_turkish,
+        tts_config=cartesia_tts_turkish,
+        main_control_config=main_control_turkish,
+        avatar_config=anam_avatar_turkish,
+    )
+)
+
+# Group 6: Eliza graph (Flux STT, GPT-5.1, Cartesia English, Anam avatar)
+print("Creating Eliza graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "eliza",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_eliza,
+        tts_config=cartesia_tts_sonic3,
+        main_control_config=main_control_eliza,
+        avatar_config=anam_avatar_eliza,
+    )
+)
+
+# Group 7: Hellos-only graph (Flux STT, GPT-5.1, Cartesia, Anam avatar, hellos_only thymia)
+print("Creating Hellos-only graph...")
+
+new_graphs.append(
+    create_apollo_graph(
+        "flux_hellos_gpt_5_1_cartesia_anam",
+        gpt51_llm_hellos,
+        flux_stt,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3,
+        avatar_config=anam_avatar_hellos,
+        thymia_config=thymia_analyzer_hellos,
+        main_control_config=main_control_hellos,
+    )
+)
+
+# Group 8: Richard (Celeste) psychic advisor with Anam avatar
+print("Creating Richard (Celeste) psychic graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_richard_gpt_5_1_elevenlabs_anam",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_richard,
+        tts_config=elevenlabs_tts,
+        main_control_config=main_control_richard,
+        avatar_config=anam_avatar_richard,
+    )
+)
+
+# Group 9: Octopus therapist (voice only, no avatar)
+print("Creating Octopus therapist graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_octopus_gpt_5_1_elevenlabs",
+        has_avatar=False,
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_octopus,
+        tts_config=elevenlabs_tts,
+        main_control_config=main_control_octopus,
     )
 )
 
