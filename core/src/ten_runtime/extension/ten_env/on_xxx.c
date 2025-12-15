@@ -107,7 +107,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
                                             duration_us);
 
     // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_configure() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
@@ -292,7 +292,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
     ten_extension_record_lifecycle_duration(extension, "on_init", duration_us);
 
     // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_init() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
@@ -391,7 +391,7 @@ bool ten_extension_on_start_done(ten_env_t *self) {
     ten_extension_record_lifecycle_duration(extension, "on_start", duration_us);
 
     // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_start() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
@@ -449,7 +449,7 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
     ten_extension_record_lifecycle_duration(extension, "on_stop", duration_us);
 
     // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_stop() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }
@@ -575,7 +575,7 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
                                             duration_us);
 
     // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS * 1000) {
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_deinit() took %" PRId64 " us",
                ten_extension_get_name(extension, true), duration_us);
     }

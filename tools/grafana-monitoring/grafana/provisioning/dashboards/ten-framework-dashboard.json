@@ -30,37 +30,14 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background"
             },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -71,6 +48,14 @@
                 "value": null
               },
               {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "orange",
+                "value": 500000
+              },
+              {
                 "color": "red",
                 "value": 1000000
               }
@@ -78,7 +63,80 @@
           },
           "unit": "µs"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extension"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extension Group"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Startup"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 500000
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1000000
+                    },
+                    {
+                      "color": "red",
+                      "value": 3000000
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
@@ -88,17 +146,19 @@
       },
       "id": 1,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "showHeader": true,
+        "sortBy": []
       },
+      "pluginVersion": "10.2.0",
       "targets": [
         {
           "datasource": {
@@ -106,9 +166,12 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "extension_lifecycle_duration{stage=\"on_configure\"}",
-          "legendFormat": "{{extension}} - on_configure",
-          "range": true,
+          "exemplar": false,
+          "expr": "avg by (extension_group, extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_configure_avg",
+          "range": false,
           "refId": "A"
         },
         {
@@ -117,11 +180,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "extension_lifecycle_duration{stage=\"on_init\"}",
-          "legendFormat": "{{extension}} - on_init",
-          "range": true,
-          "refId": "B",
-          "hide": false
+          "exemplar": false,
+          "expr": "avg by (extension_group, extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_init_avg",
+          "range": false,
+          "refId": "B"
         },
         {
           "datasource": {
@@ -129,11 +194,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "extension_lifecycle_duration{stage=\"on_start\"}",
-          "legendFormat": "{{extension}} - on_start",
-          "range": true,
-          "refId": "C",
-          "hide": false
+          "exemplar": false,
+          "expr": "avg by (extension_group, extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_start_avg",
+          "range": false,
+          "refId": "C"
         },
         {
           "datasource": {
@@ -141,11 +208,13 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "extension_lifecycle_duration{stage=\"on_stop\"}",
-          "legendFormat": "{{extension}} - on_stop",
-          "range": true,
-          "refId": "D",
-          "hide": false
+          "exemplar": false,
+          "expr": "max by (extension_group, extension) (max_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_configure_max",
+          "range": false,
+          "refId": "D"
         },
         {
           "datasource": {
@@ -153,15 +222,110 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "extension_lifecycle_duration{stage=\"on_deinit\"}",
-          "legendFormat": "{{extension}} - on_deinit",
-          "range": true,
-          "refId": "E",
-          "hide": false
+          "exemplar": false,
+          "expr": "max by (extension_group, extension) (max_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_init_max",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "max by (extension_group, extension) (max_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_start_max",
+          "range": false,
+          "refId": "F"
         }
       ],
-      "title": "Extension Lifecycle Duration (microseconds)",
-      "type": "timeseries"
+      "title": "Extension Lifecycle Duration (Statistics)",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "graph_id": true,
+              "job": true,
+              "instance": true,
+              "__name__": true,
+              "group": true,
+              "otel_scope_name": true,
+              "stage": true
+            },
+            "indexByName": {
+              "extension_group": 0,
+              "extension": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5,
+              "Value #E": 6,
+              "Value #F": 7
+            },
+            "renameByName": {
+              "Value #A": "configure (avg)",
+              "Value #B": "init (avg)",
+              "Value #C": "start (avg)",
+              "Value #D": "configure (max)",
+              "Value #E": "init (max)",
+              "Value #F": "start (max)",
+              "extension": "Extension",
+              "extension_group": "Group"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Total Startup (avg)",
+            "binary": {
+              "left": "configure (avg)",
+              "operator": "+",
+              "right": "init (avg)"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Total Startup (avg)",
+            "binary": {
+              "left": "Total Startup (avg)",
+              "operator": "+",
+              "right": "start (avg)"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": false
+          }
+        }
+      ],
+      "type": "table",
+      "description": "Shows average and maximum duration of each startup lifecycle stage (on_configure, on_init, on_start) over the last hour. Each extension shows: avg time per stage, max time per stage, and total startup time (sum of all three stages). Color coding: Green (< 100ms), Yellow (100-500ms), Orange (500ms-1s), Red (> 1s)."
     },
     {
       "datasource": {
@@ -634,6 +798,381 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 100000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(rate(extension_callback_execution_duration_bucket[1m])) by (le, extension_name, msg_type, msg_name))",
+          "legendFormat": "{{extension_name}} - {{msg_type}} - {{msg_name}} (p99)",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(extension_callback_execution_duration_bucket[1m])) by (le, extension_name, msg_type, msg_name))",
+          "legendFormat": "{{extension_name}} - {{msg_type}} - {{msg_name}} (p95)",
+          "range": true,
+          "refId": "B",
+          "hide": true
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(extension_callback_execution_duration_bucket[1m])) by (le, extension_name, msg_type, msg_name))",
+          "legendFormat": "{{extension_name}} - {{msg_type}} - {{msg_name}} (p50)",
+          "range": true,
+          "refId": "C",
+          "hide": true
+        }
+      ],
+      "title": "Extension Callback Execution Duration (P50/P95/P99)",
+      "type": "timeseries",
+      "description": "Measures the execution time of extension callbacks (on_cmd, on_data, on_audio_frame, on_video_frame). High values indicate blocking operations that may stall the event loop. Shows all three dimensions: extension_name, msg_type, and msg_name."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 100000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "sortBy": "Last",
+          "sortDesc": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(extension_callback_execution_duration_sum[5m])) by (extension_name, msg_type, msg_name) / sum(rate(extension_callback_execution_duration_count[5m])) by (extension_name, msg_type, msg_name)",
+          "legendFormat": "{{extension_name}} - {{msg_type}} - {{msg_name}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Callback Duration by Extension and Message (Average)",
+      "type": "timeseries",
+      "description": "Average callback execution duration with full dimensionality (extension_name, msg_type, msg_name). Helps identify which specific extension-message combinations are slowest to process."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 100000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extension"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Msg Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Msg Name"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Avg Duration"
+          }
+        ]
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "topk(10, sum(rate(extension_callback_execution_duration_sum[5m])) by (extension_name, msg_type, msg_name) / sum(rate(extension_callback_execution_duration_count[5m])) by (extension_name, msg_type, msg_name))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Top 10 Slowest Extension Callbacks",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Value": 4,
+              "extension_name": 1,
+              "msg_name": 3,
+              "msg_type": 2
+            },
+            "renameByName": {
+              "Value": "Avg Duration",
+              "extension_name": "Extension",
+              "msg_name": "Msg Name",
+              "msg_type": "Msg Type"
+            }
+          }
+        }
+      ],
+      "type": "table",
+      "description": "Shows the top 10 extension callbacks with the highest average execution time. Use this to identify performance bottlenecks and potential blocking operations."
     }
   ],
   "refresh": "5s",

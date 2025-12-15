@@ -31,7 +31,7 @@ void ten_random_sleep_range_ms(const int64_t min_msec, const int64_t max_msec) {
   // ensure it is positive.
   wait_time = llabs(wait_time);
 
-  wait_time %= max_msec;
+  wait_time %= (max_msec - min_msec + 1);
   wait_time += min_msec;
 
   ten_sleep_ms(wait_time);

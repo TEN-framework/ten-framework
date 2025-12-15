@@ -20,6 +20,8 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
              "Should not happen.");
   TEN_ASSERT(!self->service_hub.metric_extension_cmd_processing_duration_us,
              "Should not happen.");
+  TEN_ASSERT(!self->service_hub.metric_extension_callback_execution_duration_us,
+             "Should not happen.");
 
   if (self->service_hub.service_hub) {
     const char *label_names[] = {"app_uri", "graph_id", "extension_group"};
@@ -60,6 +62,22 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
                           cmd_processing_label_names, 4);
     TEN_ASSERT(self->service_hub.metric_extension_cmd_processing_duration_us,
                "Should not happen.");
+
+    const char *callback_execution_label_names[] = {
+        "app_uri", "graph_id", "extension_name", "msg_type", "msg_name"};
+
+    self->service_hub.metric_extension_callback_execution_duration_us =
+        ten_metric_create(
+            self->service_hub.service_hub, 2,
+            "extension_callback_execution_duration",
+            "The duration (in micro-seconds) of extension callback function "
+            "execution (on_cmd, on_data, on_audio_frame, on_video_frame). "
+            "This helps identify blocking operations in callbacks that may "
+            "cause the event loop to stall.",
+            callback_execution_label_names, 5);
+    TEN_ASSERT(
+        self->service_hub.metric_extension_callback_execution_duration_us,
+        "Should not happen.");
   }
 }
 
@@ -90,6 +108,14 @@ void ten_app_service_hub_destroy_metric(ten_app_t *self) {
     ten_metric_destroy(
         self->service_hub.metric_extension_cmd_processing_duration_us);
     self->service_hub.metric_extension_cmd_processing_duration_us = NULL;
+  }
+
+  if (self->service_hub.metric_extension_callback_execution_duration_us) {
+    TEN_ASSERT(self->service_hub.service_hub, "Should not happen.");
+
+    ten_metric_destroy(
+        self->service_hub.metric_extension_callback_execution_duration_us);
+    self->service_hub.metric_extension_callback_execution_duration_us = NULL;
   }
 }
 

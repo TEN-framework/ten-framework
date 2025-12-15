@@ -350,7 +350,35 @@ pub unsafe extern "C" fn ten_metric_histogram_observe(
 
     let metric = &*metric_ptr;
     let meter = global::meter("ten-framework");
-    let histogram = meter.f64_histogram(metric.name.clone()).build();
+
+    // Custom bucket boundaries for TEN Framework metrics
+    // Designed to handle both fast operations (< 1ms) and slow operations (up to
+    // 10s) Units: microseconds
+    // Buckets: 0, 100us, 500us, 1ms, 5ms, 10ms, 50ms, 100ms, 500ms,
+    //          1s, 1.5s, 2s, 2.5s, 3s, 4s, 5s, 7.5s, 10s, +Inf
+    let histogram = meter
+        .f64_histogram(metric.name.clone())
+        .with_boundaries(vec![
+            0.0,          // 0 us
+            100.0,        // 100 us
+            500.0,        // 500 us
+            1_000.0,      // 1 ms
+            5_000.0,      // 5 ms
+            10_000.0,     // 10 ms
+            50_000.0,     // 50 ms
+            100_000.0,    // 100 ms
+            500_000.0,    // 500 ms
+            1_000_000.0,  // 1 s
+            1_500_000.0,  // 1.5 s
+            2_000_000.0,  // 2 s
+            2_500_000.0,  // 2.5 s
+            3_000_000.0,  // 3 s
+            4_000_000.0,  // 4 s
+            5_000_000.0,  // 5 s
+            7_500_000.0,  // 7.5 s
+            10_000_000.0, // 10 s
+        ])
+        .build();
 
     // Convert label values from C strings to Rust
     let mut attributes = Vec::new();

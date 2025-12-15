@@ -28,4 +28,10 @@ TEN_RUNTIME_PRIVATE_API void ten_extension_record_cmd_processing_duration(
     ten_extension_t *self, ten_shared_ptr_t *cmd_result,
     int64_t on_cmd_start_us);
 
+TEN_RUNTIME_PRIVATE_API void
+ten_extension_record_callback_execution_duration(ten_extension_t *self,
+                                                 const char *msg_type,
+                                                 const char *msg_name,
+                                                 int64_t duration_us);
+
 #endif
