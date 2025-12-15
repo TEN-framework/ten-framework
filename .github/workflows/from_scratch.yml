@@ -58,69 +58,23 @@ jobs:
 
           sudo apt-get update
 
-          # Search for available libc++ packages
-          echo ""
-          echo "Available libc++ packages:"
-          apt-cache search libc++ | grep -E "(dev|14)" | head -20
-
           # Install C++ build essentials and libc++ development packages
           # TEN Framework uses clang and statically links libc++ on Linux
           sudo apt-get install -y \
             clang \
             libc++-14-dev \
-            libc++abi-14-dev \
+            libc++abi-dev \
             tree
 
-          # Check what was actually installed
-          echo ""
-          echo "Checking installed libc++ files:"
+          # On ARM64, create symlinks for libc++ static libraries
+          # (x64 runners already have them in the standard location)
           if [ "${{ matrix.arch }}" == "arm64" ]; then
-            echo "In /usr/lib/aarch64-linux-gnu/:"
-            ls -la /usr/lib/aarch64-linux-gnu/libc++* 2>/dev/null || echo "  No files"
-
-            echo ""
-            echo "In /usr/lib/llvm-14/lib/:"
-            ls -la /usr/lib/llvm-14/lib/libc++* 2>/dev/null || echo "  No files"
-
-            echo ""
-            echo "Searching for .a static libraries:"
-            find /usr/lib -name "*c++*.a" 2>/dev/null | head -20 || echo "  No .a files found"
-
-            # Check if static libraries exist in LLVM directory
             if [ -f "/usr/lib/llvm-14/lib/libc++.a" ]; then
               echo ""
-              echo "Found libc++.a in LLVM directory, creating symlink..."
+              echo "Creating symlinks for libc++ static libraries on ARM64..."
               sudo ln -sf /usr/lib/llvm-14/lib/libc++.a /usr/lib/aarch64-linux-gnu/libc++.a
               sudo ln -sf /usr/lib/llvm-14/lib/libc++abi.a /usr/lib/aarch64-linux-gnu/libc++abi.a
-              ls -la /usr/lib/aarch64-linux-gnu/libc++*.a
-            else
-              echo ""
-              echo "⚠ WARNING: Static libraries not found. Checking package contents..."
-              dpkg -L libc++-14-dev | grep "\.a$" || echo "  No .a files in package"
-            fi
-          else
-            echo "In /usr/lib/x86_64-linux-gnu/:"
-            ls -la /usr/lib/x86_64-linux-gnu/libc++* 2>/dev/null || echo "  No files"
-
-            echo ""
-            echo "In /usr/lib/llvm-14/lib/:"
-            ls -la /usr/lib/llvm-14/lib/libc++* 2>/dev/null || echo "  No files"
-
-            echo ""
-            echo "Searching for .a static libraries:"
-            find /usr/lib -name "*c++*.a" 2>/dev/null | head -20 || echo "  No .a files found"
-
-            # Check if static libraries exist in LLVM directory
-            if [ -f "/usr/lib/llvm-14/lib/libc++.a" ]; then
-              echo ""
-              echo "Found libc++.a in LLVM directory, creating symlink..."
-              sudo ln -sf /usr/lib/llvm-14/lib/libc++.a /usr/lib/x86_64-linux-gnu/libc++.a
-              sudo ln -sf /usr/lib/llvm-14/lib/libc++abi.a /usr/lib/x86_64-linux-gnu/libc++abi.a
-              ls -la /usr/lib/x86_64-linux-gnu/libc++*.a
-            else
-              echo ""
-              echo "⚠ WARNING: Static libraries not found. Checking package contents..."
-              dpkg -L libc++-14-dev | grep "\.a$" || echo "  No .a files in package"
+              echo "✓ Symlinks created successfully"
             fi
           fi
 
