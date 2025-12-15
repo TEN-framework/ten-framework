@@ -35,6 +35,18 @@ func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
 		nil,
 	)
 
+	// Get HTTP host from property
+	host, err := tenEnv.GetPropertyString("http_host")
+	if err != nil {
+		tenEnv.LogWarn(
+			fmt.Sprintf(
+				"Failed to get http_host property, using default 0.0.0.0: %v",
+				err,
+			),
+		)
+		host = "0.0.0.0"
+	}
+
 	// Get HTTP port from property
 	port, err := tenEnv.GetPropertyInt64("http_port")
 	if err != nil {
@@ -48,7 +60,7 @@ func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
 	}
 
 	// Create and start web server
-	e.server = server.NewWebServer(int(port), tenEnv)
+	e.server = server.NewWebServer(host, int(port), tenEnv)
 
 	// Set audio data handler
 	e.server.SetAudioDataHandler(
@@ -67,7 +79,7 @@ func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
 
 	tenEnv.Log(
 		ten.LogLevelInfo,
-		fmt.Sprintf("Web server started on port %d", port),
+		fmt.Sprintf("Web server started on %s:%d", host, port),
 		&logCategoryKeyPoint,
 		nil,
 		nil,

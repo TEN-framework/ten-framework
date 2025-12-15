@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-TGN_VERSION="${TGN_VERSION:-0.1.1}"
+TGN_VERSION="${TGN_VERSION:-main}"
 TGN_REPO="https://github.com/TEN-framework/ten_gn.git"
 INSTALL_DIR="${TGN_INSTALL_DIR:-/usr/local/ten_gn}"
 
