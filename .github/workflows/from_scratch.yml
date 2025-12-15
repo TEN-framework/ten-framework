@@ -56,16 +56,32 @@ jobs:
           echo "Installing Linux build dependencies"
           echo "================================================"
 
-          # Update package lists
           sudo apt-get update
 
-          # Install C++ build essentials and libc++ for C++ extension compilation
+          # Check available libc++ packages
+          echo ""
+          echo "Available libc++ packages:"
+          apt-cache search "^libc\+\+" | grep -E "(dev|14)" || true
+
+          # Install C++ build essentials and libc++ development packages
+          # TEN Framework uses clang and statically links libc++ on Linux
+          # On Ubuntu 22.04, we need to install versioned packages
           sudo apt-get install -y \
-            build-essential \
-            libc++-dev \
-            libc++abi-dev \
+            clang \
+            libc++-14-dev \
+            libc++abi-14-dev \
             tree
 
+          # Verify libc++.a is installed
+          echo ""
+          echo "Checking for libc++.a:"
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            ls -la /usr/lib/aarch64-linux-gnu/libc++* || echo "No libc++ files found in /usr/lib/aarch64-linux-gnu/"
+          else
+            ls -la /usr/lib/x86_64-linux-gnu/libc++* || echo "No libc++ files found in /usr/lib/x86_64-linux-gnu/"
+          fi
+
+          echo ""
           echo "✓ Linux build dependencies installed successfully"
 
       - name: Setup Python
