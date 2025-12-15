@@ -466,6 +466,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_utils_unit_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
           out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
@@ -500,6 +504,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_unit_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
           out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
@@ -535,6 +543,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_rust-%p-%m.profraw"
         run: |
           cd out/linux/x64/tests/standalone/ten_rust
 
@@ -575,6 +587,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_manager-%p-%m.profraw"
         run: |
           cd out/linux/x64/tests/standalone/ten_manager
 
@@ -614,6 +630,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_smoke_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
           out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
@@ -773,6 +793,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-ten-manager-%p-%m.profraw"
         run: |
           cd out/linux/x64/
           pytest -s tests/ten_manager/
@@ -933,6 +957,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-cpp-%p-%m.profraw"
         run: |
           df -h .
 
@@ -1093,6 +1121,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-go-%p-%m.profraw"
         run: |
           df -h .
 
@@ -1253,6 +1285,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-python-%p-%m.profraw"
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
@@ -1433,6 +1469,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-nodejs-%p-%m.profraw"
         run: |
           df -h .
 
