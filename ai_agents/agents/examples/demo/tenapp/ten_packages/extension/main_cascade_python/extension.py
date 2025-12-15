@@ -141,6 +141,13 @@ class MainControlExtension(AsyncExtension):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
         """
+        # Guard: Skip transcript if no_transcript is enabled
+        if self.config.no_transcript:
+            self.ten_env.log_info(
+                f"[MainControlExtension] Transcript suppressed (no_transcript=true): role={role}, final={final}"
+            )
+            return
+
         if data_type == "text":
             await _send_data(
                 self.ten_env,
