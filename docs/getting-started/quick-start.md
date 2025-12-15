@@ -127,7 +127,7 @@ tman --version
 
 ```bash
 # Create a new transcriber_demo app
-tman create app transcriber_demo --template transcriber_demo
+tman install app transcriber_demo
 cd transcriber_demo
 ```
 

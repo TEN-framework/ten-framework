@@ -139,8 +139,8 @@ jobs:
           # Create a temporary directory for the app
           cd /tmp
 
-          # Create the app using tman
-          tman create app transcriber_demo --template transcriber_demo
+          # Install the app using tman
+          tman install app transcriber_demo
 
           # Verify the app was created
           if [ ! -d "transcriber_demo" ]; then
