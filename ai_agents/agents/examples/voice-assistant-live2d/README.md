@@ -1,6 +1,6 @@
 # Live2D Voice Assistant
 
-A voice assistant with **Live2D character integration** and real-time conversation capabilities powered by Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS. The example extends the standard voice assistant backend with a Live2D-ready frontend, so animated characters can react to the audio pipeline with synchronized motion.
+A voice assistant with **Live2D character integration** and real-time conversation capabilities powered by Agora RTC, Deepgram STT, OpenAI LLM, and Minimax TTS. The example extends the standard voice assistant backend with a Live2D-ready frontend, so animated characters can react to the audio pipeline with synchronized motion.
 
 > **Note**: This example reuses the backend configuration from [voice-assistant](../voice-assistant/) and adds a Live2D-aware frontend.
 
@@ -34,7 +34,8 @@ A voice assistant with **Live2D character integration** and real-time conversati
 | `DEEPGRAM_API_KEY` | Deepgram API key for speech-to-text. |
 | `OPENAI_API_KEY` | OpenAI API key for the LLM. |
 | `OPENAI_MODEL` | OpenAI realtime model name (for example `gpt-4o` or `gpt-4o-mini`). |
-| `ELEVENLABS_TTS_KEY` | ElevenLabs API key for text-to-speech synthesis. |
+| `MINIMAX_TTS_API_KEY` | Minimax API key for text-to-speech synthesis. |
+| `MINIMAX_TTS_GROUP_ID` | Minimax group ID for your account. |
 
 ### Optional Environment Variables (`ai_agents/.env`)
 
@@ -152,7 +153,7 @@ The TEN runtime graph is defined in `tenapp/property.json`:
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
-                "max_tokens": 512,
+                "max_completion_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hello there, nice to meet you! I’m your anime assistant—what’s your name?",
@@ -162,13 +163,20 @@ The TEN runtime graph is defined in `tenapp/property.json`:
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "minimax_tts_websocket_python",
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY|}",
-                  "voice_id": "lhTvHflPVOqgSWyuWQry",
-                  "model_id": "eleven_multilingual_v2"
+                  "key": "${env:MINIMAX_TTS_API_KEY|}",
+                  "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
+                  "model": "speech-02-turbo",
+                  "audio_setting": {
+                    "sample_rate": 16000
+                  },
+                  "voice_setting": {
+                    "voice_id": "Japanese_KindLady"
+                  },
+                  "url": "wss://api.minimax.io/ws/v1/t2a_v2"
                 },
                 "dump": false,
                 "dump_path": "./"
@@ -326,7 +334,8 @@ The TEN runtime graph is defined in `tenapp/property.json`:
 | `OPENAI_API_KEY` | string | ✔︎ | OpenAI API key. |
 | `OPENAI_MODEL` | string | ✔︎ | OpenAI realtime model identifier. |
 | `OPENAI_PROXY_URL` | string | ✖︎ | Proxy URL for OpenAI traffic. |
-| `ELEVENLABS_TTS_KEY` | string | ✔︎ | ElevenLabs API key. |
+| `MINIMAX_TTS_API_KEY` | string | ✔︎ | Minimax API key. |
+| `MINIMAX_TTS_GROUP_ID` | string | ✔︎ | Minimax group ID. |
 | `WEATHERAPI_API_KEY` | string | ✖︎ | Enables the weather tool node. |
 
 ## Customization
@@ -360,6 +369,6 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-li
 - [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
-- [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
+- [Minimax API Documentation](https://platform.minimax.chat/docs)
 - [Live2D Documentation](https://docs.live2d.com/)
 - [TEN Framework Documentation](https://doc.theten.ai)
