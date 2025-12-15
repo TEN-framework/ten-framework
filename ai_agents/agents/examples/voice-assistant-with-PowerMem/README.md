@@ -88,12 +88,12 @@ This is the easiest way to get started. Docker will handle all dependencies auto
    OCEANBASE_COLLECTION=memories
 
    # LLM Provider (for PowerMem)
-   LLM_PROVIDER=qwen  # Options: qwen, openai, siliconflow
+   LLM_PROVIDER=qwen  # Options: qwen, openai, siliconflow, ollama, vllm, anthropic, deepseek
    LLM_API_KEY=your_qwen_api_key
    LLM_MODEL=qwen-plus
 
    # Embedding Provider (for PowerMem)
-   EMBEDDING_PROVIDER=qwen  # Options: qwen, openai, mock
+   EMBEDDING_PROVIDER=qwen  # Options: qwen, openai, huggingface, lmstudio, ollama
    EMBEDDING_API_KEY=your_qwen_api_key  # Can be same as LLM_API_KEY
    EMBEDDING_MODEL=text-embedding-v4
    EMBEDDING_DIMS=1536
