@@ -52,7 +52,7 @@ template("rust_target") {
     # enabled. Exclude tman (TEN Manager) from coverage instrumentation to
     # reduce memory usage (Because it will consume a lot of disk space when
     # running in Github CI).
-    if (enable_coverage && _target_name != "tman") {
+    if (enable_coverage) {
       assert(is_linux && target_cpu == "x64",
              "Coverage instrumentation should only be enabled in Linux + x64")
 
@@ -254,7 +254,7 @@ template("rust_test") {
     # Inject Rust coverage instrumentation globally for TEN Rust crates when
     # enabled. Exclude tman tests from coverage instrumentation (Because it will
     # consume a lot of disk space when running in Github CI).
-    if (enable_coverage && _target_name != "tman_test_cargo_build") {
+    if (enable_coverage) {
       assert(is_linux && target_cpu == "x64",
              "Coverage instrumentation should only be enabled in Linux + x64")
 
