@@ -29,6 +29,9 @@
       "properties": {
         "greeting": {
           "type": "string"
+        },
+        "no_transcript": {
+          "type": "bool"
         }
       }
     }
