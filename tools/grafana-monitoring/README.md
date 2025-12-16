@@ -21,11 +21,13 @@ We provide **three deployment configurations** to suit different needs:
 **Architecture:** Application exposes metrics endpoint → Prometheus scrapes periodically
 
 **Pros:**
+
 - ✅ Simplest setup (only 2 components)
 - ✅ No middleware needed
 - ✅ Easy to debug
 
 **Cons:**
+
 - ❌ Requires port exposure
 - ❌ Cannot capture shutdown metrics (on_stop, on_deinit)
 
@@ -38,12 +40,14 @@ We provide **three deployment configurations** to suit different needs:
 **Architecture:** Application pushes metrics → OTEL Collector → Prometheus
 
 **Pros:**
+
 - ✅ No port exposure needed (more secure)
 - ✅ Captures full lifecycle metrics (on_stop, on_deinit)
 - ✅ Cloud-native architecture
 - ✅ Supports complex data routing and multi-backend export
 
 **Cons:**
+
 - ❌ Requires OTEL Collector deployment
 - ❌ More complex configuration
 
@@ -56,11 +60,13 @@ We provide **three deployment configurations** to suit different needs:
 **Architecture:** Supports both Pull and Push modes simultaneously
 
 **Pros:**
+
 - ✅ Compare both modes side-by-side
 - ✅ Smooth migration path
 - ✅ Different apps can use different modes
 
 **Cons:**
+
 - ❌ Higher resource consumption
 
 **Best For:** A/B testing, gradual migration between modes
@@ -186,7 +192,9 @@ docker-compose -f docker-compose.hybrid.yml up -d
 ## 📊 Monitored Metrics
 
 ### 1. Extension Lifecycle Duration
+
 Monitors the execution time of each Extension lifecycle stage:
+
 - `on_configure` - Configuration stage
 - `on_init` - Initialization stage
 - `on_start` - Startup stage
@@ -194,6 +202,7 @@ Monitors the execution time of each Extension lifecycle stage:
 - `on_deinit` - Cleanup stage
 
 **Labels:**
+
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
 - `extension_group`: Extension Group name
@@ -205,11 +214,14 @@ Monitors the execution time of each Extension lifecycle stage:
 ---
 
 ### 2. Extension CMD Processing Duration
+
 Monitors command processing time with histogram buckets:
+
 - P50 and P95 percentiles
 - Average duration ranking
 
 **Labels:**
+
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
 - `extension_name`: Extension name
@@ -220,11 +232,14 @@ Monitors command processing time with histogram buckets:
 ---
 
 ### 3. Extension Thread Message Queue Wait Time
+
 Monitors message queue wait time with histogram buckets:
+
 - P50 and P95 percentiles
 - Average wait time by extension group
 
 **Labels:**
+
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
 - `extension_group`: Extension Group name
@@ -238,26 +253,31 @@ Monitors message queue wait time with histogram buckets:
 The dashboard "TEN Framework - Performance Monitoring" is automatically loaded and includes:
 
 ### Panel 1: Extension Lifecycle Duration
+
 - **Type:** Time series (bar chart)
 - **Unit:** Microseconds (µs)
 - Shows all lifecycle stages for comparison
 
 ### Panel 2: Extension CMD Processing Duration (P50/P95)
+
 - **Type:** Time series (line chart)
 - **Unit:** Microseconds (µs)
 - Shows median and 95th percentile latency
 
 ### Panel 3: Extension CMD Average Duration Ranking
+
 - **Type:** Table
 - Sorted by average duration (descending)
 - Quickly identifies slowest command handlers
 
 ### Panel 4: Extension Thread Message Queue Wait Time (P50/P95)
+
 - **Type:** Time series (line chart)
 - **Unit:** Microseconds (µs)
 - Monitors queue congestion
 
 ### Panel 5: Extension Thread Message Queue Average Wait Time
+
 - **Type:** Table
 - Sorted by average wait time (descending)
 - Identifies thread bottlenecks
@@ -267,15 +287,18 @@ The dashboard "TEN Framework - Performance Monitoring" is automatically loaded a
 ## 📊 Performance Thresholds
 
 ### Lifecycle Duration
+
 - **Good:** < 1 second (1,000,000 µs)
 - **Warning:** > 1 second (consider optimization)
 
 ### CMD Processing Duration
+
 - **Excellent:** < 100ms (100,000 µs)
 - **Good:** 100ms - 500ms
 - **Needs Optimization:** > 500ms (500,000 µs)
 
 ### Queue Wait Time
+
 - **Excellent:** < 50ms (50,000 µs)
 - **Good:** 50ms - 200ms
 - **Overloaded:** > 200ms (200,000 µs)
@@ -289,6 +312,7 @@ The dashboard "TEN Framework - Performance Monitoring" is automatically loaded a
 Configure your TEN application's `property.json` file with the appropriate exporter type:
 
 **Pull Mode (Prometheus Exporter):**
+
 ```json
 {
   "ten": {
@@ -313,6 +337,7 @@ Configure your TEN application's `property.json` file with the appropriate expor
 ```
 
 **Push Mode (OTLP Exporter):**
+
 ```json
 {
   "ten": {
@@ -338,6 +363,7 @@ Configure your TEN application's `property.json` file with the appropriate expor
 ### Prometheus Configuration
 
 Each mode has its own Prometheus configuration:
+
 - Pull Mode: `configs/pull/prometheus.yml`
 - Push Mode: `configs/push/prometheus.yml`
 - Hybrid Mode: `configs/hybrid/prometheus.yml`
@@ -345,6 +371,7 @@ Each mode has its own Prometheus configuration:
 ### OTEL Collector Configuration
 
 For Push and Hybrid modes:
+
 - Push Mode: `configs/push/otel-collector-config.yml`
 - Hybrid Mode: `configs/hybrid/otel-collector-config.yml`
 
@@ -353,6 +380,7 @@ For Push and Hybrid modes:
 ## 🛠️ Common Operations
 
 ### View Service Status
+
 ```bash
 # Pull mode
 docker-compose -f docker-compose.pull.yml ps
@@ -365,6 +393,7 @@ docker-compose -f docker-compose.hybrid.yml ps
 ```
 
 ### View Logs
+
 ```bash
 # Prometheus
 docker logs ten_prometheus_[pull|push|hybrid]
@@ -377,6 +406,7 @@ docker logs ten_otel_collector_[push|hybrid]
 ```
 
 ### Stop Services
+
 ```bash
 # Stop and remove containers
 docker-compose -f docker-compose.pull.yml down
@@ -386,6 +416,7 @@ docker-compose -f docker-compose.pull.yml down -v
 ```
 
 ### Restart Services
+
 ```bash
 docker-compose -f docker-compose.pull.yml restart
 ```
@@ -395,11 +426,13 @@ docker-compose -f docker-compose.pull.yml restart
 ## 🌐 Port Configuration
 
 ### Pull Mode Ports
+
 - **49484:** Application metrics endpoint
 - **9091:** Prometheus UI
 - **3001:** Grafana UI
 
 ### Push Mode Ports
+
 - **4317:** OTLP gRPC receiver
 - **4318:** OTLP HTTP receiver
 - **8889:** OTEL Collector Prometheus exporter
@@ -407,6 +440,7 @@ docker-compose -f docker-compose.pull.yml restart
 - **3001:** Grafana UI
 
 ### Hybrid Mode Ports
+
 - **All of the above**
 
 ---
@@ -416,17 +450,19 @@ docker-compose -f docker-compose.pull.yml restart
 ### Prometheus Cannot Scrape Metrics (Pull Mode)
 
 1. Check if application is running and exposing metrics:
+
    ```bash
    curl http://localhost:49484/metrics
    ```
 
 2. Check Prometheus logs:
+
    ```bash
    docker logs ten_prometheus_pull
    ```
 
 3. Verify Prometheus targets status:
-   - Visit: http://localhost:9091/targets
+   - Visit: <http://localhost:9091/targets>
 
 4. Check network connectivity (especially on Linux):
    - Replace `host.docker.internal` with `172.17.0.1` or your host IP in `prometheus.yml`
@@ -436,16 +472,19 @@ docker-compose -f docker-compose.pull.yml restart
 ### OTEL Collector Not Receiving Data (Push Mode)
 
 1. Check if Collector is running:
+
    ```bash
    docker ps | grep otel_collector
    ```
 
 2. Check Collector logs:
+
    ```bash
    docker logs ten_otel_collector_push
    ```
 
 3. Verify port accessibility:
+
    ```bash
    telnet localhost 4317
    ```
@@ -459,7 +498,7 @@ docker-compose -f docker-compose.pull.yml restart
 ### Grafana Shows No Data
 
 1. Check if Prometheus has data:
-   - Visit: http://localhost:9091
+   - Visit: <http://localhost:9091>
    - Query: `extension_lifecycle_duration` (Pull) or `ten_extension_lifecycle_duration` (Push)
 
 2. Verify Grafana data source:
@@ -476,6 +515,7 @@ docker-compose -f docker-compose.pull.yml restart
 ## 🔄 Switching Between Modes
 
 ### From Pull to Push
+
 ```bash
 # Stop Pull mode
 docker-compose -f docker-compose.pull.yml down
@@ -488,6 +528,7 @@ docker-compose -f docker-compose.push.yml up -d
 ```
 
 ### From Push to Pull
+
 ```bash
 # Stop Push mode
 docker-compose -f docker-compose.push.yml down
@@ -503,7 +544,7 @@ docker-compose -f docker-compose.pull.yml up -d
 
 ## 📁 Directory Structure
 
-```
+```text
 grafana-monitoring/
 ├── README.md                          # This file
 ├── docker-compose.pull.yml            # Pull mode deployment
@@ -551,6 +592,7 @@ grafana-monitoring/
 ## 🤝 Contributing
 
 To improve the monitoring setup:
+
 - Modify dashboard: `grafana/provisioning/dashboards/ten-framework-dashboard.json`
 - Modify Prometheus config: `configs/[mode]/prometheus.yml`
 - Modify Collector config: `configs/[mode]/otel-collector-config.yml`
