@@ -1,5 +1,6 @@
 ---
 title: TEN 扩展开发完整指南
+_portal_target: development/how_to_develop_with_ext.cn.md
 ---
 
 TEN Framework 提供了丰富的扩展模板，帮助开发者快速创建扩展并完成从开发到测试的完整流程。本指南将通过实际操作演示，详细介绍如何使用 C++，Go，Python，Node.js 四种语言进行扩展开发的全流程。
