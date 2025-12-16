@@ -120,14 +120,11 @@ void ten_extension_record_lifecycle_duration(ten_extension_t *self,
 
   const char *app_uri = ten_app_get_uri(app);
   const char *graph_id = ten_engine_get_id(engine, false);
-  const char *extension_group_name =
-      ten_extension_group_get_name(extension_thread->extension_group, true);
   const char *extension_name = ten_extension_get_name(self, true);
 
-  const char *label_values[] = {app_uri, graph_id, extension_group_name,
-                                extension_name, stage};
+  const char *label_values[] = {app_uri, graph_id, extension_name, stage};
 
-  ten_metric_gauge_set(metric_lifecycle, (double)duration_us, label_values, 5);
+  ten_metric_gauge_set(metric_lifecycle, (double)duration_us, label_values, 4);
 }
 
 void ten_extension_record_cmd_processing_duration(ten_extension_t *self,

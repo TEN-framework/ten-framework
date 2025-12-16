@@ -204,7 +204,6 @@ Monitors the execution time of each Extension lifecycle stage:
 
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
-- `extension_group`: Extension Group name
 - `extension`: Extension name
 - `stage`: Lifecycle stage
 
@@ -241,7 +240,7 @@ Monitors message queue wait time with histogram buckets:
 
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
-- `extension_group`: Extension Group name
+- `extension_group_name`: Extension Group name
 
 **Use Case:** Identify overloaded extension threads
 
