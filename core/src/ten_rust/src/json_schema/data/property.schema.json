@@ -872,13 +872,10 @@
                               "config": {
                                 "additionalProperties": false,
                                 "properties": {
-                                  "host": {
-                                    "type": "string"
-                                  },
-                                  "port": {
-                                    "type": "integer",
-                                    "minimum": 1,
-                                    "maximum": 65535
+                                  "endpoint": {
+                                    "type": "string",
+                                    "pattern": "^[^:]+:[0-9]+$",
+                                    "description": "HTTP server endpoint in format 'host:port'"
                                   },
                                   "path": {
                                     "type": "string",

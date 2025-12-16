@@ -16,8 +16,7 @@ fn test_parse_prometheus_config() {
             "exporter": {
                 "type": "prometheus",
                 "config": {
-                    "host": "0.0.0.0",
-                    "port": 49483,
+                    "endpoint": "0.0.0.0:49483",
                     "path": "/metrics"
                 }
             }
@@ -29,8 +28,7 @@ fn test_parse_prometheus_config() {
     assert_eq!(config.get_exporter_type(), ExporterType::Prometheus);
 
     let prom_config = config.get_prometheus_config().unwrap();
-    assert_eq!(prom_config.host, "0.0.0.0");
-    assert_eq!(prom_config.port, 49483);
+    assert_eq!(prom_config.endpoint, "0.0.0.0:49483");
     assert_eq!(prom_config.path, "/metrics");
     assert_eq!(config.get_prometheus_endpoint().unwrap(), "0.0.0.0:49483");
 }

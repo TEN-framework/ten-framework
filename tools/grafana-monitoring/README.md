@@ -106,8 +106,7 @@ docker-compose -f docker-compose.pull.yml up -d
           "exporter": {
             "type": "prometheus",
             "config": {
-              "host": "0.0.0.0",
-              "port": 49484,
+              "endpoint": "0.0.0.0:49484",
               "path": "/metrics"
             }
           }
@@ -324,8 +323,7 @@ Configure your TEN application's `property.json` file with the appropriate expor
           "exporter": {
             "type": "prometheus",
             "config": {
-              "host": "0.0.0.0",
-              "port": 49484,
+              "endpoint": "0.0.0.0:49484",
               "path": "/metrics"
             }
           }

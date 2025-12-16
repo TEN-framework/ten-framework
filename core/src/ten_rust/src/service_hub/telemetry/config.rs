@@ -118,13 +118,9 @@ pub enum ExporterType {
 /// Prometheus exporter configuration (Pull mode)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrometheusConfig {
-    /// HTTP server host (default: "0.0.0.0")
-    #[serde(default = "default_prometheus_host")]
-    pub host: String,
-
-    /// HTTP server port (default: 49483)
-    #[serde(default = "default_prometheus_port")]
-    pub port: u16,
+    /// HTTP server endpoint in format "host:port" (default: "0.0.0.0:49483")
+    #[serde(default = "default_prometheus_endpoint")]
+    pub endpoint: String,
 
     /// Metrics endpoint path (default: "/metrics")
     #[serde(default = "default_prometheus_path")]
@@ -163,12 +159,8 @@ fn default_true() -> bool {
     true
 }
 
-fn default_prometheus_host() -> String {
-    "0.0.0.0".to_string()
-}
-
-fn default_prometheus_port() -> u16 {
-    49483
+fn default_prometheus_endpoint() -> String {
+    "0.0.0.0:49483".to_string()
 }
 
 fn default_prometheus_path() -> String {
@@ -191,8 +183,7 @@ impl Default for ExporterConfig {
 impl Default for PrometheusConfig {
     fn default() -> Self {
         Self {
-            host: default_prometheus_host(),
-            port: default_prometheus_port(),
+            endpoint: default_prometheus_endpoint(),
             path: default_prometheus_path(),
         }
     }
@@ -213,9 +204,9 @@ impl TelemetryConfig {
             .unwrap_or(ExporterType::Prometheus)
     }
 
-    /// Get Prometheus host and port (if applicable)
+    /// Get Prometheus endpoint (if applicable)
     pub fn get_prometheus_endpoint(&self) -> Option<String> {
-        self.get_prometheus_config().map(|config| format!("{}:{}", config.host, config.port))
+        self.get_prometheus_config().map(|config| config.endpoint.clone())
     }
 
     /// Get Prometheus metrics path (if applicable)

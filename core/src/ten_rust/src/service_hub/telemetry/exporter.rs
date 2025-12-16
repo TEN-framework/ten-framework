@@ -46,8 +46,7 @@ impl ExporterType {
     ///           "exporter": {
     ///             "type": "prometheus",
     ///             "config": {
-    ///               "host": "0.0.0.0",
-    ///               "port": 49483,
+    ///               "endpoint": "0.0.0.0:49483",
     ///               "path": "/metrics"
     ///             }
     ///           }

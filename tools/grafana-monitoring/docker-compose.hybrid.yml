@@ -10,8 +10,7 @@
 #   {
 #     "type": "prometheus",
 #     "config": {
-#       "host": "0.0.0.0",
-#       "port": 49484,
+#       "endpoint": "0.0.0.0:49484",
 #       "path": "/metrics"
 #     }
 #   }
