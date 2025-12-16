@@ -1164,7 +1164,12 @@ jobs:
         run: |
           df -h .
 
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          # Ensure build tools use clang-21 by prioritizing /usr/local/bin in PATH :
+          #   - Docker removed from coverage CI to conserve disk space, causing multiple clang versions coexist.
+          #   - Default runner has clang-13~15 in /usr/bin; clang-21 is in /usr/local/bin.
+          #   - libc++-21 requires Clang 19+ and is incompatible with older versions
+          #   - Ref: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:$PATH
           cd out/linux/x64/
           pytest -s tests/ten_runtime/integration/cpp/
 
@@ -1394,7 +1399,11 @@ jobs:
         run: |
           df -h .
 
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          # Ensure build tools use clang-21 by prioritizing /usr/local/bin in PATH :
+          #   - Docker removed from coverage CI to conserve disk space, causing multiple clang versions coexist.
+          #   - Default runner has clang-13~15 in /usr/bin; clang-21 is in /usr/local/bin.
+          #   - libc++-21 requires Clang 19+ and is incompatible with older versions
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:$PATH
           cd out/linux/x64/
           pytest -s tests/ten_runtime/integration/go/
 
@@ -1644,7 +1653,11 @@ jobs:
 
           df -h .
 
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          # Ensure build tools use clang-21 by prioritizing /usr/local/bin in PATH :
+          #   - Docker removed from coverage CI to conserve disk space, causing multiple clang versions coexist.
+          #   - Default runner has clang-13~15 in /usr/bin; clang-21 is in /usr/local/bin.
+          #   - libc++-21 requires Clang 19+ and is incompatible with older versions
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:$PATH
           cd out/linux/x64/
           pytest -s tests/ten_runtime/integration/python/
 
@@ -1893,7 +1906,11 @@ jobs:
           df -h .
 
           # Add tgn and Go to PATH for building C++/Go apps with nodejs extensions
-          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$PATH
+          # Ensure build tools use clang-21 by prioritizing /usr/local/bin in PATH :
+          #   - Docker removed from coverage CI to conserve disk space, causing multiple clang versions coexist.
+          #   - Default runner has clang-13~15 in /usr/bin; clang-21 is in /usr/local/bin.
+          #   - libc++-21 requires Clang 19+ and is incompatible with older versions
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$PATH
 
           # Verify required tools are available
           echo "=== Verifying build tools ==="
