@@ -463,13 +463,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
@@ -850,13 +863,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
@@ -1079,13 +1105,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
@@ -1309,13 +1348,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
@@ -1539,13 +1591,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
@@ -1789,13 +1854,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: Create symlinks to ensure clang-21 is used by build tools (tgn)
+          # libc++-21 requires Clang 19+ and is incompatible with older Clang versions
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
+          echo "=== Verifying Clang-21 is correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Install Go for building Go apps
