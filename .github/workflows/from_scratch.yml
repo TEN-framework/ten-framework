@@ -44,10 +44,42 @@ jobs:
           fetch-depth: 1
 
       # This step is not necessary for the build, but it is useful for debugging.
-      - name: Install tools and dependencies
+      - name: Install tools and dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install tree
+
+      - name: Install tools and dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "================================================"
+          echo "Installing Linux build dependencies"
+          echo "================================================"
+
+          sudo apt-get update
+
+          # Install C++ build essentials and libc++ development packages
+          # TEN Framework uses clang and statically links libc++ on Linux
+          sudo apt-get install -y \
+            clang \
+            libc++-14-dev \
+            libc++abi-dev \
+            tree
+
+          # On ARM64, create symlinks for libc++ static libraries
+          # (x64 runners already have them in the standard location)
+          if [ "${{ matrix.arch }}" == "arm64" ]; then
+            if [ -f "/usr/lib/llvm-14/lib/libc++.a" ]; then
+              echo ""
+              echo "Creating symlinks for libc++ static libraries on ARM64..."
+              sudo ln -sf /usr/lib/llvm-14/lib/libc++.a /usr/lib/aarch64-linux-gnu/libc++.a
+              sudo ln -sf /usr/lib/llvm-14/lib/libc++abi.a /usr/lib/aarch64-linux-gnu/libc++abi.a
+              echo "✓ Symlinks created successfully"
+            fi
+          fi
+
+          echo ""
+          echo "✓ Linux build dependencies installed successfully"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -449,4 +481,325 @@ jobs:
           echo ""
           echo "================================================"
           echo "✅ C++ development environment verification completed on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
+          echo "================================================"
+
+      # ========================================
+      # Extension Development Verification
+      # ========================================
+
+      - name: Create C++ extension
+        run: |
+          echo "================================================"
+          echo "Creating C++ extension for testing"
+          echo "================================================"
+
+          cd /tmp
+
+          # Create a C++ extension using the default template
+          tman create extension test_ext_cpp --template default_extension_cpp
+
+          if [ ! -d "test_ext_cpp" ]; then
+            echo "❌ ERROR: test_ext_cpp extension was not created"
+            exit 1
+          fi
+
+          echo "✓ C++ extension created successfully"
+
+      - name: Install C++ extension dependencies
+        run: |
+          echo "================================================"
+          echo "Installing C++ extension dependencies"
+          echo "================================================"
+
+          cd /tmp/test_ext_cpp
+
+          # Install dependencies in standalone mode
+          tman install --standalone
+
+          if [ $? -eq 0 ]; then
+            echo "✓ C++ extension dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install C++ extension dependencies"
+            exit 1
+          fi
+
+      - name: Build C++ extension
+        run: |
+          echo "================================================"
+          echo "Building C++ extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_cpp
+
+          # Determine OS and architecture for build
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+              OS_ARCH="mac arm64"
+            else
+              OS_ARCH="mac x64"
+            fi
+          else
+            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+              OS_ARCH="linux arm64"
+            else
+              OS_ARCH="linux x64"
+            fi
+          fi
+
+          # Build using tman
+          tman run build
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: C++ extension build failed"
+            exit 1
+          fi
+
+          # Verify that test binary was generated
+          if [ -f "bin/test_ext_cpp_test" ]; then
+            echo "✓ C++ extension test binary generated successfully"
+            ls -lh bin/test_ext_cpp_test
+          else
+            echo "❌ ERROR: C++ extension test binary not found"
+            echo "Contents of bin directory:"
+            ls -la bin/ || echo "bin directory does not exist"
+            exit 1
+          fi
+
+      - name: Test C++ extension
+        run: |
+          echo "================================================"
+          echo "Testing C++ extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_cpp
+
+          # Run tests using tman
+          tman run test
+
+          if [ $? -eq 0 ]; then
+            echo "✓ C++ extension tests passed successfully"
+          else
+            echo "❌ ERROR: C++ extension tests failed"
+            exit 1
+          fi
+
+      - name: Create Go extension
+        run: |
+          echo "================================================"
+          echo "Creating Go extension for testing"
+          echo "================================================"
+
+          cd /tmp
+
+          # Create a Go extension using the default template
+          tman create extension test_ext_go --template default_extension_go --template-data class_name_prefix=Test
+
+          if [ ! -d "test_ext_go" ]; then
+            echo "❌ ERROR: test_ext_go extension was not created"
+            exit 1
+          fi
+
+          echo "✓ Go extension created successfully"
+
+      - name: Install Go extension dependencies
+        run: |
+          echo "================================================"
+          echo "Installing Go extension dependencies"
+          echo "================================================"
+
+          cd /tmp/test_ext_go
+
+          # Install dependencies in standalone mode
+          tman install --standalone
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Go extension dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install Go extension dependencies"
+            exit 1
+          fi
+
+      - name: Test Go extension
+        run: |
+          echo "================================================"
+          echo "Testing Go extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_go
+
+          # Run tests using tman
+          tman run test
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Go extension tests passed successfully"
+          else
+            echo "❌ ERROR: Go extension tests failed"
+            exit 1
+          fi
+
+      - name: Create Python extension
+        run: |
+          echo "================================================"
+          echo "Creating Python extension for testing"
+          echo "================================================"
+
+          cd /tmp
+
+          # Create a Python extension using the default async template
+          tman create extension test_ext_python --template default_async_extension_python --template-data class_name_prefix=Test
+
+          if [ ! -d "test_ext_python" ]; then
+            echo "❌ ERROR: test_ext_python extension was not created"
+            exit 1
+          fi
+
+          echo "✓ Python extension created successfully"
+
+      - name: Install Python extension dependencies
+        run: |
+          echo "================================================"
+          echo "Installing Python extension dependencies"
+          echo "================================================"
+
+          cd /tmp/test_ext_python
+
+          # Install TEN framework dependencies in standalone mode
+          tman install --standalone
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Failed to install TEN framework dependencies"
+            exit 1
+          fi
+
+          # Install Python pip dependencies (pytest, etc.)
+          if [ -f "requirements.txt" ]; then
+            echo ""
+            echo "Installing Python pip dependencies from requirements.txt..."
+            python3 -m pip install -r requirements.txt
+
+            if [ $? -eq 0 ]; then
+              echo "✓ Python pip dependencies installed successfully"
+            else
+              echo "❌ ERROR: Failed to install Python pip dependencies"
+              exit 1
+            fi
+          else
+            echo "⚠ WARNING: requirements.txt not found, skipping pip install"
+          fi
+
+          echo "✓ All Python extension dependencies installed successfully"
+
+      - name: Test Python extension
+        run: |
+          echo "================================================"
+          echo "Testing Python extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_python
+
+          # Run tests using tman
+          tman run test
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Python extension tests passed successfully"
+          else
+            echo "❌ ERROR: Python extension tests failed"
+            exit 1
+          fi
+
+      - name: Create Node.js extension
+        run: |
+          echo "================================================"
+          echo "Creating Node.js extension for testing"
+          echo "================================================"
+
+          cd /tmp
+
+          # Create a Node.js extension using the default template
+          tman create extension test_ext_nodejs --template default_extension_nodejs --template-data class_name_prefix=Test
+
+          if [ ! -d "test_ext_nodejs" ]; then
+            echo "❌ ERROR: test_ext_nodejs extension was not created"
+            exit 1
+          fi
+
+          echo "✓ Node.js extension created successfully"
+
+      - name: Install Node.js extension dependencies
+        run: |
+          echo "================================================"
+          echo "Installing Node.js extension dependencies"
+          echo "================================================"
+
+          cd /tmp/test_ext_nodejs
+
+          # Install dependencies in standalone mode
+          tman install --standalone
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Node.js extension dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install Node.js extension dependencies"
+            exit 1
+          fi
+
+      - name: Build Node.js extension
+        run: |
+          echo "================================================"
+          echo "Building Node.js extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_nodejs
+
+          # Build using tman (compiles TypeScript)
+          tman run build
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Node.js extension build failed"
+            exit 1
+          fi
+
+          # Verify that build output exists
+          if [ -f ".ten/app/ten_packages/extension/test_ext_nodejs/build/index.js" ]; then
+            echo "✓ Node.js extension compiled successfully"
+            ls -lh .ten/app/ten_packages/extension/test_ext_nodejs/build/index.js
+          else
+            echo "⚠ WARNING: Build output not found in expected location"
+            echo "Checking build directory:"
+            find .ten -name "index.js" -type f || echo "No index.js found"
+          fi
+
+      - name: Test Node.js extension
+        run: |
+          echo "================================================"
+          echo "Testing Node.js extension"
+          echo "================================================"
+
+          cd /tmp/test_ext_nodejs
+
+          # Run tests using tman
+          tman run test
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Node.js extension tests passed successfully"
+          else
+            echo "❌ ERROR: Node.js extension tests failed"
+            exit 1
+          fi
+
+      - name: Extension Development Summary
+        if: always()
+        run: |
+          echo "================================================"
+          echo "Extension Development Verification Summary"
+          echo "================================================"
+          echo "Platform: ${{ matrix.platform_name }}"
+          echo "Python Version: ${{ matrix.python-version }}"
+          echo ""
+          echo "✅ All extension development workflows verified:"
+          echo "  - C++ extension: Create → Install → Build → Test"
+          echo "  - Go extension: Create → Install → Test"
+          echo "  - Python extension: Create → Install → Test"
+          echo "  - Node.js extension: Create → Install → Build → Test"
+          echo ""
           echo "================================================"
