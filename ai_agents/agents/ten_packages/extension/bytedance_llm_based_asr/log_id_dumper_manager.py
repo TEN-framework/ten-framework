@@ -21,9 +21,7 @@ class LogIdDumperManager:
     When log_id changes, stops old dumper and creates new one.
     """
 
-    def __init__(
-        self, config: "BytedanceASRLLMConfig", ten_env: "AsyncTenEnv"
-    ) -> None:
+    def __init__(self, config: "BytedanceASRLLMConfig", ten_env: "AsyncTenEnv") -> None:
         self.config = config
         self.ten_env = ten_env
         self.current_log_id: str | None = None
@@ -40,9 +38,7 @@ class LogIdDumperManager:
 
         # Create init dumper for audio before first log_id
         if self.config and self.config.dump:
-            init_dump_file_path = os.path.join(
-                self.config.dump_path, "out_init.pcm"
-            )
+            init_dump_file_path = os.path.join(self.config.dump_path, "out_init.pcm")
             self.init_dumper = Dumper(init_dump_file_path)
             await self.init_dumper.start()
             self.ten_env.log_info(f"Created init dumper: {init_dump_file_path}")
@@ -62,9 +58,7 @@ class LogIdDumperManager:
         if self.current_log_id == log_id:
             return
 
-        self.ten_env.log_info(
-            f"Updating log_id from {self.current_log_id} to {log_id}"
-        )
+        self.ten_env.log_info(f"Updating log_id from {self.current_log_id} to {log_id}")
 
         # Stop init dumper if exists (first log_id received)
         if self.init_dumper:
@@ -101,9 +95,7 @@ class LogIdDumperManager:
 
             self.log_id_dumper = Dumper(log_id_dump_file_path)
             await self.log_id_dumper.start()
-            self.ten_env.log_info(
-                f"Created log_id dumper: {log_id_dump_file_path}"
-            )
+            self.ten_env.log_info(f"Created log_id dumper: {log_id_dump_file_path}")
 
     async def push_bytes(self, data: bytes) -> None:
         """Push bytes to appropriate dumper.

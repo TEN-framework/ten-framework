@@ -14,8 +14,6 @@ from .extension import BytedanceASRLLMExtension
 
 @register_addon_as_extension("bytedance_llm_based_asr")
 class BytedanceASRLLMExtensionAddon(Addon):
-    def on_create_instance(
-        self, ten_env: TenEnv, name: str, context: object
-    ) -> None:
+    def on_create_instance(self, ten_env: TenEnv, name: str, context: object) -> None:
         ten_env.log(LogLevel.INFO, "on_create_instance")
         ten_env.on_create_instance_done(BytedanceASRLLMExtension(name), context)

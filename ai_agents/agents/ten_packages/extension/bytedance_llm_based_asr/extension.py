@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import copy
 import json
 import os
 import websockets
@@ -75,9 +76,7 @@ class TwoPassDelayTracker:
         # Only include two_pass_delay if enable_nonstream is True
         if enable_nonstream:
             metrics["two_pass_delay"] = (
-                current_timestamp - self.stream
-                if self.stream is not None
-                else -1
+                current_timestamp - self.stream if self.stream is not None else -1
             )
         # Only include soft_two_pass_delay if soft_vad is enabled
         # Send even if value is -1 (when soft_vad or stream is None)
@@ -103,17 +102,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.client: VolcengineASRClient | None = None
         self.config: BytedanceASRLLMConfig | None = None
         self.last_finalize_timestamp: int = 0
-        self.audio_dumper: Dumper | None = (
-            None  # Original dumper, keep unchanged
-        )
-        self.vendor_result_dumper: Any = (
-            None  # File handle for asr_vendor_result.jsonl
-        )
+        self.audio_dumper: Dumper | None = None  # Original dumper, keep unchanged
+        self.vendor_result_dumper: Any = None  # File handle for asr_vendor_result.jsonl
         self.ten_env: AsyncTenEnv = None  # type: ignore
 
         # Reconnection parameters
-        self.max_retries: int = 5
-        self.base_delay: float = 0.3
+        self.max_retry_delay: float = 5.0  # Maximum delay between retries
         self.attempts: int = 0
         self.stopped: bool = False
         self.last_fatal_error: int | None = None
@@ -146,21 +140,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         try:
             self.config = BytedanceASRLLMConfig.model_validate_json(config_json)
-            self.config.update(self.config.params)
             ten_env.log_info(
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
 
-            # Set reconnection parameters from config
-            self.max_retries = self.config.max_retries
-            self.base_delay = self.config.base_delay
-
             if self.config.dump:
-                # Initialize original audio dumper (unchanged logic)
-                dump_file_path = os.path.join(
-                    self.config.dump_path, DUMP_FILE_NAME
-                )
+                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
 
@@ -172,9 +158,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     vendor_result_dump_path, "a", encoding="utf-8"
                 )
                 # Initialize log_id_dumper_manager
-                self.log_id_dumper_manager = LogIdDumperManager(
-                    self.config, ten_env
-                )
+                self.log_id_dumper_manager = LogIdDumperManager(self.config, ten_env)
 
             self.audio_timeline.reset()
 
@@ -199,34 +183,30 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if not self.config:
             raise ValueError("Configuration not loaded")
 
-        if self.config.auth_method == "api_key":
-            if not self.config.api_key:
+        if self.config.get_auth_method() == "api_key":
+            if not self.config.get_api_key():
                 raise ValueError("api_key is required")
         else:
-            if not self.config.app_key:
+            if not self.config.get_app_key():
                 raise ValueError("app_key is required")
-            if not self.config.access_key:
+            if not self.config.get_access_key():
                 raise ValueError("access_key is required")
 
         try:
             self.client = VolcengineASRClient(
-                url=self.config.api_url,
-                app_key=self.config.app_key,
-                access_key=self.config.access_key,
-                api_key=self.config.api_key,
-                auth_method=self.config.auth_method,
+                url=self.config.get_api_url(),
+                app_key=self.config.get_app_key(),
+                access_key=self.config.get_access_key(),
+                api_key=self.config.get_api_key(),
+                auth_method=self.config.get_auth_method(),
                 config=self.config,
                 ten_env=self.ten_env,
             )
 
             # Set up callbacks
             self.client.set_on_result_callback(self._on_asr_result)
-            self.client.set_on_connection_error_callback(
-                self._on_connection_error
-            )
-            self.client.set_on_asr_error_callback(
-                self._on_asr_communication_error
-            )
+            self.client.set_on_connection_error_callback(self._on_connection_error)
+            self.client.set_on_asr_error_callback(self._on_asr_communication_error)
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
 
@@ -246,9 +226,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             self.attempts = 0  # Reset retry attempts on successful connection
 
-            self.ten_env.log_info(
-                "Successfully connected to Volcengine ASR service"
-            )
+            self.ten_env.log_info("Successfully connected to Volcengine ASR service")
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
@@ -314,9 +292,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         return self.connected and self.client is not None
 
     @override
-    async def send_audio(
-        self, frame: AudioFrame, session_id: str | None
-    ) -> bool:
+    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
         """Send audio frame to ASR service."""
         if not self.is_connected():
             self.ten_env.log_warn(
@@ -370,19 +346,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return
 
         try:
-            self.last_finalize_timestamp = int(
-                asyncio.get_event_loop().time() * 1000
-            )
-            self.ten_env.log_debug(
-                f"Finalize start at {self.last_finalize_timestamp}"
-            )
+            self.last_finalize_timestamp = int(asyncio.get_event_loop().time() * 1000)
+            self.ten_env.log_debug(f"Finalize start at {self.last_finalize_timestamp}")
 
             await self.client.finalize()
 
             # Record silence audio in timeline (client sends silence data)
             if self.config:
                 self.audio_timeline.add_silence_audio(
-                    self.config.mute_pkg_duration_ms
+                    self.config.get_mute_pkg_duration_ms()
                 )
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
@@ -429,48 +401,65 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
 
     async def _handle_reconnect(self) -> None:
-        """Handle reconnection logic with exponential backoff."""
-        if self._reconnecting:
-            return
+        """Handle reconnection logic with exponential backoff (max delay: max_retry_delay).
 
-        if self.attempts >= self.max_retries:
-            self.ten_env.log_error(f"Max retries ({self.max_retries}) reached")
+        - First retry: immediate (no delay)
+        - Subsequent retries: exponential backoff with cap at max_retry_delay
+        - Unlimited retries unless stopped
+        """
+        if self._reconnecting:
             return
 
         self._reconnecting = True
 
         try:
             self.attempts += 1
-            delay = self.base_delay * (2 ** (self.attempts - 1))
+
+            # Calculate delay with exponential backoff
+            # First attempt: no delay (immediate reconnect)
+            # Subsequent attempts: exponential backoff (base 0.3s) capped at max_retry_delay
+            if self.attempts == 1:
+                delay = 0  # First retry is immediate
+            else:
+                base_delay = 0.3
+                delay = base_delay * (2 ** (self.attempts - 2))
+                delay = min(delay, self.max_retry_delay)  # Cap at max_retry_delay
 
             self.ten_env.log_info(
-                f"Reconnecting... Attempt {self.attempts}/{self.max_retries}"
+                f"Reconnecting... Attempt {self.attempts}, delay: {delay:.2f}s"
             )
-            await asyncio.sleep(delay)
+
+            if delay > 0:
+                await asyncio.sleep(delay)
 
             try:
                 await self.stop_connection()
                 await self.start_connection()
             except Exception as e:
                 self.ten_env.log_error(f"Reconnection failed: {e}")
-                if self.attempts < self.max_retries and not self.stopped:
+                if not self.stopped:
                     await self._handle_reconnect()
         finally:
             self._reconnecting = False
 
-    def _extract_final_result_metadata(
-        self, utterance: Utterance
-    ) -> dict[str, Any]:
-        """Extract metadata from utterance additions."""
+    def _extract_final_result_metadata(self, utterance: Utterance) -> dict[str, Any]:
+        """Extract metadata from utterance additions.
+
+        First copies base class metadata, then adds/extends with subclass fields.
+        """
+        # Start with a copy of base class metadata if available
+        metadata = copy.deepcopy(self.metadata) if self.metadata is not None else {}
+
         if not utterance.additions:
-            return {}
+            return metadata
 
         additions = utterance.additions
         if not isinstance(additions, dict):
-            return {}
+            return metadata
 
-        # Return additions as metadata directly
-        return additions
+        # Update metadata with additions (subclass fields override base class fields)
+        metadata.update(additions)
+        return metadata
 
     def _extract_non_final_result_metadata(
         self, utterance: Utterance
@@ -479,8 +468,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         For non-final results (stream results), only extract invoke_type and source
         to distinguish between soft_vad, hard_vad, and stream.
+
+        First copies base class metadata, then adds/extends with subclass fields.
         """
-        metadata = {}
+        # Start with a copy of base class metadata if available
+        metadata = copy.deepcopy(self.metadata) if self.metadata is not None else {}
+
         if utterance.additions and isinstance(utterance.additions, dict):
             additions = utterance.additions
             if "invoke_type" in additions:
@@ -489,20 +482,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 metadata["source"] = additions["source"]
         return metadata
 
-    def _calculate_utterance_start_ms(
-        self, utterance_start_time_ms: int
-    ) -> int:
+    def _calculate_utterance_start_ms(self, utterance_start_time_ms: int) -> int:
         """Calculate actual start_ms for an utterance based on its start_time."""
         return int(
-            self.audio_timeline.get_audio_duration_before_time(
-                utterance_start_time_ms
-            )
+            self.audio_timeline.get_audio_duration_before_time(utterance_start_time_ms)
             + self.sent_user_audio_duration_ms_before_last_reset
         )
 
-    async def _send_two_pass_delay_metrics(
-        self, current_timestamp: int
-    ) -> None:
+    async def _send_two_pass_delay_metrics(self, current_timestamp: int) -> None:
         """Send two-pass delay metrics via ModuleMetrics.
 
         Calculates and sends:
@@ -512,13 +499,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Check if enable_nonstream and soft_vad are enabled in request config
         enable_nonstream = False
         enable_soft_vad = False
-        if self.config and self.config.request:
+        if self.config and self.config.get_request_config():
             # Check if enable_nonstream is True in request params
-            enable_nonstream = self.config.request.get(
+            enable_nonstream = self.config.get_request_config().get(
                 "enable_nonstream", False
             )
             # Check if soft_vad_window_size exists in request params
-            enable_soft_vad = "soft_vad_window_size" in self.config.request
+            enable_soft_vad = "soft_vad_window_size" in self.config.get_request_config()
 
         vendor_metrics = self.two_pass_delay_tracker.calculate_metrics(
             current_timestamp,
@@ -624,8 +611,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             if not result.utterances:
                 # No utterances, send result.text as fallback (non-final)
                 # Use result.start_ms for fallback case
-                actual_start_ms = self._calculate_utterance_start_ms(
-                    result.start_ms
+                actual_start_ms = self._calculate_utterance_start_ms(result.start_ms)
+                # Start with a copy of base class metadata if available
+                metadata = (
+                    copy.deepcopy(self.metadata) if self.metadata is not None else {}
                 )
                 await self._send_asr_result_from_text(
                     text=result.text,
@@ -633,7 +622,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     start_ms=actual_start_ms,
                     duration_ms=result.duration_ms,
                     language=result.language,
-                    metadata={},
+                    metadata=metadata,
                 )
                 return
 
@@ -662,17 +651,11 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 # Record timestamps using tracker
                 match (source, invoke_type, is_final):
                     case ("stream", _, _):
-                        self.two_pass_delay_tracker.record_stream(
-                            current_timestamp
-                        )
+                        self.two_pass_delay_tracker.record_stream(current_timestamp)
                     case ("two_pass", "soft_vad", _):
-                        self.two_pass_delay_tracker.record_soft_vad(
-                            current_timestamp
-                        )
+                        self.two_pass_delay_tracker.record_soft_vad(current_timestamp)
                     case ("two_pass", "hard_vad", True):
-                        await self._send_two_pass_delay_metrics(
-                            current_timestamp
-                        )
+                        await self._send_two_pass_delay_metrics(current_timestamp)
                     case _:
                         pass  # Other combinations don't need timestamp recording
 
@@ -687,9 +670,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     has_final_result = True
                     metadata = self._extract_final_result_metadata(utterance)
                 else:
-                    metadata = self._extract_non_final_result_metadata(
-                        utterance
-                    )
+                    metadata = self._extract_non_final_result_metadata(utterance)
 
                 await self._send_asr_result_from_text(
                     text=utterance.text,
