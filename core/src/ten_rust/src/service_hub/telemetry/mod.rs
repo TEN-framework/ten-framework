@@ -18,7 +18,7 @@
 //!            │
 //!            ├──► Metrics (this module)
 //!            │      ├──► Prometheus Exporter (Pull mode)
-//!            │      ├──► OTLP Exporter (Push mode) [Future]
+//!            │      ├──► OTLP Exporter (Push mode)
 //!            │      └──► Custom Exporters [Future]
 //!            │
 //!            ├──► Traces [Future]
