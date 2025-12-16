@@ -43,9 +43,7 @@ RECONNECTABLE_ERROR_CODES = {
     VOLCENGINE_ERROR_CODES[
         "UNKNOWN_CLIENT_ERROR"
     ],  # Unknown client error - may be temporary, retryable
-    VOLCENGINE_ERROR_CODES[
-        "EMPTY_AUDIO"
-    ],  # Empty audio - data issue, retryable
+    VOLCENGINE_ERROR_CODES["EMPTY_AUDIO"],  # Empty audio - data issue, retryable
     VOLCENGINE_ERROR_CODES[
         "PACKET_TIMEOUT"
     ],  # Packet timeout - network issue, retryable
