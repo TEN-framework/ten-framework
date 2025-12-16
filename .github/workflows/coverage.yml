@@ -164,8 +164,34 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
-          # We must override these to point to clang-21 to ensure profraw format version 10
+          # Remove preinstalled clang versions to prevent LLVM version conflicts in C++ compilation
+          #
+          # Root cause:
+          # - GitHub Actions ubuntu-22.04 runner preinstalls Clang 13.0.1, 14.0.0, and 15.0.7
+          # - Ref: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md
+          #
+          # - During the build stage, we primarily compile C code (.c files) from core/src/ten_runtime/*,
+          #   which does NOT trigger the `-stdlib=libc++` flag. Therefore, clang-21 only uses its own
+          #   headers without referencing system libc++ headers, avoiding version conflicts.
+          #
+          # - During the test stage, we compile C++ applications (.cc files) that include
+          #   C++ standard library headers (like <string>, <iostream>). When clang-21 uses
+          #   `-stdlib=libc++` (set in core/ten_gn/.gnfiles/build/platform/linux/BUILD.gn:68), it:
+          #   1. Uses LLVM 21's C++ stdlib headers: /usr/lib/llvm-21/include/c++/v1/*
+          #   2. BUT also picks up LLVM 13/14/15's compiler intrinsic headers from preinstalled versions
+          #
+          # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
+          # the compiler's default header search paths still include older clang directories.
+          #
+          # Solution: Remove ALL preinstalled clang versions (13, 14, 15).
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks: GN build system hardcodes "clang"/"clang++" (without version suffix)
+          # We override these to point to clang-21 to ensure profraw format version 10
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
@@ -463,12 +489,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -850,12 +886,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -1079,12 +1125,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -1314,12 +1370,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -1548,12 +1614,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -1802,12 +1878,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
@@ -2020,12 +2106,22 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
+          clang --version | head -3
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
           lcov --version
