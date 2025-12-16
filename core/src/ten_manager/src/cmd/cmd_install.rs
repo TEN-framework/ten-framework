@@ -95,6 +95,12 @@ pub struct InstallCommand {
     /// When the user only inputs a single path parameter, if a `manifest.json`
     /// exists under that path, it indicates installation from a local path.
     pub local_path: Option<String>,
+
+    /// When set to true, the installation will strictly follow
+    /// manifest-lock.json without breaking the lock. If manifest-lock.json
+    /// is missing or versions don't satisfy manifest.json requirements, the
+    /// installation will fail.
+    pub locked: bool,
 }
 
 pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
@@ -159,6 +165,13 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .default_value(crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL_STR)
                 .required(false),
         )
+        .arg(
+            Arg::new("LOCKED")
+                .long("locked")
+                .help("Install strictly according to manifest-lock.json without breaking the lock")
+                .action(clap::ArgAction::SetTrue)
+                .required(false),
+        )
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
@@ -175,6 +188,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         cwd: String::new(),
         max_latest_versions: DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         local_path: None,
+        locked: false,
     };
 
     let _ = cmd.support.set_defaults();
@@ -249,6 +263,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
 
     cmd.standalone = sub_cmd_args.get_flag("STANDALONE");
     cmd.production = sub_cmd_args.get_flag("PRODUCTION");
+    cmd.locked = sub_cmd_args.get_flag("LOCKED");
 
     Ok(cmd)
 }
@@ -258,6 +273,238 @@ fn get_locked_pkgs(app_dir: &Path) -> Option<HashMap<PkgTypeAndName, PkgInfo>> {
         Ok(manifest_lock) => Some(manifest_lock.get_pkgs()),
         Err(_) => None,
     }
+}
+
+/// Validate that all dependencies in manifest.json (both dependencies and
+/// dev_dependencies) exist in manifest-lock.json and their locked versions
+/// satisfy the version requirements.
+fn validate_locked_dependencies(
+    manifest_dependencies: &Option<Vec<ManifestDependency>>,
+    manifest_dev_dependencies: &Option<Vec<ManifestDependency>>,
+    locked_pkgs: &HashMap<PkgTypeAndName, PkgInfo>,
+) -> Result<()> {
+    // Helper function to validate a list of dependencies
+    let validate_dep_list = |deps: &[ManifestDependency], dep_type: &str| -> Result<()> {
+        for dep in deps {
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                version_req,
+            } = dep
+            {
+                let type_and_name = PkgTypeAndName {
+                    pkg_type: *pkg_type,
+                    name: name.clone(),
+                };
+
+                // Check if the dependency exists in lock file
+                let locked_pkg = locked_pkgs.get(&type_and_name).ok_or_else(|| {
+                    anyhow!(
+                        "Error: {dep_type} '{}' with type '{}' is in manifest.json but missing \
+                         from manifest-lock.json.\nThe lock file is out of sync. Please run 'tman \
+                         install' without --locked to update it.",
+                        name,
+                        pkg_type
+                    )
+                })?;
+
+                // Check if the locked version satisfies the requirement
+                if !version_req.matches(&locked_pkg.manifest.version) {
+                    return Err(anyhow!(
+                        "Error: Locked version {} for {dep_type} '{}' (type: {}) does not satisfy \
+                         the version requirement '{}' in manifest.json.\nThe lock file is out of \
+                         sync. Please run 'tman install' without --locked to update it.",
+                        locked_pkg.manifest.version,
+                        name,
+                        pkg_type,
+                        version_req.as_raw()
+                    ));
+                }
+            }
+        }
+        Ok(())
+    };
+
+    // Validate dependencies
+    if let Some(dependencies) = manifest_dependencies {
+        validate_dep_list(dependencies, "Dependency")?;
+    }
+
+    // Validate dev_dependencies
+    if let Some(dev_dependencies) = manifest_dev_dependencies {
+        validate_dep_list(dev_dependencies, "Dev dependency")?;
+    }
+
+    Ok(())
+}
+
+/// Execute installation in locked mode: validate and install according to
+/// manifest-lock.json without dependency resolution.
+async fn execute_locked_install(
+    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
+    command_data: &InstallCommand,
+    app_dir_to_work_with: &Path,
+    app_pkg_to_work_with: &PkgInfo,
+    out: Arc<Box<dyn TmanOutput>>,
+    started: Instant,
+) -> Result<()> {
+    out.normal_line(&format!("{}  Running in locked mode...", Emoji("🔒", "")));
+
+    // Step 1: Check if manifest-lock.json exists
+    let manifest_lock = parse_manifest_lock_in_folder(app_dir_to_work_with).map_err(|_| {
+        anyhow!(
+            "Error: --locked flag was passed, but manifest-lock.json was not found in {}.\nPlease \
+             run 'tman install' without --locked to generate the lock file first.",
+            app_dir_to_work_with.display()
+        )
+    })?;
+
+    out.normal_line(&format!("{}  Validating manifest-lock.json...", Emoji("✓", "")));
+
+    // Step 2: Validate that locked versions satisfy manifest.json requirements
+    let locked_pkgs = manifest_lock.get_pkgs();
+
+    validate_locked_dependencies(
+        &app_pkg_to_work_with.manifest.dependencies,
+        &app_pkg_to_work_with.manifest.dev_dependencies,
+        &locked_pkgs,
+    )?;
+
+    out.normal_line(&format!(
+        "{}  Validation successful. Installing packages according to manifest-lock.json...",
+        Emoji("✓", "")
+    ));
+
+    // Step 3: Query registry to get download URLs for locked packages (in parallel)
+    out.normal_line(&format!("{}  Fetching package information from registry...", Emoji("📡", "")));
+
+    let mut query_tasks = Vec::new();
+
+    for locked_pkg in locked_pkgs.values() {
+        let pkg = locked_pkg.clone();
+        let tman_config_clone = tman_config.clone();
+        let out_clone = out.clone();
+
+        // Spawn a task for each package query
+        let task = tokio::spawn(async move {
+            // Skip local dependencies as they don't need URLs from registry
+            if pkg.is_local_dependency {
+                return Ok::<PkgInfo, anyhow::Error>(pkg);
+            }
+
+            // Query registry for this specific package version
+            let version_req = semver::VersionReq::parse(&format!("={}", pkg.manifest.version))?;
+            let found_packages = crate::registry::get_package_list(
+                tman_config_clone,
+                Some(pkg.manifest.type_and_name.pkg_type),
+                Some(pkg.manifest.type_and_name.name.clone()),
+                Some(version_req),
+                None,
+                None,
+                None,
+                None,
+                &out_clone,
+            )
+            .await?;
+
+            if found_packages.is_empty() {
+                return Err(anyhow!(
+                    "Package '{}:{}@{}' locked in manifest-lock.json not found in registry.",
+                    pkg.manifest.type_and_name.pkg_type,
+                    pkg.manifest.type_and_name.name,
+                    pkg.manifest.version
+                ));
+            }
+
+            // Update the URL in the locked package info
+            let mut pkg_with_url = pkg;
+            pkg_with_url.url = found_packages[0].download_url.clone();
+            Ok(pkg_with_url)
+        });
+
+        query_tasks.push(task);
+    }
+
+    // Wait for all queries to complete
+    let mut locked_pkgs_with_urls: Vec<PkgInfo> = Vec::new();
+    for task in query_tasks {
+        let pkg_result = task.await.map_err(|e| anyhow!("Task join error: {}", e))??;
+        locked_pkgs_with_urls.push(pkg_result);
+    }
+
+    let locked_pkgs_vec: Vec<&PkgInfo> = locked_pkgs_with_urls.iter().collect();
+
+    // Filter packages for production mode if needed
+    let app_pkg_dependencies =
+        app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
+    let app_pkg_dev_dependencies =
+        app_pkg_to_work_with.manifest.dev_dependencies.clone().unwrap_or_default();
+
+    let final_locked_pkgs = filter_packages_for_production_mode(
+        tman_config.clone(),
+        command_data.production,
+        &app_pkg_dependencies,
+        &app_pkg_dev_dependencies,
+        locked_pkgs_vec,
+        out.clone(),
+    )
+    .await;
+
+    // Get all installed packages to compare
+    out.normal_line(&format!("{}  Get all installed packages...", Emoji("📦", "")));
+
+    let all_installed_pkgs = tman_get_all_installed_pkgs_info_of_app(
+        tman_config.clone(),
+        app_dir_to_work_with,
+        out.clone(),
+    )
+    .await?;
+
+    // Compare with installed packages and warn about conflicts
+    let has_conflict = compare_solver_results_with_installed_pkgs(
+        &final_locked_pkgs,
+        &all_installed_pkgs,
+        out.clone(),
+    );
+
+    if has_conflict && !tman_config.read().await.assume_yes {
+        if out.is_interactive() {
+            let ans = Confirm::new(
+                "Warning!!! Some local packages will be overwritten, do you want to continue?",
+            )
+            .with_default(false)
+            .prompt();
+
+            match ans {
+                Ok(true) => {
+                    // Continue to install.
+                }
+                Ok(false) | Err(_) => {
+                    return Ok(());
+                }
+            }
+        } else {
+            out.normal_line("Non-interactive mode, auto-continue...");
+        }
+    }
+
+    // Install packages according to lock file
+    install_solver_results_in_app_folder(
+        tman_config.clone(),
+        command_data,
+        &final_locked_pkgs,
+        app_dir_to_work_with,
+        out.clone(),
+    )
+    .await?;
+
+    out.normal_line(&format!(
+        "{}  Install successfully in {}",
+        Emoji("🏆", ":-)"),
+        HumanDuration(started.elapsed())
+    ));
+
+    Ok(())
 }
 
 fn add_pkg_to_initial_pkg_to_find_candidates_and_all_candidates(
@@ -485,6 +732,16 @@ pub async fn execute_cmd(
         out.normal_line("Executing install command");
     }
 
+    // Check if --locked is used with specific package installation
+    if command_data.locked
+        && (command_data.package_type.is_some() || command_data.local_path.is_some())
+    {
+        return Err(anyhow!(
+            "Error: --locked flag can only be used with 'tman install' (without package type or \
+             name).\nFor installing specific packages, please run without --locked."
+        ));
+    }
+
     // Special handling for `tman install app <app_name>`:
     // This should be equivalent to `tman create app <app_name> --template
     // <app_name>`.
@@ -583,6 +840,20 @@ pub async fn execute_cmd(
 
     let mut app_pkg_to_work_with =
         get_pkg_info_from_path(&app_dir_to_work_with, true, false, &mut None, None).await?;
+
+    // If --locked is specified, validate the manifest-lock.json file
+    // and install directly without dependency resolution
+    if command_data.locked {
+        return execute_locked_install(
+            tman_config,
+            &command_data,
+            &app_dir_to_work_with,
+            &app_pkg_to_work_with,
+            out,
+            started,
+        )
+        .await;
+    }
 
     let app_pkg_dependencies =
         app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();

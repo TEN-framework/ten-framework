@@ -25,6 +25,7 @@ impl WsBuiltinFunction {
             local_path: None,
             cwd: base_dir.clone(),
             max_latest_versions: crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
+            locked: false,
         };
 
         run_installation(
