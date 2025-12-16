@@ -411,13 +411,16 @@ pub async fn get_all_candidates_from_deps(
     // Cache used to record combinations processed by `get_package_list`.
     let mut pkg_list_cache = PackageListCache::default();
 
+    // Create a vector to store new packages to be searched
+    let mut new_pkgs_to_be_searched = Vec::new();
+
     let mut context = DependenciesContext {
         tman_config,
         support,
         merged_dependencies: &mut merged_dependencies,
         all_compatible_installed_pkgs,
         all_candidates: &mut all_candidates,
-        new_pkgs_to_be_searched: &mut Vec::new(),
+        new_pkgs_to_be_searched: &mut new_pkgs_to_be_searched,
         pkg_list_cache: &mut pkg_list_cache,
     };
 
