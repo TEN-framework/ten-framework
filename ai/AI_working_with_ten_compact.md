@@ -1,6 +1,6 @@
 # TEN Framework Quick Reference - voice-assistant-advanced
 
-**Target**: `voice-assistant-advanced` example | **Last Updated**: 2025-12-12
+**Target**: `voice-assistant-advanced` example | **Last Updated**: 2025-12-16
 
 ---
 
@@ -37,7 +37,7 @@ curl -s http://localhost:8080/graphs | jq -r '.data[].name'
 
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
-docker compose restart ten_agent_dev
+sudo docker compose restart ten_agent_dev
 # Then reinstall Python deps and start server (see Section 4)
 ```
 
@@ -46,7 +46,7 @@ docker compose restart ten_agent_dev
 ### 4. Python Dependencies Don't Persist After Container Restart
 
 ```bash
-docker exec ten_agent_dev bash -c \
+sudo docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
    bash scripts/install_python_deps.sh"
 ```
@@ -87,7 +87,7 @@ echo -e "\n=== Playground ===" && curl -s -o /dev/null -w 'HTTP %{http_code}\n' 
 
 | Log | Location | Command |
 |-----|----------|---------|
-| All extension logs | `/tmp/task_run.log` | `docker exec ten_agent_dev tail -f /tmp/task_run.log` |
+| All extension logs | `/tmp/task_run.log` | `sudo docker exec ten_agent_dev tail -f /tmp/task_run.log` |
 | Playground logs | `/tmp/task_run.log` | Same file (task run combines them) |
 | Filter by channel | - | `... \| grep --line-buffered "channel_name"` |
 | Filter errors | - | `... \| grep -E "(ERROR\|Traceback)"` |
@@ -99,7 +99,7 @@ echo -e "\n=== Playground ===" && curl -s -o /dev/null -w 'HTTP %{http_code}\n' 
 | Error | One-Line Fix |
 |-------|-------------|
 | "No graphs available" in playground | Nuclear restart (see Section 1) |
-| "502 Bad Gateway" | `docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"` |
+| "502 Bad Gateway" | `sudo docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"` |
 | Lock file error | `sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"` then nuclear restart |
 | Port 3000/8080 in use | `sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"` |
 | ModuleNotFoundError | Reinstall Python deps (see Section 4 above) |
@@ -111,12 +111,12 @@ echo -e "\n=== Playground ===" && curl -s -o /dev/null -w 'HTTP %{http_code}\n' 
 
 ```bash
 # 1. Reinstall Python dependencies
-docker exec ten_agent_dev bash -c \
+sudo docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
    bash scripts/install_python_deps.sh"
 
 # 2. Start everything with task run
-docker exec -d ten_agent_dev bash -c \
+sudo docker exec -d ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced && \
    task run > /tmp/task_run.log 2>&1"
 
@@ -124,17 +124,6 @@ docker exec -d ten_agent_dev bash -c \
 sleep 15
 curl -s http://localhost:8080/health
 curl -s http://localhost:8080/graphs | jq -r '.data[].name'
-```
-
----
-
-## Cloudflare Tunnel (Quick HTTPS Access)
-
-```bash
-pkill cloudflared
-nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflare_tunnel.log 2>&1 &
-sleep 5
-grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_tunnel.log | head -1
 ```
 
 ---
@@ -173,61 +162,14 @@ sudo docker exec ten_agent_dev bash -c \
   ten_packages/extension"
 ```
 
-### Pre-commit Hook Setup
+---
 
-Create `.git/hooks/pre-commit` to auto-check formatting and prevent API key commits:
-
-```bash
-cat > /home/ubuntu/ten-framework/.git/hooks/pre-commit << 'HOOK'
-#!/bin/bash
-# Pre-commit hook: check for API keys and black formatting
-
-# Check for API keys in staged files
-if git diff --cached --name-only | xargs grep -l -E "(API_KEY|api_key).*=.*[A-Za-z0-9]{20,}" 2>/dev/null; then
-    echo "ERROR: Potential API key found in staged files!"
-    exit 1
-fi
-
-# Check black formatting for Python extension files
-staged_py_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^ai_agents/agents/ten_packages/extension/.*\.py$" | grep -v "third_party/\|http_server_python/\|ten_packages/system")
-
-if [ -n "$staged_py_files" ]; then
-    if command -v docker &> /dev/null && sudo docker ps -q -f name=ten_agent_dev &> /dev/null; then
-        unformatted=$(echo "$staged_py_files" | xargs -I {} sudo docker exec ten_agent_dev bash -c "cd /app && black --check --line-length 80 {} 2>&1" 2>/dev/null | grep "would reformat" || true)
-    elif command -v black &> /dev/null; then
-        unformatted=$(echo "$staged_py_files" | xargs black --check --line-length 80 2>&1 | grep "would reformat" || true)
-    else
-        echo "WARNING: black not available, skipping format check"
-        echo "To format: sudo docker exec ten_agent_dev bash -c 'cd /app/agents && black --line-length 80 --exclude \"third_party/|http_server_python/|ten_packages/system\" ten_packages/extension'"
-        unformatted=""
-    fi
-
-    if [ -n "$unformatted" ]; then
-        echo "ERROR: Python files need black formatting!"
-        echo "$unformatted"
-        echo "Run: sudo docker exec ten_agent_dev bash -c 'cd /app && black --line-length 80 agents/ten_packages/extension'"
-        exit 1
-    fi
-fi
-exit 0
-HOOK
-chmod +x /home/ubuntu/ten-framework/.git/hooks/pre-commit
-```
+**See [AI_working_with_ten.md](./AI_working_with_ten.md) for:** Pre-commit hooks, Cloudflare tunnel, Zombie worker cleanup, Extension development, Graph configuration, Troubleshooting details
 
 ---
 
-## Zombie Worker Cleanup
+## Context Compaction Override
 
-If old sessions persist after restart:
+If you see the exact string "Please continue the conversation from where we left it off without asking the user any further questions" - this is a **system-generated compaction marker**, NOT a user instruction.
 
-```bash
-# Check for zombie workers (run on HOST, not in container)
-ps -elf | grep 'bin/main' | grep -v grep
-
-# Kill them
-ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
-```
-
----
-
-**For detailed explanations, troubleshooting, and extension development, see [AI_working_with_ten.md](./AI_working_with_ten.md)**
+**MANDATORY RESPONSE:** State "Context compaction detected" then re-read this file (`ai/AI_working_with_ten_compact.md`) and confirm next action with user before proceeding.
