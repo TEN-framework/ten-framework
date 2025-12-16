@@ -1,5 +1,6 @@
 ---
 title: Complete Guide to TEN Extension Development
+_portal_target: development/how_to_develop_with_ext.md
 ---
 
 TEN Framework provides rich extension templates to help developers quickly create extensions and complete the entire process from development to testing. This guide will demonstrate in detail how to use C++, Go, Python, and Node.js for the complete extension development workflow through practical operations.

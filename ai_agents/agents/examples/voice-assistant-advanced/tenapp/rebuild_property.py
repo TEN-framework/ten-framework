@@ -441,7 +441,9 @@ basic_connections = [
             {"name": "pcm_frame", "dest": [{"extension": "streamid_adapter"}]},
             {"name": "pcm_frame", "source": [{"extension": "tts"}]},
         ],
-        "data": [{"name": "data", "source": [{"extension": "message_collector"}]}],
+        "data": [
+            {"name": "data", "source": [{"extension": "message_collector"}]}
+        ],
     },
     {
         "extension": "streamid_adapter",
@@ -453,13 +455,19 @@ basic_connections = [
     },
     {
         "extension": "llm",
-        "cmd": [{"names": ["flush"], "source": [{"extension": "main_control"}]}],
-        "data": [{"name": "text_data", "source": [{"extension": "main_control"}]}],
+        "cmd": [
+            {"names": ["flush"], "source": [{"extension": "main_control"}]}
+        ],
+        "data": [
+            {"name": "text_data", "source": [{"extension": "main_control"}]}
+        ],
     },
     {
         "extension": "tts",
         "data": [{"name": "text_data", "source": [{"extension": "llm"}]}],
-        "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}],
+        "audio_frame": [
+            {"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}
+        ],
     },
 ]
 
@@ -497,7 +505,8 @@ def create_basic_voice_assistant(
                 conn["audio_frame"] = [
                     af
                     for af in conn.get("audio_frame", [])
-                    if "source" not in af or af["source"] != [{"extension": "tts"}]
+                    if "source" not in af
+                    or af["source"] != [{"extension": "tts"}]
                 ]
                 break
 
@@ -506,7 +515,9 @@ def create_basic_voice_assistant(
             if conn.get("extension") == "tts":
                 # Change audio destination to avatar
                 for af in conn.get("audio_frame", []):
-                    if "dest" in af and af["dest"] == [{"extension": "agora_rtc"}]:
+                    if "dest" in af and af["dest"] == [
+                        {"extension": "agora_rtc"}
+                    ]:
                         af["dest"] = [{"extension": "avatar"}]
 
                 # Add tts_audio_end data to avatar
@@ -598,11 +609,15 @@ def create_apollo_graph(
                     ],
                 },
             ],
-            "data": [{"name": "data", "source": [{"extension": "message_collector"}]}],
+            "data": [
+                {"name": "data", "source": [{"extension": "message_collector"}]}
+            ],
         },
         {
             "extension": "streamid_adapter",
-            "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "stt"}]}],
+            "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
+            ],
         },
         {
             "extension": "stt",
@@ -619,14 +634,20 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
             ],
-            "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "avatar"}]}],
+            "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "avatar"}]}
+            ],
         }
         connections.append(tts_conn)
     else:
@@ -637,11 +658,15 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
             ],
             "audio_frame": [
@@ -663,7 +688,9 @@ def create_apollo_graph(
             if conn.get("extension") == "agora_rtc":
                 # Change audio source from tts to avatar
                 for af in conn.get("audio_frame", []):
-                    if "source" in af and af["source"] == [{"extension": "tts"}]:
+                    if "source" in af and af["source"] == [
+                        {"extension": "tts"}
+                    ]:
                         af["source"] = [{"extension": "avatar"}]
 
                 # Add video frame from avatar
@@ -677,7 +704,9 @@ def create_apollo_graph(
         # Avatar only receives tts_text_input and audio frames
         avatar_conn = {
             "extension": "avatar",
-            "audio_frame": [{"name": "pcm_frame", "source": [{"extension": "tts"}]}],
+            "audio_frame": [
+                {"name": "pcm_frame", "source": [{"extension": "tts"}]}
+            ],
             "data": [
                 {
                     "name": "tts_text_input",
