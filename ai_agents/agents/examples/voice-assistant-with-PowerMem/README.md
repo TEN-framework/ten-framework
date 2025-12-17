@@ -6,7 +6,7 @@ A voice assistant enhanced with [PowerMem](https://github.com/oceanbase/powermem
 
 Set the environment variable into `.env` file:
 ```bash
-# Database (OceanBase is automatically started by docker-compose)
+# Database
 DATABASE_PROVIDER=oceanbase
 OCEANBASE_HOST=127.0.0.1
 OCEANBASE_PORT=2881
@@ -16,13 +16,13 @@ OCEANBASE_DATABASE=powermem
 OCEANBASE_COLLECTION=memories
 
 # LLM Provider (for PowerMem)
-LLM_PROVIDER=qwen  # Options: qwen, openai, siliconflow, ollama, vllm, anthropic, deepseek
+LLM_PROVIDER=qwen
 LLM_API_KEY=your_qwen_api_key
 LLM_MODEL=qwen-plus
 
 # Embedding Provider (for PowerMem)
-EMBEDDING_PROVIDER=qwen  # Options: qwen, openai, huggingface, lmstudio, ollama
-EMBEDDING_API_KEY=your_qwen_api_key  # Can be same as LLM_API_KEY
+EMBEDDING_PROVIDER=qwen
+EMBEDDING_API_KEY=your_qwen_api_key
 EMBEDDING_MODEL=text-embedding-v4
 EMBEDDING_DIMS=1536
 ```
