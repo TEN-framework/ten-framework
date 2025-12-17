@@ -439,6 +439,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -457,7 +459,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -486,13 +497,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -820,6 +833,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -838,7 +853,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -885,13 +909,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1061,6 +1087,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -1079,7 +1107,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1126,13 +1163,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1303,6 +1342,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -1321,7 +1362,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1368,13 +1418,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1545,6 +1597,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -1563,7 +1617,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1610,13 +1673,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1807,6 +1872,8 @@ jobs:
             libssl-dev \
             pkg-config \
             cmake \
+            autoconf \
+            libtool \
             tree \
             zip \
             unzip \
@@ -1825,7 +1892,16 @@ jobs:
             libavfilter-dev \
             libx264-dev \
             nasm \
-            yasm
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1872,13 +1948,15 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
+            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libclang-rt-21-dev \
+            libclang-common-21-dev
 
           # Clean up apt cache
           sudo apt-get clean
