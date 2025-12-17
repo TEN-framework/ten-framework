@@ -352,7 +352,7 @@ def patch_volcengine_ws_grouping():
                         # Create ASRResponse with multiple utterances:
                         # [true, true, false, false, true, false]
                         result = ASRResponse()
-                        result.text = "你好 世界 这是 一个 测试 示例"
+                        result.text = "hello world this is test example"
                         result.code = 0
                         result.event = 1
                         result.is_last_package = True
@@ -366,35 +366,35 @@ def patch_volcengine_ws_grouping():
                         # Create utterances: [true, true, false, false, true, false]
                         result.utterances = [
                             Utterance(
-                                text="你好",
+                                text="hello",
                                 start_time=0,
                                 end_time=1000,
                                 definite=True,
                                 additions={"speech_rate": 1.2, "volume": 0.8},
                             ),
                             Utterance(
-                                text="世界",
+                                text="world",
                                 start_time=1000,
                                 end_time=2000,
                                 definite=True,
                                 additions={"speech_rate": 1.1},
                             ),
                             Utterance(
-                                text="这是",
+                                text="this",
                                 start_time=2000,
                                 end_time=3000,
                                 definite=False,
                                 additions=None,
                             ),
                             Utterance(
-                                text="一个",
+                                text="is",
                                 start_time=3000,
                                 end_time=4000,
                                 definite=False,
                                 additions=None,
                             ),
                             Utterance(
-                                text="测试",
+                                text="test",
                                 start_time=4000,
                                 end_time=5000,
                                 definite=True,
@@ -404,7 +404,7 @@ def patch_volcengine_ws_grouping():
                                 },
                             ),
                             Utterance(
-                                text="示例",
+                                text="example",
                                 start_time=5000,
                                 end_time=6000,
                                 definite=False,

@@ -40,17 +40,44 @@ class BytedanceASRLLMConfig(BaseModel):
             )
         return self.params["audio"]
 
+    def get_enable_utterance_grouping(self) -> bool:
+        """Get enable utterance grouping from params."""
+        return self.params.get("enable_utterance_grouping", True)
+
     def get_request_config(self) -> dict[str, Any]:
         """Get request configuration for ASR.
 
         Must be provided via params.request.
         Raises ValueError if not provided.
+        Sets default values for missing fields:
+        - enable_nonstream: true
+        - end_window_size: 800
+        - model_name: "bigmodel"
+        - result_type: "single"
+        - show_utterances: true
         """
         if "request" not in self.params:
             raise ValueError(
                 "Missing required parameter: request must be provided in params."
             )
-        return self.params["request"]
+
+        request_config = self.params["request"].copy()
+
+        # Set default values for missing fields
+        defaults = {
+            "enable_nonstream": True,
+            "end_window_size": 800,
+            "model_name": "bigmodel",
+            "result_type": "single",
+            "show_utterances": True,
+        }
+
+        # Apply defaults only for missing keys
+        for key, default_value in defaults.items():
+            if key not in request_config:
+                request_config[key] = default_value
+
+        return request_config
 
     def get_user_config(self) -> Optional[dict[str, Any]]:
         """Get user configuration for ASR.

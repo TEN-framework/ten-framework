@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test file for Utterance Processing Logic
-验证 utterances 处理逻辑：每个 utterance 单独发送，不再进行分组拼接
+Verify utterance processing logic: consecutive utterances with the same definite value are merged and concatenated
 """
 
 import asyncio
@@ -82,6 +82,8 @@ class UtteranceGroupingTester(AsyncExtensionTester):
             ten_env_tester.log_info(
                 f"Received ASRResult: text='{data_dict.get('text')}', "
                 f"final={data_dict.get('final')}, "
+                f"start_ms={data_dict.get('start_ms')}, "
+                f"duration_ms={data_dict.get('duration_ms')}, "
                 f"metadata={data_dict.get('metadata')}"
             )
 
@@ -105,6 +107,18 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 ten_env_tester,
                 "metadata" in data_dict,
                 f"metadata is not in data_dict: {data_dict}",
+            )
+
+            self.stop_test_if_checking_failed(
+                ten_env_tester,
+                "start_ms" in data_dict,
+                f"start_ms is not in data_dict: {data_dict}",
+            )
+
+            self.stop_test_if_checking_failed(
+                ten_env_tester,
+                "duration_ms" in data_dict,
+                f"duration_ms is not in data_dict: {data_dict}",
             )
 
             # Verify processing logic
@@ -149,6 +163,7 @@ class UtteranceGroupingTester(AsyncExtensionTester):
         for i, (received, expected) in enumerate(
             zip(self.received_results, self.expected_results)
         ):
+            # Verify text
             self.stop_test_if_checking_failed(
                 ten_env_tester,
                 received["text"] == expected["text"],
@@ -156,12 +171,36 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 f"got '{received['text']}'",
             )
 
+            # Verify final flag
             self.stop_test_if_checking_failed(
                 ten_env_tester,
                 received["final"] == expected["final"],
                 f"Result {i}: expected final={expected['final']}, "
                 f"got final={received['final']}",
             )
+
+            # Verify duration_ms
+            if "duration_ms" in expected:
+                self.stop_test_if_checking_failed(
+                    ten_env_tester,
+                    received.get("duration_ms") == expected["duration_ms"],
+                    f"Result {i}: expected duration_ms={expected['duration_ms']}, "
+                    f"got {received.get('duration_ms')}",
+                )
+
+            # Verify start_ms (if specified, allow some tolerance for audio_timeline calculation)
+            if "start_ms" in expected:
+                received_start_ms = received.get("start_ms")
+                expected_start_ms = expected["start_ms"]
+                # Allow tolerance of ±100ms for audio_timeline calculation
+                tolerance = 100
+                self.stop_test_if_checking_failed(
+                    ten_env_tester,
+                    received_start_ms is not None
+                    and abs(received_start_ms - expected_start_ms) <= tolerance,
+                    f"Result {i}: expected start_ms≈{expected_start_ms} (±{tolerance}ms), "
+                    f"got {received_start_ms}",
+                )
 
             # For final=False, metadata should not contain utterance additions fields
             # (but may contain framework-added fields like session_id)
@@ -195,7 +234,94 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 pass
 
 
-def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
+def test_utterance_grouping_enable(patch_volcengine_ws_grouping):  # type: ignore
+    """Test utterance grouping and merging logic: consecutive utterances with same definite value are merged.
+
+    Mock data has 6 utterances: [true, true, false, false, true, false]
+    - "hello" (0-1000, true)
+    - "world" (1000-2000, true)
+    - "this" (2000-3000, false)
+    - "is" (3000-4000, false)
+    - "test" (4000-5000, true)
+    - "example" (5000-6000, false)
+
+    Expected merged results (4 groups):
+    1. "helloworld" (0-2000, duration=2000, final=True) - merged [true, true]
+    2. "thisis" (2000-4000, duration=2000, final=False) - merged [false, false]
+    3. "test" (4000-5000, duration=1000, final=True) - single [true]
+    4. "example" (5000-6000, duration=1000, final=False) - single [false]
+    """
+
+    property_json = {
+        "params": {
+            "app_key": "fake_app_key",
+            "access_key": "fake_access_key",
+            "sample_rate": 16000,
+            "language": "zh-CN",
+            "enable_utterance_grouping": True,
+        }
+    }
+
+    tester = UtteranceGroupingTester()
+
+    # Set expected results based on grouping and merging logic:
+    # Consecutive utterances with same definite value are merged:
+    # Group 1: [true, true] -> "helloworld" (start_time=0, end_time=2000, duration=2000)
+    # Group 2: [false, false] -> "thisis" (start_time=2000, end_time=4000, duration=2000)
+    # Group 3: [true] -> "test" (start_time=4000, end_time=5000, duration=1000)
+    # Group 4: [false] -> "example" (start_time=5000, end_time=6000, duration=1000)
+    tester.expected_results = [
+        {
+            "text": "helloworld",  # Merged from "hello" + "world"
+            "final": True,
+            "duration_ms": 2000,  # end_time(2000) - start_time(0)
+            # "start_ms": 0,  # Will allow tolerance for audio_timeline calculation
+            "metadata": {},  # Metadata from last utterance in group ("world")
+        },
+        {
+            "text": "thisis",  # Merged from "this" + "is"
+            "final": False,
+            "duration_ms": 2000,  # end_time(4000) - start_time(2000)
+            # "start_ms": 2000,  # Will allow tolerance for audio_timeline calculation
+            "metadata": {},  # Metadata from last utterance in group ("is")
+        },
+        {
+            "text": "test",  # Single utterance, not merged
+            "final": True,
+            "duration_ms": 1000,  # end_time(5000) - start_time(4000)
+            # "start_ms": 4000,  # Will allow tolerance for audio_timeline calculation
+            "metadata": {},  # Metadata from "test"
+        },
+        {
+            "text": "example",  # Single utterance, not merged
+            "final": False,
+            "duration_ms": 1000,  # end_time(6000) - start_time(5000)
+            # "start_ms": 5000,  # Will allow tolerance for audio_timeline calculation
+            "metadata": {},  # Metadata from "example"
+        },
+    ]
+
+    tester.set_test_mode_single(
+        "bytedance_llm_based_asr", json.dumps(property_json)
+    )
+
+    err = tester.run()
+    if err is not None:
+        # Print readable error for debugging
+        try:
+            em = err.error_message()  # type: ignore[attr-defined]
+            ec = err.error_code()  # type: ignore[attr-defined]
+            assert False, f"test_utterance_grouping err: {em}, {ec}"
+        except Exception:
+            assert False, f"test_utterance_grouping err: {err}"
+
+    # Verify we got the expected number of results
+    assert len(tester.received_results) == len(
+        tester.expected_results
+    ), f"Expected {len(tester.expected_results)} results, got {len(tester.received_results)}"
+
+
+def test_utterance_grouping_disable(patch_volcengine_ws_grouping):  # type: ignore
     """Test utterance processing logic: each utterance is sent individually [true, true, false, false, true, false]"""
 
     property_json = {
@@ -204,6 +330,7 @@ def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
             "access_key": "fake_access_key",
             "sample_rate": 16000,
             "language": "zh-CN",
+            "enable_utterance_grouping": False,
         }
     }
 
@@ -212,23 +339,23 @@ def test_utterance_grouping(patch_volcengine_ws_grouping):  # type: ignore
     # Set expected results based on the simplified processing logic:
     # [true, true, false, false, true, false]
     # Each utterance is sent individually:
-    # 1. "你好" (final=True, metadata may contain speech_rate, volume)
-    # 2. "世界" (final=True, metadata may contain speech_rate)
-    # 3. "这是" (final=False, metadata={})
-    # 4. "一个" (final=False, metadata={})
-    # 5. "测试" (final=True, metadata may contain speech_rate, emotion)
-    # 6. "示例" (final=False, metadata={})
+    # 1. "hello" (final=True, metadata may contain speech_rate, volume)
+    # 2. "world" (final=True, metadata may contain speech_rate)
+    # 3. "this" (final=False, metadata={})
+    # 4. "is" (final=False, metadata={})
+    # 5. "test" (final=True, metadata may contain speech_rate, emotion)
+    # 6. "example" (final=False, metadata={})
     tester.expected_results = [
         {
-            "text": "你好",
+            "text": "hello",
             "final": True,
             "metadata": {},
         },  # Will check text and final only
-        {"text": "世界", "final": True, "metadata": {}},
-        {"text": "这是", "final": False, "metadata": {}},
-        {"text": "一个", "final": False, "metadata": {}},
-        {"text": "测试", "final": True, "metadata": {}},
-        {"text": "示例", "final": False, "metadata": {}},
+        {"text": "world", "final": True, "metadata": {}},
+        {"text": "this", "final": False, "metadata": {}},
+        {"text": "is", "final": False, "metadata": {}},
+        {"text": "test", "final": True, "metadata": {}},
+        {"text": "example", "final": False, "metadata": {}},
     ]
 
     tester.set_test_mode_single(
