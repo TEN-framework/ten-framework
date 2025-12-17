@@ -57,6 +57,17 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         self.current_utterance_start_ms: int = 0
         # Interrupt state - track if we've sent flush for this turn
         self._interrupt_sent: bool = False
+        # Silence sender for EOT detection when mic muted
+        self.last_audio_frame_time: float = 0.0
+        self.silence_sender_task: Optional[asyncio.Task] = None
+        self.silence_gap_threshold: float = 0.3  # Start silence after 300ms gap
+        self.silence_max_duration: float = 2.0  # Send silence for max 2 seconds
+
+        # Auto-reconnection
+        self.reconnect_task: Optional[asyncio.Task] = None
+        self.reconnect_delay: float = 1.0  # Initial reconnect delay
+        self.max_reconnect_delay: float = 30.0  # Max backoff delay
+        self._should_reconnect: bool = True  # Flag to control reconnection
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -169,6 +180,22 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 )
                 self.receive_task = asyncio.create_task(self._receive_loop())
 
+                # Start silence sender for EOT detection when mic muted
+                if (
+                    not self.silence_sender_task
+                    or self.silence_sender_task.done()
+                ):
+                    self.silence_sender_task = asyncio.create_task(
+                        self._silence_sender()
+                    )
+
+                # Start reconnect monitor (only once)
+                if not self.reconnect_task or self.reconnect_task.done():
+                    self._should_reconnect = True
+                    self.reconnect_task = asyncio.create_task(
+                        self._reconnect_monitor()
+                    )
+
             except Exception as e:
                 self.ten_env.log_error(
                     f"[DEEPGRAM-WS] Failed to start connection: {e}\n{traceback.format_exc()}"
@@ -211,6 +238,137 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_error(f"[DEEPGRAM-WS] Error in receive loop: {e}")
         finally:
             self.connected = False
+
+    async def _silence_sender(self):
+        """
+        Send silence when real audio stops, to trigger Deepgram's natural EOT detection.
+
+        When the user mutes their mic (e.g., TV noise causing endless interim transcripts),
+        Deepgram never sees silence to trigger speech_final=True. This task monitors for
+        audio gaps and sends silence frames to let Deepgram naturally detect end-of-turn.
+
+        Also sends periodic keep-alive silence to prevent WebSocket timeout when idle.
+        """
+        # 10ms of silence at 16kHz mono (16-bit = 2 bytes per sample)
+        # 16000 samples/sec * 0.01 sec * 2 bytes = 320 bytes
+        silence_frame = bytes(320)
+        silence_start_time = 0.0
+        last_keepalive_time = 0.0
+        keepalive_interval = 5.0  # Send keep-alive every 5 seconds when idle
+
+        while True:
+            await asyncio.sleep(0.01)  # 10ms intervals
+
+            # Check if we should send silence
+            if not self.is_connected() or self.ws is None:
+                continue
+
+            now = time.time()
+
+            # If no real audio for 300ms and we have pending speech
+            if (
+                self.last_audio_frame_time > 0
+                and (now - self.last_audio_frame_time)
+                > self.silence_gap_threshold
+                and (self.last_interim_text or self.accumulated_segments)
+            ):
+                # Start tracking silence duration
+                if silence_start_time == 0.0:
+                    silence_start_time = now
+                    self.ten_env.log_info(
+                        f"[DEEPGRAM-SILENCE] Starting silence sender: "
+                        f"gap={now - self.last_audio_frame_time:.1f}s, "
+                        f"interim='{self.last_interim_text}', "
+                        f"accumulated={len(self.accumulated_segments)} segments"
+                    )
+
+                # Stop after max duration
+                silence_elapsed = now - silence_start_time
+                if silence_elapsed > self.silence_max_duration:
+                    self.ten_env.log_info(
+                        f"[DEEPGRAM-SILENCE] Max duration reached ({self.silence_max_duration}s), "
+                        f"stopping silence sender"
+                    )
+                    silence_start_time = 0.0
+                    continue
+
+                # Send silence frame
+                try:
+                    await self.ws.send_bytes(silence_frame)
+                    last_keepalive_time = now
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"[DEEPGRAM-SILENCE] Error sending silence: {e}"
+                    )
+
+            else:
+                # Reset silence tracking when real audio resumes
+                if silence_start_time > 0.0:
+                    self.ten_env.log_info(
+                        "[DEEPGRAM-SILENCE] Real audio resumed, stopping silence sender"
+                    )
+                    silence_start_time = 0.0
+
+                # Send periodic keep-alive when no audio for extended period
+                # This prevents WebSocket timeout when user is muted for long time
+                if (
+                    self.last_audio_frame_time > 0
+                    and (now - self.last_audio_frame_time) > keepalive_interval
+                    and (now - last_keepalive_time) > keepalive_interval
+                ):
+                    try:
+                        await self.ws.send_bytes(silence_frame)
+                        last_keepalive_time = now
+                        self.ten_env.log_debug(
+                            "[DEEPGRAM-SILENCE] Sent keep-alive silence"
+                        )
+                    except Exception as e:
+                        self.ten_env.log_error(
+                            f"[DEEPGRAM-SILENCE] Error sending keep-alive: {e}"
+                        )
+
+    async def _reconnect_monitor(self):
+        """Monitor connection and auto-reconnect if dropped."""
+        current_delay = self.reconnect_delay
+
+        while self._should_reconnect:
+            await asyncio.sleep(2.0)  # Check every 2 seconds
+
+            if not self._should_reconnect:
+                break
+
+            if not self.is_connected():
+                self.ten_env.log_warn(
+                    f"[DEEPGRAM-RECONNECT] Connection lost, attempting reconnect "
+                    f"in {current_delay:.1f}s"
+                )
+
+                await asyncio.sleep(current_delay)
+
+                if not self._should_reconnect:
+                    break
+
+                try:
+                    await self.start_connection()
+                    if self.is_connected():
+                        self.ten_env.log_info(
+                            "[DEEPGRAM-RECONNECT] Successfully reconnected"
+                        )
+                        current_delay = (
+                            self.reconnect_delay
+                        )  # Reset delay on success
+                    else:
+                        # Exponential backoff
+                        current_delay = min(
+                            current_delay * 2, self.max_reconnect_delay
+                        )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"[DEEPGRAM-RECONNECT] Reconnection failed: {e}"
+                    )
+                    current_delay = min(
+                        current_delay * 2, self.max_reconnect_delay
+                    )
 
     async def _handle_message(self, data: dict):
         try:
@@ -596,6 +754,25 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
     async def stop_connection(self) -> None:
         try:
+            # Stop reconnect monitor first
+            self._should_reconnect = False
+            if self.reconnect_task:
+                self.reconnect_task.cancel()
+                try:
+                    await self.reconnect_task
+                except asyncio.CancelledError:
+                    pass
+                self.reconnect_task = None
+
+            # Stop silence sender task
+            if self.silence_sender_task:
+                self.silence_sender_task.cancel()
+                try:
+                    await self.silence_sender_task
+                except asyncio.CancelledError:
+                    pass
+                self.silence_sender_task = None
+
             if self.receive_task:
                 self.receive_task.cancel()
                 try:
@@ -666,6 +843,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
             await self.ws.send_bytes(bytes(buf))
             self.audio_frame_count += 1
+
+            # Track last audio frame time for silence sender
+            self.last_audio_frame_time = time.time()
 
             frame.unlock_buf(buf)
             return True

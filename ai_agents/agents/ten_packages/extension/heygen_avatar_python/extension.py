@@ -20,8 +20,6 @@ from ten_runtime import (  # pylint: disable=import-error
 )
 from ten_ai_base.config import BaseConfig
 from .heygen import AgoraHeygenRecorder
-
-# from .heygen_bak import HeyGenRecorder
 from dataclasses import dataclass
 
 
@@ -41,12 +39,8 @@ class HeygenAvatarExtension(AsyncExtension):
         super().__init__(name)
         self.config = None
         self.input_audio_queue = asyncio.Queue()
-        self.audio_queue = asyncio.Queue[bytes]()
-        self.video_queue = asyncio.Queue()
         self.recorder: AgoraHeygenRecorder = None
         self.ten_env: AsyncTenEnv = None
-        self.is_speaking = False  # Track if we're currently sending audio
-        self.speaking_lock = asyncio.Lock()  # Protect is_speaking state
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -60,14 +54,6 @@ class HeygenAvatarExtension(AsyncExtension):
             ten_env.log_info(
                 f"[AVATAR CONFIG] avatar_name={self.config.avatar_name}, channel={self.config.channel}"
             )
-
-            # recorder = HeyGenRecorder(
-            #     self.config.api_key,
-            #     self.config.avatar_name,
-            #     ten_env=ten_env,
-            #     audio_queue=self.audio_queue,
-            #     video_queue=self.video_queue,
-            # )
 
             recorder = AgoraHeygenRecorder(
                 heygen_api_key=self.config.heygen_api_key,
@@ -88,26 +74,8 @@ class HeygenAvatarExtension(AsyncExtension):
             ten_env.log_error(f"error on_start, {traceback.format_exc()}")
 
     async def _loop_input_audio_sender(self, _: AsyncTenEnv):
-        frame_count = 0
-        idle_reset_task = None
-
         while True:
             audio_frame = await self.input_audio_queue.get()
-            frame_count += 1
-
-            # If we're starting a new audio stream (was idle), send interrupt first
-            async with self.speaking_lock:
-                if not self.is_speaking:
-                    self.ten_env.log_debug(
-                        "Starting new audio stream, sending interrupt first"
-                    )
-                    if self.recorder and self.recorder.ws_connected():
-                        await self.recorder.interrupt()
-                    self.is_speaking = True
-
-            # Cancel previous idle reset task
-            if idle_reset_task and not idle_reset_task.done():
-                idle_reset_task.cancel()
 
             if self.recorder is None:
                 self.ten_env.log_warn("Recorder is None, dropping audio")
@@ -158,15 +126,6 @@ class HeygenAvatarExtension(AsyncExtension):
                     "utf-8"
                 )
                 await self.recorder.send(base64_audio_data)
-
-                # Set up task to reset is_speaking after 1 second of no audio
-                async def reset_speaking_state():
-                    await asyncio.sleep(1.0)
-                    async with self.speaking_lock:
-                        self.is_speaking = False
-                    self.ten_env.log_debug("Audio stream ended")
-
-                idle_reset_task = asyncio.create_task(reset_speaking_state())
 
             except Exception as e:
                 self.ten_env.log_error(f"Error processing audio frame: {e}")

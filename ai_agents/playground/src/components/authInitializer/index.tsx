@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import {
   getOptionsFromLocal,
   getRandomChannel,
@@ -14,6 +14,7 @@ import {
   fetchGraphDetails,
   reset,
   setOptions,
+  setSelectedGraphId,
   setTrulienceSettings,
 } from "@/store/reducers/global";
 
@@ -29,6 +30,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
     (state) => state.global.selectedGraphId
   );
   const graphList = useAppSelector((state) => state.global.graphList);
+  const urlParamApplied = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -50,6 +52,24 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       }
     }
   }, [dispatch]);
+
+  // Check URL params for graph selection on initial load only
+  useEffect(() => {
+    if (urlParamApplied.current) return;
+    if (typeof window !== "undefined" && graphList.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const graphParam = urlParams.get("graph");
+      if (graphParam) {
+        // Find graph by name (frontend uses UUIDs for graph_id, API uses name)
+        const graph = graphList.find((g) => g.name === graphParam);
+        if (graph) {
+          const graphId = graph.graph_id || graph.name;
+          dispatch(setSelectedGraphId(graphId));
+          urlParamApplied.current = true;
+        }
+      }
+    }
+  }, [graphList, dispatch]);
 
   useEffect(() => {
     if (selectedGraphId) {
