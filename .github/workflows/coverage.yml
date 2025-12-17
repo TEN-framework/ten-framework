@@ -184,7 +184,9 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21
+            libc++abi1-21 \
+            clang-tools-21 \
+            libasan5
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -497,15 +499,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
@@ -909,15 +909,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1163,15 +1161,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1418,15 +1414,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1673,15 +1667,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1948,15 +1940,13 @@ jobs:
           # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
-            llvm-21-dev \
             clang-21 \
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev \
-            libclang-common-21-dev
+            libasan5
 
           # Clean up apt cache
           sudo apt-get clean
