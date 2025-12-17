@@ -5,6 +5,7 @@
 #
 import asyncio
 import copy
+import itertools
 import json
 import os
 import websockets
@@ -76,7 +77,9 @@ class TwoPassDelayTracker:
         # Only include two_pass_delay if enable_nonstream is True
         if enable_nonstream:
             metrics["two_pass_delay"] = (
-                current_timestamp - self.stream if self.stream is not None else -1
+                current_timestamp - self.stream
+                if self.stream is not None
+                else -1
             )
         # Only include soft_two_pass_delay if soft_vad is enabled
         # Send even if value is -1 (when soft_vad or stream is None)
@@ -102,8 +105,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.client: VolcengineASRClient | None = None
         self.config: BytedanceASRLLMConfig | None = None
         self.last_finalize_timestamp: int = 0
-        self.audio_dumper: Dumper | None = None  # Original dumper, keep unchanged
-        self.vendor_result_dumper: Any = None  # File handle for asr_vendor_result.jsonl
+        self.audio_dumper: Dumper | None = (
+            None  # Original dumper, keep unchanged
+        )
+        self.vendor_result_dumper: Any = (
+            None  # File handle for asr_vendor_result.jsonl
+        )
         self.ten_env: AsyncTenEnv = None  # type: ignore
 
         # Reconnection parameters
@@ -126,6 +133,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Log ID dumper manager
         self.log_id_dumper_manager: LogIdDumperManager | None = None
 
+        # Enable utterance grouping
+        self.enable_utterance_grouping: bool = True
+
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
@@ -146,7 +156,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
 
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
 
@@ -158,9 +170,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     vendor_result_dump_path, "a", encoding="utf-8"
                 )
                 # Initialize log_id_dumper_manager
-                self.log_id_dumper_manager = LogIdDumperManager(self.config, ten_env)
+                self.log_id_dumper_manager = LogIdDumperManager(
+                    self.config, ten_env
+                )
 
             self.audio_timeline.reset()
+            self.enable_utterance_grouping = (
+                self.config.get_enable_utterance_grouping()
+            )
 
         except Exception as e:
             self.ten_env.log_error(f"Configuration error: {e}")
@@ -205,14 +222,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             # Set up callbacks
             self.client.set_on_result_callback(self._on_asr_result)
-            self.client.set_on_connection_error_callback(self._on_connection_error)
-            self.client.set_on_asr_error_callback(self._on_asr_communication_error)
+            self.client.set_on_connection_error_callback(
+                self._on_connection_error
+            )
+            self.client.set_on_asr_error_callback(
+                self._on_asr_communication_error
+            )
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
 
-            # Create init dumper for new connection (before first log_id)
+            # Create dumper for new connection with UUID filename
             if self.log_id_dumper_manager:
-                await self.log_id_dumper_manager.create_init_dumper()
+                await self.log_id_dumper_manager.create_dumper()
 
             await self.client.connect()
             self.connected = True
@@ -226,7 +247,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             self.attempts = 0  # Reset retry attempts on successful connection
 
-            self.ten_env.log_info("Successfully connected to Volcengine ASR service")
+            self.ten_env.log_info(
+                "Successfully connected to Volcengine ASR service"
+            )
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
@@ -248,7 +271,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Stop log_id_dumper_manager if exists
         if self.log_id_dumper_manager:
-            await self.log_id_dumper_manager.stop_all()
+            await self.log_id_dumper_manager.stop()
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -265,7 +288,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Stop log_id_dumper_manager if exists
         if self.log_id_dumper_manager:
-            await self.log_id_dumper_manager.stop_all()
+            await self.log_id_dumper_manager.stop()
             # Keep temp file if not renamed (as per requirement)
 
         if self.vendor_result_dumper:
@@ -292,7 +315,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         return self.connected and self.client is not None
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         """Send audio frame to ASR service."""
         if not self.is_connected():
             self.ten_env.log_warn(
@@ -346,8 +371,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return
 
         try:
-            self.last_finalize_timestamp = int(asyncio.get_event_loop().time() * 1000)
-            self.ten_env.log_debug(f"Finalize start at {self.last_finalize_timestamp}")
+            self.last_finalize_timestamp = int(
+                asyncio.get_event_loop().time() * 1000
+            )
+            self.ten_env.log_debug(
+                f"Finalize start at {self.last_finalize_timestamp}"
+            )
 
             await self.client.finalize()
 
@@ -423,7 +452,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             else:
                 base_delay = 0.3
                 delay = base_delay * (2 ** (self.attempts - 2))
-                delay = min(delay, self.max_retry_delay)  # Cap at max_retry_delay
+                delay = min(
+                    delay, self.max_retry_delay
+                )  # Cap at max_retry_delay
 
             self.ten_env.log_info(
                 f"Reconnecting... Attempt {self.attempts}, delay: {delay:.2f}s"
@@ -442,13 +473,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
-    def _extract_final_result_metadata(self, utterance: Utterance) -> dict[str, Any]:
+    def _extract_final_result_metadata(
+        self, utterance: Utterance
+    ) -> dict[str, Any]:
         """Extract metadata from utterance additions.
 
         First copies base class metadata, then adds/extends with subclass fields.
         """
         # Start with a copy of base class metadata if available
-        metadata = copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        metadata = (
+            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        )
 
         if not utterance.additions:
             return metadata
@@ -472,7 +507,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         First copies base class metadata, then adds/extends with subclass fields.
         """
         # Start with a copy of base class metadata if available
-        metadata = copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        metadata = (
+            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        )
 
         if utterance.additions and isinstance(utterance.additions, dict):
             additions = utterance.additions
@@ -482,14 +519,20 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 metadata["source"] = additions["source"]
         return metadata
 
-    def _calculate_utterance_start_ms(self, utterance_start_time_ms: int) -> int:
+    def _calculate_utterance_start_ms(
+        self, utterance_start_time_ms: int
+    ) -> int:
         """Calculate actual start_ms for an utterance based on its start_time."""
         return int(
-            self.audio_timeline.get_audio_duration_before_time(utterance_start_time_ms)
+            self.audio_timeline.get_audio_duration_before_time(
+                utterance_start_time_ms
+            )
             + self.sent_user_audio_duration_ms_before_last_reset
         )
 
-    async def _send_two_pass_delay_metrics(self, current_timestamp: int) -> None:
+    async def _send_two_pass_delay_metrics(
+        self, current_timestamp: int
+    ) -> None:
         """Send two-pass delay metrics via ModuleMetrics.
 
         Calculates and sends:
@@ -505,7 +548,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 "enable_nonstream", False
             )
             # Check if soft_vad_window_size exists in request params
-            enable_soft_vad = "soft_vad_window_size" in self.config.get_request_config()
+            enable_soft_vad = (
+                "soft_vad_window_size" in self.config.get_request_config()
+            )
 
         vendor_metrics = self.two_pass_delay_tracker.calculate_metrics(
             current_timestamp,
@@ -541,6 +586,40 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             metadata=metadata,
         )
         await self.send_asr_result(asr_result)
+
+    async def _track_utterance_timestamps(self, result: ASRResponse) -> None:
+        """Track utterance timestamps and send two-pass delay metrics."""
+        current_timestamp = int(asyncio.get_event_loop().time() * 1000)
+        for utterance in result.utterances:
+            # Skip utterances with invalid timestamps
+            if utterance.start_time == -1 or utterance.end_time == -1:
+                self.ten_env.log_warn(
+                    f"Skipping utterance with invalid timestamps: {utterance.text}"
+                )
+                continue
+
+            # Skip empty utterances
+            if not utterance.text.strip():
+                continue
+
+            # Identify result type and record timestamps
+            additions = utterance.additions if utterance.additions else {}
+            source = additions.get("source", "")
+            invoke_type = additions.get("invoke_type", "")
+            is_final = utterance.definite
+
+            # Record timestamps using tracker
+            match (source, invoke_type, is_final):
+                case ("stream", _, _):
+                    self.two_pass_delay_tracker.record_stream(current_timestamp)
+                case ("two_pass", "soft_vad", _):
+                    self.two_pass_delay_tracker.record_soft_vad(
+                        current_timestamp
+                    )
+                case ("two_pass", "hard_vad", True):
+                    await self._send_two_pass_delay_metrics(current_timestamp)
+                case _:
+                    pass  # Other combinations don't need timestamp recording
 
     async def _on_asr_result(self, result: ASRResponse) -> None:
         """Handle ASR result from client."""
@@ -611,10 +690,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             if not result.utterances:
                 # No utterances, send result.text as fallback (non-final)
                 # Use result.start_ms for fallback case
-                actual_start_ms = self._calculate_utterance_start_ms(result.start_ms)
+                actual_start_ms = self._calculate_utterance_start_ms(
+                    result.start_ms
+                )
                 # Start with a copy of base class metadata if available
                 metadata = (
-                    copy.deepcopy(self.metadata) if self.metadata is not None else {}
+                    copy.deepcopy(self.metadata)
+                    if self.metadata is not None
+                    else {}
                 )
                 await self._send_asr_result_from_text(
                     text=result.text,
@@ -626,60 +709,113 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
                 return
 
-            # Process each utterance individually
             has_final_result = False
-            current_timestamp = int(asyncio.get_event_loop().time() * 1000)
 
-            for utterance in result.utterances:
-                # Skip utterances with invalid timestamps
-                if utterance.start_time == -1 or utterance.end_time == -1:
-                    self.ten_env.log_warn(
-                        f"Skipping utterance with invalid timestamps: {utterance.text}"
+            await self._track_utterance_timestamps(result)
+
+            if not self.enable_utterance_grouping:
+                for utterance in result.utterances:
+                    # Skip utterances with invalid timestamps
+                    if utterance.start_time == -1 or utterance.end_time == -1:
+                        self.ten_env.log_warn(
+                            f"Skipping utterance with invalid timestamps: {utterance.text}"
+                        )
+                        continue
+
+                    # Skip empty utterances
+                    if not utterance.text.strip():
+                        continue
+
+                    is_final = utterance.definite
+                    # Calculate start_ms and duration_ms for this utterance
+                    actual_start_ms = self._calculate_utterance_start_ms(
+                        utterance.start_time
                     )
-                    continue
+                    duration_ms = utterance.end_time - utterance.start_time
 
-                # Skip empty utterances
-                if not utterance.text.strip():
-                    continue
+                    # Extract metadata (always include invoke_type and source for all results)
+                    if is_final:
+                        has_final_result = True
+                        metadata = self._extract_final_result_metadata(
+                            utterance
+                        )
+                    else:
+                        metadata = self._extract_non_final_result_metadata(
+                            utterance
+                        )
 
-                # Identify result type and record timestamps
-                additions = utterance.additions if utterance.additions else {}
-                source = additions.get("source", "")
-                invoke_type = additions.get("invoke_type", "")
-                is_final = utterance.definite
+                    await self._send_asr_result_from_text(
+                        text=utterance.text,
+                        is_final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
+                        language=result.language,
+                        metadata=metadata,
+                    )
+            else:
+                # Filter out invalid utterances first
+                valid_utterances = [
+                    u
+                    for u in result.utterances
+                    if u.start_time != -1
+                    and u.end_time != -1
+                    and u.text.strip()
+                ]
 
-                # Record timestamps using tracker
-                match (source, invoke_type, is_final):
-                    case ("stream", _, _):
-                        self.two_pass_delay_tracker.record_stream(current_timestamp)
-                    case ("two_pass", "soft_vad", _):
-                        self.two_pass_delay_tracker.record_soft_vad(current_timestamp)
-                    case ("two_pass", "hard_vad", True):
-                        await self._send_two_pass_delay_metrics(current_timestamp)
-                    case _:
-                        pass  # Other combinations don't need timestamp recording
+                # Log warnings for invalid utterances
+                for utterance in result.utterances:
+                    if utterance.start_time == -1 or utterance.end_time == -1:
+                        self.ten_env.log_warn(
+                            f"Skipping utterance with invalid timestamps: {utterance.text}"
+                        )
 
-                # Calculate start_ms and duration_ms for this utterance
-                actual_start_ms = self._calculate_utterance_start_ms(
-                    utterance.start_time
-                )
-                duration_ms = utterance.end_time - utterance.start_time
+                # Group and merge consecutive utterances with the same definite value
+                merged_utterances = []
+                for is_final, group in itertools.groupby(
+                    valid_utterances, key=lambda u: u.definite
+                ):
+                    group_list = list(group)
+                    if not group_list:
+                        continue
 
-                # Extract metadata (always include invoke_type and source for all results)
-                if is_final:
-                    has_final_result = True
-                    metadata = self._extract_final_result_metadata(utterance)
-                else:
-                    metadata = self._extract_non_final_result_metadata(utterance)
+                    first, last = group_list[0], group_list[-1]
+                    merged_utterances.append(
+                        {
+                            "text": "".join(u.text for u in group_list),
+                            "is_final": is_final,
+                            "start_time": first.start_time,
+                            "duration_ms": last.end_time - first.start_time,
+                            "metadata": (
+                                self._extract_final_result_metadata(last)
+                                if is_final
+                                else self._extract_non_final_result_metadata(
+                                    last
+                                )
+                            ),
+                            "utterance": last,  # Keep reference for timestamp tracking
+                        }
+                    )
 
-                await self._send_asr_result_from_text(
-                    text=utterance.text,
-                    is_final=is_final,
-                    start_ms=actual_start_ms,
-                    duration_ms=duration_ms,
-                    language=result.language,
-                    metadata=metadata,
-                )
+                # Process merged utterances
+                for merged in merged_utterances:
+                    is_final = merged["is_final"]
+
+                    # Calculate start_ms for merged utterance
+                    actual_start_ms = self._calculate_utterance_start_ms(
+                        merged["start_time"]
+                    )
+
+                    if is_final:
+                        has_final_result = True
+
+                    await self._send_asr_result_from_text(
+                        text=merged["text"],
+                        is_final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=merged["duration_ms"],
+                        language=result.language,
+                        metadata=merged["metadata"],
+                    )
 
             # finalize end signal if there was any final result
             if has_final_result:
