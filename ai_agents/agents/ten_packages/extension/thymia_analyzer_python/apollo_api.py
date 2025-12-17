@@ -202,9 +202,16 @@ class ApolloAPI:
                     )
 
                 elif status in ("COMPLETE_ERROR", "FAILED"):
+                    # Try multiple error field names, fallback to raw response
+                    error_msg = (
+                        data.get("error")
+                        or data.get("errorReason")
+                        or data.get("message")
+                        or f"Unknown error (raw: {data})"
+                    )
                     return ApolloResult(
                         status=status,
-                        error_message=data.get("error", "Unknown error"),
+                        error_message=error_msg,
                     )
 
                 # Still processing, continue polling

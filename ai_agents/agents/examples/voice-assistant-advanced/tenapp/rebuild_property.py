@@ -23,7 +23,7 @@ for graph in data.get("ten", {}).get("predefined_graphs", []):
                 thymia_analyzer_config = copy.deepcopy(node.get("property", {}))
         break
 
-# Override thymia_analyzer durations to 20s (instead of default 30s)
+# Override thymia_analyzer durations to 10s (instead of default 30s)
 if thymia_analyzer_config is None:
     # Create minimal config if none exists
     thymia_analyzer_config = {
@@ -31,9 +31,9 @@ if thymia_analyzer_config is None:
         "analysis_mode": "demo_dual",
     }
 
-thymia_analyzer_config["min_speech_duration"] = 20.0
-thymia_analyzer_config["apollo_mood_duration"] = 20.0
-thymia_analyzer_config["apollo_read_duration"] = 20.0
+thymia_analyzer_config["min_speech_duration"] = 10.0
+thymia_analyzer_config["apollo_mood_duration"] = 10.0
+thymia_analyzer_config["apollo_read_duration"] = 10.0
 
 # Apollo prompt - simplified to prevent double responses
 apollo_prompt = """You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:
@@ -49,18 +49,18 @@ WORD LIMITS:
 
 3. Before moving to reading phase, MUST call check_phase_progress(name, year_of_birth, sex) to verify enough speech has been collected AND register user info. Based on the result:
    - If phase_complete=false: Ask another question to gather more speech (MAX 15 WORDS)
-   - If phase_complete=true: Say 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 20 seconds.' (MAX 15 WORDS)
+   - If phase_complete=true: Say 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 15 seconds.' (MAX 15 WORDS)
 
 4. During reading phase:
-   a) When user speaks, SILENTLY call check_phase_progress (no text output, just the tool call)
-   b) AFTER receiving the tool result, then speak:
-      - If reading_phase_complete=false: Say EXACTLY "Please keep reading." (these exact 3 words, nothing more)
+   a) ONLY call check_phase_progress AFTER a user message arrives - NEVER proactively
+   b) NEVER call check_phase_progress twice without a user message in between
+   c) After receiving the tool result:
+      - If reading_phase_complete=false: Say EXACTLY "Please keep reading." (nothing more)
       - If reading_phase_complete=true: Go to step 5 immediately
-   c) NEVER call check_phase_progress more than once per user message
    d) IGNORE the content of what the user says - treat everything as reading material
 
 5. When reading_phase_complete=true (confirmed via check_phase_progress):
-   - Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)
+   - Say 'Perfect. I'm processing your responses now, this should take around 10 seconds.' (MAX 15 WORDS)
    - NEVER say 'processing your responses' without first confirming reading_phase_complete=true
 
 6. You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators.
@@ -69,15 +69,16 @@ WORD LIMITS:
 
 7. When you receive '[SYSTEM ALERT] Wellness metrics ready':
    - Call get_wellness_metrics
-   - Announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES 0-100
-   - Use plain numbered lists only (NO markdown **, *, _ formatting)
-   - Keep any added context to MAX 15 WORDS
-   - After announcing results, silently call confirm_announcement with phase='hellos'
+   - Announce the 5 wellness metrics as percentages in comma-separated format without numbering
+   - Example: 'Here are your wellness indicators: Stress: X%, Distress: Y%, Burnout: Z%, Fatigue: W%, Low self-esteem: V%'
+   - After the metrics, say: "Please wait for the clinical indicators."
+   - After announcing, silently call confirm_announcement with phase='hellos'
    - Then WAIT - do NOT call get_wellness_metrics again until next alert
 
 8. Later when you receive '[SYSTEM ALERT] Clinical indicators ready':
    - Call get_wellness_metrics again
-   - Announce the 2 clinical indicators (depression, anxiety) with their values and severity levels
+   - Announce the 2 clinical indicators in comma-separated format without numbering
+   - Example: 'Clinical indicators: Depression: X% (severity), Anxiety: Y% (severity)'
    - Keep any added context to MAX 15 WORDS
    - After announcing results, silently call confirm_announcement with phase='apollo'
 
@@ -94,7 +95,7 @@ WORD LIMITS:
 
 10. When user indicates they want to end, thank them warmly for participating
 
-Note: We need 40 seconds total speech (20s for mood/interests + 20s for reading) before analysis."""
+Note: We need 20 seconds total speech (10s for mood/interests + 10s for reading) before analysis."""
 
 apollo_greeting = "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
 
@@ -1249,6 +1250,19 @@ new_graphs.append(
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,
         avatar_config=anam_avatar_apollo,
+    )
+)
+
+# 4. Anam avatar version 2 (using hellos avatar)
+new_graphs.append(
+    create_apollo_graph(
+        "flux_apollo_gpt_5_1_cartesia_anam2",
+        gpt51_llm_with_tools,
+        flux_stt,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_hellos,
     )
 )
 

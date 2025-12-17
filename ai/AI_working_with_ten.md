@@ -502,9 +502,13 @@ Restart container after .env changes.
 Clear lock: `rm -f /app/playground/.next/dev/lock`, then nuclear restart.
 
 #### Zombie workers persist after restart
-Workers run on host, not in container:
+Workers run inside the container, not on host:
 ```bash
-ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
+# Find zombie workers
+sudo docker exec ten_agent_dev ps aux | grep 'bin/main' | grep -v grep
+
+# Kill by PID (replace <PID> with actual PID from above)
+sudo docker exec ten_agent_dev kill -9 <PID>
 ```
 
 ### Pre-commit Checks
