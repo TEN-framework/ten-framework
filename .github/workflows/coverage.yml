@@ -310,34 +310,40 @@ jobs:
         run: |
           mkdir -p binaries_and_libs
 
-          # List of files needed for llvm-cov
-          CORE_BINARIES_AND_LIBS=(
-            "out/linux/x64/tests/standalone/ten_utils_unit_test"
-            "out/linux/x64/tests/standalone/ten_rust/integration_test"
-            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
-            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
-            "out/linux/x64/libten_runtime.so"
-            "out/linux/x64/libten_runtime_go.so"
-            "out/linux/x64/libten_runtime_python.so"
-            "out/linux/x64/libten_runtime_nodejs.node"
-            "out/linux/x64/libten_utils.so"
-            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
+          # Define files to copy: "source_path:destination_name" (destination defaults to basename if not specified)
+          declare -A FILES_TO_COPY=(
+            ["out/linux/x64/tests/standalone/ten_utils_unit_test"]=""
+            ["out/linux/x64/tests/standalone/ten_rust/unit_test"]="ten_rust_unit_test"
+            ["out/linux/x64/tests/standalone/ten_rust/integration_test"]="ten_rust_integration_test"
+            ["out/linux/x64/tests/standalone/ten_manager/unit_test"]="ten_manager_unit_test"
+            ["out/linux/x64/tests/standalone/ten_manager/integration_test"]="ten_manager_integration_test"
+            ["out/linux/x64/ten_manager/bin/tman"]=""
+            ["out/linux/x64/tests/standalone/ten_runtime_smoke_test"]=""
+            ["out/linux/x64/tests/standalone/ten_runtime_unit_test"]=""
+            ["out/linux/x64/libten_runtime.so"]=""
+            ["out/linux/x64/libten_runtime_go.so"]=""
+            ["out/linux/x64/libten_runtime_python.so"]=""
+            ["out/linux/x64/libten_runtime_nodejs.node"]=""
+            ["out/linux/x64/libten_utils.so"]=""
+            ["out/linux/x64/gen/core/src/ten_rust/libten_rust.a"]=""
           )
 
-          for file in "${CORE_BINARIES_AND_LIBS[@]}"; do
-            if [ -e "$file" ]; then
-              # Copy file directly to binaries_and_libs (no subdirectories)
-              cp "$file" binaries_and_libs/
-              echo "✓ Copied: $file -> $(basename $file)"
+          # Copy files with optional renaming
+          for src in "${!FILES_TO_COPY[@]}"; do
+            dst="${FILES_TO_COPY[$src]}"
+            [ -z "$dst" ] && dst="$(basename "$src")"
+
+            if [ -e "$src" ]; then
+              cp "$src" "binaries_and_libs/$dst"
+              [ "$dst" != "$(basename "$src")" ] && echo "✓ $src -> $dst" || echo "✓ $dst"
             else
-              echo "✗ Missing: $file"
+              echo "✗ Missing: $src"
             fi
           done
 
-          echo "Files packaged for coverage analysis:"
+          echo -e "\nPackaged files:"
           ls -lh binaries_and_libs/
 
-          # Create tar archive
           tar -czf coverage-binaries-and-libs.tar.gz binaries_and_libs
 
       - name: Upload binaries and libraries for coverage analysis
@@ -460,6 +466,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_utils_unit_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
           out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
@@ -494,6 +504,10 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_unit_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
           out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
@@ -529,6 +543,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_rust-%p-%m.profraw"
         run: |
           cd out/linux/x64/tests/standalone/ten_rust
 
@@ -562,12 +580,60 @@ jobs:
 
           df -h .
 
+      - name: Run Tests (ten_manager standalone tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_manager-%p-%m.profraw"
+        run: |
+          cd out/linux/x64/tests/standalone/ten_manager
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Merge profraw for ten_manager standalone tests
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_manager.profdata
+            echo "Created profdata: ten_manager.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_manager
+
+          df -h .
+
       - name: Run Tests (ten_runtime_smoke_test)
         env:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_smoke_test-%p-%m.profraw"
         run: |
           chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
           out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
@@ -598,6 +664,7 @@ jobs:
             out/linux/x64/coverage/ten_runtime_unit_test.profdata
             out/linux/x64/coverage/ten_rust.profdata
             out/linux/x64/coverage/ten_runtime_smoke_test.profdata
+            out/linux/x64/coverage/ten_manager.profdata
 
       - name: Clean up
         continue-on-error: true
@@ -605,11 +672,171 @@ jobs:
           # Clean up test directories
           rm -rf out/linux/x64/tests/standalone/ten_runtime_smoke_test
 
-          # No need to test because we disabled coverage for tman to reduce memory cost
-          rm -rf out/linux/x64/tests/ten_manager
-
           # Clean up any remaining profraw files (should be none)
           find . -name "*.profraw" -type f -delete
+
+          df -h .
+
+  test-integration-ten-manager:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
+
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run Tests (ten_manager pytest tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-ten-manager-%p-%m.profraw"
+        run: |
+          cd out/linux/x64/
+          pytest -s tests/ten_manager/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-ten-manager
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-ten-manager.profdata
+
+          echo "Merged profdata file created: test-integration-ten-manager.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-ten-manager.profdata | head -20
+
+      - name: Upload test-integration-ten-manager profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-ten-manager-coverage
+          path: out/linux/x64/coverage/test-integration-ten-manager.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          # Clean up profraw files for this test
+          find . -name "*.profraw" -type f -delete
+
+          rm -rf out/linux/x64/tests/ten_manager
 
           df -h .
 
@@ -730,6 +957,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-cpp-%p-%m.profraw"
         run: |
           df -h .
 
@@ -890,6 +1121,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-go-%p-%m.profraw"
         run: |
           df -h .
 
@@ -1050,6 +1285,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-python-%p-%m.profraw"
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
 
@@ -1230,6 +1469,10 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-nodejs-%p-%m.profraw"
         run: |
           df -h .
 
@@ -1277,6 +1520,7 @@ jobs:
     needs:
       [
         test-standalone,
+        test-integration-ten-manager,
         test-integration-cpp,
         test-integration-go,
         test-integration-python,
@@ -1379,7 +1623,11 @@ jobs:
         run: |
           CORE_BINARIES_AND_LIBS=(
             "out/linux/x64/coverage/binaries_and_libs/ten_utils_unit_test"
-            "out/linux/x64/coverage/binaries_and_libs/integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_rust_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_rust_integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_manager_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_manager_integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/tman"
             "out/linux/x64/coverage/binaries_and_libs/ten_runtime_smoke_test"
             "out/linux/x64/coverage/binaries_and_libs/ten_runtime_unit_test"
             "out/linux/x64/coverage/binaries_and_libs/libten_runtime.so"

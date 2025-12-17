@@ -1,0 +1,11 @@
+{
+  "dump": false,
+  "dump_path": "./",
+  "params": {
+    "api_key": "${env:GEMINI_API_KEY|}",
+    "model": "gemini-2.5-flash-preview-tts",
+    "voice": "Kore",
+    "language_code": "en-US",
+    "style_prompt": ""
+  }
+}
