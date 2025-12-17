@@ -19,6 +19,7 @@ use ten_rust::pkg_info::{
     manifest::parse_manifest_in_folder,
     PkgInfo,
 };
+use tracing::instrument;
 
 use super::{constants::TEN_PACKAGE_FILE_EXTENSION, home::config::TmanConfig};
 use crate::{
@@ -37,6 +38,7 @@ pub fn get_tpkg_file_name(pkg_info: &PkgInfo) -> Result<String> {
     Ok(output_pkg_file_name)
 }
 
+#[instrument(skip_all, name = "create_package", fields(output = %output_pkg_file_path.display(), folder = %folder_to_tar_gz.display()))]
 pub async fn create_package_tar_gz_file(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     output_pkg_file_path: &Path,

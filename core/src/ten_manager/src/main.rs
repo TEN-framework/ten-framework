@@ -11,8 +11,13 @@ use console::Emoji;
 // use ten_manager::memory_stats::print_memory_stats;
 use ten_manager::output::cli::TmanOutputCli;
 use ten_manager::{
-    cmd::execute_cmd, cmd_line, constants::GITHUB_RELEASE_PAGE,
-    designer::storage::in_memory::TmanStorageInMemory, output::TmanOutput, version::VERSION,
+    cmd::execute_cmd,
+    cmd_line,
+    constants::GITHUB_RELEASE_PAGE,
+    designer::storage::in_memory::TmanStorageInMemory,
+    output::TmanOutput,
+    tracing_config::{init_tracing, TracingMode},
+    version::VERSION,
     version_utils::check_update,
 };
 use tokio::runtime::Runtime;
@@ -70,6 +75,18 @@ fn main() {
         }
     }
 
+    // Initialize tracing system based on --tracing parameter
+    let tracing_mode_str =
+        parsed_cmd.tman_config.try_read().ok().and_then(|config| config.tracing_mode.clone());
+    let tracing_mode = TracingMode::from_config(tracing_mode_str.as_deref());
+    let _tracing_guard = match init_tracing(tracing_mode, out.clone()) {
+        Ok(guard) => guard,
+        Err(e) => {
+            out.error_line(&format!("{}  Failed to initialize tracing: {}", Emoji("🔴", ":-("), e));
+            None
+        }
+    };
+
     let rt = match Runtime::new() {
         Ok(rt) => rt,
         Err(e) => {
@@ -86,6 +103,10 @@ fn main() {
     ));
 
     // print_memory_stats("at program end");
+
+    // Explicitly drop tracing_guard before process::exit to ensure proper cleanup
+    // process::exit() terminates immediately without running destructors
+    drop(_tracing_guard);
 
     if let Err(e) = result {
         out.error_line(&format!("{}  Error: {:?}", Emoji("🔴", ":-("), e));

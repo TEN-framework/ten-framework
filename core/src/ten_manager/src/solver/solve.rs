@@ -20,6 +20,7 @@ use ten_rust::pkg_info::{
     constants::MANIFEST_JSON_FILENAME, manifest::dependency::ManifestDependency,
     pkg_basic_info::PkgBasicInfo, pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
+use tracing::instrument;
 
 use crate::{
     home::config::{is_verbose, TmanConfig},
@@ -206,6 +207,7 @@ type SolveOutcome = (UsableModel, NonUsableModels);
 type SolveResult = Result<SolveOutcome>;
 
 #[allow(unused_assignments)]
+#[instrument(skip_all, name = "clingo_solve", fields(input_size = %input.len()))]
 async fn solve(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     input: &str,
@@ -851,6 +853,7 @@ async fn create_input_str(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "solve_all_dependencies", fields(pkg_name = %pkg_name, max_versions = %current_max_latest_versions, total_candidates = %all_candidates.len()))]
 pub async fn solve_all(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,

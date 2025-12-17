@@ -16,7 +16,9 @@ use std::{
 use anyhow::{anyhow, Result};
 use fs_extra::dir::CopyOptions;
 use ten_rust::pkg_info::{constants::MANIFEST_JSON_FILENAME, pkg_type::PkgType};
+use tracing::instrument;
 
+#[instrument(skip_all, name = "copy_folder", fields(src = src_dir_path, dest = dest_dir_path))]
 pub fn copy_folder_recursively(src_dir_path: &String, dest_dir_path: &String) -> Result<()> {
     let mut options = CopyOptions::new();
 

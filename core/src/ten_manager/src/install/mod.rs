@@ -30,6 +30,7 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName,
     PkgInfo,
 };
+use tracing::instrument;
 
 use super::{home::config::TmanConfig, registry::get_package};
 use crate::{
@@ -43,6 +44,7 @@ use crate::{
     solver::solver_result::filter_solver_results_by_type_and_name,
 };
 
+#[instrument(skip_all, name = "install_local_pkg", fields(pkg_type = %get_pkg_type(pkg_info), pkg_name = %get_pkg_name(pkg_info), dest = %dest_dir_path))]
 fn install_local_dependency_pkg_info(
     command_data: &InstallCommand,
     pkg_info: &PkgInfo,
@@ -104,6 +106,7 @@ fn install_local_dependency_pkg_info(
     Ok(())
 }
 
+#[instrument(skip_all, name = "install_non_local_pkg", fields(pkg_type = %get_pkg_type(pkg_info), pkg_name = %get_pkg_name(pkg_info), version = %get_pkg_version(pkg_info), dest = %dest_dir_path))]
 async fn install_non_local_dependency_pkg_info(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_info: &PkgInfo,
@@ -144,6 +147,7 @@ async fn install_non_local_dependency_pkg_info(
     Ok(())
 }
 
+#[instrument(skip_all, name = "install_pkg_info", fields(pkg_type = %get_pkg_type(pkg_info), pkg_name = %get_pkg_name(pkg_info), version = %get_pkg_version(pkg_info), is_local = pkg_info.is_local_dependency))]
 pub async fn install_pkg_info(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     command_data: &InstallCommand,
@@ -272,6 +276,7 @@ async fn update_package_manifest(
     Ok(())
 }
 
+#[instrument(skip_all, name = "write_manifest_lock", fields(pkg_count = pkgs.len()))]
 pub async fn write_pkgs_into_manifest_lock_file(
     pkgs: &Vec<&PkgInfo>,
     app_dir: &Path,

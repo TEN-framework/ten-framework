@@ -15,6 +15,7 @@ use serde_json::{json, Value};
 use tempfile::NamedTempFile;
 use ten_rust::pkg_info::{pkg_basic_info::PkgBasicInfo, pkg_type::PkgType, PkgInfo};
 use tokio::{sync::RwLock, time::sleep};
+use tracing::instrument;
 
 use super::pkg_cache::{find_in_package_cache, store_file_to_package_cache};
 use crate::{
@@ -380,6 +381,7 @@ async fn ack_of_uploading(
     .await
 }
 
+#[instrument(skip_all, name = "upload_package_remote", fields(base_url = base_url, file = package_file_path, pkg_type = %pkg_info.manifest.type_and_name.pkg_type, pkg_name = %pkg_info.manifest.type_and_name.name, version = %pkg_info.manifest.version))]
 pub async fn upload_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     base_url: &str,

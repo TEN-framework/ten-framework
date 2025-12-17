@@ -32,6 +32,7 @@ use ten_rust::pkg_info::{
     supports::{Arch, Os},
     PkgInfo,
 };
+use tracing::instrument;
 
 use crate::{
     constants::{
@@ -340,6 +341,7 @@ fn validate_locked_dependencies(
 
 /// Execute installation in locked mode: validate and install according to
 /// manifest-lock.json without dependency resolution.
+#[instrument(skip_all, name = "execute_locked_install")]
 async fn execute_locked_install(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     command_data: &InstallCommand,
@@ -507,6 +509,7 @@ async fn execute_locked_install(
     Ok(())
 }
 
+#[instrument(skip_all, name = "add_pkg_to_candidates", fields(pkg_name = %pkg.manifest.type_and_name.name))]
 fn add_pkg_to_initial_pkg_to_find_candidates_and_all_candidates(
     pkg: &PkgInfo,
     initial_pkgs_to_find_candidates: &mut Vec<PkgInfo>,
@@ -600,6 +603,7 @@ async fn prepare_standalone_app_dir(
 }
 
 /// Path logic for standalone mode and non-standalone mode.
+#[instrument(skip_all, name = "determine_app_dir", fields(standalone = %standalone))]
 async fn determine_app_dir_to_work_with(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     standalone: bool,
@@ -628,6 +632,7 @@ async fn determine_app_dir_to_work_with(
 /// Filter packages for production mode by recursively traversing only
 /// production dependencies. In production mode, dev_dependencies should be
 /// excluded from installation.
+#[instrument(skip_all, name = "filter_production_mode", fields(is_production = %is_production, total_packages = %remaining_solver_results.len()))]
 async fn filter_packages_for_production_mode<'a>(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     is_production: bool,
@@ -722,6 +727,7 @@ async fn filter_packages_for_production_mode<'a>(
         .collect::<Vec<&PkgInfo>>()
 }
 
+#[instrument(skip_all, name = "install_command")]
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,

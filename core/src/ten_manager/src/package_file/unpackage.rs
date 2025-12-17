@@ -17,6 +17,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use flate2::read::GzDecoder;
 use tar::Archive as TarArchive;
+use tracing::instrument;
 use zip::ZipArchive;
 
 use crate::{
@@ -61,6 +62,7 @@ fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
     Ok(())
 }
 
+#[instrument(skip_all, name = "extract_zip_normal", fields(file = zip_path, dest = output_dir))]
 fn extract_and_process_zip_normal_part(zip_path: &str, output_dir: &str) -> Result<InstalledPaths> {
     // Open the ZIP file.
     let file = File::open(zip_path)?;
@@ -114,6 +116,7 @@ fn extract_and_process_zip_normal_part(zip_path: &str, output_dir: &str) -> Resu
     Ok(installed_paths)
 }
 
+#[instrument(skip_all, name = "extract_zip", fields(file = zip_path, dest = output_dir))]
 fn extract_and_process_zip(
     zip_path: &str,
     output_dir: &str,
@@ -144,6 +147,7 @@ fn extract_and_process_zip(
     Ok(installed_paths)
 }
 
+#[instrument(skip_all, name = "extract_tar_gz_normal", fields(file = tar_gz_path, dest = output_dir))]
 fn extract_and_process_tar_gz_normal_part(
     tar_gz_path: &str,
     output_dir: &str,
@@ -233,6 +237,7 @@ fn extract_and_process_tar_gz_normal_part(
     Ok(installed_paths)
 }
 
+#[instrument(skip_all, name = "extract_tar_gz", fields(file = tar_gz_path, dest = output_dir))]
 fn extract_and_process_tar_gz(
     tar_gz_path: &str,
     output_dir: &str,
@@ -263,6 +268,7 @@ fn extract_and_process_tar_gz(
     Ok(installed_paths)
 }
 
+#[instrument(skip_all, name = "extract_tpkg", fields(file = %tpkg_path.display(), dest = output_dir))]
 pub fn extract_and_process_tpkg_file(
     tpkg_path: &Path,
     output_dir: &str,

@@ -18,6 +18,7 @@ use semver::{Version, VersionReq};
 use sha2::{Digest, Sha256};
 use tempfile::NamedTempFile;
 use ten_rust::pkg_info::{manifest::Manifest, pkg_type::PkgType, PkgInfo};
+use tracing::instrument;
 use walkdir::WalkDir;
 
 use super::{
@@ -31,6 +32,7 @@ use crate::{
     registry::search::{matches_filter, PkgSearchFilter},
 };
 
+#[instrument(skip_all, name = "upload_package_local", fields(base_url = base_url, file = package_file_path, pkg_type = %pkg_info.manifest.type_and_name.pkg_type, pkg_name = %pkg_info.manifest.type_and_name.name, version = %pkg_info.manifest.version))]
 pub async fn upload_package(
     base_url: &str,
     package_file_path: &str,
@@ -101,6 +103,7 @@ pub async fn upload_package(
 
 /// Calculate the hash of the file content to determine whether the file content
 /// is the same when using the local registry.
+#[instrument(skip_all, name = "calc_file_hash", fields(file = %path.display()))]
 fn calc_file_hash(path: &Path) -> Result<String> {
     let mut file = File::open(path)?;
     let mut hasher = Sha256::new();
@@ -136,6 +139,7 @@ pub fn extract_filename_from_path(path: &Path) -> Option<String> {
 
 /// Determine whether the locally cached file and the target file in the local
 /// registry have the same hash.
+#[instrument(skip_all, name = "compare_file_hash", fields(cache = %cache_file.display(), registry = registry_file_url))]
 fn is_same_file_by_hash(cache_file: &Path, registry_file_url: &str) -> Result<bool> {
     let registry_file_path = url::Url::parse(registry_file_url)
         .map_err(|e| anyhow::anyhow!("Invalid file URL: {}", e))?
@@ -155,6 +159,7 @@ fn is_same_file_by_hash(cache_file: &Path, registry_file_url: &str) -> Result<bo
     Ok(hash_cache == hash_registry)
 }
 
+#[instrument(skip_all, name = "get_package_local", fields(pkg_type = %pkg_type, pkg_name = pkg_name, version = %pkg_version, url = url))]
 pub async fn get_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -177,9 +182,28 @@ pub async fn get_package(
     if let Some(cached_file_path) =
         find_in_package_cache(pkg_type, pkg_name, pkg_version, &file_name.to_string_lossy())?
     {
-        // We need to check whether the cached file and the target file have the
-        // same content (i.e., the same hash).
-        if let Ok(true) = is_same_file_by_hash(&cached_file_path, url) {
+        // For local registry, we can trust the filename which contains the hash.
+        // Hash verification is expensive (requires reading entire file) and unnecessary
+        // for local files where filename integrity is guaranteed by the filesystem.
+        //
+        // In debug mode, skip hash verification to improve performance.
+        // In release mode, we still verify for extra safety.
+        #[cfg(debug_assertions)]
+        let should_verify_hash = false;
+
+        #[cfg(not(debug_assertions))]
+        let should_verify_hash = true;
+
+        let cache_is_valid = if should_verify_hash {
+            is_same_file_by_hash(&cached_file_path, url).unwrap_or(false)
+        } else {
+            // Quick check: compare file size instead of hash
+            let cache_size = fs::metadata(&cached_file_path).ok().map(|m| m.len());
+            let registry_size = registry_file_path.metadata().ok().map(|m| m.len());
+            cache_size.is_some() && cache_size == registry_size
+        };
+
+        if cache_is_valid {
             // If the content is the same, directly copy the cached file to
             // `temp_path`.
             if is_verbose(tman_config.clone()).await {

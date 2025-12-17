@@ -93,6 +93,22 @@ clingo-sys = { version = "0.7.2", features = ["static-linking"] }
 clingo = { version = "0.8", features = ["static-linking"] }
 json-patch = "4.0.0"
 
+# Tracing dependencies for debugging and performance analysis
+# Note: tracing, tracing-subscriber, and tracing-appender versions must match ten_rust
+# to ensure compatibility. We declare them here because #[instrument] macro needs
+# direct access to the tracing crate.
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+  "env-filter",
+  "json",
+  "time",
+] }
+tracing-appender = "0.2"
+tracing-chrome = "0.7"
+tracing-flame = "0.2"
+inferno = "0.12.4"
+chrono = "0.4"
+
 [target."cfg(unix)".dependencies]
 mimalloc = { version = "0.1", optional = true }
 jemallocator = { version = "0.5", optional = true, features = ["stats"] }
@@ -111,3 +127,27 @@ lto = true
 opt-level = 3
 codegen-units = 1
 panic = "abort"
+
+# Optimize compression-related crates even in debug mode to improve performance
+# This significantly speeds up package creation and publishing in debug builds
+# without affecting the debuggability of the main codebase
+[profile.dev.package.flate2]
+opt-level = 3
+
+[profile.dev.package.zip]
+opt-level = 3
+
+[profile.dev.package.miniz_oxide]
+opt-level = 3
+
+[profile.dev.package.libz-rs-sys]
+opt-level = 3
+
+[profile.dev.package.zlib-rs]
+opt-level = 3
+
+[profile.dev.package.crc32fast]
+opt-level = 3
+
+[profile.dev.package.adler2]
+opt-level = 3

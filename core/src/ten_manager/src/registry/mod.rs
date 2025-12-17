@@ -18,10 +18,12 @@ use found_result::PkgRegistryInfo;
 use semver::{Version, VersionReq};
 use tempfile::NamedTempFile;
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
+use tracing::instrument;
 
 use super::{constants::DEFAULT, home::config::TmanConfig};
 use crate::{output::TmanOutput, registry::search::PkgSearchFilter};
 
+#[instrument(skip_all, name = "upload_package", fields(pkg_type = %pkg_info.manifest.type_and_name.pkg_type, pkg_name = %pkg_info.manifest.type_and_name.name, version = %pkg_info.manifest.version, file = package_file_path))]
 pub async fn upload_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     package_file_path: &str,
@@ -60,6 +62,7 @@ pub async fn upload_package(
     }
 }
 
+#[instrument(skip_all, name = "get_package", fields(pkg_type = %pkg_type, pkg_name = pkg_name, version = %pkg_version, url = url))]
 pub async fn get_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,

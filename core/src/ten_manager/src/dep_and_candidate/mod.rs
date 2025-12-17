@@ -25,6 +25,7 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName,
     PkgInfo,
 };
+use tracing::instrument;
 
 use super::{home::config::TmanConfig, registry::get_package_list};
 use crate::{
@@ -395,6 +396,7 @@ fn clean_up_all_candidates(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "get_all_candidates_from_deps", fields(initial_pkgs = %pkgs_to_be_searched.len(), has_extra_dep = %extra_dep.is_some()))]
 pub async fn get_all_candidates_from_deps(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     support: &ManifestSupport,
