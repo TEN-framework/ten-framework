@@ -4,6 +4,7 @@ ARG USE_AGENT=agents/examples/voice-assistant-with-PowerMem
 
 WORKDIR /app
 
+COPY .env.example .env
 COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
@@ -31,6 +32,8 @@ WORKDIR /app/playground
 RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false bun run build
 WORKDIR /app
 
+FROM oceanbase/seekdb:latest AS seekdb
+
 FROM ubuntu:22.04
 
 ARG USE_AGENT=agents/examples/voice-assistant-with-PowerMem
@@ -41,6 +44,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     libunwind-dev \
     libc++1 \
     libssl-dev \
+    libaio1 \
     python3 \
     python3-venv \
     python3-pip \
@@ -49,6 +53,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     ca-certificates \
     curl \
     unzip \
+    mysql-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
 # Copy requirements.txt and install Python dependencies
@@ -74,6 +79,7 @@ COPY --from=builder /app/server/bin/api /app/server/bin/api
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
 COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
+COPY --from=seekdb /usr/bin/observer /usr/bin/observer
 
 # Copy built frontend from builder stage
 COPY --from=builder /app/playground/ /app/playground/
