@@ -37,6 +37,7 @@ EMBEDDING_DIMS=1536
       -p 2886:2886 \
       -v ./data:/var/lib/oceanbase \
       -e SEEKDB_DATABASE=powermem \
+      -e ROOT_PASSWORD=password \
       oceanbase/seekdb:latest
    ```
 
