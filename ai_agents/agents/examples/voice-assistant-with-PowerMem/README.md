@@ -29,17 +29,28 @@ EMBEDDING_DIMS=1536
 
 ## Quick Start
 
-1. **Install dependencies:**
+1. **Start seekdb server**
+   ```bash
+   docker run -d \
+      --name seekdb \
+      -p 2881:2881 \
+      -p 2886:2886 \
+      -v ./data:/var/lib/oceanbase \
+      -e SEEKDB_DATABASE=powermem \
+      oceanbase/seekdb:latest
+   ```
+
+2. **Install dependencies:**
    ```bash
    task install
    ```
 
-2. **Run the voice assistant with MemU:**
+3. **Run the voice assistant with MemU:**
    ```bash
    task run
    ```
 
-3. **Access the application:**
+4. **Access the application:**
    - Frontend: http://localhost:3000
    - API Server: http://localhost:8080
    - TMAN Designer: http://localhost:49483
