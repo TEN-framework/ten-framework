@@ -625,8 +625,8 @@ def create_apollo_graph(
         },
     ]
 
-    # Add TTS connection - route tts_audio messages directly to thymia_analyzer
-    # Avatar doesn't need to see these messages, only thymia needs them for timing tracking
+    # Add TTS connection - route tts_audio messages to thymia_analyzer and avatar
+    # Avatar needs tts_audio_end to send voice_end signal to avatar service
     if has_avatar:
         tts_conn = {
             "extension": "tts",
@@ -634,15 +634,11 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}],
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}, {"extension": "avatar"}],
                 },
             ],
             "audio_frame": [

@@ -861,6 +861,9 @@
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
+                    },
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
@@ -1199,6 +1202,9 @@
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
+                    },
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
