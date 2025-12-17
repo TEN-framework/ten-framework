@@ -150,21 +150,8 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
-            libclang-rt-21-dev
 
-          # Clean up apt caches to save space
-          sudo apt-get clean
-          sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang versions to prevent LLVM version conflicts in C++ compilation
+          # Remove preinstalled clang versions BEFORE installing clang-21
           #
           # Root cause:
           # - GitHub Actions ubuntu-22.04 runner preinstalls Clang 13.0.1, 14.0.0, and 15.0.7
@@ -183,12 +170,25 @@ jobs:
           # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
           # the compiler's default header search paths still include older clang directories.
           #
-          # Solution: Remove ALL preinstalled clang versions (13, 14, 15).
+          # Remove preinstalled clang versions to prevent LLVM version conflicts in C++ compilation
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21 with all required packages
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt caches to save space
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks: GN build system hardcodes "clang"/"clang++" (without version suffix)
           # We override these to point to clang-21 to ensure profraw format version 10
@@ -475,6 +475,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -488,13 +497,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
@@ -872,6 +874,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -885,13 +896,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
@@ -1111,6 +1115,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -1124,13 +1137,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
@@ -1351,6 +1357,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -1364,13 +1379,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
@@ -1591,6 +1599,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -1604,13 +1621,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
@@ -1851,6 +1861,15 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get remove -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autoremove -y || true
+
+          # Now install LLVM 21
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -1864,13 +1883,6 @@ jobs:
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
-
-          # Remove preinstalled clang-13/14/15 to prevent header conflicts.
-          sudo apt-get remove -y clang-13 clang-14 clang-15 \
-            llvm-13-dev llvm-13-runtime llvm-13 \
-            llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
-          sudo apt-get autoremove -y || true
 
           # Create symlinks to make clang-21 and coverage tools available without version suffix
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
