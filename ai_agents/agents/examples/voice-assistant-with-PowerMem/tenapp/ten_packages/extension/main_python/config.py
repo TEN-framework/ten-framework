@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Dict, Any
+
+from pydantic import BaseModel, Field
 
 
 class MainControlConfig(BaseModel):
@@ -12,3 +14,5 @@ class MainControlConfig(BaseModel):
     memory_save_interval_turns: int = 5  # Save memory every N turns of conversation
     # Save memory after N seconds of inactivity
     memory_idle_timeout_seconds: float = 30.0
+    # PowerMem Configuration
+    powermem_config: Dict[str, Any] = Field(default_factory=dict)

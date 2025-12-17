@@ -2,6 +2,13 @@ import asyncio
 from datetime import datetime
 import json
 import time
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 from typing import Literal
 
 from .agent.decorators import agent_event_handler
@@ -76,13 +83,17 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
+        self.ten_env.log_info(f"[MainControlExtension] config={self.config}")
+
         # Initialize memory store
-        if self.config and self.config.enable_memorization:
+        if self.config and self.config.enable_memorization and self.config.powermem_config:
             try:
                 if not self.config.enable_user_memory:
-                    self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
+                    self.memory_store = PowerMemSdkMemoryStore(
+                        config=self.config.powermem_config, env=ten_env)
                 else:
-                    self.memory_store = PowerMemSdkUserMemoryStore(env=ten_env)
+                    self.memory_store = PowerMemSdkUserMemoryStore(
+                        config=self.config.powermem_config, env=ten_env)
                 ten_env.log_info(
                     "[MainControlExtension] PowerMem memory store initialized successfully"
                 )

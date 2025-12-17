@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Dict
 
 from ten_runtime import AsyncTenEnv
 
@@ -30,11 +30,11 @@ class MemoryStore(ABC):
 
 
 class PowerMemSdkMemoryStore(MemoryStore):
-    def __init__(self, env: AsyncTenEnv):
+    def __init__(self, config: Dict[str, Any], env: AsyncTenEnv):
         super().__init__(env)
-        from powermem import Memory, auto_config
+        from powermem import Memory
 
-        self.client: Memory = Memory(config=auto_config())
+        self.client: Memory = Memory(config=config)
 
     async def add(
         self,
@@ -145,11 +145,11 @@ class PowerMemSdkMemoryStore(MemoryStore):
 
 
 class PowerMemSdkUserMemoryStore(MemoryStore):
-    def __init__(self, env: AsyncTenEnv):
+    def __init__(self, config: Dict[str, Any], env: AsyncTenEnv):
         super().__init__(env)
-        from powermem import UserMemory, auto_config
+        from powermem import UserMemory
 
-        self.client: UserMemory = UserMemory(config=auto_config())
+        self.client: UserMemory = UserMemory(config=config)
 
     async def add(
         self,
