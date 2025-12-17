@@ -169,8 +169,6 @@ jobs:
           #
           # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
           # the compiler's default header search paths still include older clang directories.
-          #
-          # Remove preinstalled clang versions to prevent LLVM version conflicts in C++ compilation
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
@@ -192,8 +190,8 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks: GN build system hardcodes "clang"/"clang++" (without version suffix)
-          # We override these to point to clang-21 to ensure profraw format version 10
+          # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
+          # We must override these to point to clang-21 to ensure profraw format version 10
           sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
@@ -208,11 +206,11 @@ jobs:
           # Verify installation - should all show LLVM 21
           echo "=== Verifying LLVM 21 tools are correctly linked ==="
           which clang
-          clang --version | head -3
+          clang --version | head -1
           which clang++
-          clang++ --version | head -3
-          llvm-cov --version | head -3
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          clang++ --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
           echo "=== Disk space after LLVM installation ==="
           df -h
@@ -231,9 +229,9 @@ jobs:
           # Verify we're using the correct clang version
           echo "=== Compiler verification before build ==="
           which clang
-          clang --version | head -3
+          clang --version | head -1
           which clang++
-          clang++ --version | head -3
+          clang++ --version | head -1
 
           # Install Go 1.24.3
           go env -w GOFLAGS="-buildvcs=false"
@@ -252,9 +250,9 @@ jobs:
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
-          llvm-cov --version | head -3
+          llvm-cov --version | head -1
           echo "llvm-profdata path: $(which llvm-profdata)"
-          llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
+          llvm-profdata merge --version 2>&1 | head -1 || echo "(llvm-profdata --version not supported)"
 
           echo "=== Disk space before build ==="
           df -h
@@ -519,9 +517,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -590,6 +590,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "ten_utils_unit_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
           out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
 
@@ -628,6 +632,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "ten_runtime_unit_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
           out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
 
@@ -667,6 +675,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "ten_rust-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/tests/standalone/ten_rust
 
           chmod +x unit_test
@@ -711,6 +723,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "ten_manager-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/tests/standalone/ten_manager
 
           chmod +x unit_test
@@ -754,6 +770,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "ten_runtime_smoke_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
           out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
 
@@ -929,9 +949,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -1006,6 +1028,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "test-integration-ten-manager-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/
           pytest -s tests/ten_manager/
 
@@ -1181,9 +1207,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -1259,6 +1287,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "test-integration-cpp-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -1434,9 +1466,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -1512,6 +1546,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "test-integration-go-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -1687,9 +1725,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -1765,6 +1805,10 @@ jobs:
           # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
           LLVM_PROFILE_FILE: "test-integration-python-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           curl -fsSL https://ollama.com/install.sh | sh
 
           # Start Ollama service.
@@ -1960,9 +2004,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Install Go for building Go apps
         run: |
@@ -2184,9 +2230,11 @@ jobs:
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          clang --version | head -3
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           lcov --version
 
       - name: Download binaries and libraries for coverage analysis
