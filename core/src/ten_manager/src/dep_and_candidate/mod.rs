@@ -574,9 +574,9 @@ pub async fn get_all_candidates_from_deps(
     // handle those dependencies, too.
     let mut extra_dep_opt = extra_dep.cloned();
 
-    let mut loop_iteration = 0;
+    let mut _loop_iteration = 0;
     loop {
-        loop_iteration += 1;
+        _loop_iteration += 1;
 
         // Merge the dependencies of all pending packages into a single
         // `Vector`.
