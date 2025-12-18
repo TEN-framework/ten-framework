@@ -143,28 +143,28 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang versions BEFORE installing clang-21
+          # Remove preinstalled clang versions BEFORE installing clang-18
           #
           # Root cause:
           # - GitHub Actions ubuntu-22.04 runner preinstalls Clang 13.0.1, 14.0.0, and 15.0.7
           # - Ref: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md
           #
           # - During the build stage, we primarily compile C code (.c files) from core/src/ten_runtime/*,
-          #   which does NOT trigger the `-stdlib=libc++` flag. Therefore, clang-21 only uses its own
+          #   which does NOT trigger the `-stdlib=libc++` flag. Therefore, clang-18 only uses its own
           #   headers without referencing system libc++ headers, avoiding version conflicts.
           #
           # - During the test stage, we compile C++ applications (.cc files) that include
-          #   C++ standard library headers (like <string>, <iostream>). When clang-21 uses
+          #   C++ standard library headers (like <string>, <iostream>). When clang-18 uses
           #   `-stdlib=libc++` (set in core/ten_gn/.gnfiles/build/platform/linux/BUILD.gn:68), it:
-          #   1. Uses LLVM 21's C++ stdlib headers: /usr/lib/llvm-21/include/c++/v1/*
+          #   1. Uses LLVM 18's C++ stdlib headers: /usr/lib/llvm-18/include/c++/v1/*
           #   2. BUT also picks up LLVM 13/14/15's compiler intrinsic headers from preinstalled versions
           #
           # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
@@ -175,36 +175,35 @@ jobs:
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21 with all required packages
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt caches to save space
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
-          # We must override these to point to clang-21 to ensure profraw format version 10
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
-          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
-          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+          # Create symlinks (same as Docker image setup with update-alternatives)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-18 100
+          sudo update-alternatives --install /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-18 100
+          sudo update-alternatives --install /usr/bin/llvm-ranlib llvm-ranlib /usr/bin/llvm-ranlib-18 100
 
           # Create symlinks for coverage tools
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
-          # Verify installation - should all show LLVM 21
-          echo "=== Verifying LLVM 21 tools are correctly linked ==="
+          # Verify installation - should all show LLVM 18
+          echo "=== Verifying LLVM 18 tools are correctly configured ==="
           which clang
           clang --version | head -1
           which clang++
@@ -222,8 +221,7 @@ jobs:
           CARGO_BUILD_JOBS: "2"
           MAKEFLAGS: "-j2"
         run: |
-          # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
-          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
           echo "PATH: $PATH"
 
           # Verify we're using the correct clang version
@@ -479,45 +477,45 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -911,45 +909,45 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -1169,45 +1167,45 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -1428,45 +1426,45 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -1687,45 +1685,45 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -1966,45 +1964,45 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
 
-          # Remove preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          # Remove preinstalled clang-13/14/15 BEFORE installing clang-18 (matching Docker setup)
           sudo apt-get remove -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Now install LLVM 21
+          # Now install LLVM 18 (same version as Docker image)
           sudo apt-get install -y \
-            llvm-21 \
-            clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21 \
+            llvm-18 \
+            clang-18 \
+            libc++-18-dev \
+            libc++1-18 \
+            libc++abi-18-dev \
+            libc++abi1-18 \
+            clang-tools-18 \
             libasan5
 
           # Clean up apt cache
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
@@ -2202,14 +2200,14 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-      - name: Install LLVM 21 tools
+      - name: Install LLVM 18 tools (matching Docker image)
         run: |
-          # Add LLVM official repository for LLVM 21
+          # Add LLVM official repository for LLVM 18 (matching Docker image)
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21 lcov
+          sudo apt-get install -y llvm-18 clang-18 lcov
 
           # Clean up apt cache
           sudo apt-get clean
@@ -2222,15 +2220,15 @@ jobs:
             llvm-15-dev llvm-15-runtime llvm-15 || true
           sudo apt-get autoremove -y || true
 
-          # Create symlinks to make clang-21 and coverage tools available without version suffix
-          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Create symlinks using update-alternatives (same as Docker image)
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+          sudo update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-18 100
+          sudo update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-18 100
+          sudo update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-18 100
 
           # Verify installation
-          echo "=== Verifying LLVM 21 installation ==="
+          echo "=== Verifying LLVM 18 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
