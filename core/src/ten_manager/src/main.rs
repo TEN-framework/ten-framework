@@ -4,8 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#[cfg(target_os = "windows")]
-use std::thread;
 use std::{process, sync::Arc};
 
 use anyhow::Result;
@@ -49,7 +47,7 @@ fn check_update_from_cmdline(out: Arc<Box<dyn TmanOutput>>) -> Result<()> {
 
 fn main() {
     let out: Arc<Box<dyn TmanOutput>> = Arc::new(Box::new(TmanOutputCli));
-    run_main_thread(out);
+    run(out);
 }
 
 fn run(out: Arc<Box<dyn TmanOutput>>) {
@@ -119,39 +117,4 @@ fn run(out: Arc<Box<dyn TmanOutput>>) {
     }
 
     process::exit(0);
-}
-
-#[cfg(target_os = "windows")]
-fn run_main_thread(out: Arc<Box<dyn TmanOutput>>) {
-    const TMAN_MAIN_THREAD_STACK_SIZE_BYTES: usize = 32 * 1024 * 1024;
-    let builder = thread::Builder::new()
-        .stack_size(TMAN_MAIN_THREAD_STACK_SIZE_BYTES)
-        .name("tman-main".into());
-
-    let thread_out = out.clone();
-    match builder.spawn(move || run(thread_out)) {
-        Ok(handle) => {
-            if let Err(err) = handle.join() {
-                out.error_line(&format!(
-                    "{}  Error: failed to run tman main thread: {:?}",
-                    Emoji("🔴", ":-("),
-                    err
-                ));
-                process::exit(1);
-            }
-        }
-        Err(err) => {
-            out.error_line(&format!(
-                "{}  Error: failed to spawn tman main thread: {}",
-                Emoji("🔴", ":-("),
-                err
-            ));
-            process::exit(1);
-        }
-    }
-}
-
-#[cfg(not(target_os = "windows"))]
-fn run_main_thread(out: Arc<Box<dyn TmanOutput>>) {
-    run(out);
 }
