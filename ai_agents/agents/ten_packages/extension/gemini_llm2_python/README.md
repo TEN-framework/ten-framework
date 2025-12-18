@@ -4,7 +4,7 @@ A Google Gemini LLM2 extension for the TEN framework, providing integration with
 
 ## Features
 
-- Integration with Google Gemini models (Gemini 3 Pro, etc.)
+- Integration with Google Gemini models (Gemini 3 Flash/Pro, etc.)
 - Full compatibility with the TEN LLM2 interface
 - Streaming and non-streaming responses
 - Tool calling support
@@ -37,6 +37,16 @@ export GEMINI_API_KEY=your_api_key
 ## Usage
 
 The extension uses Google's OpenAI-compatible endpoint at `https://generativelanguage.googleapis.com/v1beta/openai` to provide seamless integration with Gemini models.
+
+### Gemini 3 Flash
+
+- **Model IDs:** `gemini-3-flash` (default), `gemini-3-flash-preview` as a
+  fallback.
+- **Endpoint:** OpenAI-compatible
+  `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`.
+- **How to use:** Set `model` in `property.json` (or Ten App properties) to
+  `gemini-3-flash` and keep the default `base_url`. No other code changes are
+  required because this extension already speaks the OpenAI-compatible API.
 
 ## Code Style & Linting Rules
 
