@@ -81,7 +81,7 @@ config("utils_private_config") {
   }
 
   cflags_cc = []
-  if (!is_win) {
+  if (!is_win || (is_win && is_mingw)) {
     cflags_cc += [
       "-std=c++${cxx_standard}",
       "-fno-rtti",
