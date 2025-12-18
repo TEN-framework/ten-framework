@@ -184,7 +184,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -503,7 +503,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
@@ -935,7 +935,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1193,7 +1193,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1452,7 +1452,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1711,7 +1711,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1990,7 +1990,7 @@ jobs:
             libc++abi-21-dev \
             libc++abi1-21 \
             clang-tools-21 \
-            libclang-rt-21-dev
+            libasan8
 
           # Clean up apt cache
           sudo apt-get clean
