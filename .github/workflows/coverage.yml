@@ -182,8 +182,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -205,11 +204,11 @@ jobs:
           # Verify installation - should all show LLVM 21
           echo "=== Verifying LLVM 21 tools are correctly linked ==="
           which clang
-          clang --version | head -1
+          clang --version | head -3
           which clang++
-          clang++ --version | head -1
-          llvm-cov --version | head -1
-          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
+          clang++ --version | head -3
+          llvm-cov --version | head -3
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
           echo "=== Disk space after LLVM installation ==="
           df -h
@@ -228,9 +227,9 @@ jobs:
           # Verify we're using the correct clang version
           echo "=== Compiler verification before build ==="
           which clang
-          clang --version | head -1
+          clang --version | head -3
           which clang++
-          clang++ --version | head -1
+          clang++ --version | head -3
 
           # Install Go 1.24.3
           go env -w GOFLAGS="-buildvcs=false"
@@ -249,9 +248,9 @@ jobs:
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
-          llvm-cov --version | head -1
+          llvm-cov --version | head -3
           echo "llvm-profdata path: $(which llvm-profdata)"
-          llvm-profdata merge --version 2>&1 | head -1 || echo "(llvm-profdata --version not supported)"
+          llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
 
           echo "=== Disk space before build ==="
           df -h
@@ -500,8 +499,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
@@ -931,8 +929,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1188,8 +1185,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1446,8 +1442,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1704,8 +1699,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1982,8 +1976,7 @@ jobs:
             libc++-21-dev \
             libc++1-21 \
             libc++abi-21-dev \
-            libc++abi1-21 \
-            clang-tools-21
+            libc++abi1-21
 
           # Clean up apt cache
           sudo apt-get clean
