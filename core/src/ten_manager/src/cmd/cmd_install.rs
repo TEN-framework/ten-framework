@@ -269,11 +269,17 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
     Ok(cmd)
 }
 
+#[instrument(skip_all, name = "get_locked_pkgs", fields(
+    app_dir = %app_dir.display(),
+    found = tracing::field::Empty
+))]
 fn get_locked_pkgs(app_dir: &Path) -> Option<HashMap<PkgTypeAndName, PkgInfo>> {
-    match parse_manifest_lock_in_folder(app_dir) {
+    let result = match parse_manifest_lock_in_folder(app_dir) {
         Ok(manifest_lock) => Some(manifest_lock.get_pkgs()),
         Err(_) => None,
-    }
+    };
+    tracing::Span::current().record("found", result.is_some());
+    result
 }
 
 /// Validate that all dependencies in manifest.json (both dependencies and

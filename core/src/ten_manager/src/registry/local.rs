@@ -431,6 +431,13 @@ async fn search_versions(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "get_package_list_local", fields(
+    base_url = base_url,
+    pkg_type = ?pkg_type,
+    pkg_name = ?name,
+    version_req = ?version_req,
+    results_count = tracing::field::Empty
+))]
 pub async fn get_package_list(
     _tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     base_url: &str,
@@ -473,13 +480,17 @@ pub async fn get_package_list(
 
         // Return empty result if start index is beyond the array length.
         if start_idx >= all_results.len() {
+            tracing::Span::current().record("results_count", 0);
             return Ok(Vec::new());
         }
 
         let end_idx = std::cmp::min(start_idx + page_size_value, all_results.len());
-        Ok(all_results[start_idx..end_idx].to_vec())
+        let paginated = all_results[start_idx..end_idx].to_vec();
+        tracing::Span::current().record("results_count", paginated.len());
+        Ok(paginated)
     } else {
         // If no page is specified, return all results.
+        tracing::Span::current().record("results_count", all_results.len());
         Ok(all_results)
     }
 }

@@ -9,10 +9,12 @@ use std::{fs::File, io::Read, path::Path};
 use anyhow::Result;
 use serde::de::DeserializeOwned;
 use ten_rust::pkg_info::{constants::MANIFEST_JSON_FILENAME, manifest::Manifest};
+use tracing::instrument;
 
 use crate::fs::json::{patch_json, write_manifest_json_file};
 
 /// Load a JSON file into a deserializable object.
+#[instrument(skip_all, name = "load_json_file", fields(path = %file_path.display()))]
 pub fn load_from_file<T: DeserializeOwned>(file_path: &Path) -> Result<T> {
     let mut file = File::open(file_path)?;
     let mut contents = String::new();
@@ -24,6 +26,7 @@ pub fn load_from_file<T: DeserializeOwned>(file_path: &Path) -> Result<T> {
 
 /// Update the manifest.json file. The original order of entries in the manifest
 /// file is preserved.
+#[instrument(skip_all, name = "patch_manifest", fields(pkg_url = pkg_url))]
 pub async fn patch_manifest_json_file(pkg_url: &str, manifest: &Manifest) -> Result<()> {
     let new_manifest_str = manifest.serialize_with_resolved_content().await?;
     let new_manifest_json = serde_json::from_str(&new_manifest_str)?;

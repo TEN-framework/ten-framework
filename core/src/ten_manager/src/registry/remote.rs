@@ -425,6 +425,12 @@ fn parse_content_range(content_range: &str) -> Option<(u64, u64, u64)> {
     None
 }
 
+#[instrument(skip_all, name = "get_package_remote", fields(
+    pkg_type = %pkg_type,
+    pkg_name = pkg_name,
+    version = %pkg_version,
+    url = url
+))]
 pub async fn get_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -623,6 +629,13 @@ struct RegistryPackagesData {
 /// * If the API response has a non-OK status.
 /// * If parsing the JSON response fails.
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "get_package_list_remote", fields(
+    base_url = base_url,
+    pkg_type = ?pkg_type,
+    pkg_name = ?name,
+    version_req = ?version_req,
+    results_count = tracing::field::Empty
+))]
 pub async fn get_package_list(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     base_url: &str,
@@ -801,6 +814,9 @@ pub async fn get_package_list(
         })
     })
     .await
+    .inspect(|results| {
+        tracing::Span::current().record("results_count", results.len());
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

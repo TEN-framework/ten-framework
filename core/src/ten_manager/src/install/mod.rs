@@ -400,6 +400,11 @@ fn get_supports_str(pkg: &PkgInfo) -> String {
     }
 }
 
+#[instrument(skip_all, name = "compare_with_installed", fields(
+    solver_count = solver_results.len(),
+    installed_count = all_installed_pkgs.len(),
+    has_conflict = tracing::field::Empty
+))]
 pub fn compare_solver_results_with_installed_pkgs(
     solver_results: &[&PkgInfo],
     all_installed_pkgs: &[PkgInfo],
@@ -464,6 +469,7 @@ pub fn compare_solver_results_with_installed_pkgs(
         }
     }
 
+    tracing::Span::current().record("has_conflict", conflict);
     conflict
 }
 

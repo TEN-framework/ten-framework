@@ -25,6 +25,10 @@ use crate::{
     output::TmanOutput,
 };
 
+#[instrument(skip_all, name = "extract_solver_results", fields(
+    result_count = results.len(),
+    extracted = tracing::field::Empty
+))]
 pub fn extract_solver_results_from_raw_solver_results(
     results: &[String],
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
@@ -63,9 +67,15 @@ pub fn extract_solver_results_from_raw_solver_results(
         }
     }
 
+    tracing::Span::current().record("extracted", results_info.len());
     Ok(results_info)
 }
 
+#[instrument(skip_all, name = "filter_solver_results", fields(
+    total = solver_results.len(),
+    filter_in = filter_in,
+    filtered = tracing::field::Empty
+))]
 pub fn filter_solver_results_by_type_and_name<'a>(
     solver_results: &'a [PkgInfo],
     pkg_type: Option<&PkgType>,
@@ -99,6 +109,7 @@ pub fn filter_solver_results_by_type_and_name<'a>(
         }
     }
 
+    tracing::Span::current().record("filtered", filtered_results.len());
     Ok(filtered_results)
 }
 
