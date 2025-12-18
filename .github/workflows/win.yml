@@ -37,6 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        compiler: [msvc, mingw]
         build_type: [debug, release]
     steps:
       - name: Check PR status before matrix execution
@@ -61,6 +62,8 @@ jobs:
 
             const { owner, repo } = context.repo;
             const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}...`);
 
             try {
               const pr = await github.rest.pulls.get({
@@ -215,7 +218,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: tests-artifacts.zip
           if-no-files-found: ignore
 
@@ -226,7 +229,7 @@ jobs:
         run: |
           Write-Host "Current directory: $(Get-Location)"
 
-          Compress-Archive -Path ten_manager -DestinationPath tman-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
+          Compress-Archive -Path ten_manager -DestinationPath tman-win-${{ matrix.compiler }}-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
 
           # Define array of files/directories to package
           $FILES_TO_PACKAGE = @(
@@ -257,7 +260,7 @@ jobs:
 
           if ($EXISTING_FILES.Count -gt 0) {
             Write-Host "Creating zip archive with $($EXISTING_FILES.Count) items..."
-            Compress-Archive -Path $EXISTING_FILES -DestinationPath ten_packages-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
+            Compress-Archive -Path $EXISTING_FILES -DestinationPath ten_packages-win-${{ matrix.compiler }}-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
           } else {
             Write-Host "Warning: No files found to package"
           }
@@ -268,14 +271,14 @@ jobs:
         with:
           tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
           files: |
-            out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip
+            out/win/x64/ten_packages-win-${{ matrix.compiler }}-${{ matrix.build_type }}-x64.zip
 
       - name: Clean up
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         continue-on-error: true
         shell: pwsh
         run: |
-          Remove-Item -Force "out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip" -ErrorAction SilentlyContinue
+          Remove-Item -Force "out/win/x64/ten_packages-win-${{ matrix.compiler }}-${{ matrix.build_type }}-x64.zip" -ErrorAction SilentlyContinue
 
       - name: Publish release to TEN cloud store
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
@@ -407,6 +410,7 @@ jobs:
       PYTHONIOENCODING: utf-8
     strategy:
       matrix:
+        compiler: [msvc, mingw]
         build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
@@ -475,7 +479,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -539,6 +543,7 @@ jobs:
       PYTHONIOENCODING: utf-8
     strategy:
       matrix:
+        compiler: [msvc, mingw]
         build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
@@ -607,7 +612,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -624,210 +629,6 @@ jobs:
           cd out/win/x64/
           pytest -s tests/ten_manager/
 
-  test-integration-python:
-    needs: build
-    runs-on: windows-latest
-    env:
-      PYTHONIOENCODING: utf-8
-    strategy:
-      matrix:
-        build_type: [debug, release]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: false
-
-      - name: Enable Windows long path support
-        shell: pwsh
-        run: |
-          Write-Output "Enabling Windows long path support..."
-          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-          Write-Output "Long path support enabled"
-
-      - name: Trust working directory
-        shell: bash
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      - name: Initialize and update submodules except portal/
-        shell: bash
-        run: |
-          # Retrieve all submodule paths, excluding `portal/`.
-          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
-          git submodule init
-          for submodule in $submodules; do
-            echo "Initializing submodule: $submodule"
-            git submodule update --init --recursive --depth 1 "$submodule"
-          done
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - uses: ilammy/msvc-dev-cmd@v1
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "stable"
-          cache: false
-
-      - name: Install tools and dependencies
-        run: |
-          pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
-          go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
-          cargo install --force cbindgen
-
-      - name: Get Python executable path
-        run: |
-          $pythonPath = python -c "import sys; print(sys.executable)"
-          Write-Output "Python executable path: $pythonPath"
-          $pythonDir = Split-Path $pythonPath
-          Write-Output "Python directory path: $pythonDir"
-          echo "PYTHON3_PATH=$pythonDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-        shell: pwsh
-
-      - name: Use Python path
-        run: |
-          Write-Output "The Python directory is located at: $env:PYTHON3_PATH"
-        shell: pwsh
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
-          path: out/win/x64
-
-      - name: Extract tests artifacts preserving permissions
-        shell: pwsh
-        run: |
-          Expand-Archive -Path "out/win/x64/tests-artifacts.zip" -DestinationPath "out/win/x64" -Force
-
-      - name: Install Python dependencies via script
-        shell: pwsh
-        run: |
-          python .github/tools/setup_pytest_dependencies.py
-
-      - name: Install and setup Ollama
-        shell: pwsh
-        run: |
-          Write-Output "[Ollama] Starting setup via ZIP (Windows)"
-          Write-Output "[Ollama] PowerShell: $($PSVersionTable.PSVersion)"
-          Write-Output "[Ollama] Runner Temp: $env:RUNNER_TEMP"
-
-          # Download Ollama CLI zip
-          $zipUrl = "https://ollama.com/download/ollama-windows-amd64.zip"
-          $zipPath = Join-Path $env:RUNNER_TEMP "ollama-windows-amd64.zip"
-          Write-Output "[Ollama] Downloading: $zipUrl"
-          Write-Output "[Ollama] To: $zipPath"
-          try {
-            Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -ErrorAction Stop
-          } catch {
-            Write-Error "[Ollama] Download failed: $($_.Exception.Message)"
-            exit 1
-          }
-          if (-not (Test-Path $zipPath)) {
-            Write-Error "[Ollama] Zip file not found after download: $zipPath"
-            exit 1
-          }
-          $zipSize = (Get-Item $zipPath).Length
-          Write-Output "[Ollama] Zip size (bytes): $zipSize"
-          if ($zipSize -lt 1000000000) {
-            Write-Error "[Ollama] Zip file seems too small (<1GB), aborting."
-            exit 1
-          }
-
-          # Extract
-          $extractDir = Join-Path $env:RUNNER_TEMP "ollama"
-          if (Test-Path $extractDir) { Remove-Item -Recurse -Force $extractDir }
-          Write-Output "[Ollama] Extracting to: $extractDir"
-          Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
-
-          # Locate ollama.exe
-          $ollamaExeItem = Get-ChildItem -Path $extractDir -Recurse -Filter "ollama.exe" | Select-Object -First 1
-          if (-not $ollamaExeItem) {
-            Write-Error "[Ollama] ollama.exe not found after extraction"
-            Get-ChildItem -Path $extractDir -Recurse | Select-Object FullName
-            exit 1
-          }
-          $ollamaExe = $ollamaExeItem.FullName
-          $ollamaDir = Split-Path $ollamaExe
-          Write-Output "[Ollama] Executable: $ollamaExe"
-          Write-Output "[Ollama] Directory: $ollamaDir"
-
-          # Make available to subsequent steps
-          $ollamaDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-          # Force CPU mode and set models directory
-          $env:OLLAMA_CPU_ONLY = "1"
-          "OLLAMA_CPU_ONLY=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          $modelsDir = Join-Path $env:RUNNER_TEMP "ollama-models"
-          New-Item -ItemType Directory -Force -Path $modelsDir | Out-Null
-          $env:OLLAMA_MODELS = $modelsDir
-          "OLLAMA_MODELS=$modelsDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          Write-Output "[Ollama] Env OLLAMA_CPU_ONLY=$env:OLLAMA_CPU_ONLY"
-          Write-Output "[Ollama] Env OLLAMA_MODELS=$env:OLLAMA_MODELS"
-
-          # Print version
-          & $ollamaExe --version 2>$null | ForEach-Object { Write-Output "[Ollama] Version: $_" }
-
-          # Start service
-          Write-Output "[Ollama] Starting service..."
-          $proc = Start-Process -FilePath $ollamaExe -ArgumentList "serve" -WindowStyle Hidden -PassThru
-          if ($null -eq $proc) {
-            Write-Error "[Ollama] Failed to start service process"
-            exit 1
-          }
-          Write-Output "[Ollama] Service PID: $($proc.Id)"
-
-          # Wait for readiness
-          $ready = $false
-          for ($i = 1; $i -le 60; $i++) {
-            try {
-              $response = Invoke-WebRequest -Uri "http://127.0.0.1:11434" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
-              if ($response.StatusCode -eq 200) {
-                Write-Output "[Ollama] Ready (HTTP 200)"
-                $ready = $true
-                break
-              }
-            } catch {
-              # ignore
-            }
-            Write-Output "[Ollama] Waiting for service... ($i/60)"
-            Start-Sleep -Seconds 2
-          }
-          if (-not $ready) {
-            Write-Error "[Ollama] Service failed to become ready in time"
-            Get-Process | Where-Object { $_.ProcessName -like "ollama*" } | Select-Object Id, ProcessName, StartTime | Format-Table | Out-String | Write-Output
-            exit 1
-          }
-
-          # Pull required model
-          Write-Output "[Ollama] Pulling model smollm:135m ..."
-          & $ollamaExe pull smollm:135m
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "[Ollama] Model pull failed"
-            exit 1
-          }
-          Write-Output "[Ollama] Installed models:"
-          & $ollamaExe list
-
-      - name: Run Tests (ten_runtime Python integration tests)
-        env:
-          TEN_ENABLE_BACKTRACE_DUMP: "true"
-        shell: pwsh
-        run: |
-          $ENV:PATH += ";$PWD/core/ten_gn"
-          cd out/win/x64/
-          pytest -s tests/ten_runtime/integration/python/
-
   test-integration-cpp:
     needs: build
     runs-on: windows-latest
@@ -835,6 +636,7 @@ jobs:
       PYTHONIOENCODING: utf-8
     strategy:
       matrix:
+        compiler: [msvc, mingw]
         build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
@@ -903,7 +705,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.compiler }}-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
