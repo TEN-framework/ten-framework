@@ -4,9 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::{process, sync::Arc};
 #[cfg(target_os = "windows")]
 use std::thread;
+use std::{process, sync::Arc};
 
 use anyhow::Result;
 use console::Emoji;

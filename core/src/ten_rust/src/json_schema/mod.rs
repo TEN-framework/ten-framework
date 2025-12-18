@@ -16,11 +16,7 @@ use std::path::Path;
 use anyhow::Result;
 use json5;
 use jsonschema::Validator;
-use tracing::instrument;
 
-#[instrument(skip_all, name = "load_json_schema", fields(
-    schema_size = content.len()
-))]
 fn load_schema(content: &str) -> Validator {
     // Use json5 to strip comments from the json string.
     let schema_json: serde_json::Value = json5::from_str(content).unwrap();

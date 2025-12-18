@@ -33,11 +33,7 @@ pub fn copy_folder_recursively(src_dir_path: &String, dest_dir_path: &String) ->
 
 pub fn get_cwd() -> Result<PathBuf> {
     // Attempt to get the current working directory.
-    let cwd = match env::current_dir() {
-        Ok(current_path) => current_path,
-        // Convert the error to anyhow::Error and return.
-        Err(e) => return Err(e.into()),
-    };
+    let cwd = env::current_dir()?;
 
     // If successful, return the current working directory path.
     Ok(cwd)
