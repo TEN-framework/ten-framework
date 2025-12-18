@@ -79,20 +79,21 @@ typedef struct tagTHREADNAME_INFO {
 #pragma pack(pop)
 
 int ten_thread_set_name(ten_thread_t *thread, const char *name) {
-  ten_atomic_t tid = 0;
-  THREADNAME_INFO info;
-
   if (!name || !*name) {
     return -1;
   }
 
-  tid = ten_thread_get_id(thread);
-
+#if defined(_MSC_VER)
   // Welcom to the wild world
   // This is how Microsoft handle "set thread name" thing [1]. Good for him.
   //
   // [1]:
   // https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-a-thread-name-in-native-code?view=vs-2019
+  ten_atomic_t tid = 0;
+  THREADNAME_INFO info;
+
+  tid = ten_thread_get_id(thread);
+
   info.dwType = 0x1000;
   info.szName = name;
   info.dwThreadID = (DWORD)tid;
@@ -106,6 +107,44 @@ int ten_thread_set_name(ten_thread_t *thread, const char *name) {
   } __except (EXCEPTION_CONTINUE_EXECUTION) {
   }
 #pragma warning(pop)
+
+#else
+  // MinGW/GCC: Use SetThreadDescription (Windows 10 version 1607+).
+  // If not available, the function call will simply fail gracefully.
+  HANDLE thread_handle = thread ? (HANDLE)thread->aux : GetCurrentThread();
+
+  if (!thread_handle) {
+    return -1;
+  }
+
+  // Convert name to wide string for SetThreadDescription.
+  int wide_len = MultiByteToWideChar(CP_UTF8, 0, name, -1, NULL, 0);
+  if (wide_len <= 0) {
+    return -1;
+  }
+
+  WCHAR *wide_name = (WCHAR *)malloc(wide_len * sizeof(WCHAR));
+  if (!wide_name) {
+    return -1;
+  }
+
+  MultiByteToWideChar(CP_UTF8, 0, name, -1, wide_name, wide_len);
+
+  // SetThreadDescription is available since Windows 10 version 1607.
+  // We use dynamic loading to avoid link-time dependency.
+  typedef HRESULT(WINAPI * SetThreadDescriptionFunc)(HANDLE, PCWSTR);
+  HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+  if (kernel32) {
+    SetThreadDescriptionFunc SetThreadDescriptionPtr =
+        (SetThreadDescriptionFunc)GetProcAddress(kernel32,
+                                                  "SetThreadDescription");
+    if (SetThreadDescriptionPtr) {
+      SetThreadDescriptionPtr(thread_handle, wide_name);
+    }
+  }
+
+  free(wide_name);
+#endif
 
   return 0;
 }
