@@ -10,7 +10,8 @@ declare_args() {
 
 curl_output_libs = []
 
-if (is_win) {
+if (is_win && !is_mingw) {
+  # MSVC generates .lib files
   if (is_debug) {
     if (curl_use_shared_lib) {
       curl_output_libs += [
@@ -30,6 +31,28 @@ if (is_win) {
     } else {
       curl_output_libs +=
           [ "${root_gen_dir}/cmake/curl/install/lib/libcurl.lib" ]
+    }
+  }
+} else if (is_win && is_mingw) {
+  # MinGW generates .a and .dll.a files
+  if (is_debug) {
+    if (curl_use_shared_lib) {
+      curl_output_libs += [
+        "${root_gen_dir}/cmake/curl/install/bin/libcurl-d.dll",
+        "${root_gen_dir}/cmake/curl/install/lib/libcurl-d.dll.a",
+      ]
+    } else {
+      curl_output_libs +=
+          [ "${root_gen_dir}/cmake/curl/install/lib/libcurl-d.a" ]
+    }
+  } else {
+    if (curl_use_shared_lib) {
+      curl_output_libs += [
+        "${root_gen_dir}/cmake/curl/install/bin/libcurl.dll",
+        "${root_gen_dir}/cmake/curl/install/lib/libcurl.dll.a",
+      ]
+    } else {
+      curl_output_libs += [ "${root_gen_dir}/cmake/curl/install/lib/libcurl.a" ]
     }
   }
 } else if (is_linux) {

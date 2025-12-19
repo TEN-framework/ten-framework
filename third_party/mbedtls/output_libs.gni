@@ -10,7 +10,8 @@ declare_args() {
 
 mbedtls_output_libs = []
 
-if (is_win) {
+if (is_win && !is_mingw) {
+  # MSVC generates .lib and .dll files
   mbedtls_output_libs += [
     "${root_gen_dir}/cmake/mbedtls/install/bin/mbedcrypto.dll",
     "${root_gen_dir}/cmake/mbedtls/install/lib/mbedcrypto.lib",
@@ -18,6 +19,16 @@ if (is_win) {
     "${root_gen_dir}/cmake/mbedtls/install/lib/mbedtls.lib",
     "${root_gen_dir}/cmake/mbedtls/install/bin/mbedx509.dll",
     "${root_gen_dir}/cmake/mbedtls/install/lib/mbedx509.lib",
+  ]
+} else if (is_win && is_mingw) {
+  # MinGW generates .a files (import libraries) and .dll files
+  mbedtls_output_libs += [
+    "${root_gen_dir}/cmake/mbedtls/install/bin/libmbedcrypto.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedcrypto.dll.a",
+    "${root_gen_dir}/cmake/mbedtls/install/bin/libmbedtls.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedtls.dll.a",
+    "${root_gen_dir}/cmake/mbedtls/install/bin/libmbedx509.dll",
+    "${root_gen_dir}/cmake/mbedtls/install/lib/libmbedx509.dll.a",
   ]
 } else if (is_linux) {
   mbedtls_output_libs += [
@@ -159,7 +170,8 @@ template("ten_mbedtls_copy_deps") {
 
     all_deps += [ ":ten_mbedtls_copy_headers_psa" ]
 
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC: copy .lib files
       action("ten_mbedtls_copy_win_exported_libs") {
         script = "//build/ten_common/scripts/copy_files_with_pattern.py"
         args = [
@@ -167,6 +179,37 @@ template("ten_mbedtls_copy_deps") {
           rebase_path("${root_gen_dir}/cmake/mbedtls/install/lib"),
           "--patterns",
           "^.*\\.lib\$",
+          "--dest-dir",
+          rebase_path(basedir + "/lib"),
+          "--tg-timestamp-proxy-file",
+          rebase_path(
+              "${target_gen_dir}/copy_win_exported_libs_dummy_output_file"),
+        ]
+
+        # This action should wait for the completion of the building of mbedtls.
+        deps = [ "//third_party/mbedtls" ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                                 "data_deps",
+                               ])
+
+        outputs =
+            [ "${target_gen_dir}/copy_win_exported_libs_dummy_output_file" ]
+      }
+
+      all_deps += [ ":ten_mbedtls_copy_win_exported_libs" ]
+    } else if (is_win && is_mingw) {
+      # MinGW: copy .dll.a files (import libraries)
+      action("ten_mbedtls_copy_win_exported_libs") {
+        script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+        args = [
+          "--sources",
+          rebase_path("${root_gen_dir}/cmake/mbedtls/install/lib"),
+          "--patterns",
+          "^.*\\.dll\\.a\$",
           "--dest-dir",
           rebase_path(basedir + "/lib"),
           "--tg-timestamp-proxy-file",
