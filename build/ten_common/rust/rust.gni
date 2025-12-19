@@ -82,6 +82,11 @@ template("rust_target") {
       _rustflags = "${_rustflags} ${flags}"
     }
 
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
+    }
+
     if (_rustflags != "") {
       args += [
         "--env",
@@ -290,6 +295,11 @@ template("rust_test") {
                           "trim string")
 
       _rustflags = "${_rustflags} ${flags}"
+    }
+
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
     }
 
     if (_rustflags != "") {
