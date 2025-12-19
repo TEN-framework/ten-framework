@@ -38,6 +38,7 @@ class ArgumentInfo(argparse.Namespace):
         self.run_build: str
         self.root_out_dir: str
         self.tg_timestamp_proxy_file: str
+        self.is_mingw: bool
 
 
 class CmakeProject:
@@ -224,12 +225,18 @@ cmake.py will consider it as its own command line option."
 
         # https://cmake.org/cmake/help/latest/generator/Visual%20Studio%2017%202022.html
         elif self.args.target_os == "win":
-            if self.args.target_cpu == "x64":
-                self.defines.append("-DCMAKE_GENERATOR_PLATFORM=x64")
-            elif self.args.target_cpu == "x86":
-                self.defines.append("-DCMAKE_GENERATOR_PLATFORM=Win32")
+            if self.args.is_mingw:
+                # MinGW uses "MinGW Makefiles" generator and GCC toolchain
+                self.defines.append('-G "MinGW Makefiles"')
+                # MinGW doesn't need CMAKE_GENERATOR_PLATFORM
             else:
-                self.defines.append("-DCMAKE_GENERATOR_PLATFORM=ARM64")
+                # MSVC uses Visual Studio generator
+                if self.args.target_cpu == "x64":
+                    self.defines.append("-DCMAKE_GENERATOR_PLATFORM=x64")
+                elif self.args.target_cpu == "x86":
+                    self.defines.append("-DCMAKE_GENERATOR_PLATFORM=Win32")
+                else:
+                    self.defines.append("-DCMAKE_GENERATOR_PLATFORM=ARM64")
 
         self.process_flags_from_arg(self.cflags, self.args.cflags)
         self.process_flags_from_arg(self.cxxflags, self.args.cxxflags)
@@ -418,6 +425,7 @@ if __name__ == "__main__":
     parser.add_argument("--build-path", type=str, required=True)
     parser.add_argument("--build-type", type=str, default="Release")
     parser.add_argument("--use-clang", type=ast.literal_eval, default=True)
+    parser.add_argument("--is-mingw", action="store_true", default=False)
     parser.add_argument(
         "--target-os", type=str, required=True, help="specify target os"
     )
