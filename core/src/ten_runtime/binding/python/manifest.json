@@ -19,6 +19,7 @@
       "manifest.json",
       "BUILD.gn",
       "requirements.txt",
+      "pyproject.toml",
       "interface/**",
       "tools/**",
       "lib/**"

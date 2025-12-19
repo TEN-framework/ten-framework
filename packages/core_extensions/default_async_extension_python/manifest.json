@@ -76,6 +76,7 @@
       "property.json",
       "**.tent",
       "**.py",
+      "pyproject.toml",
       "tests/**.py",
       "tests/**.tent",
       "tests/bin/*",

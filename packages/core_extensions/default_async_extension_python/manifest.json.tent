@@ -74,6 +74,7 @@
     "include": [
       "manifest.json",
       "property.json",
+      "pyproject.toml",
       "tests/**.py",
       "tests/bin/*",
       "requirements.txt",
