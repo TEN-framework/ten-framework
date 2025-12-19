@@ -76,7 +76,8 @@ shared_library("ten_utils_shared") {
       "-Xlinker",
       "@rpath/libten_utils.dylib",
     ]
-  } else if (is_linux) {
+  } else if (is_linux || is_mingw) {
+    # MinGW uses GNU ld and supports rpath
     ldflags = [
       # Enable the executable to look in the current directory for shared
       # library.

@@ -32,7 +32,8 @@ ten_shared_library("ten_runtime_go") {
   # Add rpath to find ten_runtime library.
   if (is_mac) {
     ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
-  } else if (is_linux) {
+  } else if (is_linux || is_mingw) {
+    # MinGW also uses GNU ld and supports rpath
     ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
   }
 
