@@ -24,22 +24,32 @@ cmake_project("uv_a") {
 
   options = [ "LIBUV_BUILD_SHARED=OFF" ]
 
-  if (!is_win) {
-    # libuv is part of another shared library, so we have to enable -fPIC even if
-    # libuv is a static library.
-    #
-    # Otherwise, we will encounter the following error:
-    #
-    # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
-    # a shared object; recompile with -fPIC
+  # libuv is part of another shared library, so we have to enable -fPIC even if
+  # libuv is a static library.
+  #
+  # Otherwise, we will encounter the following error:
+  #
+  # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
+  # a shared object; recompile with -fPIC
+  #
+  # MinGW uses GCC and also needs -fPIC
+  if (!is_win || is_mingw) {
     cflags = [ "\"-fPIC\"" ]
   }
 
-  if (is_win) {
+  if (is_win && !is_mingw) {
+    # MSVC uses .lib extension
     libs = [
       "iphlpapi.lib",
       "userenv.lib",
       "ole32.lib",
+    ]
+  } else if (is_win && is_mingw) {
+    # MinGW doesn't use .lib extension
+    libs = [
+      "iphlpapi",
+      "userenv",
+      "ole32",
     ]
   }
 
