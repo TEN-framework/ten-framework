@@ -297,7 +297,9 @@ cmake.py will consider it as its own command line option."
         if self.args.hide_symbol == "true":
             self.cflags.append("-fvisibility=hidden")
 
-        if self.args.target_os != "win":
+        # MinGW uses GCC toolchain and supports CMAKE_CXX_STANDARD
+        # Only MSVC (win without mingw) doesn't need these flags
+        if self.args.target_os != "win" or self.args.is_mingw:
             self.defines.extend(
                 [
                     f"-DCMAKE_C_STANDARD={self.args.c_standard}",
@@ -375,7 +377,9 @@ cmake.py will consider it as its own command line option."
             + f" --target {self.args.project_name}"
         )
 
-        if self.args.target_os != "win" and self.args.target_os != "mac":
+        # MinGW uses GNU make and supports parallel builds with $(nproc)
+        # Only MSVC uses Visual Studio generator which doesn't support this syntax
+        if (self.args.target_os != "win" or self.args.is_mingw) and self.args.target_os != "mac":
             cmd += " --parallel $(nproc)"
 
         if self.args.log_level > 1:
