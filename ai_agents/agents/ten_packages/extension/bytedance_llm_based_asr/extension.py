@@ -48,6 +48,7 @@ from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
 from .log_id_dumper_manager import LogIdDumperManager
 from .const import (
     DUMP_FILE_NAME,
+    FINALIZE_GRACE_PERIOD_MS,
     is_reconnectable_error,
 )
 
@@ -111,7 +112,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.vendor_result_dumper: Any = (
             None  # File handle for asr_vendor_result.jsonl
         )
-        self.ten_env: AsyncTenEnv = None  # type: ignore
+        self.ten_env: AsyncTenEnv | None = None
 
         # Reconnection parameters
         self.max_retry_delay: float = 5.0  # Maximum delay between retries
@@ -278,6 +279,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         """Clean up resources when extension is deinitialized."""
         await super().on_deinit(ten_env)
 
+        # Stop connection first to ensure proper cleanup order
+        # This ensures client resources are cleaned up before other resources
+        await self.stop_connection()
+
         if self.audio_dumper:
             try:
                 await self.audio_dumper.stop()
@@ -286,10 +291,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             finally:
                 self.audio_dumper = None
 
-        # Stop log_id_dumper_manager if exists
-        if self.log_id_dumper_manager:
-            await self.log_id_dumper_manager.stop()
-            # Keep temp file if not renamed (as per requirement)
+        # log_id_dumper_manager is already stopped in stop_connection()
+        # Keep temp file if not renamed (as per requirement)
 
         if self.vendor_result_dumper:
             try:
@@ -308,8 +311,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Allow some time for final result to come back
             current_time = int(asyncio.get_event_loop().time() * 1000)
             if (
-                current_time - self.last_finalize_timestamp < 5000
-            ):  # 5 seconds grace period
+                current_time - self.last_finalize_timestamp
+                < FINALIZE_GRACE_PERIOD_MS
+            ):
                 return True  # Still consider connected during finalize grace period
 
         return self.connected and self.client is not None
@@ -897,7 +901,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.InvalidMessage):
-            # Invalid message format - umight be retryable
+            # Invalid message format - might be retryable
             error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.WebSocketException):
