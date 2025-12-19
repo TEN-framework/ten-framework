@@ -9,6 +9,7 @@ import sys
 import os
 import shutil
 import glob
+import time
 from dotenv import dotenv_values
 from io import StringIO
 from build.scripts import cmd_exec
@@ -71,6 +72,22 @@ def read_path_from_env_file(env_file: str) -> str | None:
 
     return None
 
+def safe_rmtree(path: str, max_retries: int = 3, delay: float = 0.5) -> None:
+    """
+    Safely remove a directory tree with retry logic for Windows.
+    Windows may have file locking issues that need a short delay.
+    """
+    for attempt in range(max_retries):
+        try:
+            shutil.rmtree(path)
+            return
+        except PermissionError as e:
+            if attempt < max_retries - 1:
+                print(f"Warning: Failed to remove {path}, retrying in {delay}s... ({attempt + 1}/{max_retries})")
+                time.sleep(delay)
+            else:
+                print(f"Error: Failed to remove {path} after {max_retries} attempts: {e}")
+                raise
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -135,7 +152,7 @@ if __name__ == "__main__":
 
         tmp_output = os.path.join(arg_info.target_path, "combine_static_output")
         if os.path.exists(tmp_output):
-            shutil.rmtree(tmp_output)
+            safe_rmtree(tmp_output)
 
         os.mkdir(tmp_output)
 
@@ -151,6 +168,7 @@ if __name__ == "__main__":
             returncode = -1
             print(f"An error occurred: {e}")
         finally:
-            shutil.rmtree(tmp_output)
             os.chdir(origin_wd)
+            if os.path.exists(tmp_output):
+                safe_rmtree(tmp_output)
             sys.exit(-1 if returncode != 0 else 0)
