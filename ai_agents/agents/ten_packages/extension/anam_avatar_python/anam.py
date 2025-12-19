@@ -665,6 +665,28 @@ class AgoraAnamRecorder:
 
         return success
 
+    async def send_voice_end(self) -> bool:
+        """
+        Send voice_end message to Anam immediately.
+        Called when tts_audio_end (reason=1) is received, indicating TTS generation complete.
+        """
+        # Cancel any pending debounce timer
+        if self._speak_end_timer_task and not self._speak_end_timer_task.done():
+            self._speak_end_timer_task.cancel()
+            self._speak_end_timer_task = None
+
+        end_message = {"command": "voice_end", "event_id": str(uuid.uuid4())}
+        success = await self._send_message(end_message)
+
+        if success:
+            self.ten_env.log_info(
+                "[ANAM] Sent voice_end (triggered by tts_audio_end reason=1)"
+            )
+        else:
+            self.ten_env.log_error("Failed to send voice_end message")
+
+        return success
+
     async def send(self, audio_base64: str, sample_rate: int = 24000):
         if not self._ready_for_audio:
             self.ten_env.log_info(
@@ -702,8 +724,8 @@ class AgoraAnamRecorder:
 
         if success:
             self.ten_env.log_info(f"Sent audio chunk, event_id: {event_id}")
-            # Schedule voice_end after a short delay
-            self._schedule_speak_end()
+            # NOTE: voice_end is now triggered by tts_audio_end event
+            # instead of 500ms debounce timer. See send_voice_end() method.
         else:
             await self._handle_error(
                 f"Failed to send audio chunk: {event_id}",

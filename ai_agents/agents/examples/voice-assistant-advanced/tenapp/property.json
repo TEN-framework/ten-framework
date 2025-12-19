@@ -861,6 +861,9 @@
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
+                    },
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
@@ -1006,6 +1009,345 @@
               "extension_group": "control",
               "property": {
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "anam_avatar_python",
+              "extension_group": "default",
+              "property": {
+                "anam_api_key": "${env:ANAM_API_KEY}",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "960f614f-ea88-47c3-9883-f02094f70874",
+                "anam_cluster": "",
+                "anam_pod": "",
+                "agora_appid": "${env:AGORA_APP_ID}",
+                "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "",
+                "agora_video_uid": 123,
+                "input_audio_sample_rate": 44100,
+                "quality": "${env:VIDEO_QUALITY|high}",
+                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "enable_string_uid": false,
+                "activity_idle_timeout": 120
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "source": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "thymia_analyzer"
+                    },
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "avatar",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_text_input",
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "flux_hellos_gpt_5_1_cartesia_anam",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "",
+                "stream_id": 0,
+                "remote_stream_id": 182837,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_ws_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
+                  "language": "en-US",
+                  "interim_results": true,
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "model": "gpt-5.1",
+                "max_tokens": 1000,
+                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\nWORD LIMITS:\n- Steps 1-4 (data gathering): MAX 15 WORDS per response\n- Step 6 (announcing results): MAX 15 WORDS of added context\n- Step 7 (therapeutic conversation): MAX 30 WORDS per response\n\n1. When user provides their name, sex, and year of birth, IMMEDIATELY respond warmly asking about their day. If they don't provide all three pieces, ask for what's missing before proceeding. (MAX 15 WORDS)\n\n2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 20+ seconds total speech) (MAX 15 WORDS)\n\n3. Continue with follow-up questions about their experiences, feelings, or daily life. Keep them talking naturally. (MAX 15 WORDS)\n\n4. Before announcing results, MUST call check_phase_progress(name, year_of_birth, sex) to verify enough speech has been collected AND register user info. Based on the result:\n   - If phase_complete=false: Ask another question to gather more speech (MAX 15 WORDS)\n   - If phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)\n   - NEVER say 'processing your responses' without first confirming phase_complete=true\n\n5. You will receive a [SYSTEM ALERT] message when wellness metrics are ready.\n   - CRITICAL: Only respond to [SYSTEM ALERT] messages that are actually sent to you\n   - NEVER generate or say '[SYSTEM ALERT]' yourself - these come from the system only\n\n6. When you receive '[SYSTEM ALERT] Wellness metrics ready':\n   - Call get_wellness_metrics\n   - Announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES 0-100\n   - Use plain numbered lists only (NO markdown **, *, _ formatting)\n   - Keep any added context to MAX 15 WORDS\n   - After announcing results, silently call confirm_announcement with phase='hellos'\n\n7. THERAPEUTIC CONVERSATION - After results announced:\n   - First, let user know: \"Feel free to chat as long as you like, or say goodbye whenever you're ready to end.\"\n   - Focus on building resilience and reducing stress/anxiety with these evidence-based strategies:\n     a) Reframe setbacks as information - get curious about what you can learn, focus on what's in your control\n     b) Build tolerance for discomfort - small challenges (difficult conversations, sitting with boredom) build evidence you can handle hard things\n     c) Invest in your foundation - sleep, movement, and genuine connection with trusted people\n   - Frame as research-based insights, not clinical diagnosis\n   - MAX 30 WORDS per response\n   - Use warm, empathetic tone\n   - Ask open questions to explore their experiences\n\n8. When user indicates they want to end, thank them warmly for participating\n\nNote: We need 20 seconds total speech for wellness analysis (no reading phase required).",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hi there! I would like to chat with you briefly to predict your mood and energy levels including stress, fatigue, and burnout. Nothing will be recorded and this is purely a demonstration. Please begin by telling me your name, sex and year of birth.",
+                "max_memory_length": 10,
+                "reasoning_effort": "none",
+                "verbosity": "low"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "cartesia_tts",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:CARTESIA_TTS_KEY}",
+                  "model_id": "sonic-3",
+                  "voice": {
+                    "mode": "id",
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                  },
+                  "generation_config": {
+                    "speed": 1
+                  },
+                  "output_format": {
+                    "container": "raw",
+                    "sample_rate": 44100
+                  },
+                  "language": "en"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY}",
+                "analysis_mode": "hellos_only",
+                "min_speech_duration": 20.0
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hi there! I would like to chat with you briefly to predict your mood and energy levels including stress, fatigue, and burnout. Nothing will be recorded and this is purely a demonstration. Please begin by telling me your name, sex and year of birth."
               }
             },
             {
