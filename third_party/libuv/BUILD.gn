@@ -46,8 +46,10 @@ cmake_project("uv_a") {
   hide_symbol = !is_win
 
   outputs_seen_by_ag = []
-  if (is_win) {
+  if (is_win && !is_mingw) {
     outputs_seen_by_ag += [ "$install_path/lib/libuv.lib" ]
+  } else if (is_win && is_mingw) {
+    outputs_seen_by_ag += [ "$install_path/lib/libuv.a" ]
   } else {
     outputs_seen_by_ag += [ "$install_path/lib/libuv.a" ]
   }
