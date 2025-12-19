@@ -346,10 +346,18 @@ class SarvamASRExtension(AsyncASRBaseExtension):
             audio_duration = metrics.get("audio_duration", 0.0)
 
             # Calculate timing
-            start_ms = 0  # TODO: figure out start_ms
+            # Get total audio duration sent so far (including before last reset)
+            total_audio_sent_ms = (
+                self.audio_timeline.get_total_user_audio_duration()
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
             duration_ms = (
                 int(audio_duration * 1000) if audio_duration > 0 else 0
             )
+
+            # Calculate start_ms: transcript corresponds to audio that was sent
+            # Start is total audio sent minus the duration of this transcript
+            start_ms = max(0, total_audio_sent_ms - duration_ms)
 
             # Create ASR result
             asr_result = ASRResult(
