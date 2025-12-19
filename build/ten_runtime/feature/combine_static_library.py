@@ -23,6 +23,7 @@ class ArgumentInfo(argparse.Namespace):
         self.output: str
         self.env_file: str
         self.log_level: int
+        self.is_mingw: bool
 
 
 def ar_extract(library: str, log_level: int) -> None:
@@ -65,6 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, required=False)
     parser.add_argument("--env-file", type=str, required=False)
     parser.add_argument("--log-level", type=int, required=True)
+    parser.add_argument("--is-mingw", action="store_true", default=False)
 
     arg_info = ArgumentInfo()
     args = parser.parse_args(namespace=arg_info)
@@ -73,7 +75,7 @@ if __name__ == "__main__":
 
     # The environment is required on Windows, we need to find lib.exe based on
     # the environment.
-    if is_windows:
+    if is_windows and not arg_info.is_mingw:
         if arg_info.env_file is None:
             print("The environment file is required on Windows.")
             sys.exit(-1)
@@ -96,7 +98,8 @@ if __name__ == "__main__":
     else:
         target_library = os.path.join(arg_info.target_path, arg_info.output)
 
-    if is_windows:
+    if is_windows and not arg_info.is_mingw:
+        # Use MSVC lib.exe for combining static libraries
         cmd = [
             "lib",
             "/OUT:" + target_library,
@@ -109,6 +112,7 @@ if __name__ == "__main__":
             print(f"Failed to combine static library: {output}")
             sys.exit(-1)
     else:
+        # Use ar for combining static libraries (Unix-like, including MinGW)
         if not os.path.exists(target_library):
             shutil.copy(arg_info.library[0], target_library)
 

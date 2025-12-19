@@ -163,7 +163,7 @@ combine_static_library("ten_utils_combined_static") {
   assert(libuv_static != [], "No libuv static library found.")
 
   utils_static = ""
-  if (is_win) {
+  if (is_win && !is_mingw) {
     utils_static = "${root_out_dir}/obj/core/src/ten_utils/ten_utils_static.lib"
   } else {
     utils_static =
