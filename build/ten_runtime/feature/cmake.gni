@@ -121,7 +121,9 @@ template("cmake_project") {
       ]
     }
 
-    if (!is_win) {
+    # MinGW uses GCC toolchain and supports CMAKE_CXX_STANDARD like Linux/Mac
+    # Only MSVC doesn't need these flags
+    if (!is_win || is_mingw) {
       if (defined(invoker.cxx_standard)) {
         args += [
           "--cxx-standard",
