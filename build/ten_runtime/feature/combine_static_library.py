@@ -8,6 +8,7 @@ import argparse
 import sys
 import os
 import shutil
+import glob
 from dotenv import dotenv_values
 from io import StringIO
 from build.scripts import cmd_exec
@@ -35,8 +36,22 @@ def ar_extract(library: str, log_level: int) -> None:
         raise RuntimeError("Failed to extract static library.")
 
 
-def ar_create(target_library: str, target_path: str, log_level: int) -> None:
-    cmd = ["ar", "-rcs", target_library, f"{target_path}/*.o"]
+def ar_create(
+    target_library: str, target_path: str, log_level: int, is_mingw: bool
+) -> None:
+    # On MinGW, the 'ar' command doesn't support shell wildcard expansion (*.o)
+    # directly in the command line, unlike on Linux/macOS where the shell expands
+    # it before passing to ar. We need to explicitly expand the wildcard using
+    # glob.glob() for MinGW.
+    if is_mingw:
+        obj_files = glob.glob(os.path.join(target_path, "*.o"))
+        if not obj_files:
+            print(f"Warning: No .o files found in {target_path}")
+            return
+        cmd = ["ar", "-rcs", target_library] + obj_files
+    else:
+        cmd = ["ar", "-rcs", target_library, os.path.join(target_path, "*.o")]
+
     returncode, output = cmd_exec.run_cmd(cmd, log_level)
     if returncode:
         print(f"Failed to create static library: {output}")
@@ -131,7 +146,7 @@ if __name__ == "__main__":
         try:
             for library in arg_info.library[1:]:
                 ar_extract(library, args.log_level)
-            ar_create(target_library, tmp_output, args.log_level)
+            ar_create(target_library, tmp_output, args.log_level, arg_info.is_mingw)
         except Exception as e:
             returncode = -1
             print(f"An error occurred: {e}")
