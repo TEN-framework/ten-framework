@@ -155,5 +155,8 @@ class BytedanceASRLLMConfig(BaseModel):
                 else:
                     encrypted_params[key] = value
             config.params = encrypted_params
-
+        config.params["request"] = config.get_request_config()
+        config.params["mute_pkg_duration_ms"] = (
+            config.get_mute_pkg_duration_ms()
+        )
         return config.model_dump_json()

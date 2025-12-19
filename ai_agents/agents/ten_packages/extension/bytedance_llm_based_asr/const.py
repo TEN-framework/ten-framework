@@ -23,6 +23,9 @@ SERIALIZATION_TYPE_JSON = 0b0001
 # Compression types
 COMPRESSION_TYPE_GZIP = 0b0001
 
+# Timing constants
+FINALIZE_GRACE_PERIOD_MS = 5000  # 5 seconds grace period after finalize
+
 # Error codes - Official Volcengine ASR LLM error codes
 VOLCENGINE_ERROR_CODES = {
     # Success
