@@ -377,10 +377,21 @@ cmake.py will consider it as its own command line option."
             + f" --target {self.args.project_name}"
         )
 
-        # MinGW uses GNU make and supports parallel builds with $(nproc)
-        # Only MSVC uses Visual Studio generator which doesn't support this syntax
-        if (self.args.target_os != "win" or self.args.is_mingw) and self.args.target_os != "mac":
+        # Add parallel build support for platforms that support it:
+        #   -Windows MinGW: Uses GNU make, supports parallel builds
+        #   -Linux: Uses make, supports parallel builds with $(nproc)
+        if self.args.target_os == "mac":
+            pass
+        elif self.args.target_os == "win":
+            if self.args.is_mingw:
+                cpu_count = os.cpu_count() or 4  # Default to 4 if unable to detect
+                cmd += f" --parallel {cpu_count}"
+            # else: MSVC doesn't add parallel flag
+        elif self.args.target_os == "linux":
+            # Linux and other Unix-like systems: $(nproc) works in shell
             cmd += " --parallel $(nproc)"
+        else:
+            pass
 
         if self.args.log_level > 1:
             print(f"> {cmd}")
