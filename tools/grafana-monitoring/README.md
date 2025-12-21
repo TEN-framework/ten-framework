@@ -204,7 +204,7 @@ Monitors the execution time of each Extension lifecycle stage:
 
 - `app_uri`: Application URI
 - `graph_id`: Graph ID
-- `extension`: Extension name
+- `extension_name`: Extension name
 - `stage`: Lifecycle stage
 
 **Use Case:** Identify slow initialization or cleanup processes

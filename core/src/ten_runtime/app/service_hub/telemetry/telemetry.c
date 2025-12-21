@@ -37,8 +37,8 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
     TEN_ASSERT(self->service_hub.metric_extension_thread_msg_queue_stay_time_us,
                "Should not happen.");
 
-    const char *lifecycle_label_names[] = {"app_uri", "graph_id", "extension",
-                                           "stage"};
+    const char *lifecycle_label_names[] = {"app_uri", "graph_id",
+                                           "extension_name", "stage"};
 
     self->service_hub.metric_extension_lifecycle_duration_us =
         ten_metric_create(self->service_hub.service_hub, 1,
