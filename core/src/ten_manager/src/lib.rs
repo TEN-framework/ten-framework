@@ -43,6 +43,7 @@ pub mod pkg_info;
 pub mod registry;
 pub mod schema;
 mod solver;
+pub mod tracing_config;
 pub mod version;
 pub mod version_utils;
 

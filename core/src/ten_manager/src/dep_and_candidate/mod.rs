@@ -11,6 +11,7 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
+use futures::stream::{FuturesUnordered, StreamExt};
 use semver::{Version, VersionReq};
 use ten_rust::pkg_info::{
     constants::MANIFEST_JSON_FILENAME,
@@ -25,6 +26,7 @@ use ten_rust::pkg_info::{
     pkg_type_and_name::PkgTypeAndName,
     PkgInfo,
 };
+use tracing::instrument;
 
 use super::{home::config::TmanConfig, registry::get_package_list};
 use crate::{
@@ -69,6 +71,10 @@ impl MergedVersionReq {
 /// Otherwise, it means there has been a change, so return true. This allows the
 /// caller to know that there may be new content and that some actions may need
 /// to be taken.
+#[instrument(skip_all, name = "merge_dependency", fields(
+    dep_type = ?dependency,
+    changed = tracing::field::Empty
+))]
 async fn merge_dependency_to_dependencies(
     merged_dependencies: &mut HashMap<PkgTypeAndName, MergedVersionReq>,
     dependency: &ManifestDependency,
@@ -116,9 +122,14 @@ async fn merge_dependency_to_dependencies(
             .insert(pkg_type_name, MergedVersionReq::new(version_req.as_processed()));
     }
 
+    tracing::Span::current().record("changed", changed);
     Ok(changed)
 }
 
+#[instrument(skip_all, name = "process_local_dep", fields(
+    path = tracing::field::Empty,
+    pkg_name = tracing::field::Empty
+))]
 async fn process_local_dependency_to_get_candidate(
     dependency: &ManifestDependency,
     all_candidates: &mut HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
@@ -149,6 +160,9 @@ async fn process_local_dependency_to_get_candidate(
         pkg_info.local_dependency_path = Some(path.clone());
         pkg_info.local_dependency_base_dir = base_dir.clone();
 
+        tracing::Span::current().record("path", path.as_str());
+        tracing::Span::current().record("pkg_name", &pkg_info.manifest.type_and_name.name);
+
         let candidate_map = all_candidates.entry((&pkg_info).into()).or_default();
 
         candidate_map.insert((&pkg_info).into(), pkg_info.clone());
@@ -162,6 +176,13 @@ async fn process_local_dependency_to_get_candidate(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
+#[instrument(skip_all, name = "process_registry_dep", fields(
+    pkg_type = tracing::field::Empty,
+    pkg_name = tracing::field::Empty,
+    version_req = tracing::field::Empty,
+    candidates_found = tracing::field::Empty
+))]
 async fn process_non_local_dependency_to_get_candidate(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     support: &ManifestSupport,
@@ -189,6 +210,10 @@ async fn process_non_local_dependency_to_get_candidate(
             return Err(anyhow!("Expected RegistryDependency but got LocalDependency"));
         }
     };
+
+    tracing::Span::current().record("pkg_type", pkg_type_name.pkg_type.to_string());
+    tracing::Span::current().record("pkg_name", &pkg_type_name.name);
+    tracing::Span::current().record("version_req", version_req.as_processed().to_string());
 
     // First, check whether the package list cache has already processed the
     // same or a more permissive version requirement combination.
@@ -244,6 +269,7 @@ async fn process_non_local_dependency_to_get_candidate(
     }
 
     // Filter suitable candidate packages according to `supports`.
+    let mut candidates_added = 0usize;
     for mut candidate_pkg_info in candidate_pkg_infos {
         let compatible_score = is_manifest_supports_compatible_with(
             &candidate_pkg_info.manifest.supports.clone().unwrap_or_default(),
@@ -274,9 +300,11 @@ async fn process_non_local_dependency_to_get_candidate(
                 .insert((&candidate_pkg_info).into(), candidate_pkg_info.clone());
 
             new_pkgs_to_be_searched.push(candidate_pkg_info);
+            candidates_added += 1;
         }
     }
 
+    tracing::Span::current().record("candidates_found", candidates_added);
     Ok(())
 }
 
@@ -306,45 +334,158 @@ struct DependenciesContext<'a> {
 ///
 /// This function may return an error if there is an issue processing the
 /// dependencies.
+#[instrument(skip_all, name = "process_dependencies")]
 async fn process_dependencies_to_get_candidates(
     ctx: &mut DependenciesContext<'_>,
     input_dependencies: &Vec<ManifestDependency>,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
+    // Phase 1: Process local dependencies sequentially
     for manifest_dep in input_dependencies {
-        match manifest_dep {
-            ManifestDependency::LocalDependency {
-                ..
-            } => {
-                process_local_dependency_to_get_candidate(
-                    manifest_dep,
-                    ctx.all_candidates,
-                    ctx.new_pkgs_to_be_searched,
-                )
-                .await?;
+        if let ManifestDependency::LocalDependency {
+            ..
+        } = manifest_dep
+        {
+            process_local_dependency_to_get_candidate(
+                manifest_dep,
+                ctx.all_candidates,
+                ctx.new_pkgs_to_be_searched,
+            )
+            .await?;
+        }
+    }
+
+    // Phase 2: Batch concurrent processing of registry dependencies
+    // Strategy: Process 50 dependencies concurrently in each batch, then update
+    // results
+    const BATCH_SIZE: usize = 50;
+
+    let registry_deps: Vec<&ManifestDependency> = input_dependencies
+        .iter()
+        .filter(|d| matches!(d, ManifestDependency::RegistryDependency { .. }))
+        .collect();
+
+    for chunk in registry_deps.chunks(BATCH_SIZE) {
+        let mut batch_tasks = FuturesUnordered::new();
+
+        for manifest_dep in chunk {
+            // Check if this dependency needs processing
+            let changed =
+                merge_dependency_to_dependencies(ctx.merged_dependencies, manifest_dep).await?;
+            if !changed {
+                continue;
             }
-            ManifestDependency::RegistryDependency {
-                ..
-            } => {
-                // Check if we need to get the package info from the slow path.
-                let changed =
-                    merge_dependency_to_dependencies(ctx.merged_dependencies, manifest_dep).await?;
-                if !changed {
-                    // There is no new information, so we won't proceed further.
+
+            // Extract dependency information
+            if let ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                version_req,
+            } = manifest_dep
+            {
+                let pkg_type = *pkg_type;
+                let name = name.clone();
+                let version_req = version_req.clone();
+                let tman_config = ctx.tman_config.clone();
+                let pkg_type_name = PkgTypeAndName {
+                    pkg_type,
+                    name: name.clone(),
+                };
+
+                // Check cache
+                if !ctx.pkg_list_cache.check_and_update(&pkg_type_name, version_req.as_processed())
+                {
                     continue;
                 }
 
-                process_non_local_dependency_to_get_candidate(
-                    ctx.tman_config.clone(),
-                    ctx.support,
-                    manifest_dep,
-                    ctx.all_compatible_installed_pkgs,
-                    ctx.all_candidates,
-                    ctx.new_pkgs_to_be_searched,
-                    ctx.pkg_list_cache,
-                    &out,
-                )
-                .await?;
+                // Create concurrent task (I/O operations only)
+                let out_clone = out.clone();
+                batch_tasks.push(async move {
+                    let _span = tracing::info_span!(
+                        "fetch_package_list_concurrent",
+                        pkg_type = ?pkg_type,
+                        pkg_name = %name
+                    )
+                    .entered();
+
+                    get_package_list(
+                        tman_config,
+                        Some(pkg_type),
+                        Some(name.clone()),
+                        Some(version_req.as_processed().clone()),
+                        None,
+                        Some(BASIC_SCOPE.iter().map(|s| s.to_string()).collect()),
+                        None,
+                        None,
+                        &out_clone,
+                    )
+                    .await
+                    .map(|results| (pkg_type_name, version_req, results))
+                });
+            }
+        }
+
+        // Fetch all package lists concurrently
+        while let Some(result) = batch_tasks.next().await {
+            match result {
+                Ok((pkg_type_name, version_req, results)) => {
+                    // Process results sequentially and update shared state
+                    let mut candidate_pkg_infos: Vec<PkgInfo> = vec![];
+
+                    for result in results {
+                        let mut candidate_pkg_info: PkgInfo = (&result).into();
+                        candidate_pkg_info.url = result.download_url;
+                        candidate_pkg_info.is_installed = false;
+                        candidate_pkg_infos.push(candidate_pkg_info);
+                    }
+
+                    // Find candidates from installed packages
+                    if let Some(candidates_map) =
+                        ctx.all_compatible_installed_pkgs.get(&pkg_type_name)
+                    {
+                        for candidate in candidates_map {
+                            if version_req.matches(&candidate.0.version) {
+                                candidate_pkg_infos.push(candidate.1.clone());
+                            }
+                        }
+                    }
+
+                    // Filter and update candidate list
+                    for mut candidate_pkg_info in candidate_pkg_infos {
+                        let compatible_score = is_manifest_supports_compatible_with(
+                            &candidate_pkg_info.manifest.supports.clone().unwrap_or_default(),
+                            ctx.support,
+                        );
+
+                        if compatible_score >= 0 {
+                            candidate_pkg_info.compatible_score = compatible_score;
+
+                            if is_verbose(ctx.tman_config.clone()).await {
+                                out.normal_line(&format!(
+                                    "=> Found a candidate: {}:{}@{}[{}]",
+                                    candidate_pkg_info.manifest.type_and_name.pkg_type,
+                                    candidate_pkg_info.manifest.type_and_name.name.clone(),
+                                    candidate_pkg_info.manifest.version.clone(),
+                                    SupportsDisplay(
+                                        &candidate_pkg_info
+                                            .manifest
+                                            .supports
+                                            .clone()
+                                            .unwrap_or_default(),
+                                    ),
+                                ));
+                            }
+
+                            ctx.all_candidates
+                                .entry(pkg_type_name.clone())
+                                .or_default()
+                                .insert((&candidate_pkg_info).into(), candidate_pkg_info.clone());
+
+                            ctx.new_pkgs_to_be_searched.push(candidate_pkg_info);
+                        }
+                    }
+                }
+                Err(e) => return Err(e),
             }
         }
     }
@@ -355,6 +496,10 @@ async fn process_dependencies_to_get_candidates(
 /// For a version of a package, only keep the most suitable one. The most
 /// suitable one is the package with the highest compatible_score. If there are
 /// multiple packages with the highest score, just pick one at random.
+#[instrument(skip_all, name = "clean_up_candidates", fields(
+    total_packages = all_candidates.len(),
+    cleaned_count = tracing::field::Empty
+))]
 fn clean_up_all_candidates(
     all_candidates: &mut HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
@@ -392,9 +537,13 @@ fn clean_up_all_candidates(
         *pkg_infos =
             version_map.into_values().map(|pkg_info| (pkg_info.into(), pkg_info.clone())).collect();
     }
+
+    let total_cleaned: usize = all_candidates.values().map(|v| v.len()).sum();
+    tracing::Span::current().record("cleaned_count", total_cleaned);
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "get_all_candidates_from_deps", fields(initial_pkgs = %pkgs_to_be_searched.len(), has_extra_dep = %extra_dep.is_some()))]
 pub async fn get_all_candidates_from_deps(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     support: &ManifestSupport,
@@ -425,24 +574,29 @@ pub async fn get_all_candidates_from_deps(
     // handle those dependencies, too.
     let mut extra_dep_opt = extra_dep.cloned();
 
+    let mut _loop_iteration = 0;
     loop {
+        _loop_iteration += 1;
+
         // Merge the dependencies of all pending packages into a single
         // `Vector`.
-        let mut combined_dependencies: Vec<ManifestDependency> = Vec::new();
+        let mut combined_dependencies: Vec<ManifestDependency> = {
+            let mut deps = Vec::new();
+            for pkg_to_be_search in &pkgs_to_be_searched {
+                if processed_pkgs.contains(&(pkg_to_be_search).into()) {
+                    continue;
+                }
 
-        for pkg_to_be_search in &pkgs_to_be_searched {
-            if processed_pkgs.contains(&(pkg_to_be_search).into()) {
-                continue;
+                // Add all dependencies of the current package to the merged list.
+                if let Some(dependencies) = &pkg_to_be_search.manifest.dependencies {
+                    deps.extend(dependencies.clone());
+                }
+
+                // Mark the package as processed.
+                processed_pkgs.insert(pkg_to_be_search.into());
             }
-
-            // Add all dependencies of the current package to the merged list.
-            if let Some(dependencies) = &pkg_to_be_search.manifest.dependencies {
-                combined_dependencies.extend(dependencies.clone());
-            }
-
-            // Mark the package as processed.
-            processed_pkgs.insert(pkg_to_be_search.into());
-        }
+            deps
+        };
 
         // If `extra_dep_opt` exists, add it to `combined_dependencies` (process
         // only once, i.e., the `take()` API).

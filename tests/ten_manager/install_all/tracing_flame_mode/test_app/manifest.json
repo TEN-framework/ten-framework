@@ -1,0 +1,17 @@
+{
+  "type": "app",
+  "name": "test_tracing_flame",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "local_ext",
+      "version": "1.0.0"
+    },
+    {
+      "type": "extension",
+      "name": "ext_1",
+      "version": "3.0.0"
+    }
+  ]
+}

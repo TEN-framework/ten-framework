@@ -11,6 +11,7 @@ use clap::{ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
 use ten_rust::pkg_info::get_pkg_info_from_path;
+use tracing::instrument;
 
 use crate::{
     constants::{DOT_TEN_DIR, PACKAGE_DIR_IN_DOT_TEN_DIR},
@@ -37,6 +38,7 @@ pub fn parse_sub_cmd(
     Ok(crate::cmd::cmd_publish::PublishCommand {})
 }
 
+#[instrument(skip_all, name = "publish_command")]
 pub async fn execute_cmd(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     _tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
