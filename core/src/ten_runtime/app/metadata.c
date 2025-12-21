@@ -302,25 +302,19 @@ static bool ten_app_determine_ten_namespace_properties(
       ten_namespace_properties && ten_value_is_object(ten_namespace_properties),
       "Should not happen.");
 
-  ten_value_object_foreach(ten_namespace_properties, iter) {
-    ten_value_kv_t *prop_kv = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(prop_kv && ten_value_kv_check_integrity(prop_kv),
-               "Should not happen.");
+  // Process properties in the order defined in
+  // ten_app_ten_namespace_prop_info_list.
+  for (int i = 0; i < ten_app_ten_namespace_prop_info_list_size; ++i) {
+    const ten_app_ten_namespace_prop_info_t *prop_info =
+        &ten_app_ten_namespace_prop_info_list[i];
 
-    ten_string_t *item_key = &prop_kv->key;
-    ten_value_t *item_value = prop_kv->value;
-
-    for (int i = 0; i < ten_app_ten_namespace_prop_info_list_size; ++i) {
-      const ten_app_ten_namespace_prop_info_t *prop_info =
-          &ten_app_ten_namespace_prop_info_list[i];
-      if (ten_string_is_equal_c_str(item_key, prop_info->name)) {
-        bool rc = prop_info->init_from_value(self, item_value);
-        if (rc) {
-          break;
-        } else {
-          TEN_LOGW("Failed to init property: %s", prop_info->name);
-          return false;
-        }
+    ten_value_t *item_value =
+        ten_value_object_peek(ten_namespace_properties, prop_info->name);
+    if (item_value != NULL) {
+      bool rc = prop_info->init_from_value(self, item_value);
+      if (!rc) {
+        TEN_LOGW("Failed to init property: %s", prop_info->name);
+        return false;
       }
     }
   }

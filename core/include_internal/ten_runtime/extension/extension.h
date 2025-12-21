@@ -33,7 +33,7 @@
 // an extension that was not successfully created.
 #define TEN_EXTENSION_UNSUCCESSFULLY_CREATED ((ten_extension_t *)-1)
 
-#define TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS 100  // milli-seconds
+#define TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US 100000  // micro-seconds
 
 typedef struct ten_env_t ten_env_t;
 typedef struct ten_extension_t ten_extension_t;
@@ -260,6 +260,13 @@ struct ten_extension_t {
   // List of pending trigger_life_cycle commands waiting for response
   // Contains ten_shared_ptr_t* of trigger_life_cycle commands
   ten_list_t pending_trigger_life_cycle_cmds;
+
+  // Timestamps for lifecycle stage start times (in microseconds)
+  int64_t lifecycle_on_configure_start_time_us;
+  int64_t lifecycle_on_init_start_time_us;
+  int64_t lifecycle_on_start_start_time_us;
+  int64_t lifecycle_on_stop_start_time_us;
+  int64_t lifecycle_on_deinit_start_time_us;
 
   void *user_data;
 };

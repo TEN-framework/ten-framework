@@ -27,6 +27,7 @@
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_result/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -140,6 +141,13 @@ ten_extension_t *ten_extension_create(
   }
 
   ten_list_init(&self->pending_trigger_life_cycle_cmds);
+
+  // Initialize lifecycle timestamps
+  self->lifecycle_on_configure_start_time_us = 0;
+  self->lifecycle_on_init_start_time_us = 0;
+  self->lifecycle_on_start_start_time_us = 0;
+  self->lifecycle_on_stop_start_time_us = 0;
+  self->lifecycle_on_deinit_start_time_us = 0;
 
   self->user_data = user_data;
 
@@ -674,16 +682,11 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
 
   self->state = TEN_EXTENSION_STATE_ON_CONFIGURE;
 
+  // Record the start time of on_configure
+  self->lifecycle_on_configure_start_time_us = ten_current_time_us();
+
   if (self->on_configure) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_configure(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_configure() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_configure_done(self->ten_env);
   }
@@ -706,16 +709,11 @@ void ten_extension_on_init(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_INIT;
 
+  // Record the start time of on_init
+  self->lifecycle_on_init_start_time_us = ten_current_time_us();
+
   if (self->on_init) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_init(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_init() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     (void)ten_extension_on_init_done(self->ten_env);
   }
@@ -738,16 +736,11 @@ void ten_extension_on_start(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_START;
 
+  // Record the start time of on_start
+  self->lifecycle_on_start_start_time_us = ten_current_time_us();
+
   if (self->on_start) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_start(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_start() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_start_done(self->ten_env);
   }
@@ -775,16 +768,11 @@ void ten_extension_on_stop(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_STOP;
 
+  // Record the start time of on_stop
+  self->lifecycle_on_stop_start_time_us = ten_current_time_us();
+
   if (self->on_stop) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_stop(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_stop() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_stop_done(self->ten_env);
   }
@@ -799,16 +787,11 @@ void ten_extension_on_deinit(ten_extension_t *self) {
 
   self->state = TEN_EXTENSION_STATE_ON_DEINIT;
 
+  // Record the start time of on_deinit
+  self->lifecycle_on_deinit_start_time_us = ten_current_time_us();
+
   if (self->on_deinit) {
-    int64_t begin = ten_current_time_ms();
-
     self->on_deinit(self, self->ten_env);
-
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
-      TEN_LOGW("[%s] on_deinit() took %" PRId64 " ms",
-               ten_extension_get_name(self, true), end - begin);
-    }
   } else {
     ten_extension_on_deinit_done(self->ten_env);
   }
@@ -822,17 +805,33 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_LOGD("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  // Record the timestamp when on_cmd is called for cmd processing duration
+  // tracking.
+  int64_t on_cmd_start_us = ten_current_time_us();
+  ten_msg_t *raw_msg = ten_shared_ptr_get_data(msg);
+  raw_msg->processing_start_timestamp_us = on_cmd_start_us;
+#endif
+
   if (self->on_cmd) {
-    int64_t begin = ten_current_time_ms();
+    int64_t begin = ten_current_time_us();
 
     self->on_cmd(self, self->ten_env, msg);
 
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
+    int64_t end = ten_current_time_us();
+    int64_t duration_us = end - begin;
+
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_cmd(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
-               end - begin);
+               duration_us / 1000);
     }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Record callback execution duration metric.
+    ten_extension_record_callback_execution_duration(
+        self, "cmd", ten_msg_get_name(msg), duration_us);
+#endif
   } else {
     // The default behavior of 'on_cmd' is to _not_ forward this command out,
     // and return an 'OK' result to the previous stage.
@@ -849,16 +848,23 @@ void ten_extension_on_data(ten_extension_t *self, ten_shared_ptr_t *msg) {
              "Invalid use of extension %p.", self);
 
   if (self->on_data) {
-    int64_t begin = ten_current_time_ms();
+    int64_t begin = ten_current_time_us();
 
     self->on_data(self, self->ten_env, msg);
 
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
+    int64_t end = ten_current_time_us();
+    int64_t duration_us = end - begin;
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_data(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
-               end - begin);
+               duration_us / 1000);
     }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Record callback execution duration metric.
+    ten_extension_record_callback_execution_duration(
+        self, "data", ten_msg_get_name(msg), duration_us);
+#endif
   } else {
     // Bypass the data.
     ten_env_send_data(self->ten_env, msg, NULL, NULL, NULL);
@@ -872,16 +878,23 @@ void ten_extension_on_video_frame(ten_extension_t *self,
              "Invalid use of extension %p.", self);
 
   if (self->on_video_frame) {
-    int64_t begin = ten_current_time_ms();
+    int64_t begin = ten_current_time_us();
 
     self->on_video_frame(self, self->ten_env, msg);
 
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
+    int64_t end = ten_current_time_us();
+    int64_t duration_us = end - begin;
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_video_frame(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
-               end - begin);
+               duration_us / 1000);
     }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Record callback execution duration metric.
+    ten_extension_record_callback_execution_duration(
+        self, "video_frame", ten_msg_get_name(msg), duration_us);
+#endif
   } else {
     // Bypass the video frame.
     ten_env_send_video_frame(self->ten_env, msg, NULL, NULL, NULL);
@@ -895,16 +908,23 @@ void ten_extension_on_audio_frame(ten_extension_t *self,
              "Invalid use of extension %p.", self);
 
   if (self->on_audio_frame) {
-    int64_t begin = ten_current_time_ms();
+    int64_t begin = ten_current_time_us();
 
     self->on_audio_frame(self, self->ten_env, msg);
 
-    int64_t end = ten_current_time_ms();
-    if (end - begin > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_MS) {
+    int64_t end = ten_current_time_us();
+    int64_t duration_us = end - begin;
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
       TEN_LOGW("[%s] on_audio_frame(%s) took %" PRId64 " ms",
                ten_extension_get_name(self, true), ten_msg_get_name(msg),
-               end - begin);
+               duration_us / 1000);
     }
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Record callback execution duration metric.
+    ten_extension_record_callback_execution_duration(
+        self, "audio_frame", ten_msg_get_name(msg), duration_us);
+#endif
   } else {
     // Bypass the audio frame.
     ten_env_send_audio_frame(self->ten_env, msg, NULL, NULL, NULL);

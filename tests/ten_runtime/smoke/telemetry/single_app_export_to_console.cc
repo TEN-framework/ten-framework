@@ -15,25 +15,15 @@
 
 namespace {
 
-class test_extension_1 : public ten::extension_t {
+class test_extension : public ten::extension_t {
  public:
-  explicit test_extension_1(const char *name) : ten::extension_t(name) {}
+  explicit test_extension(const char *name) : ten::extension_t(name) {}
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    if (cmd->get_name() == "hello_world") {
-      ten_env.send_cmd(std::move(cmd));
-      return;
-    }
-  }
-};
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
-class test_extension_2 : public ten::extension_t {
- public:
-  explicit test_extension_2(const char *name) : ten::extension_t(name) {}
-
-  void on_cmd(ten::ten_env_t &ten_env,
-              std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
@@ -102,14 +92,11 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
 }
 
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    telemetry_bmulti_extension_group__extension_1, test_extension_1);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    telemetry_bmulti_extension_group__extension_2, test_extension_2);
+    telemetry_single_app_export_to_console__test_extension, test_extension);
 
 }  // namespace
 
-TEST(TelemetryTest, MultiExtensionGroup) {  // NOLINT
-  // Start app.
+TEST(TelemetryTest, SingleAppExportToConsole) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -120,28 +107,11 @@ TEST(TelemetryTest, MultiExtensionGroup) {  // NOLINT
   auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
-               "type": "extension",
-               "name": "test_extension_1",
-               "addon": "telemetry_bmulti_extension_group__extension_1",
-               "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "telemetry_bmulti_extension_group__extension_group_1"
-             },{
-               "type": "extension",
-               "name": "test_extension_2",
-               "addon": "telemetry_bmulti_extension_group__extension_2",
-               "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "telemetry_bmulti_extension_group__extension_group_2"
-             }],
-             "connections": [{
-               "app": "msgpack://127.0.0.1:8001/",
-               "extension": "test_extension_1",
-               "cmd": [{
-                 "name": "hello_world",
-                 "dest": [{
-                   "app": "msgpack://127.0.0.1:8001/",
-                   "extension": "test_extension_2"
-                 }]
-               }]
+                "type": "extension",
+                "name": "test_extension",
+                "addon": "telemetry_single_app_export_to_console__test_extension",
+                "extension_group": "test_extension_group",
+                "app": "msgpack://127.0.0.1:8001/"
              }]
            })");
   auto cmd_result =
@@ -151,7 +121,7 @@ TEST(TelemetryTest, MultiExtensionGroup) {  // NOLINT
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");
   hello_world_cmd->set_dests(
-      {{"msgpack://127.0.0.1:8001/", "", "test_extension_1"}});
+      {{"msgpack://127.0.0.1:8001/", "", "test_extension"}});
   cmd_result = client->send_cmd_and_recv_result(std::move(hello_world_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
   ten_test::check_detail_with_string(cmd_result, "hello world, too");
