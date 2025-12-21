@@ -16,7 +16,6 @@ use actix::{Actor, AsyncContext, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use pty_manager::PtyManager;
-use serde::__private::from_utf8_lossy;
 use serde_json::Value;
 
 // The message to/from the pty.
@@ -32,7 +31,7 @@ impl Display for PtyMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PtyMessage::Buffer(data) => {
-                write!(f, "Buffer({:?})", from_utf8_lossy(data))
+                write!(f, "Buffer({:?})", String::from_utf8_lossy(data))
             }
             PtyMessage::Exit(code) => {
                 write!(f, "Exit({code})")
