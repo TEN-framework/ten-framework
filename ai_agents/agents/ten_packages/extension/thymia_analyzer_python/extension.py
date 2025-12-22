@@ -1229,6 +1229,48 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         return first_part, second_part
 
+    def _calculate_actual_speech_seconds(
+        self,
+        pcm_data: bytes,
+        sample_rate: int = 16000,
+        silence_threshold: float = 500.0,
+    ) -> float:
+        """
+        Calculate actual speech seconds in a PCM chunk based on RMS volume.
+
+        Args:
+            pcm_data: Raw PCM audio data
+            sample_rate: Sample rate in Hz
+            silence_threshold: RMS threshold for speech detection
+
+        Returns:
+            Seconds of actual speech (RMS > threshold)
+        """
+        import numpy as np
+
+        if not pcm_data or len(pcm_data) < 2:
+            return 0.0
+
+        # Process in 20ms chunks (same as audio buffer frame size)
+        chunk_size = int(sample_rate * 2 * 0.02)  # 20ms at 16kHz = 640 bytes
+        actual_speech_seconds = 0.0
+
+        for i in range(0, len(pcm_data) - chunk_size + 1, chunk_size):
+            chunk = pcm_data[i : i + chunk_size]
+            if len(chunk) % 2 != 0:
+                chunk = chunk[:-1]
+            if not chunk:
+                continue
+
+            # Calculate RMS
+            samples = np.frombuffer(chunk, dtype=np.int16)
+            rms = np.sqrt(np.mean(samples.astype(np.float64) ** 2))
+
+            if rms > silence_threshold:
+                actual_speech_seconds += 0.02  # 20ms
+
+        return actual_speech_seconds
+
     async def _run_hellos_only_analysis(self, ten_env: AsyncTenEnv):
         """Run Hellos analysis for hellos_only mode"""
         self.active_analysis = True
@@ -1423,9 +1465,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 full_pcm_data, mood_duration
             )
 
+            # Calculate actual speech in each chunk
+            mood_actual_speech = self._calculate_actual_speech_seconds(mood_pcm)
+            read_actual_speech = self._calculate_actual_speech_seconds(read_pcm)
+            total_actual_speech = mood_actual_speech + read_actual_speech
+
             ten_env.log_info(
-                f"[THYMIA_APOLLO_PHASE_2] Split at {mood_duration}s (config): "
-                f"mood={len(mood_pcm)} bytes, read={len(read_pcm)} bytes (in-memory, no disk I/O)"
+                f"[THYMIA_APOLLO_PHASE_2] Split at {mood_duration}s: "
+                f"mood={mood_actual_speech:.1f}s speech, read={read_actual_speech:.1f}s speech, "
+                f"TOTAL={total_actual_speech:.1f}s actual speech sent to Apollo"
             )
 
             # Call Apollo API directly with PCM data (no disk I/O needed)

@@ -31,9 +31,9 @@ if thymia_analyzer_config is None:
         "analysis_mode": "demo_dual",
     }
 
-thymia_analyzer_config["min_speech_duration"] = 20.0
-thymia_analyzer_config["apollo_mood_duration"] = 20.0
-thymia_analyzer_config["apollo_read_duration"] = 20.0
+thymia_analyzer_config["min_speech_duration"] = 10.0
+thymia_analyzer_config["apollo_mood_duration"] = 15.0
+thymia_analyzer_config["apollo_read_duration"] = 15.0
 
 # Apollo prompt - simplified to prevent double responses
 apollo_prompt = """You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:
