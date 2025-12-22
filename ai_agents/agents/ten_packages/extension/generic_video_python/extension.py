@@ -71,6 +71,9 @@ class GenericVideoExtension(AsyncExtension):
         self._audio_task = None
         self._config_valid = False  # Track configuration validation status
         self._connection_task = None
+        self._voice_end_sent_for_request = (
+            None  # Track request_id that voice_end was sent for
+        )
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -179,8 +182,13 @@ class GenericVideoExtension(AsyncExtension):
         self.ten_env.log_info("Handling interrupt")
         await self._clear_audio_queue()
 
-        # Send interrupt command
         if self.recorder and self.recorder.ws_connected():
+            # Send voice_end BEFORE interrupt (required by video avatar services)
+            # Always send voice_end on interrupt since user interrupted mid-speech
+            await self.recorder.send_voice_end()
+            self.ten_env.log_info("Sent voice_end before interrupt")
+
+            # Then send interrupt command
             success = await self.recorder.interrupt()
             if success:
                 self.ten_env.log_info(
@@ -269,11 +277,18 @@ class GenericVideoExtension(AsyncExtension):
 
                 # reason=1 means TTS generation complete (all audio sent to avatar)
                 if reason == 1:
-                    ten_env.log_info(
-                        "[GENERIC_TTS_END] TTS complete - sending voice_end"
-                    )
                     if self.recorder and self.recorder.ws_connected():
-                        await self.recorder.send_voice_end()
+                        # Only send voice_end if we haven't already for this request
+                        if self._voice_end_sent_for_request != request_id:
+                            ten_env.log_info(
+                                f"[GENERIC_TTS_END] TTS complete - sending voice_end for {request_id}"
+                            )
+                            await self.recorder.send_voice_end()
+                            self._voice_end_sent_for_request = request_id
+                        else:
+                            ten_env.log_info(
+                                f"[GENERIC_TTS_END] voice_end already sent for {request_id}, skipping"
+                            )
                     else:
                         ten_env.log_warn(
                             "[GENERIC_TTS_END] Recorder not ready, cannot send voice_end"

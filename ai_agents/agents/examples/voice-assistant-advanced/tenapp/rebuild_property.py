@@ -1052,7 +1052,7 @@ def create_apollo_graph(
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}, {"extension": "avatar"}],
                 },
             ],
             "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "avatar"}]}],

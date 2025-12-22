@@ -41,6 +41,9 @@ class HeygenAvatarExtension(AsyncExtension):
         self.input_audio_queue = asyncio.Queue()
         self.recorder: AgoraHeygenRecorder = None
         self.ten_env: AsyncTenEnv = None
+        self._voice_end_sent_for_request = (
+            None  # Track request_id that speak_end was sent for
+        )
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -133,10 +136,16 @@ class HeygenAvatarExtension(AsyncExtension):
 
     async def _handle_interrupt(self) -> None:
         """Handle audio interrupt by clearing the audio queue and interrupting the client."""
-        self.ten_env.log_debug("Handling interrupt")
+        self.ten_env.log_info("Handling interrupt")
         await self._clear_audio_queue()
         if self.recorder and self.recorder.ws_connected():
+            # Send speak_end BEFORE interrupt (required by HeyGen)
+            await self.recorder.send_speak_end()
+            self.ten_env.log_info("Sent speak_end before interrupt")
+
+            # Then send interrupt command
             await self.recorder.interrupt()
+            self.ten_env.log_info("Successfully sent interrupt command")
         else:
             self.ten_env.log_warn("Recorder not available or not connected")
 
@@ -193,19 +202,26 @@ class HeygenAvatarExtension(AsyncExtension):
                 request_id = payload.get("request_id", "unknown")
 
                 ten_env.log_info(
-                    f"[AVATAR_TTS_END] Received tts_audio_end: request_id={request_id}, reason={reason}"
+                    f"[HEYGEN_TTS_END] Received tts_audio_end: request_id={request_id}, reason={reason}"
                 )
 
                 # reason=1 means TTS generation complete (all audio sent to avatar)
                 if reason == 1:
-                    ten_env.log_info(
-                        "[AVATAR_TTS_END] TTS generation complete (reason=1) - sending agent.speak_end to HeyGen"
-                    )
-                    if self.recorder:
-                        await self.recorder.send_speak_end()
+                    if self.recorder and self.recorder.ws_connected():
+                        # Only send speak_end if we haven't already for this request
+                        if self._voice_end_sent_for_request != request_id:
+                            ten_env.log_info(
+                                f"[HEYGEN_TTS_END] TTS complete - sending speak_end for {request_id}"
+                            )
+                            await self.recorder.send_speak_end()
+                            self._voice_end_sent_for_request = request_id
+                        else:
+                            ten_env.log_info(
+                                f"[HEYGEN_TTS_END] speak_end already sent for {request_id}, skipping"
+                            )
                     else:
                         ten_env.log_warn(
-                            "[AVATAR_TTS_END] Recorder not initialized, cannot send speak_end"
+                            "[HEYGEN_TTS_END] Recorder not ready, cannot send speak_end"
                         )
 
     async def on_audio_frame(
