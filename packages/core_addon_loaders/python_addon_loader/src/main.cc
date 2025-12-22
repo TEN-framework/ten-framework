@@ -196,6 +196,10 @@ class python_addon_loader_t : public ten::addon_loader_t {
       // Complete sys.path even when Python is already initialized.
       complete_and_log_sys_path();
 
+      // The `app_base_dir` is no longer needed afterwards, so it is released.
+      ten_string_destroy(app_base_dir);
+      app_base_dir = nullptr;
+
       ten_env.on_init_done();
       return;
     }
