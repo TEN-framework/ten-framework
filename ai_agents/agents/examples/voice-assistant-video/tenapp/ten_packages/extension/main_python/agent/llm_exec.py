@@ -5,6 +5,7 @@
 #
 import asyncio
 import json
+import os
 import traceback
 from typing import Awaitable, Callable, Literal, Optional
 from ten_ai_base.const import CMD_PROPERTY_RESULT
@@ -157,6 +158,7 @@ class LLMExec:
         self.current_request_id = request_id
         llm_input = LLMRequest(
             request_id=request_id,
+            model=os.getenv("OPENAI_MODEL", "gpt-4o"),
             messages=messages,
             streaming=True,
             parameters={"temperature": 0.7},
