@@ -107,7 +107,6 @@ fn main() {
         // Verify that the library files exist
         // On MinGW, CMake should generate libclingo.a, but if it used Clang/LLVM
         // it might generate clingo.lib instead. We need to check for both.
-        let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
         if target_os.as_str() == "windows" && target_env == "gnu" {
             // MinGW: Check for libclingo.a first (expected)
             let lib_file_a = lib_dir.join("libclingo.a");
@@ -155,7 +154,6 @@ fn main() {
             println!("cargo:rustc-link-lib=dylib=c++");
         } else if target_os.as_str() == "windows" {
             // MinGW uses stdc++ like Linux
-            let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
             if target_env == "gnu" {
                 // MinGW target
                 println!("cargo:rustc-link-lib=dylib=stdc++");
