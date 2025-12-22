@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
             ...(properties || {}),
         };
 
+        console.log("[API] Start merged properties", {
+            greeting:
+                (mergedProperties as any)?.main_control?.greeting ??
+                (mergedProperties as any)?.llm?.greeting,
+            voice_id:
+                (mergedProperties as any)?.tts?.params?.voice_setting?.voice_id,
+        });
+
         const payload: Record<string, unknown> = {
             request_id,
             channel_name,

@@ -97,6 +97,11 @@ export const apiStartService = async (config: StartRequestConfig): Promise<any> 
             prompt,
             computedProperties,
             mergedProperties,
+            resolvedVoiceId:
+                (mergedProperties as any)?.tts?.params?.voice_setting?.voice_id,
+            resolvedGreeting:
+                (mergedProperties as any)?.main_control?.greeting ??
+                (mergedProperties as any)?.llm?.greeting,
         });
     }
 

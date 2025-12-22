@@ -11,7 +11,7 @@ const DEFAULT_GRAPH_NAME = "voice_assistant_live2d";
 
 const voiceTypeDefaults: Record<VoiceType, string> = {
   male: "English_Jovialman",
-  female: "",
+  female: "Japanese_KindLady",
 };
 
 const characterOverrides: Record<string, CharacterOverrides> = {
@@ -70,11 +70,16 @@ export const getGraphProperties = (
   const resolvedVoiceType =
     characterConfig.voiceType ?? voiceType ?? ("female" as VoiceType);
   const resolvedVoiceId =
-    characterConfig.voiceId ?? voiceTypeDefaults[resolvedVoiceType] ?? "";
+    (characterConfig.voiceId && characterConfig.voiceId.trim() !== ""
+      ? characterConfig.voiceId
+      : undefined) ?? voiceTypeDefaults[resolvedVoiceType] ?? "";
   // IMPORTANT:
   // Prefer the caller-provided greeting/prompt (e.g. the selected character profile in the UI),
   // and only fall back to character defaults if the caller didn't provide one.
   const greeting =
+    ((language && language !== "en-US" && localeOverride.greeting)
+      ? localeOverride.greeting
+      : undefined) ??
     fallbackGreeting ??
     localeOverride.greeting ??
     characterConfig.greeting ??
