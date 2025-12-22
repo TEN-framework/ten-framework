@@ -32,8 +32,8 @@ if thymia_analyzer_config is None:
     }
 
 thymia_analyzer_config["min_speech_duration"] = 10.0
-thymia_analyzer_config["apollo_mood_duration"] = 10.0
-thymia_analyzer_config["apollo_read_duration"] = 10.0
+thymia_analyzer_config["apollo_mood_duration"] = 15.0
+thymia_analyzer_config["apollo_read_duration"] = 15.0
 
 # Apollo prompt - simplified to prevent double responses
 apollo_prompt = """You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:
@@ -42,6 +42,8 @@ WORD LIMITS:
 - Steps 1-5 (data gathering): MAX 15 WORDS per response
 - Steps 7-8 (announcing results): MAX 15 WORDS of added context
 - Step 9 (therapeutic conversation): MAX 30 WORDS per response
+
+SPEECH FORMATTING: Avoid punctuation that sounds awkward when spoken - no slashes, parentheses, or abbreviations
 
 1. When user provides their name, sex, and year of birth, IMMEDIATELY respond warmly asking about their day. If they don't provide all three pieces, ask for what's missing before proceeding. (MAX 15 WORDS)
 
@@ -77,7 +79,8 @@ WORD LIMITS:
 
 8. Later when you receive '[SYSTEM ALERT] Clinical indicators ready':
    - Call get_wellness_metrics again
-   - Announce the 2 clinical indicators in comma-separated format without numbering
+   - If clinical_indicators field is MISSING from response: say "Clinical indicators are not available due to an API issue" - NEVER make up values
+   - If clinical_indicators field is PRESENT: Announce the 2 clinical indicators in comma-separated format without numbering
    - Example: 'Clinical indicators: Depression: X% (severity), Anxiety: Y% (severity)'
    - Keep any added context to MAX 15 WORDS
    - After announcing results, silently call confirm_announcement with phase='apollo'

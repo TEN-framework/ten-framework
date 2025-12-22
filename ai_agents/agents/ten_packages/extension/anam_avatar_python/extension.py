@@ -225,8 +225,13 @@ class AnamAvatarExtension(AsyncExtension):
         self.ten_env.log_info("Handling interrupt")
         await self._clear_audio_queue()
 
-        # Send interrupt command
         if self.recorder and self.recorder.ws_connected():
+            # Send voice_end BEFORE interrupt (per Anam requirements)
+            # This ensures avatar transitions out of "waiting for audio" state
+            await self.recorder.send_voice_end()
+            self.ten_env.log_info("Sent voice_end before interrupt")
+
+            # Then send interrupt command
             success = await self.recorder.interrupt()
             if success:
                 self.ten_env.log_info(
