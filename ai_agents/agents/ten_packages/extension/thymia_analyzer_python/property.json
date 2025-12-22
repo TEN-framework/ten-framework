@@ -1,6 +1,6 @@
 {
   "api_key": "${env:THYMIA_API_KEY|}",
-  "min_speech_duration": 30.0,
+  "hellos_only_speech_duration": 30.0,
   "silence_threshold": 0.02,
   "continuous_analysis": true,
   "min_interval_seconds": 60,

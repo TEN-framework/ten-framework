@@ -26,7 +26,7 @@ This extension:
 - `api_key` (string): Thymia API key (env: THYMIA_API_KEY)
 
 ### Optional
-- `min_speech_duration` (float, default: 30.0): Minimum seconds of speech before analysis
+- `hellos_only_speech_duration` (float, default: 30.0): Minimum seconds of speech before analysis
 - `silence_threshold` (float, default: 0.02): RMS threshold for voice activity detection
 - `continuous_analysis` (bool, default: true): Continue analyzing throughout session
 - `min_interval_seconds` (int, default: 60): Minimum seconds between analyses
@@ -48,7 +48,7 @@ Add to your graph's property.json:
       "extension_group": "default",
       "property": {
         "api_key": "${env:THYMIA_API_KEY}",
-        "min_speech_duration": 30.0
+        "hellos_only_speech_duration": 30.0
       }
     }
   ]

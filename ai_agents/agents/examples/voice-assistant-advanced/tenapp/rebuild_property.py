@@ -31,7 +31,7 @@ if thymia_analyzer_config is None:
         "analysis_mode": "demo_dual",
     }
 
-thymia_analyzer_config["min_speech_duration"] = 10.0
+thymia_analyzer_config["hellos_only_speech_duration"] = 10.0
 thymia_analyzer_config["apollo_mood_duration"] = 15.0
 thymia_analyzer_config["apollo_read_duration"] = 15.0
 
@@ -149,7 +149,7 @@ hellos_greeting = "Hi there! I would like to chat with you briefly to predict yo
 thymia_analyzer_config_hellos = {
     "api_key": "${env:THYMIA_API_KEY}",
     "analysis_mode": "hellos_only",
-    "min_speech_duration": 10.0,
+    "hellos_only_speech_duration": 10.0,
 }
 
 # Common configurations

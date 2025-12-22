@@ -25,7 +25,7 @@
         "api_key": {
           "type": "string"
         },
-        "min_speech_duration": {
+        "hellos_only_speech_duration": {
           "type": "float64"
         },
         "silence_threshold": {
