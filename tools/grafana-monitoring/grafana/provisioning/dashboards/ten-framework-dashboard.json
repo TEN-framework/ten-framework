@@ -149,7 +149,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
+          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_configure_avg",
@@ -163,7 +163,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
+          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_init_avg",
@@ -177,7 +177,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
+          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_start_avg",
@@ -191,7 +191,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
+          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_configure_max",
@@ -205,7 +205,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
+          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_init_max",
@@ -219,7 +219,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
+          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
           "format": "table",
           "instant": true,
           "legendFormat": "on_start_max",
@@ -254,7 +254,7 @@
               "extension_group": true
             },
             "indexByName": {
-              "extension": 0,
+              "extension_name": 0,
               "Value #A": 1,
               "Value #B": 2,
               "Value #C": 3,
@@ -269,7 +269,7 @@
               "Value #D": "configure (max)",
               "Value #E": "init (max)",
               "Value #F": "start (max)",
-              "extension": "Extension"
+              "extension_name": "Extension"
             }
           }
         },
@@ -400,7 +400,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(extension_cmd_processing_duration_bucket[1m])) by (le, extension_name, msg_name))",
+          "expr": "histogram_quantile(0.95, sum(increase(extension_cmd_processing_duration_bucket[5m])) by (le, extension_name, msg_name)) or histogram_quantile(0.95, sum(extension_cmd_processing_duration_bucket) by (le, extension_name, msg_name))",
           "legendFormat": "{{extension_name}} - {{msg_name}} (p95)",
           "range": true,
           "refId": "A"
@@ -411,7 +411,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(extension_cmd_processing_duration_bucket[1m])) by (le, extension_name, msg_name))",
+          "expr": "histogram_quantile(0.50, sum(increase(extension_cmd_processing_duration_bucket[5m])) by (le, extension_name, msg_name)) or histogram_quantile(0.50, sum(extension_cmd_processing_duration_bucket) by (le, extension_name, msg_name))",
           "legendFormat": "{{extension_name}} - {{msg_name}} (p50)",
           "range": true,
           "refId": "B",
@@ -519,7 +519,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(extension_cmd_processing_duration_sum[5m])) by (extension_name, msg_name) / sum(rate(extension_cmd_processing_duration_count[5m])) by (extension_name, msg_name)",
+          "expr": "(sum(increase(extension_cmd_processing_duration_sum[5m])) by (extension_name, msg_name) / sum(increase(extension_cmd_processing_duration_count[5m])) by (extension_name, msg_name)) or (sum(extension_cmd_processing_duration_sum) by (extension_name, msg_name) / sum(extension_cmd_processing_duration_count) by (extension_name, msg_name))",
           "format": "table",
           "instant": true,
           "legendFormat": "__auto",

@@ -120,6 +120,17 @@ def setup():
         ]
     )
 
+    # Install tomlkit
+    utils.run_cmd_with_retry(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "tomlkit",
+        ]
+    )
+
 
 if __name__ == "__main__":
     setup()
