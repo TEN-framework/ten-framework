@@ -10,6 +10,9 @@ config("ten_runtime_nodejs_config") {
   include_dirs = ten_runtime_common_includes
   include_dirs += [ "//third_party/node-api-headers/include" ]
 
+  # -fPIC are ignored because they are unused for Windows
+  # Ref: https://stackoverflow.com/questions/5674613/compiling-a-dynamically-linked-library
+  #      https://stackoverflow.com/questions/4787069/autoconf-set-fpic-only-when-necessary
   if (!is_win) {
     cflags = [ "-fPIC" ]
   }
