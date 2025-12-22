@@ -1,0 +1,22 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+[project]
+name = "default-llm-extension-python-tests"
+description = "Default TEN Framework LLM extension template written in Python tests"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pytest", "ten-runtime-python"]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.uv.workspace]
+members = [".."]
+
+[tool.uv.sources]
+ten-runtime-python = { path = "../.ten/app/ten_packages/system/ten_runtime_python", editable = true }
