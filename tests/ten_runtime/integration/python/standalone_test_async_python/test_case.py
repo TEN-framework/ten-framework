@@ -76,6 +76,35 @@ def test_standalone_test_async_python():
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
 
+    # Find libpython path using the tool in ten_runtime_python package
+    find_libpython_script = os.path.join(
+        extension_root_path,
+        ".ten/app/ten_packages/system/ten_runtime_python/tools/find_libpython.py",
+    )
+    if os.path.exists(find_libpython_script):
+        get_lib_path_cmd = [
+            "uv",
+            "run",
+            "python",
+            find_libpython_script,
+        ]
+        try:
+            lib_path = (
+                subprocess.check_output(
+                    get_lib_path_cmd,
+                    cwd=tests_dir,
+                    env=my_env,
+                )
+                .decode("utf-8")
+                .strip()
+            )
+
+            if lib_path:
+                print(f"Setting TEN_PYTHON_LIB_PATH to {lib_path}")
+                my_env["TEN_PYTHON_LIB_PATH"] = lib_path
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to find python lib path: {e}")
+
     if sys.platform == "linux":
         build_config_args = build_config.parse_build_config(
             os.path.join(root_dir, "tgn_args.txt"),
