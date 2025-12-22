@@ -155,7 +155,7 @@ jobs:
 
           df -h .
 
-          tgn gen mac x64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true
+          tgn gen mac x64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_nodejs_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true
 
           tgn build:ten_manager_package mac x64 ${{ matrix.build_type }}
 

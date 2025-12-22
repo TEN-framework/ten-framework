@@ -51,41 +51,20 @@ def test_send_cmd_discard_result_python():
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
-    if build_config_args.ten_enable_integration_tests_prebuilt is False:
-        # Before starting, cleanup the old app package.
-        fs_utils.remove_tree(app_root_path)
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
 
-        print(f'Assembling and building package "{app_dir_name}".')
+    print(f'Assembling and building package "{app_dir_name}".')
 
-        rc = build_pkg.prepare_and_build_app(
-            build_config_args,
-            root_dir,
-            base_path,
-            app_dir_name,
-            app_language,
-        )
-        if rc != 0:
-            assert False, "Failed to build package."
-
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
-
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
     )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
+    if rc != 0:
+        assert False, "Failed to build package."
 
     # Run bootstrap script based on platform
     if sys.platform == "win32":

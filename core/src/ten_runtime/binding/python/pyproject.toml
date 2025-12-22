@@ -19,7 +19,3 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 ignore-vcs = true
 packages = ["interface/ten_runtime"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"lib/libten_runtime_python.so" = "libten_runtime_python.so"
-"../ten_runtime/lib/" = "."

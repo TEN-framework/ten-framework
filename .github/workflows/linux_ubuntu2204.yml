@@ -158,9 +158,9 @@ jobs:
           df -h .
 
           if [ "${{ matrix.arch }}" = "x86" ]; then
-            EXTRA_ARGS="is_clang=false ten_enable_ten_rust=false ten_enable_ten_manager=false ten_manager_enable_tests=false ten_enable_go_binding=false ten_enable_python_binding=false ten_enable_nodejs_binding=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false"
+            EXTRA_ARGS="is_clang=false ten_enable_ten_rust=false ten_enable_ten_manager=false ten_manager_enable_tests=false ten_enable_go_binding=false ten_enable_python_binding=false ten_enable_nodejs_binding=false ten_manager_enable_frontend=false"
           else
-            EXTRA_ARGS="is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true"
+            EXTRA_ARGS="is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_ffmpeg_extensions=true"
           fi
 
           echo $EXTRA_ARGS

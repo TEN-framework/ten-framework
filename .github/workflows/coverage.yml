@@ -272,7 +272,6 @@ jobs:
           ten_enable_go_lint=false \
           ten_enable_rust_incremental_build=false \
           ten_manager_enable_frontend=false \
-          ten_enable_integration_tests_prebuilt=false \
           ten_enable_ffmpeg_extensions=true"
 
           echo $EXTRA_ARGS
