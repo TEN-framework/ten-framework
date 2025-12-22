@@ -387,9 +387,11 @@ cmake.py will consider it as its own command line option."
                 cpu_count = os.cpu_count() or 4  # Default to 4 if unable to detect
                 cmd += f" --parallel {cpu_count}"
             # else: MSVC doesn't add parallel flag
-        else:
+        elif self.args.target_os == "linux":
             # Linux and other Unix-like systems: $(nproc) works in shell
             cmd += " --parallel $(nproc)"
+        else:
+            pass
 
         if self.args.log_level > 1:
             print(f"> {cmd}")
