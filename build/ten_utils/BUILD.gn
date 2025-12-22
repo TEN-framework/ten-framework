@@ -110,7 +110,11 @@ config("utils_private_config") {
       "dl",
     ]
   }
+  # Note: synchronization library is not needed for MinGW as we use
+  # InterlockedExchangeAdd64 instead of InterlockedAddAcquire64
 
+  # Although MinGW uses GNU ld and supports --version-script like Linux,
+  # using __declspec(dllexport) should be enough and more native
   if (is_linux) {
     ldflags += [
       "-Wl,--version-script=" +
@@ -125,7 +129,8 @@ config("utils_private_config") {
       rebase_path("//build/ten_utils/ld_script/mac"),
       "-Wl,-w",
     ]
-  } else if (is_win) {
+  } else if (is_win && !is_mingw) {
+    # /ignore:4099 is MSVC linker option, not supported by MinGW
     ldflags += [ "/ignore:4099" ]
   }
 
