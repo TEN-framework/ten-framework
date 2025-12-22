@@ -45,6 +45,15 @@ export async function POST(request: NextRequest) {
             ...(properties || {}),
         };
 
+        if (greeting) {
+            const mc: any = (mergedProperties as any).main_control ?? {};
+            const llmProps: any = (mergedProperties as any).llm ?? {};
+            mc.greeting = mc.greeting ?? greeting;
+            llmProps.greeting = llmProps.greeting ?? greeting;
+            (mergedProperties as any).main_control = mc;
+            (mergedProperties as any).llm = llmProps;
+        }
+
         console.log("[API] Start merged properties", {
             greeting:
                 (mergedProperties as any)?.main_control?.greeting ??
