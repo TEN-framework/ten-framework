@@ -46,9 +46,33 @@ def test_standalone_test_async_python():
 
     # Step 2:
     #
-    # Run standalone test cases.
+    # Use uv to sync dependencies and run pytest.
 
+    tests_dir = os.path.join(extension_root_path, "tests")
+
+    # Run uv sync --all-packages to install dependencies.
+    uv_sync_cmd = [
+        "uv",
+        "sync",
+        "--all-packages",
+    ]
+
+    uv_sync_process = subprocess.Popen(
+        uv_sync_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=tests_dir,
+    )
+    uv_sync_process.wait()
+    return_code = uv_sync_process.returncode
+    if return_code != 0:
+        assert False, "Failed to sync dependencies with uv."
+
+    # Step 3:
+    #
     # Set the required environment variables for the test.
+
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
 
@@ -59,11 +83,8 @@ def test_standalone_test_async_python():
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
-                base_path,
-                (
-                    "default_async_extension_python/.ten/app/ten_packages/"
-                    "system/ten_runtime/lib/libasan.so"
-                ),
+                extension_root_path,
+                (".ten/app/ten_packages/system/ten_runtime/lib/libasan.so"),
             )
 
             if os.path.exists(libasan_path):
@@ -76,10 +97,10 @@ def test_standalone_test_async_python():
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
-                base_path,
+                extension_root_path,
                 (
-                    "default_async_extension_python/.ten/app/ten_packages/"
-                    "system/ten_runtime/lib/libclang_rt.asan_osx_dynamic.dylib"
+                    ".ten/app/ten_packages/system/ten_runtime/lib/"
+                    "libclang_rt.asan_osx_dynamic.dylib"
                 ),
             )
 
@@ -87,25 +108,23 @@ def test_standalone_test_async_python():
                 print("Using AddressSanitizer library.")
                 my_env["DYLD_INSERT_LIBRARIES"] = libasan_path
 
-    # Run start script based on platform
-    if sys.platform == "win32":
-        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
-        tester_process = subprocess.Popen(
-            [sys.executable, start_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=extension_root_path,
-        )
-    else:
-        # On Unix-like systems, use bash start script
-        tester_process = subprocess.Popen(
-            "tests/bin/start",
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=extension_root_path,
-        )
+    # Step 4:
+    #
+    # Run the test using uv run pytest.
+    uv_run_pytest_cmd = [
+        "uv",
+        "run",
+        "pytest",
+        "-s",
+    ]
+
+    tester_process = subprocess.Popen(
+        uv_run_pytest_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=tests_dir,
+    )
 
     tester_rc = tester_process.wait()
     assert tester_rc == 0
