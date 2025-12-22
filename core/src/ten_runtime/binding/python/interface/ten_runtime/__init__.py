@@ -70,31 +70,26 @@ if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
                 pass
 
 # ==============================================================================
-# Linux/macOS Shared Library Search Path Configuration
+# Shared Library Search Path Configuration
 # ==============================================================================
 #
-# For Linux/macOS, we need to add the lib directory to sys.path so that
-# Python can find libten_runtime_python.so when importing.
-#
-# This is similar to the Windows case above, but for Unix-like systems.
+# We need to add the lib directory to sys.path so that Python can find the
+# native extension module (e.g., libten_runtime_python.so/.pyd) when importing.
 # ==============================================================================
 
-if sys.platform in ("linux", "darwin"):
-    # Get the directory of this __init__.py file
-    _current_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the directory of this __init__.py file
+_current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Navigate to ten_packages/system/ten_runtime_python/lib
-    # Path: .../ten_packages/system/ten_runtime_python/interface/ten_runtime/__init__.py
-    #    -> .../ten_packages/system/ten_runtime_python/lib
-    # In order to find libten_runtime_python.so
-    _lib_dir = os.path.join(
-        os.path.dirname(os.path.dirname(_current_dir)), "lib"
-    )
+# Navigate to ten_packages/system/ten_runtime_python/lib
+# Path: .../ten_packages/system/ten_runtime_python/interface/ten_runtime/__init__.py
+#    -> .../ten_packages/system/ten_runtime_python/lib
+# In order to find libten_runtime_python.so
+_lib_dir = os.path.join(os.path.dirname(os.path.dirname(_current_dir)), "lib")
 
-    # Add lib directory to sys.path so Python can find .so files
-    _abs_lib_dir = os.path.abspath(_lib_dir)
-    if os.path.isdir(_abs_lib_dir) and _abs_lib_dir not in sys.path:
-        sys.path.insert(0, _abs_lib_dir)
+# Add lib directory to sys.path so Python can find .so files
+_abs_lib_dir = os.path.abspath(_lib_dir)
+if os.path.isdir(_abs_lib_dir) and _abs_lib_dir not in sys.path:
+    sys.path.insert(0, _abs_lib_dir)
 
 from .addon import Addon
 from .addon_manager import (
