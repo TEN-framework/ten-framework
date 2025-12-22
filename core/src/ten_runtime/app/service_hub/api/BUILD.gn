@@ -11,5 +11,34 @@ ten_runtime_glob("api") {
 
   if (ten_enable_ten_rust) {
     public_deps = [ "//core/src/ten_rust:ten_rust_binding" ]
+
+    # api.c calls ten_log_global_get_output_file_path which is defined in ten_utils/log/global.c
+    # Since api is compiled as part of ten_utils_shared DLL, it needs to use actual symbols
+    # instead of __declspec(dllimport). Or else core/src/ten_runtime/app/service_hub/api/api.c:18:
+    # undefined reference to `__imp_ten_log_global_get_output_file_path' when building ten_utils.dll
+    #
+    # Why only MinGW needs this (not MSVC/Linux/macOS):
+    # 1. Linux/macOS: Use __attribute__((visibility("default"))) instead of __declspec(dllimport).
+    #    No __imp_ prefix is generated, symbols are resolved directly. See ten_config.h lines 35-51.
+    #
+    # 2. MSVC: The MSVC linker can automatically resolve __declspec(dllimport) symbols even when
+    #    they're in the same DLL. It may be that MSVC's linker is more lenient and can use the
+    #    actual symbol definition from the same DLL.
+    #
+    # 3. MinGW (GCC on Windows): When GCC sees __declspec(dllimport), it generates code that
+    #    references the symbol with an __imp_ prefix (e.g., __imp_ten_log_global_get_output_file_path).
+    #    This __imp_ prefix is used for importing symbols from external DLLs via import libraries.
+    #    However, when linking the same DLL internally, the linker only has the actual symbol
+    #    (ten_log_global_get_output_file_path) available, not the __imp_ prefixed version.
+    #    This causes "undefined reference to __imp_..." errors.
+    #
+    # Solution: Define TEN_UTILS_EXPORT when compiling api so it uses __declspec(dllexport)
+    # instead of __declspec(dllimport), making it reference the actual symbol directly.
+    #
+    # References:
+    # - GCC dllimport behavior: https://gcc.gnu.org/onlinedocs/gcc-4.7.0/gcc/Function-Attributes.html
+    if (is_win && is_mingw) {
+      defines = [ "TEN_UTILS_EXPORT" ]
+    }
   }
 }
