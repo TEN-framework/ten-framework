@@ -63,7 +63,17 @@ class test_app : public ten::app_t {
                         },
                         "services": {
                           "telemetry": {
-                            "enabled": true
+                            "enabled": true,
+                            "metrics": {
+                              "enabled": true,
+                              "exporter": {
+                                "type": "otlp",
+                                "config": {
+                                  "endpoint": "http://localhost:4317",
+                                  "protocol": "grpc"
+                                }
+                              }
+                            }
                           }
                         }
                       }
@@ -85,12 +95,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(telemetry_single_app__test_extension,
-                                    test_extension);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
+    telemetry_single_app_export_to_otlp__test_extension, test_extension);
 
 }  // namespace
 
-TEST(TelemetryTest, SingleApp) {  // NOLINT
+TEST(TelemetryTest, SingleAppExportToOtlp) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -103,7 +113,7 @@ TEST(TelemetryTest, SingleApp) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "telemetry_single_app__test_extension",
+                "addon": "telemetry_single_app_export_to_otlp__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]

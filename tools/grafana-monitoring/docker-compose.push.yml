@@ -1,0 +1,77 @@
+# TEN Framework - Push Mode Monitoring Configuration
+# Use Case: Application uses OTLP exporter, cloud-native deployment
+#
+# Usage:
+#   docker-compose -f docker-compose.push.yml up -d
+#
+# Application configuration example (property.json):
+#   {
+#     "type": "otlp",
+#     "config": {
+#       "endpoint": "http://localhost:4317",
+#       "protocol": "grpc"
+#     }
+#   }
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  # OpenTelemetry Collector - Receives OTLP metrics
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: ten_otel_collector_push
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus exporter
+    volumes:
+      - ./configs/push/otel-collector-config.yml:/etc/otelcol-contrib/config.yaml
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ten_prometheus_push
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./configs/push/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ten_grafana_push
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

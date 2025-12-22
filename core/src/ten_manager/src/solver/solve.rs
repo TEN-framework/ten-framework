@@ -20,6 +20,7 @@ use ten_rust::pkg_info::{
     constants::MANIFEST_JSON_FILENAME, manifest::dependency::ManifestDependency,
     pkg_basic_info::PkgBasicInfo, pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
+use tracing::instrument;
 
 use crate::{
     home::config::{is_verbose, TmanConfig},
@@ -206,6 +207,7 @@ type SolveOutcome = (UsableModel, NonUsableModels);
 type SolveResult = Result<SolveOutcome>;
 
 #[allow(unused_assignments)]
+#[instrument(skip_all, name = "clingo_solve", fields(input_size = %input.len()))]
 async fn solve(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     input: &str,
@@ -326,7 +328,12 @@ async fn solve(
         }
 
         // i.e., clingo_solve_handle_model
-        match handle.model() {
+        let model_result = {
+            let _span = tracing::info_span!("clingo_get_model", model_num = model_count).entered();
+            handle.model()
+        };
+
+        match model_result {
             // Get the model.
             Ok(Some(model)) => {
                 let mut is_usable = false;
@@ -334,9 +341,13 @@ async fn solve(
                 if verbose {
                     out.normal_line("get_model...");
                 }
-                if let Some(m) =
+                let parsed_model = {
+                    let _span = tracing::info_span!("parse_clingo_model", model_num = model_count)
+                        .entered();
                     get_model(tman_config.clone(), model, &mut is_usable, out.clone()).await
-                {
+                };
+
+                if let Some(m) = parsed_model {
                     if is_usable {
                         usable_model = Some(m);
 
@@ -388,6 +399,9 @@ async fn solve(
     Ok((usable_model, non_usable_models))
 }
 
+#[instrument(skip_all, name = "create_input_for_dep_rel", fields(
+    has_dep_rel = dep_relationship.is_some()
+))]
 async fn create_input_str_for_dependency_relationship(
     input_str: &mut String,
     dep_relationship: Option<&DependencyRelationship>,
@@ -473,6 +487,10 @@ async fn create_input_str_for_dependency_relationship(
     Ok(())
 }
 
+#[instrument(skip_all, name = "create_input_for_pkg_deps", fields(
+    pkg_name = %pkg_info.manifest.type_and_name.name,
+    version = %pkg_info.manifest.version
+))]
 async fn create_input_str_for_pkg_info_dependencies(
     input_str: &mut String,
     pkg_info: &PkgInfo,
@@ -640,6 +658,11 @@ fn create_input_str_for_pkg_info_without_dependencies(
     Ok(())
 }
 
+#[instrument(skip_all, name = "create_input_for_all_pkgs", fields(
+    total_candidates = all_candidates.len(),
+    max_versions = max_latest_versions,
+    has_filter = valid_packages.is_some()
+))]
 fn create_input_str_for_all_possible_pkgs_info_with_filter(
     input_str: &mut String,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
@@ -699,6 +722,12 @@ fn create_input_str_for_all_possible_pkgs_info_with_filter(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "create_clingo_input", fields(
+    pkg_name = %pkg_name,
+    total_candidates = all_candidates.len(),
+    has_extra_dep = extra_dep_relationship.is_some(),
+    input_size = tracing::field::Empty
+))]
 async fn create_input_str(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -847,10 +876,12 @@ async fn create_input_str(
         out.normal_line(&format!("Input: \n{input_str}"));
     }
 
+    tracing::Span::current().record("input_size", input_str.len());
     Ok(input_str)
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "solve_all_dependencies", fields(pkg_name = %pkg_name, max_versions = %current_max_latest_versions, total_candidates = %all_candidates.len()))]
 pub async fn solve_all(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,

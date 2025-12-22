@@ -73,7 +73,13 @@ class test_app : public ten::app_t {
                         },
                         "services": {
                           "telemetry": {
-                            "enabled": true
+                            "enabled": true,
+                            "metrics": {
+                              "enabled": true,
+                              "exporter": {
+                                "type": "console"
+                              }
+                            }
                           }
                         }
                       }

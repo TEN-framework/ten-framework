@@ -253,6 +253,32 @@ class GenericVideoExtension(AsyncExtension):
         data_name = data.get_name()
         ten_env.log_debug("on_data name {}".format(data_name))
 
+        if data_name == "tts_audio_end":
+            import json
+
+            json_str, _ = data.get_property_to_json(None)
+            if json_str:
+                payload = json.loads(json_str)
+                reason = payload.get("reason")
+                request_id = payload.get("request_id", "unknown")
+
+                ten_env.log_info(
+                    f"[GENERIC_TTS_END] Received tts_audio_end: "
+                    f"request_id={request_id}, reason={reason}"
+                )
+
+                # reason=1 means TTS generation complete (all audio sent to avatar)
+                if reason == 1:
+                    ten_env.log_info(
+                        "[GENERIC_TTS_END] TTS complete - sending voice_end"
+                    )
+                    if self.recorder and self.recorder.ws_connected():
+                        await self.recorder.send_voice_end()
+                    else:
+                        ten_env.log_warn(
+                            "[GENERIC_TTS_END] Recorder not ready, cannot send voice_end"
+                        )
+
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:

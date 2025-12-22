@@ -52,7 +52,7 @@ declare_args() {
 
 declare_args() {
   # If set, enable memory leak checking in TEN go app.
-  ten_enable_go_app_leak_check = is_linux && is_debug && target_cpu == "x64"
+  ten_enable_go_app_leak_check = enable_sanitizer && is_linux && is_debug && target_cpu == "x64"
 }
 
 ten_runtime_common_defines = common_defines
