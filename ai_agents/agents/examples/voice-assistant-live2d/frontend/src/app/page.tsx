@@ -836,6 +836,9 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<CharacterProfile>(
     characterOptions[0]
   );
+  const [selectedLanguage, setSelectedLanguage] = useState<string>(
+    process.env.NEXT_PUBLIC_LANGUAGE || "en-US"
+  );
   const channelName = useMemo(
     () =>
       process.env.NEXT_PUBLIC_CHANNEL_NAME ||
@@ -882,6 +885,49 @@ export default function Home() {
       );
     }
   }, []);
+
+  const handleLanguageSelect = (lang: string) => {
+    if (lang === selectedLanguage) return;
+    setSelectedLanguage(lang);
+    if (isConnected && connectedUserId !== null) {
+      void (async () => {
+        setIsConnecting(true);
+        try {
+          await apiStopService(channelName);
+        } catch (error) {
+          console.warn("[Agent] Failed to stop agent while switching language:", error);
+        }
+        try {
+          await apiStartService({
+            channel: channelName,
+            userId: connectedUserId,
+            graphName:
+              process.env.NEXT_PUBLIC_GRAPH_NAME ||
+              (lang === "zh-CN"
+                ? selectedModel.id === "kei"
+                  ? "voice_assistant_live2d_kei_zh"
+                  : selectedModel.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie_zh"
+                  : "voice_assistant_live2d"
+                : selectedModel.id === "kei"
+                ? "voice_assistant_live2d_kei"
+                : selectedModel.id === "chubbie"
+                ? "voice_assistant_live2d_chubbie"
+                : "voice_assistant_live2d"),
+            language: lang,
+            voiceType: selectedModel.voiceType,
+            characterId: selectedModel.id,
+            greeting: selectedModel.agentGreeting,
+            prompt: selectedModel.agentPrompt,
+          });
+        } catch (error) {
+          console.error("[Agent] Failed to restart agent after language switch:", error);
+        } finally {
+          setIsConnecting(false);
+        }
+      })();
+    }
+  };
 
   useEffect(() => {
     // Dynamically import Agora service only on client side
@@ -933,8 +979,19 @@ export default function Home() {
               channel: channelName,
               userId: connectedUserId,
               graphName:
-                process.env.NEXT_PUBLIC_GRAPH_NAME || "voice_assistant_live2d",
-              language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
+                process.env.NEXT_PUBLIC_GRAPH_NAME ||
+                (selectedLanguage === "zh-CN"
+                  ? candidate.id === "kei"
+                    ? "voice_assistant_live2d_kei_zh"
+                    : candidate.id === "chubbie"
+                    ? "voice_assistant_live2d_chubbie_zh"
+                    : "voice_assistant_live2d"
+                  : candidate.id === "kei"
+                  ? "voice_assistant_live2d_kei"
+                  : candidate.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie"
+                  : "voice_assistant_live2d"),
+              language: selectedLanguage,
               voiceType: candidate.voiceType,
               characterId: candidate.id,
               greeting: candidate.agentGreeting,
@@ -1471,35 +1528,41 @@ export default function Home() {
             uid: credentials.uid,
           };
 
+          // Start the agent BEFORE joining RTC so main_control reads the overridden greeting
+          try {
+            const startResult = await apiStartService({
+              channel: agoraConfig.channel,
+              userId: agoraConfig.uid || 0,
+              graphName:
+                process.env.NEXT_PUBLIC_GRAPH_NAME ||
+                (selectedLanguage === "zh-CN"
+                  ? selectedModel.id === "kei"
+                    ? "voice_assistant_live2d_kei_zh"
+                    : selectedModel.id === "chubbie"
+                    ? "voice_assistant_live2d_chubbie_zh"
+                    : "voice_assistant_live2d"
+                  : selectedModel.id === "kei"
+                  ? "voice_assistant_live2d_kei"
+                  : selectedModel.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie"
+                  : "voice_assistant_live2d"),
+              language: selectedLanguage,
+              voiceType: selectedModel.voiceType,
+              characterId: selectedModel.id,
+              greeting: selectedModel.agentGreeting,
+              prompt: selectedModel.agentPrompt,
+            });
+            console.log("Agent started (pre-RTC):", startResult);
+          } catch (error) {
+            console.error("Failed to start agent pre-RTC:", error);
+          }
+
           console.log("Agora config:", agoraConfig);
           const success = await agoraService.connect(agoraConfig);
           if (success) {
             setIsConnected(true);
             setConnectedUserId(agoraConfig.uid ?? 0);
-
-            // Sync microphone state with Agora service
             setIsMuted(agoraService.isMicrophoneMuted());
-
-            // Start the agent service
-            try {
-              const startResult = await apiStartService({
-                channel: agoraConfig.channel,
-                userId: agoraConfig.uid || 0,
-                graphName:
-                  process.env.NEXT_PUBLIC_GRAPH_NAME ||
-                  "voice_assistant_live2d",
-                language: process.env.NEXT_PUBLIC_LANGUAGE || "en-US",
-                voiceType: selectedModel.voiceType,
-                characterId: selectedModel.id,
-                greeting: selectedModel.agentGreeting,
-                prompt: selectedModel.agentPrompt,
-              });
-
-              console.log("Agent started:", startResult);
-            } catch (error) {
-              console.error("Failed to start agent:", error);
-            }
-
             startPing();
           } else {
             throw new Error("Failed to connect to Agora");
@@ -1535,6 +1598,30 @@ export default function Home() {
     </div>
   );
 
+  const renderLanguageSwitch = () => (
+    <div className="flex w-full max-w-md items-center justify-center gap-2 overflow-x-auto rounded-full bg-white/60 p-2 shadow-sm backdrop-blur">
+      {[
+        { id: "en-US", name: "English" },
+        { id: "zh-CN", name: "中文" },
+      ].map((lang) => {
+        const isActive = lang.id === selectedLanguage;
+        return (
+          <button
+            key={lang.id}
+            type="button"
+            onClick={() => handleLanguageSelect(lang.id)}
+            className={`rounded-full px-5 py-2.5 font-semibold text-base transition md:text-sm ${
+              isActive
+                ? "bg-[#2f3dbd] text-white"
+                : "bg-white/85 text-[#586094] hover:bg-white"
+            }`}
+          >
+            {lang.name}
+          </button>
+        );
+      })}
+    </div>
+  );
   const backgroundTheme = selectedModel.backgroundTheme;
   const floatingElements =
     selectedModel.floatingElements ?? defaultFloatingElements;
@@ -1684,6 +1771,7 @@ export default function Home() {
 
         <main className="flex w-full max-w-5xl flex-col items-center gap-8">
           {renderCharacterSwitch()}
+          {renderLanguageSwitch()}
 
           <div className={stageWrapperClass}>
             <div className={stageGlowClass} style={stageGlowStyle} />
