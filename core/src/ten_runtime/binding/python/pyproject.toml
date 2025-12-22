@@ -19,3 +19,7 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 ignore-vcs = true
 packages = ["interface/ten_runtime"]
+
+[tool.hatch.build.targets.editable]
+# Make editable mode create .pth files instead of copying.
+dev-mode-exact = true

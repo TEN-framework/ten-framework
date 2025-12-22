@@ -76,6 +76,7 @@
       "property.json",
       "pyproject.toml",
       "tests/**.py",
+      "tests/pyproject.toml",
       "tests/bin/*",
       "requirements.txt",
       "docs/**",

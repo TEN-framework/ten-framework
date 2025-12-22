@@ -25,23 +25,11 @@ def test_go_app_python():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
-    # Create virtual environment.
-    venv_dir = os.path.join(base_path, "venv")
-    subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
-
     my_env = os.environ.copy()
 
     # Set the required environment variables for the test.
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
-
-    # Launch virtual environment.
-    my_env["VIRTUAL_ENV"] = venv_dir
-    if sys.platform == "win32":
-        venv_bin_dir = os.path.join(venv_dir, "Scripts")
-    else:
-        venv_bin_dir = os.path.join(venv_dir, "bin")
-    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
     app_dir_name = "go_app_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -66,29 +54,27 @@ def test_go_app_python():
     if rc != 0:
         assert False, "Failed to build package."
 
-    # Run bootstrap script based on platform
-    if sys.platform == "win32":
-        # On Windows, use Python bootstrap script directly
-        print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
-        bootstrap_process = subprocess.Popen(
-            [sys.executable, bootstrap_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=app_root_path,
-        )
-    else:
-        # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
-        bootstrap_process = subprocess.Popen(
-            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-        )
+    # Step 1: Bootstrap Python dependencies (update pyproject.toml and sync)
+    print("Bootstrapping Python dependencies...")
+    rc = build_pkg.bootstrap_python_dependencies(
+        app_root_path, my_env, log_level=1
+    )
+    if rc != 0:
+        assert False, "Failed to bootstrap Python dependencies."
 
-    bootstrap_process.wait()
-    if bootstrap_process.returncode != 0:
-        assert False, "Failed to run bootstrap script."
+    # Step 2: Activate virtual environment for Go app
+    # Go app needs to find Python packages in the uv-managed venv
+    venv_path = os.path.join(app_root_path, ".venv")
+    if os.path.exists(venv_path):
+        my_env["VIRTUAL_ENV"] = venv_path
+        if sys.platform == "win32":
+            venv_bin_dir = os.path.join(venv_path, "Scripts")
+        else:
+            venv_bin_dir = os.path.join(venv_path, "bin")
+        my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
+        print(f"Activated virtual environment at {venv_path}")
 
+    # Step 3: Setup AddressSanitizer if needed
     if sys.platform == "linux":
         if (
             build_config_args.enable_sanitizer
@@ -106,6 +92,8 @@ def test_go_app_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
+    # Step 4: Start the Go server with activated virtual environment
+    print("Starting Go server...")
     if sys.platform == "win32":
         start_script = os.path.join(app_root_path, "bin", "start.py")
 
@@ -162,4 +150,3 @@ def test_go_app_python():
             # Testing complete. If builds are only created during the testing
             # phase, we can clear the build results to save disk space.
             fs_utils.remove_tree(app_root_path)
-            fs_utils.remove_tree(venv_dir)

@@ -78,6 +78,7 @@
       "pyproject.toml",
       "tests/**.py",
       "tests/bin/*",
+      "tests/pyproject.toml",
       "requirements.txt",
       "docs/**",
       ".vscode/**"

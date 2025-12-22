@@ -192,6 +192,10 @@ class python_addon_loader_t : public ten::addon_loader_t {
     int py_initialized = ten_py_is_initialized();
     if (py_initialized != 0) {
       TEN_LOGI("[Python addon loader] Python runtime has been initialized");
+
+      // Complete sys.path even when Python is already initialized.
+      complete_and_log_sys_path();
+
       ten_env.on_init_done();
       return;
     }
@@ -200,21 +204,7 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     ten_py_initialize();
 
-    find_app_base_dir();
-
-    // Before loading the ten python modules (extensions), we have to complete
-    // sys.path first.
-    complete_sys_path();
-
-    ten_py_run_simple_string(
-        "import sys\n"
-        "print(sys.path)\n");
-
-    const auto *sys_path = ten_py_get_path();
-    TEN_LOGI("[Python addon loader] python initialized, sys.path: %s",
-             sys_path);
-
-    ten_py_mem_free((void *)sys_path);
+    complete_and_log_sys_path();
 
     start_debugpy_server_if_needed();
 
@@ -344,6 +334,35 @@ class python_addon_loader_t : public ten::addon_loader_t {
     ten_py_add_paths_to_sys(&paths);
 
     ten_list_clear(&paths);
+  }
+
+  // Complete sys.path and log the final sys.path for debugging purposes.
+  //
+  // **Note:** This function can be called from multiple threads (Python main
+  // thread or other threads). Therefore, it must be thread-safe. It acquires
+  // the GIL before modifying sys.path and releases it afterwards.
+  void complete_and_log_sys_path() {
+    find_app_base_dir();
+
+    // Acquire GIL to ensure thread-safe access to Python runtime.
+    void *ten_py_gil_state = ten_py_gil_state_ensure();
+
+    // Before loading the ten python modules (extensions), we have to complete
+    // sys.path first.
+    complete_sys_path();
+
+    ten_py_run_simple_string(
+        "import sys\n"
+        "print(sys.path)\n");
+
+    const auto *sys_path = ten_py_get_path();
+    TEN_LOGI("[Python addon loader] python initialized, sys.path: %s",
+             sys_path);
+
+    ten_py_mem_free((void *)sys_path);
+
+    // Release GIL after modifications are complete.
+    ten_py_gil_state_release(ten_py_gil_state);
   }
 
   // Get the real path of <app_root>/ten_packages/extension/

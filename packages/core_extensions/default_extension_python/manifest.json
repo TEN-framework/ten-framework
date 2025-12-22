@@ -79,6 +79,7 @@
       "pyproject.toml",
       "tests/**.py",
       "tests/**.tent",
+      "tests/pyproject.toml",
       "tests/bin/*",
       "requirements.txt",
       "docs/**",
