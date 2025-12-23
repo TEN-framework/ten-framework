@@ -1048,7 +1048,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[]))",
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_configure\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_configure_avg",
@@ -1062,7 +1062,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_init\"}[]))",
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_init\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_init_avg",
@@ -1076,7 +1076,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg by (extension_name) (avg_over_time(extension_lifecycle_duration{stage=\"on_start\"}[]))",
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_start\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_start_avg",
@@ -1090,7 +1090,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[]))",
+          "expr": "max(extension_lifecycle_duration{stage=\"on_configure\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_configure_max",
@@ -1104,7 +1104,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_init\"}[]))",
+          "expr": "max(extension_lifecycle_duration{stage=\"on_init\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_init_max",
@@ -1118,7 +1118,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max by (extension_name) (max_over_time(extension_lifecycle_duration{stage=\"on_start\"}[]))",
+          "expr": "max(extension_lifecycle_duration{stage=\"on_start\"}) by (extension_name)",
           "format": "table",
           "instant": true,
           "legendFormat": "on_start_max",
@@ -1204,8 +1204,7 @@
           }
         }
       ],
-      "type": "table",
-      "description": "Shows average and maximum duration of each startup lifecycle stage (on_configure, on_init, on_start) over the last hour. Each extension shows: avg time per stage, max time per stage, and total startup time (sum of all three stages). Color coding: Green (< 100ms), Yellow (100-500ms), Orange (500ms-1s), Red (> 1s)."
+      "type": "table"
     }
   ],
   "refresh": "5s",
