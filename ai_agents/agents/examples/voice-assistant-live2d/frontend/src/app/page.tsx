@@ -1674,7 +1674,7 @@ export default function Home() {
     const muted = isMuted;
     const barWidth = Math.min(100, Math.max(0, Math.round(micLevel * 100)));
     return (
-      <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-2 py-1 shadow-sm backdrop-blur">
+      <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur">
         <span className="text-[#586094] text-[10px] md:text-xs">
           {connected ? "Mic" : "Mic (off)"}
         </span>
@@ -1689,9 +1689,9 @@ export default function Home() {
         >
           {muted ? "Muted" : connected ? "Live" : "Disconnected"}
         </span>
-        <div className="relative h-2 w-16 rounded-full bg-white md:w-24">
+        <div className="relative h-3 w-16 rounded-full bg-white md:w-24">
           <div
-            className="absolute top-0 left-0 h-2 rounded-full transition-all duration-150"
+            className="absolute top-0 left-0 h-3 rounded-full transition-all duration-150"
             style={{
               width: `${barWidth}%`,
               background:
@@ -1887,27 +1887,10 @@ export default function Home() {
 
           <div className="flex w-full max-w-3xl flex-col items-center gap-4">
             <div className="flex w-full flex-col items-center gap-2 md:flex md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap items-center gap-2 font-medium text-[0.7rem] md:text-xs">
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
-                    isConnected
-                      ? "bg-[#e6f8ff] text-[#236d94]"
-                      : "bg-[#ffe8ef] text-[#b34f6a]"
-                  }`}
-                >
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
-                    }`}
-                  />
-                  {isConnected
-                    ? (selectedModel.connectionGreeting ??
-                      `My name is ${selectedModel.name}.`)
-                    : "Not connected"}
-                </span>
+              <div className="flex items-center">
+                {renderMicStatus()}
               </div>
               <div className="flex flex-col items-center gap-2 md:flex-row md:items-center md:gap-4">
-                {renderMicStatus()}
                 <div className="flex items-center gap-2">
                   <span className="text-[#586094] text-xs">Voice Language</span>
                   {renderLanguageSegment()}
