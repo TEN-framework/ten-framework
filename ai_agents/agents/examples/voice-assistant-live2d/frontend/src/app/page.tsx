@@ -858,6 +858,7 @@ export default function Home() {
   );
   const prevSpeakingRef = useRef(false);
   const [micLevel, setMicLevel] = useState(0);
+  const [micDeviceName, setMicDeviceName] = useState<string>("Microphone");
   const applyVoiceRule = useCallback(async (rule: VoiceCommandRule) => {
     const controller = live2dRef.current;
     if (!controller) {
@@ -982,6 +983,28 @@ export default function Home() {
       if (interval) clearInterval(interval);
     };
   }, [agoraService, isMuted, isConnected]);
+
+  useEffect(() => {
+    const resolveDeviceName = async () => {
+      try {
+        const track: any = agoraService?.getLocalAudioTrack?.();
+        const msTrack = track?.getMediaStreamTrack?.();
+        let label = "";
+        if (msTrack && typeof msTrack.label === "string" && msTrack.label) {
+          label = msTrack.label;
+        }
+        if (!label && typeof navigator !== "undefined" && navigator.mediaDevices?.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const inputs = devices.filter((d) => d.kind === "audioinput" && d.label);
+          label = inputs[0]?.label || "";
+        }
+        setMicDeviceName(label || "Microphone");
+      } catch {
+        setMicDeviceName("Microphone");
+      }
+    };
+    resolveDeviceName();
+  }, [agoraService, isConnected]);
 
   const handleConnectionChange = (status: any) => {
     setIsConnected(status.rtc === "connected");
@@ -1675,8 +1698,8 @@ export default function Home() {
     const barWidth = Math.min(100, Math.max(0, Math.round(micLevel * 100)));
     return (
       <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur">
-        <span className="text-[#586094] text-[10px] md:text-xs">
-          {connected ? "Mic" : "Mic (off)"}
+        <span className="max-w-[9rem] truncate text-[#586094] text-[10px] md:max-w-[12rem] md:text-xs">
+          {connected ? micDeviceName : "Mic (off)"}
         </span>
         <span
           className={`rounded-full px-2 py-0.5 font-semibold text-[10px] ${
