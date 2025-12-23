@@ -604,8 +604,23 @@ def bootstrap_python_dependencies(
     if log_level > 0:
         print("> Syncing dependencies with uv sync --all-packages")
 
+    # Temporarily disable ASAN leak detection for uv sync to avoid false
+    # positives from Python interpreter itself. The leak detection is from
+    # Python's internal allocations, not from our code.
+    uv_env = env.copy()
+    if "ASAN_OPTIONS" in uv_env:
+        # Modify ASAN_OPTIONS to disable leak detection during uv sync
+        asan_opts = uv_env["ASAN_OPTIONS"]
+        # Replace detect_leaks=1 with detect_leaks=0
+        asan_opts = asan_opts.replace("detect_leaks=1", "detect_leaks=0")
+        # Also disable abort_on_error to prevent premature termination
+        asan_opts = asan_opts.replace("abort_on_error=1", "abort_on_error=0")
+        uv_env["ASAN_OPTIONS"] = asan_opts
+        if log_level > 0:
+            print(f"> Modified ASAN_OPTIONS for uv sync: {asan_opts}")
+
     returncode, output = cmd_exec.run_cmd_realtime(
-        ["uv", "sync", "--all-packages"], app_root_path, env, log_level
+        ["uv", "sync", "--all-packages"], app_root_path, uv_env, log_level
     )
 
     if returncode != 0:
