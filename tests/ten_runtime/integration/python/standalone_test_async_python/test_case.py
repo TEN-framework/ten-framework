@@ -105,10 +105,11 @@ def test_standalone_test_async_python():
         except subprocess.CalledProcessError as e:
             print(f"Failed to find python lib path: {e}")
 
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
     if sys.platform == "linux":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -120,9 +121,6 @@ def test_standalone_test_async_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
     elif sys.platform == "darwin":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -140,12 +138,22 @@ def test_standalone_test_async_python():
     # Step 4:
     #
     # Run the test using uv run pytest.
-    uv_run_pytest_cmd = [
-        "uv",
-        "run",
-        "pytest",
-        "-s",
-    ]
+    # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
+    # may trigger memory leak reports (false positives from the tool itself),
+    # causing the test to fail.
+    if sys.platform == "linux" and build_config_args.enable_sanitizer:
+        print("Starting pytest with python from venv (bypassing uv run)...")
+        venv_path = os.path.join(tests_dir, ".venv")
+        python_exe = os.path.join(venv_path, "bin", "python")
+        uv_run_pytest_cmd = [python_exe, "-m", "pytest", "-s"]
+        my_env["VIRTUAL_ENV"] = venv_path
+    else:
+        uv_run_pytest_cmd = [
+            "uv",
+            "run",
+            "pytest",
+            "-s",
+        ]
 
     try:
         tester_process = subprocess.Popen(
