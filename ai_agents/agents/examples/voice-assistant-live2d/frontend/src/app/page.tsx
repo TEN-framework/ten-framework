@@ -898,22 +898,22 @@ export default function Home() {
           console.warn("[Agent] Failed to stop agent while switching language:", error);
         }
         try {
+          const mappedGraph =
+            lang === "zh-CN"
+              ? selectedModel.id === "kei"
+                ? "voice_assistant_live2d_kei_zh"
+                : selectedModel.id === "chubbie"
+                ? "voice_assistant_live2d_chubbie_zh"
+                : "voice_assistant_live2d"
+              : selectedModel.id === "kei"
+              ? "voice_assistant_live2d_kei"
+              : selectedModel.id === "chubbie"
+              ? "voice_assistant_live2d_chubbie"
+              : "voice_assistant_live2d";
           await apiStartService({
             channel: channelName,
             userId: connectedUserId,
-            graphName:
-              process.env.NEXT_PUBLIC_GRAPH_NAME ||
-              (lang === "zh-CN"
-                ? selectedModel.id === "kei"
-                  ? "voice_assistant_live2d_kei_zh"
-                  : selectedModel.id === "chubbie"
-                  ? "voice_assistant_live2d_chubbie_zh"
-                  : "voice_assistant_live2d"
-                : selectedModel.id === "kei"
-                ? "voice_assistant_live2d_kei"
-                : selectedModel.id === "chubbie"
-                ? "voice_assistant_live2d_chubbie"
-                : "voice_assistant_live2d"),
+            graphName: mappedGraph,
             language: lang,
             voiceType: selectedModel.voiceType,
             characterId: selectedModel.id,
@@ -979,8 +979,7 @@ export default function Home() {
               channel: channelName,
               userId: connectedUserId,
               graphName:
-                process.env.NEXT_PUBLIC_GRAPH_NAME ||
-                (selectedLanguage === "zh-CN"
+                selectedLanguage === "zh-CN"
                   ? candidate.id === "kei"
                     ? "voice_assistant_live2d_kei_zh"
                     : candidate.id === "chubbie"
@@ -990,7 +989,7 @@ export default function Home() {
                   ? "voice_assistant_live2d_kei"
                   : candidate.id === "chubbie"
                   ? "voice_assistant_live2d_chubbie"
-                  : "voice_assistant_live2d"),
+                  : "voice_assistant_live2d",
               language: selectedLanguage,
               voiceType: candidate.voiceType,
               characterId: candidate.id,
@@ -1530,22 +1529,22 @@ export default function Home() {
 
           // Start the agent BEFORE joining RTC so main_control reads the overridden greeting
           try {
+            const selectedGraph =
+              selectedLanguage === "zh-CN"
+                ? selectedModel.id === "kei"
+                  ? "voice_assistant_live2d_kei_zh"
+                  : selectedModel.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie_zh"
+                  : "voice_assistant_live2d"
+                : selectedModel.id === "kei"
+                ? "voice_assistant_live2d_kei"
+                : selectedModel.id === "chubbie"
+                ? "voice_assistant_live2d_chubbie"
+                : "voice_assistant_live2d";
             const startResult = await apiStartService({
               channel: agoraConfig.channel,
               userId: agoraConfig.uid || 0,
-              graphName:
-                process.env.NEXT_PUBLIC_GRAPH_NAME ||
-                (selectedLanguage === "zh-CN"
-                  ? selectedModel.id === "kei"
-                    ? "voice_assistant_live2d_kei_zh"
-                    : selectedModel.id === "chubbie"
-                    ? "voice_assistant_live2d_chubbie_zh"
-                    : "voice_assistant_live2d"
-                  : selectedModel.id === "kei"
-                  ? "voice_assistant_live2d_kei"
-                  : selectedModel.id === "chubbie"
-                  ? "voice_assistant_live2d_chubbie"
-                  : "voice_assistant_live2d"),
+              graphName: selectedGraph,
               language: selectedLanguage,
               voiceType: selectedModel.voiceType,
               characterId: selectedModel.id,
