@@ -859,6 +859,10 @@ export default function Home() {
   const prevSpeakingRef = useRef(false);
   const [micLevel, setMicLevel] = useState(0);
   const [micDeviceName, setMicDeviceName] = useState<string>("Microphone");
+  const [micDevices, setMicDevices] = useState<
+    Array<{ deviceId: string; label: string }>
+  >([]);
+  const [showMicMenu, setShowMicMenu] = useState(false);
   const applyVoiceRule = useCallback(async (rule: VoiceCommandRule) => {
     const controller = live2dRef.current;
     if (!controller) {
@@ -993,10 +997,19 @@ export default function Home() {
         if (msTrack && typeof msTrack.label === "string" && msTrack.label) {
           label = msTrack.label;
         }
-        if (!label && typeof navigator !== "undefined" && navigator.mediaDevices?.enumerateDevices) {
+        if (
+          !label &&
+          typeof navigator !== "undefined" &&
+          navigator.mediaDevices?.enumerateDevices
+        ) {
           const devices = await navigator.mediaDevices.enumerateDevices();
-          const inputs = devices.filter((d) => d.kind === "audioinput" && d.label);
+          const inputs = devices.filter(
+            (d) => d.kind === "audioinput" && d.label
+          );
           label = inputs[0]?.label || "";
+          setMicDevices(
+            inputs.map((d) => ({ deviceId: d.deviceId, label: d.label }))
+          );
         }
         setMicDeviceName(label || "Microphone");
       } catch {
@@ -1697,10 +1710,17 @@ export default function Home() {
     const muted = isMuted;
     const barWidth = Math.min(100, Math.max(0, Math.round(micLevel * 100)));
     return (
-      <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur">
-        <span className="max-w-[9rem] truncate text-[#586094] text-[10px] md:max-w-[12rem] md:text-xs">
+      <div className="relative inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2 shadow-sm backdrop-blur">
+        <button
+          type="button"
+          onClick={() => setShowMicMenu((v) => !v)}
+          className="max-w-[9rem] truncate text-[#586094] text-[10px] md:max-w-[12rem] md:text-xs"
+          aria-haspopup="listbox"
+          aria-expanded={showMicMenu}
+          disabled={!connected}
+        >
           {connected ? micDeviceName : "Mic (off)"}
-        </span>
+        </button>
         <span
           className={`rounded-full px-2 py-0.5 font-semibold text-[10px] ${
             connected
@@ -1724,6 +1744,31 @@ export default function Home() {
             }}
           />
         </div>
+        {showMicMenu && connected && micDevices.length > 0 && (
+          <div className="absolute top-full left-0 z-20 mt-1 w-48 rounded-xl border border-[#e9e7f7] bg-white shadow-lg">
+            <ul className="max-h-56 overflow-auto py-1">
+              {micDevices.map((d) => (
+                <li key={d.deviceId}>
+                  <button
+                    type="button"
+                    className="block w-full truncate px-3 py-1.5 text-left text-[#2f2d4b] text-[12px] hover:bg-[#f5f7ff]"
+                    onClick={async () => {
+                      const ok = await agoraService.switchMicrophone(
+                        d.deviceId
+                      );
+                      if (ok) {
+                        setMicDeviceName(d.label || "Microphone");
+                      }
+                      setShowMicMenu(false);
+                    }}
+                  >
+                    {d.label || "Microphone"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     );
   };
@@ -1910,9 +1955,7 @@ export default function Home() {
 
           <div className="flex w-full max-w-3xl flex-col items-center gap-4">
             <div className="flex w-full flex-col items-center gap-2 md:flex md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center">
-                {renderMicStatus()}
-              </div>
+              <div className="flex items-center">{renderMicStatus()}</div>
               <div className="flex flex-col items-center gap-2 md:flex-row md:items-center md:gap-4">
                 <div className="flex items-center gap-2">
                   <span className="text-[#586094] text-xs">Voice Language</span>

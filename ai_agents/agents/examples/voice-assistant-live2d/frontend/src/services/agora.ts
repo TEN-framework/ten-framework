@@ -372,6 +372,39 @@ export class AgoraService {
         return this.localAudioTrack ? !this.localAudioTrack.enabled : false;
     }
 
+    async listAudioInputDevices(): Promise<MediaDeviceInfo[]> {
+        if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+            return [];
+        }
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter((d) => d.kind === 'audioinput');
+    }
+
+    async switchMicrophone(deviceId: string): Promise<boolean> {
+        try {
+            if (!this.rtcClient) return false;
+            if (this.localAudioTrack && typeof (this.localAudioTrack as any).setDevice === 'function') {
+                await (this.localAudioTrack as any).setDevice(deviceId);
+                return true;
+            }
+            const oldTrack = this.localAudioTrack;
+            if (oldTrack) {
+                try {
+                    await this.rtcClient.unpublish([oldTrack]);
+                } catch {}
+                try {
+                    oldTrack.stop();
+                    oldTrack.close();
+                } catch {}
+            }
+            this.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({ microphoneId: deviceId });
+            await this.rtcClient.publish([this.localAudioTrack]);
+            return true;
+        } catch (error) {
+            console.warn('Failed to switch microphone', error);
+            return false;
+        }
+    }
     // Event setters
     setOnConnectionStatusChange(callback: (status: ConnectionStatus) => void) {
         this.onConnectionStatusChange = callback;
