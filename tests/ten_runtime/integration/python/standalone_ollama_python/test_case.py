@@ -116,6 +116,9 @@ def test_standalone_ollama_async_python():
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
+                lsan_suppressions_path = os.path.join(base_path, "lsan.suppressions")
+                if os.path.exists(lsan_suppressions_path):
+                    my_env["LSAN_OPTIONS"] = f"suppressions={lsan_suppressions_path}"
     elif sys.platform == "darwin":
 
         if build_config_args.enable_sanitizer:
@@ -129,6 +132,10 @@ def test_standalone_ollama_async_python():
 
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
+                my_env["LD_PRELOAD"] = libasan_path
+                lsan_suppressions_path = os.path.join(base_path, "lsan.suppressions")
+                if os.path.exists(lsan_suppressions_path):
+                    my_env["LSAN_OPTIONS"] = f"suppressions={lsan_suppressions_path}"
                 my_env["DYLD_INSERT_LIBRARIES"] = libasan_path
 
     # Step 5:
