@@ -6,10 +6,6 @@
 //
 use actix_web::{web, HttpResponse};
 
-// In normal builds, bindings are not used anymore since we pass values directly.
-// #[cfg(not(test))]
-// use super::bindings::*;
-
 pub fn configure_api_route(
     cfg: &mut web::ServiceConfig,
     runtime_version: String,

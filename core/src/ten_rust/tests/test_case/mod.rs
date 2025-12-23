@@ -13,6 +13,3 @@ mod path;
 mod pkg_info;
 mod schema;
 mod telemetry;
-
-// Include mock implementations for external functions.
-mod test_mock;
