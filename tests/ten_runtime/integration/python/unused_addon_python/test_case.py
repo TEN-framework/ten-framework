@@ -69,6 +69,13 @@ def test_unused_addon_python():
         my_env["VIRTUAL_ENV"] = venv_path
         if sys.platform == "win32":
             venv_bin_dir = os.path.join(venv_path, "Scripts")
+
+            # Add site-packages to PYTHONPATH so embedded Python can find dependencies
+            site_packages = os.path.join(venv_path, "Lib", "site-packages")
+            if os.path.exists(site_packages):
+                my_env["PYTHONPATH"] = (
+                    site_packages + os.pathsep + my_env.get("PYTHONPATH", "")
+                )
         else:
             venv_bin_dir = os.path.join(venv_path, "bin")
         my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
