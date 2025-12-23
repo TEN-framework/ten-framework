@@ -111,6 +111,9 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
                   // NODE_OPTIONS support in the future, split this
                   // configuration out as a command line option.
                   node::ProcessInitializationFlags::kDisableNodeOptionsEnv,
+
+                  // Do not install the default signal handler for Node.js.
+                  node::ProcessInitializationFlags::kNoDefaultSignalHandling,
               });
 
       for (const std::string &error : result->errors()) {
