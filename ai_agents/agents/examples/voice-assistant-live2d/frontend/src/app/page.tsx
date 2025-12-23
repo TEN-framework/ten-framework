@@ -1,668 +1,668 @@
-'use client'
+"use client";
 
-import dynamicImport from 'next/dynamic'
-import { Baloo_2, Quicksand } from 'next/font/google'
-import type React from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import dynamicImport from "next/dynamic";
+import { Baloo_2, Quicksand } from "next/font/google";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ExpressionConfig,
   Live2DHandle,
   MotionConfig,
-  MouthConfig
-} from '@/components/Live2DCharacter'
+  MouthConfig,
+} from "@/components/Live2DCharacter";
 
 // Dynamically import Live2D component to prevent SSR issues
 const ClientOnlyLive2D = dynamicImport(
-  () => import('@/components/ClientOnlyLive2D'),
+  () => import("@/components/ClientOnlyLive2D"),
   {
     ssr: false,
     loading: () => (
-      <div className='flex h-full items-center justify-center'>
-        <div className='text-center'>
-          <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-white border-b-2'></div>
-          <p className='text-white/70'>Loading Live2D Model...</p>
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-white border-b-2"></div>
+          <p className="text-white/70">Loading Live2D Model...</p>
         </div>
       </div>
-    )
+    ),
   }
-)
+);
 
-import { apiPing, apiStartService, apiStopService } from '@/lib/request'
-import type { AgoraConfig, Live2DModel, TranscriptMessage } from '@/types'
+import { apiPing, apiStartService, apiStopService } from "@/lib/request";
+import type { AgoraConfig, Live2DModel, TranscriptMessage } from "@/types";
 
 type VoiceCommandRule = {
-  triggers: string[]
-  expressions?: string[]
-  reset?: boolean
-  resetFirst?: boolean
-}
+  triggers: string[];
+  expressions?: string[];
+  reset?: boolean;
+  resetFirst?: boolean;
+};
 
 type BackgroundTheme = {
-  baseColor: string
-  primaryGradient: string
+  baseColor: string;
+  primaryGradient: string;
   radialOverlay: {
-    gradient: string
-    opacity: number
-  }
+    gradient: string;
+    opacity: number;
+  };
   patternOverlay: {
-    image: string
-    opacity: number
-  }
+    image: string;
+    opacity: number;
+  };
   accentOverlay: {
-    image: string
-    opacity: number
-  }
-}
+    image: string;
+    opacity: number;
+  };
+};
 
 type CharacterProfile = Live2DModel & {
-  headline: string
-  description: string
-  quote: string
-  voiceType: 'male' | 'female'
-  agentPrompt?: string
-  mouthConfig: MouthConfig
-  expressions?: ExpressionConfig[]
-  motions?: MotionConfig[]
-  backgroundTheme: BackgroundTheme
-  connectionGreeting?: string
-  agentGreeting: string
-  floatingElements?: FloatingElement[]
-  immersiveStage?: boolean
-}
+  headline: string;
+  description: string;
+  quote: string;
+  voiceType: "male" | "female";
+  agentPrompt?: string;
+  mouthConfig: MouthConfig;
+  expressions?: ExpressionConfig[];
+  motions?: MotionConfig[];
+  backgroundTheme: BackgroundTheme;
+  connectionGreeting?: string;
+  agentGreeting: string;
+  floatingElements?: FloatingElement[];
+  immersiveStage?: boolean;
+};
 
 type FloatingElementType =
-  | 'flower'
-  | 'swirl'
-  | 'spark'
-  | 'heart'
-  | 'star'
-  | 'melon_seed'
-  | 'corn_cob'
-  | 'snow_cookie'
-  | 'hot_spring_steam'
-  | 'water_leaf'
-  | 'citrus_slice'
-  | 'herb_bundle'
-  | 'water_ripple'
+  | "flower"
+  | "swirl"
+  | "spark"
+  | "heart"
+  | "star"
+  | "melon_seed"
+  | "corn_cob"
+  | "snow_cookie"
+  | "hot_spring_steam"
+  | "water_leaf"
+  | "citrus_slice"
+  | "herb_bundle"
+  | "water_ripple";
 
 type FloatingElement = {
-  type: FloatingElementType
-  top: number
-  left: number
-  size: number
-  rotate: number
-  scale: number
-  animation: string
-  duration: number
-  delay: string
-  opacity: number
-}
+  type: FloatingElementType;
+  top: number;
+  left: number;
+  size: number;
+  rotate: number;
+  scale: number;
+  animation: string;
+  duration: number;
+  delay: string;
+  opacity: number;
+};
 
-const DEFAULT_REMOTE_MODELS_BASE_URL = '/live2d/models'
+const DEFAULT_REMOTE_MODELS_BASE_URL = "/live2d/models";
 
 const remoteModelsBaseUrl = (
   process.env.NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL ||
   DEFAULT_REMOTE_MODELS_BASE_URL
-).replace(/\/$/, '')
+).replace(/\/$/, "");
 
 const buildRemoteModelAssetPath = (folder: string, fileName: string) =>
-  `${remoteModelsBaseUrl}/${folder}/${fileName}`
+  `${remoteModelsBaseUrl}/${folder}/${fileName}`;
 
 const defaultFloatingElements: FloatingElement[] = [
   {
-    type: 'flower',
+    type: "flower",
     top: 6,
     left: 10,
     size: 140,
     rotate: -8,
     scale: 1,
-    animation: 'float0',
+    animation: "float0",
     duration: 16,
-    delay: '0s',
-    opacity: 0.92
+    delay: "0s",
+    opacity: 0.92,
   },
   {
-    type: 'flower',
+    type: "flower",
     top: 32,
     left: 72,
     size: 120,
     rotate: 12,
     scale: 0.9,
-    animation: 'float2',
+    animation: "float2",
     duration: 18,
-    delay: '1.5s',
-    opacity: 0.85
+    delay: "1.5s",
+    opacity: 0.85,
   },
   {
-    type: 'swirl',
+    type: "swirl",
     top: 18,
     left: 52,
     size: 160,
     rotate: 4,
     scale: 1.1,
-    animation: 'float1',
+    animation: "float1",
     duration: 20,
-    delay: '0.8s',
-    opacity: 0.75
+    delay: "0.8s",
+    opacity: 0.75,
   },
   {
-    type: 'spark',
+    type: "spark",
     top: 58,
     left: 18,
     size: 150,
     rotate: -14,
     scale: 1,
-    animation: 'float2',
+    animation: "float2",
     duration: 17,
-    delay: '2.2s',
-    opacity: 0.8
+    delay: "2.2s",
+    opacity: 0.8,
   },
   {
-    type: 'spark',
+    type: "spark",
     top: 74,
     left: 70,
     size: 130,
     rotate: 18,
     scale: 0.95,
-    animation: 'float0',
+    animation: "float0",
     duration: 15,
-    delay: '1s',
-    opacity: 0.78
+    delay: "1s",
+    opacity: 0.78,
   },
   {
-    type: 'swirl',
+    type: "swirl",
     top: 72,
     left: 42,
     size: 120,
     rotate: -6,
     scale: 0.85,
-    animation: 'float1',
+    animation: "float1",
     duration: 19,
-    delay: '2.6s',
-    opacity: 0.72
+    delay: "2.6s",
+    opacity: 0.72,
   },
   {
-    type: 'flower',
+    type: "flower",
     top: 82,
     left: 5,
     size: 110,
     rotate: 6,
     scale: 0.8,
-    animation: 'float0',
+    animation: "float0",
     duration: 22,
-    delay: '3s',
-    opacity: 0.65
+    delay: "3s",
+    opacity: 0.65,
   },
   {
-    type: 'flower',
+    type: "flower",
     top: 12,
     left: 82,
     size: 110,
     rotate: -18,
     scale: 0.8,
-    animation: 'float1',
+    animation: "float1",
     duration: 18,
-    delay: '2s',
-    opacity: 0.7
+    delay: "2s",
+    opacity: 0.7,
   },
   {
-    type: 'heart',
+    type: "heart",
     top: 40,
     left: 12,
     size: 90,
     rotate: 14,
     scale: 0.85,
-    animation: 'float2',
+    animation: "float2",
     duration: 14,
-    delay: '0.4s',
-    opacity: 0.78
+    delay: "0.4s",
+    opacity: 0.78,
   },
   {
-    type: 'heart',
+    type: "heart",
     top: 22,
     left: 88,
     size: 80,
     rotate: -22,
     scale: 0.75,
-    animation: 'float0',
+    animation: "float0",
     duration: 16,
-    delay: '1.8s',
-    opacity: 0.8
+    delay: "1.8s",
+    opacity: 0.8,
   },
   {
-    type: 'star',
+    type: "star",
     top: 8,
     left: 46,
     size: 100,
     rotate: 6,
     scale: 0.9,
-    animation: 'float1',
+    animation: "float1",
     duration: 13,
-    delay: '0.6s',
-    opacity: 0.68
+    delay: "0.6s",
+    opacity: 0.68,
   },
   {
-    type: 'star',
+    type: "star",
     top: 62,
     left: 88,
     size: 95,
     rotate: -12,
     scale: 0.82,
-    animation: 'float2',
+    animation: "float2",
     duration: 21,
-    delay: '2.4s',
-    opacity: 0.7
+    delay: "2.4s",
+    opacity: 0.7,
   },
   {
-    type: 'heart',
+    type: "heart",
     top: 66,
     left: 30,
     size: 85,
     rotate: -6,
     scale: 0.8,
-    animation: 'float0',
+    animation: "float0",
     duration: 18,
-    delay: '1.2s',
-    opacity: 0.74
+    delay: "1.2s",
+    opacity: 0.74,
   },
   {
-    type: 'flower',
+    type: "flower",
     top: 50,
     left: 52,
     size: 105,
     rotate: 18,
     scale: 0.88,
-    animation: 'float1',
+    animation: "float1",
     duration: 19,
-    delay: '3.2s',
-    opacity: 0.82
+    delay: "3.2s",
+    opacity: 0.82,
   },
   {
-    type: 'star',
+    type: "star",
     top: 86,
     left: 60,
     size: 90,
     rotate: 10,
     scale: 0.78,
-    animation: 'float2',
+    animation: "float2",
     duration: 17,
-    delay: '2.8s',
-    opacity: 0.72
-  }
-]
+    delay: "2.8s",
+    opacity: 0.72,
+  },
+];
 
 const chubbieFloatingElements: FloatingElement[] = [
   {
-    type: 'hot_spring_steam',
+    type: "hot_spring_steam",
     top: 18,
     left: 22,
     size: 200,
     rotate: -6,
     scale: 1.05,
-    animation: 'float0',
+    animation: "float0",
     duration: 22,
-    delay: '0s',
-    opacity: 0.7
+    delay: "0s",
+    opacity: 0.7,
   },
   {
-    type: 'water_leaf',
+    type: "water_leaf",
     top: 36,
     left: 70,
     size: 150,
     rotate: 18,
     scale: 1,
-    animation: 'float2',
+    animation: "float2",
     duration: 19,
-    delay: '1.3s',
-    opacity: 0.78
+    delay: "1.3s",
+    opacity: 0.78,
   },
   {
-    type: 'citrus_slice',
+    type: "citrus_slice",
     top: 64,
     left: 16,
     size: 140,
     rotate: -12,
     scale: 0.95,
-    animation: 'float1',
+    animation: "float1",
     duration: 20,
-    delay: '0.9s',
-    opacity: 0.82
+    delay: "0.9s",
+    opacity: 0.82,
   },
   {
-    type: 'water_ripple',
+    type: "water_ripple",
     top: 78,
     left: 72,
     size: 190,
     rotate: 0,
     scale: 1,
-    animation: 'float0',
+    animation: "float0",
     duration: 24,
-    delay: '1.7s',
-    opacity: 0.65
+    delay: "1.7s",
+    opacity: 0.65,
   },
   {
-    type: 'herb_bundle',
+    type: "herb_bundle",
     top: 30,
     left: 86,
     size: 130,
     rotate: -24,
     scale: 0.9,
-    animation: 'float1',
+    animation: "float1",
     duration: 18,
-    delay: '2s',
-    opacity: 0.76
+    delay: "2s",
+    opacity: 0.76,
   },
   {
-    type: 'hot_spring_steam',
+    type: "hot_spring_steam",
     top: 50,
     left: 30,
     size: 160,
     rotate: 8,
     scale: 1,
-    animation: 'float2',
+    animation: "float2",
     duration: 21,
-    delay: '2.4s',
-    opacity: 0.7
+    delay: "2.4s",
+    opacity: 0.7,
   },
   {
-    type: 'water_leaf',
+    type: "water_leaf",
     top: 12,
     left: 58,
     size: 140,
     rotate: -18,
     scale: 0.9,
-    animation: 'float1',
+    animation: "float1",
     duration: 17,
-    delay: '1s',
-    opacity: 0.74
+    delay: "1s",
+    opacity: 0.74,
   },
   {
-    type: 'citrus_slice',
+    type: "citrus_slice",
     top: 84,
     left: 10,
     size: 150,
     rotate: 16,
     scale: 0.9,
-    animation: 'float2',
+    animation: "float2",
     duration: 23,
-    delay: '2.8s',
-    opacity: 0.8
-  }
-]
+    delay: "2.8s",
+    opacity: 0.8,
+  },
+];
 const characterOptions: CharacterProfile[] = [
   {
-    id: 'kei',
-    name: 'Kei',
+    id: "kei",
+    name: "Kei",
     path: buildRemoteModelAssetPath(
-      'kei_vowels_pro',
-      'kei_vowels_pro.model3.json'
+      "kei_vowels_pro",
+      "kei_vowels_pro.model3.json"
     ),
-    preview: buildRemoteModelAssetPath('kei_vowels_pro', 'preview.svg'),
-    headline: 'Your Charming Clever Companion',
+    preview: buildRemoteModelAssetPath("kei_vowels_pro", "preview.svg"),
+    headline: "Your Charming Clever Companion",
     description:
-      'Kei is a friendly guide who lights up every conversation. Connect with her for thoughtful answers, gentle encouragement, and a dash of anime sparkle whenever you need it.',
-    quote: 'Hi! I’m Kei. Let me know how I can make your day easier.',
-    voiceType: 'female',
+      "Kei is a friendly guide who lights up every conversation. Connect with her for thoughtful answers, gentle encouragement, and a dash of anime sparkle whenever you need it.",
+    quote: "Hi! I’m Kei. Let me know how I can make your day easier.",
+    voiceType: "female",
     agentPrompt:
-      'You are Kei, an upbeat, clever anime-style assistant. Keep replies warm, encouraging, and concise. Add gentle enthusiasm, focus on being helpful, and offer brief follow-up suggestions when useful.',
+      "You are Kei, an upbeat, clever anime-style assistant. Keep replies warm, encouraging, and concise. Add gentle enthusiasm, focus on being helpful, and offer brief follow-up suggestions when useful.",
     mouthConfig: {
-      type: 'open',
-      openId: 'ParamMouthOpenY',
-      formId: 'ParamMouthForm'
+      type: "open",
+      openId: "ParamMouthOpenY",
+      formId: "ParamMouthForm",
     },
     backgroundTheme: {
-      baseColor: '#fff9fd',
+      baseColor: "#fff9fd",
       primaryGradient:
-        'linear-gradient(160deg,#ffeaf3 0%,#fffaf2 40%,#e3f1ff 100%)',
+        "linear-gradient(160deg,#ffeaf3 0%,#fffaf2 40%,#e3f1ff 100%)",
       radialOverlay: {
         gradient:
-          'radial-gradient(circle at top,#ffdff2 0%,transparent 60%),radial-gradient(circle at bottom,#d2e8ff 0%,transparent 65%)',
-        opacity: 0.75
+          "radial-gradient(circle at top,#ffdff2 0%,transparent 60%),radial-gradient(circle at bottom,#d2e8ff 0%,transparent 65%)",
+        opacity: 0.75,
       },
       patternOverlay: {
         image:
-          'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0px, rgba(255, 255, 255, 0.32) 2px, transparent 2px, transparent 18px)',
-        opacity: 0.2
+          "repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.32) 0px, rgba(255, 255, 255, 0.32) 2px, transparent 2px, transparent 18px)",
+        opacity: 0.2,
       },
       accentOverlay: {
         image:
-          'repeating-radial-gradient(circle at 20% 20%, rgba(255, 204, 224, 0.25) 0px, rgba(255, 204, 224, 0.25) 12px, transparent 12px, transparent 48px)',
-        opacity: 0.22
-      }
+          "repeating-radial-gradient(circle at 20% 20%, rgba(255, 204, 224, 0.25) 0px, rgba(255, 204, 224, 0.25) 12px, transparent 12px, transparent 48px)",
+        opacity: 0.22,
+      },
     },
-    connectionGreeting: 'My name is Kei.',
+    connectionGreeting: "My name is Kei.",
     agentGreeting:
-      'My name is Kei, nice to meet you! I’m your anime assistant. What’s your name?'
+      "My name is Kei, nice to meet you! I’m your anime assistant. What’s your name?",
   },
   {
-    id: 'chubbie',
-    name: 'Chubbie',
+    id: "chubbie",
+    name: "Chubbie",
     path: buildRemoteModelAssetPath(
-      'capybara',
-      'capybara_v001_bear_rabbit.model3.json'
+      "capybara",
+      "capybara_v001_bear_rabbit.model3.json"
     ),
-    preview: buildRemoteModelAssetPath('capybara', 'icon.jpg'),
-    headline: 'Your Laid-Back Capybara Confidant',
+    preview: buildRemoteModelAssetPath("capybara", "icon.jpg"),
+    headline: "Your Laid-Back Capybara Confidant",
     description:
-      'Chubbie the Capybara brings spa-day calm, steady encouragement, and snack-time strategy. Settle in for mellow vibes, gentle guidance, and the coziest companion energy around.',
-    quote: 'Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?',
-    voiceType: 'male',
+      "Chubbie the Capybara brings spa-day calm, steady encouragement, and snack-time strategy. Settle in for mellow vibes, gentle guidance, and the coziest companion energy around.",
+    quote: "Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?",
+    voiceType: "male",
     agentPrompt:
-      'You are Chubbie the capybara - laid-back, cozy, and encouraging. Speak in a calm, mellow tone, keep answers short and practical, and sprinkle light humor about spa days, snacks, and unwinding.',
+      "You are Chubbie the capybara - laid-back, cozy, and encouraging. Speak in a calm, mellow tone, keep answers short and practical, and sprinkle light humor about spa days, snacks, and unwinding.",
     mouthConfig: {
-      type: 'open',
-      openId: 'ParamMouthOpenY',
-      formId: 'ParamMouthForm'
+      type: "open",
+      openId: "ParamMouthOpenY",
+      formId: "ParamMouthForm",
     },
     backgroundTheme: {
-      baseColor: '#f6f0e6',
+      baseColor: "#f6f0e6",
       primaryGradient:
-        'linear-gradient(148deg,#fff2d8 0%,#ffe7d3 36%,#e6f4ff 98%)',
+        "linear-gradient(148deg,#fff2d8 0%,#ffe7d3 36%,#e6f4ff 98%)",
       radialOverlay: {
         gradient:
-          'radial-gradient(circle at top,#ffe0ba 0%,transparent 58%),radial-gradient(circle at bottom,#cde8ff 0%,transparent 70%)',
-        opacity: 0.72
+          "radial-gradient(circle at top,#ffe0ba 0%,transparent 58%),radial-gradient(circle at bottom,#cde8ff 0%,transparent 70%)",
+        opacity: 0.72,
       },
       patternOverlay: {
         image:
-          'repeating-linear-gradient(142deg, rgba(255, 255, 255, 0.26) 0px, rgba(255, 255, 255, 0.26) 3px, transparent 3px, transparent 20px)',
-        opacity: 0.2
+          "repeating-linear-gradient(142deg, rgba(255, 255, 255, 0.26) 0px, rgba(255, 255, 255, 0.26) 3px, transparent 3px, transparent 20px)",
+        opacity: 0.2,
       },
       accentOverlay: {
         image:
-          'repeating-radial-gradient(circle at 32% 78%, rgba(214, 170, 118, 0.32) 0px, rgba(214, 170, 118, 0.32) 14px, transparent 14px, transparent 52px)',
-        opacity: 0.28
-      }
+          "repeating-radial-gradient(circle at 32% 78%, rgba(214, 170, 118, 0.32) 0px, rgba(214, 170, 118, 0.32) 14px, transparent 14px, transparent 52px)",
+        opacity: 0.28,
+      },
     },
-    connectionGreeting: 'My name is Chubbie.',
+    connectionGreeting: "My name is Chubbie.",
     agentGreeting:
-      'I’m Chubbie the Capybara. Let’s take it easy—what can I help you relax or focus on today?',
+      "I’m Chubbie the Capybara. Let’s take it easy—what can I help you relax or focus on today?",
     floatingElements: chubbieFloatingElements,
     immersiveStage: true,
     expressions: [
-      { name: 'toggle_blush_tab_r', label: 'Blush Glow' },
-      { name: 'toggle_bow_tab_b', label: 'Bow Accessory' },
-      { name: 'toggle_apron_m_3', label: 'Apron Ready' },
-      { name: 'toggle_maid_hairclip_m_1', label: 'Hair Clip' },
-      { name: 'toggle_monocle_g_3', label: 'Monocle' },
-      { name: 'toggle_glasses_g_1', label: 'Reading Glasses' },
-      { name: 'toggle_sunglasses_g_2', label: 'Sun Shades' },
-      { name: 'toggle_black_dress_m_2', label: 'Black Outfit' },
-      { name: 'toggle_bathtub_tab_q', label: 'Hot Tub Mode' },
-      { name: 'toggle_orange_m_4', label: 'Orange Snack' },
-      { name: 'toggle_mustache_tab_h', label: 'Whisker Stache' },
-      { name: 'toggle_dark_face_tab_d', label: 'Shadow Mood' },
-      { name: 'toggle_bear_rabbit_tab_9', label: 'Creator Cameo' }
+      { name: "toggle_blush_tab_r", label: "Blush Glow" },
+      { name: "toggle_bow_tab_b", label: "Bow Accessory" },
+      { name: "toggle_apron_m_3", label: "Apron Ready" },
+      { name: "toggle_maid_hairclip_m_1", label: "Hair Clip" },
+      { name: "toggle_monocle_g_3", label: "Monocle" },
+      { name: "toggle_glasses_g_1", label: "Reading Glasses" },
+      { name: "toggle_sunglasses_g_2", label: "Sun Shades" },
+      { name: "toggle_black_dress_m_2", label: "Black Outfit" },
+      { name: "toggle_bathtub_tab_q", label: "Hot Tub Mode" },
+      { name: "toggle_orange_m_4", label: "Orange Snack" },
+      { name: "toggle_mustache_tab_h", label: "Whisker Stache" },
+      { name: "toggle_dark_face_tab_d", label: "Shadow Mood" },
+      { name: "toggle_bear_rabbit_tab_9", label: "Creator Cameo" },
     ],
     motions: [
       {
-        name: 'breathing_idle',
-        label: 'Gentle Float',
-        group: 'Idle',
+        name: "breathing_idle",
+        label: "Gentle Float",
+        group: "Idle",
         index: 0,
         autoPlay: true,
         loop: true,
-        priority: 1
+        priority: 1,
       },
       {
-        name: 'neon_glow',
-        label: 'Neon Highlight',
-        group: 'Special',
+        name: "neon_glow",
+        label: "Neon Highlight",
+        group: "Special",
         index: 0,
         onSpeakingStart: true,
         loop: true,
-        priority: 2
-      }
-    ]
-  }
-]
+        priority: 2,
+      },
+    ],
+  },
+];
 
 const headlineFont = Baloo_2({
-  subsets: ['latin'],
-  weight: ['600', '700']
-})
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
 
 const subtitleFont = Quicksand({
-  subsets: ['latin'],
-  weight: ['400', '500']
-})
+  subsets: ["latin"],
+  weight: ["400", "500"],
+});
 
 const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
   switch (type) {
-    case 'flower':
+    case "flower":
       return (
-        <svg viewBox='0 0 120 120' className='h-full w-full'>
+        <svg viewBox="0 0 120 120" className="h-full w-full">
           <path
-            d='M60 14 C 44 20 32 38 36 52 C 20 50 18 64 32 71 C 24 84 36 101 52 95 C 56 108 70 108 74 95 C 90 101 102 84 94 71 C 108 64 106 50 90 52 C 94 38 82 20 66 14 C 63 12 61 12 60 14 Z'
-            fill='rgba(255,190,213,0.28)'
-            stroke='#ff92bb'
+            d="M60 14 C 44 20 32 38 36 52 C 20 50 18 64 32 71 C 24 84 36 101 52 95 C 56 108 70 108 74 95 C 90 101 102 84 94 71 C 108 64 106 50 90 52 C 94 38 82 20 66 14 C 63 12 61 12 60 14 Z"
+            fill="rgba(255,190,213,0.28)"
+            stroke="#ff92bb"
             strokeWidth={4}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
           <path
-            d='M60 34 C 50 38 44 48 46 56 C 38 56 34 62 38 68 C 34 74 40 84 50 80 C 52 90 68 90 70 80 C 80 84 86 74 82 68 C 86 62 82 56 74 56 C 76 48 70 38 60 34 Z'
-            fill='rgba(255,245,250,0.6)'
-            stroke='#ff92bb'
+            d="M60 34 C 50 38 44 48 46 56 C 38 56 34 62 38 68 C 34 74 40 84 50 80 C 52 90 68 90 70 80 C 80 84 86 74 82 68 C 86 62 82 56 74 56 C 76 48 70 38 60 34 Z"
+            fill="rgba(255,245,250,0.6)"
+            stroke="#ff92bb"
             strokeWidth={3}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
-          <circle cx='60' cy='60' r='6' fill='#ff92bb' opacity='0.75' />
+          <circle cx="60" cy="60" r="6" fill="#ff92bb" opacity="0.75" />
         </svg>
-      )
-    case 'swirl':
+      );
+    case "swirl":
       return (
-        <svg viewBox='0 0 140 140' className='h-full w-full'>
+        <svg viewBox="0 0 140 140" className="h-full w-full">
           <path
-            d='M30 86 C 24 52 58 34 86 40 C 108 46 124 70 112 92 C 102 110 78 116 62 104 C 52 96 52 76 68 70 C 78 66 88 74 84 84'
-            fill='none'
-            stroke='#8fb9ff'
+            d="M30 86 C 24 52 58 34 86 40 C 108 46 124 70 112 92 C 102 110 78 116 62 104 C 52 96 52 76 68 70 C 78 66 88 74 84 84"
+            fill="none"
+            stroke="#8fb9ff"
             strokeWidth={6}
-            strokeLinecap='round'
+            strokeLinecap="round"
           />
           <path
-            d='M44 38 C 58 26 90 26 110 46'
-            fill='none'
-            stroke='#c9deff'
+            d="M44 38 C 58 26 90 26 110 46"
+            fill="none"
+            stroke="#c9deff"
             strokeWidth={4}
-            strokeLinecap='round'
-            strokeDasharray='12 14'
+            strokeLinecap="round"
+            strokeDasharray="12 14"
           />
-          <circle cx='90' cy='102' r='6' fill='#d5e7ff' opacity='0.9' />
+          <circle cx="90" cy="102" r="6" fill="#d5e7ff" opacity="0.9" />
         </svg>
-      )
-    case 'spark':
+      );
+    case "spark":
       return (
-        <svg viewBox='0 0 140 140' className='h-full w-full'>
+        <svg viewBox="0 0 140 140" className="h-full w-full">
           <path
-            d='M70 14 L78 56 L118 48 L86 72 L104 110 L70 88 L36 110 L54 72 L22 48 L62 56 Z'
-            fill='rgba(255,235,196,0.5)'
-            stroke='#ffce7a'
+            d="M70 14 L78 56 L118 48 L86 72 L104 110 L70 88 L36 110 L54 72 L22 48 L62 56 Z"
+            fill="rgba(255,235,196,0.5)"
+            stroke="#ffce7a"
             strokeWidth={5}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
           <path
-            d='M70 32 L74 54 L96 50 L78 64 L86 84 L70 72 L54 84 L62 64 L44 50 L66 54 Z'
-            fill='rgba(255,248,225,0.7)'
-            stroke='#ffce7a'
+            d="M70 32 L74 54 L96 50 L78 64 L86 84 L70 72 L54 84 L62 64 L44 50 L66 54 Z"
+            fill="rgba(255,248,225,0.7)"
+            stroke="#ffce7a"
             strokeWidth={3}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
         </svg>
-      )
-    case 'heart':
+      );
+    case "heart":
       return (
-        <svg viewBox='0 0 120 120' className='h-full w-full'>
+        <svg viewBox="0 0 120 120" className="h-full w-full">
           <path
-            d='M60 98 C 58 96 18 70 18 44 C 18 30 30 20 44 20 C 52 20 58 24 60 30 C 62 24 68 20 76 20 C 90 20 102 30 102 44 C 102 70 62 96 60 98 Z'
-            fill='rgba(255,205,223,0.55)'
-            stroke='#ff8fb4'
+            d="M60 98 C 58 96 18 70 18 44 C 18 30 30 20 44 20 C 52 20 58 24 60 30 C 62 24 68 20 76 20 C 90 20 102 30 102 44 C 102 70 62 96 60 98 Z"
+            fill="rgba(255,205,223,0.55)"
+            stroke="#ff8fb4"
             strokeWidth={5}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
           <path
-            d='M45 42 C 46 34 54 32 60 38'
-            fill='none'
-            stroke='#ffe1ec'
+            d="M45 42 C 46 34 54 32 60 38"
+            fill="none"
+            stroke="#ffe1ec"
             strokeWidth={4}
-            strokeLinecap='round'
-            strokeDasharray='10 8'
+            strokeLinecap="round"
+            strokeDasharray="10 8"
           />
         </svg>
-      )
-    case 'star':
+      );
+    case "star":
       return (
-        <svg viewBox='0 0 120 120' className='h-full w-full'>
+        <svg viewBox="0 0 120 120" className="h-full w-full">
           <path
-            d='M60 12 L70 44 L104 46 L78 68 L86 102 L60 84 L34 102 L42 68 L16 46 L50 44 Z'
-            fill='rgba(255,248,210,0.6)'
-            stroke='#ffd27f'
+            d="M60 12 L70 44 L104 46 L78 68 L86 102 L60 84 L34 102 L42 68 L16 46 L50 44 Z"
+            fill="rgba(255,248,210,0.6)"
+            stroke="#ffd27f"
             strokeWidth={4.5}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
           <path
-            d='M60 26 L66 44 L84 46 L70 58 L74 76 L60 66 L46 76 L50 58 L36 46 L54 44 Z'
-            fill='rgba(255,242,220,0.75)'
-            stroke='#ffd27f'
+            d="M60 26 L66 44 L84 46 L70 58 L74 76 L60 66 L46 76 L50 58 L36 46 L54 44 Z"
+            fill="rgba(255,242,220,0.75)"
+            stroke="#ffd27f"
             strokeWidth={3}
-            strokeLinejoin='round'
+            strokeLinejoin="round"
           />
-          <circle cx='60' cy='72' r='5' fill='#ffe7b1' opacity='0.9' />
+          <circle cx="60" cy="72" r="5" fill="#ffe7b1" opacity="0.9" />
         </svg>
-      )
-    case 'melon_seed':
+      );
+    case "melon_seed":
       return (
-        <svg viewBox='0 0 60 100' className='h-full w-full'>
+        <svg viewBox="0 0 60 100" className="h-full w-full">
           <path
-            d='M30 4 C 16 20 10 54 30 96 C 50 54 44 20 30 4 Z'
-            fill='#5d3a19'
+            d="M30 4 C 16 20 10 54 30 96 C 50 54 44 20 30 4 Z"
+            fill="#5d3a19"
           />
           <path
-            d='M30 18 C 22 32 20 54 30 82 C 40 54 38 32 30 18 Z'
-            fill='#f3d5a2'
-            opacity='0.85'
+            d="M30 18 C 22 32 20 54 30 82 C 40 54 38 32 30 18 Z"
+            fill="#f3d5a2"
+            opacity="0.85"
           />
         </svg>
-      )
-    case 'corn_cob':
+      );
+    case "corn_cob":
       return (
-        <svg viewBox='0 0 160 220' className='h-full w-full'>
+        <svg viewBox="0 0 160 220" className="h-full w-full">
           <path
-            d='M80 206 C 46 168 42 112 80 26 C 118 112 114 168 80 206 Z'
-            fill='#f9d55b'
+            d="M80 206 C 46 168 42 112 80 26 C 118 112 114 168 80 206 Z"
+            fill="#f9d55b"
           />
           <path
-            d='M80 18 C 44 78 44 150 78 210'
-            stroke='#4daa45'
+            d="M80 18 C 44 78 44 150 78 210"
+            stroke="#4daa45"
             strokeWidth={22}
-            strokeLinecap='round'
-            opacity='0.9'
+            strokeLinecap="round"
+            opacity="0.9"
           />
           <path
-            d='M80 18 C 116 78 116 150 82 210'
-            stroke='#6ac14d'
+            d="M80 18 C 116 78 116 150 82 210"
+            stroke="#6ac14d"
             strokeWidth={22}
-            strokeLinecap='round'
-            opacity='0.82'
+            strokeLinecap="round"
+            opacity="0.82"
           />
           {[0, 1, 2, 3].map((row) =>
             [0, 1, 2].map((col) => (
@@ -673,249 +673,252 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
                 width={14}
                 height={18}
                 rx={4}
-                fill='#ffe796'
+                fill="#ffe796"
                 opacity={0.9 - row * 0.08}
               />
             ))
           )}
         </svg>
-      )
-    case 'snow_cookie':
+      );
+    case "snow_cookie":
       return (
-        <svg viewBox='0 0 160 160' className='h-full w-full'>
+        <svg viewBox="0 0 160 160" className="h-full w-full">
           <circle
-            cx='80'
-            cy='80'
-            r='70'
-            fill='#fff5da'
-            stroke='#f3b27a'
+            cx="80"
+            cy="80"
+            r="70"
+            fill="#fff5da"
+            stroke="#f3b27a"
             strokeWidth={5}
           />
-          <circle cx='80' cy='80' r='46' fill='#ffe9bc' opacity='0.85' />
+          <circle cx="80" cy="80" r="46" fill="#ffe9bc" opacity="0.85" />
           {[
             { x: 80, y: 32 },
             { x: 104, y: 52 },
             { x: 116, y: 84 },
             { x: 56, y: 52 },
             { x: 40, y: 88 },
-            { x: 84, y: 122 }
+            { x: 84, y: 122 },
           ].map((dot, idx) => (
             <circle
               key={idx}
               cx={dot.x}
               cy={dot.y}
-              r='6'
-              fill='#f0c072'
-              opacity='0.8'
+              r="6"
+              fill="#f0c072"
+              opacity="0.8"
             />
           ))}
           <path
-            d='M80 46 L88 74 L118 80 L88 88 L80 114 L72 88 L42 80 L72 74 Z'
-            fill='#fff9e8'
-            opacity='0.8'
+            d="M80 46 L88 74 L118 80 L88 88 L80 114 L72 88 L42 80 L72 74 Z"
+            fill="#fff9e8"
+            opacity="0.8"
           />
         </svg>
-      )
-    case 'hot_spring_steam':
+      );
+    case "hot_spring_steam":
       return (
-        <svg viewBox='0 0 220 220' className='h-full w-full'>
+        <svg viewBox="0 0 220 220" className="h-full w-full">
           <path
-            d='M78 180 C 40 154 44 118 70 96 C 88 80 96 64 88 44 C 80 24 88 8 110 12 C 142 18 148 56 132 80 C 118 102 120 120 136 134 C 162 158 150 192 110 198 C 96 200 86 192 78 180 Z'
-            fill='rgba(255,255,255,0.38)'
-            stroke='rgba(255,210,182,0.6)'
+            d="M78 180 C 40 154 44 118 70 96 C 88 80 96 64 88 44 C 80 24 88 8 110 12 C 142 18 148 56 132 80 C 118 102 120 120 136 134 C 162 158 150 192 110 198 C 96 200 86 192 78 180 Z"
+            fill="rgba(255,255,255,0.38)"
+            stroke="rgba(255,210,182,0.6)"
             strokeWidth={6}
           />
           <path
-            d='M120 190 C 92 166 96 140 116 124 C 132 112 136 92 126 74'
-            stroke='rgba(255,210,182,0.6)'
+            d="M120 190 C 92 166 96 140 116 124 C 132 112 136 92 126 74"
+            stroke="rgba(255,210,182,0.6)"
             strokeWidth={6}
-            strokeLinecap='round'
-            opacity='0.7'
+            strokeLinecap="round"
+            opacity="0.7"
           />
         </svg>
-      )
-    case 'water_leaf':
+      );
+    case "water_leaf":
       return (
-        <svg viewBox='0 0 180 180' className='h-full w-full'>
+        <svg viewBox="0 0 180 180" className="h-full w-full">
           <path
-            d='M90 14 C 46 52 34 118 68 164 C 110 154 142 110 150 64 C 154 42 132 10 90 14 Z'
-            fill='#5fb897'
+            d="M90 14 C 46 52 34 118 68 164 C 110 154 142 110 150 64 C 154 42 132 10 90 14 Z"
+            fill="#5fb897"
           />
           <path
-            d='M92 30 C 60 60 50 110 76 150'
-            stroke='#2f8568'
+            d="M92 30 C 60 60 50 110 76 150"
+            stroke="#2f8568"
             strokeWidth={8}
-            strokeLinecap='round'
-            opacity='0.8'
+            strokeLinecap="round"
+            opacity="0.8"
           />
           <path
-            d='M90 14 C 78 46 82 80 110 118'
-            stroke='#93e6c7'
+            d="M90 14 C 78 46 82 80 110 118"
+            stroke="#93e6c7"
             strokeWidth={8}
-            strokeLinecap='round'
-            opacity='0.75'
+            strokeLinecap="round"
+            opacity="0.75"
           />
         </svg>
-      )
-    case 'citrus_slice':
+      );
+    case "citrus_slice":
       return (
-        <svg viewBox='0 0 180 180' className='h-full w-full'>
+        <svg viewBox="0 0 180 180" className="h-full w-full">
           <circle
-            cx='90'
-            cy='90'
-            r='80'
-            fill='#ffe4b8'
-            stroke='#f6aa66'
+            cx="90"
+            cy="90"
+            r="80"
+            fill="#ffe4b8"
+            stroke="#f6aa66"
             strokeWidth={8}
           />
           {[0, 60, 120].map((angle) => (
             <path
               key={angle}
               d={`M90 90 L${90 + 70 * Math.cos((Math.PI / 180) * angle)} ${90 + 70 * Math.sin((Math.PI / 180) * angle)} A70 70 0 0 1 ${90 + 70 * Math.cos((Math.PI / 180) * (angle + 60))} ${90 + 70 * Math.sin((Math.PI / 180) * (angle + 60))} Z`}
-              fill='#fff3d5'
-              opacity='0.85'
+              fill="#fff3d5"
+              opacity="0.85"
             />
           ))}
-          <circle cx='90' cy='90' r='16' fill='#fff' opacity='0.75' />
+          <circle cx="90" cy="90" r="16" fill="#fff" opacity="0.75" />
         </svg>
-      )
-    case 'herb_bundle':
+      );
+    case "herb_bundle":
       return (
-        <svg viewBox='0 0 160 200' className='h-full w-full'>
+        <svg viewBox="0 0 160 200" className="h-full w-full">
           <path
-            d='M80 160 C 74 130 60 96 34 62 C 66 80 90 100 108 130 C 124 156 114 182 90 188 C 84 190 82 174 80 160 Z'
-            fill='#6d9d5b'
+            d="M80 160 C 74 130 60 96 34 62 C 66 80 90 100 108 130 C 124 156 114 182 90 188 C 84 190 82 174 80 160 Z"
+            fill="#6d9d5b"
           />
           <path
-            d='M86 158 C 92 128 112 104 144 82 C 122 116 110 146 110 176'
-            stroke='#508044'
+            d="M86 158 C 92 128 112 104 144 82 C 122 116 110 146 110 176"
+            stroke="#508044"
             strokeWidth={10}
-            strokeLinecap='round'
-            opacity='0.8'
+            strokeLinecap="round"
+            opacity="0.8"
           />
           <path
-            d='M74 170 L86 176'
-            stroke='#c68a4d'
+            d="M74 170 L86 176"
+            stroke="#c68a4d"
             strokeWidth={10}
-            strokeLinecap='round'
+            strokeLinecap="round"
           />
         </svg>
-      )
-    case 'water_ripple':
+      );
+    case "water_ripple":
       return (
-        <svg viewBox='0 0 220 220' className='h-full w-full'>
+        <svg viewBox="0 0 220 220" className="h-full w-full">
           <circle
-            cx='110'
-            cy='110'
-            r='90'
-            fill='none'
-            stroke='rgba(168,214,233,0.55)'
+            cx="110"
+            cy="110"
+            r="90"
+            fill="none"
+            stroke="rgba(168,214,233,0.55)"
             strokeWidth={8}
           />
           <circle
-            cx='110'
-            cy='110'
-            r='60'
-            fill='none'
-            stroke='rgba(168,214,233,0.4)'
+            cx="110"
+            cy="110"
+            r="60"
+            fill="none"
+            stroke="rgba(168,214,233,0.4)"
             strokeWidth={6}
           />
-          <circle cx='110' cy='110' r='32' fill='rgba(196,238,255,0.35)' />
+          <circle cx="110" cy="110" r="32" fill="rgba(196,238,255,0.35)" />
         </svg>
-      )
+      );
     default:
-      return null
+      return null;
   }
-}
+};
 
 export default function Home() {
-  const [isConnected, setIsConnected] = useState(false)
-  const [isMuted, setIsMuted] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [connectedUserId, setConnectedUserId] = useState<number | null>(null)
+  const [isConnected, setIsConnected] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectedUserId, setConnectedUserId] = useState<number | null>(null);
   const [selectedModel, setSelectedModel] = useState<CharacterProfile>(
     characterOptions[0]
-  )
+  );
   const [selectedLanguage, setSelectedLanguage] = useState<string>(
-    process.env.NEXT_PUBLIC_LANGUAGE || 'en-US'
-  )
+    process.env.NEXT_PUBLIC_LANGUAGE || "en-US"
+  );
   const channelName = useMemo(
     () =>
       process.env.NEXT_PUBLIC_CHANNEL_NAME ||
       `ten_live2d_${Math.random().toString(36).slice(2, 10)}`,
     []
-  )
-  const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null)
-  const [agoraService, setAgoraService] = useState<any>(null)
-  const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null)
-  const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false)
-  const live2dRef = useRef<Live2DHandle | null>(null)
-  const [modelLoadedTick, setModelLoadedTick] = useState(0)
-  const processedVoiceCommandIdsRef = useRef<string[]>([])
+  );
+  const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null);
+  const [agoraService, setAgoraService] = useState<any>(null);
+  const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
+  const live2dRef = useRef<Live2DHandle | null>(null);
+  const [modelLoadedTick, setModelLoadedTick] = useState(0);
+  const processedVoiceCommandIdsRef = useRef<string[]>([]);
   const handleModelLoaded = useCallback(
     () => setModelLoadedTick((tick) => tick + 1),
     []
-  )
-  const prevSpeakingRef = useRef(false)
+  );
+  const prevSpeakingRef = useRef(false);
+  const [micLevel, setMicLevel] = useState(0);
   const applyVoiceRule = useCallback(async (rule: VoiceCommandRule) => {
-    const controller = live2dRef.current
+    const controller = live2dRef.current;
     if (!controller) {
-      return
+      return;
     }
     try {
       if (rule.reset) {
-        await controller.setExpression(undefined)
-        return
+        await controller.setExpression(undefined);
+        return;
       }
-      const expressions = rule.expressions ?? []
+      const expressions = rule.expressions ?? [];
       const shouldResetFirst =
-        rule.resetFirst !== undefined ? rule.resetFirst : expressions.length > 0
+        rule.resetFirst !== undefined
+          ? rule.resetFirst
+          : expressions.length > 0;
       if (shouldResetFirst) {
-        await controller.setExpression(undefined)
+        await controller.setExpression(undefined);
       }
       for (const expression of expressions) {
-        await controller.setExpression(expression)
+        await controller.setExpression(expression);
       }
     } catch (error) {
       console.warn(
-        '[VoiceCommand] Failed to apply voice-triggered expression',
+        "[VoiceCommand] Failed to apply voice-triggered expression",
         error
-      )
+      );
     }
-  }, [])
+  }, []);
 
   const handleLanguageSelect = (lang: string) => {
-    if (lang === selectedLanguage) return
-    setSelectedLanguage(lang)
+    if (lang === selectedLanguage) return;
+    setSelectedLanguage(lang);
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('ten_live2d_language', lang)
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ten_live2d_language", lang);
       }
     } catch {}
     if (isConnected && connectedUserId !== null) {
       void (async () => {
-        setIsConnecting(true)
+        setIsConnecting(true);
         try {
-          await apiStopService(channelName)
+          await apiStopService(channelName);
         } catch (error) {
           console.warn(
-            '[Agent] Failed to stop agent while switching language:',
+            "[Agent] Failed to stop agent while switching language:",
             error
-          )
+          );
         }
         try {
           const mappedGraph =
-            lang === 'zh-CN'
-              ? selectedModel.id === 'kei'
-                ? 'voice_assistant_live2d_kei_zh'
-                : selectedModel.id === 'chubbie'
-                  ? 'voice_assistant_live2d_chubbie_zh'
-                  : 'voice_assistant_live2d'
-              : selectedModel.id === 'kei'
-                ? 'voice_assistant_live2d_kei'
-                : selectedModel.id === 'chubbie'
-                  ? 'voice_assistant_live2d_chubbie'
-                  : 'voice_assistant_live2d'
+            lang === "zh-CN"
+              ? selectedModel.id === "kei"
+                ? "voice_assistant_live2d_kei_zh"
+                : selectedModel.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie_zh"
+                  : "voice_assistant_live2d"
+              : selectedModel.id === "kei"
+                ? "voice_assistant_live2d_kei"
+                : selectedModel.id === "chubbie"
+                  ? "voice_assistant_live2d_chubbie"
+                  : "voice_assistant_live2d";
           await apiStartService({
             channel: channelName,
             userId: connectedUserId,
@@ -924,410 +927,433 @@ export default function Home() {
             voiceType: selectedModel.voiceType,
             characterId: selectedModel.id,
             greeting: selectedModel.agentGreeting,
-            prompt: selectedModel.agentPrompt
-          })
+            prompt: selectedModel.agentPrompt,
+          });
         } catch (error) {
           console.error(
-            '[Agent] Failed to restart agent after language switch:',
+            "[Agent] Failed to restart agent after language switch:",
             error
-          )
+          );
         } finally {
-          setIsConnecting(false)
+          setIsConnecting(false);
         }
-      })()
+      })();
     }
-  }
+  };
 
   useEffect(() => {
     // Dynamically import Agora service only on client side
-    if (typeof window !== 'undefined') {
-      import('@/services/agora').then((module) => {
-        const service = module.agoraService
-        setAgoraService(service)
+    if (typeof window !== "undefined") {
+      import("@/services/agora").then((module) => {
+        const service = module.agoraService;
+        setAgoraService(service);
 
         // Set up callbacks for Agora service
-        service.setOnConnectionStatusChange(handleConnectionChange)
-        service.setOnRemoteAudioTrack(handleAudioTrackChange)
-      })
+        service.setOnConnectionStatusChange(handleConnectionChange);
+        service.setOnRemoteAudioTrack(handleAudioTrackChange);
+      });
     }
 
     // Cleanup ping interval on unmount
     return () => {
-      stopPing()
-    }
-  }, [])
+      stopPing();
+    };
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    const readLocalLevel = () => {
+      const track: any = agoraService?.getLocalAudioTrack?.();
+      if (!track) return 0;
+      if (typeof track.getVolumeLevel === "function") {
+        return track.getVolumeLevel();
+      }
+      return isMuted ? 0 : 0.3;
+    };
+    interval = setInterval(() => {
+      try {
+        const level = readLocalLevel();
+        setMicLevel((prev) => (Math.abs(prev - level) < 0.01 ? prev : level));
+      } catch {
+        setMicLevel(0);
+      }
+    }, 160);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [agoraService, isMuted, isConnected]);
 
   const handleConnectionChange = (status: any) => {
-    setIsConnected(status.rtc === 'connected')
-  }
+    setIsConnected(status.rtc === "connected");
+  };
 
   const handleAudioTrackChange = (track: any) => {
-    setRemoteAudioTrack(track)
-  }
+    setRemoteAudioTrack(track);
+  };
 
   const handleModelSelect = (modelId: string) => {
-    const candidate = characterOptions.find((model) => model.id === modelId)
+    const candidate = characterOptions.find((model) => model.id === modelId);
     if (candidate && candidate.id !== selectedModel.id) {
-      prevSpeakingRef.current = false
-      setSelectedModel(candidate)
+      prevSpeakingRef.current = false;
+      setSelectedModel(candidate);
       // If we're already connected, restart the agent with the newly selected character
       // so that voice/greeting/personality updates take effect immediately.
       if (isConnected && connectedUserId !== null) {
         void (async () => {
-          setIsConnecting(true)
+          setIsConnecting(true);
           try {
-            await apiStopService(channelName)
+            await apiStopService(channelName);
           } catch (error) {
             console.warn(
-              '[Agent] Failed to stop agent while switching character:',
+              "[Agent] Failed to stop agent while switching character:",
               error
-            )
+            );
           }
           try {
             await apiStartService({
               channel: channelName,
               userId: connectedUserId,
               graphName:
-                selectedLanguage === 'zh-CN'
-                  ? candidate.id === 'kei'
-                    ? 'voice_assistant_live2d_kei_zh'
-                    : candidate.id === 'chubbie'
-                      ? 'voice_assistant_live2d_chubbie_zh'
-                      : 'voice_assistant_live2d'
-                  : candidate.id === 'kei'
-                    ? 'voice_assistant_live2d_kei'
-                    : candidate.id === 'chubbie'
-                      ? 'voice_assistant_live2d_chubbie'
-                      : 'voice_assistant_live2d',
+                selectedLanguage === "zh-CN"
+                  ? candidate.id === "kei"
+                    ? "voice_assistant_live2d_kei_zh"
+                    : candidate.id === "chubbie"
+                      ? "voice_assistant_live2d_chubbie_zh"
+                      : "voice_assistant_live2d"
+                  : candidate.id === "kei"
+                    ? "voice_assistant_live2d_kei"
+                    : candidate.id === "chubbie"
+                      ? "voice_assistant_live2d_chubbie"
+                      : "voice_assistant_live2d",
               language: selectedLanguage,
               voiceType: candidate.voiceType,
               characterId: candidate.id,
               greeting: candidate.agentGreeting,
-              prompt: candidate.agentPrompt
-            })
+              prompt: candidate.agentPrompt,
+            });
           } catch (error) {
             console.error(
-              '[Agent] Failed to restart agent after character switch:',
+              "[Agent] Failed to restart agent after character switch:",
               error
-            )
+            );
           } finally {
-            setIsConnecting(false)
+            setIsConnecting(false);
           }
-        })()
+        })();
       }
     }
-  }
+  };
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    const track = remoteAudioTrack
+    let interval: NodeJS.Timeout | null = null;
+    const track = remoteAudioTrack;
 
     const readLevel = () => {
-      if (!track) return 0
-      if (typeof track.getVolumeLevel === 'function') {
-        return track.getVolumeLevel()
+      if (!track) return 0;
+      if (typeof track.getVolumeLevel === "function") {
+        return track.getVolumeLevel();
       }
-      if (typeof track.getCurrentLevel === 'function') {
-        return track.getCurrentLevel()
+      if (typeof track.getCurrentLevel === "function") {
+        return track.getCurrentLevel();
       }
-      return 0
-    }
+      return 0;
+    };
 
     if (track) {
       interval = setInterval(() => {
         try {
-          const level = readLevel()
-          const speaking = level > 0.05
+          const level = readLevel();
+          const speaking = level > 0.05;
           setIsAssistantSpeaking((prev) =>
             prev === speaking ? prev : speaking
-          )
+          );
         } catch (err) {
-          console.warn('Unable to read remote audio level:', err)
-          setIsAssistantSpeaking(false)
+          console.warn("Unable to read remote audio level:", err);
+          setIsAssistantSpeaking(false);
         }
-      }, 160)
+      }, 160);
     } else {
-      setIsAssistantSpeaking(false)
+      setIsAssistantSpeaking(false);
     }
 
     return () => {
       if (interval) {
-        clearInterval(interval)
+        clearInterval(interval);
       }
-    }
-  }, [remoteAudioTrack])
+    };
+  }, [remoteAudioTrack]);
 
   useEffect(() => {
-    prevSpeakingRef.current = false
-  }, [selectedModel.id, modelLoadedTick])
+    prevSpeakingRef.current = false;
+  }, [selectedModel.id, modelLoadedTick]);
 
   useEffect(() => {
-    processedVoiceCommandIdsRef.current = []
-  }, [selectedModel.id])
+    processedVoiceCommandIdsRef.current = [];
+  }, [selectedModel.id]);
 
   useEffect(() => {
-    const controller = live2dRef.current
+    const controller = live2dRef.current;
     if (!controller) {
-      return
+      return;
     }
     const defaultExpression = selectedModel.expressions?.find(
       (expression) => expression.default
-    )
+    );
     if (defaultExpression) {
-      void controller.setExpression(defaultExpression.name)
+      void controller.setExpression(defaultExpression.name);
     } else {
-      void controller.setExpression(undefined)
+      void controller.setExpression(undefined);
     }
-    const idleMotion = selectedModel.motions?.find((motion) => motion.autoPlay)
+    const idleMotion = selectedModel.motions?.find((motion) => motion.autoPlay);
     if (idleMotion) {
       void controller.playMotion(idleMotion.name, {
-        priority: idleMotion.priority
-      })
+        priority: idleMotion.priority,
+      });
     }
-  }, [selectedModel, modelLoadedTick])
+  }, [selectedModel, modelLoadedTick]);
 
   useEffect(() => {
-    const controller = live2dRef.current
-    const wasSpeaking = prevSpeakingRef.current
-    prevSpeakingRef.current = isAssistantSpeaking
+    const controller = live2dRef.current;
+    const wasSpeaking = prevSpeakingRef.current;
+    prevSpeakingRef.current = isAssistantSpeaking;
     if (!controller) {
-      return
+      return;
     }
     if (isAssistantSpeaking && !wasSpeaking) {
       const speakingExpression = selectedModel.expressions?.find(
         (expression) => expression.onSpeaking
-      )
+      );
       if (speakingExpression) {
-        void controller.setExpression(speakingExpression.name)
+        void controller.setExpression(speakingExpression.name);
       }
       const speakingMotion = selectedModel.motions?.find(
         (motion) => motion.onSpeakingStart
-      )
+      );
       if (speakingMotion) {
         void controller.playMotion(speakingMotion.name, {
-          priority: speakingMotion.priority
-        })
+          priority: speakingMotion.priority,
+        });
       }
     } else if (!isAssistantSpeaking && wasSpeaking) {
       const defaultExpression = selectedModel.expressions?.find(
         (expression) => expression.default
-      )
+      );
       if (defaultExpression) {
-        void controller.setExpression(defaultExpression.name)
+        void controller.setExpression(defaultExpression.name);
       } else {
-        void controller.setExpression(undefined)
+        void controller.setExpression(undefined);
       }
     }
-  }, [isAssistantSpeaking, selectedModel])
+  }, [isAssistantSpeaking, selectedModel]);
 
   useEffect(() => {
     if (!agoraService) {
-      return
+      return;
     }
 
     // Persist language preference
     try {
       const saved =
-        typeof window !== 'undefined'
-          ? localStorage.getItem('ten_live2d_language')
-          : null
-      if (saved && (saved === 'en-US' || saved === 'zh-CN')) {
-        setSelectedLanguage(saved)
+        typeof window !== "undefined"
+          ? localStorage.getItem("ten_live2d_language")
+          : null;
+      if (saved && (saved === "en-US" || saved === "zh-CN")) {
+        setSelectedLanguage(saved);
       }
     } catch {}
 
     const rules: VoiceCommandRule[] =
-      selectedModel.id === 'chubbie'
+      selectedModel.id === "chubbie"
         ? [
             {
               triggers: [
-                'change your outfit',
-                'change outfit',
-                'can you change your outfit',
-                'switch your outfit'
+                "change your outfit",
+                "change outfit",
+                "can you change your outfit",
+                "switch your outfit",
               ],
-              expressions: ['toggle_black_dress_m_2'],
-              resetFirst: true
+              expressions: ["toggle_black_dress_m_2"],
+              resetFirst: true,
             },
             {
               triggers: [
-                'default outfit',
-                'back to normal outfit',
-                'regular outfit',
-                'original outfit'
+                "default outfit",
+                "back to normal outfit",
+                "regular outfit",
+                "original outfit",
               ],
-              reset: true
+              reset: true,
             },
             {
               triggers: [
-                'remove your outfit',
-                'take off your outfit',
-                'outfit off',
-                'clothes off'
+                "remove your outfit",
+                "take off your outfit",
+                "outfit off",
+                "clothes off",
               ],
-              reset: true
+              reset: true,
             },
             {
-              triggers: ['wear the apron', 'put on the apron', 'apron on'],
-              expressions: ['toggle_apron_m_3'],
-              resetFirst: true
+              triggers: ["wear the apron", "put on the apron", "apron on"],
+              expressions: ["toggle_apron_m_3"],
+              resetFirst: true,
             },
             {
-              triggers: ['take off the apron', 'remove the apron', 'apron off'],
-              reset: true
+              triggers: ["take off the apron", "remove the apron", "apron off"],
+              reset: true,
             },
             {
               triggers: [
-                'wear your sunglasses',
-                'put on sunglasses',
-                'sunglasses on'
+                "wear your sunglasses",
+                "put on sunglasses",
+                "sunglasses on",
               ],
-              expressions: ['toggle_sunglasses_g_2'],
-              resetFirst: true
+              expressions: ["toggle_sunglasses_g_2"],
+              resetFirst: true,
             },
             {
               triggers: [
-                'wear your glasses',
-                'wear glasses',
-                'put on glasses',
-                'put glasses on',
-                'put your glasses',
-                'put your glasses on',
-                'glasses on',
-                'reading glasses'
+                "wear your glasses",
+                "wear glasses",
+                "put on glasses",
+                "put glasses on",
+                "put your glasses",
+                "put your glasses on",
+                "glasses on",
+                "reading glasses",
               ],
-              expressions: ['toggle_glasses_g_1'],
-              resetFirst: true
-            }
+              expressions: ["toggle_glasses_g_1"],
+              resetFirst: true,
+            },
           ]
-        : []
+        : [];
 
     if (rules.length === 0) {
-      return
+      return;
     }
 
-    const targetModelId = selectedModel.id
+    const targetModelId = selectedModel.id;
 
     const buildDynamicGlassesRule = (
       haystacks: Set<string>
     ): VoiceCommandRule | null => {
-      const controller = live2dRef.current
+      const controller = live2dRef.current;
       if (!controller) {
-        return null
+        return null;
       }
       const expressions = controller.getAvailableExpressions
         ? controller.getAvailableExpressions()
-        : []
+        : [];
       const hasOff = Array.from(haystacks).some(
         (h) =>
-          h.includes('glasses off') ||
-          h.includes('remove glasses') ||
-          h.includes('take off')
-      )
+          h.includes("glasses off") ||
+          h.includes("remove glasses") ||
+          h.includes("take off")
+      );
       if (hasOff) {
-        return { triggers: [], reset: true }
+        return { triggers: [], reset: true };
       }
-      const keywords = ['glasses', 'sunglasses', 'shades', 'monocle']
+      const keywords = ["glasses", "sunglasses", "shades", "monocle"];
       const needOn = Array.from(haystacks).some((h) =>
         keywords.some((k) => h.includes(k))
-      )
+      );
       if (!needOn) {
-        return null
+        return null;
       }
       const candidates = expressions
         .filter((e) => keywords.some((k) => e.name.toLowerCase().includes(k)))
         .sort((a, b) => {
           const rank = (name: string) =>
-            name.toLowerCase().includes('glasses')
+            name.toLowerCase().includes("glasses")
               ? 0
-              : name.toLowerCase().includes('sunglasses')
+              : name.toLowerCase().includes("sunglasses")
                 ? 1
-                : 2
-          return rank(a.name) - rank(b.name)
+                : 2;
+          return rank(a.name) - rank(b.name);
         })
-        .map((e) => e.name)
+        .map((e) => e.name);
       if (candidates.length === 0) {
-        return null
+        return null;
       }
-      return { triggers: [], expressions: [candidates[0]], resetFirst: true }
-    }
+      return { triggers: [], expressions: [candidates[0]], resetFirst: true };
+    };
 
     const cleanup = agoraService.addTranscriptListener(
       (message: TranscriptMessage) => {
         if (selectedModel.id !== targetModelId) {
-          return
+          return;
         }
         if (message?.isUser === false) {
-          return
+          return;
         }
         if (message.isFinal === false) {
-          return
+          return;
         }
-        const base = message.text?.toLowerCase() ?? ''
+        const base = message.text?.toLowerCase() ?? "";
         if (!base.trim()) {
-          return
+          return;
         }
 
         const clean = (value: string) =>
           value
             .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
+            .replace(/[^a-z0-9\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
 
         const removeStopWords = (value: string) =>
           value
             .replace(
               /\b(can|you|could|would|will|please|your|the|a|to)\b/g,
-              ' '
+              " "
             )
-            .replace(/\s+/g, ' ')
-            .trim()
+            .replace(/\s+/g, " ")
+            .trim();
 
-        const primary = clean(base)
-        const simplified = removeStopWords(primary)
+        const primary = clean(base);
+        const simplified = removeStopWords(primary);
 
-        const haystacks = new Set<string>()
+        const haystacks = new Set<string>();
         if (primary) {
-          haystacks.add(primary)
+          haystacks.add(primary);
         }
         if (simplified) {
-          haystacks.add(simplified)
+          haystacks.add(simplified);
         }
         if (haystacks.size === 0) {
-          return
+          return;
         }
 
         const editDistance = (a: string, b: string) => {
           const dp: number[][] = Array.from({ length: a.length + 1 }, () =>
             Array(b.length + 1).fill(0)
-          )
-          for (let i = 0; i <= a.length; i++) dp[i][0] = i
-          for (let j = 0; j <= b.length; j++) dp[0][j] = j
+          );
+          for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+          for (let j = 0; j <= b.length; j++) dp[0][j] = j;
           for (let i = 1; i <= a.length; i++) {
             for (let j = 1; j <= b.length; j++) {
-              const cost = a[i - 1] === b[j - 1] ? 0 : 1
+              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
               dp[i][j] = Math.min(
                 dp[i - 1][j] + 1,
                 dp[i][j - 1] + 1,
                 dp[i - 1][j - 1] + cost
-              )
+              );
             }
           }
-          return dp[a.length][b.length]
-        }
+          return dp[a.length][b.length];
+        };
 
         const matchesTrigger = (trigger: string) => {
-          const normalizedTrigger = clean(trigger)
+          const normalizedTrigger = clean(trigger);
           if (!normalizedTrigger) {
-            return false
+            return false;
           }
-          const triggerWords = normalizedTrigger.split(' ')
+          const triggerWords = normalizedTrigger.split(" ");
           for (const hay of haystacks) {
             if (hay.includes(normalizedTrigger)) {
-              return true
+              return true;
             }
-            const hayWords = hay.split(' ')
+            const hayWords = hay.split(" ");
             if (
               triggerWords.every(
                 (word) =>
@@ -1335,100 +1361,100 @@ export default function Home() {
                   hayWords.some((hw) => editDistance(hw, word) <= 1)
               )
             ) {
-              return true
+              return true;
             }
           }
-          return false
-        }
+          return false;
+        };
 
-        console.debug('[VoiceCommand] Transcript received', {
+        console.debug("[VoiceCommand] Transcript received", {
           base,
           primary,
-          simplified
-        })
+          simplified,
+        });
 
         let matchedRule = rules.find((rule) =>
           rule.triggers.some((trigger) => matchesTrigger(trigger))
-        )
+        );
         if (!matchedRule) {
-          const dynamicRule = buildDynamicGlassesRule(haystacks)
+          const dynamicRule = buildDynamicGlassesRule(haystacks);
           if (!dynamicRule) {
-            return
+            return;
           }
-          matchedRule = dynamicRule
-          console.debug('[VoiceCommand] Using dynamic glasses rule')
+          matchedRule = dynamicRule;
+          console.debug("[VoiceCommand] Using dynamic glasses rule");
         } else {
-          console.debug('[VoiceCommand] Matched static rule', matchedRule)
+          console.debug("[VoiceCommand] Matched static rule", matchedRule);
         }
-        const processed = processedVoiceCommandIdsRef.current
+        const processed = processedVoiceCommandIdsRef.current;
         if (processed.includes(message.id)) {
-          return
+          return;
         }
-        processed.push(message.id)
+        processed.push(message.id);
         if (processed.length > 200) {
-          processed.shift()
+          processed.shift();
         }
-        console.debug('[VoiceCommand] Applying rule', matchedRule)
-        void applyVoiceRule(matchedRule)
+        console.debug("[VoiceCommand] Applying rule", matchedRule);
+        void applyVoiceRule(matchedRule);
       }
-    )
+    );
 
-    return cleanup
-  }, [agoraService, selectedModel.id, applyVoiceRule])
+    return cleanup;
+  }, [agoraService, selectedModel.id, applyVoiceRule]);
 
   const startPing = () => {
     if (pingInterval) {
-      stopPing()
+      stopPing();
     }
     const interval = setInterval(() => {
-      apiPing(channelName)
-    }, 3000)
-    setPingInterval(interval)
-  }
+      apiPing(channelName);
+    }, 3000);
+    setPingInterval(interval);
+  };
 
   const stopPing = () => {
     if (pingInterval) {
-      clearInterval(pingInterval)
-      setPingInterval(null)
+      clearInterval(pingInterval);
+      setPingInterval(null);
     }
-  }
+  };
 
   const handleMicToggle = () => {
     if (agoraService) {
       try {
         if (isMuted) {
-          agoraService.unmuteMicrophone()
-          setIsMuted(false)
+          agoraService.unmuteMicrophone();
+          setIsMuted(false);
         } else {
-          agoraService.muteMicrophone()
-          setIsMuted(true)
+          agoraService.muteMicrophone();
+          setIsMuted(true);
         }
       } catch (error) {
-        console.error('Error toggling microphone:', error)
+        console.error("Error toggling microphone:", error);
       }
     }
-  }
+  };
 
   const handleConnectToggle = async () => {
     if (agoraService) {
       try {
         if (isConnected) {
-          setIsConnecting(true)
+          setIsConnecting(true);
           // Stop the agent service first
           try {
-            await apiStopService(channelName)
-            console.log('Agent stopped')
+            await apiStopService(channelName);
+            console.log("Agent stopped");
           } catch (error) {
-            console.error('Failed to stop agent:', error)
+            console.error("Failed to stop agent:", error);
           }
 
-          await agoraService.disconnect()
-          setIsConnected(false)
-          setConnectedUserId(null)
-          stopPing() // Stop ping when disconnecting
-          setIsConnecting(false)
+          await agoraService.disconnect();
+          setIsConnected(false);
+          setConnectedUserId(null);
+          stopPing(); // Stop ping when disconnecting
+          setIsConnecting(false);
         } else {
-          setIsConnecting(true)
+          setIsConnecting(true);
 
           // Token generation with retry logic
           const generateToken = async (
@@ -1436,105 +1462,105 @@ export default function Home() {
             maxRetries = 3
           ): Promise<any> => {
             const apiBase = (
-              process.env.NEXT_PUBLIC_API_BASE_URL || ''
-            ).replace(/\/$/, '')
+              process.env.NEXT_PUBLIC_API_BASE_URL || ""
+            ).replace(/\/$/, "");
             const body = JSON.stringify({
               request_id: Math.random().toString(36).substring(2, 15),
               uid: Math.floor(Math.random() * 100000),
               // Default to the same channel as the property.json graph so agent and client stay in sync.
-              channel_name: channelName
-            })
+              channel_name: channelName,
+            });
 
             const primaryUrl = apiBase
               ? `${apiBase}/token/generate`
-              : '/api/token/generate'
-            const fallbackUrl = '/api/token/generate'
+              : "/api/token/generate";
+            const fallbackUrl = "/api/token/generate";
 
             console.log(
               `[Token] Attempting to generate token (attempt ${retryCount + 1}/${maxRetries + 1})`
-            )
+            );
 
             try {
               // Try primary endpoint with timeout
-              const controller = new AbortController()
-              const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
               let response = await fetch(primaryUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body,
-                mode: 'cors',
-                cache: 'no-store',
-                signal: controller.signal
+                mode: "cors",
+                cache: "no-store",
+                signal: controller.signal,
               }).catch((err) => {
                 console.error(
-                  '[Token] Primary endpoint error:',
+                  "[Token] Primary endpoint error:",
                   primaryUrl,
                   err.message
-                )
-                return undefined as any
-              })
+                );
+                return undefined as any;
+              });
 
-              clearTimeout(timeoutId)
+              clearTimeout(timeoutId);
 
               // Try fallback if primary failed
               if (!response || !response.ok) {
-                console.log('[Token] Trying fallback endpoint:', fallbackUrl)
-                const fallbackController = new AbortController()
+                console.log("[Token] Trying fallback endpoint:", fallbackUrl);
+                const fallbackController = new AbortController();
                 const fallbackTimeoutId = setTimeout(
                   () => fallbackController.abort(),
                   10000
-                )
+                );
 
                 response = await fetch(fallbackUrl, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
                   body,
-                  mode: 'cors',
-                  cache: 'no-store',
-                  signal: fallbackController.signal
+                  mode: "cors",
+                  cache: "no-store",
+                  signal: fallbackController.signal,
                 }).catch((err) => {
                   console.error(
-                    '[Token] Fallback endpoint error:',
+                    "[Token] Fallback endpoint error:",
                     fallbackUrl,
                     err.message
-                  )
-                  throw err
-                })
+                  );
+                  throw err;
+                });
 
-                clearTimeout(fallbackTimeoutId)
+                clearTimeout(fallbackTimeoutId);
               }
 
               if (!response.ok) {
                 throw new Error(
                   `HTTP ${response.status}: ${response.statusText}`
-                )
+                );
               }
 
-              const responseData = await response.json()
-              console.log('[Token] Token generation success:', responseData)
-              return responseData
+              const responseData = await response.json();
+              console.log("[Token] Token generation success:", responseData);
+              return responseData;
             } catch (error: any) {
-              console.error('[Token] Generation failed:', error.message)
+              console.error("[Token] Generation failed:", error.message);
 
               if (retryCount < maxRetries) {
-                const delay = 1000 * 2 ** retryCount // Exponential backoff
-                console.log(`[Token] Retrying in ${delay}ms...`)
-                await new Promise((resolve) => setTimeout(resolve, delay))
-                return generateToken(retryCount + 1, maxRetries)
+                const delay = 1000 * 2 ** retryCount; // Exponential backoff
+                console.log(`[Token] Retrying in ${delay}ms...`);
+                await new Promise((resolve) => setTimeout(resolve, delay));
+                return generateToken(retryCount + 1, maxRetries);
               }
 
               throw new Error(
                 `Failed to get Agora credentials after ${maxRetries + 1} attempts: ${error.message}`
-              )
+              );
             }
-          }
+          };
 
-          const responseData = await generateToken()
+          const responseData = await generateToken();
 
           // Handle the response structure from agent server
-          const credentials = responseData.data || responseData
-          credentials.channel_name = credentials.channel_name || channelName
+          const credentials = responseData.data || responseData;
+          credentials.channel_name = credentials.channel_name || channelName;
 
           const agoraConfig: AgoraConfig = {
             appId: credentials.appId || credentials.app_id,
@@ -1544,23 +1570,23 @@ export default function Home() {
               credentials.token !== (credentials.appId || credentials.app_id)
                 ? credentials.token
                 : null,
-            uid: credentials.uid
-          }
+            uid: credentials.uid,
+          };
 
           // Start the agent BEFORE joining RTC so main_control reads the overridden greeting
           try {
             const selectedGraph =
-              selectedLanguage === 'zh-CN'
-                ? selectedModel.id === 'kei'
-                  ? 'voice_assistant_live2d_kei_zh'
-                  : selectedModel.id === 'chubbie'
-                    ? 'voice_assistant_live2d_chubbie_zh'
-                    : 'voice_assistant_live2d'
-                : selectedModel.id === 'kei'
-                  ? 'voice_assistant_live2d_kei'
-                  : selectedModel.id === 'chubbie'
-                    ? 'voice_assistant_live2d_chubbie'
-                    : 'voice_assistant_live2d'
+              selectedLanguage === "zh-CN"
+                ? selectedModel.id === "kei"
+                  ? "voice_assistant_live2d_kei_zh"
+                  : selectedModel.id === "chubbie"
+                    ? "voice_assistant_live2d_chubbie_zh"
+                    : "voice_assistant_live2d"
+                : selectedModel.id === "kei"
+                  ? "voice_assistant_live2d_kei"
+                  : selectedModel.id === "chubbie"
+                    ? "voice_assistant_live2d_chubbie"
+                    : "voice_assistant_live2d";
             const startResult = await apiStartService({
               channel: agoraConfig.channel,
               userId: agoraConfig.uid || 0,
@@ -1569,161 +1595,197 @@ export default function Home() {
               voiceType: selectedModel.voiceType,
               characterId: selectedModel.id,
               greeting: selectedModel.agentGreeting,
-              prompt: selectedModel.agentPrompt
-            })
-            console.log('Agent started (pre-RTC):', startResult)
+              prompt: selectedModel.agentPrompt,
+            });
+            console.log("Agent started (pre-RTC):", startResult);
           } catch (error) {
-            console.error('Failed to start agent pre-RTC:', error)
+            console.error("Failed to start agent pre-RTC:", error);
           }
 
-          console.log('Agora config:', agoraConfig)
-          const success = await agoraService.connect(agoraConfig)
+          console.log("Agora config:", agoraConfig);
+          const success = await agoraService.connect(agoraConfig);
           if (success) {
-            setIsConnected(true)
-            setConnectedUserId(agoraConfig.uid ?? 0)
-            setIsMuted(agoraService.isMicrophoneMuted())
-            startPing()
+            setIsConnected(true);
+            setConnectedUserId(agoraConfig.uid ?? 0);
+            setIsMuted(agoraService.isMicrophoneMuted());
+            startPing();
           } else {
-            throw new Error('Failed to connect to Agora')
+            throw new Error("Failed to connect to Agora");
           }
-          setIsConnecting(false)
+          setIsConnecting(false);
         }
       } catch (error) {
-        console.error('Connection error:', error)
-        setIsConnecting(false)
+        console.error("Connection error:", error);
+        setIsConnecting(false);
       }
     }
-  }
+  };
 
   const renderCharacterSwitch = () => (
-    <div className='inline-flex items-center gap-2 rounded-full bg-white/60 p-2 shadow-sm backdrop-blur'>
+    <div className="inline-flex items-center gap-2 rounded-full bg-white/60 p-2 shadow-sm backdrop-blur">
       {characterOptions.map((model) => {
-        const isActive = model.id === selectedModel.id
+        const isActive = model.id === selectedModel.id;
         return (
           <button
             key={model.id}
-            type='button'
+            type="button"
             onClick={() => handleModelSelect(model.id)}
             className={`rounded-full px-5 py-2.5 font-semibold text-base transition md:text-sm ${
               isActive
-                ? 'bg-[#2f3dbd] text-white'
-                : 'bg-white/85 text-[#586094] hover:bg-white'
+                ? "bg-[#2f3dbd] text-white"
+                : "bg-white/85 text-[#586094] hover:bg-white"
             }`}
           >
             {model.name}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 
   const renderLanguageSegment = () => (
-    <div className='inline-flex items-center rounded-full bg-white/60 p-1 shadow-sm backdrop-blur'>
+    <div className="inline-flex items-center rounded-full bg-white/60 p-1 shadow-sm backdrop-blur">
       {[
-        { id: 'en-US', label: 'EN' },
-        { id: 'zh-CN', label: '中文' }
+        { id: "en-US", label: "EN" },
+        { id: "zh-CN", label: "中文" },
       ].map((lang) => {
-        const isActive = lang.id === selectedLanguage
+        const isActive = lang.id === selectedLanguage;
         return (
           <button
             key={lang.id}
-            type='button'
+            type="button"
             onClick={() => handleLanguageSelect(lang.id)}
             aria-label={`Set language to ${lang.id}`}
             className={`min-w-[60px] rounded-full px-3 py-1.5 font-semibold text-sm transition ${
               isActive
-                ? 'bg-[#2f3dbd] text-white'
-                : 'bg-transparent text-[#586094] hover:bg-white'
+                ? "bg-[#2f3dbd] text-white"
+                : "bg-transparent text-[#586094] hover:bg-white"
             }`}
           >
             {lang.label}
           </button>
-        )
+        );
       })}
     </div>
-  )
-  const backgroundTheme = selectedModel.backgroundTheme
+  );
+
+  const renderMicStatus = () => {
+    const connected = isConnected && Boolean(agoraService.getLocalAudioTrack());
+    const muted = isMuted;
+    const barWidth = Math.min(100, Math.max(0, Math.round(micLevel * 100)));
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-2 py-1 shadow-sm backdrop-blur">
+        <span className="text-[#586094] text-[10px] md:text-xs">
+          {connected ? "Mic" : "Mic (off)"}
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 font-semibold text-[10px] ${
+            connected
+              ? muted
+                ? "bg-[#ffe8ef] text-[#b34f6a]"
+                : "bg-[#ecfce1] text-[#2f7d3e]"
+              : "bg-[#ffe8ef] text-[#b34f6a]"
+          }`}
+        >
+          {muted ? "Muted" : connected ? "Live" : "Disconnected"}
+        </span>
+        <div className="relative h-2 w-16 rounded-full bg-white md:w-24">
+          <div
+            className="absolute top-0 left-0 h-2 rounded-full transition-all duration-150"
+            style={{
+              width: `${barWidth}%`,
+              background:
+                muted || !connected
+                  ? "#ffd2dc"
+                  : "linear-gradient(90deg,#c8f7c8 0%,#7dd87d 100%)",
+            }}
+          />
+        </div>
+      </div>
+    );
+  };
+  const backgroundTheme = selectedModel.backgroundTheme;
   const floatingElements =
-    selectedModel.floatingElements ?? defaultFloatingElements
+    selectedModel.floatingElements ?? defaultFloatingElements;
   const floatingShadowColor =
-    selectedModel.id === 'chubbie'
-      ? 'rgba(186, 140, 104, 0.38)'
-      : 'rgba(210, 180, 255, 0.35)'
-  const isImmersiveStage = Boolean(selectedModel.immersiveStage)
+    selectedModel.id === "chubbie"
+      ? "rgba(186, 140, 104, 0.38)"
+      : "rgba(210, 180, 255, 0.35)";
+  const isImmersiveStage = Boolean(selectedModel.immersiveStage);
   const stageWrapperClass = isImmersiveStage
-    ? 'relative w-full max-w-5xl'
-    : 'relative w-full max-w-3xl'
+    ? "relative w-full max-w-5xl"
+    : "relative w-full max-w-3xl";
   const stageGlowClass = isImmersiveStage
-    ? '-inset-20 absolute -z-10 rounded-[140px] blur-3xl pointer-events-none'
-    : '-inset-5 absolute -z-10 rounded-[40px] bg-gradient-to-br from-[#ffe1f1]/60 via-[#d8ecff]/60 to-[#fff6d9]/60 blur-3xl pointer-events-none'
+    ? "-inset-20 absolute -z-10 rounded-[140px] blur-3xl pointer-events-none"
+    : "-inset-5 absolute -z-10 rounded-[40px] bg-gradient-to-br from-[#ffe1f1]/60 via-[#d8ecff]/60 to-[#fff6d9]/60 blur-3xl pointer-events-none";
   const stageGlowStyle: React.CSSProperties | undefined = isImmersiveStage
     ? {
         background:
-          'radial-gradient(circle at 50% 30%, rgba(255,206,164,0.48) 0%, rgba(170,126,88,0.26) 50%, transparent 78%)',
-        opacity: 0.7
+          "radial-gradient(circle at 50% 30%, rgba(255,206,164,0.48) 0%, rgba(170,126,88,0.26) 50%, transparent 78%)",
+        opacity: 0.7,
       }
-    : undefined
+    : undefined;
   const stageInnerClass = isImmersiveStage
-    ? 'relative z-10 flex flex-col items-center gap-6 px-2 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12'
-    : 'relative z-10 overflow-hidden rounded-2xl border border-white/60 bg-white/80 px-4 pt-5 pb-7 shadow-[0_18px_48px_rgba(200,208,255,0.28)] backdrop-blur-md md:rounded-[32px] md:border-white/80 md:px-8 md:pt-6 md:pb-8 md:backdrop-blur-xl'
+    ? "relative z-10 flex flex-col items-center gap-6 px-2 pt-4 pb-8 md:px-6 md:pt-6 md:pb-12"
+    : "relative z-10 overflow-hidden rounded-2xl border border-white/60 bg-white/80 px-4 pt-5 pb-7 shadow-[0_18px_48px_rgba(200,208,255,0.28)] backdrop-blur-md md:rounded-[32px] md:border-white/80 md:px-8 md:pt-6 md:pb-8 md:backdrop-blur-xl";
   const stageHeaderClass = isImmersiveStage
-    ? 'flex w-full items-center justify-between font-semibold text-[#594434] text-[0.62rem] uppercase tracking-[0.32em]'
-    : 'flex w-full items-center justify-between font-semibold text-[#87a0ff] text-[0.6rem] uppercase tracking-[0.3em]'
+    ? "flex w-full items-center justify-between font-semibold text-[#594434] text-[0.62rem] uppercase tracking-[0.32em]"
+    : "flex w-full items-center justify-between font-semibold text-[#87a0ff] text-[0.6rem] uppercase tracking-[0.3em]";
   const headerIndicatorClass = isImmersiveStage
     ? isConnected
-      ? 'inline-flex h-2.5 w-2.5 rounded-full bg-[#4ecb7a]'
-      : 'inline-flex h-2.5 w-2.5 rounded-full bg-[#ffb0c1]'
+      ? "inline-flex h-2.5 w-2.5 rounded-full bg-[#4ecb7a]"
+      : "inline-flex h-2.5 w-2.5 rounded-full bg-[#ffb0c1]"
     : isConnected
-      ? 'inline-flex h-2.5 w-2.5 rounded-full bg-[#7dd87d]'
-      : 'inline-flex h-2.5 w-2.5 rounded-full bg-[#ff9bae]'
+      ? "inline-flex h-2.5 w-2.5 rounded-full bg-[#7dd87d]"
+      : "inline-flex h-2.5 w-2.5 rounded-full bg-[#ff9bae]";
   const stageCanvasWrapperClass = isImmersiveStage
-    ? 'relative mt-2 w-full'
-    : 'relative mt-4'
+    ? "relative mt-2 w-full"
+    : "relative mt-4";
   const live2dClassName = isImmersiveStage
-    ? 'h-[28rem] w-full md:h-[48rem] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]'
-    : 'h-[22rem] w-full rounded-[22px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]'
+    ? "h-[28rem] w-full md:h-[48rem] drop-shadow-[0_30px_90px_rgba(174,130,90,0.48)]"
+    : "h-[22rem] w-full rounded-[22px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]";
   const quoteClass = isImmersiveStage
-    ? 'mt-6 text-center text-[#5b4635] text-sm md:text-base font-medium'
-    : 'mt-4 text-center text-[#6f6a92] text-xs md:text-sm'
+    ? "mt-6 text-center text-[#5b4635] text-sm md:text-base font-medium"
+    : "mt-4 text-center text-[#6f6a92] text-xs md:text-sm";
 
   return (
     <div
-      className='relative min-h-[100svh] overflow-hidden text-[#2f2d4b]'
+      className="relative min-h-[100svh] overflow-hidden text-[#2f2d4b]"
       style={{ backgroundColor: backgroundTheme.baseColor }}
     >
-      <div className='absolute inset-0'>
+      <div className="absolute inset-0">
         <div
-          className='absolute inset-0'
+          className="absolute inset-0"
           style={{ backgroundImage: backgroundTheme.primaryGradient }}
         />
         <div
-          className='absolute inset-0 mix-blend-screen'
+          className="absolute inset-0 mix-blend-screen"
           style={{
             backgroundImage: backgroundTheme.radialOverlay.gradient,
-            opacity: backgroundTheme.radialOverlay.opacity
+            opacity: backgroundTheme.radialOverlay.opacity,
           }}
         />
         <div
-          className='absolute inset-0'
+          className="absolute inset-0"
           style={{
             backgroundImage: backgroundTheme.patternOverlay.image,
-            opacity: backgroundTheme.patternOverlay.opacity
+            opacity: backgroundTheme.patternOverlay.opacity,
           }}
         />
         <div
-          className='absolute inset-0 mix-blend-multiply'
+          className="absolute inset-0 mix-blend-multiply"
           style={{
             backgroundImage: backgroundTheme.accentOverlay.image,
-            opacity: backgroundTheme.accentOverlay.opacity
+            opacity: backgroundTheme.accentOverlay.opacity,
           }}
         />
       </div>
 
-      <div className='pointer-events-none absolute inset-0 hidden overflow-hidden sm:block'>
+      <div className="pointer-events-none absolute inset-0 hidden overflow-hidden sm:block">
         {floatingElements.map((item, idx) => (
           <div
             key={`${item.type}-${idx}`}
-            className='absolute'
+            className="absolute"
             style={{
               top: `${item.top}%`,
               left: `${item.left}%`,
@@ -1733,7 +1795,7 @@ export default function Home() {
               animation: `${item.animation} ${item.duration}s ease-in-out infinite`,
               animationDelay: item.delay,
               opacity: item.opacity,
-              filter: `drop-shadow(0 18px 40px ${floatingShadowColor})`
+              filter: `drop-shadow(0 18px 40px ${floatingShadowColor})`,
             }}
           >
             {renderFloatingShape(item.type)}
@@ -1741,40 +1803,40 @@ export default function Home() {
         ))}
       </div>
 
-      <div className='no-overscroll relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-4 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:gap-6 md:px-6 lg:gap-10'>
-        <header className='mt-6 w-full px-4'>
-          <div className='flex w-full items-center justify-center gap-3 md:justify-start'>
+      <div className="no-overscroll relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-4 px-3 py-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:gap-6 md:px-6 lg:gap-10">
+        <header className="mt-6 w-full px-4">
+          <div className="flex w-full items-center justify-center gap-3 md:justify-start">
             <a
-              href='https://github.com/ten-framework/ten-framework'
-              target='_blank'
-              rel='noreferrer'
-              className='inline-flex items-center'
+              href="https://github.com/ten-framework/ten-framework"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center"
             >
               <img
-                src='/images/logo-w-title.png'
-                alt='TEN logo'
-                className='h-7 w-auto mix-blend-multiply'
-                loading='lazy'
+                src="/images/logo-w-title.png"
+                alt="TEN logo"
+                className="h-7 w-auto mix-blend-multiply"
+                loading="lazy"
               />
             </a>
-            <span className='font-semibold text-[#6b6685] text-[11px]'>×</span>
+            <span className="font-semibold text-[#6b6685] text-[11px]">×</span>
             <a
-              href='https://www.minimax.io/'
-              target='_blank'
-              rel='noreferrer'
-              className='inline-flex items-center'
+              href="https://www.minimax.io/"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center"
             >
               <img
-                src='/images/minimax.webp'
-                alt='Minimax logo'
-                className='h-7 w-auto mix-blend-multiply'
-                loading='lazy'
+                src="/images/minimax.webp"
+                alt="Minimax logo"
+                className="h-7 w-auto mix-blend-multiply"
+                loading="lazy"
               />
             </a>
           </div>
         </header>
-        <header className='mt-4 max-w-sm space-y-2 text-center md:mt-8 md:max-w-2xl md:space-y-3'>
-          <span className='hidden items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm md:inline-flex'>
+        <header className="mt-4 max-w-sm space-y-2 text-center md:mt-8 md:max-w-2xl md:space-y-3">
+          <span className="hidden items-center rounded-full bg-white/70 px-3.5 py-0.5 font-semibold text-[#ff79a8] text-[0.65rem] uppercase tracking-[0.25em] shadow-sm md:inline-flex">
             Say hello to {selectedModel.name}
           </span>
           <h1
@@ -1789,8 +1851,8 @@ export default function Home() {
           </p>
         </header>
 
-        <main className='flex w-full max-w-5xl flex-col items-center gap-8'>
-          <div className='flex w-full items-center justify-center'>
+        <main className="flex w-full max-w-5xl flex-col items-center gap-8">
+          <div className="flex w-full items-center justify-center">
             {renderCharacterSwitch()}
           </div>
 
@@ -1799,9 +1861,9 @@ export default function Home() {
             <div className={stageInnerClass}>
               <div className={stageHeaderClass}>
                 <span>{selectedModel.name}</span>
-                <span className='flex items-center gap-2'>
+                <span className="flex items-center gap-2">
                   <span className={headerIndicatorClass} />
-                  {isConnected ? 'Online' : 'Waiting'}
+                  {isConnected ? "Online" : "Waiting"}
                 </span>
               </div>
               <div className={stageCanvasWrapperClass}>
@@ -1823,88 +1885,77 @@ export default function Home() {
             </div>
           </div>
 
-          <div className='flex w-full max-w-3xl flex-col items-center gap-4'>
-            <div className='flex w-full flex-col items-center gap-2 md:flex md:flex-row md:items-center md:justify-between'>
-              <div className='flex flex-wrap items-center gap-2 font-medium text-[0.7rem] md:text-xs'>
+          <div className="flex w-full max-w-3xl flex-col items-center gap-4">
+            <div className="flex w-full flex-col items-center gap-2 md:flex md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap items-center gap-2 font-medium text-[0.7rem] md:text-xs">
                 <span
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
                     isConnected
-                      ? 'bg-[#e6f8ff] text-[#236d94]'
-                      : 'bg-[#ffe8ef] text-[#b34f6a]'
+                      ? "bg-[#e6f8ff] text-[#236d94]"
+                      : "bg-[#ffe8ef] text-[#b34f6a]"
                   }`}
                 >
                   <span
                     className={`h-2.5 w-2.5 rounded-full ${
-                      isConnected ? 'bg-[#38a8d8]' : 'bg-[#f0708f]'
+                      isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
                     }`}
                   />
                   {isConnected
                     ? (selectedModel.connectionGreeting ??
                       `My name is ${selectedModel.name}.`)
-                    : 'Not connected'}
-                </span>
-                <span
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
-                    isMuted
-                      ? 'bg-[#ffe8ef] text-[#b34f6a]'
-                      : 'bg-[#ecfce1] text-[#2f7d3e]'
-                  }`}
-                >
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      isMuted ? 'bg-[#f0708f]' : 'bg-[#4cc073]'
-                    }`}
-                  />
-                  {isMuted ? 'Mic muted' : 'Mic open'}
+                    : "Not connected"}
                 </span>
               </div>
-              <div className='flex items-center gap-2'>
-                <span className='text-[#586094] text-xs'>Voice Language</span>
-                {renderLanguageSegment()}
+              <div className="flex flex-col items-center gap-2 md:flex-row md:items-center md:gap-4">
+                {renderMicStatus()}
+                <div className="flex items-center gap-2">
+                  <span className="text-[#586094] text-xs">Voice Language</span>
+                  {renderLanguageSegment()}
+                </div>
               </div>
             </div>
 
-            <div className='fixed right-0 bottom-4 left-0 z-30 mx-auto flex max-w-sm items-center justify-center gap-4 px-4 md:static md:mx-0 md:px-0'>
-              <span className='hidden items-center gap-2 rounded-full px-3 py-2 text-xs md:inline-flex'>
+            <div className="fixed right-0 bottom-4 left-0 z-30 mx-auto flex max-w-sm items-center justify-center gap-4 px-4 md:static md:mx-0 md:px-0">
+              <span className="hidden items-center gap-2 rounded-full px-3 py-2 text-xs md:inline-flex">
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-[#38a8d8]' : 'bg-[#f0708f]'}`}
+                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"}`}
                 />
-                {isConnected ? 'Online' : 'Waiting'}
+                {isConnected ? "Online" : "Waiting"}
               </span>
               <button
                 onClick={handleMicToggle}
                 disabled={!isConnected}
                 className={`relative flex h-12 w-12 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${
                   !isConnected
-                    ? 'cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60'
+                    ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
                     : isMuted
-                      ? 'border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]'
-                      : 'border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]'
+                      ? "border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]"
+                      : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
                 }`}
               >
                 {isMuted ? (
                   <svg
-                    className='h-6 w-6'
-                    fill='currentColor'
-                    viewBox='0 0 24 24'
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
-                    <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     <path
-                      d='M3 3l18 18'
-                      stroke='currentColor'
-                      strokeLinecap='round'
-                      strokeWidth='2'
+                      d="M3 3l18 18"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="2"
                     />
                   </svg>
                 ) : (
                   <svg
-                    className='h-6 w-6'
-                    fill='currentColor'
-                    viewBox='0 0 24 24'
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <path d='M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z' />
-                    <path d='M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z' />
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                   </svg>
                 )}
               </button>
@@ -1914,58 +1965,58 @@ export default function Home() {
                 disabled={isConnecting}
                 className={`relative flex h-12 w-full items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 md:w-60 ${
                   isConnecting
-                    ? 'cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]'
+                    ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
                     : isConnected
-                      ? 'border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]'
-                      : 'border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]'
+                      ? "border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]"
+                      : "border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]"
                 }`}
               >
                 {isConnecting ? (
                   <>
                     <svg
-                      className='h-4 w-4 animate-spin'
-                      fill='none'
-                      viewBox='0 0 24 24'
+                      className="h-4 w-4 animate-spin"
+                      fill="none"
+                      viewBox="0 0 24 24"
                     >
                       <circle
-                        className='opacity-25'
-                        cx='12'
-                        cy='12'
-                        r='10'
-                        stroke='currentColor'
-                        strokeWidth='4'
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
                       />
                       <path
-                        className='opacity-75'
-                        fill='currentColor'
-                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       />
                     </svg>
-                    <span className='whitespace-nowrap text-center text-sm'>
+                    <span className="whitespace-nowrap text-center text-sm">
                       Calling {selectedModel.name}...
                     </span>
                   </>
                 ) : isConnected ? (
                   <>
                     <svg
-                      className='h-4 w-4'
-                      fill='currentColor'
-                      viewBox='0 0 24 24'
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <rect x='6' y='6' width='12' height='12' rx='2' />
+                      <rect x="6" y="6" width="12" height="12" rx="2" />
                     </svg>
-                    <span className='text-center text-sm'>End session</span>
+                    <span className="text-center text-sm">End session</span>
                   </>
                 ) : (
                   <>
                     <svg
-                      className='h-4 w-4'
-                      fill='currentColor'
-                      viewBox='0 0 24 24'
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <path d='M8 5v14l11-7z' />
+                      <path d="M8 5v14l11-7z" />
                     </svg>
-                    <span className='whitespace-nowrap text-center text-sm'>
+                    <span className="whitespace-nowrap text-center text-sm">
                       Connect with {selectedModel.name}
                     </span>
                   </>
@@ -1973,7 +2024,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className='mx-auto mt-1 max-w-sm px-3 pb-[env(safe-area-inset-bottom)] text-center text-[#7a7694] text-[10px] leading-tight opacity-75 md:mt-10 md:max-w-3xl md:px-6 md:pb-8 md:text-[11px] md:leading-relaxed md:opacity-100'>
+          <div className="mx-auto mt-1 max-w-sm px-3 pb-[env(safe-area-inset-bottom)] text-center text-[#7a7694] text-[10px] leading-tight opacity-75 md:mt-10 md:max-w-3xl md:px-6 md:pb-8 md:text-[11px] md:leading-relaxed md:opacity-100">
             This content uses sample data owned and copyrighted by Live2D Inc.
             The sample data are utilized in accordance with terms and conditions
             set by Live2D Inc. This content itself is created at the author’s
@@ -1982,5 +2033,5 @@ export default function Home() {
         </main>
       </div>
     </div>
-  )
+  );
 }
