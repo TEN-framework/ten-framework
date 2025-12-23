@@ -6,6 +6,8 @@
 //
 #pragma once
 
+#include "ten_utils/ten_config.h"
+
 #if defined(_WIN32)
 #define ten_alignof __alignof
 #else
