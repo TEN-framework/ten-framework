@@ -147,13 +147,18 @@ def test_standalone_test_tmpl_async_python():
         "-s",
     ]
 
-    tester_process = subprocess.Popen(
-        uv_run_pytest_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=tests_dir,
-    )
+    try:
+        tester_process = subprocess.Popen(
+            uv_run_pytest_cmd,
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=tests_dir,
+        )
 
-    tester_rc = tester_process.wait()
-    assert tester_rc == 0
+        tester_rc = tester_process.wait()
+        assert tester_rc == 0
+    finally:
+        venv_path = os.path.join(tests_dir, ".venv")
+        if os.path.exists(venv_path):
+            fs_utils.remove_tree(venv_path)
