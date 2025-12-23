@@ -75,14 +75,24 @@ def test_subgraph_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    # Step 3: Start the server using uv run main.py
-    print("Starting server with uv run main.py...")
+    # Step 3: Start the server
     main_py_path = os.path.join(app_root_path, "main.py")
     if not os.path.isfile(main_py_path):
         print(f"main.py not found at '{main_py_path}'.")
         assert False
 
-    server_cmd = ["uv", "run", "main.py"]
+    # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
+    # may trigger memory leak reports (false positives from the tool itself),
+    # causing the test to fail.
+    if sys.platform == "linux" and build_config_args.enable_sanitizer:
+        print("Starting server with python from venv (bypassing uv run)...")
+        venv_path = os.path.join(app_root_path, ".venv")
+        python_exe = os.path.join(venv_path, "bin", "python")
+        server_cmd = [python_exe, "main.py"]
+        my_env["VIRTUAL_ENV"] = venv_path
+    else:
+        print("Starting server with uv run main.py...")
+        server_cmd = ["uv", "run", "main.py"]
 
     server = subprocess.Popen(
         server_cmd,
