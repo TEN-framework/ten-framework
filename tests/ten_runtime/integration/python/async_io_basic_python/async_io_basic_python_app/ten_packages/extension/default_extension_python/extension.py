@@ -12,6 +12,7 @@ from ten_runtime import (
     Cmd,
     CmdResult,
     LogLevel,
+    TenError,
 )
 
 
@@ -21,10 +22,10 @@ class DefaultExtension(Extension):
 
         self.loop = asyncio.get_running_loop()
 
-        # Mock async operation before on_start_done
+        # Mock async operation before on_init_done
         await asyncio.sleep(1)
 
-        ten_env.on_start_done()
+        ten_env.on_init_done()
 
         # Suspend the thread until stopEvent is set
         await self.stopEvent.wait()
@@ -35,12 +36,14 @@ class DefaultExtension(Extension):
     async def send_cmd_async(self, ten_env: TenEnv, cmd: Cmd) -> CmdResult:
         ten_env.log(LogLevel.INFO, "send_cmd_async")
         q = asyncio.Queue(maxsize=10)
-        ten_env.send_cmd(
-            cmd,
-            lambda ten_env, result, error: asyncio.run_coroutine_threadsafe(
-                q.put([result, error]), self.loop
-            ),  # type: ignore
-        )
+
+        def handler(
+            _ten_env: TenEnv, result: CmdResult | None, error: TenError | None
+        ) -> None:
+            assert self.loop
+            asyncio.run_coroutine_threadsafe(q.put([result, error]), self.loop)
+
+        ten_env.send_cmd(cmd, handler)
 
         [result, error] = await q.get()
         if error is not None:
@@ -51,18 +54,17 @@ class DefaultExtension(Extension):
         super().__init__(name)
         self.name = name
         self.stopEvent = asyncio.Event()
+        self.thread: threading.Thread | None = None
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     def on_init(self, ten_env: TenEnv) -> None:
-        ten_env.on_init_done()
-
-    def on_start(self, ten_env: TenEnv) -> None:
-        ten_env.log(LogLevel.DEBUG, "on_start")
+        ten_env.log_debug("on_init")
 
         self.thread = threading.Thread(
             target=asyncio.run, args=(self.__thread_routine(ten_env),)
         )
 
-        # Then 'on_start_done' will be called in the thread
+        # Then 'on_init_done' will be called in the thread
         self.thread.start()
 
     def on_deinit(self, ten_env: TenEnv) -> None:
@@ -93,6 +95,9 @@ class DefaultExtension(Extension):
     def on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         ten_env.log(LogLevel.INFO, "on_cmd")
 
+        if self.loop is None:
+            raise Exception("loop is not initialized")
+
         asyncio.run_coroutine_threadsafe(
             self.on_cmd_async(ten_env, cmd), self.loop
         )
@@ -100,7 +105,7 @@ class DefaultExtension(Extension):
     def on_stop(self, ten_env: TenEnv) -> None:
         ten_env.log(LogLevel.INFO, "on_stop")
 
-        if self.thread.is_alive():
+        if self.thread and self.thread.is_alive() and self.loop is not None:
             asyncio.run_coroutine_threadsafe(self.stop_thread(), self.loop)
             self.thread.join()
 
