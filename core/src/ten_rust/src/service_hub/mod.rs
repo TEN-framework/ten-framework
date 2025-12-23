@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 mod api;
-mod bindings;
 pub mod telemetry; // OpenTelemetry-based telemetry (public for testing)
 
 use std::{ffi::CStr, os::raw::c_char, ptr, thread};
@@ -41,6 +40,8 @@ fn configure_routes(
     metrics_path: Option<String>,
     is_telemetry_endpoint: bool,
     is_api_endpoint: bool,
+    runtime_version: String,
+    log_path: String,
 ) {
     if is_telemetry_endpoint {
         if let Some(reg) = registry {
@@ -56,7 +57,7 @@ fn configure_routes(
 
     if is_api_endpoint {
         // Configure API endpoints.
-        api::configure_api_route(cfg);
+        api::configure_api_route(cfg, runtime_version, log_path);
     }
 }
 
@@ -95,6 +96,8 @@ fn create_server_app(
     metrics_path: Option<String>,
     telemetry_endpoint: &Option<String>,
     api_endpoint: &Option<String>,
+    runtime_version: String,
+    log_path: String,
 ) -> App<
     impl actix_web::dev::ServiceFactory<
         actix_web::dev::ServiceRequest,
@@ -121,6 +124,10 @@ fn create_server_app(
         let metrics_path_clone = metrics_path.clone();
         let registry_clone_for_telemetry = registry.clone();
         let registry_clone_for_api = registry.clone();
+        let runtime_version_for_telemetry = runtime_version.clone();
+        let log_path_for_telemetry = log_path.clone();
+        let runtime_version_for_api = runtime_version;
+        let log_path_for_api = log_path;
 
         app_builder
             // Add telemetry routes with guard.
@@ -145,6 +152,8 @@ fn create_server_app(
                             metrics_path_clone.clone(),
                             true,
                             false,
+                            runtime_version_for_telemetry,
+                            log_path_for_telemetry,
                         )
                     }),
             )
@@ -164,7 +173,15 @@ fn create_server_app(
                         }
                     }))
                     .configure(move |cfg| {
-                        configure_routes(cfg, registry_clone_for_api.clone(), None, false, true)
+                        configure_routes(
+                            cfg,
+                            registry_clone_for_api.clone(),
+                            None,
+                            false,
+                            true,
+                            runtime_version_for_api,
+                            log_path_for_api,
+                        )
                     }),
             )
     } else {
@@ -174,7 +191,15 @@ fn create_server_app(
         let is_api = api_endpoint.is_some();
 
         app_builder.configure(|cfg| {
-            configure_routes(cfg, registry.clone(), metrics_path, is_telemetry, is_api)
+            configure_routes(
+                cfg,
+                registry.clone(),
+                metrics_path,
+                is_telemetry,
+                is_api,
+                runtime_version,
+                log_path,
+            )
         })
     }
 }
@@ -190,6 +215,8 @@ fn create_server_and_bind_to_addresses(
     metrics_path: Option<String>,
     telemetry_endpoint: &Option<String>,
     api_endpoint: &Option<String>,
+    runtime_version: String,
+    log_path: String,
 ) -> (Option<actix_web::dev::Server>, Vec<String>) {
     let mut bind_errors = Vec::new();
 
@@ -198,6 +225,8 @@ fn create_server_and_bind_to_addresses(
     let metrics_path_clone = metrics_path.clone();
     let telemetry_endpoint_clone = telemetry_endpoint.clone();
     let api_endpoint_clone = api_endpoint.clone();
+    let runtime_version_clone = runtime_version.clone();
+    let log_path_clone = log_path.clone();
 
     // Create a new server with a factory that uses the create_server_app
     // function
@@ -207,6 +236,8 @@ fn create_server_and_bind_to_addresses(
             metrics_path_clone.clone(),
             &telemetry_endpoint_clone,
             &api_endpoint_clone,
+            runtime_version_clone.clone(),
+            log_path_clone.clone(),
         )
     })
     .shutdown_timeout(0)
@@ -273,6 +304,8 @@ fn create_service_hub_server_with_retry(
     api_endpoint: &Option<String>,
     registry: Option<Registry>,
     metrics_path: Option<String>,
+    runtime_version: String,
+    log_path: String,
 ) -> Option<actix_web::dev::Server> {
     // If both endpoints are None, return None early.
     if telemetry_endpoint.is_none() && api_endpoint.is_none() {
@@ -290,6 +323,8 @@ fn create_service_hub_server_with_retry(
             metrics_path.clone(),
             telemetry_endpoint,
             api_endpoint,
+            runtime_version.clone(),
+            log_path.clone(),
         );
 
         // If we've successfully bound to the specified addresses, return the
@@ -412,19 +447,46 @@ fn create_service_hub_server_thread(
 ///
 /// # Safety
 ///
-/// This function takes a raw C string pointer to the services configuration
-/// JSON. The pointer must be valid and point to a properly null-terminated
-/// string or be NULL. The returned pointer must be freed with
-/// `ten_service_hub_shutdown` to avoid memory leaks.
+/// This function takes raw C string pointers. All pointers must be valid and
+/// point to properly null-terminated strings or be NULL. The returned pointer
+/// must be freed with `ten_service_hub_shutdown` to avoid memory leaks.
 #[no_mangle]
 pub unsafe extern "C" fn ten_service_hub_create(
     services_config_json: *const c_char,
+    runtime_version: *const c_char,
+    log_path: *const c_char,
 ) -> *mut ServiceHub {
     // Check if config is NULL.
     if services_config_json.is_null() {
         tracing::error!("Warning: services_config_json is NULL, service hub not created");
         return ptr::null_mut();
     }
+
+    // Parse runtime_version.
+    let runtime_version_str = if runtime_version.is_null() {
+        String::from("unknown")
+    } else {
+        match CStr::from_ptr(runtime_version).to_str() {
+            Ok(s) => s.to_string(),
+            Err(e) => {
+                tracing::error!("Error: Failed to parse runtime_version as UTF-8: {e}");
+                String::from("unknown")
+            }
+        }
+    };
+
+    // Parse log_path.
+    let log_path_str = if log_path.is_null() {
+        String::from("unknown")
+    } else {
+        match CStr::from_ptr(log_path).to_str() {
+            Ok(s) => s.to_string(),
+            Err(e) => {
+                tracing::error!("Error: Failed to parse log_path as UTF-8: {e}");
+                String::from("unknown")
+            }
+        }
+    };
 
     // Parse the JSON configuration.
     let config_str = match CStr::from_ptr(services_config_json).to_str() {
@@ -517,6 +579,8 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 &api_endpoint,
                 registry,
                 metrics_path,
+                runtime_version_str,
+                log_path_str,
             ) {
                 Some(server) => {
                     // Start the server in a separate thread.

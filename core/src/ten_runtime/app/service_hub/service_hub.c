@@ -11,6 +11,7 @@
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
 
 #include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/app/service_hub/api/api.h"
 #include "include_internal/ten_runtime/app/service_hub/telemetry/telemetry.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_rust/ten_rust.h"
@@ -85,8 +86,12 @@ bool ten_app_init_service_hub(ten_app_t *self, ten_value_t *value) {
 
   // Create service hub if we have valid configuration.
   if (services_config_json_str) {
-    self->service_hub.service_hub =
-        ten_service_hub_create(services_config_json_str);
+    // Get runtime version and log path before creating service hub.
+    const char *runtime_version = ten_get_runtime_version();
+    const char *log_path = ten_get_global_log_path();
+
+    self->service_hub.service_hub = ten_service_hub_create(
+        services_config_json_str, runtime_version, log_path);
 
     // Clean up the JSON string
     TEN_FREE(services_config_json_str);
