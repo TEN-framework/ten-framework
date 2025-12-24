@@ -13,7 +13,7 @@ permissions:
 jobs:
   cancel_workflows:
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Cancel Related Workflow Runs
         uses: actions/github-script@v7

@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   asr-guarder-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     container:
       image: ghcr.io/ten-framework/ten_agent_build:0.7.12
 

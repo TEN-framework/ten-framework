@@ -33,7 +33,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'release')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Debug workflow_run event
         if: github.event_name != 'workflow_dispatch'

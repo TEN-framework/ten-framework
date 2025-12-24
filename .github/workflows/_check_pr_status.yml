@@ -9,7 +9,7 @@ on:
 
 jobs:
   check_pr_status:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       should_continue: ${{ steps.check.outputs.should_continue }}
     steps:
