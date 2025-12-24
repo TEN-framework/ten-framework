@@ -186,8 +186,8 @@ class AsyncExtension(_Extension):
 
             # Run configuration coroutine
             self._ten_loop.run_until_complete(self._configure_routine(ten_env))
-        except Exception as e:
-            ten_env.log_warn(f"Error in multi-thread configure: {e}")
+        except BaseException as e:
+            ten_env.log_warn(f"Error in multi-thread configure: {e}", option=LogOption(sync=True))
             traceback.print_exc()
         finally:
             if self._ten_loop and not self._ten_loop.is_closed():
@@ -390,43 +390,43 @@ class AsyncExtension(_Extension):
     async def _wrapper_on_config(self, async_ten_env: AsyncTenEnv):
         try:
             await self.on_configure(async_ten_env)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_init(self, async_ten_env: AsyncTenEnv):
         try:
             await self.on_init(async_ten_env)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_start(self, async_ten_env: AsyncTenEnv):
         try:
             await self.on_start(async_ten_env)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_stop(self, async_ten_env: AsyncTenEnv):
         try:
             await self.on_stop(async_ten_env)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_deinit(self, async_ten_env: AsyncTenEnv):
         try:
             await self.on_deinit(async_ten_env)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_cmd(self, async_ten_env: AsyncTenEnv, cmd: Cmd):
         try:
             await self.on_cmd(async_ten_env, cmd)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_data(self, async_ten_env: AsyncTenEnv, data: Data):
         try:
             await self.on_data(async_ten_env, data)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_video_frame(
@@ -434,7 +434,7 @@ class AsyncExtension(_Extension):
     ):
         try:
             await self.on_video_frame(async_ten_env, video_frame)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
     async def _wrapper_on_audio_frame(
@@ -442,10 +442,10 @@ class AsyncExtension(_Extension):
     ):
         try:
             await self.on_audio_frame(async_ten_env, audio_frame)
-        except Exception as e:
+        except BaseException as e:
             self._exit_on_exception(async_ten_env, e)
 
-    def _exit_on_exception(self, async_ten_env: AsyncTenEnv, e: Exception):
+    def _exit_on_exception(self, async_ten_env: AsyncTenEnv, e: BaseException):
         traceback_info = traceback.format_exc()
 
         err = async_ten_env.log(
