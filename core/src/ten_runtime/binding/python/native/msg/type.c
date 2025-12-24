@@ -256,6 +256,7 @@ PyTypeObject *ten_py_error_py_type(void) {
       .tp_itemsize = 0,
       .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
       .tp_dealloc = ten_py_error_destroy,
+      .tp_str = ten_py_error_str,
       .tp_methods = py_methods,
       .tp_init = NULL,
       .tp_getset = NULL,

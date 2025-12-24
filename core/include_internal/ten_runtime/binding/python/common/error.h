@@ -39,6 +39,8 @@ TEN_RUNTIME_PRIVATE_API PyObject *ten_py_error_get_error_code(PyObject *self,
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_error_get_error_message(
     PyObject *self, PyObject *args);
 
+TEN_RUNTIME_PRIVATE_API PyObject *ten_py_error_str(PyObject *self);
+
 TEN_RUNTIME_PRIVATE_API bool ten_py_check_and_clear_py_error(void);
 
 TEN_RUNTIME_PRIVATE_API PyObject *ten_py_raise_py_value_error_exception(
