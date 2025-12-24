@@ -265,6 +265,8 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
     if (err_msg) {
       TEN_LOGE("Failed to create log config: %s", err_msg);
       ten_rust_free_cstring(err_msg);
+    } else {
+      TEN_LOGE("Failed to create log config: unknown error");
     }
     return false;
   }
@@ -280,8 +282,10 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
     if (err_msg) {
       TEN_LOGE("Failed to configure log: %s", err_msg);
       ten_rust_free_cstring(err_msg);
-      ten_rust_log_config_destroy(log_config);
+    } else {
+      TEN_LOGE("Failed to configure log: unknown error");
     }
+    ten_rust_log_config_destroy(log_config);
 
     return false;
   }
@@ -290,8 +294,9 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
       ten_log_rust_log_func, ten_log_rust_config_deinit,
       ten_log_rust_config_reopen_all, log_config);
 
-  return true;
 #endif
+
+  return true;
 }
 
 static bool ten_app_determine_ten_namespace_properties(
@@ -314,7 +319,6 @@ static bool ten_app_determine_ten_namespace_properties(
       bool rc = prop_info->init_from_value(self, item_value);
       if (!rc) {
         TEN_LOGW("Failed to init property: %s", prop_info->name);
-        return false;
       }
     }
   }

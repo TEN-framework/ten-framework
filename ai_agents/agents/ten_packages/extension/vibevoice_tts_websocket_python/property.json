@@ -1,0 +1,13 @@
+{
+  "params": {
+    "url": "ws://127.0.0.1:3000/stream",
+    "cfg_scale": 1.5,
+    "steps": 5,
+    "voice": "",
+    "sample_rate": 24000,
+    "channels": 1,
+    "sample_width": 2
+  },
+  "dump": false,
+  "dump_path": ""
+}
