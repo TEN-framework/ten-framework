@@ -23,290 +23,17 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "color-background"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 100000
-              },
-              {
-                "color": "orange",
-                "value": 500000
-              },
-              {
-                "color": "red",
-                "value": 1000000
-              }
-            ]
-          },
-          "unit": "µs"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Extension"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 150
-              },
-              {
-                "id": "custom.cellOptions",
-                "value": {
-                  "type": "auto"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Total Startup"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 120
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 500000
-                    },
-                    {
-                      "color": "orange",
-                      "value": 1000000
-                    },
-                    {
-                      "color": "red",
-                      "value": 3000000
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 10,
+        "h": 1,
         "w": 24,
         "x": 0,
         "y": 0
       },
-      "id": 1,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_configure_avg",
-          "range": false,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_init_avg",
-          "range": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "avg by (extension) (avg_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_start_avg",
-          "range": false,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_configure\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_configure_max",
-          "range": false,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_init\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_init_max",
-          "range": false,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "max by (extension) (max_over_time(extension_lifecycle_duration{stage=\"on_start\"}[1h]))",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "on_start_max",
-          "range": false,
-          "refId": "F"
-        }
-      ],
-      "title": "Extension Lifecycle Duration (Statistics)",
-      "transformations": [
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "Time 2": true,
-              "Time 3": true,
-              "Time 4": true,
-              "Time 5": true,
-              "Time 6": true,
-              "graph_id": true,
-              "job": true,
-              "instance": true,
-              "__name__": true,
-              "group": true,
-              "otel_scope_name": true,
-              "stage": true,
-              "extension_group": true
-            },
-            "indexByName": {
-              "extension": 0,
-              "Value #A": 1,
-              "Value #B": 2,
-              "Value #C": 3,
-              "Value #D": 4,
-              "Value #E": 5,
-              "Value #F": 6
-            },
-            "renameByName": {
-              "Value #A": "configure (avg)",
-              "Value #B": "init (avg)",
-              "Value #C": "start (avg)",
-              "Value #D": "configure (max)",
-              "Value #E": "init (max)",
-              "Value #F": "start (max)",
-              "extension": "Extension"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Total Startup (avg)",
-            "binary": {
-              "left": "configure (avg)",
-              "operator": "+",
-              "right": "init (avg)"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            }
-          }
-        },
-        {
-          "id": "calculateField",
-          "options": {
-            "alias": "Total Startup (avg)",
-            "binary": {
-              "left": "Total Startup (avg)",
-              "operator": "+",
-              "right": "start (avg)"
-            },
-            "mode": "binary",
-            "reduce": {
-              "reducer": "sum"
-            },
-            "replaceFields": false
-          }
-        }
-      ],
-      "type": "table",
-      "description": "Shows average and maximum duration of each startup lifecycle stage (on_configure, on_init, on_start) over the last hour. Each extension shows: avg time per stage, max time per stage, and total startup time (sum of all three stages). Color coding: Green (< 100ms), Yellow (100-500ms), Orange (500ms-1s), Red (> 1s)."
+      "id": 200,
+      "panels": [],
+      "title": "Cmd",
+      "type": "row"
     },
     {
       "datasource": {
@@ -374,7 +101,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 1
       },
       "id": 2,
       "options": {
@@ -400,7 +127,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(extension_cmd_processing_duration_bucket[1m])) by (le, extension_name, msg_name))",
+          "expr": "histogram_quantile(0.95, sum(rate(extension_cmd_processing_duration_bucket[5m])) by (le, extension_name, msg_name))",
           "legendFormat": "{{extension_name}} - {{msg_name}} (p95)",
           "range": true,
           "refId": "A"
@@ -411,7 +138,7 @@
             "uid": "PBFA97CFB590B2093"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(extension_cmd_processing_duration_bucket[1m])) by (le, extension_name, msg_name))",
+          "expr": "histogram_quantile(0.50, sum(rate(extension_cmd_processing_duration_bucket[5m])) by (le, extension_name, msg_name))",
           "legendFormat": "{{extension_name}} - {{msg_name}} (p50)",
           "range": true,
           "refId": "B",
@@ -489,7 +216,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 1
       },
       "id": 3,
       "options": {
@@ -552,233 +279,17 @@
       "type": "table"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 50000
-              },
-              {
-                "color": "red",
-                "value": 200000
-              }
-            ]
-          },
-          "unit": "µs"
-        },
-        "overrides": []
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 10,
-        "w": 12,
+        "h": 1,
+        "w": 24,
         "x": 0,
-        "y": 20
+        "y": 11
       },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "max",
-            "min"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum(rate(extension_thread_msg_queue_stay_time_bucket[1m])) by (le, extension_group_name))",
-          "legendFormat": "{{extension_group_name}} (p95)",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(extension_thread_msg_queue_stay_time_bucket[1m])) by (le, extension_group_name))",
-          "legendFormat": "{{extension_group_name}} (p50)",
-          "range": true,
-          "refId": "B",
-          "hide": false
-        }
-      ],
-      "title": "Extension Thread Message Queue Wait Time (P50/P95)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "color-text"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 50000
-              },
-              {
-                "color": "red",
-                "value": 200000
-              }
-            ]
-          },
-          "unit": "µs"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Extension Group"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 250
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 20
-      },
-      "id": 5,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "Avg Wait Time"
-          }
-        ]
-      },
-      "pluginVersion": "10.2.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(rate(extension_thread_msg_queue_stay_time_sum[5m])) by (extension_group_name) / sum(rate(extension_thread_msg_queue_stay_time_count[5m])) by (extension_group_name)",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "Extension Thread Message Queue Average Wait Time",
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true
-            },
-            "indexByName": {
-              "Time": 0,
-              "Value": 2,
-              "extension_group_name": 1
-            },
-            "renameByName": {
-              "Value": "Avg Wait Time",
-              "extension_group_name": "Extension Group"
-            }
-          }
-        }
-      ],
-      "type": "table"
+      "id": 201,
+      "panels": [],
+      "title": "Callback Execution",
+      "type": "row"
     },
     {
       "datasource": {
@@ -846,7 +357,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 12
       },
       "id": 6,
       "options": {
@@ -972,7 +483,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 12
       },
       "id": 7,
       "options": {
@@ -1090,7 +601,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 22
       },
       "id": 8,
       "options": {
@@ -1154,6 +665,546 @@
       ],
       "type": "table",
       "description": "Shows the top 10 extension callbacks with the highest average execution time. Use this to identify performance bottlenecks and potential blocking operations."
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 202,
+      "panels": [],
+      "title": "Msg Queue",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 50000
+              },
+              {
+                "color": "red",
+                "value": 200000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean",
+            "max",
+            "min"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(extension_thread_msg_queue_stay_time_bucket[1m])) by (le, extension_group_name))",
+          "legendFormat": "{{extension_group_name}} (p95)",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(extension_thread_msg_queue_stay_time_bucket[1m])) by (le, extension_group_name))",
+          "legendFormat": "{{extension_group_name}} (p50)",
+          "range": true,
+          "refId": "B",
+          "hide": false
+        }
+      ],
+      "title": "Extension Thread Message Queue Wait Time (P50/P95)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 50000
+              },
+              {
+                "color": "red",
+                "value": 200000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extension Group"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Avg Wait Time"
+          }
+        ]
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "sum(rate(extension_thread_msg_queue_stay_time_sum[5m])) by (extension_group_name) / sum(rate(extension_thread_msg_queue_stay_time_count[5m])) by (extension_group_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Extension Thread Message Queue Average Wait Time",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Value": 2,
+              "extension_group_name": 1
+            },
+            "renameByName": {
+              "Value": "Avg Wait Time",
+              "extension_group_name": "Extension Group"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
+      "id": 203,
+      "panels": [],
+      "title": "Extension Lifecycle",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-background"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "orange",
+                "value": 500000
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extension"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Total Startup"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 500000
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1000000
+                    },
+                    {
+                      "color": "red",
+                      "value": 3000000
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.2.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_configure\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_configure_avg",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_init\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_init_avg",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "avg(extension_lifecycle_duration{stage=\"on_start\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_start_avg",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "max(extension_lifecycle_duration{stage=\"on_configure\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_configure_max",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "max(extension_lifecycle_duration{stage=\"on_init\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_init_max",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "max(extension_lifecycle_duration{stage=\"on_start\"}) by (extension_name)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "on_start_max",
+          "range": false,
+          "refId": "F"
+        }
+      ],
+      "title": "Extension Lifecycle Duration (Statistics)",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "graph_id": true,
+              "job": true,
+              "instance": true,
+              "__name__": true,
+              "group": true,
+              "otel_scope_name": true,
+              "stage": true,
+              "extension_group": true
+            },
+            "indexByName": {
+              "extension_name": 0,
+              "Value #A": 1,
+              "Value #B": 2,
+              "Value #C": 3,
+              "Value #D": 4,
+              "Value #E": 5,
+              "Value #F": 6
+            },
+            "renameByName": {
+              "Value #A": "configure (avg)",
+              "Value #B": "init (avg)",
+              "Value #C": "start (avg)",
+              "Value #D": "configure (max)",
+              "Value #E": "init (max)",
+              "Value #F": "start (max)",
+              "extension_name": "Extension"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Total Startup (avg)",
+            "binary": {
+              "left": "configure (avg)",
+              "operator": "+",
+              "right": "init (avg)"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Total Startup (avg)",
+            "binary": {
+              "left": "Total Startup (avg)",
+              "operator": "+",
+              "right": "start (avg)"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            },
+            "replaceFields": false
+          }
+        }
+      ],
+      "type": "table"
     }
   ],
   "refresh": "5s",

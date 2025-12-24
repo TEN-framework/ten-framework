@@ -549,3 +549,82 @@ def build_nodejs_extensions(app_root_path: str):
     os.chdir(origin_wd)
 
     return 0
+
+
+def bootstrap_python_dependencies(
+    app_root_path: str, env: dict[str, str] | None = None, log_level: int = 0
+) -> int:
+    """
+    Bootstrap Python dependencies for an app using uv.
+
+    This function performs the following steps:
+    1. Run update_root_pyproject.py to generate/update pyproject.toml
+    2. Run uv sync --all-packages to install all dependencies
+
+    Args:
+        app_root_path: Path to the app root directory
+        env: Environment variables (optional, uses os.environ if None)
+        log_level: Log level (0 = quiet, 1+ = verbose)
+
+    Returns:
+        0 on success, non-zero on failure
+    """
+    import sys
+
+    if env is None:
+        env = os.environ.copy()
+
+    # Step 1: Update pyproject.toml using update_root_pyproject.py
+    update_pyproject_script = os.path.join(
+        app_root_path,
+        "ten_packages/system/ten_runtime_python/tools/update_root_pyproject.py",
+    )
+
+    if not os.path.exists(update_pyproject_script):
+        print(
+            f"Error: update_root_pyproject.py not found at {update_pyproject_script}"
+        )
+        return 1
+
+    if log_level > 0:
+        print("> Updating pyproject.toml")
+
+    returncode, output = cmd_exec.run_cmd_realtime(
+        [sys.executable, update_pyproject_script, app_root_path],
+        app_root_path,
+        env,
+        log_level,
+    )
+
+    if returncode != 0:
+        print(f"Failed to update pyproject.toml: {output}")
+        return 1
+
+    # Step 2: Sync dependencies using uv sync --all-packages
+    if log_level > 0:
+        print("> Syncing dependencies with uv sync --all-packages")
+
+    # Temporarily disable ASAN leak detection for uv sync to avoid false
+    # positives from Python interpreter itself. The leak detection is from
+    # Python's internal allocations, not from our code.
+    uv_env = env.copy()
+    if "ASAN_OPTIONS" in uv_env:
+        # Modify ASAN_OPTIONS to disable leak detection during uv sync
+        asan_opts = uv_env["ASAN_OPTIONS"]
+        # Replace detect_leaks=1 with detect_leaks=0
+        asan_opts = asan_opts.replace("detect_leaks=1", "detect_leaks=0")
+        # Also disable abort_on_error to prevent premature termination
+        asan_opts = asan_opts.replace("abort_on_error=1", "abort_on_error=0")
+        uv_env["ASAN_OPTIONS"] = asan_opts
+        if log_level > 0:
+            print(f"> Modified ASAN_OPTIONS for uv sync: {asan_opts}")
+
+    returncode, output = cmd_exec.run_cmd_realtime(
+        ["uv", "sync", "--all-packages"], app_root_path, uv_env, log_level
+    )
+
+    if returncode != 0:
+        print(f"Failed to sync dependencies: {output}")
+        return 1
+
+    return 0

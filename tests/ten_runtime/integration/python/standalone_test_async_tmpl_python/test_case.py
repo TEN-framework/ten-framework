@@ -75,44 +75,28 @@ def test_standalone_test_async_tmpl_async_python():
 
     # Step 3:
     #
-    # pip install the package.
+    # Use uv to sync dependencies and run pytest.
 
-    # Create virtual environment.
-    venv_dir = os.path.join(extension_root_path, "venv")
-    subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
+    tests_dir = os.path.join(extension_root_path, "tests")
 
-    # Launch virtual environment.
-    my_env["VIRTUAL_ENV"] = venv_dir
-    if sys.platform == "win32":
-        venv_bin_dir = os.path.join(venv_dir, "Scripts")
-    else:
-        venv_bin_dir = os.path.join(venv_dir, "bin")
-    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
+    # Run uv sync --all-packages to install dependencies.
+    uv_sync_cmd = [
+        "uv",
+        "sync",
+        "--all-packages",
+    ]
 
-    # Run bootstrap script based on platform
-    if sys.platform == "win32":
-        # On Windows, use Python bootstrap script directly
-        print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(
-            extension_root_path, "tests/bin/bootstrap.py"
-        )
-        bootstrap_process = subprocess.Popen(
-            [sys.executable, bootstrap_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=extension_root_path,
-        )
-    else:
-        # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(extension_root_path, "tests/bin/bootstrap")
-        bootstrap_process = subprocess.Popen(
-            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-        )
-
-    bootstrap_process.wait()
-    if bootstrap_process.returncode != 0:
-        assert False, "Failed to run bootstrap script."
+    uv_sync_process = subprocess.Popen(
+        uv_sync_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=tests_dir,
+    )
+    uv_sync_process.wait()
+    return_code = uv_sync_process.returncode
+    if return_code != 0:
+        assert False, "Failed to sync dependencies with uv."
 
     # Step 4:
     #
@@ -123,10 +107,11 @@ def test_standalone_test_async_tmpl_async_python():
 
     # my_env["ASAN_OPTIONS"] = "detect_leaks=0"
 
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
     if sys.platform == "linux":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -138,9 +123,6 @@ def test_standalone_test_async_tmpl_async_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
     elif sys.platform == "darwin":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -157,29 +139,36 @@ def test_standalone_test_async_tmpl_async_python():
 
     # Step 5:
     #
-    # Run the test.
-    if sys.platform == "win32":
-        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
-        tester_process = subprocess.Popen(
-            [sys.executable, start_script, "-s"],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=extension_root_path,
-        )
+    # Run the test using uv run pytest.
+    # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
+    # may trigger memory leak reports (false positives from the tool itself),
+    # causing the test to fail.
+    if sys.platform == "linux" and build_config_args.enable_sanitizer:
+        print("Starting pytest with python from venv (bypassing uv run)...")
+        venv_path = os.path.join(tests_dir, ".venv")
+        python_exe = os.path.join(venv_path, "bin", "python")
+        uv_run_pytest_cmd = [python_exe, "-m", "pytest", "-s"]
+        my_env["VIRTUAL_ENV"] = venv_path
     else:
-        # On Unix-like systems, use bash start script
-        test_cmd = [
-            "tests/bin/start",
+        uv_run_pytest_cmd = [
+            "uv",
+            "run",
+            "pytest",
             "-s",
         ]
+
+    try:
         tester_process = subprocess.Popen(
-            test_cmd,
+            uv_run_pytest_cmd,
             stdout=stdout,
             stderr=subprocess.STDOUT,
             env=my_env,
-            cwd=extension_root_path,
+            cwd=tests_dir,
         )
 
-    tester_rc = tester_process.wait()
-    assert tester_rc == 0
+        tester_rc = tester_process.wait()
+        assert tester_rc == 0
+    finally:
+        venv_path = os.path.join(tests_dir, ".venv")
+        if os.path.exists(venv_path):
+            fs_utils.remove_tree(venv_path)

@@ -92,6 +92,7 @@
       "property.json",
       "**.tent",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**",
       ".vscode/**",

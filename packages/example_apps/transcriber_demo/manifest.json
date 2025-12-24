@@ -77,7 +77,7 @@
       "*.go",
       "go.mod",
       "go.sum",
-      ".env",
+      ".env.example",
       "ten_packages/extension/audio_file_player_python/**",
       "ten_packages/extension/web_audio_control_go/**",
       "ten_packages/extension/vtt_nodejs/**",
