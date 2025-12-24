@@ -123,7 +123,9 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default 1.92.0
+          rustc --version
+          cargo --version
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests

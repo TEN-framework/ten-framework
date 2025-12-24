@@ -121,7 +121,10 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-09-18
+
+          rustup default 1.92.0
+          rustc --version
+          cargo --version
 
           brew install tree
           brew install gettext
