@@ -1,0 +1,71 @@
+{
+  "type": "extension",
+  "name": "vibevoice_tts_websocket_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string"
+            },
+            "cfg_scale": {
+              "type": "float64"
+            },
+            "steps": {
+              "type": "int64"
+            },
+            "voice": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "channels": {
+              "type": "int64"
+            },
+            "sample_width": {
+              "type": "int64"
+            }
+          }
+        }
+      }
+    }
+  }
+}
