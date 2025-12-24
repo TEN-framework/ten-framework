@@ -138,7 +138,7 @@ jobs:
 
       - name: Free up disk space
         run: |
-          apt-get clean
+          sudo apt-get clean
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

@@ -173,11 +173,11 @@ jobs:
           go env -w GOFLAGS=\"-buildvcs=false\"
           # go install golang.org/dl/go1.24.3@latest
           # go1.24.3 download
-          apt-get update
-          apt-get install -y curl unzip
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
-          apt-get install -y nodejs
+          sudo apt-get install -y nodejs
           curl -fsSL https://bun.sh/install | bash
           export BUN_INSTALL=\"\$HOME/.bun\"
           export PATH=\"\$BUN_INSTALL/bin:\$PATH\"
@@ -296,11 +296,11 @@ jobs:
       - name: Install Playwright Browsers in Docker
         if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
-          apt-get update
-          apt-get install -y curl
+          sudo apt-get update
+          sudo apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
-          apt-get install -y nodejs
+          sudo apt-get install -y nodejs
           npm install -g npm@latest
           npx playwright install --with-deps || true \
 
@@ -389,11 +389,11 @@ jobs:
           fi
 
           # Install Node.js and run tests
-          apt-get update
-          apt-get install -y curl
+          sudo apt-get update
+          sudo apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
-          apt-get install -y nodejs
+          sudo apt-get install -y nodejs
           npm install -g npm@latest
 
           # Go to frontend directory and run tests
