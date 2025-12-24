@@ -242,9 +242,8 @@ jobs:
           df -h
 
           # Install Rust nightly
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-09-18
-          source $HOME/.cargo/env
-          rustup default nightly-2025-09-18
+          rustup update nightly
+          rustup default nightly
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
