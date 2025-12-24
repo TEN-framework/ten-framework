@@ -17,7 +17,7 @@ from typing_extensions import override
 from ten_ai_base.asr import (
     AsyncASRBaseExtension,
     ASRBufferConfig,
-    ASRBufferConfigModeDiscard,
+    ASRBufferConfigModeKeep,
     ASRResult,
 )
 
@@ -48,7 +48,6 @@ from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
 from .log_id_dumper_manager import LogIdDumperManager
 from .const import (
     DUMP_FILE_NAME,
-    FINALIZE_GRACE_PERIOD_MS,
     is_reconnectable_error,
 )
 
@@ -307,14 +306,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         """Check if connected to ASR service."""
         # After finalize, connection may be closed by server (normal behavior)
         # Only check connection if we haven't finalized recently
-        if self.last_finalize_timestamp > 0:
-            # Allow some time for final result to come back
-            current_time = int(asyncio.get_event_loop().time() * 1000)
-            if (
-                current_time - self.last_finalize_timestamp
-                < FINALIZE_GRACE_PERIOD_MS
-            ):
-                return True  # Still consider connected during finalize grace period
+        # if self.last_finalize_timestamp > 0:
+        #     # Allow some time for final result to come back
+        #     current_time = int(asyncio.get_event_loop().time() * 1000)
+        #     if (
+        #         current_time - self.last_finalize_timestamp
+        #         < FINALIZE_GRACE_PERIOD_MS
+        #     ):
+        #         return True  # Still consider connected during finalize grace period
 
         return self.connected and self.client is not None
 
@@ -394,8 +393,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        """Get buffer strategy for audio processing."""
-        return ASRBufferConfigModeDiscard()
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
     def input_audio_sample_rate(self) -> int:
