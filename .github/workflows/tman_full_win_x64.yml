@@ -126,7 +126,11 @@ jobs:
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
+
+          rustup default 1.92.0
+          rustc --version
+          cargo --version
+
           cargo install --force cbindgen
 
       - name: Update version
