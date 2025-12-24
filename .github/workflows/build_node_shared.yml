@@ -20,8 +20,6 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang]
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
       - name: Checkout Node.js
         uses: actions/checkout@v4
