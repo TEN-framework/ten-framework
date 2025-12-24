@@ -132,7 +132,14 @@ class LogIdDumperManager:
     async def push_bytes(self, data: bytes) -> None:
         """Push bytes to dumper."""
         if self.dumper:
-            await self.dumper.push_bytes(data)
+            try:
+                await self.dumper.push_bytes(data)
+            except Exception as e:
+                # Dumper might be temporarily closed during rename operation
+                # Log warning but don't fail - this is just for debugging/dumping
+                self.ten_env.log_warn(
+                    f"Error pushing bytes to dumper (may be temporarily closed): {e}"
+                )
 
     async def stop(self) -> None:
         """Stop dumper and close file."""
