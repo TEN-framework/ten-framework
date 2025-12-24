@@ -141,6 +141,11 @@ jobs:
           apt-get update
           apt-get install -y gcc-multilib g++-multilib
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Build
         run: |
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
@@ -150,8 +155,8 @@ jobs:
             go env -w GOFLAGS="-buildvcs=false"
             go install golang.org/dl/go1.24.3@latest
             export PATH=$PATH:$(go env GOPATH)/bin
-            go1.24.3 download
-            go1.24.3 version
+            # go1.24.3 download
+            # go1.24.3 version
             rustup default nightly-2025-09-18
           fi
 

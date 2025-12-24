@@ -126,15 +126,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
@@ -445,15 +445,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
@@ -577,15 +577,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
@@ -670,15 +670,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
@@ -873,15 +873,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen

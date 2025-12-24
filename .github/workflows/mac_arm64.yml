@@ -113,9 +113,9 @@ jobs:
         with:
           python-version: "3.10"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
-          go-version: "stable"
+          go-version: "1.24.3"
           cache: false
 
       - name: Install tools and dependencies
@@ -127,7 +127,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -423,6 +423,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
@@ -432,7 +437,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -580,6 +585,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
@@ -589,7 +599,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -674,6 +684,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
@@ -683,7 +698,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -776,6 +791,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
@@ -785,7 +805,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -878,6 +898,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
@@ -887,7 +912,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 

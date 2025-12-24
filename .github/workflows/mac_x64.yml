@@ -118,6 +118,11 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
@@ -128,7 +133,7 @@ jobs:
 
           pip3 install --use-pep517 python-dotenv jinja2 requests
 
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
           cargo install --force cbindgen
@@ -435,6 +440,11 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
@@ -442,7 +452,7 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -583,13 +593,18 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -678,13 +693,18 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -781,13 +801,18 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -884,13 +909,18 @@ jobs:
           sudo sysctl -w kern.ipc.somaxconn=8192
         shell: bash
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.3'
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
