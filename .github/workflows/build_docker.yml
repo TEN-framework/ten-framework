@@ -28,7 +28,7 @@ jobs:
           - image_name: "ubuntu2204"
             workdir: "tools/docker_for_building/ubuntu/22.04"
             platforms: linux/amd64,linux/arm64
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
