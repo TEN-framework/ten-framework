@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "!.github/workflows/linux_x64.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -31,7 +31,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -431,7 +431,7 @@ jobs:
 
   test-standalone:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -663,7 +663,7 @@ jobs:
 
   test-integration-ten-manager:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -831,7 +831,7 @@ jobs:
 
   test-integration-cpp:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -995,7 +995,7 @@ jobs:
 
   test-integration-go:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1152,7 +1152,7 @@ jobs:
 
   test-integration-python:
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1434,7 +1434,7 @@ jobs:
 
   test-integration-nodejs:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     strategy:
       matrix:
         compiler: [gcc, clang]
