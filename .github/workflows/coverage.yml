@@ -241,9 +241,9 @@ jobs:
           echo "=== Disk space after Go installation ==="
           df -h
 
-          # Install Rust nightly
-          rustup update nightly
-          rustup default nightly
+          # Install Rust stable because we need to disable asan to avoid coverage instrumentation conflicts.
+          # Therefore, rust nightly is not needed.
+          rustup default 1.92.0
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
