@@ -29,12 +29,18 @@ class ArgumentInfo(argparse.Namespace):
 
 
 def ar_extract(library: str, log_level: int) -> None:
+    # Check if the library file exists before trying to extract it.
+    if not os.path.exists(library):
+        error_msg = f"Error: Static library file does not exist: {library}"
+        print(error_msg)
+        raise RuntimeError(error_msg)
+
     # No --output option on macos.
     cmd = ["ar", "-x", library]
     returncode, output = cmd_exec.run_cmd(cmd, log_level)
     if returncode:
-        print(f"Failed to extract static library: {output}")
-        raise RuntimeError("Failed to extract static library.")
+        print(f"Failed to extract static library '{library}': {output}")
+        raise RuntimeError(f"Failed to extract static library: {library}")
 
 
 def ar_create(
@@ -45,10 +51,17 @@ def ar_create(
     # it before passing to ar. We need to explicitly expand the wildcard using
     # glob.glob() for MinGW.
     if is_mingw:
+        # On MinGW, CMake may generate .obj files (Windows style) while GN generates .o files (Unix style)
+        # We need to collect both types.
         obj_files = glob.glob(os.path.join(target_path, "*.o"))
+        obj_files += glob.glob(os.path.join(target_path, "*.obj"))
+
         if not obj_files:
-            print(f"Warning: No .o files found in {target_path}")
-            return
+            error_msg = f"Error: No .o or .obj files found in {target_path}. This likely means the static library extraction failed or the library file does not exist."
+            print(error_msg)
+            raise RuntimeError(error_msg)
+
+        print(f"Found {len(obj_files)} object files to combine")
         cmd = ["ar", "-rcs", target_library] + obj_files
     else:
         cmd = ["ar", "-rcs", target_library, os.path.join(target_path, "*.o")]
@@ -145,7 +158,18 @@ if __name__ == "__main__":
             sys.exit(-1)
     else:
         # Use ar for combining static libraries (Unix-like, including MinGW)
+
+        # Print library info for debugging
+        print(f"Combining {len(arg_info.library)} static libraries:")
+        for i, lib in enumerate(arg_info.library):
+            exists = "EXISTS" if os.path.exists(lib) else "NOT FOUND"
+            print(f"  [{i}] {lib} [{exists}]")
+
         if not os.path.exists(target_library):
+            if not os.path.exists(arg_info.library[0]):
+                error_msg = f"Error: Base library file does not exist: {arg_info.library[0]}"
+                print(error_msg)
+                sys.exit(-1)
             shutil.copy(arg_info.library[0], target_library)
 
         origin_wd = os.getcwd()
@@ -164,6 +188,14 @@ if __name__ == "__main__":
             for library in arg_info.library[1:]:
                 ar_extract(library, args.log_level)
             ar_create(target_library, tmp_output, args.log_level, arg_info.is_mingw)
+
+            # Print success message
+            if os.path.exists(target_library):
+                file_size = os.path.getsize(target_library)
+                file_size_mb = file_size / (1024 * 1024)
+                print(f"Successfully created combined static library: {target_library}")
+                print(f"Output file size: {file_size_mb:.2f} MB ({file_size} bytes)")
+
         except Exception as e:
             returncode = -1
             print(f"An error occurred: {e}")
