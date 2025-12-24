@@ -170,11 +170,10 @@ TEN_RUST_PRIVATE_API bool ten_validate_property_json_file(
     const char *property_file, const char **out_err_msg);
 
 TEN_RUST_PRIVATE_API ServiceHub *ten_service_hub_create(
-    const char *services_config_json);
+    const char *services_config_json, const char *runtime_version,
+    const char *log_path);
 
 TEN_RUST_PRIVATE_API void ten_service_hub_shutdown(ServiceHub *service_hub_ptr);
-
-TEN_RUST_PRIVATE_API const char *ten_get_runtime_version(void);
 
 TEN_RUST_PRIVATE_API MetricHandle *ten_metric_create(
     ServiceHub *system_ptr, uint32_t metric_type, const char *name,
