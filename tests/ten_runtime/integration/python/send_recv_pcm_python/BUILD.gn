@@ -20,6 +20,7 @@ ten_package_test_prepare_app("send_recv_pcm_python_app") {
   replace_paths_after_install_all = [
     "send_recv_pcm_python_app/ten_packages/extension/default_extension_python/extension.py",
     "send_recv_pcm_python_app/ten_packages/extension/default_extension_python/requirements.txt",
+    "send_recv_pcm_python_app/ten_packages/extension/default_extension_python/pyproject.toml",
   ]
 
   if (ten_enable_ten_manager) {

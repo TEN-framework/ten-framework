@@ -37,43 +37,22 @@ def test_cpp_app_nodejs():
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
-    if build_config_args.ten_enable_integration_tests_prebuilt is False:
-        print(f'Assembling and building package "{app_dir_name}".')
+    print(f'Assembling and building package "{app_dir_name}".')
 
-        rc = build_pkg.prepare_and_build_app(
-            build_config_args,
-            root_dir,
-            base_path,
-            app_dir_name,
-            app_language,
-        )
-        if rc != 0:
-            assert False, "Failed to build package."
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
+    )
+    if rc != 0:
+        assert False, "Failed to build package."
 
-        tman_install_cmd = [
-            os.path.join(root_dir, "ten_manager/bin/tman"),
-            "--config-file",
-            os.path.join(root_dir, "tests/local_registry/config.json"),
-            "--yes",
-            "install",
-        ]
-
-        tman_install_process = subprocess.Popen(
-            tman_install_cmd,
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=app_root_path,
-        )
-        tman_install_process.wait()
-        return_code = tman_install_process.returncode
-        if return_code != 0:
-            assert False, "Failed to install package."
-
-        # Compile typescript extensions.
-        rc = build_pkg.build_nodejs_extensions(app_root_path)
-        if rc != 0:
-            assert False, "Failed to build TypeScript extensions."
+    # Compile typescript extensions.
+    rc = build_pkg.build_nodejs_extensions(app_root_path)
+    if rc != 0:
+        assert False, "Failed to build TypeScript extensions."
 
     if sys.platform == "linux":
         if (
@@ -135,7 +114,6 @@ def test_cpp_app_nodejs():
 
         assert exit_code == 0
 
-        if build_config_args.ten_enable_integration_tests_prebuilt is False:
-            # Testing complete. If builds are only created during the testing
-            # phase, we  can clear the build results to save disk space.
-            fs_utils.remove_tree(app_root_path)
+        # Testing complete. If builds are only created during the testing
+        # phase, we  can clear the build results to save disk space.
+        fs_utils.remove_tree(app_root_path)

@@ -51,7 +51,7 @@ def main(args: ArgumentInfo) -> int:
             args.tman_path,
         ]
 
-        if args.log_level > 0 or True:
+        if args.log_level > 0:
             cmd += ["--verbose", "--tracing", "all"]
 
         if args.config_file is not None:

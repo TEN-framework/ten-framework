@@ -12,6 +12,7 @@ ten_package_test_prepare_auxiliary_resources(
   resources = [
     "__init__.py",
     "test_case.py",
+    "lsan.suppressions",
   ]
 
   utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",

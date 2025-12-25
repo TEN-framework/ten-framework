@@ -6,7 +6,7 @@ import subprocess
 import os
 import sys
 from sys import stdout
-from .utils import build_config
+from .utils import build_config, fs_utils
 
 
 def test_standalone_test_async_python():
@@ -46,40 +46,88 @@ def test_standalone_test_async_python():
 
     # Step 2:
     #
-    # Run standalone test cases.
+    # Use uv to sync dependencies and run pytest.
 
+    tests_dir = os.path.join(extension_root_path, "tests")
+
+    # Run uv sync --all-packages to install dependencies.
+    uv_sync_cmd = [
+        "uv",
+        "sync",
+        "--all-packages",
+    ]
+
+    uv_sync_process = subprocess.Popen(
+        uv_sync_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=tests_dir,
+    )
+    uv_sync_process.wait()
+    return_code = uv_sync_process.returncode
+    if return_code != 0:
+        assert False, "Failed to sync dependencies with uv."
+
+    # Step 3:
+    #
     # Set the required environment variables for the test.
+
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
 
+    # Find libpython path using the tool in ten_runtime_python package
+    find_libpython_script = os.path.join(
+        extension_root_path,
+        ".ten/app/ten_packages/system/ten_runtime_python/tools/find_libpython.py",
+    )
+    if os.path.exists(find_libpython_script):
+        get_lib_path_cmd = [
+            "uv",
+            "run",
+            "python",
+            find_libpython_script,
+        ]
+        try:
+            lib_path = (
+                subprocess.check_output(
+                    get_lib_path_cmd,
+                    cwd=tests_dir,
+                    env=my_env,
+                )
+                .decode("utf-8")
+                .strip()
+            )
+
+            if lib_path:
+                print(f"Setting TEN_PYTHON_LIB_PATH to {lib_path}")
+                my_env["TEN_PYTHON_LIB_PATH"] = lib_path
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to find python lib path: {e}")
+
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
     if sys.platform == "linux":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
-                base_path,
-                (
-                    "default_async_extension_python/.ten/app/ten_packages/"
-                    "system/ten_runtime/lib/libasan.so"
-                ),
+                extension_root_path,
+                (".ten/app/ten_packages/system/ten_runtime/lib/libasan.so"),
             )
 
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
     elif sys.platform == "darwin":
-        build_config_args = build_config.parse_build_config(
-            os.path.join(root_dir, "tgn_args.txt"),
-        )
 
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
-                base_path,
+                extension_root_path,
                 (
-                    "default_async_extension_python/.ten/app/ten_packages/"
-                    "system/ten_runtime/lib/libclang_rt.asan_osx_dynamic.dylib"
+                    ".ten/app/ten_packages/system/ten_runtime/lib/"
+                    "libclang_rt.asan_osx_dynamic.dylib"
                 ),
             )
 
@@ -87,25 +135,38 @@ def test_standalone_test_async_python():
                 print("Using AddressSanitizer library.")
                 my_env["DYLD_INSERT_LIBRARIES"] = libasan_path
 
-    # Run start script based on platform
-    if sys.platform == "win32":
-        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
-        tester_process = subprocess.Popen(
-            [sys.executable, start_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=extension_root_path,
-        )
+    # Step 4:
+    #
+    # Run the test using uv run pytest.
+    # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
+    # may trigger memory leak reports (false positives from the tool itself),
+    # causing the test to fail.
+    if sys.platform == "linux" and build_config_args.enable_sanitizer:
+        print("Starting pytest with python from venv (bypassing uv run)...")
+        venv_path = os.path.join(tests_dir, ".venv")
+        python_exe = os.path.join(venv_path, "bin", "python")
+        uv_run_pytest_cmd = [python_exe, "-m", "pytest", "-s"]
+        my_env["VIRTUAL_ENV"] = venv_path
     else:
-        # On Unix-like systems, use bash start script
+        uv_run_pytest_cmd = [
+            "uv",
+            "run",
+            "pytest",
+            "-s",
+        ]
+
+    try:
         tester_process = subprocess.Popen(
-            "tests/bin/start",
+            uv_run_pytest_cmd,
             stdout=stdout,
             stderr=subprocess.STDOUT,
             env=my_env,
-            cwd=extension_root_path,
+            cwd=tests_dir,
         )
 
-    tester_rc = tester_process.wait()
-    assert tester_rc == 0
+        tester_rc = tester_process.wait()
+        assert tester_rc == 0
+    finally:
+        venv_path = os.path.join(tests_dir, ".venv")
+        if os.path.exists(venv_path):
+            fs_utils.remove_tree(venv_path)

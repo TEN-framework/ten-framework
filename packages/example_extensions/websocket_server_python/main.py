@@ -21,11 +21,16 @@ class WebsocketServerExtension(AsyncExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.name = name
+        self.ten_env: AsyncTenEnv = (
+            None  # pyright: ignore[reportAttributeAccessIssue]
+        )
+        self.server_port: int | None = None
+        self.server: websockets.Server | None = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
 
-    async def echo(self, websocket, path):
+    async def echo(self, websocket):
         async for message in websocket:
             print(f"Received message: {message}")
             # Echo the message back to the client
@@ -42,13 +47,14 @@ class WebsocketServerExtension(AsyncExtension):
             )
             self.server_port = 8002
 
-        self.server = websockets.serve(self.echo, "localhost", self.server_port)
+        self.server = await websockets.serve(
+            self.echo, "localhost", self.server_port
+        )
         self.ten_env.log(
             LogLevel.DEBUG,
             f"Websocket server started on port {self.server_port}",
         )
 
-        await self.server
         print("Websocket server started.")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -62,7 +68,10 @@ class WebsocketServerExtension(AsyncExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log(LogLevel.DEBUG, "on_stop")
-        self.server.ws_server.close()
+        if self.server is not None:
+            self.server.close()
+            await self.server.wait_closed()
+            self.server = None
 
 
 @register_addon_as_extension("websocket_server_python")

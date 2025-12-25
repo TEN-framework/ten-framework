@@ -90,23 +90,11 @@ def test_go_app_cythonize():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
-    # Create virtual environment.
-    venv_dir = os.path.join(base_path, "venv")
-    subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
-
     my_env = os.environ.copy()
 
     # Set the required environment variables for the test.
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
-
-    # Launch virtual environment.
-    my_env["VIRTUAL_ENV"] = venv_dir
-    if sys.platform == "win32":
-        venv_bin_dir = os.path.join(venv_dir, "Scripts")
-    else:
-        venv_bin_dir = os.path.join(venv_dir, "bin")
-    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
     app_dir_name = "go_app_cythonize_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -116,65 +104,49 @@ def test_go_app_cythonize():
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
-    if build_config_args.ten_enable_integration_tests_prebuilt is False:
-        # Before starting, cleanup the old app package.
-        fs_utils.remove_tree(app_root_path)
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
 
-        print(f'Assembling and building package "{app_dir_name}".')
+    print(f'Assembling and building package "{app_dir_name}".')
 
-        rc = build_pkg.prepare_and_build_app(
-            build_config_args,
-            root_dir,
-            base_path,
-            app_dir_name,
-            app_language,
-        )
-        if rc != 0:
-            assert False, "Failed to build package."
-
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
-
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
     )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
+    if rc != 0:
+        assert False, "Failed to build package."
 
-    # Run bootstrap script based on platform
-    if sys.platform == "win32":
-        # On Windows, use Python bootstrap script directly
-        print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
-        bootstrap_process = subprocess.Popen(
-            [sys.executable, bootstrap_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=app_root_path,
-        )
-    else:
-        # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
-        bootstrap_process = subprocess.Popen(
-            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-        )
+    # Step 1: Bootstrap Python dependencies (update pyproject.toml and sync)
+    print("Bootstrapping Python dependencies...")
+    rc = build_pkg.bootstrap_python_dependencies(
+        app_root_path, my_env, log_level=1
+    )
+    if rc != 0:
+        assert False, "Failed to bootstrap Python dependencies."
 
-    bootstrap_process.wait()
-    if bootstrap_process.returncode != 0:
-        assert False, "Failed to run bootstrap script."
+    # Step 2: Activate virtual environment for Go/C++ app
+    # Go/C++ app needs to find Python packages in the uv-managed venv
+    venv_path = os.path.join(app_root_path, ".venv")
+    if os.path.exists(venv_path):
+        my_env["VIRTUAL_ENV"] = venv_path
+        if sys.platform == "win32":
+            venv_bin_dir = os.path.join(venv_path, "Scripts")
 
+            # Add site-packages to PYTHONPATH so embedded Python can find dependencies
+            site_packages = os.path.join(venv_path, "Lib", "site-packages")
+            if os.path.exists(site_packages):
+                my_env["PYTHONPATH"] = (
+                    site_packages + os.pathsep + my_env.get("PYTHONPATH", "")
+                )
+        else:
+            venv_bin_dir = os.path.join(venv_path, "bin")
+        my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
+        print(f"Activated virtual environment at {venv_path}")
+
+    # Step 3: Setup AddressSanitizer if needed
     compile_pyx(app_root_path)
 
     if sys.platform == "linux":
@@ -255,4 +227,3 @@ def test_go_app_cythonize():
             # Testing complete. If builds are only created during the testing
             # phase, we can clear the build results to save disk space.
             fs_utils.remove_tree(app_root_path)
-            fs_utils.remove_tree(venv_dir)

@@ -129,6 +129,12 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
 
     cmd.template_data.insert("package_name".to_string(), cmd.pkg_name.clone());
 
+    // Insert a variant of package_name with underscores replaced by dashes.
+    // This is useful for Python package naming conventions where distribution
+    // names should use dashes (e.g., in pyproject.toml).
+    let package_name_with_dash = cmd.pkg_name.replace('_', "-");
+    cmd.template_data.insert("package_name_with_dash".to_string(), package_name_with_dash);
+
     let template = sub_cmd_args
         .get_one::<String>("TEMPLATE")
         .cloned()

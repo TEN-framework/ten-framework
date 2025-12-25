@@ -21,6 +21,17 @@ def setup():
         ]
     )
 
+    # Install uv for Python dependency management.
+    utils.run_cmd_with_retry(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "uv",
+        ]
+    )
+
     # Install some python packages which are necessary during the building.
     utils.run_cmd_with_retry(
         [
@@ -106,6 +117,17 @@ def setup():
             "pip",
             "install",
             "websocket-client",
+        ]
+    )
+
+    # Install tomlkit
+    utils.run_cmd_with_retry(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "tomlkit",
         ]
     )
 

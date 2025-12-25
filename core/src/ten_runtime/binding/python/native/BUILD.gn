@@ -136,5 +136,10 @@ ten_shared_library("ten_runtime_python") {
     # on macOS, when Python imports a Python C extension, the file extension
     # must be `.so` and cannot be `.dylib`.
     output_extension = "so"
+  } else if (is_win) {
+    # On Windows, Python C extensions must be .pyd files.
+    # We also prepend "lib" to match the module name "libten_runtime_python".
+    output_name = "libten_runtime_python"
+    output_extension = "pyd"
   }
 }

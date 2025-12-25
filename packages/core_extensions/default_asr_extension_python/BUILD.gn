@@ -23,6 +23,8 @@ ten_package("default_asr_extension_python") {
     "manifest.json",
     "manifest.json.tent",
     "property.json",
+    "pyproject.toml",
+    "pyproject.toml.tent",
     "requirements.txt",
   ]
 

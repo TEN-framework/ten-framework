@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "{{package_name}}",
-  "version": "0.11.46",
+  "version": "0.11.47",
   "display_name": {
     "locales": {
       "en-US": {
@@ -67,14 +67,16 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.46"
+      "version": "0.11.47"
     }
   ],
   "package": {
     "include": [
       "manifest.json",
       "property.json",
+      "pyproject.toml",
       "tests/**.py",
+      "tests/pyproject.toml",
       "tests/bin/*",
       "requirements.txt",
       "docs/**",

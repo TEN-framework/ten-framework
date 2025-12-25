@@ -25,23 +25,11 @@ def test_send_cmd_python():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
-    # Create virtual environment.
-    venv_dir = os.path.join(base_path, "venv")
-    subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
-
     my_env = os.environ.copy()
 
     # Set the required environment variables for the test.
     my_env["PYTHONMALLOC"] = "malloc"
     my_env["PYTHONDEVMODE"] = "1"
-
-    # Launch virtual environment.
-    my_env["VIRTUAL_ENV"] = venv_dir
-    if sys.platform == "win32":
-        venv_bin_dir = os.path.join(venv_dir, "Scripts")
-    else:
-        venv_bin_dir = os.path.join(venv_dir, "bin")
-    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
     app_dir_name = "send_cmd_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -51,65 +39,28 @@ def test_send_cmd_python():
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
-    if build_config_args.ten_enable_integration_tests_prebuilt is False:
-        # Before starting, cleanup the old app package.
-        fs_utils.remove_tree(app_root_path)
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
 
-        print(f'Assembling and building package "{app_dir_name}".')
+    print(f'Assembling and building package "{app_dir_name}".')
 
-        rc = build_pkg.prepare_and_build_app(
-            build_config_args,
-            root_dir,
-            base_path,
-            app_dir_name,
-            app_language,
-        )
-        if rc != 0:
-            assert False, "Failed to build package."
-
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
-
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
     )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
+    if rc != 0:
+        assert False, "Failed to build package."
 
-    # Run bootstrap script based on platform
-    if sys.platform == "win32":
-        # On Windows, use Python bootstrap script directly
-        print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
-        bootstrap_process = subprocess.Popen(
-            [sys.executable, bootstrap_script],
-            stdout=stdout,
-            stderr=subprocess.STDOUT,
-            env=my_env,
-            cwd=app_root_path,
-        )
-    else:
-        # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
-        bootstrap_process = subprocess.Popen(
-            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-        )
+    # Step 1: Bootstrap Python dependencies (update pyproject.toml and sync)
+    print("Bootstrapping Python dependencies...")
+    rc = build_pkg.bootstrap_python_dependencies(app_root_path, my_env, log_level=1)
+    if rc != 0:
+        assert False, "Failed to bootstrap Python dependencies."
 
-    bootstrap_process.wait()
-    if bootstrap_process.returncode != 0:
-        assert False, "Failed to run bootstrap script."
-
+    # Step 2: Setup AddressSanitizer if needed
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -124,20 +75,24 @@ def test_send_cmd_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    if sys.platform == "win32":
-        start_script = os.path.join(app_root_path, "bin", "start.py")
+    # Step 3: Start the server
+    main_py_path = os.path.join(app_root_path, "main.py")
+    if not os.path.isfile(main_py_path):
+        print(f"main.py not found at '{main_py_path}'.")
+        assert False
 
-        if not os.path.isfile(start_script):
-            print(f"Server command '{start_script}' does not exist.")
-            assert False
-
-        server_cmd = [sys.executable, start_script]
+    # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
+    # may trigger memory leak reports (false positives from the tool itself),
+    # causing the test to fail.
+    if sys.platform == "linux" and build_config_args.enable_sanitizer:
+        print("Starting server with python from venv (bypassing uv run)...")
+        venv_path = os.path.join(app_root_path, ".venv")
+        python_exe = os.path.join(venv_path, "bin", "python")
+        server_cmd = [python_exe, "main.py"]
+        my_env["VIRTUAL_ENV"] = venv_path
     else:
-        server_cmd = os.path.join(app_root_path, "bin/start")
-
-        if not os.path.isfile(server_cmd):
-            print(f"Server command '{server_cmd}' does not exist.")
-            assert False
+        print("Starting server with uv run main.py...")
+        server_cmd = ["uv", "run", "main.py"]
 
     server = subprocess.Popen(
         server_cmd,
@@ -180,4 +135,3 @@ def test_send_cmd_python():
             # Testing complete. If builds are only created during the testing
             # phase, we can clear the build results to save disk space.
             fs_utils.remove_tree(app_root_path)
-            fs_utils.remove_tree(venv_dir)
