@@ -487,60 +487,60 @@ pub fn ten_log(
     match tracing_level {
         tracing::Level::TRACE => {
             tracing::trace!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
                 "{}",
                 msg
             )
         }
         tracing::Level::DEBUG => {
             tracing::debug!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
                 "{}",
                 msg
             )
         }
         tracing::Level::INFO => {
             tracing::info!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
                 "{}",
                 msg
             )
         }
         tracing::Level::WARN => {
             tracing::warn!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
                 "{}",
                 msg
             )
         }
         tracing::Level::ERROR => {
             tracing::error!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
                 "{}",
                 msg
             )
