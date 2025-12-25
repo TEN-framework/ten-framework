@@ -1,0 +1,47 @@
+name: Frontend Biome
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "ai_agents/agents/examples/**"
+      - "ai_agents/playground/**"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "Taskfile.yml"
+      - "biome.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/frontend_biome.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: frontend-biome-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  biome:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: go-task/setup-task@v1
+
+      - name: Run Biome lint + check
+        run: task biome-frontend

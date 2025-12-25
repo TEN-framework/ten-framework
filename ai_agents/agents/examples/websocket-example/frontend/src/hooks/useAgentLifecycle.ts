@@ -2,7 +2,7 @@
  * Agent Lifecycle Hook - Manages agent start/stop via API server
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ping } from "@/lib/api";
 
 interface StartAgentParams {
@@ -94,7 +94,11 @@ export function useAgentLifecycle() {
    * Start the agent with property overrides
    */
   const startAgent = useCallback(
-    async ({ port, graphName = "voice_assistant", timeout = -1 }: StartAgentParams) => {
+    async ({
+      port,
+      graphName = "voice_assistant",
+      timeout = -1,
+    }: StartAgentParams) => {
       setState((prev) => ({ ...prev, status: "starting", error: null }));
 
       const channelName = generateChannelName();
@@ -123,7 +127,8 @@ export function useAgentLifecycle() {
         const data: StartAgentResponse = await response.json();
 
         // Handle both string and number codes (server returns "0" as string for success)
-        const code = typeof data.code === "string" ? parseInt(data.code, 10) : data.code;
+        const code =
+          typeof data.code === "string" ? parseInt(data.code, 10) : data.code;
         if (!response.ok || code !== 0) {
           throw new Error(data.msg || "Failed to start agent");
         }
@@ -140,7 +145,8 @@ export function useAgentLifecycle() {
 
         return { channelName, requestId, port };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         setState({
           status: "error",
           error: errorMessage,

@@ -1,6 +1,9 @@
 "use client";
 
-import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
+import type {
+  IMicrophoneAudioTrack,
+  IRemoteAudioTrack,
+} from "agora-rtc-sdk-ng";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import type { AddonDef, Graph, Node } from "@/common/graph";
@@ -11,7 +14,7 @@ import {
 } from "@/common/moduleConfig";
 import { initializeGraphData, updateGraph } from "@/store/reducers/global";
 import type { AppDispatch, AppStore, RootState } from "../store";
-import { deepMerge, normalizeFrequencies } from "./utils";
+import { normalizeFrequencies } from "./utils";
 // import { Grid } from "antd"
 
 // const { useBreakpoint } = Grid;
@@ -78,7 +81,7 @@ export const useMultibandTrackVolume = (
 };
 
 export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
-  const callback: MutationCallback = (mutationList, observer) => {
+  const callback: MutationCallback = (mutationList, _observer) => {
     mutationList.forEach((mutation) => {
       switch (mutation.type) {
         case "childList":
@@ -104,7 +107,7 @@ export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
     return () => {
       observer.disconnect();
     };
-  }, [ref]);
+  }, [ref, callback]);
 };
 
 // export const useSmallScreen = () => {

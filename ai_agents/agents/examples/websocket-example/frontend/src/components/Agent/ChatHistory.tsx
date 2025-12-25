@@ -1,10 +1,10 @@
 "use client";
 
+import { Bot, User } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAgentStore } from "@/store/agentStore";
-import { Bot, User } from "lucide-react";
-import { useEffect, useRef } from "react";
 
 export function ChatHistory() {
   const { messages } = useAgentStore();
@@ -15,16 +15,16 @@ export function ChatHistory() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, []);
 
   if (messages.length === 0) {
     return (
-      <div className="flex h-[360px] md:h-[420px] items-center justify-center rounded-xl bg-muted/20 shadow-sm">
+      <div className="flex h-[360px] items-center justify-center rounded-xl bg-muted/20 shadow-sm md:h-[420px]">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="rounded-full bg-muted p-4 shadow-sm">
             <Bot className="h-8 w-8 text-muted-foreground" />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Start speaking to see your conversation here
           </p>
         </div>
@@ -33,9 +33,9 @@ export function ChatHistory() {
   }
 
   return (
-    <ScrollArea className="h-[360px] md:h-[420px] w-full rounded-xl ring-1 ring-border/40 border border-border/30">
-      <div ref={scrollRef} className="p-4 space-y-4">
-        {messages.map((message, index) => (
+    <ScrollArea className="h-[360px] w-full rounded-xl border border-border/30 ring-1 ring-border/40 md:h-[420px]">
+      <div ref={scrollRef} className="space-y-4 p-4">
+        {messages.map((message, _index) => (
           <div
             key={message.id}
             className={`flex gap-3 ${
@@ -69,11 +69,11 @@ export function ChatHistory() {
                     : "bg-muted/60 text-foreground"
                 }`}
               >
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground px-2">
+              <p className="px-2 text-muted-foreground text-xs">
                 {new Date(message.timestamp).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",

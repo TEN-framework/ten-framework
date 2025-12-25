@@ -22,6 +22,11 @@ export default function MicrophoneBlock(props: {
   const [mediaStreamTrack, setMediaStreamTrack] =
     React.useState<MediaStreamTrack>();
 
+  const onAudioTrackupdated = (track: MediaStreamTrack) => {
+    console.log("[test] audio track updated", track);
+    setMediaStreamTrack(track);
+  };
+
   React.useEffect(() => {
     audioTrack?.on("track-updated", onAudioTrackupdated);
     if (audioTrack) {
@@ -31,18 +36,13 @@ export default function MicrophoneBlock(props: {
     return () => {
       audioTrack?.off("track-updated", onAudioTrackupdated);
     };
-  }, [audioTrack]);
+  }, [audioTrack, onAudioTrackupdated]);
 
   React.useEffect(() => {
     audioTrack?.setMuted(audioMute);
   }, [audioTrack, audioMute]);
 
   const subscribedVolumes = useMultibandTrackVolume(mediaStreamTrack, 20);
-
-  const onAudioTrackupdated = (track: MediaStreamTrack) => {
-    console.log("[test] audio track updated", track);
-    setMediaStreamTrack(track);
-  };
 
   const onClickMute = () => {
     setAudioMute(!audioMute);

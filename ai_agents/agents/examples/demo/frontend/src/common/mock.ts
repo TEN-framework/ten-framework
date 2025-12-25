@@ -1,5 +1,5 @@
-import { getRandomUserId } from "./utils"
-import { IChatItem, EMessageType, EMessageDataType } from "@/types"
+import { EMessageDataType, EMessageType, type IChatItem } from "@/types";
+import { getRandomUserId } from "./utils";
 
 const SENTENCES = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
@@ -9,31 +9,31 @@ const SENTENCES = [
   "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
   "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-]
+];
 
 export const genRandomParagraph = (num: number = 0): string => {
-  let paragraph = ""
+  let paragraph = "";
   for (let i = 0; i < num; i++) {
-    const randomIndex = Math.floor(Math.random() * SENTENCES.length)
-    paragraph += SENTENCES[randomIndex] + " "
+    const randomIndex = Math.floor(Math.random() * SENTENCES.length);
+    paragraph += `${SENTENCES[randomIndex]} `;
   }
 
-  return paragraph.trim()
-}
+  return paragraph.trim();
+};
 
 export const genRandomChatList = (num: number = 10): IChatItem[] => {
-  const arr: IChatItem[] = []
+  const arr: IChatItem[] = [];
   for (let i = 0; i < num; i++) {
-    const type = Math.random() > 0.5 ? EMessageType.AGENT : EMessageType.USER
+    const type = Math.random() > 0.5 ? EMessageType.AGENT : EMessageType.USER;
     arr.push({
       userId: getRandomUserId(),
-      userName: type == "agent" ? "Agent" : "You",
+      userName: type === "agent" ? "Agent" : "You",
       text: genRandomParagraph(3),
       data_type: EMessageDataType.TEXT,
       type,
       time: Date.now(),
-    })
+    });
   }
 
-  return arr
-}
+  return arr;
+};

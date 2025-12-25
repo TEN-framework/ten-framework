@@ -5,21 +5,28 @@
 //
 import {
   Addon,
-  RegisterAddonAsExtension,
-  Extension,
-  TenEnv,
-  Cmd,
+  type Cmd,
   CmdResult,
+  type Data,
+  Extension,
+  RegisterAddonAsExtension,
   StatusCode,
-  Data,
+  type TenEnv,
 } from "ten-runtime-nodejs";
-import { Agent } from "./agent/agent.js";
-import { ASRResultEvent, LLMResponseEvent, UserJoinedEvent, UserLeftEvent } from "./agent/events.js";
-import { parseSentences, sendCmd, sendData } from "./helper.js";
 import z from "zod";
+import { Agent } from "./agent/agent.js";
+import {
+  ASRResultEvent,
+  LLMResponseEvent,
+  UserJoinedEvent,
+  UserLeftEvent,
+} from "./agent/events.js";
+import { parseSentences, sendCmd, sendData } from "./helper.js";
 
 const MainControlConfig = z.object({
-  greeting: z.string().default("Ten Agent connected, how can i help you today?"),
+  greeting: z
+    .string()
+    .default("Ten Agent connected, how can i help you today?"),
 });
 
 type MainControlConfig = z.infer<typeof MainControlConfig>;
@@ -40,7 +47,7 @@ class MainControlExtension extends Extension {
   async onInit(_tenEnv: TenEnv): Promise<void> {
     console.log("MainControlExtension onInit");
     this.tenEnv = _tenEnv;
-    this.agent = new Agent(_tenEnv)
+    this.agent = new Agent(_tenEnv);
 
     const [config_json] = await _tenEnv.getPropertyToJson("");
     if (!config_json) {
@@ -52,10 +59,7 @@ class MainControlExtension extends Extension {
     this.agent.on(UserJoinedEvent, async (event) => {
       this.joinedUserCount++;
       if (this.joinedUserCount === 1) {
-        await this._send_to_tts(
-          this.config.greeting,
-          true
-        );
+        await this._send_to_tts(this.config.greeting, true);
         await this._send_transcript(
           "assistant",
           this.config.greeting,
@@ -91,7 +95,10 @@ class MainControlExtension extends Extension {
     this.agent.on(LLMResponseEvent, async (event) => {
       if (!event) return;
       if (!event.is_final && event.kind === "message") {
-        const [sentences, remainText] = parseSentences(this.sentenceFragment, event.delta)
+        const [sentences, remainText] = parseSentences(
+          this.sentenceFragment,
+          event.delta
+        );
         this.sentenceFragment = remainText;
         for (const sentence of sentences) {
           await this._send_to_tts(sentence, false);
@@ -138,7 +145,7 @@ class MainControlExtension extends Extension {
     text: string,
     final: boolean,
     stream_id: number,
-    data_type: "text" | "reasoning" = "text",
+    data_type: "text" | "reasoning" = "text"
   ): Promise<void> {
     /**
      * Sends the transcript (ASR or LLM output) to the message collector.
@@ -148,7 +155,7 @@ class MainControlExtension extends Extension {
         data_type: "transcribe",
         role,
         text,
-        text_ts: Date.now(),      // int(time.time() * 1000)
+        text_ts: Date.now(), // int(time.time() * 1000)
         is_final: final,
         stream_id,
       });
@@ -167,7 +174,7 @@ class MainControlExtension extends Extension {
     }
 
     this.tenEnv.logInfo(
-      `[MainControlExtension] Sent transcript: ${role}, final=${final}, text=${text}`,
+      `[MainControlExtension] Sent transcript: ${role}, final=${final}, text=${text}`
     );
   }
 
@@ -184,7 +191,7 @@ class MainControlExtension extends Extension {
     });
 
     this.tenEnv.logInfo(
-      `[MainControlExtension] Sent to TTS: is_final=${is_final}, text=${text}`,
+      `[MainControlExtension] Sent to TTS: is_final=${is_final}, text=${text}`
     );
   }
 
@@ -194,7 +201,9 @@ class MainControlExtension extends Extension {
      */
     this.sentenceFragment = "";
     await this.agent.flushLLM();
-    await sendData(this.tenEnv, "tts_flush", "tts", { flush_id: String(Date.now()) });
+    await sendData(this.tenEnv, "tts_flush", "tts", {
+      flush_id: String(Date.now()),
+    });
     await sendCmd(this.tenEnv, "flush", "agora_rtc");
     this.tenEnv.logInfo(`[MainControlExtension] Sent interrupt to LLM`);
   }
@@ -208,7 +217,6 @@ class MainControlExtension extends Extension {
       turn_id: this.turn_id,
     };
   }
-
 }
 
 @RegisterAddonAsExtension("main_nodejs")

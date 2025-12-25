@@ -15,15 +15,9 @@
     "ten-runtime-nodejs": "file:../.ten/app/ten_packages/system/ten_runtime_nodejs"
   },
   "mocha": {
-    "spec": [
-      "**/*.spec.*"
-    ],
+    "spec": ["**/*.spec.*"],
     "loader": "ts-node/esm",
-    "extensions": [
-      "ts",
-      "tsx",
-      "js"
-    ]
+    "extensions": ["ts", "tsx", "js"]
   },
   "scripts": {
     "build": "tsc --listEmittedFiles",

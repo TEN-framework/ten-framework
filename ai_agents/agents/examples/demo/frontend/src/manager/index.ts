@@ -1,2 +1,2 @@
-export * from "./rtc"
-export * from "./rtm"
+export * from "./rtc";
+export * from "./rtm";

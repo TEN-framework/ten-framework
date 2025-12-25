@@ -124,6 +124,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql-config.yml
 
       - name: Build C/C++ project
         if: matrix.language == 'c-cpp' && matrix.build-mode == 'manual'

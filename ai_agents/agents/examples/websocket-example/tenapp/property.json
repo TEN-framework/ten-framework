@@ -89,9 +89,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"

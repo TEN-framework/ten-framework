@@ -1,8 +1,8 @@
-import { LanguageOptionItem } from "@/types"
+import type { LanguageOptionItem } from "@/types";
 
 export const genRandomString = (length: number = 10) => {
-  let result = '';
-  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = "";
+  const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
   const charactersLength = characters.length;
 
   for (let i = 0; i < length; i++) {
@@ -10,22 +10,19 @@ export const genRandomString = (length: number = 10) => {
   }
 
   return result;
-}
-
+};
 
 export const getRandomUserId = (): number => {
-  return Math.floor(Math.random() * 99999) + 100000
-}
+  return Math.floor(Math.random() * 99999) + 100000;
+};
 
 export const getRandomChannel = (number = 6) => {
-  return "agora_" + genRandomString(number)
-}
-
+  return `agora_${genRandomString(number)}`;
+};
 
 export const sleep = (ms: number) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 export const normalizeFrequencies = (frequencies: Float32Array) => {
   const normalizeDb = (value: number) => {
@@ -46,20 +43,17 @@ export const normalizeFrequencies = (frequencies: Float32Array) => {
   });
 };
 
-
 export const genUUID = () => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0
-    const v = c === "x" ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
-}
-
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 export const isMobile = () => {
-  return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
-}
-
+  return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent);
+};
 
 export const getBrowserLanguage = (): LanguageOptionItem => {
   const lang = navigator.language;
@@ -68,22 +62,22 @@ export const getBrowserLanguage = (): LanguageOptionItem => {
     case lang.startsWith("zh"):
       return {
         label: "Chinese",
-        value: "zh-CN"
+        value: "zh-CN",
       };
     case lang.startsWith("ko"):
       return {
         label: "Korean",
-        value: "ko-KR"
+        value: "ko-KR",
       };
     case lang.startsWith("ja"):
       return {
         label: "Japanese",
-        value: "ja-JP"
+        value: "ja-JP",
       };
     default:
       return {
         label: "English",
-        value: "en-US"
+        value: "en-US",
       };
   }
 };

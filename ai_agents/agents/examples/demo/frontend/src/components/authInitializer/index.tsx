@@ -1,52 +1,52 @@
-"use client"
+"use client";
 
-import { ReactNode, useEffect } from "react"
+import { type ReactNode, useEffect } from "react";
 import {
-  useAppDispatch,
-  getOptionsFromLocal,
-  getRandomUserId,
-  getRandomChannel,
   genRandomString,
-} from "@/common"
+  getOptionsFromLocal,
+  getRandomChannel,
+  getRandomUserId,
+  useAppDispatch,
+} from "@/common";
 import {
-  setOptions,
   reset,
   setAgentSettings,
   setCozeSettings,
   setDifySettings,
   setOceanBaseSettings,
-} from "@/store/reducers/global"
+  setOptions,
+} from "@/store/reducers/global";
 
 interface AuthInitializerProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 const AuthInitializer = (props: AuthInitializerProps) => {
-  const { children } = props
-  const dispatch = useAppDispatch()
+  const { children } = props;
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const data = getOptionsFromLocal()
-      if (data && data?.options?.channel) {
-        dispatch(reset())
-        dispatch(setOptions(data.options))
-        dispatch(setAgentSettings(data.settings))
-        dispatch(setCozeSettings(data.cozeSettings))
-        dispatch(setDifySettings(data.difySettings))
-        dispatch(setOceanBaseSettings(data.oceanbaseSettings))
+      const data = getOptionsFromLocal();
+      if (data?.options?.channel) {
+        dispatch(reset());
+        dispatch(setOptions(data.options));
+        dispatch(setAgentSettings(data.settings));
+        dispatch(setCozeSettings(data.cozeSettings));
+        dispatch(setDifySettings(data.difySettings));
+        dispatch(setOceanBaseSettings(data.oceanbaseSettings));
       } else {
         const newOptions = {
           userName: genRandomString(8),
           channel: getRandomChannel(),
           userId: getRandomUserId(),
-        }
-        dispatch(setOptions(newOptions))
+        };
+        dispatch(setOptions(newOptions));
       }
     }
-  }, [dispatch])
+  }, [dispatch]);
 
-  return children
-}
+  return children;
+};
 
-export default AuthInitializer
+export default AuthInitializer;

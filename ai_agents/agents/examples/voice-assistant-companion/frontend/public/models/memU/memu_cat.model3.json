@@ -1,62 +1,60 @@
 {
-	"Version": 3,
-	"FileReferences": {
-		"Moc": "memu_cat.moc3",
-		"Textures": [
-			"memu_cat.2048/texture_00.png"
-		],
-		"Physics": "memu_cat.physics3.json",
-		"DisplayInfo": "memu_cat.cdi3.json",
-		"Expressions": [
-			{
-				"Name": "surprised",
-				"File": "surprised.exp3.json"
-			},
-			{
-				"Name": "sweat",
-				"File": "sweat.exp3.json"
-			},
-			{
-				"Name": "love",
-				"File": "love.exp3.json"
-			},
-			{
-				"Name": "cat1",
-				"File": "cat1.exp3.json"
-			},
-			{
-				"Name": "cat2",
-				"File": "cat2.exp3.json"
-			},
-			{
-				"Name": "cat3",
-				"File": "cat3.exp3.json"
-			},
-			{
-				"Name": "cat4",
-				"File": "cat4.exp3.json"
-			},
-			{
-				"Name": "angry",
-				"File": "angry.exp3.json"
-			},
-			{
-				"Name": "question",
-				"File": "question.exp3.json"
-			}
-		]
-	},
-	"Groups": [
-		{
-			"Target": "Parameter",
-			"Name": "LipSync",
-			"Ids": []
-		},
-		{
-			"Target": "Parameter",
-			"Name": "EyeBlink",
-			"Ids": []
-		}
-	],
-	"HitAreas": []
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "memu_cat.moc3",
+    "Textures": ["memu_cat.2048/texture_00.png"],
+    "Physics": "memu_cat.physics3.json",
+    "DisplayInfo": "memu_cat.cdi3.json",
+    "Expressions": [
+      {
+        "Name": "surprised",
+        "File": "surprised.exp3.json"
+      },
+      {
+        "Name": "sweat",
+        "File": "sweat.exp3.json"
+      },
+      {
+        "Name": "love",
+        "File": "love.exp3.json"
+      },
+      {
+        "Name": "cat1",
+        "File": "cat1.exp3.json"
+      },
+      {
+        "Name": "cat2",
+        "File": "cat2.exp3.json"
+      },
+      {
+        "Name": "cat3",
+        "File": "cat3.exp3.json"
+      },
+      {
+        "Name": "cat4",
+        "File": "cat4.exp3.json"
+      },
+      {
+        "Name": "angry",
+        "File": "angry.exp3.json"
+      },
+      {
+        "Name": "question",
+        "File": "question.exp3.json"
+      }
+    ]
+  },
+  "Groups": [
+    {
+      "Target": "Parameter",
+      "Name": "LipSync",
+      "Ids": []
+    },
+    {
+      "Target": "Parameter",
+      "Name": "EyeBlink",
+      "Ids": []
+    }
+  ],
+  "HitAreas": []
 }

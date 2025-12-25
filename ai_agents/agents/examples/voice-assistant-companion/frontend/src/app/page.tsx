@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 export const dynamic = "force-dynamic";
 
 import dynamicImport from "next/dynamic";
@@ -21,7 +21,7 @@ const ClientOnlyLive2D = dynamicImport(
   }
 );
 
-import { apiPing, apiStartService, apiStopService, apiSaveMemory } from "@/lib/request";
+import { apiPing, apiStartService, apiStopService } from "@/lib/request";
 import type { AgoraConfig, Live2DModel } from "@/types";
 
 const defaultModel: Live2DModel = {
@@ -45,27 +45,13 @@ export default function Home() {
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<Live2DModel>(defaultModel);
+  const [selectedModel, _setSelectedModel] =
+    useState<Live2DModel>(defaultModel);
   const [remoteAudioTrack, setRemoteAudioTrack] = useState<any>(null);
   const [agoraService, setAgoraService] = useState<any>(null);
   const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("@/services/agora").then((module) => {
-        const service = module.agoraService;
-        setAgoraService(service);
-        service.setOnConnectionStatusChange(handleConnectionChange);
-        service.setOnRemoteAudioTrack(handleAudioTrackChange);
-      });
-    }
-
-    return () => {
-      stopPing();
-    };
-  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -116,7 +102,9 @@ export default function Home() {
         try {
           const level = readLevel();
           const speaking = level > 0.05;
-          setIsAssistantSpeaking((prev) => (prev === speaking ? prev : speaking));
+          setIsAssistantSpeaking((prev) =>
+            prev === speaking ? prev : speaking
+          );
         } catch (err) {
           console.warn("Unable to read remote audio level:", err);
           setIsAssistantSpeaking(false);
@@ -146,7 +134,22 @@ export default function Home() {
     }
   };
 
-  const handleMicToggle = () => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      import("@/services/agora").then((module) => {
+        const service = module.agoraService;
+        setAgoraService(service);
+        service.setOnConnectionStatusChange(handleConnectionChange);
+        service.setOnRemoteAudioTrack(handleAudioTrackChange);
+      });
+    }
+
+    return () => {
+      stopPing();
+    };
+  }, [handleAudioTrackChange, handleConnectionChange, stopPing]);
+
+  const _handleMicToggle = () => {
     if (agoraService) {
       try {
         if (isMuted) {
@@ -173,7 +176,7 @@ export default function Home() {
 
             // Wait a bit to let UserLeftEvent handler save the conversation
             console.log("Waiting for memory save...");
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds delay
+            await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay
 
             // Then stop the companion service
             await apiStopService("companion_channel");
@@ -201,7 +204,9 @@ export default function Home() {
           });
 
           if (!response.ok) {
-            throw new Error(`Failed to get Agora credentials: ${response.statusText}`);
+            throw new Error(
+              `Failed to get Agora credentials: ${response.statusText}`
+            );
           }
 
           const responseData = await response.json();
@@ -258,8 +263,10 @@ export default function Home() {
       <div className="relative z-10 flex min-h-[100svh] flex-col items-center justify-center gap-6 px-4 py-8">
         {/* Phone call header */}
         <div className="w-full max-w-md">
-          <div className="text-center space-y-2 mb-8">
-            <div className={`${titleFont.className} text-gray-800 text-xl font-semibold tracking-tight`}>
+          <div className="mb-8 space-y-2 text-center">
+            <div
+              className={`${titleFont.className} font-semibold text-gray-800 text-xl tracking-tight`}
+            >
               {isConnected ? "Call in Progress" : "AI Companion"}
             </div>
             {isConnected && (
@@ -271,17 +278,22 @@ export default function Home() {
 
           {/* Live2D Character - Phone style */}
           <div className="relative mb-8">
-            <div className="absolute -inset-8 bg-gradient-to-r from-purple-100 via-indigo-100 to-blue-100 blur-3xl rounded-full"></div>
+            <div className="-inset-8 absolute rounded-full bg-gradient-to-r from-purple-100 via-indigo-100 to-blue-100 blur-3xl"></div>
 
             <div className="relative">
               {/* Status indicator ring */}
               {isConnected && (
-                <div className="absolute inset-0 rounded-full border-4 border-green-400/50 animate-ping"></div>
+                <div className="absolute inset-0 animate-ping rounded-full border-4 border-green-400/50"></div>
               )}
 
               {/* Main character container */}
-              <div className={`relative rounded-full overflow-hidden shadow-2xl transition-all duration-300 ${isAssistantSpeaking ? "ring-4 ring-green-400 ring-offset-4 ring-offset-white" : "ring-2 ring-gray-200"
-                }`}>
+              <div
+                className={`relative overflow-hidden rounded-full shadow-2xl transition-all duration-300 ${
+                  isAssistantSpeaking
+                    ? "ring-4 ring-green-400 ring-offset-4 ring-offset-white"
+                    : "ring-2 ring-gray-200"
+                }`}
+              >
                 <div className="aspect-square bg-gradient-to-br from-purple-50 to-blue-50">
                   <ClientOnlyLive2D
                     key={selectedModel.id}
@@ -294,18 +306,20 @@ export default function Home() {
 
               {/* Ripple effect when speaking */}
               {isAssistantSpeaking && (
-                <div className="absolute inset-0 rounded-full border-4 border-green-400/30 animate-pulse"></div>
+                <div className="absolute inset-0 animate-pulse rounded-full border-4 border-green-400/30"></div>
               )}
             </div>
           </div>
 
           {/* Status text */}
-          <div className={`${bodyFont.className} text-center text-gray-600 text-sm mb-12`}>
+          <div
+            className={`${bodyFont.className} mb-12 text-center text-gray-600 text-sm`}
+          >
             {isConnecting ? (
               "Connecting..."
             ) : isConnected ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span className="h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
                 "Hi! I'm here to chat, listen, and help."
               </span>
             ) : (
@@ -318,31 +332,34 @@ export default function Home() {
             <button
               onClick={handleConnectToggle}
               disabled={isConnecting}
-              className={`group relative transition-all duration-300 ${isConnecting ? "cursor-wait" : "cursor-pointer"
-                }`}
+              className={`group relative transition-all duration-300 ${
+                isConnecting ? "cursor-wait" : "cursor-pointer"
+              }`}
             >
               {/* Button glow effect */}
               <div
-                className={`absolute inset-0 rounded-full blur-xl transition-all duration-300 ${isConnecting
-                  ? "bg-gray-400/30"
-                  : isConnected
-                    ? "bg-red-500/40 group-hover:bg-red-500/60"
-                    : "bg-green-500/40 group-hover:bg-green-500/60"
-                  }`}
+                className={`absolute inset-0 rounded-full blur-xl transition-all duration-300 ${
+                  isConnecting
+                    ? "bg-gray-400/30"
+                    : isConnected
+                      ? "bg-red-500/40 group-hover:bg-red-500/60"
+                      : "bg-green-500/40 group-hover:bg-green-500/60"
+                }`}
               ></div>
 
               {/* Main button */}
               <div
-                className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${isConnecting
-                  ? "bg-gradient-to-br from-gray-400 to-gray-500 scale-95"
-                  : isConnected
-                    ? "bg-gradient-to-br from-red-500 to-red-600 group-hover:scale-105 group-hover:shadow-red-500/50"
-                    : "bg-gradient-to-br from-green-500 to-green-600 group-hover:scale-105 group-hover:shadow-green-500/50"
-                  } ${isConnecting ? "" : "group-active:scale-95"}`}
+                className={`relative flex h-24 w-24 items-center justify-center rounded-full shadow-2xl transition-all duration-300 ${
+                  isConnecting
+                    ? "scale-95 bg-gradient-to-br from-gray-400 to-gray-500"
+                    : isConnected
+                      ? "bg-gradient-to-br from-red-500 to-red-600 group-hover:scale-105 group-hover:shadow-red-500/50"
+                      : "bg-gradient-to-br from-green-500 to-green-600 group-hover:scale-105 group-hover:shadow-green-500/50"
+                } ${isConnecting ? "" : "group-active:scale-95"}`}
               >
                 {isConnecting ? (
                   <svg
-                    className="w-10 h-10 text-white animate-spin"
+                    className="h-10 w-10 animate-spin text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -363,7 +380,7 @@ export default function Home() {
                 ) : isConnected ? (
                   // Hang up icon
                   <svg
-                    className="w-10 h-10 text-white transform rotate-135"
+                    className="h-10 w-10 rotate-135 transform text-white"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -372,7 +389,7 @@ export default function Home() {
                 ) : (
                   // Call icon
                   <svg
-                    className="w-10 h-10 text-white"
+                    className="h-10 w-10 text-white"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -384,21 +401,26 @@ export default function Home() {
               {/* Inner ring animation */}
               {!isConnecting && (
                 <div
-                  className={`absolute inset-0 rounded-full border-2 transition-all duration-300 ${isConnected
-                    ? "border-red-300/50 scale-110 group-hover:scale-115"
-                    : "border-green-300/50 scale-110 group-hover:scale-115"
-                    }`}
+                  className={`absolute inset-0 rounded-full border-2 transition-all duration-300 ${
+                    isConnected
+                      ? "scale-110 border-red-300/50 group-hover:scale-115"
+                      : "scale-110 border-green-300/50 group-hover:scale-115"
+                  }`}
                 ></div>
               )}
             </button>
 
             {/* Button label */}
             <div className={`${bodyFont.className} text-center`}>
-              <div className="text-gray-700 font-semibold text-base">
-                {isConnecting ? "Connecting..." : isConnected ? "Hang Up" : "Call"}
+              <div className="font-semibold text-base text-gray-700">
+                {isConnecting
+                  ? "Connecting..."
+                  : isConnected
+                    ? "Hang Up"
+                    : "Call"}
               </div>
               {isConnected && (
-                <div className="text-gray-500 text-xs mt-1">
+                <div className="mt-1 text-gray-500 text-xs">
                   Tap to end conversation
                 </div>
               )}
@@ -408,8 +430,8 @@ export default function Home() {
           {/* Connection status */}
           {isConnected && (
             <div className="mt-8 flex items-center justify-center gap-3 text-sm">
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-full">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-green-500"></span>
                 <span className="text-green-700">Connected</span>
               </div>
             </div>
@@ -417,7 +439,9 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <div className={`${bodyFont.className} text-gray-400 text-xs text-center mt-8`}>
+        <div
+          className={`${bodyFont.className} mt-8 text-center text-gray-400 text-xs`}
+        >
           <p>Your AI Companion is always here for you</p>
         </div>
       </div>

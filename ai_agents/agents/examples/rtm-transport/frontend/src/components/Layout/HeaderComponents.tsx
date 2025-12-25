@@ -43,55 +43,51 @@ export function HeaderRoomInfo() {
   }, [agentConnected]);
 
   return (
-    <>
-      <TooltipProvider delayDuration={200}>
-        <Tooltip>
-          <TooltipTrigger className="flex items-center space-x-2 font-semibold text-lg">
-            <InfoIcon className="h-4 w-4 md:h-5 md:w-5" />
-            <span className="hidden text-sm md:inline-block">
-              Channel Name:{" "}
-            </span>
-            <span className="max-w-24 text-sm md:text-base">{channel}</span>
-          </TooltipTrigger>
-          <TooltipContent className="bg-(--background-color,#1C1E22) text-gray-600">
-            <table className="border-collapse">
-              <tbody>
-                <tr>
-                  <td className="pr-2 font-bold text-primary">INFO</td>
-                  <td></td>
-                </tr>
-                <tr>
-                  <td className="pr-2">Room:</td>
-                  <td className="text-[#0888FF]">{channel}</td>
-                </tr>
-                <tr>
-                  <td className="pr-2">Participant:</td>
-                  <td className="text-[#0888FF]">{userId}</td>
-                </tr>
-                <tr>
-                  <td colSpan={2}>
-                    <hr className="my-2 border-gray-600 border-t" />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="pr-2 font-bold text-primary" colSpan={2}>
-                    STATUS
-                  </td>
-                </tr>
-                <tr>
-                  <td className="pr-2">Room connected:</td>
-                  <td className="text-[#0888FF]">{roomConnectedText}</td>
-                </tr>
-                <tr>
-                  <td className="pr-2">Agent connected:</td>
-                  <td className="text-[#0888FF]">{agentConnectedText}</td>
-                </tr>
-              </tbody>
-            </table>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger className="flex items-center space-x-2 font-semibold text-lg">
+          <InfoIcon className="h-4 w-4 md:h-5 md:w-5" />
+          <span className="hidden text-sm md:inline-block">Channel Name: </span>
+          <span className="max-w-24 text-sm md:text-base">{channel}</span>
+        </TooltipTrigger>
+        <TooltipContent className="bg-(--background-color,#1C1E22) text-gray-600">
+          <table className="border-collapse">
+            <tbody>
+              <tr>
+                <td className="pr-2 font-bold text-primary">INFO</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td className="pr-2">Room:</td>
+                <td className="text-[#0888FF]">{channel}</td>
+              </tr>
+              <tr>
+                <td className="pr-2">Participant:</td>
+                <td className="text-[#0888FF]">{userId}</td>
+              </tr>
+              <tr>
+                <td colSpan={2}>
+                  <hr className="my-2 border-gray-600 border-t" />
+                </td>
+              </tr>
+              <tr>
+                <td className="pr-2 font-bold text-primary" colSpan={2}>
+                  STATUS
+                </td>
+              </tr>
+              <tr>
+                <td className="pr-2">Room connected:</td>
+                <td className="text-[#0888FF]">{roomConnectedText}</td>
+              </tr>
+              <tr>
+                <td className="pr-2">Agent connected:</td>
+                <td className="text-[#0888FF]">{agentConnectedText}</td>
+              </tr>
+            </tbody>
+          </table>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -125,50 +121,48 @@ export const ThemePalettePopover = () => {
   };
 
   return (
-    <>
-      <Popover>
-        <PopoverTrigger>
-          <PaletteIcon className="h-4 w-4 md:h-5 md:w-5" color={themeColor} />
-        </PopoverTrigger>
-        <PopoverContent className="space-y-2 border-none bg-(--background-color,#1C1E22)">
-          <div className="font-semibold text-(--Grey-300,#EAECF0) text-sm">
-            STYLE
-          </div>
-          <div className="mt-4 flex gap-3">
-            {COLOR_LIST.map((item, index) => {
-              const isSelected = item.active === themeColor;
-              return (
-                <button
-                  onClick={() => onMainClickSelect(index)}
-                  className={cn(
-                    "relative h-7 w-7 rounded-full",
-                    {
-                      "ring-2 ring-offset-2": isSelected,
-                    },
-                    "transition-all duration-200 ease-in-out"
-                  )}
+    <Popover>
+      <PopoverTrigger>
+        <PaletteIcon className="h-4 w-4 md:h-5 md:w-5" color={themeColor} />
+      </PopoverTrigger>
+      <PopoverContent className="space-y-2 border-none bg-(--background-color,#1C1E22)">
+        <div className="font-semibold text-(--Grey-300,#EAECF0) text-sm">
+          STYLE
+        </div>
+        <div className="mt-4 flex gap-3">
+          {COLOR_LIST.map((item, index) => {
+            const isSelected = item.active === themeColor;
+            return (
+              <button
+                onClick={() => onMainClickSelect(index)}
+                className={cn(
+                  "relative h-7 w-7 rounded-full",
+                  {
+                    "ring-2 ring-offset-2": isSelected,
+                  },
+                  "transition-all duration-200 ease-in-out"
+                )}
+                style={{
+                  backgroundColor: item.default,
+                  ...(isSelected && { ringColor: item.active }),
+                }}
+                key={index}
+              >
+                <span
+                  className="absolute inset-1 rounded-full"
                   style={{
-                    backgroundColor: item.default,
-                    ...(isSelected && { ringColor: item.active }),
+                    backgroundColor: item.active,
                   }}
-                  key={index}
-                >
-                  <span
-                    className="absolute inset-1 rounded-full"
-                    style={{
-                      backgroundColor: item.active,
-                    }}
-                  ></span>
-                </button>
-              );
-            })}
-          </div>
-          <div className={cn("flex h-6 items-center", styles.colorPicker)}>
-            <HexColorPicker color={themeColor} onChange={onColorSliderChange} />
-          </div>
-        </PopoverContent>
-      </Popover>
-    </>
+                ></span>
+              </button>
+            );
+          })}
+        </div>
+        <div className={cn("flex h-6 items-center", styles.colorPicker)}>
+          <HexColorPicker color={themeColor} onChange={onColorSliderChange} />
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 

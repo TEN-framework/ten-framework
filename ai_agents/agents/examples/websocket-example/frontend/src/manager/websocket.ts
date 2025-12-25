@@ -100,12 +100,12 @@ export class WebSocketManager {
     switch (message.type) {
       case "audio":
         this.onAudioHandlers.forEach((handler) =>
-          handler(message as AudioMessage),
+          handler(message as AudioMessage)
         );
         break;
       case "data":
         this.onDataHandlers.forEach((handler) =>
-          handler(message as DataMessage),
+          handler(message as DataMessage)
         );
         break;
       case "cmd":
@@ -113,7 +113,7 @@ export class WebSocketManager {
         break;
       case "error":
         this.onErrorMessageHandlers.forEach((handler) =>
-          handler(message as ErrorMessage),
+          handler(message as ErrorMessage)
         );
         break;
     }
@@ -137,11 +137,11 @@ export class WebSocketManager {
     this.reconnectAttempts++;
     if (this.config.maxReconnectAttempts === -1) {
       console.log(
-        `Attempting to reconnect... (attempt ${this.reconnectAttempts}, unlimited retries)`,
+        `Attempting to reconnect... (attempt ${this.reconnectAttempts}, unlimited retries)`
       );
     } else {
       console.log(
-        `Attempting to reconnect... (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`,
+        `Attempting to reconnect... (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
       );
     }
 

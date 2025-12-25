@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "NODE_ENV=production node server.js",
     "lint": "biome check --write src",
     "format": "biome format --write src"

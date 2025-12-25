@@ -1,14 +1,18 @@
 "use client";
 
+import { Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAgentStore } from "@/store/agentStore";
-import { Circle } from "lucide-react";
 
 export function ConnectionStatus() {
   const { wsConnected, status } = useAgentStore();
 
   // Keep badge subtle regardless of state for a minimal look
-  const getStatusVariant = (): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = ():
+    | "default"
+    | "secondary"
+    | "destructive"
+    | "outline" => {
     return "outline";
   };
 
@@ -25,7 +29,10 @@ export function ConnectionStatus() {
   };
 
   return (
-    <Badge variant={getStatusVariant()} className="flex items-center gap-2 px-3 py-1">
+    <Badge
+      variant={getStatusVariant()}
+      className="flex items-center gap-2 px-3 py-1"
+    >
       <Circle className={`h-2 w-2 fill-current ${getStatusColor()}`} />
       <span>{getStatusText()}</span>
     </Badge>
