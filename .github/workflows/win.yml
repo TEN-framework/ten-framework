@@ -120,8 +120,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -131,13 +129,48 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Installing MinGW via Chocolatey..."
+          choco install mingw -y --force
+
+          Write-Output "Refreshing environment..."
+          refreshenv
+
+          # Verify MinGW installation
+          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
+          if (Test-Path $mingwPath) {
+            Write-Output "MinGW found at: $mingwPath"
+            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "MinGW installation failed!"
+            exit 1
+          }
+
+          # Verify gcc
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
+          rustup target add x86_64-pc-windows-gnu
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup target list --installed
+          rustc --version
+          cargo --version
 
       - name: Update version
         run: |
@@ -439,8 +472,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -450,13 +481,48 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Installing MinGW via Chocolatey..."
+          choco install mingw -y --force
+
+          Write-Output "Refreshing environment..."
+          refreshenv
+
+          # Verify MinGW installation
+          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
+          if (Test-Path $mingwPath) {
+            Write-Output "MinGW found at: $mingwPath"
+            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "MinGW installation failed!"
+            exit 1
+          }
+
+          # Verify gcc
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
+          rustup target add x86_64-pc-windows-gnu
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup target list --installed
+          rustc --version
+          cargo --version
 
       - name: Get Python executable path
         run: |
@@ -571,8 +637,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -582,13 +646,48 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Installing MinGW via Chocolatey..."
+          choco install mingw -y --force
+
+          Write-Output "Refreshing environment..."
+          refreshenv
+
+          # Verify MinGW installation
+          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
+          if (Test-Path $mingwPath) {
+            Write-Output "MinGW found at: $mingwPath"
+            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "MinGW installation failed!"
+            exit 1
+          }
+
+          # Verify gcc
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
+          rustup target add x86_64-pc-windows-gnu
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup target list --installed
+          rustc --version
+          cargo --version
 
       - name: Get Python executable path
         run: |
@@ -664,8 +763,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -675,13 +772,48 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Installing MinGW via Chocolatey..."
+          choco install mingw -y --force
+
+          Write-Output "Refreshing environment..."
+          refreshenv
+
+          # Verify MinGW installation
+          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
+          if (Test-Path $mingwPath) {
+            Write-Output "MinGW found at: $mingwPath"
+            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "MinGW installation failed!"
+            exit 1
+          }
+
+          # Verify gcc
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
+          rustup target add x86_64-pc-windows-gnu
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup target list --installed
+          rustc --version
+          cargo --version
 
       - name: Get Python executable path
         run: |
@@ -867,8 +999,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -878,13 +1008,48 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Installing MinGW via Chocolatey..."
+          choco install mingw -y --force
+
+          Write-Output "Refreshing environment..."
+          refreshenv
+
+          # Verify MinGW installation
+          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
+          if (Test-Path $mingwPath) {
+            Write-Output "MinGW found at: $mingwPath"
+            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "MinGW installation failed!"
+            exit 1
+          }
+
+          # Verify gcc
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
+          rustup target add x86_64-pc-windows-gnu
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup target list --installed
+          rustc --version
+          cargo --version
 
       - name: Get Python executable path
         run: |
