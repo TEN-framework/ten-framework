@@ -8,13 +8,11 @@ import("//build/ten_utils/utils.gni")
 
 ten_utils_glob("transport") {
   deps = [ "//third_party/libuv:uv_a" ]
+  cflags = []
   if (is_win && !is_mingw) {
-    cflags += [
-      "/wd4113",
-      "/wd4133",
-    ]
+    cflags += [ "/wd4113", "/wd4133" ]
   }
   else {
-    cflags = [ "-Wno-incompatible-pointer-types" ]
+    cflags += [ "-Wno-incompatible-pointer-types" ]
   }
 }
