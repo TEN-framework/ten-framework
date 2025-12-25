@@ -17,13 +17,14 @@ use super::config::{OtlpProtocol, TelemetryConfig};
 #[derive(Debug, Clone)]
 pub enum ExporterType {
     /// Prometheus exporter (Pull mode, /metrics endpoint)
-    Prometheus,
+    Prometheus { service_name: Option<String> },
 
     /// OTLP exporter (Push mode, to Collector/Langfuse/etc)
     Otlp {
         endpoint: String,
         protocol: OtlpProtocol,
         headers: std::collections::HashMap<String, String>,
+        service_name: Option<String>,
     },
 
     /// Console exporter (for debugging)
@@ -112,7 +113,11 @@ impl ExporterType {
         match exporter_type {
             ConfigExporterType::Prometheus => {
                 tracing::info!("Telemetry: Using Prometheus exporter (Pull mode)");
-                ExporterType::Prometheus
+                ExporterType::Prometheus {
+                    service_name: config
+                        .get_prometheus_config()
+                        .and_then(|c| c.service_name.clone()),
+                }
             }
             ConfigExporterType::Otlp => {
                 if let Some(otlp_config) = config.get_otlp_config() {
@@ -127,13 +132,16 @@ impl ExporterType {
                         endpoint: otlp_config.endpoint.clone(),
                         protocol: otlp_config.protocol.clone(),
                         headers: otlp_config.headers.clone(),
+                        service_name: otlp_config.service_name.clone(),
                     }
                 } else {
                     tracing::warn!(
                         "Warning: OTLP exporter selected but no config provided, falling back to \
                          Prometheus"
                     );
-                    ExporterType::Prometheus
+                    ExporterType::Prometheus {
+                        service_name: None,
+                    }
                 }
             }
             ConfigExporterType::Console => {
@@ -167,15 +175,26 @@ impl MetricsExporter {
     }
 
     /// Initialize the exporter with given service name
-    pub fn init(&self, service_name: &str) -> Result<()> {
+    pub fn init(&self, default_service_name: &str) -> Result<()> {
         match &self.exporter_type {
-            ExporterType::Prometheus => self.init_prometheus_exporter(service_name),
+            ExporterType::Prometheus {
+                service_name,
+            } => {
+                let effective_service_name =
+                    service_name.as_deref().unwrap_or(default_service_name);
+                self.init_prometheus_exporter(effective_service_name)
+            }
             ExporterType::Otlp {
                 endpoint,
                 protocol,
                 headers,
-            } => self.init_otlp_exporter(service_name, endpoint, protocol, headers),
-            ExporterType::Console => self.init_console_exporter(service_name),
+                service_name,
+            } => {
+                let effective_service_name =
+                    service_name.as_deref().unwrap_or(default_service_name);
+                self.init_otlp_exporter(effective_service_name, endpoint, protocol, headers)
+            }
+            ExporterType::Console => self.init_console_exporter(default_service_name),
         }
     }
 
@@ -374,6 +393,8 @@ impl MetricsExporter {
 
 impl Default for MetricsExporter {
     fn default() -> Self {
-        Self::new(ExporterType::Prometheus)
+        Self::new(ExporterType::Prometheus {
+            service_name: None,
+        })
     }
 }

@@ -880,6 +880,10 @@
                                   "path": {
                                     "type": "string",
                                     "pattern": "^/.*$"
+                                  },
+                                  "service_name": {
+                                    "type": "string",
+                                    "minLength": 1
                                   }
                                 }
                               }
@@ -918,6 +922,10 @@
                                       }
                                     },
                                     "additionalProperties": false
+                                  },
+                                  "service_name": {
+                                    "type": "string",
+                                    "minLength": 1
                                   }
                                 }
                               }
@@ -1306,7 +1314,8 @@
           "type": "string",
           "enum": [
             "console",
-            "file"
+            "file",
+            "otlp"
           ]
         },
         "config": {
@@ -1367,6 +1376,51 @@
                   },
                   "encryption": {
                     "$ref": "#/$defs/encryptionConfiguration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "otlp"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "additionalProperties": false,
+                "required": [
+                  "endpoint"
+                ],
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "enum": [
+                      "grpc",
+                      "http"
+                    ]
+                  },
+                  "headers": {
+                    "type": "object",
+                    "patternProperties": {
+                      "^[A-Za-z0-9_-]+$": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "service_name": {
+                    "type": "string",
+                    "minLength": 1
                   }
                 }
               }

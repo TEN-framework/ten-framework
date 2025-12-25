@@ -10,6 +10,7 @@ pub mod dynamic_filter;
 pub mod encryption;
 pub mod file_appender;
 pub mod formatter;
+pub mod otel;
 pub mod reloadable;
 
 use std::{fmt, io};
@@ -136,12 +137,38 @@ pub struct FileEmitterConfig {
     pub encryption: Option<EncryptionConfig>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum OtlpProtocol {
+    Grpc,
+    Http,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OtlpEmitterConfig {
+    pub endpoint: String,
+
+    #[serde(default = "default_otlp_protocol")]
+    pub protocol: OtlpProtocol,
+
+    #[serde(default)]
+    pub headers: std::collections::HashMap<String, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
+}
+
+fn default_otlp_protocol() -> OtlpProtocol {
+    OtlpProtocol::Grpc
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "config")]
 #[serde(rename_all = "lowercase")]
 pub enum AdvancedLogEmitter {
     Console(ConsoleEmitterConfig),
     File(FileEmitterConfig),
+    Otlp(OtlpEmitterConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -324,6 +351,15 @@ fn create_layer_with_dynamic_filter(handler: &AdvancedLogHandler) -> LayerWithGu
             LayerWithGuard {
                 layer,
                 guard: Some(Box::new(composite_guard)),
+            }
+        }
+        AdvancedLogEmitter::Otlp(otlp_config) => {
+            eprintln!("[DEBUG] Creating OTLP layer for endpoint: {}", otlp_config.endpoint);
+            let (layer, guard) = otel::create_otlp_layer(otlp_config);
+            eprintln!("[DEBUG] OTLP layer created successfully");
+            LayerWithGuard {
+                layer,
+                guard: Some(Box::new(guard)),
             }
         }
     };
