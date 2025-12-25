@@ -131,7 +131,10 @@ jobs:
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
