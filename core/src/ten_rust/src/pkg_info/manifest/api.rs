@@ -10,7 +10,10 @@ use anyhow::Result;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::pkg_info::{manifest::interface::flatten_manifest_api, value_type::ValueType};
+use crate::pkg_info::{
+    manifest::{interface::flatten_manifest_api, StringOrLocalizedField},
+    value_type::ValueType,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManifestApi {
@@ -112,6 +115,9 @@ impl Default for ManifestApiProperty {
 pub struct ManifestApiPropertyAttributes {
     #[serde(rename = "type")]
     pub prop_type: ValueType,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<StringOrLocalizedField>,
 
     // Used when prop_type is ValueType::Array.
     #[serde(skip_serializing_if = "Option::is_none")]

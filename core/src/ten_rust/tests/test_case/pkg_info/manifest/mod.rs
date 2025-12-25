@@ -233,4 +233,118 @@ mod tests {
         assert_eq!(audio_frame_out.len(), 1);
         assert_eq!(audio_frame_out[0].name, "pcm_frame");
     }
+
+    #[test]
+    fn test_api_property_description_string_and_localized() {
+        let manifest_json = r#"{
+            "type": "extension",
+            "name": "test_extension",
+            "version": "1.0.0",
+            "description": {
+                "locales": {
+                    "en-US": {
+                        "content": "Test extension"
+                    }
+                }
+            },
+            "dependencies": [],
+            "api": {
+                "property": {
+                    "properties": {
+                        "api_key": {
+                            "type": "string",
+                            "description": "Simple string description for API key"
+                        },
+                        "config": {
+                            "type": "object",
+                            "description": {
+                                "locales": {
+                                    "en-US": {
+                                        "content": "Configuration object"
+                                    },
+                                    "zh-CN": {
+                                        "content": "配置对象"
+                                    }
+                                }
+                            },
+                            "properties": {
+                                "timeout": {
+                                    "type": "int32",
+                                    "description": "Timeout value in milliseconds"
+                                },
+                                "retry": {
+                                    "type": "int32",
+                                    "description": {
+                                        "locales": {
+                                            "en-US": {
+                                                "content": "Number of retries"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }"#;
+
+        let manifest: Manifest = serde_json::from_str(manifest_json).unwrap();
+
+        let api = manifest.api.as_ref().unwrap();
+        let properties = api.property.as_ref().unwrap().properties.as_ref().unwrap();
+
+        // Test simple string description
+        let api_key = properties.get("api_key").unwrap();
+        assert!(api_key.description.is_some());
+        let api_key_desc = api_key.description.as_ref().unwrap();
+        assert_eq!(
+            api_key_desc.as_string().unwrap(),
+            "Simple string description for API key"
+        );
+
+        // Test localized description
+        let config = properties.get("config").unwrap();
+        assert!(config.description.is_some());
+        let config_desc = config.description.as_ref().unwrap();
+        let config_localized = config_desc.as_localized().unwrap();
+        assert_eq!(
+            config_localized.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "Configuration object"
+        );
+        assert_eq!(
+            config_localized.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            "配置对象"
+        );
+
+        // Test nested properties
+        let config_props = config.properties.as_ref().unwrap();
+
+        let timeout = config_props.get("timeout").unwrap();
+        assert!(timeout.description.is_some());
+        assert_eq!(
+            timeout.description.as_ref().unwrap().as_string().unwrap(),
+            "Timeout value in milliseconds"
+        );
+
+        let retry = config_props.get("retry").unwrap();
+        assert!(retry.description.is_some());
+        let retry_localized = retry.description.as_ref().unwrap().as_localized().unwrap();
+        assert_eq!(
+            retry_localized.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            "Number of retries"
+        );
+
+        // Test serialization roundtrip
+        let serialized = serde_json::to_string(&manifest).unwrap();
+        let deserialized: Manifest = serde_json::from_str(&serialized).unwrap();
+
+        let des_api = deserialized.api.as_ref().unwrap();
+        let des_properties = des_api.property.as_ref().unwrap().properties.as_ref().unwrap();
+        let des_api_key = des_properties.get("api_key").unwrap();
+        assert_eq!(
+            des_api_key.description.as_ref().unwrap().as_string().unwrap(),
+            "Simple string description for API key"
+        );
+    }
 }

@@ -5,7 +5,14 @@
       "property": {
         "properties": {
           "text": {
-            "type": "int64"
+            "type": "int64",
+            "description": {
+              "locales": {
+                "en-US": {
+                  "content": "Test description"
+                }
+              }
+            }
           }
         }
       }

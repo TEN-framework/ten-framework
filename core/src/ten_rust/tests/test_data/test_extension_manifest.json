@@ -13,7 +13,8 @@
     "property": {
       "properties": {
         "foo": {
-          "type": "string"
+          "type": "string",
+          "description": "A test string property"
         }
       }
     },
@@ -23,7 +24,17 @@
         "property": {
           "properties": {
             "foo": {
-              "type": "string"
+              "type": "string",
+              "description": {
+                "locales": {
+                  "en-US": {
+                    "content": "Command parameter for hello"
+                  },
+                  "zh-CN": {
+                    "content": "hello 命令参数"
+                  }
+                }
+              }
             }
           },
           "required": [
