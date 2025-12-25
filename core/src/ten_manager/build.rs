@@ -10,7 +10,11 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         // Set stack size to 32MB for Windows
-        // This is equivalent to /STACK:33554432 linker flag
-        println!("cargo:rustc-link-arg=/STACK:33554432");
+        if cfg!(target_env = "msvc") {
+            println!("cargo:rustc-link-arg=/STACK:33554432");
+        } else {
+            // MinGW/GNU ld format
+            println!("cargo:rustc-link-arg=-Wl,--stack,33554432");
+        }
     }
 }
