@@ -122,6 +122,10 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -134,8 +138,6 @@ jobs:
         run: |
           export PATH=$(pwd)/core/ten_gn:$PATH
           go env -w GOFLAGS="-buildvcs=false"
-          # go1.20.12 download
-          rustup default nightly-2025-09-18
 
           tgn gen linux x64 debug -- enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false
 

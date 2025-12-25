@@ -112,67 +112,20 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      # - name: Create out directory
-      #   run: |
-      #     # Due to the use of QEMU, running as root inside the Docker container
-      #     # is required. However, outside the container, the user is not root.
-      #     # This causes issues when trying to handle the contents of the out/
-      #     # folder from outside the container. To resolve this, the out/ folder
-      #     # is first created by a regular non-root user to prevent it from being
-      #     # created during the build stage, thus avoiding permission issues with
-      #     # the out/ folder being created by the root user.
-      #     mkdir -p out/linux/arm64
-      #   shell: bash
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
-      #   with:
-      #     platforms: arm64
-
-      # - name: Build (tman with Designer UI)
-      #   run: |
-      #     docker run --rm --platform linux/arm64 \
-      #       -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
-      #       ghcr.io/ten-framework/ten_building_ubuntu2204 \
-      #       bash -c "\
-      #         export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
-      #         echo $PATH && \
-      #         go env -w GOFLAGS=\"-buildvcs=false\" && \
-      #         go install golang.org/dl/go1.24.3@latest && \
-      #         go1.24.3 download && \
-      #         apt-get update && \
-      #         apt-get install -y curl unzip && \
-      #         curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-      #         bash nodesource_setup.sh && \
-      #         apt-get install -y nodejs && \
-      #         curl -fsSL https://bun.sh/install | bash && \
-      #         export BUN_INSTALL=\"\$HOME/.bun\" && \
-      #         export PATH=\"\$BUN_INSTALL/bin:\$PATH\" && \
-      #         cd core/src/ten_manager/designer_frontend && \
-      #         bun install && \
-      #         cd ${{ github.workspace }} && \
-      #         rustup default nightly-2025-09-18 && \
-      #         df -h . && \
-      #         EXTRA_ARGS=\"is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true\" && \
-      #         echo \$EXTRA_ARGS && \
-      #         tgn gen linux ${{ matrix.arch }} ${{ matrix.build_type }} -- \$EXTRA_ARGS && \
-      #         tgn build:ten_manager_package linux ${{ matrix.arch }} ${{ matrix.build_type }} && \
-      #         df -h . && \
-      #         tree -I 'gen|obj' out \
-      #       "
-
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.24.3'
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
 
       - name: Build (tman with Designer UI)
         run: |
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
           go env -w GOFLAGS=\"-buildvcs=false\"
-          # go install golang.org/dl/go1.24.3@latest
-          # go1.24.3 download
           sudo apt-get update
           sudo apt-get install -y curl unzip
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
@@ -184,7 +137,6 @@ jobs:
           cd core/src/ten_manager/designer_frontend
           bun install
           cd ${{ github.workspace }}
-          rustup default nightly-2025-09-18
           df -h .
           EXTRA_ARGS=\"is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true\"
           echo \$EXTRA_ARGS

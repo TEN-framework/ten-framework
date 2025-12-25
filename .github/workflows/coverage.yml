@@ -218,6 +218,10 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
         env:
           CARGO_INCREMENTAL: "0"
@@ -236,20 +240,8 @@ jobs:
           which clang++
           clang++ --version | head -3
 
-          # # Install Go 1.24.3
-          # go env -w GOFLAGS="-buildvcs=false"
-          # go install golang.org/dl/go1.24.3@latest
-          # export PATH=$PATH:$(go env GOPATH)/bin
-          # go1.24.3 download
-          # go1.24.3 version
-
           echo "=== Disk space after Go installation ==="
           df -h
-
-          # Install Rust nightly
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-09-18
-          source $HOME/.cargo/env
-          rustup default nightly-2025-09-18
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
@@ -2004,24 +1996,6 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.24.3'
-
-      # - name: Install Go for building Go apps
-      #   run: |
-      #     # Install Go 1.24.3 for building Go applications with nodejs extensions
-      #     export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
-      #     go env -w GOFLAGS="-buildvcs=false"
-      #     go install golang.org/dl/go1.24.3@latest
-      #     go1.24.3 download
-      #     go1.24.3 version
-
-      #     # Create symlink so 'go' points to go1.24.3
-      #     # This is needed because build scripts use 'go' command
-      #     GO_BIN_DIR=$(go env GOPATH)/bin
-      #     sudo ln -sf $GO_BIN_DIR/go1.24.3 /usr/local/bin/go
-
-      #     # Verify
-      #     which go
-      #     go version
 
       - name: Clean profraw files before tests
         run: |

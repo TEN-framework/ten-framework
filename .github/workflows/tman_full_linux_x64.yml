@@ -134,12 +134,14 @@ jobs:
           cd core/src/ten_manager/designer_frontend
           bun install
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+            toolchain: nightly
+
       - name: Build (tman)
         run: |
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
-
-          rustup default nightly-2025-09-18
 
           df -h .
 

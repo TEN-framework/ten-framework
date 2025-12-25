@@ -123,17 +123,19 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-09-18
 
           brew install tree
           brew install gettext
 
           pip3 install --use-pep517 python-dotenv jinja2 requests
 
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
           cargo install --force cbindgen
@@ -445,14 +447,16 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 

@@ -111,63 +111,24 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      # - name: Create out directory
-      #   run: |
-      #     # Due to the use of QEMU, running as root inside the Docker container
-      #     # is required. However, outside the container, the user is not root.
-      #     # This causes issues when trying to handle the contents of the out/
-      #     # folder from outside the container. To resolve this, the out/ folder
-      #     # is first created by a regular non-root user to prevent it from being
-      #     # created during the build stage, thus avoiding permission issues with
-      #     # the out/ folder being created by the root user.
-      #     mkdir -p out/linux/arm64
-      #   shell: bash
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
-      #   with:
-      #     platforms: arm64
-
-      # - name: Build
-      #   run: |
-      #     docker run --rm --platform linux/arm64 \
-      #       -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
-      #       ghcr.io/ten-framework/ten_building_ubuntu2204 \
-      #       bash -c "\
-      #         export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
-      #         echo $PATH && \
-      #         go env -w GOFLAGS="-buildvcs=false" && \
-      #         go install golang.org/dl/go1.24.3@latest && \
-      #         go1.24.3 download && \
-      #         apt-get install -y curl && \
-      #         curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-      #         bash nodesource_setup.sh && \
-      #         apt-get install -y nodejs && \
-      #         rustup default nightly-2025-09-18 && \
-      #         df -h . && \
-      #         tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false && \
-      #         tgn build linux arm64 ${{ matrix.build_type }} && \
-      #         df -h . && \
-      #         tree -I 'gen|obj' out \
-      #       "
-
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version: '1.24.3'
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
 
       - name: Build
         run: |
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
           go env -w GOFLAGS="-buildvcs=false"
-          # go install golang.org/dl/go1.24.3@latest
-          # go1.24.3 download
           sudo apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
           sudo apt-get install -y nodejs
-          rustup default nightly-2025-09-18
           df -h .
           tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false
           tgn build linux arm64 ${{ matrix.build_type }}

@@ -131,12 +131,14 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
       - name: Update version
@@ -450,12 +452,14 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
       - name: Get Python executable path
@@ -582,12 +586,14 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
       - name: Get Python executable path
@@ -675,12 +681,14 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
       - name: Get Python executable path
@@ -878,12 +886,14 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
       - name: Get Python executable path

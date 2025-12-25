@@ -118,16 +118,18 @@ jobs:
           go-version: "1.24.3"
           cache: false
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -428,16 +430,18 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -590,16 +594,18 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -689,16 +695,18 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -796,16 +804,18 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -903,16 +913,18 @@ jobs:
         with:
           go-version: '1.24.3'
 
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly
+
       - name: Install tools and dependencies
         run: |
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          # go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
