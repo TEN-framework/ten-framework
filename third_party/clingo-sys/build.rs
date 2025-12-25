@@ -107,32 +107,43 @@ fn main() {
         // Verify that the library files exist
         // On MinGW, CMake should generate libclingo.a, but if it used Clang/LLVM
         // it might generate clingo.lib instead. We need to check for both.
-        if target_os.as_str() == "windows" && target_env == "gnu" {
-            // MinGW: Check for libclingo.a first (expected)
-            let lib_file_a = lib_dir.join("libclingo.a");
-            let lib_file_lib = lib_dir.join("clingo.lib");
+        if target_os.as_str() == "windows" {
+            if target_env == "gnu" {
+                // MinGW: Check for libclingo.a first (expected)
+                let lib_file_a = lib_dir.join("libclingo.a");
+                let lib_file_lib = lib_dir.join("clingo.lib");
 
-            if !lib_file_a.exists() && !lib_file_lib.exists() {
-                panic!(
-                    "clingo static library not found at {} or {}. CMake build may have failed or used wrong toolchain (Clang instead of GCC).",
-                    lib_file_a.display(),
-                    lib_file_lib.display()
-                );
-            }
+                if !lib_file_a.exists() && !lib_file_lib.exists() {
+                    panic!(
+                        "clingo static library not found at {} or {}. CMake build may have failed or used wrong toolchain (Clang instead of GCC).",
+                        lib_file_a.display(),
+                        lib_file_lib.display()
+                    );
+                }
 
-            // If only .lib exists, CMake used Clang/LLVM instead of MinGW GCC
-            // This is a problem because Rust expects .a files for MinGW target
-            if !lib_file_a.exists() && lib_file_lib.exists() {
-                panic!(
-                    "CMake generated clingo.lib (MSVC format) instead of libclingo.a (MinGW format). \
-                    This indicates CMake used Clang/LLVM toolchain instead of MinGW GCC. \
-                    Please ensure MinGW GCC (gcc/g++) is in PATH and CMake can find it, \
-                    or set CC and CXX environment variables to point to MinGW GCC."
-                );
+                // If only .lib exists, CMake used Clang/LLVM instead of MinGW GCC
+                // This is a problem because Rust expects .a files for MinGW target
+                if !lib_file_a.exists() && lib_file_lib.exists() {
+                    panic!(
+                        "CMake generated clingo.lib (MSVC format) instead of libclingo.a (MinGW format). \
+                        This indicates CMake used Clang/LLVM toolchain instead of MinGW GCC. \
+                        Please ensure MinGW GCC (gcc/g++) is in PATH and CMake can find it, \
+                        or set CC and CXX environment variables to point to MinGW GCC."
+                    );
+                }
+            } else {
+                // MSVC: Check for clingo.lib
+                let lib_file = lib_dir.join("clingo.lib");
+                if !lib_file.exists() {
+                    panic!(
+                        "clingo static library not found at {}. CMake build may have failed.",
+                        lib_file.display()
+                    );
+                }
             }
         } else {
-            // MSVC: Check for clingo.lib
-            let lib_file = lib_dir.join("clingo.lib");
+            // Unix-like (Linux, macOS, etc.): Check for libclingo.a
+            let lib_file = lib_dir.join("libclingo.a");
             if !lib_file.exists() {
                 panic!(
                     "clingo static library not found at {}. CMake build may have failed.",
