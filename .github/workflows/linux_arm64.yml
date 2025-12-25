@@ -120,14 +120,21 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
           go1.24.3 version
+
           sudo apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
           sudo apt-get install -y nodejs
+
           rustup default nightly-2025-09-18
+
+          pip3 install --use-pep517 python-dotenv jinja2
+
           df -h .
+
           tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false
           tgn build linux arm64 ${{ matrix.build_type }}
+
           df -h .
           tree -I 'gen|obj' out
 
