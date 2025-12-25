@@ -117,7 +117,9 @@ jobs:
           echo $PATH
           go env -w GOFLAGS="-buildvcs=false"
           go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
+          go1.24.3 version
           apt-get install -y curl
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
           bash nodesource_setup.sh
