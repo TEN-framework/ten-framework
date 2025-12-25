@@ -57,7 +57,7 @@ class DefaultExtension(AsyncExtension):
         result, err = await ten_env.send_cmd(new_cmd)
         if err is not None:
             ten_env.log(
-                LogLevel.FATAL, f"greeting error: {err.error_message()}"
+                LogLevel.ERROR, f"greeting error: {err.error_message()}"
             )
 
         return result
@@ -89,13 +89,13 @@ class DefaultExtension(AsyncExtension):
 
         for result in results:
             if result is None:
-                ten_env.log(LogLevel.FATAL, "check_hello: result is None")
+                ten_env.log(LogLevel.ERROR, "check_hello: result is None")
                 assert False
 
             statusCode = result.get_status_code()
             if statusCode != StatusCode.OK:
                 ten_env.log(
-                    LogLevel.FATAL, f"check_hello: status: {str(statusCode)}"
+                    LogLevel.ERROR, f"check_hello: status: {str(statusCode)}"
                 )
                 assert False
 
