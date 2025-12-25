@@ -21,6 +21,15 @@ fn main() {
         } else if target.contains("gnu") || target.contains("mingw") {
             // MinGW/GNU ld format
             println!("cargo:rustc-link-arg=-Wl,--stack,33554432");
+
+            // Disable gc-sections for MinGW to avoid linker errors with newer MinGW versions
+            // This is necessary because --gc-sections can cause issues with .drectve sections
+            // in some Rust dependencies
+            // https://stackoverflow.com/questions/45077846/collect2-exe-error-ld-returned-5-exit-status
+
+            // TODO(nzh): check if these args are necessary
+            println!("cargo:rustc-link-arg=-Wl,--no-gc-sections");
+            println!("cargo:rustc-link-arg=-Wl,-verbose");
         }
     }
 }
