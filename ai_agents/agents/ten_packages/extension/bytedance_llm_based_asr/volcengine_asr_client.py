@@ -33,6 +33,7 @@ class Utterance:
     start_time: int = 0
     end_time: int = 0
     definite: bool = False
+    additions: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -50,9 +51,7 @@ class ASRResponse:
     # ASR result fields (matching the image structure)
     result: Optional[Dict[str, Any]] = None
     text: str = ""  # Complete audio recognition result text
-    utterances: Optional[list[Utterance]] = (
-        None  # Recognition result speech segmentation information
-    )
+    utterances: list[Utterance] = None  # type: ignore[assignment]
 
     # Computed fields for compatibility with ASRResult
     start_ms: int = 0
@@ -320,12 +319,16 @@ class ResponseParser:
 
                         # Parse utterances
                         utterances_data = result_data.get("utterances", [])
+                        # Ensure utterances list is initialized (handled by __post_init__ but check for type safety)
+                        if response.utterances is None:
+                            response.utterances = []
                         for utterance_data in utterances_data:
                             utterance = Utterance(
                                 text=utterance_data.get("text", ""),
                                 start_time=utterance_data.get("start_time", 0),
                                 end_time=utterance_data.get("end_time", 0),
                                 definite=utterance_data.get("definite", False),
+                                additions=utterance_data.get("additions"),
                             )
                             response.utterances.append(utterance)
 
@@ -400,7 +403,9 @@ class VolcengineASRClient:
             * self.config.get_sample_rate()
         )
         # Calculate segment size in bytes
-        segment_size = bytes_per_sec * self.config.segment_duration_ms // 1000
+        segment_size = (
+            bytes_per_sec * self.config.get_segment_duration_ms() // 1000
+        )
         return segment_size
 
     async def connect(self) -> None:
@@ -410,11 +415,11 @@ class VolcengineASRClient:
 
         if self.auth_method == "api_key":
             headers = RequestBuilder.new_api_key_headers(
-                self.api_key, self.config.resource_id
+                self.api_key, self.config.get_resource_id()
             )
         else:
             headers = RequestBuilder.new_auth_headers(
-                self.app_key, self.access_key, self.config.resource_id
+                self.app_key, self.access_key, self.config.get_resource_id()
             )
         try:
             self.websocket = await websockets.connect(
@@ -462,12 +467,11 @@ class VolcengineASRClient:
                         logging.error(
                             f"Error in connection error callback: {callback_error}"
                         )
-            else:
+            elif self.ten_env:
                 # Fallback logging if no connection error callback is set
-                if self.ten_env:
-                    self.ten_env.log_error(f"Connection failed: {e}")
-                else:
-                    logging.error(f"Connection failed: {e}")
+                self.ten_env.log_error(f"Connection failed: {e}")
+            else:
+                logging.error(f"Connection failed: {e}")
 
             await self.disconnect()
             raise
@@ -529,12 +533,12 @@ class VolcengineASRClient:
             self.audio_buffer.clear()
 
         # For 16kHz, 16-bit, mono: 800ms = 0.8 * 16000 * 2 = 25600 bytes
-        silence_duration_ms = self.config.silence_duration_ms
+        mute_pkg_duration_ms = self.config.get_mute_pkg_duration_ms()
         bytes_per_sample = self.config.get_bits() // 8  # bits to bytes
         samples_per_ms = (
             self.config.get_sample_rate() // 1000
         )  # samples per millisecond
-        silence_bytes = silence_duration_ms * samples_per_ms * bytes_per_sample
+        silence_bytes = mute_pkg_duration_ms * samples_per_ms * bytes_per_sample
 
         # Generate silence (zeros)
         silence_data = bytes(silence_bytes)
@@ -652,11 +656,10 @@ class VolcengineASRClient:
                     self.ten_env.log_error(f"Error in result callback: {e}")
                 else:
                     logging.error(f"Error in result callback: {e}")
+        elif self.ten_env:
+            self.ten_env.log_warn("result_callback is not set")
         else:
-            if self.ten_env:
-                self.ten_env.log_warn("result_callback is not set")
-            else:
-                logging.warning("result_callback is not set")
+            logging.warning("result_callback is not set")
 
     def set_on_connection_error_callback(
         self, callback: Callable[[Exception], None]
