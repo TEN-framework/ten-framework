@@ -1,0 +1,43 @@
+{
+  "type": "app",
+  "name": "voice_image_kids",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_tts2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_gpt_image_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/message_collector2"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh"
+  }
+}
