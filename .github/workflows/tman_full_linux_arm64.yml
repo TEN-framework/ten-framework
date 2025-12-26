@@ -123,6 +123,7 @@ jobs:
           go1.24.3 version
 
           sudo apt-get update
+          sudo apt-get install libc++-dev libc++abi-dev
           sudo apt-get install -y curl unzip
 
           curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
