@@ -11,6 +11,42 @@ use std::{
 
 use crate::log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig};
 
+// Mirror the C struct ten_log_loc_info_t for FFI.
+#[repr(C)]
+pub struct TenLogLocInfo {
+    pub app_uri: *const c_char,
+    pub app_uri_len: usize,
+    pub graph_id: *const c_char,
+    pub graph_id_len: usize,
+    pub extension_name: *const c_char,
+    pub extension_name_len: usize,
+}
+
+impl TenLogLocInfo {
+    /// Helper to safely extract strings from the C struct.
+    pub fn to_strings(&self) -> (&str, &str, &str) {
+        let app_uri = if self.app_uri_len > 0 && !self.app_uri.is_null() {
+            unsafe { CStr::from_ptr(self.app_uri).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        let graph_id = if self.graph_id_len > 0 && !self.graph_id.is_null() {
+            unsafe { CStr::from_ptr(self.graph_id).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        let extension_name = if self.extension_name_len > 0 && !self.extension_name.is_null() {
+            unsafe { CStr::from_ptr(self.extension_name).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        (app_uri, graph_id, extension_name)
+    }
+}
+
 /// Configure the log.
 ///
 /// # Parameter
@@ -147,6 +183,7 @@ pub extern "C" fn ten_rust_log(
     file_name: *const c_char,
     file_name_len: usize,
     line_no: u32,
+    loc_info: *const TenLogLocInfo,
     msg: *const c_char,
     msg_len: usize,
 ) {
@@ -164,6 +201,10 @@ pub extern "C" fn ten_rust_log(
     let config = unsafe { &*config };
 
     let log_level = crate::log::LogLevel::from(level as u8);
+
+    // Parse location info.
+    let (app_uri, graph_id, extension_name) =
+        if !loc_info.is_null() { unsafe { (*loc_info).to_strings() } } else { ("", "", "") };
 
     let func_name_str = match unsafe { CStr::from_ptr(func_name) }.to_str() {
         Ok(s) => s,
@@ -198,6 +239,9 @@ pub extern "C" fn ten_rust_log(
         func_name_str,
         file_name_str,
         line_no,
+        app_uri,
+        graph_id,
+        extension_name,
         msg_str,
     );
 }

@@ -137,6 +137,9 @@ mod tests {
             "test_func",
             "test.rs",
             100,
+            "",
+            "",
+            "",
             "Trace message",
         );
         ten_log(
@@ -148,6 +151,9 @@ mod tests {
             "test_func",
             "test.rs",
             101,
+            "",
+            "",
+            "",
             "Debug message",
         );
         ten_log(
@@ -159,6 +165,9 @@ mod tests {
             "test_func",
             "test.rs",
             102,
+            "",
+            "",
+            "",
             "Info message",
         );
         ten_log(
@@ -170,6 +179,9 @@ mod tests {
             "test_func",
             "test.rs",
             103,
+            "",
+            "",
+            "",
             "Warn message",
         );
         ten_log(
@@ -181,6 +193,9 @@ mod tests {
             "test_func",
             "test.rs",
             104,
+            "",
+            "",
+            "",
             "Error message",
         );
 
@@ -230,6 +245,9 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             50,
+            "",
+            "",
+            "",
             "Error message in red",
         );
 
@@ -242,6 +260,9 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             51,
+            "",
+            "",
+            "",
             "Warning message in yellow",
         );
 
@@ -254,6 +275,9 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             52,
+            "",
+            "",
+            "",
             "Info message in default color",
         );
 
@@ -266,6 +290,9 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             53,
+            "",
+            "",
+            "",
             "Debug message in blue",
         );
     }
@@ -299,6 +326,9 @@ mod tests {
             "test_plain_no_color",
             "formatter.rs",
             51,
+            "",
+            "",
+            "",
             "Plain no color message",
         );
     }
@@ -331,6 +361,9 @@ mod tests {
             "test_json",
             "formatter.rs",
             52,
+            "",
+            "",
+            "",
             "JSON formatted message",
         );
     }
@@ -363,6 +396,9 @@ mod tests {
             "test_json_colored",
             "formatter.rs",
             53,
+            "",
+            "",
+            "",
             "JSON colored message",
         );
 
@@ -375,6 +411,9 @@ mod tests {
             "test_json_colored",
             "formatter.rs",
             54,
+            "",
+            "",
+            "",
             "JSON colored message",
         );
     }
@@ -407,6 +446,9 @@ mod tests {
             "test_stdout",
             "emitter.rs",
             60,
+            "",
+            "",
+            "",
             "Message to stdout",
         );
     }
@@ -439,6 +481,9 @@ mod tests {
             "test_stderr",
             "emitter.rs",
             61,
+            "",
+            "",
+            "",
             "Warning message to stderr",
         );
     }
@@ -474,6 +519,9 @@ mod tests {
             "test_file_plain",
             "file_emitter.rs",
             70,
+            "",
+            "",
+            "",
             "Plain message to file",
         );
         ten_log(
@@ -485,6 +533,9 @@ mod tests {
             "test_file_plain",
             "file_emitter.rs",
             71,
+            "",
+            "",
+            "",
             "Warning message to file",
         );
 
@@ -530,6 +581,9 @@ mod tests {
             "test_file_json",
             "file_emitter.rs",
             80,
+            "",
+            "",
+            "",
             "JSON message to file",
         );
 
@@ -590,6 +644,9 @@ mod tests {
             "before_fn",
             "before.rs",
             1,
+            "",
+            "",
+            "",
             "before-1",
         );
         ten_log(
@@ -601,6 +658,9 @@ mod tests {
             "before_fn",
             "before.rs",
             2,
+            "",
+            "",
+            "",
             "before-2",
         );
 
@@ -615,8 +675,34 @@ mod tests {
         ten_rust::log::ten_log_reopen_all(&mut config, true);
 
         // Write more lines after reopen request
-        ten_log(&config, "test_reopen", 1, 1, LogLevel::Info, "after_fn", "after.rs", 3, "after-1");
-        ten_log(&config, "test_reopen", 1, 1, LogLevel::Warn, "after_fn", "after.rs", 4, "after-2");
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Info,
+            "after_fn",
+            "after.rs",
+            3,
+            "",
+            "",
+            "",
+            "after-1",
+        );
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Warn,
+            "after_fn",
+            "after.rs",
+            4,
+            "",
+            "",
+            "",
+            "after-2",
+        );
 
         // Force flush: disable all handlers to drop worker guard(s)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -688,6 +774,9 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
             msg,
         );
         ten_log(
@@ -699,6 +788,9 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
             "My card number is 1234567890",
         );
         ten_log(
@@ -710,6 +802,9 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
             "My phone number is 9876543210",
         );
 
@@ -969,6 +1064,9 @@ mod tests {
             "test_default",
             "default.rs",
             100,
+            "",
+            "",
+            "",
             "Default config info",
         );
     }
@@ -1024,6 +1122,9 @@ mod tests {
                     "test_fn",
                     "test.rs",
                     1,
+                    "",
+                    "",
+                    "",
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1112,6 +1213,9 @@ mod tests {
                     "test_fn",
                     "test.rs",
                     1,
+                    "",
+                    "",
+                    "",
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1192,6 +1296,9 @@ mod tests {
             "main",
             "app.rs",
             10,
+            "",
+            "",
+            "",
             "Application started",
         );
         ten_log(
@@ -1203,6 +1310,9 @@ mod tests {
             "auth",
             "auth.rs",
             25,
+            "",
+            "",
+            "",
             "User login successful",
         );
         ten_log(
@@ -1214,6 +1324,9 @@ mod tests {
             "db",
             "database.rs",
             50,
+            "",
+            "",
+            "",
             "Database connection pool almost full",
         );
         ten_log(
@@ -1225,6 +1338,9 @@ mod tests {
             "network",
             "network.rs",
             75,
+            "",
+            "",
+            "",
             "Network connection timeout",
         );
 
@@ -1237,6 +1353,9 @@ mod tests {
             "parser",
             "json_parser.rs",
             100,
+            "",
+            "",
+            "",
             "Parse JSON: {\"key\": \"value\"}",
         );
     }
@@ -1269,9 +1388,48 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 1, "global-off-info");
-        ten_log(&config, "any", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "global-off-warn");
-        ten_log(&config, "any", 1, 1, LogLevel::Error, "f", "f.rs", 3, "global-off-error");
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            1,
+            "",
+            "",
+            "",
+            "global-off-info",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Warn,
+            "f",
+            "f.rs",
+            2,
+            "",
+            "",
+            "",
+            "global-off-warn",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Error,
+            "f",
+            "f.rs",
+            3,
+            "",
+            "",
+            "",
+            "global-off-error",
+        );
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1309,10 +1467,10 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "aaa");
-        ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "bbb");
-        ten_log(&config, "database", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ccc");
-        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ddd");
+        ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "", "", "", "aaa");
+        ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "", "", "", "bbb");
+        ten_log(&config, "database", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", "ccc");
+        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", "ddd");
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1415,8 +1573,34 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be written (effective level is DEBUG)
-        ten_log(&config, "any", 1, 1, LogLevel::Debug, "f", "f.rs", 1, "off-then-debug-debug");
-        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 2, "off-then-debug-info");
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Debug,
+            "f",
+            "f.rs",
+            1,
+            "",
+            "",
+            "",
+            "off-then-debug-debug",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            2,
+            "",
+            "",
+            "",
+            "off-then-debug-info",
+        );
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();

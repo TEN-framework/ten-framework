@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include "ten_utils/lib/string.h"
+#include "ten_utils/log/log.h"
 #include "ten_utils/value/value.h"
 
 #define TEN_LOC_SIGNATURE 0x581B639EF70CBC5DU
@@ -141,3 +142,7 @@ TEN_RUNTIME_PRIVATE_API void ten_loc_set_extension_name_with_size(
 
 TEN_RUNTIME_PRIVATE_API void ten_loc_set_extension_name(
     ten_loc_t *self, const char *extension_name);
+
+// Helper function to initialize ten_log_loc_info_t from ten_loc_t.
+TEN_RUNTIME_PRIVATE_API void ten_log_loc_info_init_from_loc(
+    ten_log_loc_info_t *info, ten_loc_t *loc);

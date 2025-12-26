@@ -80,11 +80,22 @@ typedef void (*ten_log_encrypt_on_encrypt_func_t)(uint8_t *data,
                                                   void *user_data);
 typedef void (*ten_log_encrypt_on_deinit_func_t)(void *user_data);
 
+// Structure to pass location information to log functions.
+typedef struct ten_log_loc_info_t {
+  const char *app_uri;
+  size_t app_uri_len;
+  const char *graph_id;
+  size_t graph_id_len;
+  const char *extension_name;
+  size_t extension_name_len;
+} ten_log_loc_info_t;
+
 typedef void (*ten_log_advanced_log_func_t)(
     ten_log_t *self, TEN_LOG_LEVEL level, const char *category,
     size_t category_len, const char *func_name, size_t func_name_len,
     const char *file_name, size_t file_name_len, size_t line_no,
-    const char *msg, size_t msg_len, ten_value_t *fields);
+    const char *msg, size_t msg_len, ten_value_t *fields,
+    const ten_log_loc_info_t *loc_info);
 
 typedef void (*ten_log_advanced_log_reopen_all_func_t)(ten_log_t *self,
                                                        void *config);

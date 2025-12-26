@@ -476,6 +476,9 @@ pub fn ten_log(
     func_name: &str,
     file_name: &str,
     line_no: u32,
+    app_uri: &str,
+    graph_id: &str,
+    extension_name: &str,
     msg: &str,
 ) {
     let tracing_level = level.to_tracing_level();
@@ -488,6 +491,9 @@ pub fn ten_log(
         tracing::Level::TRACE => {
             tracing::trace!(
                 ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
                 ten_pid = pid,
                 ten_tid = tid,
                 ten_func_name = func_name,
@@ -500,6 +506,9 @@ pub fn ten_log(
         tracing::Level::DEBUG => {
             tracing::debug!(
                 ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
                 ten_pid = pid,
                 ten_tid = tid,
                 ten_func_name = func_name,
@@ -512,6 +521,9 @@ pub fn ten_log(
         tracing::Level::INFO => {
             tracing::info!(
                 ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
                 ten_pid = pid,
                 ten_tid = tid,
                 ten_func_name = func_name,
@@ -524,6 +536,9 @@ pub fn ten_log(
         tracing::Level::WARN => {
             tracing::warn!(
                 ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
                 ten_pid = pid,
                 ten_tid = tid,
                 ten_func_name = func_name,
@@ -536,6 +551,9 @@ pub fn ten_log(
         tracing::Level::ERROR => {
             tracing::error!(
                 ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
                 ten_pid = pid,
                 ten_tid = tid,
                 ten_func_name = func_name,
