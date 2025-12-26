@@ -519,6 +519,35 @@ void ten_loc_set_extension_name(ten_loc_t *self, const char *extension_name) {
                                        strlen(extension_name));
 }
 
+void ten_log_loc_info_init_from_loc(ten_log_loc_info_t *info, ten_loc_t *loc) {
+  TEN_ASSERT(info, "Invalid argument.");
+  TEN_ASSERT(loc && ten_loc_check_integrity(loc), "Invalid argument.");
+
+  if (loc->has_app_uri && !ten_string_is_empty(&loc->app_uri)) {
+    info->app_uri = ten_string_get_raw_str(&loc->app_uri);
+    info->app_uri_len = ten_string_len(&loc->app_uri);
+  } else {
+    info->app_uri = NULL;
+    info->app_uri_len = 0;
+  }
+
+  if (loc->has_graph_id && !ten_string_is_empty(&loc->graph_id)) {
+    info->graph_id = ten_string_get_raw_str(&loc->graph_id);
+    info->graph_id_len = ten_string_len(&loc->graph_id);
+  } else {
+    info->graph_id = NULL;
+    info->graph_id_len = 0;
+  }
+
+  if (loc->has_extension_name && !ten_string_is_empty(&loc->extension_name)) {
+    info->extension_name = ten_string_get_raw_str(&loc->extension_name);
+    info->extension_name_len = ten_string_len(&loc->extension_name);
+  } else {
+    info->extension_name = NULL;
+    info->extension_name_len = 0;
+  }
+}
+
 bool ten_loc_str_check_correct(const char *app_uri, const char *graph_id,
                                const char *extension_name, ten_error_t *err) {
   if (!app_uri) {

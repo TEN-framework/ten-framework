@@ -1,5 +1,5 @@
 # OpenTelemetry Collector Configuration - Push Mode
-# Receives OTLP metrics and exports to Prometheus
+# Receives OTLP metrics and logs, exports to Prometheus and Loki
 
 receivers:
   otlp:
@@ -25,7 +25,7 @@ processors:
         action: upsert
 
 exporters:
-  # Export to Prometheus (pull mode)
+  # Export metrics to Prometheus (pull mode)
   prometheus:
     endpoint: "0.0.0.0:8889"
     # namespace: ten  # Removed to keep metric names consistent with Pull Mode
@@ -33,6 +33,12 @@ exporters:
       exporter: otlp
     resource_to_telemetry_conversion:
       enabled: true
+
+  # Export logs to Loki via OTLP HTTP
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
 
   # For debugging: output to logs
   debug:
@@ -42,10 +48,17 @@ exporters:
 
 service:
   pipelines:
+    # Metrics pipeline
     metrics:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [prometheus, debug]
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [otlphttp/loki, debug]
 
   telemetry:
     logs:

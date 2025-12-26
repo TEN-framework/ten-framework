@@ -36,31 +36,31 @@ struct FieldVisitor {
 impl Visit for FieldVisitor {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn fmt::Debug) {
         match field.name() {
-            "pid" => {
+            "ten_pid" => {
                 if let Ok(pid) = format!("{value:?}").parse::<i64>() {
                     self.pid = Some(pid);
                 }
             }
-            "tid" => {
+            "ten_tid" => {
                 if let Ok(tid) = format!("{value:?}").parse::<i64>() {
                     self.tid = Some(tid);
                 }
             }
-            "func_name" => {
+            "ten_func_name" => {
                 self.func_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "file_name" => {
+            "ten_file_name" => {
                 self.file_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "line_no" => {
+            "ten_line_no" => {
                 if let Ok(line) = format!("{value:?}").parse::<u32>() {
                     self.line_no = Some(line);
                 }
             }
-            "category" => {
+            "ten_category" => {
                 self.category = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "message" => {
+            "ten_message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
@@ -80,16 +80,16 @@ impl Visit for FieldVisitor {
 
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
         match field.name() {
-            "func_name" => {
+            "ten_func_name" => {
                 self.func_name = Some(value.to_string());
             }
-            "file_name" => {
+            "ten_file_name" => {
                 self.file_name = Some(value.to_string());
             }
-            "category" => {
+            "ten_category" => {
                 self.category = Some(value.to_string());
             }
-            "message" => {
+            "ten_message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
@@ -105,17 +105,17 @@ impl Visit for FieldVisitor {
     }
 
     fn record_u64(&mut self, field: &tracing::field::Field, value: u64) {
-        if field.name() == "line_no" {
+        if field.name() == "ten_line_no" {
             self.line_no = Some(value as u32);
         }
     }
 
     fn record_i64(&mut self, field: &tracing::field::Field, value: i64) {
         match field.name() {
-            "pid" => {
+            "ten_pid" => {
                 self.pid = Some(value);
             }
-            "tid" => {
+            "ten_tid" => {
                 self.tid = Some(value);
             }
             _ => {}

@@ -144,7 +144,7 @@ fn test_multiple_exporters_comparison() {
 
     // Test Prometheus exporter
     println!("📊 Testing Prometheus Exporter:");
-    let prom_exporter = MetricsExporter::new(ExporterType::Prometheus);
+    let prom_exporter = MetricsExporter::new(ExporterType::Prometheus { service_name: None });
     assert!(prom_exporter.init("prom-service").is_ok());
     assert!(prom_exporter.get_prometheus_registry().is_some());
     println!("   ✅ Prometheus exporter works, has registry\n");

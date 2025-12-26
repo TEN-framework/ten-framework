@@ -18,6 +18,7 @@
 
 typedef struct ten_engine_t ten_engine_t;
 typedef struct ten_addon_loader_t ten_addon_loader_t;
+typedef struct ten_loc_t ten_loc_t;
 
 typedef void (*ten_env_destroy_handler_in_target_lang_func_t)(
     void *me_in_target_lang);
@@ -114,6 +115,10 @@ TEN_RUNTIME_PRIVATE_API void ten_env_set_attach_to(
 
 TEN_RUNTIME_PRIVATE_API const char *ten_env_get_attached_instance_name(
     ten_env_t *self, bool check_thread);
+
+TEN_RUNTIME_PRIVATE_API void ten_env_get_attached_target_loc(ten_env_t *self,
+                                                             ten_loc_t *loc,
+                                                             bool check_thread);
 
 TEN_RUNTIME_PRIVATE_API ten_app_t *ten_env_get_belonging_app(ten_env_t *self);
 
