@@ -1612,4 +1612,150 @@ mod tests {
         assert!(content.contains("off-then-debug-debug"));
         assert!(content.contains("off-then-debug-info"));
     }
+
+    /// Comprehensive compile-time and runtime verification of TenLogLocInfo
+    /// layout.
+    ///
+    /// This test ensures that the Rust struct `TenLogLocInfo` has the exact
+    /// same memory layout as the C struct `ten_log_loc_info_t`.
+    ///
+    /// ## Checks performed:
+    /// 1. Total struct size
+    /// 2. Struct alignment
+    /// 3. Individual field offsets
+    /// 4. Field sizes
+    ///
+    /// If this test fails, it means the Rust and C structs are out of sync.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_layout() {
+        use std::{
+            mem::{align_of, offset_of, size_of},
+            os::raw::c_char,
+        };
+
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        // Verify overall size
+        // Expected: 6 fields of pointer-sized values
+        // On 64-bit: 48 bytes (6 * 8)
+        // On 32-bit: 24 bytes (6 * 4)
+        let ptr_size = size_of::<*const c_char>();
+        let expected_size = ptr_size * 6;
+        assert_eq!(
+            size_of::<TenLogLocInfo>(),
+            expected_size,
+            "TenLogLocInfo size mismatch: expected {}, got {}",
+            expected_size,
+            size_of::<TenLogLocInfo>()
+        );
+
+        // Verify alignment (should match pointer alignment)
+        assert_eq!(
+            align_of::<TenLogLocInfo>(),
+            align_of::<*const c_char>(),
+            "TenLogLocInfo alignment mismatch"
+        );
+
+        // Verify field offsets match expected C struct layout
+        // In C: fields are laid out sequentially without padding (for this struct)
+        assert_eq!(offset_of!(TenLogLocInfo, app_uri), 0, "app_uri offset should be 0");
+        assert_eq!(
+            offset_of!(TenLogLocInfo, app_uri_len),
+            ptr_size,
+            "app_uri_len offset should be {}",
+            ptr_size
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, graph_id),
+            ptr_size * 2,
+            "graph_id offset should be {}",
+            ptr_size * 2
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, graph_id_len),
+            ptr_size * 3,
+            "graph_id_len offset should be {}",
+            ptr_size * 3
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, extension_name),
+            ptr_size * 4,
+            "extension_name offset should be {}",
+            ptr_size * 4
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, extension_name_len),
+            ptr_size * 5,
+            "extension_name_len offset should be {}",
+            ptr_size * 5
+        );
+
+        // Verify individual field sizes
+        assert_eq!(size_of::<*const c_char>(), ptr_size, "Pointer size mismatch");
+        assert_eq!(
+            size_of::<usize>(),
+            ptr_size,
+            "usize should match pointer size on this platform"
+        );
+
+        println!("✓ TenLogLocInfo layout verification passed");
+        println!("  Size: {} bytes", size_of::<TenLogLocInfo>());
+        println!("  Alignment: {} bytes", align_of::<TenLogLocInfo>());
+        println!("  Field offsets:");
+        println!("    app_uri:        {}", offset_of!(TenLogLocInfo, app_uri));
+        println!("    app_uri_len:    {}", offset_of!(TenLogLocInfo, app_uri_len));
+        println!("    graph_id:       {}", offset_of!(TenLogLocInfo, graph_id));
+        println!("    graph_id_len:   {}", offset_of!(TenLogLocInfo, graph_id_len));
+        println!("    extension_name: {}", offset_of!(TenLogLocInfo, extension_name));
+        println!("    extension_name_len: {}", offset_of!(TenLogLocInfo, extension_name_len));
+    }
+
+    /// Test the to_strings method with NULL pointers and empty strings.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_to_strings_null() {
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        let loc_info = TenLogLocInfo {
+            app_uri: std::ptr::null(),
+            app_uri_len: 0,
+            graph_id: std::ptr::null(),
+            graph_id_len: 0,
+            extension_name: std::ptr::null(),
+            extension_name_len: 0,
+        };
+
+        let (app_uri, graph_id, extension_name) = loc_info.to_strings();
+        assert_eq!(app_uri, "");
+        assert_eq!(graph_id, "");
+        assert_eq!(extension_name, "");
+    }
+
+    /// Test the to_strings method with valid C strings.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_to_strings_valid() {
+        use std::ffi::CString;
+
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        let app_uri_str = CString::new("msgpack://127.0.0.1:8001/").unwrap();
+        let graph_id_str = CString::new("default").unwrap();
+        let ext_name_str = CString::new("test_extension").unwrap();
+
+        let loc_info = TenLogLocInfo {
+            app_uri: app_uri_str.as_ptr(),
+            app_uri_len: app_uri_str.as_bytes().len(),
+            graph_id: graph_id_str.as_ptr(),
+            graph_id_len: graph_id_str.as_bytes().len(),
+            extension_name: ext_name_str.as_ptr(),
+            extension_name_len: ext_name_str.as_bytes().len(),
+        };
+
+        let (app_uri, graph_id, extension_name) = loc_info.to_strings();
+        assert_eq!(app_uri, "msgpack://127.0.0.1:8001/");
+        assert_eq!(graph_id, "default");
+        assert_eq!(extension_name, "test_extension");
+    }
 }

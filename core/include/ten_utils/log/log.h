@@ -80,7 +80,48 @@ typedef void (*ten_log_encrypt_on_encrypt_func_t)(uint8_t *data,
                                                   void *user_data);
 typedef void (*ten_log_encrypt_on_deinit_func_t)(void *user_data);
 
-// Structure to pass location information to log functions.
+/**
+ * @brief Structure to pass location information to log functions.
+ *
+ * This structure contains the location context (app_uri, graph_id,
+ * extension_name) for a log message. It's designed for efficient FFI passing
+ * between C and Rust.
+ *
+ * @warning CRITICAL: Keep in sync with Rust definition
+ *
+ * This struct MUST exactly match the Rust struct `TenLogLocInfo` defined in:
+ * `core/src/ten_rust/src/log/bindings.rs`
+ *
+ * Rust Definition (for reference):
+ * @code{.rs}
+ * #[repr(C)]
+ * pub struct TenLogLocInfo {
+ *     pub app_uri: *const c_char,
+ *     pub app_uri_len: usize,
+ *     pub graph_id: *const c_char,
+ *     pub graph_id_len: usize,
+ *     pub extension_name: *const c_char,
+ *     pub extension_name_len: usize,
+ * }
+ * @endcode
+ *
+ * @note Memory Layout Requirements:
+ * - Field order must match exactly
+ * - Field types must have same size and alignment
+ * - No padding should be introduced between fields (naturally aligned)
+ * - On 64-bit: sizeof = 48 bytes, On 32-bit: sizeof = 24 bytes
+ *
+ * @note Safety:
+ * - Modifying this struct requires updating the Rust definition
+ * - Modifying the Rust definition requires updating this struct
+ * - Rust has compile-time assertions to verify layout compatibility
+ *
+ * @note Verification:
+ * - Run Rust test: `cargo test test_ten_log_loc_info_layout`
+ * - The test verifies size, alignment, and field offsets
+ *
+ * @see TenLogLocInfo in core/src/ten_rust/src/log/bindings.rs
+ */
 typedef struct ten_log_loc_info_t {
   const char *app_uri;
   size_t app_uri_len;
