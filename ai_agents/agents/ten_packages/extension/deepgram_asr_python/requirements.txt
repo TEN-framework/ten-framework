@@ -1,3 +1,2 @@
-deepgram-sdk==3.9.0
-websockets
+websockets>=15.0.1
 pydantic
