@@ -10,7 +10,26 @@ fn main() {
     #[cfg(target_os = "windows")]
     {
         // Set stack size to 32MB for Windows
-        // This is equivalent to /STACK:33554432 linker flag
-        println!("cargo:rustc-link-arg=/STACK:33554432");
+        // MSVC uses /STACK:33554432, MinGW uses -Wl,--stack,33554432
+
+        // Use TARGET environment variable to determine the actual target
+        // This is more reliable than cfg! which reflects the host environment
+        let target = std::env::var("TARGET").unwrap_or_default();
+
+        if target.contains("msvc") {
+            println!("cargo:rustc-link-arg=/STACK:33554432");
+        } else if target.contains("gnu") || target.contains("mingw") {
+            // MinGW/GNU ld format
+            println!("cargo:rustc-link-arg=-Wl,--stack,33554432");
+
+            // Disable gc-sections for MinGW to avoid linker errors with newer MinGW versions
+            // This is necessary because --gc-sections can cause issues with .drectve sections
+            // in some Rust dependencies
+            // https://stackoverflow.com/questions/45077846/collect2-exe-error-ld-returned-5-exit-status
+
+            // TODO(nzh): check if these args are necessary
+            println!("cargo:rustc-link-arg=-Wl,--no-gc-sections");
+            println!("cargo:rustc-link-arg=-Wl,-verbose");
+        }
     }
 }

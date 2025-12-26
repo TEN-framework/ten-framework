@@ -21,10 +21,17 @@ if (is_linux) {
     "${root_gen_dir}/cmake/zlib/install/lib/libz.1.dylib",
     "${root_gen_dir}/cmake/zlib/install/lib/libz.1.3.1.dylib",
   ]
-} else if (is_win) {
+} else if (is_win && !is_mingw) {
+  # MSVC generates zlib.dll / zlibd.dll
   if (is_debug) {
     zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlibd.dll" ]
   } else {
     zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlib.dll" ]
   }
+} else if (is_win && is_mingw) {
+  # MinGW generates libzlib.dll
+  zlib_output_libs += [
+    "${root_gen_dir}/cmake/zlib/install/bin/libzlib.dll",
+    "${root_gen_dir}/cmake/zlib/install/lib/libzlib.dll.a",
+  ]
 }

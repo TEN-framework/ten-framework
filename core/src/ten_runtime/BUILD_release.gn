@@ -8,10 +8,18 @@ import("//build/feature/ten_package.gni")
 
 config("ten_runtime_common_libs") {
   if (is_win) {
-    libs = [
-      "ten_runtime.dll.lib",
-      "ten_utils.dll.lib",
-    ]
+    if (is_mingw) {
+      # MinGW uses .dll.a import library
+      libs = [
+        "ten_runtime.dll.a",
+        "ten_utils.dll.a",
+      ]
+    } else {
+      libs = [
+        "ten_runtime.dll.lib",
+        "ten_utils.dll.lib",
+      ]
+    }
   } else {
     libs = [
       "ten_runtime",

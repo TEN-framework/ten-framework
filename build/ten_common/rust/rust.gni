@@ -82,6 +82,11 @@ template("rust_target") {
       _rustflags = "${_rustflags} ${flags}"
     }
 
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
+    }
+
     if (_rustflags != "") {
       args += [
         "--env",
@@ -102,13 +107,23 @@ template("rust_target") {
     # enabled, otherwise the platform-dependent dependencies might not be found,
     # and there might be asan conflict with the shared libraries depended by
     # the dependencies.
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC target for Windows
       if (target_cpu == "x86") {
         target = "i686-pc-windows-msvc"
       } else if (target_cpu == "x64") {
         target = "x86_64-pc-windows-msvc"
       } else if (target_cpu == "arm64") {
         target = "aarch64-pc-windows-msvc"
+      }
+    } else if (is_win && is_mingw) {
+      # MinGW target for Windows
+      if (target_cpu == "x86") {
+        target = "i686-pc-windows-gnu"
+      } else if (target_cpu == "x64") {
+        target = "x86_64-pc-windows-gnu"
+      } else if (target_cpu == "arm64") {
+        target = "aarch64-pc-windows-gnullvm"
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -282,6 +297,11 @@ template("rust_test") {
       _rustflags = "${_rustflags} ${flags}"
     }
 
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
+    }
+
     if (_rustflags != "") {
       args += [
         "--env",
@@ -302,13 +322,23 @@ template("rust_test") {
     # enabled, otherwise the platform-dependent dependencies might not be found,
     # and there might be asan conflict with the shared libraries depended by
     # the dependencies.
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC target for Windows
       if (target_cpu == "x86") {
         target = "i686-pc-windows-msvc"
       } else if (target_cpu == "x64") {
         target = "x86_64-pc-windows-msvc"
       } else if (target_cpu == "arm64") {
         target = "aarch64-pc-windows-msvc"
+      }
+    } else if (is_win && is_mingw) {
+      # MinGW target for Windows
+      if (target_cpu == "x86") {
+        target = "i686-pc-windows-gnu"
+      } else if (target_cpu == "x64") {
+        target = "x86_64-pc-windows-gnu"
+      } else if (target_cpu == "arm64") {
+        target = "aarch64-pc-windows-gnullvm"
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -454,13 +484,23 @@ template("rust_gen_cargo_config") {
       args += [ "gcc" ]
     }
 
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC target for Windows
       if (target_cpu == "x86") {
         target = "i686-pc-windows-msvc"
       } else if (target_cpu == "x64") {
         target = "x86_64-pc-windows-msvc"
       } else if (target_cpu == "arm64") {
         target = "aarch64-pc-windows-msvc"
+      }
+    } else if (is_win && is_mingw) {
+      # MinGW target for Windows
+      if (target_cpu == "x86") {
+        target = "i686-pc-windows-gnu"
+      } else if (target_cpu == "x64") {
+        target = "x86_64-pc-windows-gnu"
+      } else if (target_cpu == "arm64") {
+        target = "aarch64-pc-windows-gnullvm"
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -542,13 +582,23 @@ template("rust_clean") {
       "${log_level}",
     ]
 
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC target for Windows
       if (target_cpu == "x86") {
         target = "i686-pc-windows-msvc"
       } else if (target_cpu == "x64") {
         target = "x86_64-pc-windows-msvc"
       } else if (target_cpu == "arm64") {
         target = "aarch64-pc-windows-msvc"
+      }
+    } else if (is_win && is_mingw) {
+      # MinGW target for Windows
+      if (target_cpu == "x86") {
+        target = "i686-pc-windows-gnu"
+      } else if (target_cpu == "x64") {
+        target = "x86_64-pc-windows-gnu"
+      } else if (target_cpu == "arm64") {
+        target = "aarch64-pc-windows-gnullvm"
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {

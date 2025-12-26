@@ -6,8 +6,11 @@
 #
 libuv_output_libs = []
 
-if (is_win) {
+if (is_win && !is_mingw) {
   libuv_output_libs += [ "${root_gen_dir}/cmake/uv_a/install/lib/libuv.lib" ]
+} else if (is_win && is_mingw) {
+  # MinGW generates libuv.a with GNU ar format
+  libuv_output_libs += [ "${root_gen_dir}/cmake/uv_a/install/lib/libuv.a" ]
 } else {
   libuv_output_libs += [ "${root_gen_dir}/cmake/uv_a/install/lib/libuv.a" ]
 }

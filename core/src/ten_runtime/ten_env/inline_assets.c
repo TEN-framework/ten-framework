@@ -6,6 +6,9 @@
 //
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 
+// Only used in ten_runtime.dll, no cross-DLL usage, so when compiled by
+// MinGW, no need to set TEN_RUNTIME_API for them to export.
+
 extern inline ten_extension_t *ten_env_get_attached_extension(ten_env_t *self);
 
 extern inline ten_extension_group_t *ten_env_get_attached_extension_group(

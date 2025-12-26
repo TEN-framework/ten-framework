@@ -25,6 +25,10 @@ config("ten_runtime_python_config") {
                               "list lines")
 
   cflags = []
+
+  # -fPIC are ignored because they are unused for Windows
+  # Ref: https://stackoverflow.com/questions/5674613/compiling-a-dynamically-linked-library
+  #      https://stackoverflow.com/questions/4787069/autoconf-set-fpic-only-when-necessary
   if (!is_win) {
     cflags = python_cflags + [ "-fPIC" ]
   } else {
@@ -73,7 +77,8 @@ config("ten_runtime_python_config") {
   # Add rpath to find ten_runtime library.
   if (is_mac) {
     ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
-  } else if (is_linux) {
+  } else if (is_linux || is_mingw) {
+    # MinGW uses GNU ld and supports rpath
     ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
   } else if (is_win) {
     # On Windows, prevent MSVC from automatically looking for python3XX_d.lib

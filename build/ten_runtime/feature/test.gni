@@ -144,6 +144,20 @@ template("ten_package_test_prepare_client") {
     if (defined(invoker.defines) && invoker.defines != []) {
       defines += invoker.defines
     }
+    # TODO(nzh): modify related macro
+    # On Windows with MinGW, when compiling test client executables that use
+    # msgpack_client functions (e.g., ten_test_msgpack_tcp_client_create), we
+    # need to define TEN_RUNTIME_EXPORT so that TEN_RUNTIME_API expands to
+    # __declspec(dllexport) instead of __declspec(dllimport). This prevents
+    # MinGW from generating __imp_ prefixed symbol references that would cause
+    # "undefined reference" errors when linking functions defined in the same
+    # executable.
+    #
+    # See tests/common/client/BUILD.gn for more details on why this is needed.
+    if (is_win && is_mingw) {
+      defines += [ "TEN_RUNTIME_EXPORT" ]
+    }
+
     include_dirs = common_includes
     if (defined(invoker.include_dirs) && invoker.include_dirs != []) {
       include_dirs += invoker.include_dirs

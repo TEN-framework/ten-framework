@@ -72,7 +72,7 @@ if (ten_enable_ten_rust) {
     utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
     env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
 
-    if (is_win) {
+    if (is_win && !is_mingw) {
       output_name = "ten_rust.lib"
     } else {
       output_name = "libten_rust.a"
@@ -91,7 +91,7 @@ if (ten_enable_ten_rust) {
         get_target_outputs(":ten_rust_static_lib_cargo_build")
 
     resources = []
-    if (is_win) {
+    if (is_win && !is_mingw) {
       resources += [ "${ten_rust_static_outputs[0]}=>ten_rust.lib" ]
     } else {
       resources += [ "${ten_rust_static_outputs[0]}=>libten_rust.a" ]
@@ -149,7 +149,7 @@ if (ten_enable_ten_rust) {
   config("ten_rust_config") {
     if (ten_enable_cargo_clean) {
       _target_path = "${target_gen_dir}"
-      if (is_win) {
+      if (is_win && !is_mingw) {
         _output_name = "ten_rust.lib"
       } else {
         _output_name = "libten_rust.a"

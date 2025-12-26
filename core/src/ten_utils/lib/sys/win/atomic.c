@@ -18,7 +18,13 @@ int64_t ten_atomic_fetch_add(volatile ten_atomic_t *a, int64_t v) {
 }
 
 int64_t ten_atomic_add_fetch(volatile ten_atomic_t *a, int64_t v) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+  // MinGW-w64's Windows API headers lack the InterlockedAddAcquire64
+  // function. Use InterlockedExchangeAdd64 as a compatible alternative.
+  return InterlockedExchangeAdd64(a, v) + v;
+#else
   return InterlockedAddAcquire64(a, v);
+#endif
 }
 
 int64_t ten_atomic_and_fetch(volatile ten_atomic_t *a, int64_t v) {
@@ -36,7 +42,13 @@ int64_t ten_atomic_fetch_sub(volatile ten_atomic_t *a, int64_t v) {
 }
 
 int64_t ten_atomic_sub_fetch(volatile ten_atomic_t *a, int64_t v) {
+#if defined(__MINGW32__) || defined(__MINGW64__)
+  // MinGW-w64's Windows API headers lack the InterlockedAddAcquire64
+  // function. Use InterlockedExchangeAdd64 as a compatible alternative.
+  return InterlockedExchangeAdd64(a, (0 - v)) - v;
+#else
   return InterlockedAddAcquire64(a, (0 - v));
+#endif
 }
 
 int64_t ten_atomic_test_set(volatile ten_atomic_t *a, int64_t v) {
