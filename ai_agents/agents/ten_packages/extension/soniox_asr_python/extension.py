@@ -20,7 +20,6 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -31,6 +30,7 @@ from typing_extensions import override
 
 from .config import SonioxASRConfig, FinalizeMode
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .dumper import Dumper
 from .websocket import (
     SonioxFinToken,
     SonioxEndToken,
@@ -247,12 +247,27 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def _real_finalize(
         self, silence_duration_ms: int | None = None
     ) -> None:
+        # Create rotation callback if dump rotation is enabled
+        callback = None
+        if self.config.dump_rotate_on_finalize and self.audio_dumper:
+
+            async def rotate_callback():
+                timestamp_ms = int(time.time() * 1000)
+                self.ten_env.log_info(
+                    f"Sending finalize to Soniox server at timestamp: {timestamp_ms}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                if self.audio_dumper:
+                    await self.audio_dumper.rotate()
+
+            callback = rotate_callback
+
         self.ten_env.log_info(
             f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         if self.websocket:
-            await self.websocket.finalize(silence_duration_ms)
+            await self.websocket.finalize(silence_duration_ms, before_send_callback=callback)
 
     async def _real_finalize_by_mute_pkg(self) -> None:
         self.ten_env.log_info(
