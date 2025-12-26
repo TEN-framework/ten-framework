@@ -29,7 +29,9 @@ if (is_linux) {
     zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlib.dll" ]
   }
 } else if (is_win && is_mingw) {
-  # MinGW generates zlib1.dll (same as MSVC with BUILD_SHARED_LIBS)
-  # See CMakeLists.txt line 178: set_target_properties(zlib PROPERTIES SUFFIX "1.dll")
-  zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlib1.dll" ]
+  # MinGW generates libzlib.dll
+  zlib_output_libs += [
+    "${root_gen_dir}/cmake/zlib/install/bin/libzlib.dll",
+    "${root_gen_dir}/cmake/zlib/install/lib/libzlib.dll.a",
+  ]
 }
