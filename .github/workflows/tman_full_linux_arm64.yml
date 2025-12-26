@@ -27,7 +27,7 @@ jobs:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     timeout-minutes: 360
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
@@ -112,56 +112,46 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Create out directory
-        run: |
-          # Due to the use of QEMU, running as root inside the Docker container
-          # is required. However, outside the container, the user is not root.
-          # This causes issues when trying to handle the contents of the out/
-          # folder from outside the container. To resolve this, the out/ folder
-          # is first created by a regular non-root user to prevent it from being
-          # created during the build stage, thus avoiding permission issues with
-          # the out/ folder being created by the root user.
-          mkdir -p out/linux/arm64
-        shell: bash
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Build (tman with Designer UI)
         run: |
-          docker run --rm --platform linux/arm64 \
-            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
-            ghcr.io/ten-framework/ten_building_ubuntu2204 \
-            bash -c "\
-              export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
-              echo $PATH && \
-              go env -w GOFLAGS=\"-buildvcs=false\" && \
-              go install golang.org/dl/go1.24.3@latest && \
-              export PATH=$PATH:$(go env GOPATH)/bin && \
-              go1.24.3 download && \
-              go1.24.3 version && \
-              apt-get update && \
-              apt-get install -y curl unzip && \
-              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-              bash nodesource_setup.sh && \
-              apt-get install -y nodejs && \
-              curl -fsSL https://bun.sh/install | bash && \
-              export BUN_INSTALL=\"\$HOME/.bun\" && \
-              export PATH=\"\$BUN_INSTALL/bin:\$PATH\" && \
-              cd core/src/ten_manager/designer_frontend && \
-              bun install && \
-              cd ${{ github.workspace }} && \
-              rustup default nightly-2025-09-18 && \
-              df -h . && \
-              EXTRA_ARGS=\"is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true\" && \
-              echo \$EXTRA_ARGS && \
-              tgn gen linux ${{ matrix.arch }} ${{ matrix.build_type }} -- \$EXTRA_ARGS && \
-              tgn build:ten_manager_package linux ${{ matrix.arch }} ${{ matrix.build_type }} && \
-              df -h . && \
-              tree -I 'gen|obj' out \
-            "
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          echo $PATH
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
+
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
+
+          curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+          bash nodesource_setup.sh
+          sudo apt-get install -y nodejs
+
+          curl -fsSL https://bun.sh/install | bash
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          cd core/src/ten_manager/designer_frontend
+          bun install
+
+          cd ${{ github.workspace }}
+
+          rustup default nightly-2025-09-18
+
+          df -h .
+
+          EXTRA_ARGS="is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true"
+
+          echo $EXTRA_ARGS
+
+          tgn gen linux ${{ matrix.arch }} ${{ matrix.build_type }} -- $EXTRA_ARGS
+
+          tgn build:ten_manager_package linux ${{ matrix.arch }} ${{ matrix.build_type }}
+
+          df -h .
+
+          tree -I 'gen|obj' out
 
       - name: Package assets
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
@@ -250,73 +240,62 @@ jobs:
       - name: Install Playwright Browsers in Docker
         if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
-          docker run --rm --platform linux/arm64 \
-            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }}/core/src/ten_manager/designer_frontend \
-            --entrypoint /bin/bash \
-            ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
-              apt-get update && \
-              apt-get install -y curl && \
-              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-              bash nodesource_setup.sh && \
-              apt-get install -y nodejs && \
-              npm install -g npm@latest && \
-              npx playwright install --with-deps || true \
-            "
+          sudo apt-get update
+          sudo apt-get install -y curl
+          curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+          bash nodesource_setup.sh
+          sudo apt-get install -y nodejs
+          npm install -g npm@latest
+          npx playwright install --with-deps || true
 
       - name: Run Playwright tests
         if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
-          # Run tests inside Docker container with ARM64 emulation
-          docker run --rm --platform linux/arm64 \
-            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
-            --entrypoint /bin/bash \
-            ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
-              # Start the tman designer backend
-              cd ${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin && \
-              ./tman --verbose designer &
-              TMAN_PID=\$! && \
-              echo \"Started tman designer with PID \$TMAN_PID\" && \
+          # Start the tman designer backend
+          cd ${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin
+          ./tman --verbose designer &
+          TMAN_PID=$!
+          echo "Started tman designer with PID $TMAN_PID"
 
-              # Wait for the server to be available (max 30 seconds)
-              echo \"Waiting for server to be available...\" && \
-              timeout=30 && \
-              while [ \$timeout -gt 0 ]; do
-                if curl -s http://127.0.0.1:49483/ > /dev/null 2>&1; then
-                  echo \"Server is up and running!\"
-                  break
-                fi
-                echo \"Server not ready yet, waiting... (\$timeout seconds left)\"
-                sleep 1
-                timeout=\$((timeout-1))
-              done && \
+          # Wait for the server to be available (max 30 seconds)
+          echo "Waiting for server to be available..."
+          timeout=30
+          while [ $timeout -gt 0 ]; do
+            if curl -s http://127.0.0.1:49483/ > /dev/null 2>&1; then
+              echo "Server is up and running!"
+              break
+            fi
+            echo "Server not ready yet, waiting... ($timeout seconds left)"
+            sleep 1
+            timeout=$((timeout-1))
+          done
 
-              if [ \$timeout -eq 0 ]; then
-                echo \"Timed out waiting for server to start\"
-                echo \"Checking if tman designer is running:\"
-                ps -p \$TMAN_PID || true
-                exit 1
-              fi && \
+          if [ $timeout -eq 0 ]; then
+            echo "Timed out waiting for server to start"
+            echo "Checking if tman designer is running:"
+            ps -p $TMAN_PID || true
+            exit 1
+          fi
 
-              # Install Node.js and run tests
-              apt-get update && \
-              apt-get install -y curl && \
-              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-              bash nodesource_setup.sh && \
-              apt-get install -y nodejs && \
-              npm install -g npm@latest && \
+          # Install Node.js and run tests
+          sudo apt-get update
+          sudo apt-get install -y curl
+          curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+          bash nodesource_setup.sh
+          sudo apt-get install -y nodejs
+          npm install -g npm@latest
 
-              # Go to frontend directory and run tests
-              cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend && \
-              npx playwright install --with-deps && \
-              npx playwright test
-              TEST_EXIT_CODE=\$? && \
+          # Go to frontend directory and run tests
+          cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend
+          npx playwright install --with-deps
+          npx playwright test
+          TEST_EXIT_CODE=$?
 
-              # Cleanup background processes
-              kill \$TMAN_PID || true && \
+          # Cleanup background processes
+          kill $TMAN_PID || true
 
-              # Return the test exit code
-              exit \$TEST_EXIT_CODE \
-            " || echo "Playwright tests failed or skipped (expected on ARM64 with QEMU limitations)"
+          # Return the test exit code
+          exit $TEST_EXIT_CODE
 
       - name: Upload tests relevant artifacts
         if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
