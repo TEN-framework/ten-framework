@@ -1,6 +1,6 @@
 # TEN Framework Quick Reference - voice-assistant-advanced
 
-**Target**: `voice-assistant-advanced` example | **Last Updated**: 2025-12-16
+**Target**: `voice-assistant-advanced` example | **Last Updated**: 2025-12-28
 
 ---
 
