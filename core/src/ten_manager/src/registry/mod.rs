@@ -18,10 +18,12 @@ use found_result::PkgRegistryInfo;
 use semver::{Version, VersionReq};
 use tempfile::NamedTempFile;
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
+use tracing::instrument;
 
 use super::{constants::DEFAULT, home::config::TmanConfig};
 use crate::{output::TmanOutput, registry::search::PkgSearchFilter};
 
+#[instrument(skip_all, name = "upload_package", fields(pkg_type = %pkg_info.manifest.type_and_name.pkg_type, pkg_name = %pkg_info.manifest.type_and_name.name, version = %pkg_info.manifest.version, file = package_file_path))]
 pub async fn upload_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     package_file_path: &str,
@@ -60,6 +62,7 @@ pub async fn upload_package(
     }
 }
 
+#[instrument(skip_all, name = "get_package", fields(pkg_type = %pkg_type, pkg_name = pkg_name, version = %pkg_version, url = url))]
 pub async fn get_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: &PkgType,
@@ -112,6 +115,12 @@ pub async fn get_package(
 ///   supported).
 /// * If there's an error retrieving the package list from the registry.
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "get_package_list", fields(
+    pkg_type = ?pkg_type,
+    pkg_name = ?name,
+    version_req = ?version_req,
+    results_count = tracing::field::Empty
+))]
 pub async fn get_package_list(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     pkg_type: Option<PkgType>,
@@ -178,10 +187,18 @@ pub async fn get_package_list(
     let mut sorted_results = results;
     sorted_results.sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
 
+    tracing::Span::current().record("results_count", sorted_results.len());
     Ok(sorted_results)
 }
 
 #[allow(clippy::too_many_arguments)]
+#[instrument(skip_all, name = "search_packages", fields(
+    filter = ?filter,
+    page_size = ?page_size,
+    page = ?page,
+    total = tracing::field::Empty,
+    results_count = tracing::field::Empty
+))]
 pub async fn search_packages(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     filter: &PkgSearchFilter,
@@ -240,6 +257,9 @@ pub async fn search_packages(
             return Err(anyhow!("Unsupported URL scheme: {}", parsed_registry_url.scheme()));
         }
     };
+
+    tracing::Span::current().record("total", results.0);
+    tracing::Span::current().record("results_count", results.1.len());
     Ok(results)
 }
 

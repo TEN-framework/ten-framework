@@ -150,6 +150,32 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
+
+          # Purge preinstalled clang versions BEFORE installing clang-21
+          #
+          # Root cause:
+          # - GitHub Actions ubuntu-22.04 runner preinstalls Clang 13.0.1, 14.0.0, and 15.0.7
+          # - Ref: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md
+          #
+          # - During the build stage, we primarily compile C code (.c files) from core/src/ten_runtime/*,
+          #   which does NOT trigger the `-stdlib=libc++` flag. Therefore, clang-21 only uses its own
+          #   headers without referencing system libc++ headers, avoiding version conflicts.
+          #
+          # - During the test stage, we compile C++ applications (.cc files) that include
+          #   C++ standard library headers (like <string>, <iostream>). When clang-21 uses
+          #   `-stdlib=libc++` (set in core/ten_gn/.gnfiles/build/platform/linux/BUILD.gn:68), it:
+          #   1. Uses LLVM 21's C++ stdlib headers: /usr/lib/llvm-21/include/c++/v1/*
+          #   2. BUT also picks up LLVM 13/14/15's compiler intrinsic headers from preinstalled versions
+          #
+          # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
+          # the compiler's default header search paths still include older clang directories.
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
+
+          # Now install LLVM 21 with all required packages
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
@@ -246,12 +272,11 @@ jobs:
           ten_enable_go_lint=false \
           ten_enable_rust_incremental_build=false \
           ten_manager_enable_frontend=false \
-          ten_enable_integration_tests_prebuilt=false \
           ten_enable_ffmpeg_extensions=true"
 
           echo $EXTRA_ARGS
 
-          tgn gen linux x64 release -- $EXTRA_ARGS
+          tgn gen linux x64 debug -- $EXTRA_ARGS
 
           echo "=== Disk space after tgn gen ==="
           df -h .
@@ -269,7 +294,7 @@ jobs:
           ) &
           CLEANUP_PID=$!
 
-          tgn build linux x64 release
+          tgn build linux x64 debug
 
           # Stop the cleanup background process
           kill $CLEANUP_PID 2>/dev/null || true
@@ -310,34 +335,40 @@ jobs:
         run: |
           mkdir -p binaries_and_libs
 
-          # List of files needed for llvm-cov
-          CORE_BINARIES_AND_LIBS=(
-            "out/linux/x64/tests/standalone/ten_utils_unit_test"
-            "out/linux/x64/tests/standalone/ten_rust/integration_test"
-            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
-            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
-            "out/linux/x64/libten_runtime.so"
-            "out/linux/x64/libten_runtime_go.so"
-            "out/linux/x64/libten_runtime_python.so"
-            "out/linux/x64/libten_runtime_nodejs.node"
-            "out/linux/x64/libten_utils.so"
-            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
+          # Define files to copy: "source_path:destination_name" (destination defaults to basename if not specified)
+          declare -A FILES_TO_COPY=(
+            ["out/linux/x64/tests/standalone/ten_utils_unit_test"]=""
+            ["out/linux/x64/tests/standalone/ten_rust/unit_test"]="ten_rust_unit_test"
+            ["out/linux/x64/tests/standalone/ten_rust/integration_test"]="ten_rust_integration_test"
+            ["out/linux/x64/tests/standalone/ten_manager/unit_test"]="ten_manager_unit_test"
+            ["out/linux/x64/tests/standalone/ten_manager/integration_test"]="ten_manager_integration_test"
+            ["out/linux/x64/ten_manager/bin/tman"]=""
+            ["out/linux/x64/tests/standalone/ten_runtime_smoke_test"]=""
+            ["out/linux/x64/tests/standalone/ten_runtime_unit_test"]=""
+            ["out/linux/x64/libten_runtime.so"]=""
+            ["out/linux/x64/libten_runtime_go.so"]=""
+            ["out/linux/x64/libten_runtime_python.so"]=""
+            ["out/linux/x64/libten_runtime_nodejs.node"]=""
+            ["out/linux/x64/libten_utils.so"]=""
+            ["out/linux/x64/gen/core/src/ten_rust/libten_rust.a"]=""
           )
 
-          for file in "${CORE_BINARIES_AND_LIBS[@]}"; do
-            if [ -e "$file" ]; then
-              # Copy file directly to binaries_and_libs (no subdirectories)
-              cp "$file" binaries_and_libs/
-              echo "✓ Copied: $file -> $(basename $file)"
+          # Copy files with optional renaming
+          for src in "${!FILES_TO_COPY[@]}"; do
+            dst="${FILES_TO_COPY[$src]}"
+            [ -z "$dst" ] && dst="$(basename "$src")"
+
+            if [ -e "$src" ]; then
+              cp "$src" "binaries_and_libs/$dst"
+              [ "$dst" != "$(basename "$src")" ] && echo "✓ $src -> $dst" || echo "✓ $dst"
             else
-              echo "✗ Missing: $file"
+              echo "✗ Missing: $src"
             fi
           done
 
-          echo "Files packaged for coverage analysis:"
+          echo -e "\nPackaged files:"
           ls -lh binaries_and_libs/
 
-          # Create tar archive
           tar -czf coverage-binaries-and-libs.tar.gz binaries_and_libs
 
       - name: Upload binaries and libraries for coverage analysis
@@ -370,33 +401,122 @@ jobs:
 
   test-standalone:
     needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - uses: actions/checkout@v4
 
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -436,7 +556,7 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash
@@ -460,7 +580,15 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_utils_unit_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
           out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
 
@@ -494,7 +622,15 @@ jobs:
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_unit_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
           out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
 
@@ -529,7 +665,15 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_rust-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/tests/standalone/ten_rust
 
           chmod +x unit_test
@@ -562,13 +706,69 @@ jobs:
 
           df -h .
 
+      - name: Run Tests (ten_manager standalone tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_manager-%p-%m.profraw"
+        run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
+          cd out/linux/x64/tests/standalone/ten_manager
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Merge profraw for ten_manager standalone tests
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_manager.profdata
+            echo "Created profdata: ten_manager.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_manager
+
+          df -h .
+
       - name: Run Tests (ten_runtime_smoke_test)
         env:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "ten_runtime_smoke_test-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
           out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
 
@@ -598,6 +798,7 @@ jobs:
             out/linux/x64/coverage/ten_runtime_unit_test.profdata
             out/linux/x64/coverage/ten_rust.profdata
             out/linux/x64/coverage/ten_runtime_smoke_test.profdata
+            out/linux/x64/coverage/ten_manager.profdata
 
       - name: Clean up
         continue-on-error: true
@@ -605,20 +806,86 @@ jobs:
           # Clean up test directories
           rm -rf out/linux/x64/tests/standalone/ten_runtime_smoke_test
 
-          # No need to test because we disabled coverage for tman to reduce memory cost
-          rm -rf out/linux/x64/tests/ten_manager
-
           # Clean up any remaining profraw files (should be none)
           find . -name "*.profraw" -type f -delete
 
           df -h .
 
-  test-integration-cpp:
+  test-integration-ten-manager:
     needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -642,24 +909,44 @@ jobs:
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -699,7 +986,263 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run Tests (ten_manager pytest tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-ten-manager-%p-%m.profraw"
+        run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
+          cd out/linux/x64/
+          pytest -s tests/ten_manager/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-ten-manager
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-ten-manager.profdata
+
+          echo "Merged profdata file created: test-integration-ten-manager.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-ten-manager.profdata | head -20
+
+      - name: Upload test-integration-ten-manager profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-ten-manager-coverage
+          path: out/linux/x64/coverage/test-integration-ten-manager.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          # Clean up profraw files for this test
+          find . -name "*.profraw" -type f -delete
+
+          rm -rf out/linux/x64/tests/ten_manager
+
+          df -h .
+
+  test-integration-cpp:
+    needs: build
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          sudo apt-get update
+
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
+
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
+
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash
@@ -730,7 +1273,15 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-cpp-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -775,10 +1326,79 @@ jobs:
 
   test-integration-go:
     needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -802,24 +1422,44 @@ jobs:
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -859,7 +1499,7 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash
@@ -890,7 +1530,15 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-go-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -935,10 +1583,79 @@ jobs:
 
   test-integration-python:
     needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -962,24 +1679,44 @@ jobs:
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
 
       - name: Clean profraw files before tests
         run: |
@@ -1019,7 +1756,7 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash
@@ -1050,7 +1787,15 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-python-%p-%m.profraw"
         run: |
+          echo "=== Verifying clang version before test ==="
+          which clang
+          clang --version | head -1
+
           curl -fsSL https://ollama.com/install.sh | sh
 
           # Start Ollama service.
@@ -1115,10 +1860,79 @@ jobs:
 
   test-integration-nodejs:
     needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space
+    # With debug mode enabled, we need more disk space for coverage instrumentation
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -1142,24 +1956,62 @@ jobs:
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21 (see build job for details)
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
+
+      - name: Install Go for building Go apps
+        run: |
+          # Install Go 1.24.3 for building Go applications with nodejs extensions
+          export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          go1.24.3 download
+          go1.24.3 version
+
+          # Create symlink so 'go' points to go1.24.3
+          # This is needed because build scripts use 'go' command
+          GO_BIN_DIR=$(go env GOPATH)/bin
+          sudo ln -sf $GO_BIN_DIR/go1.24.3 /usr/local/bin/go
+
+          # Verify
+          which go
+          go version
 
       - name: Clean profraw files before tests
         run: |
@@ -1199,7 +2051,7 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash
@@ -1230,10 +2082,24 @@ jobs:
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
+          # Set custom profraw filename pattern for better identification during debugging.
+          # Coverage data will still be collected even if LLVM_PROFILE_FILE is not set,
+          # but with default naming (default.profraw). Pattern: %p=PID, %m=unique ID.
+          LLVM_PROFILE_FILE: "test-integration-nodejs-%p-%m.profraw"
         run: |
           df -h .
 
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          # Add tgn and Go to PATH for building C++/Go apps with nodejs extensions
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$PATH
+
+          # Verify required tools are available
+          echo "=== Verifying build tools ==="
+          which tgn
+          which go
+          go version
+          which clang
+          clang --version | head -1
+
           cd out/linux/x64/
           pytest -s tests/ten_runtime/integration/nodejs/
 
@@ -1277,6 +2143,7 @@ jobs:
     needs:
       [
         test-standalone,
+        test-integration-ten-manager,
         test-integration-cpp,
         test-integration-go,
         test-integration-python,
@@ -1333,14 +2200,26 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # Purge preinstalled clang-13/14/15 to prevent header conflicts.
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
+
+          # Create symlinks to make clang-21 and coverage tools available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
+          llvm-cov --version | head -1
+          llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           lcov --version
 
       - name: Download binaries and libraries for coverage analysis
@@ -1379,7 +2258,11 @@ jobs:
         run: |
           CORE_BINARIES_AND_LIBS=(
             "out/linux/x64/coverage/binaries_and_libs/ten_utils_unit_test"
-            "out/linux/x64/coverage/binaries_and_libs/integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_rust_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_rust_integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_manager_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_manager_integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/tman"
             "out/linux/x64/coverage/binaries_and_libs/ten_runtime_smoke_test"
             "out/linux/x64/coverage/binaries_and_libs/ten_runtime_unit_test"
             "out/linux/x64/coverage/binaries_and_libs/libten_runtime.so"

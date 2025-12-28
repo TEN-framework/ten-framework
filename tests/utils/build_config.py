@@ -13,7 +13,6 @@ class BuildConfig:
         is_clang,
         enable_sanitizer,
         vs_version,
-        ten_enable_integration_tests_prebuilt,
         ten_enable_tests_cleanup,
     ):
         self.target_os = target_os
@@ -22,9 +21,6 @@ class BuildConfig:
         self.is_clang = is_clang
         self.enable_sanitizer = enable_sanitizer
         self.vs_version = vs_version
-        self.ten_enable_integration_tests_prebuilt = (
-            ten_enable_integration_tests_prebuilt
-        )
         self.ten_enable_tests_cleanup = ten_enable_tests_cleanup
 
 
@@ -35,7 +31,6 @@ def parse_build_config(file_path: str) -> BuildConfig:
     is_clang = None
     enable_sanitizer = None
     vs_version = None
-    ten_enable_integration_tests_prebuilt = None
     ten_enable_tests_cleanup = None
 
     with open(file_path, "r", encoding="utf-8") as file:
@@ -53,10 +48,6 @@ def parse_build_config(file_path: str) -> BuildConfig:
                 enable_sanitizer = line.split("=")[1].strip().lower() == "true"
             elif line.startswith("vs_version"):
                 vs_version = line.split("=")[1].strip().strip('"')
-            elif line.startswith("ten_enable_integration_tests_prebuilt"):
-                ten_enable_integration_tests_prebuilt = (
-                    line.split("=")[1].strip().lower() == "true"
-                )
             elif line.startswith("ten_enable_tests_cleanup"):
                 ten_enable_tests_cleanup = (
                     line.split("=")[1].strip().lower() == "true"
@@ -71,6 +62,5 @@ def parse_build_config(file_path: str) -> BuildConfig:
         is_clang,
         enable_sanitizer,
         vs_version,
-        ten_enable_integration_tests_prebuilt,
         ten_enable_tests_cleanup,
     )

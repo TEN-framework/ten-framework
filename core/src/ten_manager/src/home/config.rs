@@ -39,6 +39,7 @@ pub struct TmanConfig {
 
     pub verbose: bool,
     pub assume_yes: bool,
+    pub tracing_mode: Option<String>, // "console", "chrome", "flame", "all"
 
     pub enable_package_cache: bool,
 
@@ -60,6 +61,7 @@ impl Default for TmanConfig {
             user_token: None,
             verbose: false,
             assume_yes: false,
+            tracing_mode: None,
             enable_package_cache: true,
             designer: default_designer(),
         }

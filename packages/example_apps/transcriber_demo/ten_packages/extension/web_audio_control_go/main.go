@@ -52,11 +52,11 @@ func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
 	if err != nil {
 		tenEnv.LogWarn(
 			fmt.Sprintf(
-				"Failed to get http_port property, using default 8080: %v",
+				"Failed to get http_port property, using default 8001: %v",
 				err,
 			),
 		)
-		port = 8080
+		port = 8001
 	}
 
 	// Create and start web server

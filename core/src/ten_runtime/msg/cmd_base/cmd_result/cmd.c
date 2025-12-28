@@ -91,6 +91,8 @@ static ten_cmd_result_t *ten_raw_cmd_result_create_empty(void) {
   // so by default, it is not completed at the beginning.
   ten_value_init_bool(&raw_cmd->is_completed, false);
 
+  raw_cmd->origin_cmd_processing_start_timestamp_us = 0;
+
   return raw_cmd;
 }
 
@@ -140,6 +142,11 @@ static ten_cmd_result_t *ten_raw_cmd_result_create_from_raw_cmd(
 
     ten_raw_cmd_result_set_original_cmd_name(
         cmd, ten_raw_msg_get_name((ten_msg_t *)original_cmd));
+
+    // Copy the processing start timestamp from the original cmd for cmd
+    // processing duration tracking.
+    cmd->origin_cmd_processing_start_timestamp_us =
+        ((ten_msg_t *)original_cmd)->processing_start_timestamp_us;
 
     // There are only 2 possible values of destination count of
     // 'original_cmd':

@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ollama_python",
-  "version": "0.11.44",
+  "version": "0.11.47",
   "display_name": {
     "locales": {
       "en-US": {
@@ -66,7 +66,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.44"
+      "version": "0.11.47"
     }
   ],
   "package": {
@@ -75,6 +75,7 @@
       "property.json",
       "tests/**",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "LICENSE",
       "docs/**"

@@ -15,12 +15,17 @@
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd_result/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/macro/check.h"
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
+#endif
 
 static bool ten_env_return_result_internal(
     ten_env_t *self, ten_shared_ptr_t *cmd_result, const char *cmd_id,
@@ -77,6 +82,20 @@ static bool ten_env_return_result_internal(
                app);
 
     ten_msg_set_src_app_uri_if_empty(cmd_result, ten_app_get_uri(app));
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Record cmd processing duration metric when returning final result.
+    // The on_cmd_start timestamp is stored in the cmd_result's
+    // origin_cmd_processing_start_timestamp_us field.
+    ten_cmd_result_t *raw_cmd_result =
+        (ten_cmd_result_t *)ten_shared_ptr_get_data(cmd_result);
+    int64_t on_cmd_start_us =
+        raw_cmd_result->origin_cmd_processing_start_timestamp_us;
+    if (on_cmd_start_us > 0) {
+      ten_extension_record_cmd_processing_duration(extension, cmd_result,
+                                                   on_cmd_start_us);
+    }
+#endif
 
     result = ten_extension_dispatch_msg(
         extension, cmd_result, TEN_RESULT_RETURN_POLICY_EACH_OK_AND_ERROR, err);

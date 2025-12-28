@@ -137,7 +137,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/standalone/ten_runtime_smoke_test",
       "args": [
-        "--gtest_filter=GraphCommunicationTest.GraphCommunicationBasic3"
+        "--gtest_filter=TelemetryTest.SingleAppExportToConsole"
       ],
       "cwd": "${workspaceFolder}/out/linux/x64/tests/standalone/",
       "env": {
@@ -567,9 +567,9 @@
       "name": "app (c/c++) (lldb, launch)",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app/bin/import_graph_app",
+      "program": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/long_running/long_running_app/bin/long_running_app",
       "args": [],
-      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/import_graph/import_graph_app",
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/cpp/long_running/long_running_app",
       "env": {
         "ASAN_OPTIONS": "use_sigaltstack=0"
       }
@@ -697,12 +697,12 @@
         "main.py"
       ],
       "env": {
-        "PYTHONPATH": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/two_async_exts_one_group_python/two_async_exts_one_group_python_app/ten_packages/system/ten_runtime_python/lib:${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/two_async_exts_one_group_python/two_async_exts_one_group_python_app/ten_packages/system/ten_runtime_python/interface",
-        "TEN_APP_BASE_DIR": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/two_async_exts_one_group_python/two_async_exts_one_group_python_app/",
-        "LD_PRELOAD": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/two_async_exts_one_group_python/two_async_exts_one_group_python_app/ten_packages/system/ten_runtime/lib/libasan.so",
+        "PYTHONPATH": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/async_extension_basic_python/async_extension_basic_python_app/ten_packages/system/ten_runtime_python/lib:${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/async_extension_basic_python/async_extension_basic_python_app/ten_packages/system/ten_runtime_python/interface",
+        "TEN_APP_BASE_DIR": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/async_extension_basic_python/async_extension_basic_python_app/",
+        "LD_PRELOAD": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/async_extension_basic_python/async_extension_basic_python_app/ten_packages/system/ten_runtime/lib/libasan.so",
         "PYTHONMALLOC": "malloc"
       },
-      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/two_async_exts_one_group_python/two_async_exts_one_group_python_app"
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_runtime/integration/python/async_extension_basic_python/async_extension_basic_python_app"
     },
     {
       "name": "app (python) (cppdbg, attach)",

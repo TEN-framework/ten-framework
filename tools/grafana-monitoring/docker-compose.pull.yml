@@ -1,0 +1,60 @@
+# TEN Framework - Pull Mode Monitoring Configuration
+# Use Case: Application uses Prometheus exporter, simple deployment
+#
+# Usage:
+#   docker-compose -f docker-compose.pull.yml up -d
+#
+# Application configuration example (property.json):
+#   {
+#     "type": "prometheus",
+#     "config": {
+#       "endpoint": "0.0.0.0:49484",
+#       "path": "/metrics"
+#     }
+#   }
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ten_prometheus_pull
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./configs/pull/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ten_grafana_pull
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

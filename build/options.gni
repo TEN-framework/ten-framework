@@ -25,13 +25,6 @@ declare_args() {
   # such as CI.
   ten_enable_cargo_clean = false
 
-  # Since building the integration tests also increases disk space usage, in
-  # disk space-limited environments (such as CI), the variable below is used to
-  # defer the integration test build until the testing phase. This prevents it
-  # from being built together with the core TEN framework components (e.g.,
-  # `ten_runtime`, `ten_manager`).
-  ten_enable_integration_tests_prebuilt = false
-
   ten_enable_tests_cleanup = true
 
   # Rust's incremental build requires additional disk space, so this option

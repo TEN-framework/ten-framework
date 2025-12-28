@@ -15,6 +15,10 @@
 static const ten_app_ten_namespace_prop_info_t
     ten_app_ten_namespace_prop_info_list[] = {
         {
+            .name = TEN_STR_LOG,
+            .init_from_value = ten_app_init_advanced_log,
+        },
+        {
             .name = TEN_STR_ONE_EVENT_LOOP_PER_ENGINE,
             .init_from_value = ten_app_init_one_event_loop_per_engine,
         },
@@ -37,10 +41,6 @@ static const ten_app_ten_namespace_prop_info_t
         {
             .name = TEN_STR_ADDON,
             .init_from_value = ten_app_init_addon,
-        },
-        {
-            .name = TEN_STR_LOG,
-            .init_from_value = ten_app_init_advanced_log,
         },
 };
 

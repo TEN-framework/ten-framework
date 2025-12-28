@@ -14,12 +14,14 @@ use std::{
 use anyhow::{Context, Result};
 use semver::Version;
 use ten_rust::pkg_info::pkg_type::PkgType;
+use tracing::instrument;
 
 use crate::home::package_cache::get_default_package_cache_folder;
 
 /// Search under `package_cache` to see if there is a corresponding file for
 /// `pkg_type/pkg_name/pkg_version/`. If found, return its path; otherwise,
 /// return `None`."
+#[instrument(skip_all, name = "find_in_cache", fields(pkg_type = %pkg_type, name = name, version = %version, file_name = file_name))]
 pub fn find_in_package_cache(
     pkg_type: &PkgType,
     name: &str,
@@ -40,6 +42,7 @@ pub fn find_in_package_cache(
 /// Place the newly retrieved package file into
 /// `package_cache/pkg_type/pkg_name/pkg_version/`. The filename should remain
 /// the same as the original.
+#[instrument(skip_all, name = "store_to_package_cache", fields(pkg_type = %pkg_type, name = name, version = %version, file_name = file_name, src = %downloaded_path.display()))]
 pub fn store_file_to_package_cache(
     pkg_type: &PkgType,
     name: &str,

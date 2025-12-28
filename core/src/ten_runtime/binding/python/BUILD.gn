@@ -17,6 +17,7 @@ ten_package("ten_python_binding_system_package") {
 
   resources = [
     "manifest.json",
+    "pyproject.toml",
     "requirements.txt",
   ]
 

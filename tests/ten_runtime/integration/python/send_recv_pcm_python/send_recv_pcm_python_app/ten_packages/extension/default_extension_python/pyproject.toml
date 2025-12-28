@@ -1,0 +1,13 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+[project]
+name = "default-extension-python"
+description = "Default TEN Framework extension template written in Python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pytest", "pydub==0.25.1"]

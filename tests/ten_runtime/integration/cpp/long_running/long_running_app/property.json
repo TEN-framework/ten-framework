@@ -5,8 +5,35 @@
         "enabled": true
       },
       "telemetry": {
-        "enabled": true
+        "enabled": true,
+        "metrics": {
+          "enabled": true,
+          "exporter": {
+            "type": "console"
+          }
+        }
       }
+    },
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
     },
     "predefined_graphs": [
       {

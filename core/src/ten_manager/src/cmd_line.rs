@@ -84,6 +84,14 @@ fn create_cmd() -> clap::ArgMatches {
                 .help("Automatically answer 'yes' to all prompts")
                 .action(clap::ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("TRACING")
+                .long("tracing")
+                .help("Enable tracing mode for debugging and performance analysis")
+                .value_name("MODE")
+                .value_parser(["console", "chrome", "flame", "all"])
+                .required(false),
+        )
         // Hidden arguments.
         .arg(
             Arg::new("ADMIN_TOKEN")
@@ -147,6 +155,7 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
         }),
         verbose: matches.get_flag("VERBOSE"),
         assume_yes: matches.get_flag("ASSUME_YES"),
+        tracing_mode: matches.get_one::<String>("TRACING").cloned(),
         registry: if let Some(tman_config_file) = &tman_config_file {
             tman_config_file.registry.clone()
         } else {

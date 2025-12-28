@@ -178,6 +178,7 @@
 
 // Telemetry.
 #define TEN_STR_TELEMETRY "telemetry"
+#define TEN_STR_METRICS "metrics"
 #define TEN_STR_ENABLED "enabled"
 #define TEN_STR_ENDPOINT "endpoint"
 
