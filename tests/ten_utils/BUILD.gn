@@ -32,10 +32,23 @@ ten_executable("ten_utils_unit_test") {
     "//core/src/ten_utils/schema",
     "//core/src/ten_utils/value",
     "//tests:copy_yyjson_library_for_test",
+    "//third_party/googletest:gtest_main",
   ]
 
   if (ten_enable_ten_rust) {
     public_deps += [ "//core/src/ten_rust:ten_rust_binding" ]
+  }
+
+  # When linking with libten_rust.a, we need to explicitly link CoreFoundation framework
+  # because Rust crates (e.g., iana_time_zone) use CoreFoundation APIs
+  if (is_mac && ten_enable_ten_rust) {
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+    ldflags += [
+      "-framework",
+      "CoreFoundation",
+    ]
   }
 
   # !Important notice!
@@ -43,8 +56,6 @@ ten_executable("ten_utils_unit_test") {
   # Do not set the value of `configs` here, because setting `configs` within a
   # template will prevent the `executable` target from using the default
   # `common_configs`.
-
-  public_deps += [ "//third_party/googletest:gtest_main" ]
 }
 
 ten_utils_group("ten_utils") {
