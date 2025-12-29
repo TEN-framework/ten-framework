@@ -114,7 +114,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.ten_env: AsyncTenEnv | None = None
 
         # Reconnection parameters
-        self.max_retry_delay: float = 5.0  # Maximum delay between retries
+        self.min_retry_delay: float = 0.5
+        self.max_retry_delay: float = 4.0  # Maximum delay between retries
         self.attempts: int = 0
         self.stopped: bool = False
         self.last_fatal_error: int | None = None
@@ -432,10 +433,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
 
     async def _handle_reconnect(self) -> None:
-        """Handle reconnection logic with exponential backoff (max delay: max_retry_delay).
+        """Handle reconnection logic with exponential backoff (min delay: 0.5s, max delay: max_retry_delay).
 
-        - First retry: immediate (no delay)
-        - Subsequent retries: exponential backoff with cap at max_retry_delay
+        - First retry: 0.5s delay
+        - Subsequent retries: exponential backoff (base 0.5s) with min 0.5s and cap at max_retry_delay
         - Unlimited retries unless stopped
         """
         if self._reconnecting:
@@ -447,16 +448,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.attempts += 1
 
             # Calculate delay with exponential backoff
-            # First attempt: no delay (immediate reconnect)
-            # Subsequent attempts: exponential backoff (base 0.3s) capped at max_retry_delay
+            # First attempt: 0.5s delay
+            # Subsequent attempts: exponential backoff (base 0.5s) with min 0.5s and cap at max_retry_delay
             if self.attempts == 1:
-                delay = 0  # First retry is immediate
+                delay = self.min_retry_delay
             else:
-                base_delay = 0.3
-                delay = base_delay * (2 ** (self.attempts - 2))
-                delay = min(
-                    delay, self.max_retry_delay
-                )  # Cap at max_retry_delay
+                delay = self.min_retry_delay * (2 ** (self.attempts - 2))
+                delay = max(
+                    self.min_retry_delay, min(delay, self.max_retry_delay)
+                )
 
             self.ten_env.log_info(
                 f"Reconnecting... Attempt {self.attempts}, delay: {delay:.2f}s"
