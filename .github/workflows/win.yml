@@ -249,6 +249,7 @@ jobs:
           $buildArgs = @()
           if ("${{ matrix.compiler }}" -eq "mingw") {
             $buildArgs += "is_mingw=true"
+            $buildArgs += "is_clang=false"
             $buildArgs += "ten_enable_python_binding=false"
           } else {
             $buildArgs += "is_mingw=false"
