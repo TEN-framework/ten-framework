@@ -118,17 +118,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            # Since the TEN runtime and TEN manager are a combination of C and
-            # Rust, to enable ASan, the ASan versions used by both the C and
-            # Rust compilation environments must be consistent. Therefore, it is
-            # necessary to lock the LLVM and Rust versions to enable ASan.
-            brew install llvm@18
-            rustup default nightly-2024-07-19
-          else
-            rustup default nightly-2025-09-18
-          fi
+          rustup default stable
 
           brew install tree
           brew install gettext

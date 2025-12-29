@@ -128,7 +128,7 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default nightly-2025-09-18
+          rustup default stable
           cargo install --force cbindgen
 
       - name: Update version
