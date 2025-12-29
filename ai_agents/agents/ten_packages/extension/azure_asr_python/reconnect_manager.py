@@ -10,16 +10,16 @@ class ReconnectManager:
 
     Features:
     - Unlimited retry attempts (will keep retrying until successful)
-    - Exponential backoff strategy with maximum delay cap: 300ms, 600ms, 1.2s, 2.4s (capped)
-    - Maximum delay cap to prevent overwhelming the service provider (default: 2.4s)
+    - Exponential backoff strategy with maximum delay cap: 0.5s, 1s, 2s, 4s (capped)
+    - Maximum delay cap to prevent overwhelming the service provider (default: 4s)
     - Automatic counter reset after successful connection
     - Detailed logging for monitoring and debugging
     """
 
     def __init__(
         self,
-        base_delay: float = 0.3,  # 300 milliseconds
-        max_delay: float = 2.4,  # 2.4 seconds maximum delay
+        base_delay: float = 0.5,  # 500 milliseconds
+        max_delay: float = 4.0,  # 4 seconds maximum delay
         logger=None,
     ):
         self.base_delay = base_delay
