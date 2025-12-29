@@ -145,6 +145,12 @@ jobs:
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/usr/local/opt/llvm/bin:$PATH"
+            # Add LLVM library path for libc++ linking in debug mode
+            if [ -d "/usr/local/opt/llvm/lib" ]; then
+              export LIBRARY_PATH="/usr/local/opt/llvm/lib:$LIBRARY_PATH"
+              export LDFLAGS="-L/usr/local/opt/llvm/lib $LDFLAGS"
+              echo "Added LLVM library path for debug build"
+            fi
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           # Add gettext library path for intl library linking
