@@ -38,6 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
@@ -194,9 +195,31 @@ jobs:
         shell: pwsh
 
       - name: Build
+        shell: pwsh
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
-          tgn gen win x64 ${{ matrix.build_type }} -- is_mingw=true is_clang=false log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
+          $buildArgs = @()
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            $buildArgs += "is_mingw=true"
+            $buildArgs += "ten_enable_python_binding=false"
+          } else {
+            $buildArgs += "is_mingw=false"
+            $buildArgs += "vs_version=2022"
+            $buildArgs += "ten_enable_python_binding=true"
+          }
+          $buildArgs += "log_level=1"
+          $buildArgs += "enable_serialized_actions=true"
+          $buildArgs += "ten_rust_enable_gen_cargo_config=false"
+          $buildArgs += "ten_enable_cargo_clean=true"
+          $buildArgs += "ten_enable_go_binding=false"
+          $buildArgs += "ten_enable_nodejs_binding=false"
+          $buildArgs += "ten_enable_rust_incremental_build=false"
+          $buildArgs += "ten_manager_enable_frontend=false"
+          $buildArgs += "ten_enable_integration_tests_prebuilt=false"
+          $argsString = $buildArgs -join " "
+          Write-Host "Build arguments: $argsString"
+
+          tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
 
       - name: Update supports before upload or publish
@@ -248,7 +271,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: tests-artifacts.zip
           if-no-files-found: ignore
 
@@ -441,6 +464,7 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -541,7 +565,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -606,6 +630,7 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -706,7 +731,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -731,6 +756,9 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
+        exclude:
+          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -832,7 +860,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -968,6 +996,9 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
+        exclude:
+          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1068,7 +1099,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
