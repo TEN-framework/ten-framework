@@ -61,6 +61,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         super().__init__(name)
         self.connected: bool = False
         self.websocket: Optional[SonioxWebsocketClient] = None
+        self.ws_task: asyncio.Task[None] | None = None
         self.config: Optional[SonioxASRConfig] = None
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
@@ -94,16 +95,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             )
 
             if self.config.finalize_mode == FinalizeMode.IGNORE:
-                if not (
-                    self.config.params.get("enable_endpoint_detection", False)
-                ):
+                if not (self.config.params.get("enable_endpoint_detection", False)):
                     raise ValueError(
                         "endpoint detection must be enabled when finalize_mode is IGNORE"
                     )
             if self.config.dump:
-                dump_file_path = os.path.join(
-                    self.config.dump_path, DUMP_FILE_NAME
-                )
+                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
                 self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
@@ -134,7 +131,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         try:
             start_request = json.dumps(self.config.params)
-            ws = SonioxWebsocketClient(self.config.url, start_request)
+            ws = SonioxWebsocketClient(
+                self.config.url,
+                start_request,
+                enable_keepalive=self.config.enable_keepalive,
+            )
             ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
             ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
             ws.on(SonioxWebsocketEvents.EXCEPTION, self._handle_exception)
@@ -142,7 +143,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             ws.on(SonioxWebsocketEvents.FINISHED, self._handle_finished)
             ws.on(SonioxWebsocketEvents.TRANSCRIPT, self._handle_transcript)
             self.websocket = ws
-            asyncio.create_task(ws.connect())
+            self.ws_task = asyncio.create_task(ws.connect())
         except Exception as e:
             self.ten_env.log_error(f"start_connection failed: {e}")
             await self.send_asr_error(
@@ -197,9 +198,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         return 2
 
     @override
-    async def send_audio(
-        self, frame: AudioFrame, session_id: Optional[str]
-    ) -> bool:
+    async def send_audio(self, frame: AudioFrame, session_id: Optional[str]) -> bool:
         assert self.config is not None
         assert self.websocket is not None
 
@@ -236,17 +235,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             #
             # This property is not in the asr api, but will be included in the future.
             # The upstream can set this property if it knows the trailing silence duration.
-            silence_duration_ms, err = data.get_property_int(
-                "silence_duration_ms"
-            )
+            silence_duration_ms, err = data.get_property_int("silence_duration_ms")
             if err:
                 await self._real_finalize()
             else:
                 await self._real_finalize(silence_duration_ms)
 
-    async def _real_finalize(
-        self, silence_duration_ms: int | None = None
-    ) -> None:
+    async def _real_finalize(self, silence_duration_ms: int | None = None) -> None:
         # Create rotation callback if dump rotation is enabled
         callback = None
         if self.config.dump_rotate_on_finalize and self.audio_dumper:
@@ -267,7 +262,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         if self.websocket:
-            await self.websocket.finalize(silence_duration_ms, before_send_callback=callback)
+            await self.websocket.finalize(
+                silence_duration_ms, before_send_callback=callback
+            )
 
     async def _real_finalize_by_mute_pkg(self) -> None:
         self.ten_env.log_info(
@@ -276,10 +273,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         )
 
         empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms
-            * self.config.sample_rate
-            / 1000
-            * 2
+            self.config.mute_pkg_duration_ms * self.config.sample_rate / 1000 * 2
         )
         frame = bytearray(empty_audio_bytes_len)
         if self.websocket:
@@ -339,9 +333,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.connected = False
 
     async def _handle_exception(self, e: Exception):
-        self.ten_env.log_error(
-            f"soniox connection exception: {type(e)} {str(e)}"
-        )
+        self.ten_env.log_error(f"soniox connection exception: {type(e)} {str(e)}")
         await self._handle_error(-1, str(e))
 
     async def _handle_error(self, error_code: int, error_message: str):
@@ -535,9 +527,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             start_ms=start_ms,
             duration_ms=duration_ms,
             language=map_language_code(translation_tokens[0].language),
-            source_language=map_language_code(
-                translation_tokens[0].source_language
-            ),
+            source_language=map_language_code(translation_tokens[0].source_language),
         )
         if self.metadata is not None:
             translation_result.metadata = self.metadata
