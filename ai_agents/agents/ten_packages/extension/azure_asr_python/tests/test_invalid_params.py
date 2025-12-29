@@ -61,7 +61,11 @@ class AzureAsrExtensionTester(AsyncExtensionTester):
 
 
 def test_invalid_params():
-    property_json = {"params": {}}
+    property_json = {
+        "params": {
+            "key": "",
+        }
+    }
 
     tester = AzureAsrExtensionTester()
     tester.set_test_mode_single("azure_asr_python", json.dumps(property_json))
