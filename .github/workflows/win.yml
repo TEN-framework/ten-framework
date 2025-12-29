@@ -196,7 +196,7 @@ jobs:
       - name: Build
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
-          tgn gen win x64 ${{ matrix.build_type }} -- is_mingw=true is_clang=false log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
+          tgn gen win x64 ${{ matrix.build_type }} -- is_mingw=true is_clang=false log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
           tgn build win x64 ${{ matrix.build_type }}
 
       - name: Update supports before upload or publish
