@@ -34,7 +34,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
@@ -393,7 +393,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -541,7 +541,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -639,7 +639,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -745,7 +745,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -851,7 +851,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
