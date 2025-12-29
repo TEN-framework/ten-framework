@@ -137,23 +137,67 @@ jobs:
       - name: Install MinGW and setup toolchain
         shell: pwsh
         run: |
-          Write-Output "Installing MinGW via Chocolatey..."
-          choco install mingw -y --force
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
 
-          Write-Output "Refreshing environment..."
-          refreshenv
-
-          # Verify MinGW installation
-          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
-          if (Test-Path $mingwPath) {
-            Write-Output "MinGW found at: $mingwPath"
-            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            Write-Error "MinGW installation failed!"
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
             exit 1
           }
 
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
           # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
           & gcc --version
           if ($LASTEXITCODE -ne 0) {
             Write-Error "gcc not working!"
@@ -500,10 +544,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Setup MSVC
-        if: matrix.compiler == 'msvc'
-        uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -512,34 +552,6 @@ jobs:
         with:
           go-version: "stable"
           cache: false
-
-      - name: Install MinGW and setup toolchain
-        shell: pwsh
-        run: |
-          Write-Output "Installing MinGW via Chocolatey..."
-          choco install mingw -y --force
-
-          Write-Output "Refreshing environment..."
-          refreshenv
-
-          # Verify MinGW installation
-          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
-          if (Test-Path $mingwPath) {
-            Write-Output "MinGW found at: $mingwPath"
-            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            Write-Error "MinGW installation failed!"
-            exit 1
-          }
-
-          # Verify gcc
-          & gcc --version
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "gcc not working!"
-            exit 1
-          }
-
-          Write-Output "MinGW installation successful"
 
       - name: Install tools and dependencies
         shell: pwsh
@@ -670,10 +682,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Setup MSVC
-        if: matrix.compiler == 'msvc'
-        uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -682,34 +690,6 @@ jobs:
         with:
           go-version: "stable"
           cache: false
-
-      - name: Install MinGW and setup toolchain
-        shell: pwsh
-        run: |
-          Write-Output "Installing MinGW via Chocolatey..."
-          choco install mingw -y --force
-
-          Write-Output "Refreshing environment..."
-          refreshenv
-
-          # Verify MinGW installation
-          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
-          if (Test-Path $mingwPath) {
-            Write-Output "MinGW found at: $mingwPath"
-            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            Write-Error "MinGW installation failed!"
-            exit 1
-          }
-
-          # Verify gcc
-          & gcc --version
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "gcc not working!"
-            exit 1
-          }
-
-          Write-Output "MinGW installation successful"
 
       - name: Install tools and dependencies
         shell: pwsh
@@ -819,23 +799,67 @@ jobs:
       - name: Install MinGW and setup toolchain
         shell: pwsh
         run: |
-          Write-Output "Installing MinGW via Chocolatey..."
-          choco install mingw -y --force
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
 
-          Write-Output "Refreshing environment..."
-          refreshenv
-
-          # Verify MinGW installation
-          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
-          if (Test-Path $mingwPath) {
-            Write-Output "MinGW found at: $mingwPath"
-            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            Write-Error "MinGW installation failed!"
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
             exit 1
           }
 
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
           # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
           & gcc --version
           if ($LASTEXITCODE -ne 0) {
             Write-Error "gcc not working!"
@@ -1062,23 +1086,67 @@ jobs:
       - name: Install MinGW and setup toolchain
         shell: pwsh
         run: |
-          Write-Output "Installing MinGW via Chocolatey..."
-          choco install mingw -y --force
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
 
-          Write-Output "Refreshing environment..."
-          refreshenv
-
-          # Verify MinGW installation
-          $mingwPath = "C:\ProgramData\mingw64\mingw64\bin"
-          if (Test-Path $mingwPath) {
-            Write-Output "MinGW found at: $mingwPath"
-            echo "$mingwPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          } else {
-            Write-Error "MinGW installation failed!"
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
             exit 1
           }
 
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
           # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
           & gcc --version
           if ($LASTEXITCODE -ne 0) {
             Write-Error "gcc not working!"
