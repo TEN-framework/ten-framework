@@ -204,7 +204,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         buf = frame.get_buf()
         if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(buf))
+            try:
+                await self.audio_dumper.push_bytes(bytes(buf))
+            except Exception as e:
+                self.ten_env.log_warn(
+                    f"Failed to push bytes into audio dumper, error: {str(e)}"
+                )
         self.audio_timeline.add_user_audio(
             int(len(buf) / (self.config.sample_rate / 1000 * 2))
         )
@@ -253,7 +258,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                     category=LOG_CATEGORY_KEY_POINT,
                 )
                 if self.audio_dumper:
-                    await self.audio_dumper.rotate()
+                    try:
+                        await self.audio_dumper.rotate()
+                    except Exception as e:
+                        self.ten_env.log_warn(
+                            f"Failed to rotate audio dumper, error: {str(e)}"
+                        )
 
             callback = rotate_callback
 

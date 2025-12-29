@@ -5,7 +5,9 @@
 #
 
 import aiofiles
+import asyncio
 import os
+import secrets
 from datetime import datetime
 
 
@@ -14,6 +16,7 @@ class Dumper:
         self.dump_file_base_path: str = dump_file_path
         self.dump_file_path: str = dump_file_path
         self._file: aiofiles.threadpool.binary.AsyncBufferedIOBase | None = None
+        self._lock: asyncio.Lock = asyncio.Lock()
 
     async def start(self):
         if self._file:
@@ -24,28 +27,39 @@ class Dumper:
         self._file = await aiofiles.open(self.dump_file_path, mode="wb")
 
     async def stop(self):
-        if self._file:
-            await self._file.close()
-            self._file = None
+        async with self._lock:
+            if self._file:
+                await self._file.close()
+                self._file = None
 
     async def rotate(self):
         """Close current file and open new one with timestamp suffix."""
-        if self._file:
-            await self._file.close()
+        async with self._lock:
+            old_file = self._file
 
-        # Generate timestamped filename: soniox_asr_in_20250126_143052.pcm
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base, ext = os.path.splitext(self.dump_file_base_path)
-        self.dump_file_path = f"{base}_{timestamp}{ext}"
+            try:
+                # Generate new filename
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                base, ext = os.path.splitext(self.dump_file_base_path)
+                self.dump_file_path = f"{base}_{timestamp}_{secrets.token_hex(3)}{ext}"
 
-        os.makedirs(os.path.dirname(self.dump_file_path), exist_ok=True)
-        self._file = await aiofiles.open(self.dump_file_path, mode="wb")
+                # Open new file first
+                os.makedirs(os.path.dirname(self.dump_file_path), exist_ok=True)
+                new_file = await aiofiles.open(self.dump_file_path, mode="wb")
+
+                # Only close old file after new one opens successfully
+                if old_file:
+                    await old_file.close()
+
+                self._file = new_file
+            except Exception as e:
+                # Keep old file handle if rotation fails
+                self._file = old_file
+                raise RuntimeError(f"Failed to rotate dump file: {e}") from e
 
     async def push_bytes(self, data: bytes):
         if not self._file:
             raise RuntimeError(
-                "Dumper for {} is not opened. Please start the Dumper first.".format(
-                    self.dump_file_path
-                )
+                f"Dumper for {self.dump_file_path} is not opened. Please start the Dumper first."
             )
         _ = await self._file.write(data)
