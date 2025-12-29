@@ -3856,7 +3856,8 @@ mod tests {
 
     #[test]
     fn test_validate_manifest_top_level_description_must_be_localized() {
-        // Test that top-level description does NOT support simple string (must be localizedText)
+        // Test that top-level description does NOT support simple string (must be
+        // localizedText)
         let manifest = r#"
         {
           "type": "extension",
@@ -3870,7 +3871,8 @@ mod tests {
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        // Should fail because description at top level requires localizedText format (object type)
+        // Should fail because description at top level requires localizedText format
+        // (object type)
         assert!(error_msg.contains("is not of type \"object\""));
     }
 

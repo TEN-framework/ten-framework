@@ -298,10 +298,7 @@ mod tests {
         let api_key = properties.get("api_key").unwrap();
         assert!(api_key.description.is_some());
         let api_key_desc = api_key.description.as_ref().unwrap();
-        assert_eq!(
-            api_key_desc.as_string().unwrap(),
-            "Simple string description for API key"
-        );
+        assert_eq!(api_key_desc.as_string().unwrap(), "Simple string description for API key");
 
         // Test localized description
         let config = properties.get("config").unwrap();

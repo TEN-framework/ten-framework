@@ -458,9 +458,8 @@ impl Manifest {
                     locale_obj.insert("content".to_string(), Value::String(content));
                     resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
                 } else {
-                    // If we can't get content (e.g., base_dir is None with relative
-                    // import_uri), preserve the original
-                    // LocaleContent structure
+                    // If we can't get content (e.g., base_dir is None with relative import_uri),
+                    // preserve the original LocaleContent structure
                     if let Ok(value) = serde_json::to_value(locale_content) {
                         resolved_locales.insert(locale.clone(), value);
                     }
