@@ -53,7 +53,10 @@ class SonioxEndToken:
 
 
 SonioxToken = (
-    SonioxTranscriptToken | SonioxTranslationToken | SonioxFinToken | SonioxEndToken
+    SonioxTranscriptToken
+    | SonioxTranslationToken
+    | SonioxFinToken
+    | SonioxEndToken
 )
 
 
@@ -105,7 +108,10 @@ class SonioxWebsocketClient:
 
     async def connect(self):
         self._reset_client_state()
-        while self.state != self.State.STOPPED and self.state != self.State.STOPPING:
+        while (
+            self.state != self.State.STOPPED
+            and self.state != self.State.STOPPING
+        ):
             try:
                 self._reset_session_state()
                 self.state = self.State.CONNECTING
@@ -180,7 +186,9 @@ class SonioxWebsocketClient:
 
         self._attempt_count += 1
 
-        delay = min(self.base_delay * (2 ** (self._attempt_count - 1)), self.max_delay)
+        delay = min(
+            self.base_delay * (2 ** (self._attempt_count - 1)), self.max_delay
+        )
 
         jitter = random.uniform(0, 0.1 * delay)
         final_delay = delay + jitter

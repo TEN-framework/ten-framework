@@ -41,7 +41,9 @@ class Dumper:
                 # Generate new filename
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 base, ext = os.path.splitext(self.dump_file_base_path)
-                self.dump_file_path = f"{base}_{timestamp}_{secrets.token_hex(3)}{ext}"
+                self.dump_file_path = (
+                    f"{base}_{timestamp}_{secrets.token_hex(3)}{ext}"
+                )
 
                 # Open new file first
                 os.makedirs(os.path.dirname(self.dump_file_path), exist_ok=True)
