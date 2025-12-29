@@ -26,7 +26,6 @@ class UnlimitedReconnectTester(AsyncExtensionTester):
         super().__init__()
         self.recv_error_count = 0
         self.max_failures_before_success = max_failures_before_success
-        self.reconnect_delays = []
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
@@ -46,7 +45,9 @@ class UnlimitedReconnectTester(AsyncExtensionTester):
             ten_env_tester.stop_test(err)
 
     @override
-    async def on_data(self, ten_env_tester: AsyncTenEnvTester, data: Data) -> None:
+    async def on_data(
+        self, ten_env_tester: AsyncTenEnvTester, data: Data
+    ) -> None:
         data_name = data.get_name()
         if data_name == "error":
             self.recv_error_count += 1

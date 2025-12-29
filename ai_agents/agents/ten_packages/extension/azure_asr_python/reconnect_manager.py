@@ -30,7 +30,7 @@ class ReconnectManager:
         self.attempts = 0
         self._connection_successful = False
 
-    def reset_counter(self):
+    def _reset_counter(self):
         """Reset reconnection counter"""
         self.attempts = 0
         if self.logger:
@@ -39,7 +39,7 @@ class ReconnectManager:
     def mark_connection_successful(self):
         """Mark connection as successful and reset counter"""
         self._connection_successful = True
-        self.reset_counter()
+        self._reset_counter()
 
     def get_attempts_info(self) -> dict:
         """Get current reconnection attempts information"""
@@ -70,7 +70,9 @@ class ReconnectManager:
         self.attempts += 1
 
         # Calculate exponential backoff delay with max limit: min(2^(attempts-1) * base_delay, max_delay)
-        delay = min(self.base_delay * (2 ** (self.attempts - 1)), self.max_delay)
+        delay = min(
+            self.base_delay * (2 ** (self.attempts - 1)), self.max_delay
+        )
 
         if self.logger:
             self.logger.log_warn(
