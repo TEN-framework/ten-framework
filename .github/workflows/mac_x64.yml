@@ -145,15 +145,9 @@ jobs:
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/usr/local/opt/llvm/bin:$PATH"
-            # Add LLVM library path for libc++ linking in debug mode
-            if [ -d "/usr/local/opt/llvm/lib" ]; then
-              export LIBRARY_PATH="/usr/local/opt/llvm/lib:$LIBRARY_PATH"
-              export LDFLAGS="-L/usr/local/opt/llvm/lib $LDFLAGS"
-              echo "Added LLVM library path for debug build"
-            fi
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
-          # Add gettext library path for intl library linking
+          # Add gettext library path for intl library linking (needed for Python binding)
           # Try common Homebrew paths for gettext
           GETTEXT_LIB_PATH=""
           if [ -d "/usr/local/opt/gettext/lib" ]; then
@@ -171,8 +165,6 @@ jobs:
             echo "Warning: gettext library path not found, intl linking may fail"
           fi
           echo $PATH
-          echo "LIBRARY_PATH: $LIBRARY_PATH"
-          echo "LDFLAGS: $LDFLAGS"
 
           df -h .
 

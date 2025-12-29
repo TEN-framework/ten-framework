@@ -5,10 +5,11 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import("//build/options.gni")
+import("//build/ten_runtime/ten.gni")
 import("//build/ten_utils/options.gni")
 import("//build/ten_utils/utils.gni")
 
-ten_utils_test("ten_utils_unit_test") {
+ten_executable("ten_utils_unit_test") {
   output_dir = "${root_out_dir}/tests/standalone"
 
   deps = []
