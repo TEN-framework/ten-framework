@@ -147,7 +147,26 @@ jobs:
             export PATH="/usr/local/opt/llvm/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
+          # Add gettext library path for intl library linking
+          # Try common Homebrew paths for gettext
+          GETTEXT_LIB_PATH=""
+          if [ -d "/usr/local/opt/gettext/lib" ]; then
+            GETTEXT_LIB_PATH="/usr/local/opt/gettext/lib"
+          elif [ -d "/opt/homebrew/opt/gettext/lib" ]; then
+            GETTEXT_LIB_PATH="/opt/homebrew/opt/gettext/lib"
+          elif [ -n "$(brew --prefix gettext 2>/dev/null)" ]; then
+            GETTEXT_LIB_PATH="$(brew --prefix gettext)/lib"
+          fi
+          if [ -n "$GETTEXT_LIB_PATH" ]; then
+            export LIBRARY_PATH="$GETTEXT_LIB_PATH:$LIBRARY_PATH"
+            export LDFLAGS="-L$GETTEXT_LIB_PATH $LDFLAGS"
+            echo "Added gettext library path: $GETTEXT_LIB_PATH"
+          else
+            echo "Warning: gettext library path not found, intl linking may fail"
+          fi
           echo $PATH
+          echo "LIBRARY_PATH: $LIBRARY_PATH"
+          echo "LDFLAGS: $LDFLAGS"
 
           df -h .
 
