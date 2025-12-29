@@ -5,7 +5,6 @@
 #
 import asyncio
 import json
-import os
 import time
 from typing import Any, List, Optional
 
@@ -102,10 +101,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                         "endpoint detection must be enabled when finalize_mode is IGNORE"
                     )
             if self.config.dump:
-                dump_file_path = os.path.join(
+                self.audio_dumper = Dumper(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
-                self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = SonioxASRConfig.model_validate_json("{}")
@@ -261,10 +259,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         callback = None
         if self.config.dump_rotate_on_finalize and self.audio_dumper:
 
-            async def rotate_callback():
-                timestamp_ms = int(time.time() * 1000)
+            async def rotate_callback(audio_timestamp_ts: int = 0):
                 self.ten_env.log_info(
-                    f"Sending finalize to Soniox server at timestamp: {timestamp_ms}",
+                    f"Sending finalize to Soniox server at timestamp: {audio_timestamp_ts}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
                 if self.audio_dumper:
