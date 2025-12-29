@@ -264,7 +264,6 @@ jobs:
           $buildArgs += "ten_enable_nodejs_binding=false"
           $buildArgs += "ten_enable_rust_incremental_build=false"
           $buildArgs += "ten_manager_enable_frontend=false"
-          $buildArgs += "ten_enable_integration_tests_prebuilt=false"
           $argsString = $buildArgs -join " "
           Write-Host "Build arguments: $argsString"
 
