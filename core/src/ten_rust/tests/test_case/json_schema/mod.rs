@@ -7,8 +7,8 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::json_schema::{
-        ten_validate_manifest_json_string, ten_validate_property_json_string,
-        validate_manifest_lock_json_string,
+        ten_validate_interface_json_string, ten_validate_manifest_json_string,
+        ten_validate_property_json_string, validate_manifest_lock_json_string,
     };
 
     #[test]
@@ -2441,6 +2441,346 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_api_property_with_string_description() {
+        // Test that property with simple string description succeeds
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": "API key for authentication"
+                },
+                "timeout": {
+                  "type": "int32",
+                  "description": "Request timeout in milliseconds"
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        println!("result: {result:?}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_api_property_with_localized_description() {
+        // Test that property with localizedText description succeeds
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": {
+                    "locales": {
+                      "en-US": {
+                        "content": "API key for authentication"
+                      },
+                      "zh-CN": {
+                        "content": "用于身份验证的 API 密钥"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        println!("result: {result:?}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_cmd_in_property_with_string_description() {
+        // Test that cmd_in property with string description succeeds
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "cmd_in": [
+              {
+                "name": "tool_call",
+                "property": {
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "tool name"
+                    },
+                    "args": {
+                      "type": "string",
+                      "description": "tool arguments"
+                    }
+                  },
+                  "required": ["name"]
+                }
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_cmd_in_property_with_localized_description() {
+        // Test that cmd_in property with localizedText description succeeds
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "bingsearch_tool_python",
+          "version": "0.2.0",
+          "dependencies": [],
+          "api": {
+            "cmd_in": [
+              {
+                "name": "tool_call",
+                "property": {
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "tool name"
+                    },
+                    "args": {
+                      "type": "string",
+                      "description": {
+                        "locales": {
+                          "en-US": {
+                            "content": "tool arguments"
+                          },
+                          "zh-CN": {
+                            "content": "工具参数"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": ["name"]
+                }
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_nested_object_property_with_description() {
+        // Test nested object properties with descriptions
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "cmd_in": [
+              {
+                "name": "configure",
+                "property": {
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "Configuration settings",
+                      "properties": {
+                        "host": {
+                          "type": "string",
+                          "description": {
+                            "locales": {
+                              "en-US": {
+                                "content": "Server hostname"
+                              },
+                              "zh-CN": {
+                                "content": "服务器主机名"
+                              }
+                            }
+                          }
+                        },
+                        "port": {
+                          "type": "int32",
+                          "description": "Server port number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_array_items_with_description() {
+        // Test array items with description
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "servers": {
+                  "type": "array",
+                  "description": "List of server configurations",
+                  "items": {
+                    "type": "object",
+                    "description": "Server configuration",
+                    "properties": {
+                      "url": {
+                        "type": "string",
+                        "description": "Server URL"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_description_with_invalid_locale() {
+        // Test that invalid locale format fails
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": {
+                    "locales": {
+                      "invalid_locale": {
+                        "content": "Invalid locale format"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        println!("Error message: {}", msg);
+        // The invalid locale name should cause validation error
+        assert!(
+            msg.contains("oneOf")
+                || msg.contains("does not match")
+                || msg.contains("Property name")
+        );
+    }
+
+    #[test]
+    fn test_validate_description_localized_text_empty_locales() {
+        // Test that localizedText with empty locales fails
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": {
+                    "locales": {}
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        println!("Error message: {}", msg);
+        // Empty locales object should fail validation due to oneOf constraint
+        assert!(
+            msg.contains("oneOf") || msg.contains("minProperties") || msg.contains("has less than")
+        );
+    }
+
+    #[test]
+    fn test_validate_description_localized_text_missing_content() {
+        // Test that localizedText without content or import_uri fails
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "api_key": {
+                  "type": "string",
+                  "description": {
+                    "locales": {
+                      "en-US": {}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("oneOf"));
+    }
+
+    #[test]
     fn test_validate_msg_dest_extension_with_app() {
         let property = r#"{
   "ten": {
@@ -3167,5 +3507,415 @@ mod tests {
         let result = ten_validate_property_json_string(property);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Additional properties are not allowed"));
+    }
+
+    // Tests for interface.json API description support
+    #[test]
+    fn test_validate_interface_cmd_in_with_string_description() {
+        // Test that cmd_in in interface.json with string description succeeds
+        let interface = r#"
+        {
+          "cmd_in": [
+            {
+              "name": "search",
+              "property": {
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "Search query text"
+                  },
+                  "limit": {
+                    "type": "int32",
+                    "description": "Maximum number of results"
+                  }
+                },
+                "required": ["query"]
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_cmd_in_with_localized_description() {
+        // Test that cmd_in in interface.json with localizedText description succeeds
+        let interface = r#"
+        {
+          "cmd_in": [
+            {
+              "name": "execute",
+              "property": {
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Action to execute"
+                        },
+                        "zh-CN": {
+                          "content": "要执行的动作"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_cmd_out_with_description() {
+        // Test that cmd_out with description succeeds
+        let interface = r#"
+        {
+          "cmd_out": [
+            {
+              "name": "result",
+              "property": {
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "Operation status"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Status message"
+                        },
+                        "zh-CN": {
+                          "content": "状态消息"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "result": {
+                "property": {
+                  "properties": {
+                    "data": {
+                      "type": "string",
+                      "description": "Result data"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_data_in_with_description() {
+        // Test that data_in with description succeeds
+        let interface = r#"
+        {
+          "data_in": [
+            {
+              "name": "input_data",
+              "property": {
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Input content"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Metadata information"
+                        },
+                        "zh-CN": {
+                          "content": "元数据信息"
+                        }
+                      }
+                    },
+                    "properties": {
+                      "timestamp": {
+                        "type": "int64",
+                        "description": "Unix timestamp"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_data_out_with_description() {
+        // Test that data_out with description succeeds
+        let interface = r#"
+        {
+          "data_out": [
+            {
+              "name": "output_data",
+              "property": {
+                "properties": {
+                  "result": {
+                    "type": "string",
+                    "description": "Output result"
+                  },
+                  "confidence": {
+                    "type": "float64",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Confidence score"
+                        },
+                        "zh-CN": {
+                          "content": "置信度分数"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_audio_frame_with_description() {
+        // Test that audio_frame_in/out with description succeeds
+        let interface = r#"
+        {
+          "audio_frame_in": [
+            {
+              "name": "audio_input",
+              "property": {
+                "properties": {
+                  "sample_rate": {
+                    "type": "int32",
+                    "description": "Audio sample rate in Hz"
+                  },
+                  "channels": {
+                    "type": "int32",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Number of audio channels"
+                        },
+                        "zh-CN": {
+                          "content": "音频通道数"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "audio_frame_out": [
+            {
+              "name": "audio_output",
+              "property": {
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "description": "Audio format"
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_video_frame_with_description() {
+        // Test that video_frame_in/out with description succeeds
+        let interface = r#"
+        {
+          "video_frame_in": [
+            {
+              "name": "video_input",
+              "property": {
+                "properties": {
+                  "width": {
+                    "type": "int32",
+                    "description": "Video width in pixels"
+                  },
+                  "height": {
+                    "type": "int32",
+                    "description": {
+                      "locales": {
+                        "en-US": {
+                          "content": "Video height in pixels"
+                        },
+                        "zh-CN": {
+                          "content": "视频高度（像素）"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "video_frame_out": [
+            {
+              "name": "video_output",
+              "property": {
+                "properties": {
+                  "fps": {
+                    "type": "int32",
+                    "description": "Frames per second"
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_interface_result_property_with_description() {
+        // Test that result properties with description succeed
+        let interface = r#"
+        {
+          "cmd_in": [
+            {
+              "name": "process",
+              "property": {
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "Input data"
+                  }
+                }
+              },
+              "result": {
+                "property": {
+                  "properties": {
+                    "output": {
+                      "type": "string",
+                      "description": "Processed output"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": {
+                        "locales": {
+                          "en-US": {
+                            "content": "Error message if any"
+                          },
+                          "zh-CN": {
+                            "content": "错误消息（如果有）"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_interface_json_string(interface);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_manifest_top_level_description_must_be_localized() {
+        // Test that top-level description does NOT support simple string (must be
+        // localizedText)
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "description": "This simple string should fail",
+          "dependencies": []
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        // Should fail because description at top level requires localizedText format
+        // (object type)
+        assert!(error_msg.contains("is not of type \"object\""));
+    }
+
+    #[test]
+    fn test_validate_api_description_supports_both_formats() {
+        // Test that API description supports BOTH string and localizedText
+        let manifest = r#"
+        {
+          "type": "extension",
+          "name": "test_extension",
+          "version": "0.1.0",
+          "description": {
+            "locales": {
+              "en-US": {
+                "content": "Top-level must be localized"
+              }
+            }
+          },
+          "dependencies": [],
+          "api": {
+            "property": {
+              "properties": {
+                "simple_prop": {
+                  "type": "string",
+                  "description": "Simple string description for API property"
+                },
+                "localized_prop": {
+                  "type": "string",
+                  "description": {
+                    "locales": {
+                      "en-US": {
+                        "content": "Localized description for API property"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_manifest_json_string(manifest);
+        assert!(result.is_ok());
     }
 }

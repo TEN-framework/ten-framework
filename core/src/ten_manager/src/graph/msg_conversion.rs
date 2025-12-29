@@ -65,6 +65,7 @@ fn navigate_property_path_mut<'a>(
                         } else {
                             ValueType::Object
                         },
+                        description: None,
                         items: None,
                         properties: None,
                         required: None,
@@ -86,6 +87,7 @@ fn navigate_property_path_mut<'a>(
                 if prop.items.is_none() {
                     prop.items = Some(Box::new(ManifestApiPropertyAttributes {
                         prop_type: ValueType::Object,
+                        description: None,
                         items: None,
                         properties: None,
                         required: None,
@@ -108,6 +110,7 @@ fn navigate_property_path_mut<'a>(
                 name.to_string(),
                 ManifestApiPropertyAttributes {
                     prop_type: if index.is_some() { ValueType::Array } else { ValueType::Object },
+                    description: None,
                     items: None,
                     properties: Some(HashMap::new()),
                     required: None,
@@ -128,6 +131,7 @@ fn navigate_property_path_mut<'a>(
             if prop.items.is_none() {
                 prop.items = Some(Box::new(ManifestApiPropertyAttributes {
                     prop_type: ValueType::Object,
+                    description: None,
                     items: None,
                     properties: Some(HashMap::new()),
                     required: None,
@@ -333,6 +337,7 @@ fn convert_rules_to_schema_properties(
                                 ManifestApiPropertyAttributes {
                                     // Will be replaced based on value.
                                     prop_type: ValueType::Object,
+                                    description: None,
                                     items: None,
                                     properties: None,
                                     required: None,
