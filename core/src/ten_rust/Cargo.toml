@@ -84,9 +84,6 @@ default = ["service-hub"]
 service-hub = []
 deprecated = ["bindgen"]
 
-[profile.dev]
-panic = "abort"
-
 [profile.release]
 lto = true
 opt-level = 3

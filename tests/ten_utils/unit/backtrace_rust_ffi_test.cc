@@ -34,8 +34,7 @@ void on_error(void *ctx, const char *msg, int errnum, void *data) {
                 (msg != nullptr) ? msg : "<null>");
 }
 
-// TODO(xilin): Enable this test in the future.
-TEST(BacktraceRustFfiSmoke, DISABLED_DumpFrames) {  // NOLINT
+TEST(BacktraceRustFfiSmoke, DumpFrames) {  // NOLINT
   g_frame_count = 0;
   int rc = ten_rust_backtrace_dump(nullptr, on_dump, on_error, 0);
   // rc 0 means not interrupted
