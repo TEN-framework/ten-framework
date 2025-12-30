@@ -498,9 +498,10 @@ jobs:
           out/mac/arm64/tests/standalone/ten_runtime_smoke_test
 
           df -h .
-      #   continue-on-error: true
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_rust standalone tests)
         env:
