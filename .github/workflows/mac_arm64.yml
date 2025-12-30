@@ -123,8 +123,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
@@ -432,8 +431,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
@@ -498,10 +496,10 @@ jobs:
           out/mac/arm64/tests/standalone/ten_runtime_smoke_test
 
           df -h .
-        continue-on-error: true
+      #   continue-on-error: true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_rust standalone tests)
         env:
@@ -594,8 +592,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
@@ -692,8 +689,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
@@ -798,8 +794,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
@@ -904,8 +899,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup toolchain install 1.89.0
-          rustup default 1.89.0
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
