@@ -468,6 +468,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -620,6 +623,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -720,6 +726,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -828,6 +837,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -936,6 +948,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
