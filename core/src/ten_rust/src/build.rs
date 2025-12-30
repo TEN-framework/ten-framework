@@ -177,12 +177,6 @@ fn main() {
         deprecated::auto_gen_schema_bindings_from_c();
     }
 
-    #[cfg(target_os = "macos")]
-    {
-        // Set stack size to 32 MiB on macOS
-        println!("cargo:rustc-link-arg=-Wl,-stack_size,33554432");
-    }
-
     // If the auto-detected utils library path is incorrect, we can specify it
     // using the environment variable.
     let utils_search_path: String = match env::var("TEN_UTILS_LIBRARY_PATH") {
