@@ -21,7 +21,7 @@ class SonioxASRConfig(BaseModel):
     finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
     finalize_holding: bool = False
     mute_pkg_duration_ms: int = 800
-    enable_keepalive: bool = False
+    enable_keepalive: bool = True
 
     def update(self, params: dict[str, Any]):
         special_params = [
