@@ -215,10 +215,6 @@ jobs:
 
           if ("${{ matrix.compiler }}" -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
-            rustup target add x86_64-pc-windows-gnu
-            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
-            # Or else toolchain may be switched to msvc during build
-            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
           } else {
             # msvc
             rustup default nightly-2025-09-18
@@ -275,6 +271,12 @@ jobs:
           $buildArgs += "ten_manager_enable_frontend=false"
           $argsString = $buildArgs -join " "
           Write-Host "Build arguments: $argsString"
+
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
+            # Or else toolchain may be switched to msvc during build
+            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
+          }
 
           tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
