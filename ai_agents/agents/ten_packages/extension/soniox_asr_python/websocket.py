@@ -106,9 +106,7 @@ class SonioxWebsocketClient:
         self._last_audio_time = 0.0
         self._keepalive_task = None
 
-        # This is an unreliable stats just for logging.
-        # It assumes every audio frames are 10ms long.
-        self._total_sent_audio_ts_ms = 0
+        self._total_sent_audio_bytes = 0
 
     async def connect(self):
         self._reset_client_state()
@@ -284,10 +282,10 @@ class SonioxWebsocketClient:
 
     async def _handle_send(self, ws, item: str | bytes | QueueItem):
         if isinstance(item, QueueItem):
-            await item.before_send_callback(self._total_sent_audio_ts_ms)
+            await item.before_send_callback(self._total_sent_audio_bytes)
             await ws.send(item.message)
         elif isinstance(item, bytes):
-            self._total_sent_audio_ts_ms += 10
+            self._total_sent_audio_bytes += len(item)
             await ws.send(item)
         else:  # str
             await ws.send(item)

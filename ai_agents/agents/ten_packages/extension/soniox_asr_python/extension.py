@@ -259,9 +259,16 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         callback = None
         if self.config.dump_rotate_on_finalize and self.audio_dumper:
 
-            async def rotate_callback(audio_timestamp_ts: int = 0):
+            async def rotate_callback(audio_bytes_sent: int = 0):
+                audio_timestamp_ms = int(
+                    audio_bytes_sent
+                    / self.input_audio_sample_width()
+                    / self.input_audio_channels()
+                    / self.input_audio_sample_rate()
+                    * 1000
+                )
                 self.ten_env.log_info(
-                    f"Sending finalize to Soniox server at timestamp: {audio_timestamp_ts}",
+                    f"Sending finalize to Soniox server at timestamp: {audio_timestamp_ms}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
                 if self.audio_dumper:
