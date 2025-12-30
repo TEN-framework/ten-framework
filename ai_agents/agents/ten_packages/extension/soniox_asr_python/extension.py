@@ -137,6 +137,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.config.url,
                 start_request,
                 enable_keepalive=self.config.enable_keepalive,
+                base_delay=0.5,
+                max_delay=4,
             )
             ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
             ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
