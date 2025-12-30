@@ -1200,20 +1200,21 @@ jobs:
 
           if (${matrix.compiler} -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+
+            # Explicitly install rust-std component for GNU
+            rustup component add rust-std-x86_64-pc-windows-gnu --toolchain nightly-x86_64-pc-windows-gnu
             rustup target add x86_64-pc-windows-gnu
-            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
-            # Or else toolchain may be switched to msvc during build
+
+            # Set environment to force use of GNU toolchain
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
+            $env:CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu"
+            $env:CC = "x86_64-w64-mingw32-gcc"
+            $env:CXX = "x86_64-w64-mingw32-g++"
           } else {
             # msvc
             rustup default nightly-2025-09-18
           }
           cargo install --force cbindgen
-
-          Write-Output "Verifying Rust toolchain..."
-          rustup show
-          rustc --version
-          cargo --version
 
           Write-Output "Verifying Rust toolchain..."
           rustup show
