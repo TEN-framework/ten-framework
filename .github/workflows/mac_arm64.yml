@@ -478,7 +478,6 @@ jobs:
 
       - name: Run Tests (ten_utils_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -490,7 +489,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -502,7 +500,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_smoke_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -517,7 +514,6 @@ jobs:
 
       - name: Run Tests (ten_rust standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -535,7 +531,6 @@ jobs:
 
       - name: Run Tests (ten_manager standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -642,7 +637,6 @@ jobs:
 
       - name: Run Tests (ten_manager pytest tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -742,7 +736,6 @@ jobs:
 
       - name: Run tests (ten_runtime C++ integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -850,7 +843,6 @@ jobs:
 
       - name: Run tests (ten_runtime Go integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -958,7 +950,6 @@ jobs:
 
       - name: Run tests (ten_runtime Python integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"

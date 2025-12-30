@@ -139,7 +139,21 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
-          rustup default nightly-2025-09-18
+          # $HOME could be different in different commands, causing path conflicts.
+          export CARGO_HOME=/root/.cargo
+          export RUSTUP_HOME=/root/.rustup
+
+          # Set Rust toolchain based on build type
+          # Linux debug uses nightly (for ASAN support)
+          # Linux release, Mac, and Windows use stable 1.83.0
+          if [ "${{ matrix.build_type }}" = "debug" ]; then
+            echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
+            rustup update nightly
+            rustup default nightly
+          else
+            echo "Setting Rust toolchain to stable 1.92.0 for Linux release build"
+            rustup default 1.92.0
+          fi
 
           df -h .
 
