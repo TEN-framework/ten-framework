@@ -118,7 +118,8 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          rustup default stable
+          rustup toolchain install 1.89.0
+          rustup default 1.89.0
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
