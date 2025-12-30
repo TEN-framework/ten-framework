@@ -461,6 +461,21 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
       - name: Run Tests (ten_utils_unit_test)
         env:
           ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
@@ -496,10 +511,10 @@ jobs:
           out/mac/arm64/tests/standalone/ten_runtime_smoke_test
 
           df -h .
-      #   continue-on-error: true
+        continue-on-error: true
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_rust standalone tests)
         env:
