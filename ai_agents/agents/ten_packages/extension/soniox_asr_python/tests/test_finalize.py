@@ -7,7 +7,7 @@
 import asyncio
 import json
 
-from ten_packages.extension.soniox_asr_python.websocket import (
+from ..websocket import (
     SonioxFinToken,
     SonioxTranscriptToken,
 )
@@ -20,8 +20,6 @@ from ten_runtime import (
     TenErrorCode,
 )
 from typing_extensions import override
-
-from .mock import patch_soniox_ws  # noqa: F401
 
 
 class SonioxAsrFinalizeTester(AsyncExtensionTester):
@@ -155,7 +153,10 @@ class SonioxAsrFinalizeTester(AsyncExtensionTester):
 
 
 def test_finalize(patch_soniox_ws):
-    async def fake_connect():
+    from ..websocket import SonioxFinToken, SonioxTranscriptToken
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
         # Simulate connection opening
         await patch_soniox_ws.websocket_client.trigger_open()
 
@@ -172,12 +173,14 @@ def test_finalize(patch_soniox_ws):
         )
         await asyncio.sleep(0.1)
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
+    async def custom_finalize(
+        trailing_silence_ms=None, before_send_callback=None
+    ):
         # When finalize is called, send final results
         await asyncio.sleep(0.1)
+
+        if before_send_callback:
+            await before_send_callback()
 
         # Send final transcript
         final_token = SonioxTranscriptToken(
@@ -197,14 +200,13 @@ def test_finalize(patch_soniox_ws):
         # Trigger finished event
         await patch_soniox_ws.websocket_client.trigger_finished(1000, 1000)
 
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    # Create and inject mocks
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+        on_finalize=custom_finalize,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {

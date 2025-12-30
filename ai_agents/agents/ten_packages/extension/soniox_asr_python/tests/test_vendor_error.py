@@ -17,8 +17,6 @@ from ten_runtime import (
 )
 from typing_extensions import override
 
-from .mock import patch_soniox_ws  # noqa: F401
-
 
 class SonioxAsrVendorErrorTester(AsyncExtensionTester):
 
@@ -121,7 +119,9 @@ class SonioxAsrVendorErrorTester(AsyncExtensionTester):
 
 
 def test_vendor_authentication_error(patch_soniox_ws):
-    async def fake_connect():
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
         # Simulate connection opening
         await patch_soniox_ws.websocket_client.trigger_open()
 
@@ -133,20 +133,11 @@ def test_vendor_authentication_error(patch_soniox_ws):
             "auth_failed", "Invalid API key"
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
@@ -167,7 +158,9 @@ def test_vendor_authentication_error(patch_soniox_ws):
 
 
 def test_vendor_quota_exceeded_error(patch_soniox_ws):
-    async def fake_connect():
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
         # Simulate connection opening
         await patch_soniox_ws.websocket_client.trigger_open()
 
@@ -179,20 +172,11 @@ def test_vendor_quota_exceeded_error(patch_soniox_ws):
             "quota_exceeded", "Monthly quota limit reached"
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
@@ -213,7 +197,9 @@ def test_vendor_quota_exceeded_error(patch_soniox_ws):
 
 
 def test_vendor_unsupported_format_error(patch_soniox_ws):
-    async def fake_connect():
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
         # Simulate connection opening
         await patch_soniox_ws.websocket_client.trigger_open()
 
@@ -225,20 +211,11 @@ def test_vendor_unsupported_format_error(patch_soniox_ws):
             "unsupported_format", "Unsupported audio format"
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
@@ -259,7 +236,9 @@ def test_vendor_unsupported_format_error(patch_soniox_ws):
 
 
 def test_vendor_service_unavailable_error(patch_soniox_ws):
-    async def fake_connect():
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
         # Simulate service unavailable - immediate error on connect
         await asyncio.sleep(0.1)
 
@@ -269,20 +248,11 @@ def test_vendor_service_unavailable_error(patch_soniox_ws):
             "Soniox transcription service is temporarily unavailable",
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
