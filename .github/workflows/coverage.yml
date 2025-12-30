@@ -243,7 +243,7 @@ jobs:
 
           # Install Rust stable because we need to disable asan to avoid coverage instrumentation conflicts.
           # Therefore, rust nightly is not needed.
-          rustup default 1.92.0
+          rustup default stable
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM

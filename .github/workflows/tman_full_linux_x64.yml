@@ -145,14 +145,14 @@ jobs:
 
           # Set Rust toolchain based on build type
           # Linux debug uses nightly (for ASAN support)
-          # Linux release, Mac, and Windows use stable 1.83.0
+          # Linux release, Mac, and Windows use stable
           if [ "${{ matrix.build_type }}" = "debug" ]; then
             echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
             rustup update nightly
             rustup default nightly
           else
-            echo "Setting Rust toolchain to stable 1.92.0 for Linux release build"
-            rustup default 1.92.0
+            echo "Setting Rust toolchain to stable for Linux release build"
+            rustup default stable
           fi
 
           df -h .
