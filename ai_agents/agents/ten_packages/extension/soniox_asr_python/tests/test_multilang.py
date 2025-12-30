@@ -7,7 +7,7 @@
 import asyncio
 import json
 
-from ten_packages.extension.soniox_asr_python.websocket import (
+from ..websocket import (
     SonioxFinToken,
     SonioxTranscriptToken,
 )
@@ -20,8 +20,6 @@ from ten_runtime import (
     TenErrorCode,
 )
 from typing_extensions import override
-
-from .mock import patch_soniox_ws  # noqa: F401
 
 
 class SonioxAsrMultiLangTester(AsyncExtensionTester):
@@ -128,9 +126,11 @@ class SonioxAsrMultiLangTester(AsyncExtensionTester):
 
 
 def test_english_recognition(patch_soniox_ws):
-    async def fake_connect():
-        await patch_soniox_ws.websocket_client.trigger_open()
+    from ..websocket import SonioxFinToken, SonioxTranscriptToken
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
 
+    async def custom_connect():
+        await patch_soniox_ws.websocket_client.trigger_open()
         await asyncio.sleep(0.2)
 
         # Send English transcription results
@@ -161,20 +161,11 @@ def test_english_recognition(patch_soniox_ws):
             [token2, fin_token], 1500, 1500
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
@@ -194,9 +185,11 @@ def test_english_recognition(patch_soniox_ws):
 
 
 def test_spanish_recognition(patch_soniox_ws):
-    async def fake_connect():
-        await patch_soniox_ws.websocket_client.trigger_open()
+    from ..websocket import SonioxFinToken, SonioxTranscriptToken
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
 
+    async def custom_connect():
+        await patch_soniox_ws.websocket_client.trigger_open()
         await asyncio.sleep(0.2)
 
         # Send Spanish transcription results
@@ -227,20 +220,11 @@ def test_spanish_recognition(patch_soniox_ws):
             [token2, fin_token], 1500, 1500
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
@@ -260,9 +244,11 @@ def test_spanish_recognition(patch_soniox_ws):
 
 
 def test_multilang_hints(patch_soniox_ws):
-    async def fake_connect():
-        await patch_soniox_ws.websocket_client.trigger_open()
+    from ..websocket import SonioxFinToken, SonioxTranscriptToken
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
 
+    async def custom_connect():
+        await patch_soniox_ws.websocket_client.trigger_open()
         await asyncio.sleep(0.2)
 
         # Send mixed language results
@@ -302,20 +288,11 @@ def test_multilang_hints(patch_soniox_ws):
             [token3, fin_token], 1500, 1500
         )
 
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     property_json = {
         "params": {
