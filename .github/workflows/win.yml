@@ -215,6 +215,7 @@ jobs:
 
           if ("${{ matrix.compiler }}" -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+            rustup target add x86_64-pc-windows-gnu
             # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
             # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
@@ -570,6 +571,7 @@ jobs:
 
           if (${matrix.compiler} -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+            rustup target add x86_64-pc-windows-gnu
             # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
             # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
@@ -716,6 +718,7 @@ jobs:
 
           if (${matrix.compiler} -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+            rustup target add x86_64-pc-windows-gnu
             # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
             # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
@@ -901,6 +904,7 @@ jobs:
 
           if (${matrix.compiler} -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+            rustup target add x86_64-pc-windows-gnu
             # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
             # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
@@ -1196,6 +1200,7 @@ jobs:
 
           if (${matrix.compiler} -eq "mingw") {
             rustup default nightly-x86_64-pc-windows-gnu
+            rustup target add x86_64-pc-windows-gnu
             # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
             # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
