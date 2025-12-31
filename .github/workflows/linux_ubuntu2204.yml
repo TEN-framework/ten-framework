@@ -146,6 +146,10 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
 
+          # $HOME could be different in different commands, causing path conflicts.
+          export CARGO_HOME=/root/.cargo
+          export RUSTUP_HOME=/root/.rustup
+
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
             go install golang.org/dl/go1.24.3@latest
