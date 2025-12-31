@@ -38,6 +38,7 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
@@ -120,7 +121,9 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup MSVC
+        if: matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - uses: actions/setup-python@v5
         with:
@@ -131,15 +134,104 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
+
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
+            exit 1
+          }
+
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
+        shell: pwsh
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
+
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            # Must use nightly for MinGW, otherwise error[E0554] will be triggered
+            # when rustc is building tman.exe, because sysinfo 0.32 uses
+            # "#![cfg_attr(target_os = "windows", feature(windows_by_handle))]"
+            # to use windows file handle API, which "may not be used on the stable
+            # release channel"
+            rustup default nightly-x86_64-pc-windows-gnu
+          } else {
+            # msvc
+            rustup default stable
+          }
           cargo install --force cbindgen
+
+          Write-Output "Verifying Rust toolchain..."
+          rustup show
+          rustc --version
+          cargo --version
 
       - name: Update version
         run: |
@@ -163,9 +255,39 @@ jobs:
         shell: pwsh
 
       - name: Build
+        shell: pwsh
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
-          tgn gen win x64 ${{ matrix.build_type }} -- vs_version=2022 log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false
+          $buildArgs = @()
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            $buildArgs += "is_mingw=true"
+            $buildArgs += "is_clang=false"
+            $buildArgs += "ten_enable_python_binding=false"
+          } else {
+            $buildArgs += "is_mingw=false" # msvc
+            $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
+            $buildArgs += "vs_version=2022"
+            $buildArgs += "ten_enable_python_binding=true"
+          }
+          $buildArgs += "log_level=1"
+          $buildArgs += "enable_serialized_actions=true"
+          $buildArgs += "ten_rust_enable_gen_cargo_config=false"
+          $buildArgs += "ten_enable_cargo_clean=true"
+          $buildArgs += "ten_enable_go_binding=false"
+          $buildArgs += "ten_enable_nodejs_binding=false"
+          $buildArgs += "ten_enable_rust_incremental_build=false"
+          $buildArgs += "ten_manager_enable_frontend=false"
+          $argsString = $buildArgs -join " "
+          Write-Host "Build arguments: $argsString"
+
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
+            # Or else toolchain may be switched to msvc during build
+            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
+            echo $env:RUSTUP_TOOLCHAIN
+          }
+
+          tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
 
       - name: Update supports before upload or publish
@@ -217,7 +339,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: tests-artifacts.zip
           if-no-files-found: ignore
 
@@ -410,6 +532,7 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -441,8 +564,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -459,8 +580,6 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
-          cargo install --force cbindgen
 
       - name: Get Python executable path
         run: |
@@ -479,7 +598,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -544,6 +663,7 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -575,8 +695,6 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -593,8 +711,6 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
-          cargo install --force cbindgen
 
       - name: Get Python executable path
         run: |
@@ -613,7 +729,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -638,6 +754,9 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
+        exclude:
+          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -670,7 +789,9 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup MSVC
+        if: matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - uses: actions/setup-python@v5
         with:
@@ -681,6 +802,78 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
+
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
+            exit 1
+          }
+
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
@@ -688,8 +881,6 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
-          cargo install --force cbindgen
 
       - name: Get Python executable path
         run: |
@@ -708,7 +899,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -844,6 +1035,9 @@ jobs:
     strategy:
       matrix:
         build_type: [debug, release]
+        compiler: [msvc, mingw]
+        exclude:
+          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -875,7 +1069,9 @@ jobs:
         with:
           node-version: 20
 
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup MSVC
+        if: matrix.compiler == 'msvc'
+        uses: ilammy/msvc-dev-cmd@v1
 
       - uses: actions/setup-python@v5
         with:
@@ -886,6 +1082,78 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Install MinGW and setup toolchain
+        shell: pwsh
+        run: |
+          Write-Output "Downloading MinGW from GitHub releases..."
+          $mingwUrl = "https://github.com/niXman/mingw-builds-binaries/releases/download/15.2.0-rt_v13-rev0/x86_64-15.2.0-release-posix-seh-ucrt-rt_v13-rev0.7z"
+          $mingwArchive = Join-Path $env:RUNNER_TEMP "mingw.7z"
+          $mingwBase = Join-Path $env:RUNNER_TEMP "mingw64"
+
+          try {
+            Invoke-WebRequest -Uri $mingwUrl -OutFile $mingwArchive -UseBasicParsing -ErrorAction Stop
+            Write-Output "Download completed: $mingwArchive"
+          } catch {
+            Write-Error "Failed to download MinGW: $($_.Exception.Message)"
+            exit 1
+          }
+
+          # Extract 7z archive
+          Write-Output "Extracting MinGW archive..."
+          if (Test-Path $mingwBase) {
+            Remove-Item -Recurse -Force $mingwBase
+          }
+          New-Item -ItemType Directory -Force -Path $mingwBase | Out-Null
+
+          # Use 7z to extract (7-Zip is expected on Windows runners; install via choco if missing)
+          $7zPath = "C:\Program Files\7-Zip\7z.exe"
+          if (-not (Test-Path $7zPath)) {
+            Write-Output "7-Zip not found at $7zPath, installing via Chocolatey..."
+            choco install 7zip -y --no-progress
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to install 7-Zip via Chocolatey"
+              exit 1
+            }
+            if (-not (Test-Path $7zPath)) {
+              Write-Error "7-Zip still not found at $7zPath after installation"
+              exit 1
+            }
+          }
+
+          & $7zPath x $mingwArchive -o"$mingwBase" -y | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to extract MinGW archive"
+            exit 1
+          }
+
+          # Find the mingw64 directory (it might be nested)
+          $mingw64Path = Get-ChildItem -Path $mingwBase -Recurse -Directory -Filter "mingw64" | Select-Object -First 1
+          if ($null -eq $mingw64Path) {
+            Write-Error "mingw64 directory not found after extraction"
+            exit 1
+          }
+
+          $mingwBinPath = Join-Path $mingw64Path.FullName "bin"
+          if (-not (Test-Path $mingwBinPath)) {
+            Write-Error "mingw64/bin directory not found"
+            exit 1
+          }
+
+          Write-Output "MinGW installed at: $mingwBinPath"
+
+          # Add to PATH
+          echo "$mingwBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          # Verify gcc
+          $env:PATH = "$mingwBinPath;$env:PATH"
+          & gcc --version
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "gcc not working!"
+            exit 1
+          }
+
+          Write-Output "MinGW installation successful"
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
@@ -893,8 +1161,6 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
-          cargo install --force cbindgen
 
       - name: Get Python executable path
         run: |
@@ -913,7 +1179,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-win-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}-${{ matrix.compiler }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
