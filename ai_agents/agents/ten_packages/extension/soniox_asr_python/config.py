@@ -17,9 +17,11 @@ class SonioxASRConfig(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     dump: bool = False
     dump_path: str = "."
+    dump_rotate_on_finalize: bool = False
     finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
     finalize_holding: bool = False
     mute_pkg_duration_ms: int = 800
+    enable_keepalive: bool = True
 
     def update(self, params: dict[str, Any]):
         special_params = [
@@ -27,9 +29,11 @@ class SonioxASRConfig(BaseModel):
             "sample_rate",
             "dump",
             "dump_path",
+            "dump_rotate_on_finalize",
             "finalize_mode",
             "finalize_holding",
             "mute_pkg_duration_ms",
+            "enable_keepalive",
         ]
         for key in special_params:
             if key in params:

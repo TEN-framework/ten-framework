@@ -8,6 +8,7 @@
 
 #include "include_internal/ten_utils/schema/constant_str.h"
 #include "include_internal/ten_utils/schema/keywords/keyword.h"
+#include "include_internal/ten_utils/schema/keywords/keyword_description.h"
 #include "include_internal/ten_utils/schema/keywords/keyword_items.h"
 #include "include_internal/ten_utils/schema/keywords/keyword_properties.h"
 #include "include_internal/ten_utils/schema/keywords/keyword_required.h"
@@ -48,6 +49,11 @@ static const ten_schema_keyword_info_t ten_schema_keywords_info[] = {
         {
             .name = TEN_SCHEMA_KEYWORD_STR_REQUIRED,
             .from_value = ten_schema_keyword_required_create_from_value,
+        },
+    [TEN_SCHEMA_KEYWORD_DESCRIPTION] =
+        {
+            .name = TEN_SCHEMA_KEYWORD_STR_DESCRIPTION,
+            .from_value = ten_schema_keyword_description_create_from_value,
         },
 };
 
