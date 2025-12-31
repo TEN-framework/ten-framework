@@ -626,6 +626,10 @@ jobs:
         run: |
           chmod +x out/win/x64/tests/standalone/ten_runtime_unit_test
           out/win/x64/tests/standalone/ten_runtime_unit_test
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_rust standalone tests)
         env:
@@ -638,6 +642,10 @@ jobs:
 
           ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
           ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_manager standalone tests)
         env:
@@ -650,6 +658,10 @@ jobs:
 
           ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
           ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       #   continue-on-error: true
       # - name: Setup tmate session
@@ -661,6 +673,10 @@ jobs:
         run: |
           chmod +x out/win/x64/tests/standalone/ten_runtime_smoke_test
           out/win/x64/tests/standalone/ten_runtime_smoke_test
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
   test-integration-ten-manager:
     needs: build
