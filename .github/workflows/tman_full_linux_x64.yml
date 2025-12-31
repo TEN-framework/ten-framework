@@ -139,10 +139,6 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
-          # $HOME could be different in different commands, causing path conflicts.
-          export CARGO_HOME=/root/.cargo
-          export RUSTUP_HOME=/root/.rustup
-
           # Set Rust toolchain based on build type
           # Linux debug uses nightly (for ASAN support)
           # Linux release, Mac, and Windows use stable
