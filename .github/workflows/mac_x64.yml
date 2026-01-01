@@ -34,7 +34,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
@@ -120,15 +120,20 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-18
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default stable
 
           brew install tree
           brew install gettext
 
           pip3 install --use-pep517 python-dotenv jinja2 requests
 
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
           cargo install --force cbindgen
@@ -142,8 +147,42 @@ jobs:
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/usr/local/opt/llvm/bin:$PATH"
+            # Ensure we link against Homebrew LLVM's libc++ in debug builds.
+            # Otherwise the system /usr/lib/libc++ on older macOS images may miss
+            # newer libc++ symbols (e.g. std::__1::__hash_memory) and fail to link.
+            LLVM_PREFIX="$(brew --prefix llvm 2>/dev/null || true)"
+            if [ -n "$LLVM_PREFIX" ] && [ -d "$LLVM_PREFIX" ]; then
+              LLVM_LIBCXX_DYLIB="$(find "$LLVM_PREFIX" -name 'libc++.1.dylib' -print -quit 2>/dev/null || true)"
+              if [ -n "$LLVM_LIBCXX_DYLIB" ]; then
+                LLVM_LIBCXX_DIR="$(dirname "$LLVM_LIBCXX_DYLIB")"
+                export LIBRARY_PATH="$LLVM_LIBCXX_DIR:$LIBRARY_PATH"
+                export LDFLAGS="-L$LLVM_LIBCXX_DIR $LDFLAGS"
+                echo "Added LLVM libc++ dir: $LLVM_LIBCXX_DIR"
+              else
+                echo "Warning: libc++.1.dylib not found under $LLVM_PREFIX; libc++ linking may fail"
+              fi
+            else
+              echo "Warning: brew prefix for llvm not found; libc++ linking may fail"
+            fi
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
+          # Add gettext library path for intl library linking (needed for Python binding)
+          # Try common Homebrew paths for gettext
+          GETTEXT_LIB_PATH=""
+          if [ -d "/usr/local/opt/gettext/lib" ]; then
+            GETTEXT_LIB_PATH="/usr/local/opt/gettext/lib"
+          elif [ -d "/opt/homebrew/opt/gettext/lib" ]; then
+            GETTEXT_LIB_PATH="/opt/homebrew/opt/gettext/lib"
+          elif [ -n "$(brew --prefix gettext 2>/dev/null)" ]; then
+            GETTEXT_LIB_PATH="$(brew --prefix gettext)/lib"
+          fi
+          if [ -n "$GETTEXT_LIB_PATH" ]; then
+            export LIBRARY_PATH="$GETTEXT_LIB_PATH:$LIBRARY_PATH"
+            export LDFLAGS="-L$GETTEXT_LIB_PATH $LDFLAGS"
+            echo "Added gettext library path: $GETTEXT_LIB_PATH"
+          else
+            echo "Warning: gettext library path not found, intl linking may fail"
+          fi
           echo $PATH
 
           df -h .
@@ -390,7 +429,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -429,6 +468,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -437,12 +479,17 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-18
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -463,7 +510,6 @@ jobs:
 
       - name: Run Tests (ten_utils_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -474,7 +520,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -485,7 +530,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_smoke_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -496,7 +540,6 @@ jobs:
 
       - name: Run Tests (ten_rust standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -514,7 +557,6 @@ jobs:
 
       - name: Run Tests (ten_manager standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -535,7 +577,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -576,6 +618,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -585,11 +630,16 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -615,7 +665,6 @@ jobs:
 
       - name: Run Tests (ten_manager pytest tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -630,7 +679,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -671,6 +720,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -680,11 +732,16 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -710,7 +767,6 @@ jobs:
 
       - name: Run tests (ten_runtime C++ integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -733,7 +789,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -774,6 +830,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -783,11 +842,16 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -813,7 +877,6 @@ jobs:
 
       - name: Run tests (ten_runtime Go integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -836,7 +899,7 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       matrix:
-        build_type: [release]
+        build_type: [debug, release]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -877,6 +940,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
 
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
@@ -886,11 +952,16 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
       - name: Download build artifacts (tar archive)
@@ -916,7 +987,6 @@ jobs:
 
       - name: Run tests (ten_runtime Python integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"

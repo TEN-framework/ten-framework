@@ -5,7 +5,6 @@
 #
 import asyncio
 import json
-import os
 import time
 from typing import Any, List, Optional
 
@@ -20,7 +19,6 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -31,6 +29,7 @@ from typing_extensions import override
 
 from .config import SonioxASRConfig, FinalizeMode
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .dumper import Dumper
 from .websocket import (
     SonioxFinToken,
     SonioxEndToken,
@@ -61,6 +60,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         super().__init__(name)
         self.connected: bool = False
         self.websocket: Optional[SonioxWebsocketClient] = None
+        self.ws_task: asyncio.Task[None] | None = None
         self.config: Optional[SonioxASRConfig] = None
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
@@ -101,10 +101,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                         "endpoint detection must be enabled when finalize_mode is IGNORE"
                     )
             if self.config.dump:
-                dump_file_path = os.path.join(
+                self.audio_dumper = Dumper(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
-                self.audio_dumper = Dumper(dump_file_path)
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = SonioxASRConfig.model_validate_json("{}")
@@ -134,7 +133,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         try:
             start_request = json.dumps(self.config.params)
-            ws = SonioxWebsocketClient(self.config.url, start_request)
+            ws = SonioxWebsocketClient(
+                self.config.url,
+                start_request,
+                enable_keepalive=self.config.enable_keepalive,
+                base_delay=0.5,
+                max_delay=4,
+            )
             ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
             ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
             ws.on(SonioxWebsocketEvents.EXCEPTION, self._handle_exception)
@@ -142,7 +147,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             ws.on(SonioxWebsocketEvents.FINISHED, self._handle_finished)
             ws.on(SonioxWebsocketEvents.TRANSCRIPT, self._handle_transcript)
             self.websocket = ws
-            asyncio.create_task(ws.connect())
+            self.ws_task = asyncio.create_task(ws.connect())
         except Exception as e:
             self.ten_env.log_error(f"start_connection failed: {e}")
             await self.send_asr_error(
@@ -205,7 +210,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         buf = frame.get_buf()
         if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(buf))
+            try:
+                await self.audio_dumper.push_bytes(bytes(buf))
+            except Exception as e:
+                self.ten_env.log_warn(
+                    f"Failed to push bytes into audio dumper, error: {str(e)}"
+                )
         self.audio_timeline.add_user_audio(
             int(len(buf) / (self.config.sample_rate / 1000 * 2))
         )
@@ -247,12 +257,40 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def _real_finalize(
         self, silence_duration_ms: int | None = None
     ) -> None:
+        # Create rotation callback if dump rotation is enabled
+        callback = None
+        if self.config.dump_rotate_on_finalize and self.audio_dumper:
+
+            async def rotate_callback(audio_bytes_sent: int = 0):
+                audio_timestamp_ms = int(
+                    audio_bytes_sent
+                    / self.input_audio_sample_width()
+                    / self.input_audio_channels()
+                    / self.input_audio_sample_rate()
+                    * 1000
+                )
+                self.ten_env.log_info(
+                    f"Sending finalize to Soniox server at timestamp: {audio_timestamp_ms}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                if self.audio_dumper:
+                    try:
+                        await self.audio_dumper.rotate()
+                    except Exception as e:
+                        self.ten_env.log_warn(
+                            f"Failed to rotate audio dumper, error: {str(e)}"
+                        )
+
+            callback = rotate_callback
+
         self.ten_env.log_info(
             f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         if self.websocket:
-            await self.websocket.finalize(silence_duration_ms)
+            await self.websocket.finalize(
+                silence_duration_ms, before_send_callback=callback
+            )
 
     async def _real_finalize_by_mute_pkg(self) -> None:
         self.ten_env.log_info(

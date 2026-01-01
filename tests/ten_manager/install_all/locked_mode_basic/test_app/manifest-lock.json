@@ -5,7 +5,7 @@
       "type": "extension",
       "name": "ext_a",
       "version": "2.0.0",
-      "hash": "4823744cb628c771c7baf0c8f5a1ce07716d7ba9c467c87382f7d9c414865fa3",
+      "hash": "9c3f624fcc3e1bf4619f59e1f1be7d8901673dcba625ef2afe26ba50f7252fe4",
       "supports": [
         {
           "os": "linux"

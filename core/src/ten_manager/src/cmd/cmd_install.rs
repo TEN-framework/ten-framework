@@ -424,9 +424,45 @@ async fn execute_locked_install(
                 ));
             }
 
+            // In locked mode, we must pick the exact package by the hash stored
+            // in manifest-lock.json. Selecting the first result can choose a
+            // package with incompatible supports.
+            if pkg.hash.is_empty() {
+                return Err(anyhow!(
+                    "Package '{}:{}@{}' in manifest-lock.json is missing 'hash'. Please re-run \
+                     'tman install' without --locked to regenerate the lock file.",
+                    pkg.manifest.type_and_name.pkg_type,
+                    pkg.manifest.type_and_name.name,
+                    pkg.manifest.version
+                ));
+            }
+
+            let matched = found_packages.iter().find(|p| p.hash == pkg.hash);
+            let matched = match matched {
+                Some(p) => p,
+                None => {
+                    let available_hashes = found_packages
+                        .iter()
+                        .map(|p| p.hash.clone())
+                        .filter(|h| !h.is_empty())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+
+                    return Err(anyhow!(
+                        "Package '{}:{}@{}' locked in manifest-lock.json not found in registry \
+                         with expected hash '{}'. Available hashes for this version: [{}].",
+                        pkg.manifest.type_and_name.pkg_type,
+                        pkg.manifest.type_and_name.name,
+                        pkg.manifest.version,
+                        pkg.hash,
+                        available_hashes
+                    ));
+                }
+            };
+
             // Update the URL in the locked package info
             let mut pkg_with_url = pkg;
-            pkg_with_url.url = found_packages[0].download_url.clone();
+            pkg_with_url.url = matched.download_url.clone();
             Ok(pkg_with_url)
         });
 

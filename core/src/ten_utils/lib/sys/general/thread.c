@@ -192,6 +192,24 @@ ten_thread_t *ten_thread_create(const char *name,
   pthread_attr_setstacksize(&attr, stacksize);
 
   attr_ptr = &attr;
+#elif defined(OS_MACOS)
+  pthread_attr_t attr;
+  pthread_attr_init(&attr);
+  /*
+   * NOTE:
+   * On macOS, the default stack size for newly created threads can be as small
+   * as 512KB. We observed stack overflow when TEN Runtime calls into Rust code
+   * (deep call stacks / larger stack frames).
+   *
+   * `ulimit -s` only affects the main thread's stack size; it does NOT
+   * automatically increase the stack size of threads created via pthreads.
+   * Therefore we must set the stack size explicitly for all threads using
+   * `pthread_attr_setstacksize()` before `pthread_create()`.
+   */
+  size_t stacksize = 8UL * 1024UL * 1024UL;
+  pthread_attr_setstacksize(&attr, stacksize);
+
+  attr_ptr = &attr;
 #endif
 
   int rc = pthread_create(&self, attr_ptr, pthread_routine, thread);
