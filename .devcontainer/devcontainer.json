@@ -1,6 +1,6 @@
 {
   "name": "ten_framework",
-  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.12",
+  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.14",
   "customizations": {
     "vscode": {
       "extensions": [
