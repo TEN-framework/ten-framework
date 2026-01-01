@@ -279,7 +279,7 @@ export function calculateVolume(pcmData: Float32Array): number {
  */
 export class AudioAnalyzer {
   private analyser: AnalyserNode | null = null;
-  private dataArray: Uint8Array | null = null;
+  private dataArray: Uint8Array<ArrayBuffer> | null = null;
 
   constructor(
     private audioContext: AudioContext,
@@ -287,7 +287,9 @@ export class AudioAnalyzer {
   ) {
     this.analyser = this.audioContext.createAnalyser();
     this.analyser.fftSize = 256;
-    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+    this.dataArray = new Uint8Array(
+      new ArrayBuffer(this.analyser.frequencyBinCount)
+    );
     this.source.connect(this.analyser);
   }
 

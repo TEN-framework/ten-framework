@@ -16,16 +16,9 @@
     "emitDecoratorMetadata": true,
     "rootDir": "src",
     "strict": true,
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
-    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2020", "DOM"],
+    "forceConsistentCasingInFileNames": true
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "include": [
-    "src/**/*"
-  ]
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"]
 }

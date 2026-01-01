@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { type SWRResponse, type SWRConfiguration } from "swr"
-import useSWR from "swr"
+import type { SWRConfiguration, SWRResponse } from "swr";
+import useSWR from "swr";
 
 // https://github.com/vercel/swr/discussions/2330#discussioncomment-4460054
 export function useCancelableSWR<T>(
   key: string,
-  opts?: SWRConfiguration,
+  opts?: SWRConfiguration
 ): [SWRResponse<T>, AbortController] {
-  const controller = new AbortController()
+  const controller = new AbortController();
   return [
     useSWR(
       key,
@@ -21,10 +21,10 @@ export function useCancelableSWR<T>(
         // dedupingInterval: 30000,
         // focusThrottleInterval: 60000,
         ...opts,
-      },
+      }
     ),
     controller,
-  ]
+  ];
   // to use it:
   // const [{ data }, controller] = useCancelableSWR('/api')
   // ...

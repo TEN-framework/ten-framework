@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -9,15 +9,18 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith('/api/token/')) {
+  if (pathname.startsWith("/api/token/")) {
     const url = req.nextUrl.clone();
-    url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/token/', '/token/')}`;
+    url.href = `${AGENT_SERVER_URL}${pathname.replace("/api/token/", "/token/")}`;
     return NextResponse.rewrite(url);
   }
 
-  if (pathname.startsWith('/api/agents/') && !pathname.startsWith('/api/agents/start')) {
+  if (
+    pathname.startsWith("/api/agents/") &&
+    !pathname.startsWith("/api/agents/start")
+  ) {
     const url = req.nextUrl.clone();
-    url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/agents/', '/')}`;
+    url.href = `${AGENT_SERVER_URL}${pathname.replace("/api/agents/", "/")}`;
     return NextResponse.rewrite(url);
   }
 
@@ -26,5 +29,5 @@ export function middleware(req: NextRequest) {
 
 // Only run middleware for API routes
 export const config = {
-  matcher: ['/api/:path*'],
-}
+  matcher: ["/api/:path*"],
+};

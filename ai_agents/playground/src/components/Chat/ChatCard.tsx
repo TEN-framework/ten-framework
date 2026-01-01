@@ -17,7 +17,7 @@ import {
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
-  const [modal2Open, setModal2Open] = React.useState(false);
+  const [_modal2Open, _setModal2Open] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
@@ -49,9 +49,9 @@ export default function ChatCard(props: { className?: string }) {
 
   useAutoScroll(chatRef);
 
-  const onTextChanged = (text: IRTMTextItem) => {
+  const _onTextChanged = (text: IRTMTextItem) => {
     console.log("[rtm] onTextChanged", text);
-    if (text.type == ERTMTextType.TRANSCRIBE) {
+    if (text.type === ERTMTextType.TRANSCRIBE) {
       // const isAgent = Number(text.uid) != Number(options.userId)
       dispatch(
         addChatItem({
@@ -64,7 +64,7 @@ export default function ChatCard(props: { className?: string }) {
         })
       );
     }
-    if (text.type == ERTMTextType.INPUT_TEXT) {
+    if (text.type === ERTMTextType.INPUT_TEXT) {
       dispatch(
         addChatItem({
           userId: options.userId,
@@ -103,7 +103,7 @@ export default function ChatCard(props: { className?: string }) {
           {/* Input area */}
           <div
             className={cn("border-t pt-4", {
-              ["hidden"]: !graphName.includes("rtm"), // TODO: TMP use rtm key word
+              hidden: !graphName.includes("rtm"), // TODO: TMP use rtm key word
             })}
           >
             <form
@@ -119,7 +119,7 @@ export default function ChatCard(props: { className?: string }) {
                 className={cn(
                   "grow rounded-md border bg-background p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring",
                   {
-                    ["cursor-not-allowed"]: disableInputMemo,
+                    "cursor-not-allowed": disableInputMemo,
                   }
                 )}
               />
@@ -129,8 +129,8 @@ export default function ChatCard(props: { className?: string }) {
                 size="icon"
                 variant="outline"
                 className={cn("bg-transparent", {
-                  ["opacity-50"]: disableInputMemo || inputValue.length === 0,
-                  ["cursor-not-allowed"]: disableInputMemo,
+                  "opacity-50": disableInputMemo || inputValue.length === 0,
+                  "cursor-not-allowed": disableInputMemo,
                 })}
               >
                 <Send className="h-4 w-4" />

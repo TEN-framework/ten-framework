@@ -3,9 +3,9 @@
  * Manages WebSocket connection and integrates with Zustand store
  */
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WebSocketManager } from "@/manager/websocket";
 import { useAgentStore } from "@/store/agentStore";
-import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseWebSocketOptions {
   url: string;
@@ -22,12 +22,14 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
     maxReconnectAttempts,
     reconnectInterval,
   } = typeof options === "string"
-      ? { url: options, autoConnect: false }
-      : options;
+    ? { url: options, autoConnect: false }
+    : options;
 
   const wsManagerRef = useRef<WebSocketManager | null>(null);
   // Expose the manager through state so consumers re-render
-  const [wsManagerState, setWsManagerState] = useState<WebSocketManager | null>(null);
+  const [wsManagerState, setWsManagerState] = useState<WebSocketManager | null>(
+    null
+  );
   // Select stable action references from Zustand store to avoid unnecessary re-renders
   // Zustand action function identities are stable; using selectors prevents effect churn
   const setWsConnected = useAgentStore((s) => s.setWsConnected);
@@ -97,7 +99,10 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
       }
 
       // Handle transcript messages (text_data with data_type: 'transcribe')
-      if (message.name === "text_data" && message.data?.data_type === "transcribe") {
+      if (
+        message.name === "text_data" &&
+        message.data?.data_type === "transcribe"
+      ) {
         const transcript = message.data;
         const text = transcript.text || "";
         const isFinal = transcript.is_final || false;
@@ -122,10 +127,7 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
       }
 
       // Handle other LLM text responses (non-transcribe)
-      if (
-        message.name === "llm_response" ||
-        message.name === "chat_message"
-      ) {
+      if (message.name === "llm_response" || message.name === "chat_message") {
         const text = message.data?.text || message.data?.content || "";
         if (text) {
           addMessage({
@@ -156,7 +158,17 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
     return () => {
       wsManager.disconnect();
     };
-  }, [url, autoConnect, maxReconnectAttempts, reconnectInterval, setWsConnected, setError, addMessage, setTranscribing, clearTranscribing]);
+  }, [
+    url,
+    autoConnect,
+    maxReconnectAttempts,
+    reconnectInterval,
+    setWsConnected,
+    setError,
+    addMessage,
+    setTranscribing,
+    clearTranscribing,
+  ]);
 
   // Manual connect function
   const connect = useCallback(() => {

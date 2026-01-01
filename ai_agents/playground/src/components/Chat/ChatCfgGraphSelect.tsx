@@ -1,5 +1,3 @@
-import * as React from "react";
-import { useIsCompactLayout } from "@/common";
 import { useAppDispatch, useAppSelector } from "@/common/hooks";
 import {
   Select,
@@ -31,34 +29,29 @@ export function RemoteGraphSelect() {
   const displayLabel = selectedGraph?.name || "Select Graph";
 
   // Truncate label for display when closed (max 20 chars on mobile, 25 on desktop)
-  const truncatedLabel = displayLabel.length > 20
-    ? displayLabel.substring(0, 17) + "..."
-    : displayLabel;
+  const truncatedLabel =
+    displayLabel.length > 20
+      ? `${displayLabel.substring(0, 17)}...`
+      : displayLabel;
 
   return (
-    <>
-      <Select
-        value={graphName}
-        onValueChange={onGraphNameChange}
-        disabled={agentConnected}
-      >
-        <SelectTrigger
-          className={cn(
-            "w-auto max-w-[180px] md:max-w-[220px]"
-          )}
-        >
-          <SelectValue placeholder={"Select Graph"}>
-            <span className="truncate">{truncatedLabel}</span>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {graphOptions.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </>
+    <Select
+      value={graphName}
+      onValueChange={onGraphNameChange}
+      disabled={agentConnected}
+    >
+      <SelectTrigger className={cn("w-auto max-w-[180px] md:max-w-[220px]")}>
+        <SelectValue placeholder={"Select Graph"}>
+          <span className="truncate">{truncatedLabel}</span>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {graphOptions.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

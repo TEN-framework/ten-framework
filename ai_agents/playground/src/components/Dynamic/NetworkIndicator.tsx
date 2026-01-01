@@ -8,17 +8,17 @@ import { rtcManager } from "@/manager";
 export default function NetworkIndicator() {
   const [networkQuality, setNetworkQuality] = React.useState<NetworkQuality>();
 
+  const onNetworkQuality = (quality: NetworkQuality) => {
+    setNetworkQuality(quality);
+  };
+
   React.useEffect(() => {
     rtcManager.on("networkQuality", onNetworkQuality);
 
     return () => {
       rtcManager.off("networkQuality", onNetworkQuality);
     };
-  }, []);
-
-  const onNetworkQuality = (quality: NetworkQuality) => {
-    setNetworkQuality(quality);
-  };
+  }, [onNetworkQuality]);
 
   return (
     <NetworkIconByLevel

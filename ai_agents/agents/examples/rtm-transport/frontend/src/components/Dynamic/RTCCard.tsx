@@ -51,26 +51,30 @@ export default function RTCCard(props: { className?: string }) {
 
   const isCompactLayout = useIsCompactLayout();
 
-  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
+  const _DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
     ssr: false,
   });
 
-  React.useEffect(() => {
-    if (!options.channel) {
-      return;
+  const onRemoteUserChanged = (user: IRtcUser) => {
+    console.log("[rtc] onRemoteUserChanged", user);
+    if (useTrulienceAvatar) {
+      // trulience SDK will play audio in synch with mouth
+      user.audioTrack?.stop();
     }
-    if (hasInit) {
-      return;
+    if (user.audioTrack) {
+      setRemoteUser(user);
     }
+  };
 
-    init();
-
-    return () => {
-      if (hasInit) {
-        destory();
-      }
-    };
-  }, [options.channel]);
+  const onLocalTracksChanged = (tracks: IUserTracks) => {
+    console.log("[rtc] onLocalTracksChanged", tracks);
+    const { videoTrack, audioTrack, screenTrack } = tracks;
+    setVideoTrack(videoTrack);
+    setScreenTrack(screenTrack);
+    if (audioTrack) {
+      setAudioTrack(audioTrack);
+    }
+  };
 
   const init = async () => {
     console.log("[rtc] init");
@@ -130,28 +134,24 @@ export default function RTCCard(props: { className?: string }) {
     hasInit = false;
   };
 
-  const onRemoteUserChanged = (user: IRtcUser) => {
-    console.log("[rtc] onRemoteUserChanged", user);
-    if (useTrulienceAvatar) {
-      // trulience SDK will play audio in synch with mouth
-      user.audioTrack?.stop();
+  React.useEffect(() => {
+    if (!options.channel) {
+      return;
     }
-    if (user.audioTrack) {
-      setRemoteUser(user);
+    if (hasInit) {
+      return;
     }
-  };
 
-  const onLocalTracksChanged = (tracks: IUserTracks) => {
-    console.log("[rtc] onLocalTracksChanged", tracks);
-    const { videoTrack, audioTrack, screenTrack } = tracks;
-    setVideoTrack(videoTrack);
-    setScreenTrack(screenTrack);
-    if (audioTrack) {
-      setAudioTrack(audioTrack);
-    }
-  };
+    init();
 
-  const onVoiceChange = (value: any) => {
+    return () => {
+      if (hasInit) {
+        destory();
+      }
+    };
+  }, [options.channel, destory, init]);
+
+  const _onVoiceChange = (value: any) => {
     dispatch(setVoiceType(value));
   };
 

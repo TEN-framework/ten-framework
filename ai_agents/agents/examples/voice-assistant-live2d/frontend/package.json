@@ -1,51 +1,51 @@
 {
-    "name": "live2d-voice-assistant",
-    "version": "1.0.0",
-    "private": true,
-    "engines": {
-        "node": ">=20"
-    },
-    "scripts": {
-        "dev": "next dev --turbopack",
-        "build": "next build",
-        "start": "next start",
-        "lint": "next lint"
-    },
-    "dependencies": {
-        "@radix-ui/react-avatar": "^1.1.1",
-        "@radix-ui/react-dialog": "^1.1.2",
-        "@radix-ui/react-label": "^2.1.0",
-        "@radix-ui/react-progress": "^1.1.2",
-        "@radix-ui/react-select": "^2.1.2",
-        "@radix-ui/react-slot": "^1.1.0",
-        "@radix-ui/react-switch": "^1.1.1",
-        "@radix-ui/react-tabs": "^1.1.1",
-        "agora-rtc-sdk-ng": "^4.21.0",
-        "agora-rtm": "^2.2.0",
-        "axios": "^1.7.7",
-        "class-variance-authority": "^0.7.0",
-        "clsx": "^2.1.1",
-        "live2d-motionsync": "0.0.4",
-        "lucide-react": "^0.454.0",
-        "next": "^15.0.3",
-        "pixi-live2d-display": "^0.4.0",
-        "pixi.js": "^6.5.10",
-        "react": "^18",
-        "react-dom": "^18",
-        "tailwind-merge": "^2.5.4",
-        "tailwindcss-animate": "^1.0.7",
-        "zod": "^3.23.8"
-    },
-    "devDependencies": {
-        "@types/node": "^20",
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "autoprefixer": "^10.4.20",
-        "eslint": "^8",
-        "eslint-config-next": "^15.0.3",
-        "postcss": "^8.4.47",
-        "tailwindcss": "^3.4.14",
-        "typescript": "^5"
-    },
-    "packageManager": "pnpm@10.2.0"
+  "name": "live2d-voice-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-progress": "^1.1.2",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.1",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "agora-rtc-sdk-ng": "^4.21.0",
+    "agora-rtm": "^2.2.0",
+    "axios": "^1.7.7",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "live2d-motionsync": "0.0.4",
+    "lucide-react": "^0.454.0",
+    "next": "^15.0.3",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^6.5.10",
+    "react": "^18",
+    "react-dom": "^18",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8",
+    "eslint-config-next": "^15.0.3",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@10.2.0"
 }

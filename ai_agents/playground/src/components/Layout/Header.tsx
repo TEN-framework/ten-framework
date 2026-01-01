@@ -1,4 +1,3 @@
-import { LogoIcon, SmallLogoIcon } from "@/components/Icon";
 import { cn } from "@/lib/utils";
 import { HeaderActions, HeaderRoomInfo } from "./HeaderComponents";
 

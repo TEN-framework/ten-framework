@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Heart = {
   id: number;
@@ -29,8 +30,7 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
 
       const id = nextId.current++;
       const side: Heart["side"] = Math.random() > 0.5 ? "left" : "right";
-      const baseX =
-        (side === "left" ? -1 : 1) * (90 + Math.random() * 55); // around cheeks
+      const baseX = (side === "left" ? -1 : 1) * (90 + Math.random() * 55); // around cheeks
 
       const heart: Heart = {
         id,
@@ -60,19 +60,21 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
   }, [active]);
 
   return (
-    <div className="pointer-events-none absolute bottom-[24%] left-1/2 flex h-0 w-full max-w-[460px] -translate-x-1/2 justify-center">
+    <div className="-translate-x-1/2 pointer-events-none absolute bottom-[24%] left-1/2 flex h-0 w-full max-w-[460px] justify-center">
       {hearts.map((heart) => (
         <span
           key={heart.id}
           className="heart-emit select-none"
-          style={{
-            fontSize: `${heart.size}px`,
-            animationDuration: `${heart.duration}s`,
-            ["--heart-base-x" as string]: `${heart.baseX}px`,
-            ["--heart-jitter" as string]: `${heart.jitter}px`,
-            ["--heart-y" as string]: `${heart.verticalJitter}px`,
-            ["--heart-rot" as string]: `${heart.rotation}deg`,
-          } as React.CSSProperties}
+          style={
+            {
+              fontSize: `${heart.size}px`,
+              animationDuration: `${heart.duration}s`,
+              ["--heart-base-x" as string]: `${heart.baseX}px`,
+              ["--heart-jitter" as string]: `${heart.jitter}px`,
+              ["--heart-y" as string]: `${heart.verticalJitter}px`,
+              ["--heart-rot" as string]: `${heart.rotation}deg`,
+            } as React.CSSProperties
+          }
         >
           ❤️
         </span>

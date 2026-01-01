@@ -1,27 +1,26 @@
-import { StoreProvider } from "@/store"
-import type { Metadata, Viewport } from "next"
-import "./global.css"
-import { Toaster } from "@/components/ui/sonner"
-import { Roboto } from "next/font/google"
-import { cn } from "@/lib/utils"
-import Script from "next/script"
+import type { Metadata, Viewport } from "next";
+import { StoreProvider } from "@/store";
+import "./global.css";
+import { Roboto } from "next/font/google";
+import Script from "next/script";
+import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 
 const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-roboto",
   display: "swap",
-})
+});
 
 export const metadata: Metadata = {
   title: "TEN Agent",
-  description:
-    "Multi-Purpose Voice Assistant Agent Example Powered by TEN",
+  description: "Multi-Purpose Voice Assistant Agent Example Powered by TEN",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
   },
-}
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -30,12 +29,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -87,5 +86,5 @@ export default function RootLayout({
         </Script>
       </body>
     </html>
-  )
+  );
 }

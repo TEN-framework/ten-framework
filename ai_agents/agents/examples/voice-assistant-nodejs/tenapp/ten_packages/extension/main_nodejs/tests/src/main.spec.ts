@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { AddonManager, App, TenEnv } from "ten-runtime-nodejs";
+import { AddonManager, App, type TenEnv } from "ten-runtime-nodejs";
 
 let fakeApp: FakeApp;
 let fakeAppRunPromise: Promise<void>;

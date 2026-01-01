@@ -1,11 +1,9 @@
-import {
-  IAgoraRTCClient,
-  IAgoraRTCRemoteUser,
-  type ICameraVideoTrack,
-  type ILocalVideoTrack,
-  type IMicrophoneAudioTrack,
-  type NetworkQuality,
-  type UID,
+import type {
+  ICameraVideoTrack,
+  ILocalVideoTrack,
+  IMicrophoneAudioTrack,
+  NetworkQuality,
+  UID,
 } from "agora-rtc-sdk-ng";
 
 export interface IRtcUser extends IUserTracks {

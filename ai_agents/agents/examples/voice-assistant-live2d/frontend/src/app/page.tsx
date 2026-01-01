@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -10,8 +11,8 @@ import { Baloo_2, Quicksand } from "next/font/google";
 import type {
   ExpressionConfig,
   Live2DHandle,
-  MouthConfig,
   MotionConfig,
+  MouthConfig,
 } from "@/components/Live2DCharacter";
 
 // Dynamically import Live2D component to prevent SSR issues
@@ -495,7 +496,10 @@ const characterOptions: CharacterProfile[] = [
   {
     id: "kei",
     name: "Kei",
-    path: buildRemoteModelAssetPath("kei_vowels_pro", "kei_vowels_pro.model3.json"),
+    path: buildRemoteModelAssetPath(
+      "kei_vowels_pro",
+      "kei_vowels_pro.model3.json"
+    ),
     preview: buildRemoteModelAssetPath("kei_vowels_pro", "preview.svg"),
     headline: "Your Charming Clever Companion",
     description:
@@ -923,13 +927,32 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "snow_cookie":
       return (
         <svg viewBox="0 0 160 160" className="h-full w-full">
-          <circle cx="80" cy="80" r="70" fill="#fff5da" stroke="#f3b27a" strokeWidth={5} />
+          <circle
+            cx="80"
+            cy="80"
+            r="70"
+            fill="#fff5da"
+            stroke="#f3b27a"
+            strokeWidth={5}
+          />
           <circle cx="80" cy="80" r="46" fill="#ffe9bc" opacity="0.85" />
-          {[{ x: 80, y: 32 }, { x: 104, y: 52 }, { x: 116, y: 84 }, { x: 56, y: 52 }, { x: 40, y: 88 }, { x: 84, y: 122 }].map(
-            (dot, idx) => (
-              <circle key={idx} cx={dot.x} cy={dot.y} r="6" fill="#f0c072" opacity="0.8" />
-            )
-          )}
+          {[
+            { x: 80, y: 32 },
+            { x: 104, y: 52 },
+            { x: 116, y: 84 },
+            { x: 56, y: 52 },
+            { x: 40, y: 88 },
+            { x: 84, y: 122 },
+          ].map((dot, idx) => (
+            <circle
+              key={idx}
+              cx={dot.x}
+              cy={dot.y}
+              r="6"
+              fill="#f0c072"
+              opacity="0.8"
+            />
+          ))}
           <path
             d="M80 46 L88 74 L118 80 L88 88 L80 114 L72 88 L42 80 L72 74 Z"
             fill="#fff9e8"
@@ -981,7 +1004,14 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "citrus_slice":
       return (
         <svg viewBox="0 0 180 180" className="h-full w-full">
-          <circle cx="90" cy="90" r="80" fill="#ffe4b8" stroke="#f6aa66" strokeWidth={8} />
+          <circle
+            cx="90"
+            cy="90"
+            r="80"
+            fill="#ffe4b8"
+            stroke="#f6aa66"
+            strokeWidth={8}
+          />
           {[0, 60, 120].map((angle) => (
             <path
               key={angle}
@@ -1018,8 +1048,22 @@ const renderFloatingShape = (type: FloatingElementType): JSX.Element | null => {
     case "water_ripple":
       return (
         <svg viewBox="0 0 220 220" className="h-full w-full">
-          <circle cx="110" cy="110" r="90" fill="none" stroke="rgba(168,214,233,0.55)" strokeWidth={8} />
-          <circle cx="110" cy="110" r="60" fill="none" stroke="rgba(168,214,233,0.4)" strokeWidth={6} />
+          <circle
+            cx="110"
+            cy="110"
+            r="90"
+            fill="none"
+            stroke="rgba(168,214,233,0.55)"
+            strokeWidth={8}
+          />
+          <circle
+            cx="110"
+            cy="110"
+            r="60"
+            fill="none"
+            stroke="rgba(168,214,233,0.4)"
+            strokeWidth={6}
+          />
           <circle cx="110" cy="110" r="32" fill="rgba(196,238,255,0.35)" />
         </svg>
       );
@@ -1040,7 +1084,7 @@ export default function Home() {
   const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
   const live2dRef = useRef<Live2DHandle | null>(null);
-  const [modelLoadedTick, setModelLoadedTick] = useState(0);
+  const [_modelLoadedTick, setModelLoadedTick] = useState(0);
   const processedVoiceCommandIdsRef = useRef<string[]>([]);
   const handleModelLoaded = useCallback(
     () => setModelLoadedTick((tick) => tick + 1),
@@ -1059,7 +1103,9 @@ export default function Home() {
       }
       const expressions = rule.expressions ?? [];
       const shouldResetFirst =
-        rule.resetFirst !== undefined ? rule.resetFirst : expressions.length > 0;
+        rule.resetFirst !== undefined
+          ? rule.resetFirst
+          : expressions.length > 0;
       if (shouldResetFirst) {
         await controller.setExpression(undefined);
       }
@@ -1067,27 +1113,11 @@ export default function Home() {
         await controller.setExpression(expression);
       }
     } catch (error) {
-      console.warn("[VoiceCommand] Failed to apply voice-triggered expression", error);
+      console.warn(
+        "[VoiceCommand] Failed to apply voice-triggered expression",
+        error
+      );
     }
-  }, []);
-
-  useEffect(() => {
-    // Dynamically import Agora service only on client side
-    if (typeof window !== "undefined") {
-      import("@/services/agora").then((module) => {
-        const service = module.agoraService;
-        setAgoraService(service);
-
-        // Set up callbacks for Agora service
-        service.setOnConnectionStatusChange(handleConnectionChange);
-        service.setOnRemoteAudioTrack(handleAudioTrackChange);
-      });
-    }
-
-    // Cleanup ping interval on unmount
-    return () => {
-      stopPing();
-    };
   }, []);
 
   const handleConnectionChange = (status: any) => {
@@ -1147,18 +1177,20 @@ export default function Home() {
 
   useEffect(() => {
     prevSpeakingRef.current = false;
-  }, [selectedModel.id, modelLoadedTick]);
+  }, []);
 
   useEffect(() => {
     processedVoiceCommandIdsRef.current = [];
-  }, [selectedModel.id]);
+  }, []);
 
   useEffect(() => {
     const controller = live2dRef.current;
     if (!controller) {
       return;
     }
-    const defaultExpression = selectedModel.expressions?.find((expression) => expression.default);
+    const defaultExpression = selectedModel.expressions?.find(
+      (expression) => expression.default
+    );
     if (defaultExpression) {
       void controller.setExpression(defaultExpression.name);
     } else {
@@ -1166,9 +1198,11 @@ export default function Home() {
     }
     const idleMotion = selectedModel.motions?.find((motion) => motion.autoPlay);
     if (idleMotion) {
-      void controller.playMotion(idleMotion.name, { priority: idleMotion.priority });
+      void controller.playMotion(idleMotion.name, {
+        priority: idleMotion.priority,
+      });
     }
-  }, [selectedModel, modelLoadedTick]);
+  }, [selectedModel]);
 
   useEffect(() => {
     const controller = live2dRef.current;
@@ -1178,16 +1212,24 @@ export default function Home() {
       return;
     }
     if (isAssistantSpeaking && !wasSpeaking) {
-      const speakingExpression = selectedModel.expressions?.find((expression) => expression.onSpeaking);
+      const speakingExpression = selectedModel.expressions?.find(
+        (expression) => expression.onSpeaking
+      );
       if (speakingExpression) {
         void controller.setExpression(speakingExpression.name);
       }
-      const speakingMotion = selectedModel.motions?.find((motion) => motion.onSpeakingStart);
+      const speakingMotion = selectedModel.motions?.find(
+        (motion) => motion.onSpeakingStart
+      );
       if (speakingMotion) {
-        void controller.playMotion(speakingMotion.name, { priority: speakingMotion.priority });
+        void controller.playMotion(speakingMotion.name, {
+          priority: speakingMotion.priority,
+        });
       }
     } else if (!isAssistantSpeaking && wasSpeaking) {
-      const defaultExpression = selectedModel.expressions?.find((expression) => expression.default);
+      const defaultExpression = selectedModel.expressions?.find(
+        (expression) => expression.default
+      );
       if (defaultExpression) {
         void controller.setExpression(defaultExpression.name);
       } else {
@@ -1242,7 +1284,11 @@ export default function Home() {
               reset: true,
             },
             {
-              triggers: ["wear your sunglasses", "put on sunglasses", "sunglasses on"],
+              triggers: [
+                "wear your sunglasses",
+                "put on sunglasses",
+                "sunglasses on",
+              ],
               expressions: ["toggle_sunglasses_g_2"],
               resetFirst: true,
             },
@@ -1255,35 +1301,40 @@ export default function Home() {
                 "put your glasses",
                 "put your glasses on",
                 "glasses on",
-                "reading glasses"
+                "reading glasses",
               ],
               expressions: ["toggle_glasses_g_1"],
               resetFirst: true,
             },
           ]
         : selectedModel.id === "kevin"
-        ? [
-            {
-              triggers: [
-                "big smile",
-                "give me a smile",
-                "smile for me",
-                "smile kevin",
-              ],
-              expressions: ["greet"],
-              resetFirst: true,
-            },
-            {
-              triggers: ["cheeky face", "be cheeky", "give me a cheeky grin"],
-              expressions: ["cheeky"],
-              resetFirst: true,
-            },
-            {
-              triggers: ["relax face", "back to relaxed", "neutral face", "reset face"],
-              reset: true,
-            },
-          ]
-        : [];
+          ? [
+              {
+                triggers: [
+                  "big smile",
+                  "give me a smile",
+                  "smile for me",
+                  "smile kevin",
+                ],
+                expressions: ["greet"],
+                resetFirst: true,
+              },
+              {
+                triggers: ["cheeky face", "be cheeky", "give me a cheeky grin"],
+                expressions: ["cheeky"],
+                resetFirst: true,
+              },
+              {
+                triggers: [
+                  "relax face",
+                  "back to relaxed",
+                  "neutral face",
+                  "reset face",
+                ],
+                reset: true,
+              },
+            ]
+          : [];
 
     if (rules.length === 0) {
       return;
@@ -1291,20 +1342,29 @@ export default function Home() {
 
     const targetModelId = selectedModel.id;
 
-    const buildDynamicGlassesRule = (haystacks: Set<string>): VoiceCommandRule | null => {
+    const buildDynamicGlassesRule = (
+      haystacks: Set<string>
+    ): VoiceCommandRule | null => {
       const controller = live2dRef.current;
       if (!controller) {
         return null;
       }
-      const expressions = controller.getAvailableExpressions ? controller.getAvailableExpressions() : [];
-      const hasOff = Array.from(haystacks).some((h) =>
-        h.includes("glasses off") || h.includes("remove glasses") || h.includes("take off")
+      const expressions = controller.getAvailableExpressions
+        ? controller.getAvailableExpressions()
+        : [];
+      const hasOff = Array.from(haystacks).some(
+        (h) =>
+          h.includes("glasses off") ||
+          h.includes("remove glasses") ||
+          h.includes("take off")
       );
       if (hasOff) {
         return { triggers: [], reset: true };
       }
       const keywords = ["glasses", "sunglasses", "shades", "monocle"];
-      const needOn = Array.from(haystacks).some((h) => keywords.some((k) => h.includes(k)));
+      const needOn = Array.from(haystacks).some((h) =>
+        keywords.some((k) => h.includes(k))
+      );
       if (!needOn) {
         return null;
       }
@@ -1312,7 +1372,11 @@ export default function Home() {
         .filter((e) => keywords.some((k) => e.name.toLowerCase().includes(k)))
         .sort((a, b) => {
           const rank = (name: string) =>
-            name.toLowerCase().includes("glasses") ? 0 : name.toLowerCase().includes("sunglasses") ? 1 : 2;
+            name.toLowerCase().includes("glasses")
+              ? 0
+              : name.toLowerCase().includes("sunglasses")
+                ? 1
+                : 2;
           return rank(a.name) - rank(b.name);
         })
         .map((e) => e.name);
@@ -1322,109 +1386,126 @@ export default function Home() {
       return { triggers: [], expressions: [candidates[0]], resetFirst: true };
     };
 
-    const cleanup = agoraService.addTranscriptListener((message: TranscriptMessage) => {
-      if (selectedModel.id !== targetModelId) {
-        return;
-      }
-      if (message?.isUser === false) {
-        return;
-      }
-      if (message.isFinal === false) {
-        return;
-      }
-      const base = message.text?.toLowerCase() ?? "";
-      if (!base.trim()) {
-        return;
-      }
-
-      const clean = (value: string) =>
-        value
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const removeStopWords = (value: string) =>
-        value
-          .replace(/\b(can|you|could|would|will|please|your|the|a|to)\b/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const primary = clean(base);
-      const simplified = removeStopWords(primary);
-
-      const haystacks = new Set<string>();
-      if (primary) {
-        haystacks.add(primary);
-      }
-      if (simplified) {
-        haystacks.add(simplified);
-      }
-      if (haystacks.size === 0) {
-        return;
-      }
-
-      const editDistance = (a: string, b: string) => {
-        const dp: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-        for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-        for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-        for (let i = 1; i <= a.length; i++) {
-          for (let j = 1; j <= b.length; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-              dp[i - 1][j] + 1,
-              dp[i][j - 1] + 1,
-              dp[i - 1][j - 1] + cost
-            );
-          }
-        }
-        return dp[a.length][b.length];
-      };
-
-      const matchesTrigger = (trigger: string) => {
-        const normalizedTrigger = clean(trigger);
-        if (!normalizedTrigger) {
-          return false;
-        }
-        const triggerWords = normalizedTrigger.split(" ");
-        for (const hay of haystacks) {
-          if (hay.includes(normalizedTrigger)) {
-            return true;
-          }
-          const hayWords = hay.split(" ");
-          if (triggerWords.every((word) => hayWords.includes(word) || hayWords.some((hw) => editDistance(hw, word) <= 1))) {
-            return true;
-          }
-        }
-        return false;
-      };
-
-      console.debug("[VoiceCommand] Transcript received", { base, primary, simplified });
-
-      let matchedRule = rules.find((rule) =>
-        rule.triggers.some((trigger) => matchesTrigger(trigger))
-      );
-      if (!matchedRule) {
-        const dynamicRule = buildDynamicGlassesRule(haystacks);
-        if (!dynamicRule) {
+    const cleanup = agoraService.addTranscriptListener(
+      (message: TranscriptMessage) => {
+        if (selectedModel.id !== targetModelId) {
           return;
         }
-        matchedRule = dynamicRule;
-        console.debug("[VoiceCommand] Using dynamic glasses rule");
-      } else {
-        console.debug("[VoiceCommand] Matched static rule", matchedRule);
+        if (message?.isUser === false) {
+          return;
+        }
+        if (message.isFinal === false) {
+          return;
+        }
+        const base = message.text?.toLowerCase() ?? "";
+        if (!base.trim()) {
+          return;
+        }
+
+        const clean = (value: string) =>
+          value
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const removeStopWords = (value: string) =>
+          value
+            .replace(
+              /\b(can|you|could|would|will|please|your|the|a|to)\b/g,
+              " "
+            )
+            .replace(/\s+/g, " ")
+            .trim();
+
+        const primary = clean(base);
+        const simplified = removeStopWords(primary);
+
+        const haystacks = new Set<string>();
+        if (primary) {
+          haystacks.add(primary);
+        }
+        if (simplified) {
+          haystacks.add(simplified);
+        }
+        if (haystacks.size === 0) {
+          return;
+        }
+
+        const editDistance = (a: string, b: string) => {
+          const dp: number[][] = Array.from({ length: a.length + 1 }, () =>
+            Array(b.length + 1).fill(0)
+          );
+          for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+          for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+          for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+              const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+              dp[i][j] = Math.min(
+                dp[i - 1][j] + 1,
+                dp[i][j - 1] + 1,
+                dp[i - 1][j - 1] + cost
+              );
+            }
+          }
+          return dp[a.length][b.length];
+        };
+
+        const matchesTrigger = (trigger: string) => {
+          const normalizedTrigger = clean(trigger);
+          if (!normalizedTrigger) {
+            return false;
+          }
+          const triggerWords = normalizedTrigger.split(" ");
+          for (const hay of haystacks) {
+            if (hay.includes(normalizedTrigger)) {
+              return true;
+            }
+            const hayWords = hay.split(" ");
+            if (
+              triggerWords.every(
+                (word) =>
+                  hayWords.includes(word) ||
+                  hayWords.some((hw) => editDistance(hw, word) <= 1)
+              )
+            ) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        console.debug("[VoiceCommand] Transcript received", {
+          base,
+          primary,
+          simplified,
+        });
+
+        let matchedRule = rules.find((rule) =>
+          rule.triggers.some((trigger) => matchesTrigger(trigger))
+        );
+        if (!matchedRule) {
+          const dynamicRule = buildDynamicGlassesRule(haystacks);
+          if (!dynamicRule) {
+            return;
+          }
+          matchedRule = dynamicRule;
+          console.debug("[VoiceCommand] Using dynamic glasses rule");
+        } else {
+          console.debug("[VoiceCommand] Matched static rule", matchedRule);
+        }
+        const processed = processedVoiceCommandIdsRef.current;
+        if (processed.includes(message.id)) {
+          return;
+        }
+        processed.push(message.id);
+        if (processed.length > 200) {
+          processed.shift();
+        }
+        console.debug("[VoiceCommand] Applying rule", matchedRule);
+        void applyVoiceRule(matchedRule);
       }
-      const processed = processedVoiceCommandIdsRef.current;
-      if (processed.includes(message.id)) {
-        return;
-      }
-      processed.push(message.id);
-      if (processed.length > 200) {
-        processed.shift();
-      }
-      console.debug("[VoiceCommand] Applying rule", matchedRule);
-      void applyVoiceRule(matchedRule);
-    });
+    );
 
     return cleanup;
   }, [agoraService, selectedModel.id, applyVoiceRule]);
@@ -1445,6 +1526,25 @@ export default function Home() {
       setPingInterval(null);
     }
   };
+
+  useEffect(() => {
+    // Dynamically import Agora service only on client side
+    if (typeof window !== "undefined") {
+      import("@/services/agora").then((module) => {
+        const service = module.agoraService;
+        setAgoraService(service);
+
+        // Set up callbacks for Agora service
+        service.setOnConnectionStatusChange(handleConnectionChange);
+        service.setOnRemoteAudioTrack(handleAudioTrackChange);
+      });
+    }
+
+    // Cleanup ping interval on unmount
+    return () => {
+      stopPing();
+    };
+  }, [handleAudioTrackChange, handleConnectionChange, stopPing]);
 
   const handleMicToggle = () => {
     if (agoraService) {
@@ -1565,7 +1665,7 @@ export default function Home() {
             key={model.id}
             type="button"
             onClick={() => handleModelSelect(model.id)}
-            className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+            className={`rounded-full px-5 py-2 font-semibold text-sm transition ${
               isActive
                 ? "bg-[#2f3dbd] text-white"
                 : "bg-white/85 text-[#586094] hover:bg-white"
@@ -1734,9 +1834,7 @@ export default function Home() {
                   className={live2dClassName}
                 />
               </div>
-              <p className={quoteClass}>
-                “{selectedModel.quote}”
-              </p>
+              <p className={quoteClass}>“{selectedModel.quote}”</p>
             </div>
           </div>
 
@@ -1755,8 +1853,8 @@ export default function Home() {
                   }`}
                 />
                 {isConnected
-                  ? selectedModel.connectionGreeting ??
-                    `My name is ${selectedModel.name}.`
+                  ? (selectedModel.connectionGreeting ??
+                    `My name is ${selectedModel.name}.`)
                   : "Not connected"}
               </span>
               <span
@@ -1788,7 +1886,11 @@ export default function Home() {
                 }`}
               >
                 {isMuted ? (
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                     <path
@@ -1799,7 +1901,11 @@ export default function Home() {
                     />
                   </svg>
                 ) : (
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="h-6 w-6"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
                     <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
                   </svg>
@@ -1844,14 +1950,22 @@ export default function Home() {
                   </>
                 ) : isConnected ? (
                   <>
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <rect x="6" y="6" width="12" height="12" rx="2" />
                     </svg>
                     <span className="text-center text-sm">End session</span>
                   </>
                 ) : (
                   <>
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M8 5v14l11-7z" />
                     </svg>
                     <span className="text-center text-sm">

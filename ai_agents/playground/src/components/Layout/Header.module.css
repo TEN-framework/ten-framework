@@ -8,7 +8,7 @@
 }
 
 .colorPicker :global(.react-colorful__hue) {
-  border-radius: 8px !important;
+  border-radius: 8px;
   height: 8px;
 }
 

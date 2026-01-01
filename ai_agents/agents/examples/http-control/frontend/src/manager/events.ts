@@ -38,7 +38,7 @@ export class AGEventEmitter<T> {
     const cbs = this._eventMap.get(evt) ?? [];
     for (const cb of cbs) {
       try {
-        cb && cb(...args);
+        cb?.(...args);
       } catch (e) {
         // cb exception should not affect other callbacks
         const error = e as Error;

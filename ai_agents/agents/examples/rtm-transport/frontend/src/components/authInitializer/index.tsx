@@ -35,7 +35,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       const options = getOptionsFromLocal();
       const trulienceSettings = getTrulienceSettingsFromLocal();
       initialize();
-      if (options && options.channel) {
+      if (options?.channel) {
         dispatch(reset());
         dispatch(setOptions(options));
         dispatch(setTrulienceSettings(trulienceSettings));
@@ -49,7 +49,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
         );
       }
     }
-  }, [dispatch]);
+  }, [dispatch, initialize]);
 
   useEffect(() => {
     if (selectedGraphId) {

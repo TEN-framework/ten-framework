@@ -1,10 +1,10 @@
 {
-    "greeting": "Hello, I am your AI assistant.",
-    "twilio_account_sid": "${env:TWILIO_ACCOUNT_SID}",
-    "twilio_auth_token": "${env:TWILIO_AUTH_TOKEN}",
-    "twilio_from_number": "${env:TWILIO_FROM_NUMBER}",
-    "twilio_server_port": 9000,
-    "twilio_public_server_url": "${env:TWILIO_PUBLIC_SERVER_URL}",
-    "twilio_use_https": false,
-    "twilio_use_wss": false
+  "greeting": "Hello, I am your AI assistant.",
+  "twilio_account_sid": "${env:TWILIO_ACCOUNT_SID}",
+  "twilio_auth_token": "${env:TWILIO_AUTH_TOKEN}",
+  "twilio_from_number": "${env:TWILIO_FROM_NUMBER}",
+  "twilio_server_port": 9000,
+  "twilio_public_server_url": "${env:TWILIO_PUBLIC_SERVER_URL}",
+  "twilio_use_https": false,
+  "twilio_use_wss": false
 }

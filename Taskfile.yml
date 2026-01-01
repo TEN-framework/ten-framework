@@ -1,10 +1,5 @@
 version: "3"
 
-includes:
-  ai_agents:
-    taskfile: ai_agents/Taskfile.yml
-    dir: ai_agents
-
 vars:
   OS: "linux"
   ARCH: "x64"
@@ -37,3 +32,36 @@ tasks:
     desc: clean build
     cmds:
       - rm -rf out
+
+  biome-install:
+    desc: install root node deps (biome)
+    internal: true
+    sources:
+      - package.json
+      - package-lock.json
+    generates:
+      - node_modules/.bin/biome
+    cmds:
+      - npm ci
+
+  biome-frontend-lint:
+    desc: run biome lint for frontends
+    deps: [biome-install]
+    vars:
+      FRONTEND_PATHS: "ai_agents/agents/examples ai_agents/playground core/src/ten_manager/designer_frontend"
+    cmds:
+      - ./node_modules/.bin/biome lint {{.FRONTEND_PATHS}}
+
+  biome-frontend-check:
+    desc: run biome check for frontends
+    deps: [biome-install]
+    vars:
+      FRONTEND_PATHS: "ai_agents/agents/examples ai_agents/playground core/src/ten_manager/designer_frontend"
+    cmds:
+      - ./node_modules/.bin/biome check {{.FRONTEND_PATHS}}
+
+  biome-frontend:
+    desc: run biome lint and check for frontends
+    cmds:
+      - task: biome-frontend-lint
+      - task: biome-frontend-check

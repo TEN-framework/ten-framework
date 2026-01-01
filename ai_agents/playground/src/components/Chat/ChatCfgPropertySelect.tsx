@@ -1,12 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  BoxesIcon,
-  LoaderCircleIcon,
-  SettingsIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { LoaderCircleIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,43 +10,35 @@ import { useAppDispatch, useAppSelector } from "@/common";
 import type { AddonDef, Graph } from "@/common/graph";
 import { useGraphs } from "@/common/hooks";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export function RemotePropertyCfgSheet() {
-  const dispatch = useAppDispatch();
+  const _dispatch = useAppDispatch();
   const { selectedGraph, updateGraph } = useGraphs();
   const graphName = useAppSelector((state) => state.global.selectedGraphId);
 
@@ -108,12 +95,12 @@ export function RemotePropertyCfgSheet() {
         </div>
 
         {hasProperty ? (
-          selectedExtensionNode?.["property"] && (
+          selectedExtensionNode?.property && (
             <GraphCfgForm
               selectedAddonModule={selectedAddonModule}
               selectedExtension={selectedExtension}
               key={`${graphName}-${selectedExtension}`}
-              initialData={selectedExtensionNode?.["property"] || {}}
+              initialData={selectedExtensionNode?.property || {}}
               metadata={
                 addonModules.find(
                   (module) => module.name === selectedExtensionNode?.addon
@@ -160,7 +147,7 @@ export function RemotePropertyAddCfgSheet({
   extensionNodeData: Record<string, string | number | boolean | null>;
   onUpdate: (data: string) => void;
 }) {
-  const dispatch = useAppDispatch();
+  const _dispatch = useAppDispatch();
   const { selectedGraph } = useGraphs();
 
   const selectedExtensionNode = selectedGraph?.nodes.find(
@@ -285,7 +272,6 @@ const defaultTypeValue = (type: string) => {
       return 0.1;
     case "bool":
       return false;
-    case "string":
     default:
       return "";
   }

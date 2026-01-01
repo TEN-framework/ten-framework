@@ -12,13 +12,11 @@ import {
   useAppSelector,
   useIsCompactLayout,
   VideoSourceType,
-  VOICE_OPTIONS,
 } from "@/common";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import AgentView from "@/components/Agent/View";
-import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
@@ -28,7 +26,7 @@ import {
   setRoomConnected,
   setVoiceType,
 } from "@/store/reducers/global";
-import { EMessageType, type IChatItem, ITextItem } from "@/types";
+import type { IChatItem } from "@/types";
 
 let hasInit: boolean = false;
 
@@ -53,26 +51,37 @@ export default function RTCCard(props: { className?: string }) {
 
   const isCompactLayout = useIsCompactLayout();
 
-  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
+  const _DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
     ssr: false,
   });
 
-  React.useEffect(() => {
-    if (!options.channel) {
-      return;
+  const onRemoteUserChanged = (user: IRtcUser) => {
+    console.log("[rtc] onRemoteUserChanged", user);
+    if (useTrulienceAvatar) {
+      // trulience SDK will play audio in synch with mouth
+      user.audioTrack?.stop();
     }
-    if (hasInit) {
-      return;
+    if (user.audioTrack || user.videoTrack) {
+      setRemoteUser(user);
+    } else {
+      setRemoteUser(undefined);
     }
+  };
 
-    init();
+  const onLocalTracksChanged = (tracks: IUserTracks) => {
+    console.log("[rtc] onLocalTracksChanged", tracks);
+    const { videoTrack, audioTrack, screenTrack } = tracks;
+    setVideoTrack(videoTrack);
+    setScreenTrack(screenTrack);
+    if (audioTrack) {
+      setAudioTrack(audioTrack);
+    }
+  };
 
-    return () => {
-      if (hasInit) {
-        destory();
-      }
-    };
-  }, [options.channel]);
+  const onTextChanged = (text: IChatItem) => {
+    console.log("[rtc] onTextChanged", text);
+    dispatch(addChatItem(text));
+  };
 
   const init = async () => {
     console.log("[rtc] init");
@@ -107,35 +116,24 @@ export default function RTCCard(props: { className?: string }) {
     hasInit = false;
   };
 
-  const onRemoteUserChanged = (user: IRtcUser) => {
-    console.log("[rtc] onRemoteUserChanged", user);
-    if (useTrulienceAvatar) {
-      // trulience SDK will play audio in synch with mouth
-      user.audioTrack?.stop();
+  React.useEffect(() => {
+    if (!options.channel) {
+      return;
     }
-    if (user.audioTrack || user.videoTrack) {
-      setRemoteUser(user);
-    } else {
-      setRemoteUser(undefined);
+    if (hasInit) {
+      return;
     }
-  };
 
-  const onLocalTracksChanged = (tracks: IUserTracks) => {
-    console.log("[rtc] onLocalTracksChanged", tracks);
-    const { videoTrack, audioTrack, screenTrack } = tracks;
-    setVideoTrack(videoTrack);
-    setScreenTrack(screenTrack);
-    if (audioTrack) {
-      setAudioTrack(audioTrack);
-    }
-  };
+    init();
 
-  const onTextChanged = (text: IChatItem) => {
-    console.log("[rtc] onTextChanged", text);
-    dispatch(addChatItem(text));
-  };
+    return () => {
+      if (hasInit) {
+        destory();
+      }
+    };
+  }, [options.channel, destory, init]);
 
-  const onVoiceChange = (value: any) => {
+  const _onVoiceChange = (value: any) => {
     dispatch(setVoiceType(value));
   };
 
@@ -147,7 +145,10 @@ export default function RTCCard(props: { className?: string }) {
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Top region (Avatar or ChatCard) */}
-      <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: '240px' }}>
+      <div
+        className="z-10 min-h-0 flex-1 overflow-y-auto"
+        style={{ minHeight: "240px" }}
+      >
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
@@ -162,7 +163,10 @@ export default function RTCCard(props: { className?: string }) {
             )
           )
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+          <AgentView
+            audioTrack={remoteuser?.audioTrack}
+            videoTrack={remoteuser?.videoTrack}
+          />
         )}
       </div>
 

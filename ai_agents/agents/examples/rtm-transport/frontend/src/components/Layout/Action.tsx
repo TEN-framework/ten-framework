@@ -27,7 +27,9 @@ export default function Action(props: { className?: string }) {
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
   const channel = useAppSelector((state) => state.global.options.channel);
   const userId = useAppSelector((state) => state.global.options.userId);
-  const httpPortNumber = useAppSelector((state) => state.global.options.http_port_number);
+  const httpPortNumber = useAppSelector(
+    (state) => state.global.options.http_port_number
+  );
   const language = useAppSelector((state) => state.global.language);
   const voiceType = useAppSelector((state) => state.global.voiceType);
   const selectedGraphId = useAppSelector(
@@ -39,18 +41,18 @@ export default function Action(props: { className?: string }) {
   );
   const [loading, setLoading] = React.useState(false);
 
+  const checkAgentConnected = async () => {
+    const res: any = await apiPing(channel);
+    if (res?.code === 0) {
+      dispatch(setAgentConnected(true));
+    }
+  };
+
   React.useEffect(() => {
     if (channel) {
       checkAgentConnected();
     }
-  }, [channel]);
-
-  const checkAgentConnected = async () => {
-    const res: any = await apiPing(channel);
-    if (res?.code == 0) {
-      dispatch(setAgentConnected(true));
-    }
-  };
+  }, [channel, checkAgentConnected]);
 
   const onClickConnect = async () => {
     if (loading) {
@@ -87,8 +89,8 @@ export default function Action(props: { className?: string }) {
           : undefined,
       });
       const { code, msg } = res || {};
-      if (code != 0) {
-        if (code == "10001") {
+      if (code !== 0) {
+        if (code === "10001") {
           toast.error(
             "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later."
           );

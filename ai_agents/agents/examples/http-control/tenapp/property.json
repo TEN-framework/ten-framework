@@ -114,10 +114,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -125,9 +122,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -194,9 +189,7 @@
               "extension": "http_server_python",
               "cmd": [
                 {
-                  "names": [
-                    "http_cmd"
-                  ],
+                  "names": ["http_cmd"],
                   "dest": [
                     {
                       "extension": "main_control"

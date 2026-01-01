@@ -63,6 +63,37 @@
       "react": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "ai_agents/agents/examples/**",
+        "ai_agents/playground/**",
+        "core/src/ten_manager/designer_frontend/**"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": "warn",
+            "noStaticElementInteractions": "warn",
+            "noSvgWithoutTitle": "warn",
+            "useButtonType": "warn",
+            "useGenericFontNames": "warn",
+            "useKeyWithClickEvents": "warn"
+          },
+          "correctness": {
+            "noInvalidUseBeforeDeclaration": "warn",
+            "useExhaustiveDependencies": "warn"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "warn",
+            "noAssignInExpressions": "warn",
+            "noRedeclare": "warn",
+            "useIterableCallbackReturn": "warn"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",
@@ -86,7 +117,8 @@
   },
   "css": {
     "parser": {
-      "tailwindDirectives": true
+      "tailwindDirectives": true,
+      "cssModules": true
     }
   }
 }

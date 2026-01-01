@@ -1,14 +1,14 @@
 {
-    "FileMetadata": {
-        "LastSavedVTubeStudioVersion": "1.27.8",
-        "LastSavedPlatform": "Steam",
-        "LastSavedDateUTC": "Saturday, 09 December 2023, 07:21:21",
-        "LastSavedDateLocalTime": "Saturday, 09 December 2023, 15:21:21",
-        "LastSavedDateUnixMillisecondTimestamp": "1702106481271"
-    },
-    "SceneName": "",
-    "SceneGroupName": "",
-    "SceneModel": "",
-    "SceneID": "",
-    "Items": []
+  "FileMetadata": {
+    "LastSavedVTubeStudioVersion": "1.27.8",
+    "LastSavedPlatform": "Steam",
+    "LastSavedDateUTC": "Saturday, 09 December 2023, 07:21:21",
+    "LastSavedDateLocalTime": "Saturday, 09 December 2023, 15:21:21",
+    "LastSavedDateUnixMillisecondTimestamp": "1702106481271"
+  },
+  "SceneName": "",
+  "SceneGroupName": "",
+  "SceneModel": "",
+  "SceneID": "",
+  "Items": []
 }
