@@ -123,11 +123,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -428,11 +431,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -455,9 +461,23 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
       - name: Run Tests (ten_utils_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -469,7 +489,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_unit_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -481,7 +500,6 @@ jobs:
 
       - name: Run Tests (ten_runtime_smoke_test)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -496,7 +514,6 @@ jobs:
 
       - name: Run Tests (ten_rust standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -514,7 +531,6 @@ jobs:
 
       - name: Run Tests (ten_manager standalone tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -574,6 +590,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -585,11 +604,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -615,7 +637,6 @@ jobs:
 
       - name: Run Tests (ten_manager pytest tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -668,6 +689,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -679,11 +703,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -709,7 +736,6 @@ jobs:
 
       - name: Run tests (ten_runtime C++ integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -770,6 +796,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -781,11 +810,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -811,7 +843,6 @@ jobs:
 
       - name: Run tests (ten_runtime Go integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"
@@ -872,6 +903,9 @@ jobs:
           # concurrent socket connections, we need to enlarge the maximum number
           # of the opened file descriptor.
           ulimit -n 102400
+          # Increase stack size limit to avoid stack overflow issues.
+          # Default is usually 8MB, setting to 32MB for safety.
+          ulimit -s 32768
           # Because there are concurrent test cases which will create many
           # concurrent connections simutaneously, we increase the TCP listening
           # backlog value to 8192.
@@ -883,11 +917,14 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
-          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
@@ -913,7 +950,6 @@ jobs:
 
       - name: Run tests (ten_runtime Python integration tests)
         env:
-          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
           TEN_ENABLE_MEMORY_TRACKING: "true"
           TEN_ENABLE_BACKTRACE_DUMP: "true"

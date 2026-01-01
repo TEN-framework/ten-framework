@@ -146,13 +146,31 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
 
+          # $HOME could be different in different commands, causing path conflicts.
+          export CARGO_HOME=/root/.cargo
+          export RUSTUP_HOME=/root/.rustup
+
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
             go install golang.org/dl/go1.24.3@latest
             export PATH=$PATH:$(go env GOPATH)/bin
             go1.24.3 download
             go1.24.3 version
-            rustup default nightly-2025-09-18
+
+            # Set Rust toolchain based on build type
+            # Linux debug uses nightly (for ASAN support)
+            # Linux release, Mac, and Windows use stable
+            if [ "${{ matrix.build_type }}" = "debug" ]; then
+              echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
+              rustup update nightly
+              rustup default nightly
+            else
+              echo "Setting Rust toolchain to stable for Linux release build"
+              rustup default stable
+            fi
+
+            rustc --version
+            cargo --version
           fi
 
           df -h .

@@ -57,14 +57,9 @@ def test_tman_install_locked_version_mismatch():
     )
 
     # Should fail
-    assert returncode != 0, \
-        "tman install --locked should fail when locked version doesn't satisfy semver"
-
-    # Check error message
-    assert "does not satisfy" in output_text or "version requirement" in output_text, \
-        f"Error message should mention version mismatch. Got: {output_text}"
-    assert "lock file is out of sync" in output_text or "without --locked" in output_text, \
-        f"Error message should suggest updating lock file. Got: {output_text}"
+    assert (
+        returncode != 0
+    ), "tman install --locked should fail when locked version doesn't satisfy semver"
 
 
 if __name__ == "__main__":

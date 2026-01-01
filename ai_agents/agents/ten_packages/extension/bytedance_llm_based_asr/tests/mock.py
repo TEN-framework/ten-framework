@@ -4,11 +4,9 @@
 # See the LICENSE file for more information.
 #
 
-from types import SimpleNamespace
 import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import patch
 import asyncio
-import json
 
 
 @pytest.fixture(scope="function")
@@ -260,6 +258,192 @@ def patch_volcengine_ws():
             url, app_key, access_key, api_key, auth_method, config, ten_env
         )
 
-    with patch(patch_target) as MockClient:
+    with patch(patch_target, create=True, autospec=False) as MockClient:
+        MockClient.side_effect = _fake_ctor
+        yield MockClient
+
+
+@pytest.fixture(scope="function")
+def patch_volcengine_ws_grouping():
+    """Mock Volcengine ASR WebSocket client for utterance processing tests.
+
+    This fixture emits a single ASRResponse with multiple utterances:
+    [true, true, false, false, true, false]
+    Each utterance will be sent individually (no grouping/concatenation).
+    """
+
+    patch_target = "ten_packages.extension.bytedance_llm_based_asr.extension.VolcengineASRClient"
+
+    def _fake_ctor(
+        url,
+        app_key,
+        access_key,
+        api_key,
+        auth_method,
+        config,
+        ten_env=None,
+        audio_timeline=None,
+    ):
+        class _FakeClient:
+            def __init__(
+                self,
+                url,
+                app_key,
+                access_key,
+                api_key,
+                auth_method,
+                config,
+                ten_env=None,
+                audio_timeline=None,
+            ):
+                self.url = url
+                self.app_key = app_key
+                self.access_key = access_key
+                self.api_key = api_key
+                self.auth_method = auth_method
+                self.config = config
+                self.ten_env = ten_env
+                self.audio_timeline = audio_timeline
+                self.connected = False
+                self.on_result_callback = None
+                self.on_error_callback = None
+                self.on_connection_error_callback = None
+                self.on_asr_error_callback = None
+                self.on_connected_callback = None
+                self.on_disconnected_callback = None
+                self._emit_task = None
+
+            def set_on_result_callback(self, callback):
+                self.on_result_callback = callback
+
+            def set_on_error_callback(self, callback):
+                self.on_error_callback = callback
+
+            def set_on_connection_error_callback(self, callback):
+                self.on_connection_error_callback = callback
+
+            def set_on_asr_error_callback(self, callback):
+                self.on_asr_error_callback = callback
+
+            def set_on_connected_callback(self, callback):
+                self.on_connected_callback = callback
+
+            def set_on_disconnected_callback(self, callback):
+                self.on_disconnected_callback = callback
+
+            async def connect(self):
+                print(
+                    "[mock] VolcengineASRClient.connect called (grouping test)"
+                )
+                self.connected = True
+
+                if self.on_connected_callback:
+                    self.on_connected_callback()
+
+                async def _emit_results():
+                    await asyncio.sleep(0.5)
+
+                    if self.on_result_callback:
+                        from ten_packages.extension.bytedance_llm_based_asr.volcengine_asr_client import (
+                            ASRResponse,
+                            Utterance,
+                        )
+
+                        # Create ASRResponse with multiple utterances:
+                        # [true, true, false, false, true, false]
+                        result = ASRResponse()
+                        result.text = "hello world this is test example"
+                        result.code = 0
+                        result.event = 1
+                        result.is_last_package = True
+                        result.payload_sequence = 1
+                        result.payload_size = 0
+                        result.start_ms = 0
+                        result.duration_ms = 6000
+                        result.language = "zh-CN"
+                        result.confidence = 0.95
+
+                        # Create utterances: [true, true, false, false, true, false]
+                        result.utterances = [
+                            Utterance(
+                                text="hello",
+                                start_time=0,
+                                end_time=1000,
+                                definite=True,
+                                additions={"speech_rate": 1.2, "volume": 0.8},
+                            ),
+                            Utterance(
+                                text="world",
+                                start_time=1000,
+                                end_time=2000,
+                                definite=True,
+                                additions={"speech_rate": 1.1},
+                            ),
+                            Utterance(
+                                text="this",
+                                start_time=2000,
+                                end_time=3000,
+                                definite=False,
+                                additions=None,
+                            ),
+                            Utterance(
+                                text="is",
+                                start_time=3000,
+                                end_time=4000,
+                                definite=False,
+                                additions=None,
+                            ),
+                            Utterance(
+                                text="test",
+                                start_time=4000,
+                                end_time=5000,
+                                definite=True,
+                                additions={
+                                    "speech_rate": 1.3,
+                                    "emotion": "happy",
+                                },
+                            ),
+                            Utterance(
+                                text="example",
+                                start_time=5000,
+                                end_time=6000,
+                                definite=False,
+                                additions=None,
+                            ),
+                        ]
+
+                        await self.on_result_callback(result)
+
+                self._emit_task = asyncio.create_task(_emit_results())
+                return None
+
+            async def disconnect(self):
+                print("[mock] VolcengineASRClient.disconnect called")
+                self.connected = False
+
+                if self._emit_task and not self._emit_task.done():
+                    self._emit_task.cancel()
+                    try:
+                        await self._emit_task
+                    except asyncio.CancelledError:
+                        pass
+
+                if self.on_disconnected_callback:
+                    self.on_disconnected_callback()
+                return None
+
+            async def send_audio(self, audio_data):
+                print(f"[mock] send_audio called with {len(audio_data)} bytes")
+                return None
+
+            async def listen(self):
+                print("[mock] listen called")
+                return None
+
+        return _FakeClient(
+            url, app_key, access_key, api_key, auth_method, config, ten_env
+        )
+
+    with patch(patch_target, create=True, autospec=False) as MockClient:
         MockClient.side_effect = _fake_ctor
         yield MockClient

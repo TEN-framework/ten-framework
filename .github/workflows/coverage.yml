@@ -241,10 +241,9 @@ jobs:
           echo "=== Disk space after Go installation ==="
           df -h
 
-          # Install Rust nightly
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-09-18
-          source $HOME/.cargo/env
-          rustup default nightly-2025-09-18
+          # Install Rust stable because we need to disable asan to avoid coverage instrumentation conflicts.
+          # Therefore, rust nightly is not needed.
+          rustup default stable
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM
@@ -2001,6 +2000,7 @@ jobs:
           export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
           go env -w GOFLAGS="-buildvcs=false"
           go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
           go1.24.3 version
 
