@@ -40,7 +40,7 @@ jobs:
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.7.12
+      image: ghcr.io/ten-framework/ten_agent_build:0.7.14
     strategy:
       matrix:
         agent:
