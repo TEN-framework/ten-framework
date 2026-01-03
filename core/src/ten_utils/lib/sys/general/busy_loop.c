@@ -13,7 +13,8 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
-#define ATOMIC_LOAD32(a) InterlockedAdd((a), 0)
+// Cast to LONG volatile* for InterlockedAdd compatibility with MinGW
+#define ATOMIC_LOAD32(a) InterlockedAdd((LONG volatile *)(a), 0)
 #else
 #define ATOMIC_LOAD32(a) __sync_add_and_fetch((a), 0)
 #endif
@@ -29,7 +30,7 @@ int __busy_loop(volatile uint32_t *addr, uint32_t expect, ten_spinlock_t *lock,
   }
 
   if (!timeout) {
-    return (ATOMIC_LOAD32(addr) != expect) ? 0 : -1;
+    return (ATOMIC_LOAD32(addr) != (int32_t)expect) ? 0 : -1;
   }
 
   timeout_time = timeout < 0 ? -1 : ten_current_time_ms() + timeout;
@@ -40,7 +41,7 @@ int __busy_loop(volatile uint32_t *addr, uint32_t expect, ten_spinlock_t *lock,
   // heavy envrionment
   while (*addr == expect) {
     // then safe test
-    if (UNLIKELY(ATOMIC_LOAD32(addr) != expect)) {
+    if (UNLIKELY(ATOMIC_LOAD32(addr) != (int32_t)expect)) {
       continue;
     }
 

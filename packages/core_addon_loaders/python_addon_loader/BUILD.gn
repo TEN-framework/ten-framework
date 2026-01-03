@@ -42,7 +42,8 @@ ten_package("python_addon_loader") {
   if (is_mac) {
     ldflags +=
         [ "-Wl,-rpath,@loader_path/../../../system/ten_runtime_python/lib" ]
-  } else if (is_linux) {
+  } else if (is_linux || is_mingw) {
+    # MinGW uses GNU ld and supports rpath
     ldflags += [
       "-Wl,-rpath=\$ORIGIN/../../../system/ten_runtime_python/lib",
       "-Wl,-rpath-link=\$ORIGIN/../../../system/ten_runtime_python/lib",
