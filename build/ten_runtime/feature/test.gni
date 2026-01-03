@@ -144,6 +144,7 @@ template("ten_package_test_prepare_client") {
     if (defined(invoker.defines) && invoker.defines != []) {
       defines += invoker.defines
     }
+
     # TODO(nzh): modify related macro
     # On Windows with MinGW, when compiling test client executables that use
     # msgpack_client functions (e.g., ten_test_msgpack_tcp_client_create), we

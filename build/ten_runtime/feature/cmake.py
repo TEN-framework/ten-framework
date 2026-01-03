@@ -384,7 +384,9 @@ cmake.py will consider it as its own command line option."
             pass
         elif self.args.target_os == "win":
             if self.args.is_mingw:
-                cpu_count = os.cpu_count() or 4  # Default to 4 if unable to detect
+                cpu_count = (
+                    os.cpu_count() or 4
+                )  # Default to 4 if unable to detect
                 cmd += f" --parallel {cpu_count}"
             # else: MSVC doesn't add parallel flag
         elif self.args.target_os == "linux":

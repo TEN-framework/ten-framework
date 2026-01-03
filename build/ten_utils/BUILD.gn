@@ -110,6 +110,7 @@ config("utils_private_config") {
       "dl",
     ]
   }
+
   # Note: synchronization library is not needed for MinGW as we use
   # InterlockedExchangeAdd64 instead of InterlockedAddAcquire64
 
