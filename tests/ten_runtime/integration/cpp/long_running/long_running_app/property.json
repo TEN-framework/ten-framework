@@ -32,6 +32,24 @@
               "stream": "stdout"
             }
           }
+        },
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "json",
+            "colored": false
+          },
+          "emitter": {
+            "type": "otlp",
+            "config": {
+              "endpoint": "http://localhost:4317",
+              "service_name": "my-custom-service-name"
+            }
+          }
         }
       ]
     },

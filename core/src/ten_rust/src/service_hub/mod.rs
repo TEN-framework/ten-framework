@@ -524,7 +524,9 @@ pub unsafe extern "C" fn ten_service_hub_create(
     let exporter_type = telemetry_config
         .as_ref()
         .map(telemetry::ExporterType::from_config)
-        .unwrap_or(telemetry::ExporterType::Prometheus);
+        .unwrap_or(telemetry::ExporterType::Prometheus {
+            service_name: None,
+        });
 
     // Initialize metrics exporter.
     let metrics_exporter = telemetry::MetricsExporter::new(exporter_type);

@@ -125,6 +125,10 @@ pub struct PrometheusConfig {
     /// Metrics endpoint path (default: "/metrics")
     #[serde(default = "default_prometheus_path")]
     pub path: String,
+
+    /// Service name (optional, defaults to application name)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
 }
 
 /// OTLP exporter configuration (Push mode)
@@ -140,6 +144,10 @@ pub struct OtlpConfig {
     /// HTTP headers for authentication
     #[serde(default)]
     pub headers: HashMap<String, String>,
+
+    /// Service name (optional, defaults to application name)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
 }
 
 /// OTLP protocol type
@@ -185,6 +193,7 @@ impl Default for PrometheusConfig {
         Self {
             endpoint: default_prometheus_endpoint(),
             path: default_prometheus_path(),
+            service_name: None,
         }
     }
 }

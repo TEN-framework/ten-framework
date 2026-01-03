@@ -1,6 +1,13 @@
 # TEN Framework - Grafana Performance Monitoring
 
-This directory provides a complete monitoring solution for TEN Framework applications using Prometheus and Grafana.
+This directory provides a complete monitoring solution for TEN Framework applications using Prometheus, Loki, and Grafana.
+
+## 🎯 Features
+
+- ✅ **Metrics Monitoring**: Real-time performance metrics with Prometheus
+- ✅ **Log Aggregation**: Centralized log collection with Loki
+- ✅ **Unified Visualization**: Grafana dashboards for metrics and logs
+- ✅ **OTLP Support**: OpenTelemetry Protocol for cloud-native observability
 
 ## 🎯 Deployment Modes
 
@@ -9,7 +16,7 @@ We provide **three deployment configurations** to suit different needs:
 | Mode | Use Case | Deploy Command | Config Files |
 |------|----------|----------------|--------------|
 | **Pull Mode** | Development, Simple Deployment | `docker-compose -f docker-compose.pull.yml up -d` | `configs/pull/` |
-| **Push Mode** | Production, Cloud Native | `docker-compose -f docker-compose.push.yml up -d` | `configs/push/` |
+| **Push Mode** | Production, Cloud Native, **Logs + Metrics** | `docker-compose -f docker-compose.push.yml up -d` | `configs/push/` |
 | **Hybrid Mode** | Testing Both Modes | `docker-compose -f docker-compose.hybrid.yml up -d` | `configs/hybrid/` |
 
 ---
@@ -19,6 +26,9 @@ We provide **three deployment configurations** to suit different needs:
 ### 1. Pull Mode (Prometheus Exporter)
 
 **Architecture:** Application exposes metrics endpoint → Prometheus scrapes periodically
+
+**Features:**
+- ✅ Metrics only (no logs)
 
 **Pros:**
 
@@ -30,6 +40,7 @@ We provide **three deployment configurations** to suit different needs:
 
 - ❌ Requires port exposure
 - ❌ Cannot capture shutdown metrics (on_stop, on_deinit)
+- ❌ No log aggregation
 
 **Best For:** Development, testing, long-running services
 
@@ -37,21 +48,28 @@ We provide **three deployment configurations** to suit different needs:
 
 ### 2. Push Mode (OTLP Exporter) ⭐ Recommended for Production
 
-**Architecture:** Application pushes metrics → OTEL Collector → Prometheus
+**Architecture:** Application pushes metrics + logs → OTEL Collector → Prometheus + Loki → Grafana
+
+**Features:**
+- ✅ Metrics collection (OpenTelemetry → Prometheus)
+- ✅ Log aggregation (OpenTelemetry → Loki)
+- ✅ Unified visualization in Grafana
 
 **Pros:**
 
 - ✅ No port exposure needed (more secure)
 - ✅ Captures full lifecycle metrics (on_stop, on_deinit)
+- ✅ **Centralized log collection and visualization**
 - ✅ Cloud-native architecture
 - ✅ Supports complex data routing and multi-backend export
+- ✅ Correlate metrics and logs in same dashboard
 
 **Cons:**
 
-- ❌ Requires OTEL Collector deployment
+- ❌ Requires OTEL Collector and Loki deployment
 - ❌ More complex configuration
 
-**Best For:** Production, cloud-native deployments, Kubernetes, short-lived processes
+**Best For:** Production, cloud-native deployments, Kubernetes, short-lived processes, **applications needing log visibility**
 
 ---
 
@@ -78,65 +96,42 @@ We provide **three deployment configurations** to suit different needs:
 | Feature | Pull Mode | Push Mode | Hybrid Mode |
 |---------|-----------|-----------|-------------|
 | **Setup Complexity** | ⭐ Simple | ⭐⭐ Medium | ⭐⭐ Medium |
-| **Components** | 2 | 3 | 3 |
+| **Components** | 2 | 4 (+ Loki) | 4 (+ Loki) |
 | **Port Exposure** | Required | Not Required | Optional |
 | **Full Lifecycle** | ❌ | ✅ | Configurable |
+| **Log Aggregation** | ❌ | ✅ | ✅ |
 | **Cloud Native** | Basic | ✅ | ✅ |
 | **Best For** | Dev/Test | Production | Testing/Migration |
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start with Logs
 
-### Pull Mode (Simplest)
-
-```bash
-# 1. Start monitoring stack
-cd /path/to/grafana-monitoring
-docker-compose -f docker-compose.pull.yml up -d
-
-# 2. Configure your TEN application (property.json)
-{
-  "ten": {
-    "services": {
-      "telemetry": {
-        "enabled": true,
-        "metrics": {
-          "enabled": true,
-          "exporter": {
-            "type": "prometheus",
-            "config": {
-              "endpoint": "0.0.0.0:49484",
-              "path": "/metrics"
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-# 3. Start your TEN application
-./your_ten_application
-
-# 4. Access Grafana
-# URL: http://localhost:3001
-# Username: admin
-# Password: admin
-```
-
----
-
-### Push Mode (Production)
+### Push Mode (Production - Metrics + Logs)
 
 ```bash
-# 1. Start monitoring stack
+# 1. Start monitoring stack (Prometheus + Loki + Grafana)
 cd /path/to/grafana-monitoring
 docker-compose -f docker-compose.push.yml up -d
 
 # 2. Configure your TEN application (property.json)
 {
   "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [{"level": "debug"}],
+          "formatter": {"type": "json"},
+          "emitter": {
+            "type": "otlp",
+            "config": {
+              "endpoint": "http://localhost:4317",
+              "service_name": "my-ten-service"
+            }
+          }
+        }
+      ]
+    },
     "services": {
       "telemetry": {
         "enabled": true,
@@ -146,7 +141,8 @@ docker-compose -f docker-compose.push.yml up -d
             "type": "otlp",
             "config": {
               "endpoint": "http://localhost:4317",
-              "protocol": "grpc"
+              "protocol": "grpc",
+              "service_name": "my-ten-service"
             }
           }
         }
@@ -158,14 +154,20 @@ docker-compose -f docker-compose.push.yml up -d
 # 3. Start your TEN application
 ./your_ten_application
 
-# 4. Verify
+# 4. Verify metrics
 docker logs -f ten_otel_collector_push
 curl http://localhost:8889/metrics | grep ten_
 
-# 5. Access Grafana
+# 5. Query logs
+curl -G "http://localhost:3100/loki/api/v1/query" \
+  --data-urlencode 'query={service_name="my-ten-service"}'
+
+# 6. Access Grafana
 # URL: http://localhost:3001
 # Username: admin
 # Password: admin
+# - Explore → Select "Loki" data source to query logs
+# - Dashboards → TEN Framework metrics dashboard
 ```
 
 ---
@@ -185,6 +187,62 @@ docker-compose -f docker-compose.hybrid.yml up -d
 # Pull mode: {mode="pull"}
 # Push mode: {mode="push"}
 ```
+
+---
+
+## 📝 Log Visualization (Push Mode Only)
+
+### Accessing Logs in Grafana
+
+1. **Open Grafana**: http://localhost:3001 (admin/admin)
+
+2. **Navigate to Explore**:
+   - Click the compass icon (🧭) in the left sidebar
+   - Select "Loki" from the data source dropdown
+
+3. **Query Logs with LogQL**:
+
+```logql
+# View all logs from your service
+{service_name="my-ten-service"}
+
+# Filter by log level
+{service_name="my-ten-service", level="error"}
+
+# Search for specific text
+{service_name="my-ten-service"} |= "database connection"
+
+# Regex search
+{service_name="my-ten-service"} |~ "error|warn"
+
+# Rate of log lines
+rate({service_name="my-ten-service"}[5m])
+
+# Count errors by level
+sum by (level) (rate({service_name="my-ten-service"}[5m]))
+```
+
+4. **Create Log Dashboard**:
+   - Add new panel to existing dashboard
+   - Select "Loki" as data source
+   - Choose visualization: Logs, Time series, or Table
+   - Save dashboard
+
+### Correlating Metrics and Logs
+
+In Grafana, you can create dashboards that show both metrics and logs:
+
+```
++------------------+------------------+
+|  Error Rate      |  Request Rate   |  ← Metrics (Prometheus)
+|  (Prometheus)    |  (Prometheus)   |
++------------------+------------------+
+|  Error Logs                        |  ← Logs (Loki)
+|  (Loki)                            |
++------------------------------------+
+```
+
+**See detailed guide**: `LOGS_VISUALIZATION.md`
 
 ---
 
@@ -430,9 +488,10 @@ docker-compose -f docker-compose.pull.yml restart
 
 ### Push Mode Ports
 
-- **4317:** OTLP gRPC receiver
-- **4318:** OTLP HTTP receiver
+- **4317:** OTLP gRPC receiver (metrics + logs)
+- **4318:** OTLP HTTP receiver (metrics + logs)
 - **8889:** OTEL Collector Prometheus exporter
+- **3100:** Loki HTTP API
 - **9091:** Prometheus UI
 - **3001:** Grafana UI
 
