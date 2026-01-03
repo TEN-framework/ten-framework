@@ -14,7 +14,7 @@ cmake_project("msgpackc") {
   public_configs = [ ":msgpackc_header" ]
 
   project_path = "."
-  if (is_win) {
+  if (is_win && !is_mingw) {
     project_name = "ALL_BUILD"
   } else {
     project_name = "all"
@@ -31,21 +31,25 @@ cmake_project("msgpackc") {
     "BUILD_SHARED_LIBS=OFF",
   ]
 
-  if (!is_win) {
-    # msgpack-c is part of another shared library, so we have to enable -fPIC even
-    # if msgpack-c is a static library.
-    #
-    # Otherwise, we will encounter the following error:
-    #
-    # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
-    # a shared object; recompile with -fPIC
+  # msgpack-c is part of another shared library, so we have to enable -fPIC even
+  # if msgpack-c is a static library.
+  #
+  # Otherwise, we will encounter the following error:
+  #
+  # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
+  # a shared object; recompile with -fPIC
+  #
+  # MinGW uses GCC and also needs -fPIC for shared libraries
+  if (!is_win || is_mingw) {
     cflags = [ "\"-fPIC\"" ]
   }
 
   outputs_seen_by_ag = []
-  if (is_win) {
+  if (is_win && !is_mingw) {
+    # MSVC produces msgpack-c.lib
     outputs_seen_by_ag += [ "$install_path/lib/msgpack-c.lib" ]
   } else {
+    # MinGW and Unix produce libmsgpack-c.a
     outputs_seen_by_ag += [ "$install_path/lib/libmsgpack-c.a" ]
   }
 }

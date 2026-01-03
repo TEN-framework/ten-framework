@@ -81,12 +81,13 @@ int ten_waitable_wait(ten_waitable_t *wb, uint32_t expect, ten_spinlock_t *lock,
 
   if (timeout == 0) {
     // only a test
-    return (InterlockedAdd(&wb->sig, 0) != expect) ? 0 : -1;
+    // Cast to LONG* for InterlockedAdd, as it requires LONG volatile* type
+    return (InterlockedAdd((LONG volatile *)&wb->sig, 0) != (LONG)expect) ? 0 : -1;
   }
 
   int64_t timeout_time = (timeout < 0) ? -1 : (ten_current_time_ms() + timeout);
 
-  while (InterlockedAdd(&wb->sig, 0) == expect) {
+  while (InterlockedAdd((LONG volatile *)&wb->sig, 0) == (LONG)expect) {
     int64_t diff = INFINITE;
 
     if (timeout > 0) {

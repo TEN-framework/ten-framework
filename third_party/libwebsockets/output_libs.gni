@@ -6,11 +6,18 @@
 #
 libwebsockets_output_libs = []
 
-if (is_win) {
+if (is_win && !is_mingw) {
+  # MSVC generates .lib files
   libwebsockets_output_libs += [
     "${root_gen_dir}/cmake/websockets/install/bin/websockets.dll",
     "${root_gen_dir}/cmake/websockets/install/lib/websockets.lib",
     "${root_gen_dir}/cmake/websockets/install/lib/websockets_static.lib",
+  ]
+} else if (is_win && is_mingw) {
+  # MinGW generates .dll.a import libraries
+  libwebsockets_output_libs += [
+    "${root_gen_dir}/cmake/websockets/install/bin/libwebsockets.dll",
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.dll.a",
   ]
 } else if (is_linux) {
   libwebsockets_output_libs += [
@@ -116,7 +123,8 @@ template("ten_websockets_copy_deps") {
 
     all_deps += [ ":ten_websockets_copy_headers" ]
 
-    if (is_win) {
+    if (is_win && !is_mingw) {
+      # MSVC: copy .lib files
       action("ten_websockets_copy_win_exported_libs") {
         script = "//build/ten_common/scripts/copy_files_with_pattern.py"
         args = [
@@ -124,6 +132,38 @@ template("ten_websockets_copy_deps") {
           rebase_path("${root_gen_dir}/cmake/websockets/install/lib"),
           "--patterns",
           "^.*\\.lib\$",
+          "--dest-dir",
+          rebase_path(basedir + "/lib"),
+          "--tg-timestamp-proxy-file",
+          rebase_path(
+              "${target_gen_dir}/copy_win_exported_libs_dummy_output_file"),
+        ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                                 "data_deps",
+                               ])
+
+        outputs =
+            [ "${target_gen_dir}/copy_win_exported_libs_dummy_output_file" ]
+
+        # This action should wait for the completion of the building of
+        # libweboskcets.
+        deps = [ "//third_party/libwebsockets" ]
+      }
+
+      all_deps += [ ":ten_websockets_copy_win_exported_libs" ]
+    } else if (is_win && is_mingw) {
+      # MinGW: copy .dll.a files (import libraries)
+      action("ten_websockets_copy_win_exported_libs") {
+        script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+        args = [
+          "--sources",
+          rebase_path("${root_gen_dir}/cmake/websockets/install/lib"),
+          "--patterns",
+          "^.*\\.dll\\.a\$",
           "--dest-dir",
           rebase_path(basedir + "/lib"),
           "--tg-timestamp-proxy-file",

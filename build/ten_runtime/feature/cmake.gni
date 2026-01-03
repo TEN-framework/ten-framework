@@ -58,6 +58,10 @@ template("cmake_project") {
       ]
     }
 
+    if (is_mingw) {
+      args += [ "--is-mingw" ]
+    }
+
     if (defined(invoker.run_build)) {
       args += [
         "--run-build",
@@ -117,7 +121,9 @@ template("cmake_project") {
       ]
     }
 
-    if (!is_win) {
+    # MinGW uses GCC toolchain and supports CMAKE_CXX_STANDARD like Linux/Mac
+    # Only MSVC doesn't need these flags
+    if (!is_win || is_mingw) {
       if (defined(invoker.cxx_standard)) {
         args += [
           "--cxx-standard",
@@ -191,14 +197,19 @@ template("cmake_project") {
       _libs = rebase_path(get_target_outputs(":${_target_name}_cmake_action"))
       foreach(lib, _libs) {
         current_libs = []
+        _args = []
+        _args += [
+          "--libs",
+          "${lib}",
+          "--target-os",
+          "${target_os}",
+        ]
+        if (is_mingw) {
+          _args += [ "--is-mingw" ]
+        }
         current_libs = exec_script(
                 "//build/ten_common/scripts/get_lib_name_from_cmake_output.py",
-                [
-                  "--libs",
-                  "${lib}",
-                  "--target-os",
-                  "${target_os}",
-                ],
+                _args,
                 "list lines")
 
         libs += current_libs

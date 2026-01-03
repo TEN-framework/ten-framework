@@ -10,7 +10,9 @@ import("//build/ten_runtime/options.gni")
 config("third_party_config") {
   cflags = []
 
-  if (!is_win) {
+  # GCC/MinGW specific warning flags
+  # MSVC doesn't recognize these flags
+  if (!is_win || is_mingw) {
     cflags += [
       "-Wno-stringop-overflow",
       "-Wno-cast-function-type",

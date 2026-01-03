@@ -27,7 +27,8 @@ ten_process_mutex_t *ten_process_mutex_create(const char *name) {
   TEN_ASSERT(mutex, "Failed to allocate memory.");
 
   mutex->handle = NULL;
-  mutex->handle = CreateMutex(NULL, false, name);
+  // Use CreateMutexA to explicitly use ANSI version instead of Unicode
+  mutex->handle = CreateMutexA(NULL, FALSE, name);
   TEN_ASSERT(mutex->handle, "Failed to create mutex.");
   mutex->name = ten_string_create_formatted("%s", name);
 
