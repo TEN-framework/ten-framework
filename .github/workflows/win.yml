@@ -135,6 +135,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
@@ -803,6 +804,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
@@ -1081,6 +1083,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
