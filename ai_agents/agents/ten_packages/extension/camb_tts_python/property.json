@@ -1,0 +1,12 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "api_key": "${env:CAMB_API_KEY|}",
+        "voice_id": 2681,
+        "language": "en-us",
+        "speech_model": "mars-8-flash",
+        "speed": 1.0,
+        "format": "pcm_s16le"
+    }
+}
