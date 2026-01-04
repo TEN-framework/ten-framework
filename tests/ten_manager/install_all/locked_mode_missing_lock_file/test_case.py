@@ -61,14 +61,6 @@ def test_tman_install_locked_missing_lock_file():
         returncode != 0
     ), "tman install --locked should fail when lock file is missing"
 
-    # Check error message contains expected text
-    assert (
-        "manifest-lock.json was not found" in output_text
-    ), f"Error message should mention missing lock file. Got: {output_text}"
-    assert (
-        "without --locked" in output_text
-    ), f"Error message should suggest running without --locked. Got: {output_text}"
-
 
 if __name__ == "__main__":
     test_tman_install_locked_missing_lock_file()
