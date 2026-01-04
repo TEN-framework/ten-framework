@@ -145,18 +145,18 @@ template("ten_package_test_prepare_client") {
       defines += invoker.defines
     }
 
-    # TODO(nzh): modify related macro
-    # On Windows with MinGW, when compiling test client executables that use
+    # On Windows (with MinGW), when compiling test client executables that use
     # msgpack_client functions (e.g., ten_test_msgpack_tcp_client_create), we
-    # need to define TEN_RUNTIME_EXPORT so that TEN_RUNTIME_API expands to
-    # __declspec(dllexport) instead of __declspec(dllimport). This prevents
-    # MinGW from generating __imp_ prefixed symbol references that would cause
-    # "undefined reference" errors when linking functions defined in the same
-    # executable.
+    # need to define TEN_MSGPACK_EXPORT so that TEN_MSGPACK_API expands to
+    # __declspec(dllexport) instead of __declspec(dllimport).
+    # This is because static link (to msgpack functions) is used for tests,
+    # instead of through dll (which needs import-export cooperation). In this
+    # case, no "__imp_" prefix is involved, and all compile units should use
+    # TEN_MSGPACK_EXPORT to prevent MinGW from generating __imp_ prefixed symbol
+    # references that would cause "undefined reference" errors.
     #
-    # See tests/common/client/BUILD.gn for more details on why this is needed.
     if (is_win && is_mingw) {
-      defines += [ "TEN_RUNTIME_EXPORT" ]
+      defines += [ "TEN_MSGPACK_EXPORT" ]
     }
 
     include_dirs = common_includes
