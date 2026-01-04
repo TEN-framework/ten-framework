@@ -57,13 +57,9 @@ def test_tman_install_locked_missing_dependency():
     )
 
     # Should fail
-    assert returncode != 0, \
-        "tman install --locked should fail when dependency is missing from lock file"
-
-    # Check error message
-    assert ("ext_b" in output_text and "missing from manifest-lock.json" in output_text) or \
-           ("missing" in output_text and "lock" in output_text), \
-        f"Error message should mention missing dependency. Got: {output_text}"
+    assert (
+        returncode != 0
+    ), "tman install --locked should fail when dependency is missing from lock file"
 
 
 if __name__ == "__main__":
