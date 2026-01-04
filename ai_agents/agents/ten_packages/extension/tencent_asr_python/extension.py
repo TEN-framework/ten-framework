@@ -101,6 +101,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 listener=self,
                 log_level=self.config.params.log_level,
                 log_path=log_path,
+                reconnect_max_retries=0,  # 0 means infinite reconnection
+                reconnect_delay=0.5,  # Initial reconnection delay in seconds (exponential backoff: 0.5s, 1s, 2s, 4s, 4s...)
+                reconnect_max_delay=4,  # Maximum reconnection delay in seconds
             )
             self.ten_env.log_info(
                 "vendor_status_changed: Tencent ASR client started",

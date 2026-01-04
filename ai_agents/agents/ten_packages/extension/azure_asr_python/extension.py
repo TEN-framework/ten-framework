@@ -50,7 +50,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
 
-        # Reconnection manager with retry limits and backoff strategy
+        # Reconnection manager with unlimited retries and backoff strategy
         self.reconnect_manager: ReconnectManager | None = None
 
     @override
@@ -521,11 +521,6 @@ class AzureASRExtension(AsyncASRBaseExtension):
         """
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
-            return
-
-        # Check if we can still retry
-        if not self.reconnect_manager.can_retry():
-            self.ten_env.log_warn("No more reconnection attempts allowed")
             return
 
         # Attempt a single reconnection
