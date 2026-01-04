@@ -1036,8 +1036,6 @@ jobs:
       matrix:
         build_type: [debug, release]
         compiler: [msvc, mingw]
-        exclude:
-          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
