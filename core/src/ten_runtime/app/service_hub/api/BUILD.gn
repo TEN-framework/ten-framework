@@ -13,9 +13,6 @@ ten_runtime_glob("api") {
     public_deps = [ "//core/src/ten_rust:ten_rust_binding" ]
   }
 
-  # TODO(nzh): add a proper API macro to control the export of ten_utils symbols
-  # Instead of using TEN_UTILS_API
-  #
   # On Windows with MinGW, api.c calls TEN_UTILS_API functions (e.g.,
   # ten_log_global_get_output_file_path) which are defined in ten_utils. Since
   # these functions are compiled as part of the same executable (e.g.,

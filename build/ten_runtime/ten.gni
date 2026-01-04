@@ -230,6 +230,24 @@ template("ten_executable") {
     } else {
       ldflags = exe_ld_flags
     }
+
+    # On Windows (with MinGW), when compiling test client executables that use
+    # msgpack_client functions (e.g., ten_test_msgpack_tcp_client_create), we
+    # need to define TEN_MSGPACK_EXPORT so that TEN_MSGPACK_API expands to
+    # __declspec(dllexport) instead of __declspec(dllimport).
+    # This is because static link (to msgpack functions) is used for tests,
+    # instead of through dll (which needs import-export cooperation). In this
+    # case, no "__imp_" prefix is involved, and all compile units should use
+    # TEN_MSGPACK_EXPORT to prevent MinGW from generating __imp_ prefixed symbol
+    # references that would cause "undefined reference" errors.
+    #
+    if (is_win && is_mingw) {
+      if (defined(invoker.defines)) {
+        defines += [ "TEN_MSGPACK_EXPORT" ]
+      } else {
+        defines = [ "TEN_MSGPACK_EXPORT" ]
+      }
+    }
   }
 }
 

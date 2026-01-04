@@ -75,10 +75,7 @@ ten_package("msgpack") {
     "//third_party/msgpack:msgpackc",
   ]
 
-  # TODO(nzh): add a MSGPACK_API to control the export of msgpack symbols
-  # Instead of using TEN_RUNTIME_API
-
-  # On Windows with MinGW, msgpack package calls TEN_RUNTIME_API functions
+  # On Windows with MinGW, msgpack package calls TEN_MSGPACK_API functions
   # (e.g., ten_msgpack_deserialize_msgs, ten_msgpack_serialize_msgs) which are
   # defined in the same package (msg.c). Since these functions are compiled as
   # part of the msgpack DLL, they need to use actual symbols instead of
@@ -88,7 +85,7 @@ ten_package("msgpack") {
   #
   # 1. Linux/macOS: Use __attribute__((visibility("default"))) instead of
   #    __declspec(dllimport). No __imp_ prefix is generated, symbols are resolved
-  #    directly. See ten_config.h lines 35-51.
+  #    directly. See msgpack_config.h.
   #
   # 2. MSVC: The MSVC linker can automatically resolve __declspec(dllimport) symbols
   #    even when they're in the same DLL. MSVC's linker is more lenient and can use the
@@ -102,14 +99,14 @@ ten_package("msgpack") {
   #    (ten_msgpack_deserialize_msgs) available, not the __imp_ prefixed version.
   #    This causes "undefined reference to __imp_..." errors.
   #
-  # Solution: Define TEN_RUNTIME_EXPORT when compiling msgpack so it uses
+  # Solution: Define TEN_MSGPACK_EXPORT when compiling msgpack so it uses
   # __declspec(dllexport) instead of __declspec(dllimport), making it reference the
   # actual symbol directly.
   #
   # References:
   # - GCC dllimport behavior: https://gcc.gnu.org/onlinedocs/gcc-4.7.0/gcc/Function-Attributes.html
   if (is_win && is_mingw) {
-    defines = [ "TEN_RUNTIME_EXPORT" ]
+    defines = [ "TEN_MSGPACK_EXPORT" ]
   }
 }
 
