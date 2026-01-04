@@ -10,10 +10,18 @@ import("//third_party/yyjson/output_libs.gni")
 ten_runtime_output_libs = []
 
 if (is_win) {
-  ten_runtime_output_libs += [
-    "${root_out_dir}/ten_runtime.dll",
-    "${root_out_dir}/ten_runtime.dll.lib",
-  ]
+  if (is_mingw) {
+    # MinGW uses .dll.a import library
+    ten_runtime_output_libs += [
+      "${root_out_dir}/ten_runtime.dll",
+      "${root_out_dir}/ten_runtime.dll.a",
+    ]
+  } else {
+    ten_runtime_output_libs += [
+      "${root_out_dir}/ten_runtime.dll",
+      "${root_out_dir}/ten_runtime.dll.lib",
+    ]
+  }
 } else if (is_mac) {
   ten_runtime_output_libs += [ "${root_out_dir}/libten_runtime.dylib" ]
 } else if (is_linux) {
@@ -33,14 +41,27 @@ if (is_linux) {
   ten_runtime_python_output_libs =
       [ "${root_out_dir}/libten_runtime_python.so" ]
 } else if (is_win) {
-  ten_runtime_go_output_libs = [
-    "${root_out_dir}/ten_runtime_go.dll",
-    "${root_out_dir}/ten_runtime_go.dll.lib",
-  ]
-  ten_runtime_python_output_libs = [
-    "${root_out_dir}/libten_runtime_python.pyd",
-    "${root_out_dir}/libten_runtime_python.pyd.lib",
-  ]
+  if (is_mingw) {
+    # MinGW uses .dll.a import library for .dll files
+    # For .pyd files, the import library is .pyd.a (see mingw.gni:123)
+    ten_runtime_go_output_libs = [
+      "${root_out_dir}/ten_runtime_go.dll",
+      "${root_out_dir}/ten_runtime_go.dll.a",
+    ]
+    ten_runtime_python_output_libs = [
+      "${root_out_dir}/libten_runtime_python.pyd",
+      "${root_out_dir}/libten_runtime_python.pyd.a",
+    ]
+  } else {
+    ten_runtime_go_output_libs = [
+      "${root_out_dir}/ten_runtime_go.dll",
+      "${root_out_dir}/ten_runtime_go.dll.lib",
+    ]
+    ten_runtime_python_output_libs = [
+      "${root_out_dir}/libten_runtime_python.pyd",
+      "${root_out_dir}/libten_runtime_python.pyd.lib",
+    ]
+  }
 }
 
 ten_runtime_nodejs_output_libs =

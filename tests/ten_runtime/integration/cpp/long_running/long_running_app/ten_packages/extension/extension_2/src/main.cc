@@ -16,11 +16,13 @@ class test_extension : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "test_cmd_from_1") {
+      TEN_ENV_LOG_INFO(ten_env, "test_cmd_from_1 received");
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       ten_env.return_result(std::move(cmd_result));
 
       ten_random_sleep_range_ms(1000, 2000);
 
+      TEN_ENV_LOG_INFO(ten_env, "test_cmd_from_2 sent");
       auto test_cmd = ten::cmd_t::create("test_cmd_from_2");
       ten_env.send_cmd(std::move(test_cmd));
     }

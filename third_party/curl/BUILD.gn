@@ -82,7 +82,18 @@ cmake_project("curl") {
   }
 
   if (is_win) {
-    options += [ "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE" ]
+    options += [
+      "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE",
+
+      # These flags are required to prevent the "no non-blocking method was
+      # found/used/set" error when compiled by MinGW.
+      # MSVC will probably define the macros on its own.
+      "HAVE_LIBWS2_32=ON", # Informs that the Winsock 2 library is available.
+      "HAVE_WINSOCK2_H=1", # Informs that the winsock2.h header file is available.
+      "HAVE_WS2TCPIP_H=1", # Informs that the ws2tcpip.h header file is available.
+      #Explicitly enables the use of ioctlsocket() with FIONBIO for non-blocking I/O on Windows.
+      "HAVE_IOCTLSOCKET_FIONBIO=1",
+    ]
   }
 
   if (curl_use_shared_lib) {
