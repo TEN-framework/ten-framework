@@ -18,6 +18,7 @@
 #include "ten_utils/lib/signature.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/memory.h"
+#include "ten_utils/value/value_buffer.h"
 
 bool ten_log_check_integrity(ten_log_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
@@ -144,19 +145,29 @@ const char *filename(const char *path, size_t path_len, size_t *filename_len) {
 static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
                                      const char *func_name,
                                      const char *file_name, size_t line_no,
-                                     const char *category,
-                                     const uint8_t *fields_buf,
-                                     size_t fields_buf_size, const char *fmt,
-                                     va_list ap) {
+                                     const char *category, ten_value_t *fields,
+                                     const char *fmt, va_list ap) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
   ten_string_t msg;
   ten_string_init_from_va_list(&msg, fmt, ap);
 
+  uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+
+  if (fields != NULL) {
+    fields_buf =
+        ten_value_serialize_to_buffer_c(fields, &fields_buf_size, NULL);
+  }
+
   ten_log_log(self, level, func_name, file_name, line_no,
               ten_string_get_raw_str(&msg), category, fields_buf,
               fields_buf_size, NULL);
+
+  if (fields_buf != NULL) {
+    TEN_FREE(fields_buf);
+  }
 
   ten_string_deinit(&msg);
 }
@@ -164,8 +175,7 @@ static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
 void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
                            const char *func_name, const char *file_name,
                            size_t line_no, const char *category,
-                           const uint8_t *fields_buf, size_t fields_buf_size,
-                           const char *fmt, ...) {
+                           ten_value_t *fields, const char *fmt, ...) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -173,7 +183,7 @@ void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
   va_start(ap, fmt);
 
   ten_log_log_from_va_list(self, level, func_name, file_name, line_no, category,
-                           fields_buf, fields_buf_size, fmt, ap);
+                           fields, fmt, ap);
 
   va_end(ap);
 }
