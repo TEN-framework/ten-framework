@@ -14,6 +14,7 @@ from .const import (
     FINALIZE_MODE_MUTE_PKG,
     DUMP_FILE_NAME,
     MODULE_NAME_ASR,
+    FATAL_ERROR_CODES,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -426,10 +427,17 @@ class AzureASRExtension(AsyncASRBaseExtension):
             f"vendor_error: code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        is_fatal = cancellation_details.code in FATAL_ERROR_CODES
+
+        if is_fatal:
+            # Stop retrying for fatal errors
+            self.stopped = True
+
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                code=ModuleErrorCode.FATAL_ERROR.value if is_fatal else ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=cancellation_details.error_details,
             ),
             ModuleErrorVendorInfo(
