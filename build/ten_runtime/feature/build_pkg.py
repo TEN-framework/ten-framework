@@ -27,6 +27,7 @@ class ArgumentInfo(argparse.Namespace):
         self.cpu: str
         self.build: str
         self.is_clang: bool
+        self.is_mingw: bool
         self.enable_sanitizer: bool
         self.vs_version: str
         self.log_level: int
@@ -40,12 +41,17 @@ def construct_extra_args_for_cpp_ag(args: ArgumentInfo) -> list[str]:
     else:
         cmd += ["is_clang=false"]
 
+    if args.is_mingw is True:
+        cmd += ["is_mingw=true"]
+    else:
+        cmd += ["is_mingw=false"]
+
     if args.enable_sanitizer is True:
         cmd += ["enable_sanitizer=true"]
     else:
         cmd += ["enable_sanitizer=false"]
 
-    if args.vs_version:
+    if args.vs_version and not args.is_mingw:
         cmd += [f"vs_version={args.vs_version}"]
 
     return cmd
@@ -363,6 +369,7 @@ if __name__ == "__main__":
     parser.add_argument("--cpu", type=str, required=True)
     parser.add_argument("--build", type=str, required=True)
     parser.add_argument("--is-clang", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--is-mingw", action=argparse.BooleanOptionalAction)
     parser.add_argument(
         "--enable-sanitizer", action=argparse.BooleanOptionalAction
     )
