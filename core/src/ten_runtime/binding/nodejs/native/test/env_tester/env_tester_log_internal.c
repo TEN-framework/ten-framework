@@ -65,7 +65,7 @@ static void ten_env_tester_proxy_notify_log(ten_env_tester_t *ten_env_tester,
                      ten_string_get_raw_str(&ctx->func_name),
                      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
                      ten_string_get_raw_str(&ctx->msg),
-                     ten_string_get_raw_str(&ctx->category), NULL, NULL);
+                     ten_string_get_raw_str(&ctx->category), NULL, 0, NULL);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }

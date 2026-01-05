@@ -23,8 +23,8 @@ TEN_RUNTIME_PRIVATE_API void ten_log_rust_log_func(
     ten_log_t *self, TEN_LOG_LEVEL level, const char *category,
     size_t category_len, const char *func_name, size_t func_name_len,
     const char *file_name, size_t file_name_len, size_t line_no,
-    const char *msg, size_t msg_len, ten_value_t *fields,
-    const ten_log_loc_info_t *loc_info);
+    const char *msg, size_t msg_len, const uint8_t *fields_buf,
+    size_t fields_buf_size, const ten_log_loc_info_t *loc_info);
 
 TEN_RUNTIME_PRIVATE_API void ten_log_rust_config_deinit(void *config);
 

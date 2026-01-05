@@ -63,7 +63,7 @@ static void ten_go_ten_env_tester_log_proxy_notify(
                      ten_string_get_raw_str(&ctx->func_name),
                      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
                      ten_string_get_raw_str(&ctx->msg),
-                     ten_string_get_raw_str(&ctx->category), NULL, NULL);
+                     ten_string_get_raw_str(&ctx->category), NULL, 0, NULL);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }

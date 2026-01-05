@@ -31,6 +31,7 @@ struct FieldVisitor {
     line_no: Option<u32>,
     message: String,
     category: Option<String>,
+    user_fields: Option<String>,
 }
 
 impl Visit for FieldVisitor {
@@ -66,6 +67,9 @@ impl Visit for FieldVisitor {
                 }
                 self.message.push_str(format!("{value:?}").trim_matches('"'));
             }
+            "ten_user_fields" => {
+                self.user_fields = Some(format!("{value:?}"));
+            }
             _ => {
                 // This might be the actual log message
                 if field.name() == "message" || self.message.is_empty() {
@@ -94,6 +98,9 @@ impl Visit for FieldVisitor {
                     self.message.push(' ');
                 }
                 self.message.push_str(value);
+            }
+            "ten_user_fields" => {
+                self.user_fields = Some(value.to_string());
             }
             _ => {
                 // This might be the actual log message
@@ -308,6 +315,27 @@ where
             visitor.message.replace('"', "\\\""),
             if self.config.ansi { COLOR_RESET } else { "" }
         )?;
+
+        // User fields - expand into top-level JSON fields
+        if let Some(user_fields_str) = visitor.user_fields.as_deref() {
+            if !user_fields_str.is_empty() {
+                // Try to parse as JSON object and expand each key-value
+                if let Ok(serde_json::Value::Object(obj)) =
+                    serde_json::from_str::<serde_json::Value>(user_fields_str)
+                {
+                    for (k, v) in obj.iter() {
+                        write!(writer, ",\"{}\":", k)?;
+                        // Output value with proper JSON encoding
+                        match v {
+                            serde_json::Value::String(s) => {
+                                write!(writer, "\"{}\"", s.replace('"', "\\\""))?;
+                            }
+                            _ => write!(writer, "{}", v)?,
+                        }
+                    }
+                }
+            }
+        }
 
         // End JSON object
         write!(writer, "}}")?;

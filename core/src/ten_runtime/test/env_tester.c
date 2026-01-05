@@ -887,7 +887,7 @@ static void test_extension_ten_env_log(ten_env_t *self, void *user_data) {
   ten_env_log(self, ctx->level, ten_string_get_raw_str(&ctx->func_name),
               ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
               ten_string_get_raw_str(&ctx->msg),
-              ten_string_get_raw_str(&ctx->category), NULL);
+              ten_string_get_raw_str(&ctx->category), NULL, 0);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }
@@ -895,7 +895,8 @@ static void test_extension_ten_env_log(ten_env_t *self, void *user_data) {
 bool ten_env_tester_log(ten_env_tester_t *self, TEN_LOG_LEVEL level,
                         const char *func_name, const char *file_name,
                         size_t line_no, const char *msg, const char *category,
-                        ten_value_t *fields, ten_error_t *error) {
+                        const uint8_t *fields_buf, size_t fields_buf_size,
+                        ten_error_t *error) {
   TEN_ASSERT(self && ten_env_tester_check_integrity(self, true),
              "Invalid argument.");
 
@@ -908,7 +909,7 @@ bool ten_env_tester_log(ten_env_tester_t *self, TEN_LOG_LEVEL level,
   }
 
   ten_env_tester_notify_log_ctx_t *ctx = ten_env_tester_notify_log_ctx_create(
-      self, level, func_name, file_name, line_no, category, fields, msg);
+      self, level, func_name, file_name, line_no, category, NULL, msg);
   TEN_ASSERT(ctx, "Allocation failed.");
 
   bool rc = ten_env_proxy_notify(self->tester->test_extension_ten_env_proxy,

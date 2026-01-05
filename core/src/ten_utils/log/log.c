@@ -144,8 +144,10 @@ const char *filename(const char *path, size_t path_len, size_t *filename_len) {
 static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
                                      const char *func_name,
                                      const char *file_name, size_t line_no,
-                                     const char *category, ten_value_t *fields,
-                                     const char *fmt, va_list ap) {
+                                     const char *category,
+                                     const uint8_t *fields_buf,
+                                     size_t fields_buf_size, const char *fmt,
+                                     va_list ap) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -153,7 +155,8 @@ static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
   ten_string_init_from_va_list(&msg, fmt, ap);
 
   ten_log_log(self, level, func_name, file_name, line_no,
-              ten_string_get_raw_str(&msg), category, fields, NULL);
+              ten_string_get_raw_str(&msg), category, fields_buf,
+              fields_buf_size, NULL);
 
   ten_string_deinit(&msg);
 }
@@ -161,7 +164,8 @@ static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
 void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
                            const char *func_name, const char *file_name,
                            size_t line_no, const char *category,
-                           ten_value_t *fields, const char *fmt, ...) {
+                           const uint8_t *fields_buf, size_t fields_buf_size,
+                           const char *fmt, ...) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -169,22 +173,23 @@ void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
   va_start(ap, fmt);
 
   ten_log_log_from_va_list(self, level, func_name, file_name, line_no, category,
-                           fields, fmt, ap);
+                           fields_buf, fields_buf_size, fmt, ap);
 
   va_end(ap);
 }
 
 void ten_log_log(ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
                  const char *file_name, size_t line_no, const char *msg,
-                 const char *category, ten_value_t *fields,
-                 const ten_log_loc_info_t *loc_info) {
+                 const char *category, const uint8_t *fields_buf,
+                 size_t fields_buf_size, const ten_log_loc_info_t *loc_info) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
   ten_log_log_with_size(
       self, level, func_name, func_name ? strlen(func_name) : 0, file_name,
       file_name ? strlen(file_name) : 0, line_no, msg, msg ? strlen(msg) : 0,
-      category, category ? strlen(category) : 0, fields, loc_info);
+      category, category ? strlen(category) : 0, fields_buf, fields_buf_size,
+      loc_info);
 }
 
 void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
@@ -192,7 +197,7 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
                            const char *file_name, size_t file_name_len,
                            size_t line_no, const char *msg, size_t msg_len,
                            const char *category, size_t category_len,
-                           ten_value_t *fields,
+                           const uint8_t *fields_buf, size_t fields_buf_size,
                            const ten_log_loc_info_t *loc_info) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
@@ -201,7 +206,8 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
     if (self->advanced_impl.impl) {
       self->advanced_impl.impl(self, level, category, category_len, func_name,
                                func_name_len, file_name, file_name_len, line_no,
-                               msg, msg_len, fields, loc_info);
+                               msg, msg_len, fields_buf, fields_buf_size,
+                               loc_info);
     }
 
     return;

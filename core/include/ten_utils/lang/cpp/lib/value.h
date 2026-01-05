@@ -34,6 +34,16 @@ class ten_env_t;
 class msg_t;
 class cmd_result_t;
 class value_kv_t;
+class error_t;
+class value_t;
+
+// Forward declarations for value_buffer functions
+namespace value_buffer {
+uint8_t *serialize_to_buffer(const value_t &value, size_t *buffer_size,
+                             error_t *err);
+value_t deserialize_from_buffer(const uint8_t *buffer, size_t buffer_size,
+                                size_t *bytes_consumed, error_t *err);
+}  // namespace value_buffer
 
 class value_t {
  public:
@@ -49,7 +59,28 @@ class value_t {
     }
   }
 
- private:
+  bool is_valid() const {
+    // The 'c_value_' is always not NULL.
+    TEN_ASSERT(c_value_, "Should not happen.");
+    return ten_value_is_valid(c_value_);
+  }
+
+  bool from_json(ten_json_t *c_json) {
+    if (c_json == nullptr) {
+      return false;
+    }
+
+    if (c_value_ != nullptr && own_) {
+      ten_value_destroy(c_value_);
+    }
+
+    c_value_ = ten_value_from_json(c_json);
+    return c_value_ != nullptr;
+  }
+
+  // @{
+  // Constructors for basic types - available for developers to create values.
+
   explicit value_t(bool value) : c_value_(ten_value_create_bool(value)) {}
 
   explicit value_t(int8_t value) : c_value_(ten_value_create_int8(value)) {}
@@ -72,62 +103,6 @@ class value_t {
 
   explicit value_t(double value) : c_value_(ten_value_create_float64(value)) {}
 
-  // @{
-  // Create a TEN value of 'ptr' type for all types of C++ pointers.
-  template <typename V>
-  explicit value_t(V *value)
-      : c_value_(ten_value_create_ptr(value, nullptr, nullptr, nullptr)) {}
-  // @}
-
-  template <typename T>
-  struct always_false : public std::false_type {};
-
-  template <typename T>
-  struct is_vector : public std::false_type {};
-
-  template <typename T, typename A>
-  struct is_vector<std::vector<T, A>> : public std::true_type {};
-
-  template <typename T>
-  struct is_unordered_map : public std::false_type {};
-
-  template <typename T, typename A>
-  struct is_unordered_map<std::unordered_map<T, A>> : public std::true_type {};
-
-  /**
-   * @brief This is the fallback constructor to handle all other types of C++
-   * objects.
-   */
-  template <
-      typename V,
-      // Have specific constructors to handle ten::value_t.
-      typename std::enable_if<
-          !std::is_same<typename std::remove_reference<V>::type,
-                        value_t>::value,
-          void>::type * = nullptr,
-      // Have specific constructors to handle std::vector.
-      typename std::enable_if<
-          !is_vector<typename std::remove_reference<V>::type>::value,
-          void>::type * = nullptr,
-      // Have specific constructors to handle std::unordered_map.
-      typename std::enable_if<
-          !is_unordered_map<typename std::remove_reference<V>::type>::value,
-          void>::type * = nullptr,
-      // Have specific constructors to handle normal pointers.
-      typename std::enable_if<
-          !std::is_pointer<typename std::remove_reference<V>::type>::value,
-          void>::type * = nullptr,
-      // Have specific constructors to handle std::string.
-      typename std::enable_if<
-          !std::is_same<typename std::remove_reference<V>::type,
-                        std::string>::value,
-          void>::type * = nullptr>
-  value_t(V &&value) {  // NOLINT
-    static_assert(always_false<V>::value,
-                  "This type is not supported by TEN C++ Binding.");
-  }
-
-  // @{
   // Pay attention to its copy semantics.
   explicit value_t(const std::string &value)
       : c_value_(ten_value_create_string(value.c_str())) {}
@@ -139,7 +114,6 @@ class value_t {
       c_value_ = ten_value_create_string(value);
     }
   }
-  // @}
 
   // Pay attention to its copy semantics.
   explicit value_t(const buf_t &value) {
@@ -155,6 +129,258 @@ class value_t {
 
     c_value_ = ten_value_create_buf_with_move(buf);
   }
+
+  // @}
+
+  // @{
+  // Copy and move assignment operators.
+
+  value_t &operator=(const value_t &other) {
+    if (this == &other) {
+      return *this;
+    }
+
+    if (c_value_ != nullptr && own_) {
+      ten_value_destroy(c_value_);
+    }
+
+    c_value_ = nullptr;
+    own_ = false;
+
+    if (other.c_value_ != nullptr) {
+      if (other.own_) {
+        c_value_ = ten_value_clone(other.c_value_);
+      } else {
+        c_value_ = other.c_value_;
+      }
+
+      own_ = other.own_;
+    }
+
+    return *this;
+  }
+
+  value_t &operator=(value_t &&other) noexcept {
+    if (c_value_ != nullptr && own_) {
+      ten_value_destroy(c_value_);
+    }
+
+    c_value_ = nullptr;
+    own_ = true;
+
+    if (other.c_value_ != nullptr) {
+      c_value_ = other.c_value_;
+      other.c_value_ = nullptr;
+
+      own_ = other.own_;
+    }
+
+    return *this;
+  }
+
+  // @}
+
+  // @{
+  // Type query and value retrieval methods.
+
+  TEN_TYPE get_type() const {
+    if (c_value_ == nullptr) {
+      return TEN_TYPE_INVALID;
+    }
+    return ten_value_get_type(c_value_);
+  }
+
+  template <typename T>
+  T get_real_value(ten_error_t *err = nullptr) {
+    auto *tmp = err;
+    if (tmp == nullptr) {
+      tmp = ten_error_create();
+    }
+
+    auto t = get_real_value_impl<T>(tmp);
+    if (err == nullptr) {
+      ten_error_destroy(tmp);
+    }
+
+    return t;
+  }
+
+  bool get_bool(ten_error_t *err = nullptr) const {
+    return ten_value_get_bool(c_value_, err);
+  }
+
+  int8_t get_int8(ten_error_t *err = nullptr) const {
+    return ten_value_get_int8(c_value_, err);
+  }
+
+  int16_t get_int16(ten_error_t *err = nullptr) const {
+    return ten_value_get_int16(c_value_, err);
+  }
+
+  int32_t get_int32(ten_error_t *err = nullptr) const {
+    return ten_value_get_int32(c_value_, err);
+  }
+
+  int64_t get_int64(ten_error_t *err = nullptr) const {
+    return ten_value_get_int64(c_value_, err);
+  }
+
+  uint8_t get_uint8(ten_error_t *err = nullptr) const {
+    return ten_value_get_uint8(c_value_, err);
+  }
+
+  uint16_t get_uint16(ten_error_t *err = nullptr) const {
+    return ten_value_get_uint16(c_value_, err);
+  }
+
+  uint32_t get_uint32(ten_error_t *err = nullptr) const {
+    return ten_value_get_uint32(c_value_, err);
+  }
+
+  uint64_t get_uint64(ten_error_t *err = nullptr) const {
+    return ten_value_get_uint64(c_value_, err);
+  }
+
+  float get_float32(ten_error_t *err = nullptr) const {
+    return ten_value_get_float32(c_value_, err);
+  }
+
+  double get_float64(ten_error_t *err = nullptr) const {
+    return ten_value_get_float64(c_value_, err);
+  }
+
+  std::string get_string(ten_error_t *err = nullptr) const {
+    TEN_ASSERT(c_value_, "Should not happen.");
+
+    const char *result = ten_value_peek_raw_str(c_value_, err);
+    if (result != nullptr) {
+      return result;
+    } else {
+      if (err) {
+        ten_error_set(err, TEN_ERROR_CODE_GENERIC, "Not found.");
+      }
+      return {};
+    }
+  }
+
+  // Pay attention to its copy semantics.
+  buf_t get_buf(ten_error_t *err = nullptr) const {
+    TEN_ASSERT(c_value_, "Should not happen.");
+
+    void *orig_data = nullptr;
+    size_t orig_size = 0;
+
+    ten_buf_t *result = ten_value_peek_buf(c_value_, err);
+    if (result != nullptr) {
+      orig_size = result->content_size;
+      orig_data = result->data;
+    }
+
+    buf_t buf{orig_size};
+    memcpy(buf.data(), orig_data, orig_size);
+
+    return buf;
+  }
+
+  std::vector<value_t> get_array(
+      const std::vector<value_t> &default_value = {}) {
+    if (c_value_ == nullptr) {
+      return default_value;
+    }
+
+    if (!ten_value_is_array(c_value_)) {
+      return default_value;
+    }
+
+    std::vector<value_t> result;
+    auto size = ten_value_array_size(c_value_);
+    for (size_t i = 0; i < size; ++i) {
+      auto *v = ten_value_array_peek(c_value_, i, nullptr);
+      TEN_ASSERT(v, "Invalid argument.");
+
+      result.push_back(value_t(ten_value_clone(v)));
+    }
+
+    return result;
+  }
+
+  std::unordered_map<std::string, value_t> get_object(
+      const std::unordered_map<std::string, value_t> &default_value = {}) {
+    if (c_value_ == nullptr) {
+      return default_value;
+    }
+
+    if (!ten_value_is_object(c_value_)) {
+      return default_value;
+    }
+
+    std::unordered_map<std::string, value_t> result;
+    ten_value_object_foreach(c_value_, iter) {
+      auto *kv =
+          reinterpret_cast<ten_value_kv_t *>(ten_ptr_listnode_get(iter.node));
+      TEN_ASSERT(kv, "Invalid argument.");
+
+      result[ten_string_get_raw_str(&kv->key)] =
+          value_t(ten_value_clone(kv->value));
+    };
+
+    return result;
+  }
+
+  int to_json(std::string &result) const {
+    ten_json_t c_json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
+    bool success = ten_value_to_json(c_value_, &c_json);
+    if (!success) {
+      return -1;
+    }
+
+    bool must_free = false;
+    const char *json_str = ten_json_to_string(&c_json, nullptr, &must_free);
+    TEN_ASSERT(json_str, "Failed to convert a JSON to a string");
+
+    result = json_str;
+
+    ten_json_deinit(&c_json);
+    if (must_free) {
+      TEN_FREE(json_str);
+    }
+
+    return 0;
+  }
+
+  // @}
+
+ private:
+  // Allow value_buffer functions to access private members
+  friend uint8_t *value_buffer::serialize_to_buffer(const value_t &, size_t *,
+                                                    error_t *);
+  friend value_t value_buffer::deserialize_from_buffer(const uint8_t *, size_t,
+                                                       size_t *, error_t *);
+
+  friend class ten_env_t;
+  friend class msg_t;
+  friend class cmd_result_t;
+  friend class value_kv_t;
+
+  // Create a TEN value of 'ptr' type for all types of C++ pointers.
+  template <typename V>
+  explicit value_t(V *value)
+      : c_value_(ten_value_create_ptr(value, nullptr, nullptr, nullptr)) {}
+
+  template <typename T>
+  struct always_false : public std::false_type {};
+
+  template <typename T>
+  struct is_vector : public std::false_type {};
+
+  template <typename T, typename A>
+  struct is_vector<std::vector<T, A>> : public std::true_type {};
+
+  template <typename T>
+  struct is_unordered_map : public std::false_type {};
+
+  template <typename T, typename A>
+  struct is_unordered_map<std::unordered_map<T, A>> : public std::true_type {};
 
   // Create a TEN value of 'object' type.
   template <typename V>
@@ -190,243 +416,42 @@ class value_t {
     ten_list_clear(&m);
   }
 
-  // Copy semantics.
-  value_t &operator=(const value_t &other) {
-    if (this == &other) {
-      return *this;
-    }
-
-    if (c_value_ != nullptr && own_) {
-      // Destroy the old value.
-      ten_value_destroy(c_value_);
-    }
-
-    c_value_ = nullptr;
-    own_ = false;
-
-    if (other.c_value_ != nullptr) {
-      if (other.own_) {
-        c_value_ = ten_value_clone(other.c_value_);
-      } else {
-        c_value_ = other.c_value_;
-      }
-
-      own_ = other.own_;
-    }
-
-    return *this;
-  }
-
-  // Move semantics.
-  value_t &operator=(value_t &&other) noexcept {
-    if (c_value_ != nullptr && own_) {
-      // Destroy the old value.
-      ten_value_destroy(c_value_);
-    }
-
-    c_value_ = nullptr;
-    own_ = true;
-
-    if (other.c_value_ != nullptr) {
-      c_value_ = other.c_value_;
-      other.c_value_ = nullptr;
-
-      own_ = other.own_;
-    }
-
-    return *this;
-  }
-
-  bool is_valid() const {
-    // The 'c_value_' is always not NULL.
-    TEN_ASSERT(c_value_, "Should not happen.");
-    return ten_value_is_valid(c_value_);
-  }
-
-  bool from_json(ten_json_t *c_json) {
-    if (c_json == nullptr) {
-      return false;
-    }
-
-    if (c_value_ != nullptr && own_) {
-      ten_value_destroy(c_value_);
-    }
-
-    c_value_ = ten_value_from_json(c_json);
-    return c_value_ != nullptr;
-  }
-
-  TEN_TYPE get_type() const {
-    if (c_value_ == nullptr) {
-      return TEN_TYPE_INVALID;
-    }
-    return ten_value_get_type(c_value_);
-  }
-
-  template <typename T>
-  T get_real_value(ten_error_t *err = nullptr) {
-    auto *tmp = err;
-    if (tmp == nullptr) {
-      tmp = ten_error_create();
-    }
-
-    auto t = get_real_value_impl<T>(tmp);
-    if (err == nullptr) {
-      ten_error_destroy(tmp);
-    }
-
-    return t;
-  }
-
-  bool get_bool(ten_error_t *err) const {
-    return ten_value_get_bool(c_value_, err);
-  }
-
-  int8_t get_int8(ten_error_t *err) const {
-    return ten_value_get_int8(c_value_, err);
-  }
-
-  int16_t get_int16(ten_error_t *err) const {
-    return ten_value_get_int16(c_value_, err);
-  }
-
-  int32_t get_int32(ten_error_t *err) const {
-    return ten_value_get_int32(c_value_, err);
-  }
-
-  int64_t get_int64(ten_error_t *err) const {
-    return ten_value_get_int64(c_value_, err);
-  }
-
-  uint8_t get_uint8(ten_error_t *err) const {
-    return ten_value_get_uint8(c_value_, err);
-  }
-
-  uint16_t get_uint16(ten_error_t *err) const {
-    return ten_value_get_uint16(c_value_, err);
-  }
-
-  uint32_t get_uint32(ten_error_t *err) const {
-    return ten_value_get_uint32(c_value_, err);
-  }
-
-  uint64_t get_uint64(ten_error_t *err) const {
-    return ten_value_get_uint64(c_value_, err);
-  }
-
-  float get_float32(ten_error_t *err) const {
-    return ten_value_get_float32(c_value_, err);
-  }
-
-  double get_float64(ten_error_t *err) const {
-    return ten_value_get_float64(c_value_, err);
+  /**
+   * @brief This is the fallback constructor to handle all other types of C++
+   * objects.
+   */
+  template <
+      typename V,
+      // Have specific constructors to handle ten::value_t.
+      typename std::enable_if<
+          !std::is_same<typename std::remove_reference<V>::type,
+                        value_t>::value,
+          void>::type * = nullptr,
+      // Have specific constructors to handle std::vector.
+      typename std::enable_if<
+          !is_vector<typename std::remove_reference<V>::type>::value,
+          void>::type * = nullptr,
+      // Have specific constructors to handle std::unordered_map.
+      typename std::enable_if<
+          !is_unordered_map<typename std::remove_reference<V>::type>::value,
+          void>::type * = nullptr,
+      // Have specific constructors to handle normal pointers.
+      typename std::enable_if<
+          !std::is_pointer<typename std::remove_reference<V>::type>::value,
+          void>::type * = nullptr,
+      // Have specific constructors to handle std::string.
+      typename std::enable_if<
+          !std::is_same<typename std::remove_reference<V>::type,
+                        std::string>::value,
+          void>::type * = nullptr>
+  value_t(V &&value) {  // NOLINT
+    static_assert(always_false<V>::value,
+                  "This type is not supported by TEN C++ Binding.");
   }
 
   void *get_ptr(ten_error_t *err) const {
     return ten_value_get_ptr(c_value_, err);
   }
-
-  std::vector<value_t> get_array(const std::vector<value_t> &default_value) {
-    if (c_value_ == nullptr) {
-      return default_value;
-    }
-
-    if (!ten_value_is_array(c_value_)) {
-      return default_value;
-    }
-
-    std::vector<value_t> result;
-    auto size = ten_value_array_size(c_value_);
-    for (size_t i = 0; i < size; ++i) {
-      auto *v = ten_value_array_peek(c_value_, i, nullptr);
-      TEN_ASSERT(v, "Invalid argument.");
-
-      result.push_back(value_t(ten_value_clone(v)));
-    }
-
-    return result;
-  }
-
-  std::unordered_map<std::string, value_t> get_object(
-      const std::unordered_map<std::string, value_t> &default_value) {
-    if (c_value_ == nullptr) {
-      return default_value;
-    }
-
-    if (!ten_value_is_object(c_value_)) {
-      return default_value;
-    }
-
-    std::unordered_map<std::string, value_t> result;
-    ten_value_object_foreach(c_value_, iter) {
-      auto *kv =
-          reinterpret_cast<ten_value_kv_t *>(ten_ptr_listnode_get(iter.node));
-      TEN_ASSERT(kv, "Invalid argument.");
-
-      result[ten_string_get_raw_str(&kv->key)] =
-          value_t(ten_value_clone(kv->value));
-    };
-
-    return result;
-  }
-
-  std::string get_string(ten_error_t *err) const {
-    TEN_ASSERT(c_value_, "Should not happen.");
-
-    const char *result = ten_value_peek_raw_str(c_value_, err);
-    if (result != nullptr) {
-      return result;
-    } else {
-      // Property is not found.
-      ten_error_set(err, TEN_ERROR_CODE_GENERIC, "Not found.");
-      return {};
-    }
-  }
-
-  // Pay attention to its copy semantics.
-  buf_t get_buf(ten_error_t *err) const {
-    TEN_ASSERT(c_value_, "Should not happen.");
-
-    void *orig_data = nullptr;
-    size_t orig_size = 0;
-
-    ten_buf_t *result = ten_value_peek_buf(c_value_, err);
-    if (result != nullptr) {
-      orig_size = result->content_size;
-      orig_data = result->data;
-    }
-
-    buf_t buf{orig_size};
-    memcpy(buf.data(), orig_data, orig_size);
-
-    return buf;
-  }
-
-  int to_json(std::string &result) const {
-    ten_json_t c_json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
-    bool success = ten_value_to_json(c_value_, &c_json);
-    if (!success) {
-      return -1;
-    }
-
-    bool must_free = false;
-    const char *json_str = ten_json_to_string(&c_json, nullptr, &must_free);
-    TEN_ASSERT(json_str, "Failed to convert a JSON to a string");
-
-    result = json_str;
-
-    ten_json_deinit(&c_json);
-    if (must_free) {
-      TEN_FREE(json_str);
-    }
-
-    return 0;
-  }
-
-  friend class ten_env_t;
-  friend class msg_t;
-  friend class cmd_result_t;
-  friend class value_kv_t;
 
   template <typename T, typename std::enable_if<
                             !std::is_pointer<T>::value>::type * = nullptr>

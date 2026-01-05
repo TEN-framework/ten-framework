@@ -20,28 +20,28 @@
   do {                                                                        \
     ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_DEBUG, __func__,     \
                           __FILE__, __LINE__, TEN_LOG_CATEGORY_DEFAULT, NULL, \
-                          __VA_ARGS__);                                       \
+                          0, __VA_ARGS__);                                    \
   } while (0)
 
 #define TEN_LOGI(...)                                                         \
   do {                                                                        \
     ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_INFO, __func__,      \
                           __FILE__, __LINE__, TEN_LOG_CATEGORY_DEFAULT, NULL, \
-                          __VA_ARGS__);                                       \
+                          0, __VA_ARGS__);                                    \
   } while (0)
 
 #define TEN_LOGW(...)                                                         \
   do {                                                                        \
     ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_WARN, __func__,      \
                           __FILE__, __LINE__, TEN_LOG_CATEGORY_DEFAULT, NULL, \
-                          __VA_ARGS__);                                       \
+                          0, __VA_ARGS__);                                    \
   } while (0)
 
 #define TEN_LOGE(...)                                                         \
   do {                                                                        \
     ten_log_log_formatted(&ten_global_log, TEN_LOG_LEVEL_ERROR, __func__,     \
                           __FILE__, __LINE__, TEN_LOG_CATEGORY_DEFAULT, NULL, \
-                          __VA_ARGS__);                                       \
+                          0, __VA_ARGS__);                                    \
   } while (0)
 
 typedef struct ten_string_t ten_string_t;
@@ -135,8 +135,8 @@ typedef void (*ten_log_advanced_log_func_t)(
     ten_log_t *self, TEN_LOG_LEVEL level, const char *category,
     size_t category_len, const char *func_name, size_t func_name_len,
     const char *file_name, size_t file_name_len, size_t line_no,
-    const char *msg, size_t msg_len, ten_value_t *fields,
-    const ten_log_loc_info_t *loc_info);
+    const char *msg, size_t msg_len, const uint8_t *fields_buf,
+    size_t fields_buf_size, const ten_log_loc_info_t *loc_info);
 
 typedef void (*ten_log_advanced_log_reopen_all_func_t)(ten_log_t *self,
                                                        void *config);
@@ -190,9 +190,7 @@ typedef struct ten_log_t {
 
 TEN_UTILS_API ten_log_t ten_global_log;
 
-TEN_UTILS_API void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
-                                         const char *func_name,
-                                         const char *file_name, size_t line_no,
-                                         const char *category,
-                                         ten_value_t *fields, const char *fmt,
-                                         ...);
+TEN_UTILS_API void ten_log_log_formatted(
+    ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    const char *file_name, size_t line_no, const char *category,
+    const uint8_t *fields_buf, size_t fields_buf_size, const char *fmt, ...);

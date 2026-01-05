@@ -26,6 +26,7 @@
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lang/cpp/lib/error.h"
 #include "ten_utils/lang/cpp/lib/value.h"
+#include "ten_utils/lang/cpp/lib/value_buffer.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -609,8 +610,21 @@ class ten_env_t {
            value_t *fields) {
     TEN_ASSERT(c_ten_env, "Should not happen.");
 
+    uint8_t *fields_buf = nullptr;
+    size_t fields_buf_size = 0;
+
+    if (fields != nullptr) {
+      fields_buf =
+          value_buffer::serialize_to_buffer(*fields, &fields_buf_size, nullptr);
+    }
+
     ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg, category,
-                fields != nullptr ? fields->get_c_value() : nullptr);
+                fields_buf, fields_buf_size);
+
+    // Free the serialized buffer to avoid memory leak.
+    if (fields_buf != nullptr) {
+      TEN_FREE(fields_buf);
+    }
   }
 
  private:
