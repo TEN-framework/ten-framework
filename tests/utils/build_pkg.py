@@ -28,6 +28,7 @@ class ArgumentInfo:
         self.cpu: str
         self.build: str
         self.is_clang: bool
+        self.is_mingw: bool
         self.enable_sanitizer: bool
         self.vs_version: str
         self.log_level: int
@@ -37,11 +38,12 @@ def _construct_cpp_additional_args(args: ArgumentInfo) -> list[str]:
     cmd = ["--"]
 
     cmd.append(f"is_clang={'true' if args.is_clang else 'false'}")
+    cmd.append(f"is_mingw={'true' if args.is_mingw else 'false'}")
     cmd.append(
         f"enable_sanitizer={'true' if args.enable_sanitizer else 'false'}"
     )
 
-    if args.vs_version:
+    if args.vs_version and not args.is_mingw:
         cmd += [f"vs_version={args.vs_version}"]
 
     return cmd
@@ -443,6 +445,7 @@ def build_app(
     args.cpu = build_config.target_cpu
     args.build = build_config.target_build
     args.is_clang = build_config.is_clang
+    args.is_mingw = build_config.is_mingw
     args.enable_sanitizer = build_config.enable_sanitizer
     args.vs_version = build_config.vs_version
     args.log_level = log_level
