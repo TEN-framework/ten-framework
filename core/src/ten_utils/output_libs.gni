@@ -11,7 +11,7 @@ if (is_win) {
     # MinGW uses .dll.a import library
     ten_utils_output_libs += [
       "${root_out_dir}/ten_utils.dll",
-      "${root_out_dir}/ten_utils.dll.a",
+      "${root_out_dir}/libten_utils.dll.a",
     ]
   } else {
     ten_utils_output_libs += [
