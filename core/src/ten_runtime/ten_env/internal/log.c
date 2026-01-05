@@ -10,7 +10,9 @@
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_utils/log/log.h"
 #include "ten_runtime/ten_env/ten_env.h"
+#include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/value/value_buffer.h"
 
 #if !defined(OS_WINDOWS)
 #include <unistd.h>
@@ -150,15 +152,28 @@ void ten_env_log_with_size_formatted(
 void ten_env_log_formatted(ten_env_t *self, TEN_LOG_LEVEL level,
                            const char *func_name, const char *file_name,
                            size_t line_no, const char *category,
-                           size_t category_len, const uint8_t *fields_buf,
-                           size_t fields_buf_size, const char *fmt, ...) {
+                           ten_value_t *fields, const char *fmt, ...) {
+  // Serialize fields to buffer if provided.
+  uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+
+  if (fields != NULL) {
+    fields_buf =
+        ten_value_serialize_to_buffer_c(fields, &fields_buf_size, NULL);
+  }
+
   va_list ap;
   va_start(ap, fmt);
 
   ten_env_log_with_size_formatted_internal(
       self, level, func_name, strlen(func_name), file_name, strlen(file_name),
-      line_no, true, category, category_len, fields_buf, fields_buf_size, fmt,
-      ap);
+      line_no, true, category, category ? strlen(category) : 0, fields_buf,
+      fields_buf_size, fmt, ap);
 
   va_end(ap);
+
+  // Free serialized buffer.
+  if (fields_buf != NULL) {
+    TEN_FREE(fields_buf);
+  }
 }
