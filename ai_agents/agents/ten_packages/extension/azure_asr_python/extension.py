@@ -50,6 +50,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
+        self.connection_start_timestamp: int = 0
 
         # Reconnection manager with unlimited retries and backoff strategy
         self.reconnect_manager: ReconnectManager | None = None
@@ -191,6 +192,10 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 phrase_list_grammar.addPhrase(phrase)
 
         await self._register_azure_event_handlers()
+
+        # Record timestamp before starting continuous recognition
+        self.connection_start_timestamp = int(datetime.now().timestamp() * 1000)
+
         self.client.start_continuous_recognition()
         self.ten_env.log_debug("start_connection completed")
 
@@ -473,10 +478,17 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, evt: speechsdk.ConnectionEventArgs
     ):
         """Handle the connected event from Azure ASR."""
+        connection_delay_ms = (
+            int(datetime.now().timestamp() * 1000)
+            - self.connection_start_timestamp
+        )
+
         self.ten_env.log_info(
-            f"vendor_status_changed: on_connected, session_id: {evt.session_id}",
+            f"vendor_status_changed: on_connected, session_id: {evt.session_id}, connection_delay_ms: {connection_delay_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        await self.send_connect_delay_metrics(connection_delay_ms)
 
         # Notify reconnect manager that connection is successful
         if self.reconnect_manager:
