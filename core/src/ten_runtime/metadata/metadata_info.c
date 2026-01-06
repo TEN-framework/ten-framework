@@ -213,7 +213,7 @@ bool ten_metadata_info_set(ten_metadata_info_t *self, TEN_METADATA_TYPE type,
 
   do {
     if (!value) {
-      TEN_LOGW("Failed to set metadata for %s, the `value` is required",
+      TEN_LOGE("Failed to set metadata for %s, the `value` is required",
                ten_string_get_raw_str(&display));
       break;
     }
@@ -221,7 +221,7 @@ bool ten_metadata_info_set(ten_metadata_info_t *self, TEN_METADATA_TYPE type,
     if (type == TEN_METADATA_JSON_FILENAME) {
       absolute_path = ten_metadata_info_filename_to_absolute_path(self, value);
       if (!absolute_path) {
-        TEN_LOGW("Failed to set metadata for %s, file '%s' is not found",
+        TEN_LOGE("Failed to set metadata for %s, file '%s' is not found",
                  ten_string_get_raw_str(&display), value);
         break;
       }
@@ -275,7 +275,7 @@ bool ten_metadata_info_set(ten_metadata_info_t *self, TEN_METADATA_TYPE type,
     }
 
     if (!validated) {
-      TEN_LOGW("Failed to set metadata for %s, %s",
+      TEN_LOGE("Failed to set metadata for %s, %s",
                ten_string_get_raw_str(&display), ten_error_message(&err));
       break;
     }
