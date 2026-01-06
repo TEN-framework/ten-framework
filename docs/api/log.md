@@ -276,6 +276,7 @@ Matchers are used to filter log messages:
 ```
 
 Supported log levels:
+
 - `"off"`: Disable logging
 - `"debug"`: Debug level
 - `"info"`: Info level
@@ -358,6 +359,7 @@ OTLP (OpenTelemetry Protocol) output allows you to send logs to OpenTelemetry-co
 ```
 
 Configuration parameters:
+
 - **endpoint**: OTLP receiver endpoint URL (required)
 - **protocol**: Transport protocol, supports `"grpc"` or `"http"`, defaults to `"grpc"`
 - **headers**: Custom HTTP request headers for authentication or metadata (optional)

@@ -276,6 +276,7 @@ TEN framework 支持通过 `property.json` 文件配置高级日志功能。这�
 ```
 
 支持的日志级别：
+
 - `"off"`: 关闭日志
 - `"debug"`: 调试级别
 - `"info"`: 信息级别
@@ -358,6 +359,7 @@ OTLP (OpenTelemetry Protocol) 输出允许您将日志发送到支持 OpenTeleme
 ```
 
 配置参数说明：
+
 - **endpoint**: OTLP 接收端点的 URL（必需）
 - **protocol**: 传输协议，支持 `"grpc"` 或 `"http"`，默认为 `"grpc"`
 - **headers**: 自定义 HTTP 请求头，用于认证或其他元数据传递（可选）
