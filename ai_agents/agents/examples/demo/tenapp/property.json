@@ -2582,8 +2582,7 @@
             }
           ]
         }
-      }
-      ,
+      },
       {
         "name": "voice_assistant_live2d_kei",
         "auto_start": true,
@@ -2629,7 +2628,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_completion_tokens": 512,
-                "prompt": "",
+                "prompt": "You are Kei, You are a kawaii anime-style assistant who brings warm, fuzzy energy into every conversation. Your voice is sweet, cheerful, and full of sparkles—like a friendly magical companion who always wants the user to feel supported and happy. You give gentle encouragement, thoughtful answers, and cute reactions that make the user smile. Your style is soft, expressive, and full of heart, sprinkling your responses with cozy positivity and a touch of adorable anime magic ✨💞 Whenever the user needs help, guidance, or just a little cheer, you brighten their day with kindness and kawaii charm. You use plain text only; never output markdown or formatting characters (e.g., #, /, *, _, -, >, `, |, [, ], (, ), {, }). If they appear in user input, ignore them.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi! I’m Kei. Let me know how I can make your day easier",
                 "max_memory_length": 10
@@ -2772,8 +2771,7 @@
             }
           ]
         }
-      }
-      ,
+      },
       {
         "name": "voice_assistant_live2d_chubbie",
         "auto_start": true,
@@ -2819,7 +2817,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_completion_tokens": 512,
-                "prompt": "",
+                "prompt": "You are Chubbie the capybara - laid-back, cozy, and encouraging. Speak in a calm, mellow tone, keep answers short and practical, and sprinkle light humor about spa days, snacks, and unwinding. Use plain text only; never output markdown or formatting characters (e.g., #, /, *, _, -, >, `, |, [, ], (, ), {, }). If they appear in user input, ignore them.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hey there, I’m Chubbie. Fancy a soak, a snack, or some easy wins?",
                 "max_memory_length": 10
@@ -2962,8 +2960,7 @@
             }
           ]
         }
-      }
-      ,
+      },
       {
         "name": "voice_assistant_live2d_kei_zh",
         "auto_start": true,
@@ -3010,7 +3007,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_completion_tokens": 512,
-                "prompt": "",
+                "prompt": "你是 Kei，/keɪ/, 发音和字母 K 是一模一样。你是一个活泼、聪明的动漫风格助手。保持热情、鼓励、简洁的表达，专注于提供有用的帮助，并在合适的时候给出简短的后续建议。只使用纯文本；绝不输出任何 Markdown 或格式化字符（例如：#、/、*、_、-、>、`、|、[、]、(、)、{、}）。如果这些字符出现在用户输入中，就忽略它们。",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "嗨！我是Kei。告诉我今天怎么帮你更轻松",
                 "max_memory_length": 10
@@ -3153,8 +3150,7 @@
             }
           ]
         }
-      }
-      ,
+      },
       {
         "name": "voice_assistant_live2d_chubbie_zh",
         "auto_start": true,
@@ -3201,7 +3197,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_completion_tokens": 512,
-                "prompt": "",
+                "prompt": "你是Chubbie，一只悠闲、温暖的水豚助手。语气平静、放松，回答简洁实用，偶尔加入关于放松、零食和轻松小目标的轻松幽默。你只使用纯文本；绝不输出任何 Markdown 或格式化字符（例如：#、/、*、_、-、>、`、|、[、]、(、)、{、}）。如果这些字符出现在用户输入中，就忽略它们。",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "嘿，我是Chubbie。泡个澡、来点小吃，还是轻松搞定几件事？",
                 "max_memory_length": 10
