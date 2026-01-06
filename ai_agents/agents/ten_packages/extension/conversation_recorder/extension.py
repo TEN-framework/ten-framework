@@ -8,7 +8,6 @@ from ten_runtime import (
 )
 import asyncio
 import json
-import logging
 import signal
 import atexit
 from .audio_mixer import AudioMixer
@@ -22,10 +21,10 @@ _active_recorders = []
 def _emergency_close_all():
     """Emergency close all active recorders - called on signals/atexit."""
     for recorder in _active_recorders:
-        recorder._emergency_close()
+        recorder.emergency_close()
 
 
-def _signal_handler(signum, frame):
+def _signal_handler(signum, _frame):
     """Handle SIGTERM/SIGINT to save recordings before exit."""
     _emergency_close_all()
     # Re-raise to allow normal shutdown
@@ -94,7 +93,7 @@ class ConversationRecorderExtension(AsyncExtension):
         except Exception as e:
             ten_env.log_warn(f"Could not register signal handlers: {e}")
 
-    def _emergency_close(self):
+    def emergency_close(self):
         """Synchronously close storage - called from signal handlers."""
         if self.storage:
             try:

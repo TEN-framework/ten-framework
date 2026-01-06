@@ -93,6 +93,7 @@ class LocalStorage(BaseStorage):
         if self.wav_file:
             # WAV module doesn't have explicit flush, but we can sync via the underlying file
             try:
+                # pylint: disable=protected-access
                 self.wav_file._file.flush()
                 os.fsync(self.wav_file._file.fileno())
             except (AttributeError, OSError):
