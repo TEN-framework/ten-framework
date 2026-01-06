@@ -21,41 +21,66 @@ class test_extension : public ten::extension_t {
   explicit test_extension(const char *name) : ten::extension_t(name) {}
 
   void on_init(ten::ten_env_t &ten_env) override {
-    // Create a value_t with various field types for testing
+    // Test 1: Log with multiple fields of various types using builder pattern
+    TEN_ENV_LOG_INFO_WITH_FIELDS(
+        ten_env, "Testing structured logging with various field types")
+        .field("string_field", "hello world")
+        .field("int_field", 42)
+        .field("float_field", 3.14159)
+        .field("bool_field", true)
+        .field("negative_int", -100)
+        .field("large_number", 9223372036854775807L);
+
+    // Test 2: Log with nested object (using traditional API for complex
+    // structures)
     ten_json_t *json = ten_json_from_string(
         R"({
-          "string_field": "hello world",
-          "int_field": 42,
-          "float_field": 3.14159,
-          "bool_field": true,
-          "negative_int": -100,
-          "large_number": 9223372036854775807,
           "nested_object": {
             "inner_key": "inner_value"
           },
           "array_field": [1, 2, 3, "four", true]
         })",
         nullptr);
-
-    ten::value_t fields;
-    fields.from_json(json);
+    ten::value_t complex_fields;
+    complex_fields.from_json(json);
     ten_json_destroy(json);
-
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log advanced on_init",
-                nullptr, &fields);
-
-    ten::value_t fields2(123);
     TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
-                "check log advanced on_init with int value", nullptr, &fields2);
+                "Testing log with nested object and array", nullptr,
+                &complex_fields);
+
+    // Test 3: Log with category
+    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Testing log with category")
+        .category("initialization")
+        .field("status", "success")
+        .field("duration_ms", 150);
+
+    // Test 4: Simple log with single field
+    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Simple log with single field")
+        .field("value", 123);
+
+    // Test 5: Log with string types
+    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Testing different string types")
+        .field("const_char", "C string")
+        .field("std_string", std::string("C++ string"))
+        .field("literal", "string literal");
+
     ten_env.on_init_done();
   }
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG_DEBUG(ten_env,
-                      (std::string("on_cmd ") + cmd->get_name()).c_str());
+    // Test 6: Log with dynamic values from command
+    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Received command")
+        .field("cmd_name", cmd->get_name().c_str())
+        .field("timestamp", ten_current_time_ms());
 
     if (cmd->get_name() == "hello_world") {
+      // Test 7: Log command processing with fields
+      TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Processing hello_world command")
+          .field("cmd_name", "hello_world")
+          .field("status", "ok")
+          .field("response", "hello world, too");
+
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
       ten_env.return_result(std::move(cmd_result));
@@ -63,7 +88,12 @@ class test_extension : public ten::extension_t {
   }
 
   void on_deinit(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG_INFO(ten_env, "check log advanced on_deinit");
+    // Test 8: Log cleanup with performance metrics
+    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Extension cleanup")
+        .category("lifecycle")
+        .field("phase", "deinit")
+        .field("cleanup_status", "success");
+
     ten_env.on_deinit_done();
   }
 };

@@ -8,6 +8,9 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/binding/cpp/detail/binding_handle.h"
@@ -604,6 +607,131 @@ class ten_env_t {
     (ten_env).log(level, __func__, __FILE__, __LINE__, (msg), (category), \
                   (fields));                                              \
   } while (0)
+
+  // Builder class for structured logging with fields.
+  //
+  // Design notes on lifetime management:
+  // - The builder is designed to be used as a temporary object in a single
+  //   statement, ensuring immediate log commit upon statement completion.
+  // - Deleted copy constructor prevents unintended lifetime extension.
+  // - The log is committed in the destructor automatically.
+  //
+  // Usage:
+  //   TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "User logged in")
+  //       .field("user_id", 1001)
+  //       .field("username", "john");
+  //
+  // Note: Use in a single statement for immediate logging. Do not store
+  // the builder in a variable as it would delay log output.
+  class ten_log_builder_t {
+   public:
+    ten_log_builder_t(ten_env_t &env, TEN_LOG_LEVEL level,
+                      const char *func_name, const char *file_name,
+                      size_t line_no, const char *msg,
+                      const char *category = nullptr)
+        : env_(env),
+          level_(level),
+          func_name_(func_name),
+          file_name_(file_name),
+          line_no_(line_no),
+          msg_(msg),
+          category_(category) {}
+
+    // Disable copy to prevent lifetime issues.
+    ten_log_builder_t(const ten_log_builder_t &) = delete;
+    ten_log_builder_t &operator=(const ten_log_builder_t &) = delete;
+
+    // Allow move for return value optimization.
+    ten_log_builder_t(ten_log_builder_t &&other) noexcept
+        : env_(other.env_),
+          level_(other.level_),
+          func_name_(other.func_name_),
+          file_name_(other.file_name_),
+          line_no_(other.line_no_),
+          msg_(other.msg_),
+          category_(other.category_),
+          fields_(std::move(other.fields_)),
+          committed_(other.committed_) {
+      other.committed_ = true;  // Prevent double commit.
+    }
+
+    ten_log_builder_t &operator=(ten_log_builder_t &&) = delete;
+
+    // Add field with any supported type.
+    // Returns rvalue reference for method chaining.
+    template <typename T>
+    ten_log_builder_t &&field(const char *key, T &&value) && {
+      fields_[key] = value_t(std::forward<T>(value));
+      return std::move(*this);
+    }
+
+    // Overload for string literals to avoid ambiguity.
+    ten_log_builder_t &&field(const char *key, const char *value) && {
+      fields_[key] = value_t(value);
+      return std::move(*this);
+    }
+
+    // Overload for std::string.
+    ten_log_builder_t &&field(const char *key, const std::string &value) && {
+      fields_[key] = value_t(value);
+      return std::move(*this);
+    }
+
+    // Set category (optional).
+    ten_log_builder_t &&category(const char *cat) && {
+      category_ = cat;
+      return std::move(*this);
+    }
+
+    // Destructor: automatically commit the log immediately.
+    ~ten_log_builder_t() { commit(); }
+
+    // Explicitly commit the log immediately (for advanced use cases).
+    // After calling commit(), the builder can be safely discarded.
+    void commit() {
+      if (committed_) {
+        return;
+      }
+      committed_ = true;
+
+      if (fields_.empty()) {
+        env_.log(level_, func_name_, file_name_, line_no_, msg_, category_,
+                 nullptr);
+      } else {
+        value_t fields_value(fields_);
+        env_.log(level_, func_name_, file_name_, line_no_, msg_, category_,
+                 &fields_value);
+      }
+    }
+
+   private:
+    ten_env_t &env_;
+    TEN_LOG_LEVEL level_;
+    const char *func_name_;
+    const char *file_name_;
+    size_t line_no_;
+    const char *msg_;
+    const char *category_;
+    std::unordered_map<std::string, value_t> fields_;
+    bool committed_ = false;
+  };
+
+#define TEN_ENV_LOG_WITH_FIELDS(ten_env, level, msg)                          \
+  ::ten::ten_env_t::ten_log_builder_t((ten_env), (level), __func__, __FILE__, \
+                                      __LINE__, (msg))
+
+// Convenience macros for different log levels with fields.
+#define TEN_ENV_LOG_DEBUG_WITH_FIELDS(ten_env, msg) \
+  TEN_ENV_LOG_WITH_FIELDS(ten_env, TEN_LOG_LEVEL_DEBUG, msg)
+
+#define TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, msg) \
+  TEN_ENV_LOG_WITH_FIELDS(ten_env, TEN_LOG_LEVEL_INFO, msg)
+
+#define TEN_ENV_LOG_WARN_WITH_FIELDS(ten_env, msg) \
+  TEN_ENV_LOG_WITH_FIELDS(ten_env, TEN_LOG_LEVEL_WARN, msg)
+
+#define TEN_ENV_LOG_ERROR_WITH_FIELDS(ten_env, msg) \
+  TEN_ENV_LOG_WITH_FIELDS(ten_env, TEN_LOG_LEVEL_ERROR, msg)
 
   void log(TEN_LOG_LEVEL level, const char *func_name, const char *file_name,
            size_t line_no, const char *msg, const char *category,
