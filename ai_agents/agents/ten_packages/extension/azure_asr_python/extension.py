@@ -437,7 +437,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.FATAL_ERROR.value if is_fatal else ModuleErrorCode.NON_FATAL_ERROR.value,
+                code=(
+                    ModuleErrorCode.FATAL_ERROR.value
+                    if is_fatal
+                    else ModuleErrorCode.NON_FATAL_ERROR.value
+                ),
                 message=cancellation_details.error_details,
             ),
             ModuleErrorVendorInfo(
