@@ -30,10 +30,10 @@ use tracing_subscriber::{
 
 use crate::{
     log::{
-    dynamic_filter::DynamicTargetFilterLayer,
-    encryption::{EncryptMakeWriter, EncryptionConfig},
-    file_appender::FileAppenderGuard,
-    formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+        dynamic_filter::DynamicTargetFilterLayer,
+        encryption::{EncryptMakeWriter, EncryptionConfig},
+        file_appender::FileAppenderGuard,
+        formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
     },
     value_buffer,
 };

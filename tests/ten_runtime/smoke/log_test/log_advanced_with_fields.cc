@@ -29,7 +29,7 @@ class test_extension : public ten::extension_t {
         .field("float_field", 3.14159)
         .field("bool_field", true)
         .field("negative_int", -100)
-        .field("large_number", 9223372036854775807L);
+        .field("large_number", static_cast<int64_t>(9223372036854775807LL));
 
     // Test 2: Log with nested object (using traditional API for complex
     // structures)
