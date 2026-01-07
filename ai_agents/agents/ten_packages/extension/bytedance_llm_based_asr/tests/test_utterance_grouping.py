@@ -122,10 +122,12 @@ class UtteranceGroupingTester(AsyncExtensionTester):
             )
 
             # Verify processing logic
-            # If final=False, metadata should not contain utterance additions fields
-            # (but may contain framework-added fields like session_id)
+            # If final=False, metadata.asr_info should not contain utterance additions fields
+            # (but may contain framework-added fields like vendor, invoke_type, source)
+            # session_id is at metadata root level
             if not data_dict["final"]:
                 metadata = data_dict.get("metadata", {})
+                asr_info = metadata.get("asr_info", {})
                 utterance_addition_fields = [
                     "speech_rate",
                     "volume",
@@ -136,8 +138,8 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 for field in utterance_addition_fields:
                     self.stop_test_if_checking_failed(
                         ten_env_tester,
-                        field not in metadata,
-                        f"definite=False result should not contain '{field}' in metadata, "
+                        field not in asr_info,
+                        f"definite=False result should not contain '{field}' in metadata.asr_info, "
                         f"got: {metadata}",
                     )
 
@@ -202,12 +204,14 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                     f"got {received_start_ms}",
                 )
 
-            # For final=False, metadata should not contain utterance additions fields
-            # (but may contain framework-added fields like session_id)
+            # For final=False, metadata.asr_info should not contain utterance additions fields
+            # (but may contain framework-added fields like vendor, invoke_type, source)
+            # session_id is at metadata root level
             # For final=True, we don't strictly check metadata content
-            # (it may contain extracted fields from additions)
+            # (it may contain extracted fields from additions in asr_info)
             if not expected["final"]:
                 metadata = received.get("metadata", {})
+                asr_info = metadata.get("asr_info", {})
                 utterance_addition_fields = [
                     "speech_rate",
                     "volume",
@@ -218,8 +222,8 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 for field in utterance_addition_fields:
                     self.stop_test_if_checking_failed(
                         ten_env_tester,
-                        field not in metadata,
-                        f"Result {i}: final=False result should not contain '{field}' in metadata, "
+                        field not in asr_info,
+                        f"Result {i}: final=False result should not contain '{field}' in metadata.asr_info, "
                         f"got {metadata}",
                     )
 
@@ -339,12 +343,13 @@ def test_utterance_grouping_disable(patch_volcengine_ws_grouping):  # type: igno
     # Set expected results based on the simplified processing logic:
     # [true, true, false, false, true, false]
     # Each utterance is sent individually:
-    # 1. "hello" (final=True, metadata may contain speech_rate, volume)
-    # 2. "world" (final=True, metadata may contain speech_rate)
-    # 3. "this" (final=False, metadata={})
-    # 4. "is" (final=False, metadata={})
-    # 5. "test" (final=True, metadata may contain speech_rate, emotion)
-    # 6. "example" (final=False, metadata={})
+    # Metadata structure: {"session_id": "...", "asr_info": {...}}
+    # 1. "hello" (final=True, metadata.asr_info may contain speech_rate, volume)
+    # 2. "world" (final=True, metadata.asr_info may contain speech_rate)
+    # 3. "this" (final=False, metadata.asr_info should not contain utterance additions)
+    # 4. "is" (final=False, metadata.asr_info should not contain utterance additions)
+    # 5. "test" (final=True, metadata.asr_info may contain speech_rate, emotion)
+    # 6. "example" (final=False, metadata.asr_info should not contain utterance additions)
     tester.expected_results = [
         {
             "text": "hello",
