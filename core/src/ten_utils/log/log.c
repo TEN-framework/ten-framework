@@ -202,6 +202,17 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
       self->advanced_impl.impl(self, level, category, category_len, func_name,
                                func_name_len, file_name, file_name_len, line_no,
                                msg, msg_len, fields, loc_info);
+    } else {
+      // Warning and Error logs should at least be logged to stderr.
+      // This is a fallback mechanism to ensure critical logs are visible
+      // even when the advanced log system is not properly initialized
+      // (e.g., due to invalid log configuration in property.json).
+      if (level >= TEN_LOG_LEVEL_WARN) {
+        const char *level_str =
+            (level == TEN_LOG_LEVEL_WARN) ? "WARN" : "ERROR";
+        (void)fprintf(stderr, "[TEN][%s] %.*s\n", level_str, (int)msg_len, msg);
+        (void)fflush(stderr);
+      }
     }
 
     return;
