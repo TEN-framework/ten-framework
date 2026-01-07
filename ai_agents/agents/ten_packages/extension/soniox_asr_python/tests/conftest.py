@@ -123,7 +123,12 @@ def create_fake_websocket_mocks(
     """
 
     async def default_fake_connect():
-        await patch_soniox_ws.websocket_client.trigger_open()
+        import time
+
+        connection_start_timestamp = int(time.time() * 1000)
+        await patch_soniox_ws.websocket_client.trigger_open(
+            connection_start_timestamp
+        )
         await asyncio.sleep(0.1)
 
     async def default_fake_send_audio(_audio_data: bytes):
@@ -191,9 +196,11 @@ def patch_soniox_ws():
         websocket_client_instance.stop = AsyncMock()
 
         # Add helper methods that can be called by tests to trigger events
-        async def trigger_open():
+        async def trigger_open(connection_start_timestamp: int = 0):
             if "open" in websocket_client_instance._callbacks:
-                await websocket_client_instance._callbacks["open"]()
+                await websocket_client_instance._callbacks["open"](
+                    connection_start_timestamp
+                )
 
         async def trigger_close():
             if "close" in websocket_client_instance._callbacks:
