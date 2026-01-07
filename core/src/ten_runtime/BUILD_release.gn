@@ -11,8 +11,8 @@ config("ten_runtime_common_libs") {
     if (is_mingw) {
       # MinGW uses .dll.a import library
       libs = [
-        "ten_runtime.dll.a",
-        "ten_utils.dll.a",
+        "ten_runtime",
+        "ten_utils",
       ]
     } else {
       libs = [

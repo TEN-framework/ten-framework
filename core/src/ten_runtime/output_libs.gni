@@ -14,7 +14,7 @@ if (is_win) {
     # MinGW uses .dll.a import library
     ten_runtime_output_libs += [
       "${root_out_dir}/ten_runtime.dll",
-      "${root_out_dir}/ten_runtime.dll.a",
+      "${root_out_dir}/libten_runtime.dll.a",
     ]
   } else {
     ten_runtime_output_libs += [
@@ -46,7 +46,7 @@ if (is_linux) {
     # For .pyd files, the import library is .pyd.a (see mingw.gni:123)
     ten_runtime_go_output_libs = [
       "${root_out_dir}/ten_runtime_go.dll",
-      "${root_out_dir}/ten_runtime_go.dll.a",
+      "${root_out_dir}/libten_runtime_go.dll.a",
     ]
     ten_runtime_python_output_libs = [
       "${root_out_dir}/libten_runtime_python.pyd",
