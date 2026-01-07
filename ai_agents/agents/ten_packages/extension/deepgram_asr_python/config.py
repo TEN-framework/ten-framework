@@ -1,42 +1,18 @@
-from typing import Any, Dict, List
+from typing import Dict, Any
 from pydantic import BaseModel, Field
-from dataclasses import dataclass
 from ten_ai_base.utils import encrypt
 
 
-@dataclass
 class DeepgramASRConfig(BaseModel):
-    api_key: str = ""
-    url: str = "wss://api.deepgram.com/v1/listen"
-    key: str = ""
-    language: str = "en-US"
-    language_list: List[str] = Field(default_factory=lambda: ["en-US"])
-    model: str = "nova-2"
-    sample_rate: int = 16000
-    encoding: str = "linear16"
-    interim_results: bool = True
-    punctuate: bool = True
-    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
-    mid_opt_out: bool = True
-    mute_pkg_duration_ms: int = 100
+    """Deepgram ASR Configuration"""
+
+    # Debugging and dumping
     dump: bool = False
     dump_path: str = "/tmp"
-    advanced_params_json: str = ""
-    hotwords: List[str] = Field(default_factory=list)
+    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
+    mute_pkg_duration_ms: int = 1000
+    # Additional parameters
     params: Dict[str, Any] = Field(default_factory=dict)
-    black_list_params: List[str] = Field(
-        default_factory=lambda: [
-            "channels",
-            "encoding",
-            "multichannel",
-            "sample_rate",
-            "callback_method",
-            "callback",
-        ]
-    )
-
-    def is_black_list_params(self, key: str) -> bool:
-        return key in self.black_list_params
 
     def update(self, params: Dict[str, Any]) -> None:
         """Update configuration with additional parameters."""
@@ -47,29 +23,31 @@ class DeepgramASRConfig(BaseModel):
     def to_json(self, sensitive_handling: bool = False) -> str:
         """Convert config to JSON string with optional sensitive data handling."""
         config_dict = self.model_dump()
-        if sensitive_handling and self.api_key:
-            config_dict["api_key"] = encrypt(config_dict["api_key"])
-        if config_dict["params"]:
+        if sensitive_handling and config_dict["params"]:
             for key, value in config_dict["params"].items():
                 if key == "api_key":
+                    config_dict["params"][key] = encrypt(value)
+                if key == "key":
                     config_dict["params"][key] = encrypt(value)
         return str(config_dict)
 
     @property
-    def normalized_language(self):
-        if self.language == "zh-CN":
-            return "zh-CN"
-        elif self.language == "en-US":
-            return "en-US"
-        elif self.language == "es-ES":
-            return "es"
-        elif self.language == "ja-JP":
-            return "ja"
-        elif self.language == "ko-KR":
-            return "ko-KR"
-        elif self.language == "ar-AE":
-            return "ar"
-        elif self.language == "hi-IN":
-            return "hi"
-        else:
-            return self.language
+    def normalized_language(self) -> str:
+        """Convert language code to normalized format for Deepgram"""
+        language_map = {
+            "zh": "zh-CN",
+            "en": "en-US",
+            "ja": "ja-JP",
+            "ko": "ko-KR",
+            "de": "de-DE",
+            "fr": "fr-FR",
+            "ru": "ru-RU",
+            "es": "es-ES",
+            "pt": "pt-PT",
+            "it": "it-IT",
+            "hi": "hi-IN",
+            "ar": "ar-AE",
+        }
+        params_dict = self.params or {}
+        language_code = params_dict.get("language", "") or ""
+        return language_map.get(language_code, language_code)

@@ -6,30 +6,31 @@ from .const import MODULE_NAME_ASR
 
 class ReconnectManager:
     """
-    Manages reconnection attempts with fixed retry limit and exponential backoff strategy.
+    Manages reconnection attempts with unlimited retries and exponential backoff strategy.
 
     Features:
-    - Fixed retry limit (default: 5 attempts)
-    - Exponential backoff strategy: 300ms, 600ms, 1.2s, 2.4s, 4.8s
+    - Unlimited retry attempts (will keep retrying until successful)
+    - Exponential backoff strategy with maximum delay cap: 0.5s, 1s, 2s, 4s (capped)
+    - Maximum delay cap to prevent overwhelming the service provider (default: 4s)
     - Automatic counter reset after successful connection
     - Detailed logging for monitoring and debugging
     """
 
     def __init__(
         self,
-        max_attempts: int = 5,
-        base_delay: float = 0.3,  # 300 milliseconds
+        base_delay: float = 0.5,  # 500 milliseconds
+        max_delay: float = 4.0,  # 4 seconds maximum delay
         logger=None,
     ):
-        self.max_attempts = max_attempts
         self.base_delay = base_delay
+        self.max_delay = max_delay
         self.logger = logger
 
         # State tracking
         self.attempts = 0
         self._connection_successful = False
 
-    def reset_counter(self):
+    def _reset_counter(self):
         """Reset reconnection counter"""
         self.attempts = 0
         if self.logger:
@@ -38,18 +39,13 @@ class ReconnectManager:
     def mark_connection_successful(self):
         """Mark connection as successful and reset counter"""
         self._connection_successful = True
-        self.reset_counter()
-
-    def can_retry(self) -> bool:
-        """Check if more reconnection attempts are allowed"""
-        return self.attempts < self.max_attempts
+        self._reset_counter()
 
     def get_attempts_info(self) -> dict:
         """Get current reconnection attempts information"""
         return {
             "current_attempts": self.attempts,
-            "max_attempts": self.max_attempts,
-            "can_retry": self.can_retry(),
+            "unlimited_retries": True,
         }
 
     async def handle_reconnect(
@@ -70,31 +66,18 @@ class ReconnectManager:
             True if connection function executed successfully, False if attempt failed
             Note: Actual connection success is determined by callback calling mark_connection_successful()
         """
-        if not self.can_retry():
-            if self.logger:
-                self.logger.log_error(
-                    f"Maximum reconnection attempts ({self.max_attempts}) reached. No more attempts allowed."
-                )
-            if error_handler:
-                await error_handler(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=f"Failed to reconnect after {self.max_attempts} attempts",
-                    )
-                )
-            return False
-
         self._connection_successful = False
         self.attempts += 1
 
-        # Calculate exponential backoff delay: 2^(attempts-1) * base_delay
-        delay = self.base_delay * (2 ** (self.attempts - 1))
+        # Calculate exponential backoff delay with max limit: min(2^(attempts-1) * base_delay, max_delay)
+        delay = min(
+            self.base_delay * (2 ** (self.attempts - 1)), self.max_delay
+        )
 
         if self.logger:
             self.logger.log_warn(
-                f"Attempting reconnection #{self.attempts}/{self.max_attempts} "
-                f"after {delay} seconds delay..."
+                f"Attempting reconnection #{self.attempts} "
+                f"after {delay:.2f} seconds delay..."
             )
 
         try:
@@ -112,18 +95,17 @@ class ReconnectManager:
         except Exception as e:
             if self.logger:
                 self.logger.log_error(
-                    f"Reconnection attempt #{self.attempts} failed: {e}"
+                    f"Reconnection attempt #{self.attempts} failed: {e}. Will retry..."
                 )
 
-            # If this was the last attempt, send error
-            if self.attempts >= self.max_attempts:
-                if error_handler:
-                    await error_handler(
-                        ModuleError(
-                            module=MODULE_NAME_ASR,
-                            code=ModuleErrorCode.FATAL_ERROR.value,
-                            message=f"All reconnection attempts failed. Last error: {str(e)}",
-                        )
+            # Report error but don't stop retrying
+            if error_handler:
+                await error_handler(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
                     )
+                )
 
             return False
