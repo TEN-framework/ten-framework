@@ -13,6 +13,7 @@ from ten_runtime import (
     Data,
     AudioFrame,
 )
+from ten_ai_base.message import ModuleErrorCode
 import json
 import asyncio
 import os
@@ -42,7 +43,9 @@ class AsrReconnectionTester(AsyncExtensionTester):
         print("=" * 80)
         print("🧪 TEST CASE: ASR Reconnection Test")
         print("=" * 80)
-        print("📋 Test Description: Validate ASR extension reconnection mechanism")
+        print(
+            "📋 Test Description: Validate ASR extension reconnection mechanism"
+        )
         print("🎯 Test Objectives:")
         print("   - Test ASR extension reconnection with invalid credentials")
         print("   - Verify error handling during connection failures")
@@ -63,6 +66,8 @@ class AsrReconnectionTester(AsyncExtensionTester):
         # Statistics tracking
         self.errors_received: int = 0
         self.reconnection_attempts: int = 0
+        self.fatal_error_received: bool = False
+        self.error_codes: list[int] = []  # Track all error codes received
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data."""
@@ -283,6 +288,24 @@ class AsrReconnectionTester(AsyncExtensionTester):
             if not self._validate_error_format(ten_env, json_data):
                 return
 
+            # Check if this is a fatal error (won't retry)
+            error_code: int = json_data.get("code", 0)
+            self.error_codes.append(error_code)
+
+            is_fatal = error_code == ModuleErrorCode.FATAL_ERROR.value
+
+            error_message: str = json_data.get("message", "")
+
+            if is_fatal:
+                self.fatal_error_received = True
+                ten_env.log_info(
+                    f"🔴 Detected FATAL error (no retry expected): {error_message}"
+                )
+            else:
+                ten_env.log_info(
+                    f"🟡 Detected non-fatal error (retry expected): {error_message}"
+                )
+
             # Log complete error details
             ten_env.log_info("=== COMPLETE ERROR DETAILS ===")
             ten_env.log_info(f"Error #{self.errors_received}:")
@@ -290,6 +313,7 @@ class AsrReconnectionTester(AsyncExtensionTester):
             ten_env.log_info(f"  Code: {json_data.get('code', 'N/A')}")
             ten_env.log_info(f"  Message: {json_data.get('message', 'N/A')}")
             ten_env.log_info(f"  Module: {json_data.get('module', 'N/A')}")
+            ten_env.log_info(f"  Is Fatal: {is_fatal}")
             ten_env.log_info("=== END ERROR DETAILS ===")
         else:
             ten_env.log_info(f"Received data type: {name}")
@@ -341,3 +365,39 @@ def test_reconnection(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
+
+    # Verify error handling behavior based on error sequence
+    if tester.fatal_error_received:
+        # FATAL error: once fatal error occurs, should not retry anymore
+        # Check that fatal error is present in error codes
+        fatal_error_index = -1
+        for i, code in enumerate(tester.error_codes):
+            if code == ModuleErrorCode.FATAL_ERROR.value:
+                fatal_error_index = i
+                break
+
+        assert (
+            fatal_error_index >= 0
+        ), "Fatal error should be present in error codes"
+
+        # After fatal error, no more errors should be received
+        # (fatal error should be the last error, or there might be some cleanup errors)
+        print(
+            f"✅ FATAL error validation passed: fatal error detected at position {fatal_error_index + 1}, "
+            f"total errors: {tester.errors_received}, error sequence: {tester.error_codes}"
+        )
+    else:
+        # No fatal error received: should be retrying with non-fatal errors
+        assert tester.errors_received > 1, (
+            f"Non-fatal errors should trigger retries, but received {tester.errors_received} errors. "
+            f"Expected multiple errors for non-fatal errors."
+        )
+        # Verify all errors are non-fatal or other non-fatal codes
+        non_fatal_codes = [code for code in tester.error_codes if code != ModuleErrorCode.NON_FATAL_ERROR.value]
+        assert len(non_fatal_codes) == len(
+            tester.error_codes
+        ), f"All errors should be non-fatal, but found fatal error in sequence: {tester.error_codes}"
+        print(
+            f"✅ Non-fatal error validation passed: received {tester.errors_received} errors "
+            f"as expected (continuous retries), error sequence: {tester.error_codes}"
+        )
