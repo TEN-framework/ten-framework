@@ -107,6 +107,7 @@ class SonioxWebsocketClient:
         self._keepalive_task = None
 
         self._total_sent_audio_bytes = 0
+        self._connection_attempt_start_time = 0
 
     async def connect(self):
         self._reset_client_state()
@@ -117,10 +118,15 @@ class SonioxWebsocketClient:
             try:
                 self._reset_session_state()
                 self.state = self.State.CONNECTING
+                # Record timestamp before each connection attempt
+                self._connection_attempt_start_time = int(time.time() * 1000)
                 async with websockets.connect(self.url) as ws:
                     await ws.send(self.start_request)
                     self.state = self.State.CONNECTED
-                    await self._call(SonioxWebsocketEvents.OPEN)
+                    await self._call(
+                        SonioxWebsocketEvents.OPEN,
+                        self._connection_attempt_start_time,
+                    )
                     # Start keepalive task when connection is established and keepalive is enabled
                     if self.enable_keepalive:
                         self._start_keepalive_task(ws)
@@ -334,7 +340,7 @@ class SonioxWebsocketClient:
         EXCEPTION:
             - Exception: the exception object
         OPEN:
-            - None
+            - connection_start_timestamp: int (milliseconds)
         CLOSE:
             - None
         ERROR:

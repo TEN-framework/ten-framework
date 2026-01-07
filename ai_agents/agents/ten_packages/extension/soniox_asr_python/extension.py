@@ -343,11 +343,18 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             await self.send_asr_finalize_end()
 
     # WebSocket event handlers
-    async def _handle_open(self):
+    async def _handle_open(self, connection_start_timestamp: int):
+        connection_delay_ms = (
+            int(time.time() * 1000) - connection_start_timestamp
+        )
+
         self.ten_env.log_info(
-            "vendor_status_changed: connection opened",
+            f"vendor_status_changed: connection opened, connection_delay_ms: {connection_delay_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        await self.send_connect_delay_metrics(connection_delay_ms)
+
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
         )
