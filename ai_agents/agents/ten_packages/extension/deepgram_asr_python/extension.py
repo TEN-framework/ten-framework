@@ -1,6 +1,6 @@
 from datetime import datetime
-import json
 import os
+from typing import Dict, Any
 
 from typing_extensions import override
 from .const import (
@@ -9,7 +9,7 @@ from .const import (
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
-    ASRBufferConfigModeDiscard,
+    ASRBufferConfigModeKeep,
     ASRResult,
     AsyncASRBaseExtension,
 )
@@ -23,34 +23,31 @@ from ten_runtime import (
     AudioFrame,
 )
 from ten_ai_base.const import (
-    LOG_CATEGORY_KEY_POINT,
     LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
 )
 
-import asyncio
-from deepgram import (
-    DeepgramClientOptions,
-    LiveTranscriptionEvents,
-    LiveOptions,
-)
-import deepgram
-from .config import DeepgramASRConfig
+from .const import TIMEOUT_CODE
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
+from .recognition import DeepgramASRRecognition, DeepgramASRRecognitionCallback
+from .config import DeepgramASRConfig
 
 
-class DeepgramASRExtension(AsyncASRBaseExtension):
+class DeepgramASRExtension(
+    AsyncASRBaseExtension, DeepgramASRRecognitionCallback
+):
+    """Deepgram ASR Extension"""
+
     def __init__(self, name: str):
         super().__init__(name)
-        self.connected: bool = False
-        self.client: deepgram.AsyncListenWebSocketClient | None = None
+        self.recognition: DeepgramASRRecognition | None = None
         self.config: DeepgramASRConfig | None = None
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-
-        # Reconnection manager with retry limits and backoff strategy
-        self.reconnect_manager: ReconnectManager | None = None
+        # Reconnection manager
+        self.reconnect_manager: ReconnectManager = None  # type: ignore
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -61,7 +58,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     @override
     def vendor(self) -> str:
-        """Get the name of the ASR vendor."""
+        """Get ASR vendor name"""
         return "deepgram"
 
     @override
@@ -77,17 +74,17 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             self.config = DeepgramASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}",
+                f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-
             if self.config.dump:
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
                 self.audio_dumper = Dumper(dump_file_path)
+                await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(f"Invalid Deepgram config: {e}")
             self.config = DeepgramASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -99,86 +96,55 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     @override
     async def start_connection(self) -> None:
+        """Start ASR connection"""
         assert self.config is not None
-        self.ten_env.log_info("start_connection")
+        self.ten_env.log_info("Starting Deepgram connection")
 
         try:
-            await self.stop_connection()
+            # Check required credentials
+            api_key = self.config.params.get("api_key", "")
+            key = self.config.params.get("key", "")
 
-            self.client = deepgram.AsyncListenWebSocketClient(
-                config=DeepgramClientOptions(
-                    url=self.config.url,
-                    api_key=self.config.key or self.config.api_key,
-                    options={"keepalive": "true"},
-                )
+            # Use api_key if available, otherwise fallback to key
+            final_api_key = (
+                api_key
+                if api_key
+                and (isinstance(api_key, str) and api_key.strip() != "")
+                else key
             )
 
-            if self.audio_dumper:
-                await self.audio_dumper.start()
-
-            await self._register_deepgram_event_handlers()
-
-            keywords = []
-            if self.config.hotwords:
-                for hw in self.config.hotwords:
-                    tokens = hw.split("|")
-                    if len(tokens) == 2 and tokens[1].isdigit():
-                        keywords.append(":".join(tokens))  # replase to ":"
-                    else:
-                        self.ten_env.log_warn("invalid hotword format: " + hw)
-
-            options = LiveOptions(
-                language=self.config.language,
-                model=self.config.model,
-                sample_rate=self.input_audio_sample_rate(),
-                channels=self.input_audio_channels(),
-                encoding=self.config.encoding,
-                interim_results=self.config.interim_results,
-                punctuate=self.config.punctuate,
-                keywords=keywords,
-                extra=(
-                    {"mid_opt_out": "true"} if self.config.mid_opt_out else None
-                ),
-            )
-
-            # Update options with advanced params
-            if self.config.advanced_params_json:
-                try:
-                    params: dict[str, str] = json.loads(
-                        self.config.advanced_params_json
-                    )
-                    for key, value in params.items():
-                        if hasattr(
-                            options, key
-                        ) and not self.config.is_black_list_params(key):
-                            self.ten_env.log_debug(
-                                f"set deepgram param: {key} = {value}"
-                            )
-                            setattr(options, key, value)
-                except Exception as e:
-                    self.ten_env.log_error(f"set deepgram param failed: {e}")
-
-            self.ten_env.log_info(f"deepgram options: {options}")
-
-            # Connect to websocket
-            result = await self.client.start(options)
-            if not result:
-                self.ten_env.log_error("failed to connect to deepgram")
+            # Check if final_api_key is valid
+            if not final_api_key or (
+                isinstance(final_api_key, str) and final_api_key.strip() == ""
+            ):
+                error_msg = "Deepgram API key is required but missing or empty"
+                self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
                         module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        message="failed to connect to deepgram",
-                    )
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message=error_msg,
+                    ),
                 )
-                asyncio.create_task(self._handle_reconnect())
-            else:
-                self.ten_env.log_info("start_connection completed")
+                return
+
+            # Stop existing connection
+            if self.is_connected():
+                await self.stop_connection()
+
+            # Create recognition instance
+            self.recognition = DeepgramASRRecognition(
+                api_key=final_api_key,
+                audio_timeline=self.audio_timeline,
+                ten_env=self.ten_env,
+                config=self.config.params,
+                callback=self,
+            )
+
+            await self.recognition.start()
 
         except Exception as e:
-            self.ten_env.log_error(
-                f"KEYPOINT start_connection failed: invalid vendor config: {e}"
-            )
+            self.ten_env.log_error(f"Failed to start Deepgram connection: {e}")
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -188,32 +154,22 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
     @override
-    async def finalize(self, session_id: str | None) -> None:
+    async def finalize(self, _session_id: str | None) -> None:
+        """Finalize recognition"""
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_info(
-            f"vendor_cmd: finalize start at {self.last_finalize_timestamp}",
-            category=LOG_CATEGORY_VENDOR,
+        self.ten_env.log_debug(
+            f"Deepgram finalize start at {self.last_finalize_timestamp}"
         )
-        await self._handle_finalize_api()
 
-    async def _register_deepgram_event_handlers(self):
-        """Register event handlers for Deepgram WebSocket client."""
-        assert self.client is not None
-        self.client.on(
-            LiveTranscriptionEvents.Open, self._deepgram_event_handler_on_open
-        )
-        self.client.on(
-            LiveTranscriptionEvents.Close, self._deepgram_event_handler_on_close
-        )
-        self.client.on(
-            LiveTranscriptionEvents.Transcript,
-            self._deepgram_event_handler_on_transcript,
-        )
-        self.client.on(
-            LiveTranscriptionEvents.Error, self._deepgram_event_handler_on_error
-        )
+        finalize_mode = self.config.finalize_mode
+        if finalize_mode == "disconnect":
+            await self._handle_finalize_disconnect()
+        elif finalize_mode == "mute_pkg":
+            await self._handle_finalize_mute_pkg()
+        else:
+            raise ValueError(f"invalid finalize mode: {finalize_mode}")
 
     async def _handle_asr_result(
         self,
@@ -223,7 +179,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         duration_ms: int = 0,
         language: str = "",
     ):
-        """Handle the ASR result from Deepgram ASR."""
+        """Process ASR recognition result"""
         assert self.config is not None
 
         if final:
@@ -237,152 +193,35 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             language=language,
             words=[],
         )
+
         await self.send_asr_result(asr_result)
 
-    async def _deepgram_event_handler_on_open(self, _, event):
-        """Handle the open event from Deepgram."""
-        self.ten_env.log_info(
-            f"vendor_status_changed: on_open event: {event}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-        self.sent_user_audio_duration_ms_before_last_reset += (
-            self.audio_timeline.get_total_user_audio_duration()
-        )
-        self.audio_timeline.reset()
-        self.connected = True
+    async def _handle_finalize_disconnect(self):
+        """Handle disconnect mode finalization"""
+        if self.recognition:
+            await self.recognition.stop()
+            self.ten_env.log_debug("Deepgram finalize completed")
 
-        # Notify reconnect manager that connection is successful
-        if self.reconnect_manager:
-            self.reconnect_manager.mark_connection_successful()
-
-    async def _deepgram_event_handler_on_close(self, *args, **kwargs):
-        """Handle the close event from Deepgram."""
-        self.ten_env.log_info(
-            f"vendor_status_changed: on_close, args: {args}, kwargs: {kwargs}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-        self.connected = False
-
-        if not self.stopped:
-            self.ten_env.log_warn(
-                "Deepgram connection closed unexpectedly. Reconnecting..."
-            )
-            await self._handle_reconnect()
-
-    async def _deepgram_event_handler_on_transcript(self, _, result):
-        """Handle the transcript event from Deepgram."""
-        assert self.config is not None
-
-        # SimpleNamespace
-        try:
-            result_json = result.to_json()
-            self.ten_env.log_debug(
-                f"vendor_result: on_transcript: {result_json}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-        except AttributeError:
-            # SimpleNamespace no have to_json
-            self.ten_env.log_error(
-                "deepgram event callback on_transcript: SimpleNamespace object (no to_json method)"
-            )
-
-        try:
-            sentence = result.channel.alternatives[0].transcript
-
-            if not sentence:
-                return
-
-            start_ms = int(
-                result.start * 1000
-            )  # convert seconds to milliseconds
-            duration_ms = int(
-                result.duration * 1000
-            )  # convert seconds to milliseconds
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
-            is_final = result.is_final
-            language = self.config.language
-
-            self.ten_env.log_debug(
-                f"deepgram event callback on_transcript: {sentence}, language: {language}, is_final: {is_final}"
-            )
-
-            await self._handle_asr_result(
-                sentence,
-                final=is_final,
-                start_ms=actual_start_ms,
-                duration_ms=duration_ms,
-                language=language,
-            )
-
-        except Exception as e:
-            self.ten_env.log_error(f"Error processing transcript: {e}")
-
-    async def _deepgram_event_handler_on_error(self, _, error):
-        """Handle the error event from Deepgram."""
-        self.ten_env.log_error(
-            f"vendor_error: {error.to_json()}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-
-        await self.send_asr_error(
-            ModuleError(
-                module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=error.to_json(),
-            ),
-            ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=str(error.code) if hasattr(error, "code") else "unknown",
-                message=(
-                    error.message
-                    if hasattr(error, "message")
-                    else error.to_json()
-                ),
-            ),
-        )
-
-    async def _handle_finalize_api(self):
-        """Handle finalize with api mode."""
-        assert self.config is not None
-
-        if self.client is None:
-            _ = self.ten_env.log_debug("finalize api: client is not connected")
-            return
-
-        await self.client.finalize()
-        self.ten_env.log_info(
-            "vendor_cmd: finalize api completed",
-            category=LOG_CATEGORY_VENDOR,
-        )
+    async def _handle_finalize_mute_pkg(self):
+        """Handle mute package mode finalization"""
+        # Send silence package
+        if self.recognition and self.config:
+            mute_pkg_duration_ms = self.config.mute_pkg_duration_ms
+            sample_rate = self.config.params.get("sample_rate", 16000)
+            silence_duration = mute_pkg_duration_ms / 1000.0
+            silence_samples = int(sample_rate * silence_duration)
+            silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
+            self.audio_timeline.add_silence_audio(mute_pkg_duration_ms)
+            await self.recognition.send_audio_frame(silence_data)
+            self.ten_env.log_debug("Deepgram finalize mute package sent")
 
     async def _handle_reconnect(self):
-        """
-        Handle a single reconnection attempt using the ReconnectManager.
-        Connection success is determined by the _deepgram_event_handler_on_open callback.
-
-        This method should be called repeatedly (e.g., after connection closed events)
-        until either connection succeeds or max attempts are reached.
-        """
+        """Handle reconnection"""
+        # Attempt reconnection
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
             return
 
-        # Check if we can still retry
-        if not self.reconnect_manager.can_retry():
-            self.ten_env.log_warn("No more reconnection attempts allowed")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="No more reconnection attempts allowed",
-                )
-            )
-            return
-
-        # Attempt a single reconnection
         success = await self.reconnect_manager.handle_reconnect(
             connection_func=self.start_connection,
             error_handler=self.send_asr_error,
@@ -399,54 +238,167 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
     async def _finalize_end(self) -> None:
-        """Handle finalize end logic."""
+        """Handle finalization end logic"""
         if self.last_finalize_timestamp != 0:
             timestamp = int(datetime.now().timestamp() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+                f"Deepgram finalize end at {timestamp}, latency: {latency}ms"
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
 
     async def stop_connection(self) -> None:
-        """Stop the Deepgram connection."""
+        """Stop ASR connection"""
+        self.ten_env.log_info("Deepgram stop_connection stop_connection")
         try:
-            if self.client:
-                await self.client.finish()
-                self.client = None
-                self.connected = False
-                self.ten_env.log_info("deepgram connection stopped")
+            if self.recognition:
+                await self.recognition.close()
+                self.recognition = None
+            self.ten_env.log_info("Deepgram connection stopped1")
         except Exception as e:
-            self.ten_env.log_error(f"Error stopping deepgram connection: {e}")
+            self.ten_env.log_error(f"Error stopping Deepgram connection: {e}")
 
     @override
     def is_connected(self) -> bool:
-        return self.connected and self.client is not None
+        """Check connection status"""
+        is_connected: bool = (
+            self.recognition is not None and self.recognition.is_connected()
+        )
+        return is_connected
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeDiscard()
+        """Buffer strategy configuration"""
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
     def input_audio_sample_rate(self) -> int:
+        """Input audio sample rate"""
         assert self.config is not None
-        return self.config.sample_rate
+        return self.config.params.get("sample_rate", 16000)
 
     @override
     async def send_audio(
-        self, frame: AudioFrame, session_id: str | None
+        self, frame: AudioFrame, _session_id: str | None
     ) -> bool:
-        assert self.config is not None
-        assert self.client is not None
+        """Send audio data"""
+        assert self.recognition is not None
 
-        buf = frame.lock_buf()
-        if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(buf))
-        self.audio_timeline.add_user_audio(
-            int(len(buf) / (self.config.sample_rate / 1000 * 2))
+        try:
+            buf = frame.lock_buf()
+            audio_data = bytes(buf)
+
+            # Dump audio data
+            if self.audio_dumper:
+                await self.audio_dumper.push_bytes(audio_data)
+
+            # self.ten_env.log_debug(f"Sending audio frame: {len(audio_data)} bytes")
+            await self.recognition.send_audio_frame(audio_data)
+
+            frame.unlock_buf(buf)
+            return True
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error sending audio to Deepgram Flux: {e}")
+            frame.unlock_buf(buf)
+            return False
+
+    # Vendor callback functions
+    @override
+    async def on_open(self) -> None:
+        """Handle callback when connection is established"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
         )
-        await self.client.send(bytes(buf))
-        frame.unlock_buf(buf)
+        # Notify reconnect manager of successful connection
+        self.reconnect_manager.mark_connection_successful()
 
-        return True
+        # Reset timeline and audio duration
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
+
+    @override
+    async def on_result(self, message_data: Dict[str, Any]) -> None:
+        """Handle recognition result callback"""
+
+        try:
+            # Extract basic fields
+            is_final = message_data.get("is_final", False)
+
+            # Extract transcript and words from channel.alternatives[0]
+            channel = message_data.get("channel", {})
+            alternatives = channel.get("alternatives", [])
+            if not alternatives:
+                self.ten_env.log_debug("No alternatives in Deepgram result")
+                return
+
+            first_alt = alternatives[0]
+            result_to_send = first_alt.get("transcript", "")
+
+            # Extract timing information (in seconds, convert to milliseconds)
+            start_seconds = message_data.get("start", 0)
+            duration_seconds = message_data.get("duration", 0)
+            start_ms = int(start_seconds * 1000)
+            duration_ms = int(duration_seconds * 1000)
+
+            # Calculate actual start time using audio timeline
+            actual_start_ms = int(
+                self.audio_timeline.get_audio_duration_before_time(start_ms)
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+
+            # Process ASR result
+            await self._handle_asr_result(
+                text=result_to_send,
+                final=is_final,
+                start_ms=actual_start_ms,
+                duration_ms=duration_ms,
+                language=self.config.normalized_language,
+            )
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error processing Deepgram result: {e}")
+
+    @override
+    async def on_error(
+        self, error_msg: str, error_code: int | None = None
+    ) -> None:
+        """Handle error callback"""
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, reason: {error_msg}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+        if error_code == TIMEOUT_CODE:
+            await self._handle_reconnect()
+        else:
+            # Send error information
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=error_msg,
+                ),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=str(error_code) if error_code else "unknown",
+                    message=error_msg,
+                ),
+            )
+
+    @override
+    async def on_close(self) -> None:
+        """Handle callback when connection is closed"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Deepgram connection closed unexpectedly. Reconnecting..."
+            )
+            await self._handle_reconnect()

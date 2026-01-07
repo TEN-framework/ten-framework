@@ -1,9 +1,8 @@
 {
     "type": "extension",
     "name": "deepgram_asr_python",
-    "version": "0.2.2",
-    "dependencies": [
-        {
+    "version": "0.3.0",
+    "dependencies": [{
             "type": "system",
             "name": "ten_runtime_python",
             "version": "0.11"
@@ -15,11 +14,9 @@
         }
     ],
     "api": {
-        "interface": [
-            {
-                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
-            }
-        ],
+        "interface": [{
+            "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+        }],
         "property": {
             "properties": {
                 "params": {

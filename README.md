@@ -104,9 +104,9 @@ See the [Example code][voice-assistant-live2d-example] for different Live2D char
 
 <br>
 
-![Image][speech-diarization-image]
+![Image][speaker-diarization-image]
 
-<strong>Speech Diarization</strong> — Real-time diarization that detects and labels speakers, the Who Likes What game shows an interactive use case.
+<strong>Speaker Diarization</strong> — Real-time diarization that detects and labels speakers, the Who Likes What game shows an interactive use case.
 
 [Example code][speechmatics-diarization-example]
 
@@ -538,7 +538,7 @@ Contributions are welcome! Please read the [contribution guidelines][contributio
 [divider-dark]: https://github.com/user-attachments/assets/d57fad08-4f49-4a1c-bdfc-f659a5d86150#gh-dark-mode-only
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ai_agents/agents/examples/voice-assistant-live2d
-[speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
+[speaker-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
 [speechmatics-diarization-example]: ai_agents/agents/examples/speechmatics-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ai_agents/agents/examples/voice-assistant-sip-twilio

@@ -135,6 +135,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
@@ -803,6 +804,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
@@ -1024,6 +1026,14 @@ jobs:
         shell: pwsh
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
+
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
+            # Or else toolchain may be switched to msvc during build
+            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
+            echo $env:RUSTUP_TOOLCHAIN
+          }
+
           cd out/win/x64/
           pytest -s tests/ten_runtime/integration/python/
 
@@ -1036,8 +1046,6 @@ jobs:
       matrix:
         build_type: [debug, release]
         compiler: [msvc, mingw]
-        exclude:
-          - compiler: mingw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1083,6 +1091,7 @@ jobs:
           cache: false
 
       - name: Install MinGW and setup toolchain
+        if: matrix.compiler == 'mingw'
         shell: pwsh
         run: |
           Write-Output "Downloading MinGW from GitHub releases..."
@@ -1196,6 +1205,14 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
+
+          if ("${{ matrix.compiler }}" -eq "mingw") {
+            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
+            # Or else toolchain may be switched to msvc during build
+            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
+            echo $env:RUSTUP_TOOLCHAIN
+          }
+
           cd out/win/x64/
           pytest -s tests/ten_runtime/integration/cpp/
       #   continue-on-error: true
