@@ -87,7 +87,9 @@ def test_standalone_test_tmpl_cpp():
 
     if build_config_args.is_mingw:
         if build_config_args.is_clang:
-            assert False, "is_clang and is_mingw cannot be true at the same time"
+            assert (
+                False
+            ), "is_clang and is_mingw cannot be true at the same time"
         extra_args.append("is_mingw=true")
         extra_args.append("is_clang=false")
 
