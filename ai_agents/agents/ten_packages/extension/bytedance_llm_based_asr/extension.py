@@ -475,28 +475,66 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
+    def _build_metadata_with_asr_info(
+        self,
+        base_metadata: dict[str, Any] | None = None,
+        additional_fields: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build metadata according to protocol: session_id at root, others in asr_info.
+
+        Args:
+            base_metadata: Base metadata dict (defaults to self.metadata if None)
+            additional_fields: Additional fields to add to asr_info
+
+        Returns:
+            Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
+        """
+        # Start with a copy of base metadata if available
+        if base_metadata is None:
+            base_metadata = (
+                copy.deepcopy(self.metadata)
+                if self.metadata is not None
+                else {}
+            )
+
+        # Extract session_id from base metadata if present
+        session_id = base_metadata.pop("session_id", None)
+
+        # Collect all other fields into asr_info
+        asr_info = copy.deepcopy(base_metadata)
+
+        # Add vendor field to asr_info
+        asr_info["vendor"] = "bytedance_bigmodel"
+
+        # Add additional fields to asr_info if provided
+        if additional_fields:
+            asr_info.update(additional_fields)
+
+        # Build final metadata structure
+        metadata: dict[str, Any] = {}
+        if session_id is not None:
+            metadata["session_id"] = session_id
+        metadata["asr_info"] = asr_info
+
+        return metadata
+
     def _extract_final_result_metadata(
         self, utterance: Utterance
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions.
 
-        First copies base class metadata, then adds/extends with subclass fields.
+        According to asr-interface.json protocol:
+        - session_id should be at metadata root level
+        - All other fields should be in metadata.asr_info
         """
-        # Start with a copy of base class metadata if available
-        metadata = (
-            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        # Get utterance additions as additional fields
+        additional_fields = None
+        if utterance.additions and isinstance(utterance.additions, dict):
+            additional_fields = utterance.additions
+
+        return self._build_metadata_with_asr_info(
+            additional_fields=additional_fields
         )
-
-        if not utterance.additions:
-            return metadata
-
-        additions = utterance.additions
-        if not isinstance(additions, dict):
-            return metadata
-
-        # Update metadata with additions (subclass fields override base class fields)
-        metadata.update(additions)
-        return metadata
 
     def _extract_non_final_result_metadata(
         self, utterance: Utterance
@@ -506,20 +544,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         For non-final results (stream results), only extract invoke_type and source
         to distinguish between soft_vad, hard_vad, and stream.
 
-        First copies base class metadata, then adds/extends with subclass fields.
+        According to asr-interface.json protocol:
+        - session_id should be at metadata root level
+        - All other fields should be in metadata.asr_info
         """
-        # Start with a copy of base class metadata if available
-        metadata = (
-            copy.deepcopy(self.metadata) if self.metadata is not None else {}
-        )
-
+        # Extract only invoke_type and source from utterance additions
+        additional_fields = None
         if utterance.additions and isinstance(utterance.additions, dict):
             additions = utterance.additions
+            additional_fields = {}
             if "invoke_type" in additions:
-                metadata["invoke_type"] = additions["invoke_type"]
+                additional_fields["invoke_type"] = additions["invoke_type"]
             if "source" in additions:
-                metadata["source"] = additions["source"]
-        return metadata
+                additional_fields["source"] = additions["source"]
+
+        return self._build_metadata_with_asr_info(
+            additional_fields=additional_fields
+        )
 
     def _calculate_utterance_start_ms(
         self, utterance_start_time_ms: int
@@ -695,12 +736,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 actual_start_ms = self._calculate_utterance_start_ms(
                     result.start_ms
                 )
-                # Start with a copy of base class metadata if available
-                metadata = (
-                    copy.deepcopy(self.metadata)
-                    if self.metadata is not None
-                    else {}
-                )
+                # Build metadata according to protocol: session_id at root, others in asr_info
+                metadata = self._build_metadata_with_asr_info()
                 await self._send_asr_result_from_text(
                     text=result.text,
                     is_final=False,
