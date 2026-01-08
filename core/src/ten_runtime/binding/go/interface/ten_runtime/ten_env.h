@@ -184,4 +184,5 @@ ten_go_error_t ten_go_ten_env_log(uintptr_t bridge_addr, int level,
                                   const void *func_name, int func_name_len,
                                   const void *file_name, int file_name_len,
                                   int line_no, const void *msg, int msg_len,
-                                  const void *category, int category_len);
+                                  const void *category, int category_len,
+                                  const void *fields_buf, int fields_buf_size);
