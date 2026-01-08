@@ -253,7 +253,7 @@ def serialize_to_buffer(value: Value) -> bytes:
     )
 
     struct.pack_into(
-        "<HBBcI",
+        "<H B B I",  # magic(2) + version(1) + type(1) + size(4) = 8 bytes
         buffer,
         pos,
         header.magic,
@@ -280,7 +280,7 @@ def _validate_buffer_header(buffer: bytes) -> ValueBufferHeader:
         assert False, "Buffer too small to contain header"
 
     magic, version, type_id, size = cast(
-        tuple[int, int, int, int], struct.unpack_from("<HBBIN", buffer, 0)
+        tuple[int, int, int, int], struct.unpack_from("<H B B I", buffer, 0)
     )
 
     if magic != VALUE_BUFFER_MAGIC:

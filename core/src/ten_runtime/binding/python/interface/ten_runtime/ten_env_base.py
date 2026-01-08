@@ -5,13 +5,17 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import inspect
+from typing import Any
 
 from libten_runtime_python import _TenEnv  # pyright: ignore[reportPrivateUsage]
 
 from .log_level import LogLevel
-from .error import TenError
+from .error import TenError, TenErrorCode
 from .value import Value
 from .log_option import LogOption, DefaultLogOption
+from .value_buffer import serialize_to_buffer
+
+FieldsType = Value | dict[str, Any] | None
 
 
 class TenEnvBase:
@@ -27,7 +31,7 @@ class TenEnvBase:
         self,
         msg: str,
         category: str | None = None,
-        fields: Value | None = None,
+        fields: FieldsType = None,
         option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.DEBUG, msg, category, fields, option)
@@ -36,7 +40,7 @@ class TenEnvBase:
         self,
         msg: str,
         category: str | None = None,
-        fields: Value | None = None,
+        fields: FieldsType = None,
         option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.INFO, msg, category, fields, option)
@@ -45,7 +49,7 @@ class TenEnvBase:
         self,
         msg: str,
         category: str | None = None,
-        fields: Value | None = None,
+        fields: FieldsType = None,
         option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.WARN, msg, category, fields, option)
@@ -54,7 +58,7 @@ class TenEnvBase:
         self,
         msg: str,
         category: str | None = None,
-        fields: Value | None = None,
+        fields: FieldsType = None,
         option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.ERROR, msg, category, fields, option)
@@ -64,7 +68,7 @@ class TenEnvBase:
         level: LogLevel,
         msg: str,
         category: str | None = None,
-        fields: Value | None = None,
+        fields: FieldsType = None,
         option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(level, msg, category, fields, option)
@@ -74,9 +78,35 @@ class TenEnvBase:
         level: LogLevel,
         msg: str,
         category: str | None,
-        fields: Value | None,
+        fields: FieldsType,
         option: LogOption,
     ) -> TenError | None:
+        # Convert fields to Value if it's a dict
+        fields_value: Value | None = None
+        if fields is not None:
+            try:
+                if isinstance(fields, dict):
+                    fields_value = Value.from_python(fields)
+                else:
+                    # fields is already a Value object
+                    fields_value = fields
+            except Exception as e:
+                return TenError.create(
+                    TenErrorCode.ErrorCodeGeneric,
+                    f"failed to convert fields: {str(e)}",
+                )
+
+        # Serialize fields Value to buffer if provided
+        fields_buf: bytes | None = None
+        if fields_value is not None:
+            try:
+                fields_buf = serialize_to_buffer(fields_value)
+            except Exception as e:
+                return TenError.create(
+                    TenErrorCode.ErrorCodeGeneric,
+                    f"failed to serialize fields: {str(e)}",
+                )
+
         # Get the current frame.
         frame = inspect.currentframe()
         if frame is not None:
@@ -102,6 +132,7 @@ class TenEnvBase:
                         category,
                         msg,
                         option.sync,
+                        fields_buf,
                     )
             finally:
                 # A defensive programming practice to ensure immediate cleanup
@@ -110,5 +141,5 @@ class TenEnvBase:
 
         # Fallback in case of failure to get caller information.
         return self._internal.log(
-            level, None, None, 0, category, msg, option.sync
+            level, None, None, 0, category, msg, option.sync, fields_buf
         )
