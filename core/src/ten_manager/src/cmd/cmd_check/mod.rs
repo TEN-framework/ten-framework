@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod cmd_check_env;
+pub mod cmd_check_interface_json;
 pub mod cmd_check_manifest_json;
 pub mod cmd_check_property_json;
 
@@ -20,6 +21,7 @@ use crate::{
 #[derive(Debug)]
 pub enum CheckCommandData {
     CheckEnv(cmd_check_env::CheckEnvCommand),
+    CheckInterfaceJson(cmd_check_interface_json::CheckInterfaceJsonCommand),
     CheckManifestJson(cmd_check_manifest_json::CheckManifestJsonCommand),
     CheckPropertyJson(cmd_check_property_json::CheckPropertyJsonCommand),
 }
@@ -30,6 +32,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(crate::cmd::cmd_check::cmd_check_env::create_sub_cmd(args_cfg))
+        .subcommand(crate::cmd::cmd_check::cmd_check_interface_json::create_sub_cmd(args_cfg))
         .subcommand(crate::cmd::cmd_check::cmd_check_manifest_json::create_sub_cmd(args_cfg))
         .subcommand(crate::cmd::cmd_check::cmd_check_property_json::create_sub_cmd(args_cfg))
 }
@@ -38,6 +41,9 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CheckCommandData> {
     let command_data = match sub_cmd_args.subcommand() {
         Some(("env", env_cmd_args)) => CheckCommandData::CheckEnv(
             crate::cmd::cmd_check::cmd_check_env::parse_sub_cmd(env_cmd_args)?,
+        ),
+        Some(("interface", interface_cmd_args)) => CheckCommandData::CheckInterfaceJson(
+            crate::cmd::cmd_check::cmd_check_interface_json::parse_sub_cmd(interface_cmd_args)?,
         ),
         Some(("manifest-json", manifest_json_cmd_args)) => CheckCommandData::CheckManifestJson(
             crate::cmd::cmd_check::cmd_check_manifest_json::parse_sub_cmd(manifest_json_cmd_args)?,
@@ -61,6 +67,15 @@ pub async fn execute_cmd(
     match command_data {
         CheckCommandData::CheckEnv(cmd) => {
             crate::cmd::cmd_check::cmd_check_env::execute_cmd(
+                tman_config,
+                tman_storage_in_memory,
+                cmd,
+                out,
+            )
+            .await
+        }
+        CheckCommandData::CheckInterfaceJson(cmd) => {
+            crate::cmd::cmd_check::cmd_check_interface_json::execute_cmd(
                 tman_config,
                 tman_storage_in_memory,
                 cmd,
