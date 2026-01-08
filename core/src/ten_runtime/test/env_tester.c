@@ -7,6 +7,7 @@
 #include "include_internal/ten_runtime/test/env_tester.h"
 
 #include <inttypes.h>
+#include <string.h>
 
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
@@ -121,6 +122,8 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   size_t line_no;
   ten_string_t msg;
   ten_string_t category;
+  uint8_t *fields_buf;
+  size_t fields_buf_size;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_send_cmd_ctx_t *ten_env_tester_send_cmd_ctx_create(
@@ -269,7 +272,8 @@ static void ten_extension_tester_return_result_ctx_destroy(
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     ten_env_tester_t *ten_env_tester, TEN_LOG_LEVEL level,
     const char *func_name, const char *file_name, size_t line_no,
-    const char *category, TEN_UNUSED ten_value_t *fields, const char *msg) {
+    const char *category, const uint8_t *fields_buf, size_t fields_buf_size,
+    const char *msg) {
   TEN_ASSERT(ten_env_tester, "Invalid argument.");
 
   ten_env_tester_notify_log_ctx_t *self =
@@ -307,6 +311,18 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     TEN_STRING_INIT(self->category);
   }
 
+  // Copy fields buffer if provided
+  if (fields_buf != NULL && fields_buf_size > 0) {
+    self->fields_buf = TEN_MALLOC(fields_buf_size);
+    TEN_ASSERT(self->fields_buf,
+               "Failed to allocate memory for fields buffer.");
+    memcpy(self->fields_buf, fields_buf, fields_buf_size);
+    self->fields_buf_size = fields_buf_size;
+  } else {
+    self->fields_buf = NULL;
+    self->fields_buf_size = 0;
+  }
+
   return self;
 }
 
@@ -318,6 +334,10 @@ static void ten_env_tester_notify_log_ctx_destroy(
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->msg);
   ten_string_deinit(&ctx->category);
+
+  if (ctx->fields_buf != NULL) {
+    TEN_FREE(ctx->fields_buf);
+  }
 
   TEN_FREE(ctx);
 }
@@ -884,11 +904,11 @@ static void test_extension_ten_env_log(ten_env_t *self, void *user_data) {
   ten_env_tester_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_log_with_fields_buf(self, ctx->level,
-                              ten_string_get_raw_str(&ctx->func_name),
-                              ten_string_get_raw_str(&ctx->file_name),
-                              ctx->line_no, ten_string_get_raw_str(&ctx->msg),
-                              ten_string_get_raw_str(&ctx->category), NULL, 0);
+  ten_env_log_with_fields_buf(
+      self, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+      ten_string_get_raw_str(&ctx->msg), ten_string_get_raw_str(&ctx->category),
+      ctx->fields_buf, ctx->fields_buf_size);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }
@@ -910,7 +930,8 @@ bool ten_env_tester_log(ten_env_tester_t *self, TEN_LOG_LEVEL level,
   }
 
   ten_env_tester_notify_log_ctx_t *ctx = ten_env_tester_notify_log_ctx_create(
-      self, level, func_name, file_name, line_no, category, NULL, msg);
+      self, level, func_name, file_name, line_no, category, fields_buf,
+      fields_buf_size, msg);
   TEN_ASSERT(ctx, "Allocation failed.");
 
   bool rc = ten_env_proxy_notify(self->tester->test_extension_ten_env_proxy,
