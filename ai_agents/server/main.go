@@ -36,10 +36,30 @@ func main() {
 
 	// Check if the directory exists
 	logPath := os.Getenv("LOG_PATH")
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(logPath, os.ModePerm); err != nil {
-			slog.Error("create log directory failed", "err", err)
+	fallbackLogPath := func(reason string, err error) string {
+		tempDir, tempErr := os.MkdirTemp("", "ten_agent_logs_")
+		if tempErr != nil {
+			slog.Error("create fallback log directory failed", "err", tempErr)
 			os.Exit(1)
+		}
+		slog.Warn("Using fallback log directory", "reason", reason, "err", err, "logPath", tempDir)
+		return tempDir
+	}
+
+	if logPath == "" {
+		logPath = fallbackLogPath("LOG_PATH empty", nil)
+	} else {
+		stat, err := os.Stat(logPath)
+		if err == nil {
+			if !stat.IsDir() {
+				logPath = fallbackLogPath("LOG_PATH is not a directory", nil)
+			}
+		} else if os.IsNotExist(err) {
+			if err := os.MkdirAll(logPath, os.ModePerm); err != nil {
+				logPath = fallbackLogPath("create log directory failed", err)
+			}
+		} else {
+			logPath = fallbackLogPath("stat log directory failed", err)
 		}
 	}
 
