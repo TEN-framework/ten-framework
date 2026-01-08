@@ -949,14 +949,22 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 	var flags string
 
 	switch runtime.GOOS {
-	case "linux":
-		flags = "-Lten_packages/system/ten_runtime_go/lib " +
-			"-lten_runtime_go " +
-			"-Wl,-rpath=$ORIGIN/../ten_packages/system/ten_runtime_go/lib"
-	case "darwin":
-		flags = "-Lten_packages/system/ten_runtime_go/lib " +
-			"-lten_runtime_go " +
-			"-Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime_go/lib"
+	case "linux", "darwin", "windows":
+		cc := ab.cachedEnv["CC"]
+		if(runtime.GOOS == "windows" && cc != "gcc") {
+			// We use gcc as the C compiler by default when using MinGW.
+			log.Fatalf("
+				Unsupported compiler %s for platform %s, consider using mingw instead.\n
+				Note that MSVC does not support go_binding yet.",
+				cc, runtime.GOOS
+			)
+		}
+
+		flags = "-Lten_packages/system/ten_runtime/lib " +
+			"-Lten_packages/system/ten_runtime_go/lib " +
+			"-lten_utils " +
+			"-lten_runtime " +
+			"-lten_runtime_go"
 	default:
 		log.Fatalf("Unsupported platform %s.\n", runtime.GOOS)
 	}
@@ -967,6 +975,7 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 	}
 
 	ab.cachedEnv[KeyCGOLdflags] = flags
+	log.Printf("🚨🚨🚨flags: %s", flags)
 }
 
 // buildExecEnvs combines the OS environments and GO environments (i.e., go

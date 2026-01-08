@@ -29,12 +29,9 @@ if (is_win) {
 }
 
 if (is_linux) {
-  ten_runtime_go_output_libs = [ "${root_out_dir}/libten_runtime_go.so" ]
   ten_runtime_python_output_libs =
       [ "${root_out_dir}/libten_runtime_python.so" ]
 } else if (is_mac) {
-  ten_runtime_go_output_libs = [ "${root_out_dir}/libten_runtime_go.dylib" ]
-
   # According to the explanation in https://bugs.python.org/issue43898, even on
   # macOS, when Python imports a Python C extension, the file extension must be
   # `.so` and cannot be `.dylib`.
@@ -42,27 +39,21 @@ if (is_linux) {
       [ "${root_out_dir}/libten_runtime_python.so" ]
 } else if (is_win) {
   if (is_mingw) {
-    # MinGW uses .dll.a import library for .dll files
     # For .pyd files, the import library is .pyd.a (see mingw.gni:123)
-    ten_runtime_go_output_libs = [
-      "${root_out_dir}/ten_runtime_go.dll",
-      "${root_out_dir}/libten_runtime_go.dll.a",
-    ]
     ten_runtime_python_output_libs = [
       "${root_out_dir}/libten_runtime_python.pyd",
       "${root_out_dir}/libten_runtime_python.pyd.a",
     ]
   } else {
-    ten_runtime_go_output_libs = [
-      "${root_out_dir}/ten_runtime_go.dll",
-      "${root_out_dir}/ten_runtime_go.dll.lib",
-    ]
     ten_runtime_python_output_libs = [
       "${root_out_dir}/libten_runtime_python.pyd",
       "${root_out_dir}/libten_runtime_python.pyd.lib",
     ]
   }
 }
+
+# Note: ten_runtime_go_output_libs is no longer used since it's
+# a static library now.
 
 ten_runtime_nodejs_output_libs =
     [ "${root_out_dir}/libten_runtime_nodejs.node" ]
