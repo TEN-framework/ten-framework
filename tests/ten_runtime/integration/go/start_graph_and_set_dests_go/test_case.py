@@ -1,5 +1,5 @@
 """
-Test start_graph_and_set_dests_from_new_graph_go.
+Test start_graph_and_set_dests_go.
 """
 
 import subprocess
@@ -9,14 +9,14 @@ from sys import stdout
 from .utils import msgpack, build_config, build_pkg, fs_utils
 
 
-def test_start_graph_and_set_dests_from_new_graph_go():
+def test_start_graph_and_set_dests_go():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
     my_env = os.environ.copy()
 
-    app_dir_name = "start_graph_and_set_dests_from_new_graph_go_app"
+    app_dir_name = "start_graph_and_set_dests_go_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "go"
 
@@ -41,7 +41,7 @@ def test_start_graph_and_set_dests_from_new_graph_go():
 
     if sys.platform == "win32":
         print(
-            "test_start_graph_and_set_dests_from_new_graph_go doesn't support win32"
+            "test_start_graph_and_set_dests_go doesn't support win32"
         )
         assert False
     elif sys.platform == "darwin":
@@ -49,7 +49,7 @@ def test_start_graph_and_set_dests_from_new_graph_go():
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,
             (
-                "start_graph_and_set_dests_from_new_graph_go_app/"
+                "start_graph_and_set_dests_go_app/"
                 "ten_packages/system/ten_runtime/lib"
             ),
         )
@@ -58,7 +58,7 @@ def test_start_graph_and_set_dests_from_new_graph_go():
         my_env["LD_LIBRARY_PATH"] = os.path.join(
             base_path,
             (
-                "start_graph_and_set_dests_from_new_graph_go_app/"
+                "start_graph_and_set_dests_go_app/"
                 "ten_packages/system/ten_runtime/lib"
             ),
         )
@@ -70,7 +70,7 @@ def test_start_graph_and_set_dests_from_new_graph_go():
             libasan_path = os.path.join(
                 base_path,
                 (
-                    "start_graph_and_set_dests_from_new_graph_go_app/ten_packages/system/"
+                    "start_graph_and_set_dests_go_app/ten_packages/system/"
                     "ten_runtime/lib/libasan.so"
                 ),
             )
@@ -79,10 +79,10 @@ def test_start_graph_and_set_dests_from_new_graph_go():
                 my_env["LD_PRELOAD"] = libasan_path
 
     server_cmd = os.path.join(
-        base_path, "start_graph_and_set_dests_from_new_graph_go_app/bin/start"
+        base_path, "start_graph_and_set_dests_go_app/bin/start"
     )
     client_cmd = os.path.join(
-        base_path, "start_graph_and_set_dests_from_new_graph_go_app_client"
+        base_path, "start_graph_and_set_dests_go_app_client"
     )
 
     if not os.path.isfile(server_cmd):
@@ -100,13 +100,13 @@ def test_start_graph_and_set_dests_from_new_graph_go():
     is_started, sock = msgpack.is_app_started("127.0.0.1", 8001, 30)
     if not is_started:
         print(
-            "The start_graph_and_set_dests_from_new_graph_go is not started after 30 seconds."
+            "The start_graph_and_set_dests_go is not started after 30 seconds."
         )
 
         server.kill()
         exit_code = server.wait()
         print(
-            "The exit code of start_graph_and_set_dests_from_new_graph_go: ",
+            "The exit code of start_graph_and_set_dests_go: ",
             exit_code,
         )
 
