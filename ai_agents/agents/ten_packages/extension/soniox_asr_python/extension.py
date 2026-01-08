@@ -611,6 +611,15 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         return results
 
+    def _calculate_average_confidence(
+        self, tokens: List[SonioxTranscriptToken]
+    ) -> Optional[float]:
+        """Calculate average confidence from tokens, skipping None values."""
+        confidences = [t.confidence for t in tokens if t.confidence is not None]
+        if not confidences:
+            return None
+        return sum(confidences) / len(confidences)
+
     def _create_single_asr_result(
         self, tokens: List[SonioxTranscriptToken], language: str, is_final: bool
     ) -> ASRResult:
@@ -630,6 +639,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             words.append(word)
             text += token.text
 
+        # Calculate average confidence
+        avg_confidence = self._calculate_average_confidence(tokens)
+        metadata = {}
+        if avg_confidence is not None:
+            metadata["asr_info"] = {"confidence": avg_confidence}
+
         return ASRResult(
             text=text,
             final=is_final,
@@ -637,6 +652,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             duration_ms=duration_ms,
             language=language,
             words=words,
+            metadata=metadata,
         )
 
     def _adjust_timestamp(self, timestamp_ms: int) -> int:
