@@ -6,6 +6,7 @@
 //
 #include <nlohmann/json.hpp>
 #include <string>
+#include <unordered_map>
 
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
@@ -22,47 +23,65 @@ class test_extension : public ten::extension_t {
 
   void on_init(ten::ten_env_t &ten_env) override {
     // Test 1: Log with multiple fields of various types using builder pattern
-    TEN_ENV_LOG_INFO_WITH_FIELDS(
-        ten_env, "Testing structured logging with various field types")
-        .field("string_field", "hello world")
-        .field("int_field", 42)
-        .field("float_field", 3.14159)
-        .field("bool_field", true)
-        .field("negative_int", -100)
-        .field("large_number", static_cast<int64_t>(9223372036854775807LL));
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["string_field"] = ten::value_t("hello world");
+      fields["int_field"] = ten::value_t(42);
+      fields["float_field"] = ten::value_t(3.14159);
+      fields["bool_field"] = ten::value_t(true);
+      fields["negative_int"] = ten::value_t(-100);
+      fields["large_number"] =
+          ten::value_t(static_cast<int64_t>(9223372036854775807LL));
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                  "Testing structured logging with various field types",
+                  nullptr, &fields_value);
+    }
 
     // Test 2: Log with nested object (using traditional API for complex
     // structures)
-    ten_json_t *json = ten_json_from_string(
-        R"({
+    const char *json_str = R"({
           "nested_object": {
             "inner_key": "inner_value"
           },
           "array_field": [1, 2, 3, "four", true]
-        })",
-        nullptr);
+        })";
     ten::value_t complex_fields;
-    complex_fields.from_json(json);
-    ten_json_destroy(json);
+    bool rc = complex_fields.from_json(json_str);
+    TEN_ASSERT(rc, "Should not happen.");
     TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
                 "Testing log with nested object and array", nullptr,
                 &complex_fields);
 
     // Test 3: Log with category
-    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Testing log with category")
-        .category("initialization")
-        .field("status", "success")
-        .field("duration_ms", 150);
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["status"] = ten::value_t("success");
+      fields["duration_ms"] = ten::value_t(150);
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "Testing log with category",
+                  "initialization", &fields_value);
+    }
 
     // Test 4: Simple log with single field
-    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Simple log with single field")
-        .field("value", 123);
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["value"] = ten::value_t(123);
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "Simple log with single field",
+                  nullptr, &fields_value);
+    }
 
     // Test 5: Log with string types
-    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Testing different string types")
-        .field("const_char", "C string")
-        .field("std_string", std::string("C++ string"))
-        .field("literal", "string literal");
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["const_char"] = ten::value_t("C string");
+      fields["std_string"] = ten::value_t(std::string("C++ string"));
+      fields["literal"] = ten::value_t("string literal");
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "Testing different string types",
+                  nullptr, &fields_value);
+    }
 
     ten_env.on_init_done();
   }
@@ -70,16 +89,27 @@ class test_extension : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     // Test 6: Log with dynamic values from command
-    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Received command")
-        .field("cmd_name", cmd->get_name().c_str())
-        .field("timestamp", ten_current_time_ms());
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["cmd_name"] = ten::value_t(cmd->get_name().c_str());
+      fields["timestamp"] =
+          ten::value_t(static_cast<int64_t>(ten_current_time_ms()));
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "Received command", nullptr,
+                  &fields_value);
+    }
 
     if (cmd->get_name() == "hello_world") {
       // Test 7: Log command processing with fields
-      TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Processing hello_world command")
-          .field("cmd_name", "hello_world")
-          .field("status", "ok")
-          .field("response", "hello world, too");
+      {
+        std::unordered_map<std::string, ten::value_t> fields;
+        fields["cmd_name"] = ten::value_t("hello_world");
+        fields["status"] = ten::value_t("ok");
+        fields["response"] = ten::value_t("hello world, too");
+        ten::value_t fields_value(fields);
+        TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
+                    "Processing hello_world command", nullptr, &fields_value);
+      }
 
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
@@ -89,10 +119,14 @@ class test_extension : public ten::extension_t {
 
   void on_deinit(ten::ten_env_t &ten_env) override {
     // Test 8: Log cleanup with performance metrics
-    TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "Extension cleanup")
-        .category("lifecycle")
-        .field("phase", "deinit")
-        .field("cleanup_status", "success");
+    {
+      std::unordered_map<std::string, ten::value_t> fields;
+      fields["phase"] = ten::value_t("deinit");
+      fields["cleanup_status"] = ten::value_t("success");
+      ten::value_t fields_value(fields);
+      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "Extension cleanup", "lifecycle",
+                  &fields_value);
+    }
 
     ten_env.on_deinit_done();
   }

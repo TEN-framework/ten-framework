@@ -66,11 +66,40 @@ TEN_RUNTIME_API void ten_env_log_without_check_thread(
 
 void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
                  const char *file_name, size_t line_no, const char *msg,
-                 const char *category, const uint8_t *fields_buf,
-                 size_t fields_buf_size) {
+                 const char *category, ten_value_t *fields) {
   if (ten_env_is_closed(self)) {
 #if !defined(OS_WINDOWS)
     (void)dprintf(STDERR_FILENO, "ten_env_log failed due to closed: %s\n", msg);
+#endif
+    return;
+  }
+
+  uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+  if (fields != NULL) {
+    fields_buf =
+        ten_value_serialize_to_buffer_c(fields, &fields_buf_size, NULL);
+  }
+
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, fields_buf, fields_buf_size, true);
+
+  if (fields_buf != NULL) {
+    TEN_FREE(fields_buf);
+  }
+}
+
+void ten_env_log_with_fields_buf(ten_env_t *self, TEN_LOG_LEVEL level,
+                                 const char *func_name, const char *file_name,
+                                 size_t line_no, const char *msg,
+                                 const char *category,
+                                 const uint8_t *fields_buf,
+                                 size_t fields_buf_size) {
+  if (ten_env_is_closed(self)) {
+#if !defined(OS_WINDOWS)
+    (void)dprintf(STDERR_FILENO,
+                  "ten_env_log_with_fields_buf failed due to closed: %s\n",
+                  msg);
 #endif
     return;
   }

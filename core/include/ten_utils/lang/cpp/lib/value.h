@@ -16,6 +16,7 @@
 
 #include "buf.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_utils/lang/cpp/lib/error.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
@@ -65,7 +66,9 @@ class value_t {
     return ten_value_is_valid(c_value_);
   }
 
-  bool from_json(ten_json_t *c_json) {
+  bool from_json(const char *json_str, error_t *err = nullptr) {
+    ten_json_t *c_json = ten_json_from_string(
+        json_str, err != nullptr ? err->get_c_error() : nullptr);
     if (c_json == nullptr) {
       return false;
     }
@@ -75,6 +78,8 @@ class value_t {
     }
 
     c_value_ = ten_value_from_json(c_json);
+    ten_json_destroy(c_json);
+
     return c_value_ != nullptr;
   }
 
@@ -128,6 +133,25 @@ class value_t {
     memcpy(buf.data, value.buf.data, value.buf.size);
 
     c_value_ = ten_value_create_buf_with_move(buf);
+  }
+
+  // Create a TEN value of 'object' type.
+  template <typename V>
+  explicit value_t(const std::unordered_map<std::string, V> &map) {
+    ten_list_t m = TEN_LIST_INIT_VAL;
+
+    for (const auto &pair : map) {
+      ten_value_kv_t *ten_pair = ten_value_kv_create_empty(pair.first.c_str());
+      TEN_ASSERT(ten_pair, "Invalid argument.");
+
+      ten_pair->value = create_c_value_from_cpp_concept(pair.second);
+      ten_list_push_ptr_back(&m, ten_pair,
+                             reinterpret_cast<ten_ptr_listnode_destroy_func_t>(
+                                 ten_value_kv_destroy));
+    }
+
+    c_value_ = ten_value_create_object_with_move(&m);
+    ten_list_clear(&m);
   }
 
   // @}
@@ -381,25 +405,6 @@ class value_t {
 
   template <typename T, typename A>
   struct is_unordered_map<std::unordered_map<T, A>> : public std::true_type {};
-
-  // Create a TEN value of 'object' type.
-  template <typename V>
-  explicit value_t(const std::unordered_map<std::string, V> &map) {
-    ten_list_t m = TEN_LIST_INIT_VAL;
-
-    for (const auto &pair : map) {
-      ten_value_kv_t *ten_pair = ten_value_kv_create_empty(pair.first.c_str());
-      TEN_ASSERT(ten_pair, "Invalid argument.");
-
-      ten_pair->value = create_c_value_from_cpp_concept(pair.second);
-      ten_list_push_ptr_back(&m, ten_pair,
-                             reinterpret_cast<ten_ptr_listnode_destroy_func_t>(
-                                 ten_value_kv_destroy));
-    }
-
-    c_value_ = ten_value_create_object_with_move(&m);
-    ten_list_clear(&m);
-  }
 
   // Create a TEN value of 'array' type.
   template <typename V>

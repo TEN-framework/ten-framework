@@ -17,12 +17,10 @@ class test_extension : public ten::extension_t {
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "test_cmd_from_1") {
       auto cmd_json_str = cmd->get_property_to_json();
-      ten_json_t *cmd_json =
-          ten_json_from_string(cmd_json_str.c_str(), nullptr);
 
       ten::value_t fields;
-      fields.from_json(cmd_json);
-      ten_json_destroy(cmd_json);
+      bool rc = fields.from_json(cmd_json_str.c_str());
+      TEN_ASSERT(rc, "Should not happen.");
 
       TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
                   "test_cmd_from_1 received with detailed fields", nullptr,

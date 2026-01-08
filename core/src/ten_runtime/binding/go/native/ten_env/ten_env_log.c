@@ -67,10 +67,11 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   ten_env_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_log(ten_env, ctx->level, ten_string_get_raw_str(&ctx->func_name),
-              ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-              ten_string_get_raw_str(&ctx->msg),
-              ten_string_get_raw_str(&ctx->category), NULL, 0);
+  ten_env_log_with_fields_buf(ten_env, ctx->level,
+                              ten_string_get_raw_str(&ctx->func_name),
+                              ten_string_get_raw_str(&ctx->file_name),
+                              ctx->line_no, ten_string_get_raw_str(&ctx->msg),
+                              ten_string_get_raw_str(&ctx->category), NULL, 0);
 
   ten_env_notify_log_ctx_destroy(ctx);
 }

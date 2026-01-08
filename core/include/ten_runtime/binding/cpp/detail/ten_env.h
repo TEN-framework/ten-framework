@@ -8,9 +8,6 @@
 
 #include <functional>
 #include <memory>
-#include <string>
-#include <unordered_map>
-#include <utility>
 
 #include "ten_runtime/binding/common.h"
 #include "ten_runtime/binding/cpp/detail/binding_handle.h"
@@ -29,7 +26,6 @@
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lang/cpp/lib/error.h"
 #include "ten_utils/lang/cpp/lib/value.h"
-#include "ten_utils/lang/cpp/lib/value_buffer.h"
 #include "ten_utils/lib/buf.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -608,21 +604,22 @@ class ten_env_t {
                   (fields));                                              \
   } while (0)
 
-  // Builder class for structured logging with fields.
-  //
-  // Design notes on lifetime management:
-  // - The builder is designed to be used as a temporary object in a single
-  //   statement, ensuring immediate log commit upon statement completion.
-  // - Deleted copy constructor prevents unintended lifetime extension.
-  // - The log is committed in the destructor automatically.
-  //
-  // Usage:
-  //   TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "User logged in")
-  //       .field("user_id", 1001)
-  //       .field("username", "john");
-  //
-  // Note: Use in a single statement for immediate logging. Do not store
-  // the builder in a variable as it would delay log output.
+// Builder class for structured logging with fields.
+//
+// Design notes on lifetime management:
+// - The builder is designed to be used as a temporary object in a single
+//   statement, ensuring immediate log commit upon statement completion.
+// - Deleted copy constructor prevents unintended lifetime extension.
+// - The log is committed in the destructor automatically.
+//
+// Usage:
+//   TEN_ENV_LOG_INFO_WITH_FIELDS(ten_env, "User logged in")
+//       .field("user_id", 1001)
+//       .field("username", "john");
+//
+// Note: Use in a single statement for immediate logging. Do not store
+// the builder in a variable as it would delay log output.
+#if 0
   class ten_log_builder_t {
    public:
     ten_log_builder_t(ten_env_t &env, TEN_LOG_LEVEL level,
@@ -733,26 +730,15 @@ class ten_env_t {
 #define TEN_ENV_LOG_ERROR_WITH_FIELDS(ten_env, msg) \
   TEN_ENV_LOG_WITH_FIELDS(ten_env, TEN_LOG_LEVEL_ERROR, msg)
 
+#endif
+
   void log(TEN_LOG_LEVEL level, const char *func_name, const char *file_name,
            size_t line_no, const char *msg, const char *category,
            value_t *fields) {
     TEN_ASSERT(c_ten_env, "Should not happen.");
 
-    uint8_t *fields_buf = nullptr;
-    size_t fields_buf_size = 0;
-
-    if (fields != nullptr) {
-      fields_buf =
-          value_buffer::serialize_to_buffer(*fields, &fields_buf_size, nullptr);
-    }
-
     ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg, category,
-                fields_buf, fields_buf_size);
-
-    // Free the serialized buffer to avoid memory leak.
-    if (fields_buf != nullptr) {
-      TEN_FREE(fields_buf);
-    }
+                fields != nullptr ? fields->get_c_value() : nullptr);
   }
 
  private:
