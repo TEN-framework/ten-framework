@@ -1,0 +1,5 @@
+{
+    "storage_type": "local",
+    "file_path": "records/conversation.wav",
+    "start_trigger": "on_user_joined"
+}
