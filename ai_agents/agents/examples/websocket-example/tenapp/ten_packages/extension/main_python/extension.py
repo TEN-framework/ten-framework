@@ -20,7 +20,8 @@ from .agent.events import (
     UserLeftEvent,
 )
 from .helper import _send_cmd, _send_data, parse_sentences
-from .config import MainControlConfig  # assume extracted from your base model
+from .config import MainControlConfig
+from .tracing import AgentTracer, TracingConfig, TraceAttrs, initialize_tracing
 
 import uuid
 
@@ -29,6 +30,7 @@ class MainControlExtension(AsyncExtension):
     """
     The entry point of the agent module.
     Consumes semantic AgentEvents from the Agent class and drives the runtime behavior.
+    Includes OpenTelemetry tracing for observability.
     """
 
     def __init__(self, name: str):
@@ -43,6 +45,11 @@ class MainControlExtension(AsyncExtension):
         self.turn_id: int = 0
         self.session_id: str = "0"
 
+        # Tracing
+        self._tracer: AgentTracer = None
+        self._llm_response_text: str = ""  # Accumulate LLM response for tracing
+        self._tts_started: bool = False
+
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
 
@@ -53,7 +60,16 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
-        self.agent = Agent(ten_env)
+        # Initialize tracing
+        tracing_config = TracingConfig(
+            enabled=True,
+            otlp_endpoint="http://localhost:4317",
+            service_name="ten-voice-agent",
+        )
+        self._tracer = initialize_tracing(tracing_config)
+        ten_env.log_info(f"[MainControlExtension] Tracing initialized, enabled={self._tracer.enabled}")
+
+        self.agent = Agent(ten_env, tracer=self._tracer)
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
@@ -66,15 +82,29 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1
-        if self._rtc_user_count == 1 and self.config and self.config.greeting:
-            await self._send_to_tts(self.config.greeting, True)
-            await self._send_transcript(
-                "assistant", self.config.greeting, True, 100
+
+        # Start session span when first user joins
+        if self._rtc_user_count == 1:
+            self._tracer.start_session(
+                session_id=self.session_id,
+                **{TraceAttrs.AGENT_NAME: self.name}
             )
+            self._tracer.add_session_event("user_joined")
+
+            if self.config and self.config.greeting:
+                await self._send_to_tts(self.config.greeting, True)
+                await self._send_transcript(
+                    "assistant", self.config.greeting, True, 100
+                )
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
         self._rtc_user_count -= 1
+        self._tracer.add_session_event("user_left")
+
+        # End session when all users leave
+        if self._rtc_user_count == 0:
+            self._tracer.end_session()
 
     @agent_event_handler(ToolRegisterEvent)
     async def _on_tool_register(self, event: ToolRegisterEvent):
@@ -86,11 +116,31 @@ class MainControlExtension(AsyncExtension):
         stream_id = int(self.session_id)
         if not event.text:
             return
+
+        # Interrupt on speech detection
         if event.final or len(event.text) > 2:
             await self._interrupt()
+
         if event.final:
+            # End previous turn if exists
+            self._tracer.end_turn()
+
+            # Start new turn
             self.turn_id += 1
+            self._tracer.start_turn(
+                turn_id=self.turn_id,
+                user_input=event.text,
+            )
+
+            # Reset accumulators
+            self._llm_response_text = ""
+            self._tts_started = False
+
+            # Start LLM span
+            self._tracer.start_llm(request_id=f"llm-{self.turn_id}")
+
             await self.agent.queue_llm_input(event.text)
+
         await self._send_transcript("user", event.text, event.final, stream_id)
 
     @agent_event_handler(LLMResponseEvent)
@@ -100,12 +150,35 @@ class MainControlExtension(AsyncExtension):
                 self.sentence_fragment, event.delta
             )
             for s in sentences:
+                # Start TTS span on first sentence (if not started)
+                if not self._tts_started:
+                    self._tts_started = True
+                    self._tracer.start_tts(
+                        text=s,
+                        request_id=f"tts-{self.turn_id}"
+                    )
                 await self._send_to_tts(s, False)
+
+            # Accumulate response text for tracing
+            self._llm_response_text += event.delta
 
         if event.is_final and event.type == "message":
             remaining_text = self.sentence_fragment or ""
             self.sentence_fragment = ""
+
+            # End LLM span with accumulated response
+            self._tracer.end_llm(response_text=self._llm_response_text)
+
+            # Add LLM response event
+            self._tracer.add_session_event(
+                "llm_response_complete",
+                response_length=len(self._llm_response_text)
+            )
+
             await self._send_to_tts(remaining_text, True)
+
+            # End TTS span
+            self._tracer.end_tts()
 
         await self._send_transcript(
             "assistant",
@@ -122,6 +195,11 @@ class MainControlExtension(AsyncExtension):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
         await self.agent.stop()
+
+        # Shutdown tracing
+        if self._tracer:
+            self._tracer.shutdown()
+            ten_env.log_info("[MainControlExtension] Tracing shutdown complete")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
@@ -204,7 +282,15 @@ class MainControlExtension(AsyncExtension):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
+        # Mark current turn as interrupted in tracing
+        self._tracer.mark_interrupted()
+
         self.sentence_fragment = ""
+
+        # End any active spans due to interruption
+        self._tracer.end_llm(status="ok")  # Not an error, just interrupted
+        self._tracer.end_tts(status="ok")
+
         await self.agent.flush_llm()
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}

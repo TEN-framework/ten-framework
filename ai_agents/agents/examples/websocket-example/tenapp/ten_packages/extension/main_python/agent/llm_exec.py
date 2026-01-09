@@ -28,6 +28,11 @@ from ..helper import _send_cmd, _send_cmd_ex
 from ten_runtime import AsyncTenEnv, Loc, StatusCode
 import uuid
 
+# Import tracer type for type hints
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..tracing import AgentTracer
+
 
 class LLMExec:
     """
@@ -35,8 +40,9 @@ class LLMExec:
     This class handles the interaction with the LLM, including processing commands and data.
     """
 
-    def __init__(self, ten_env: AsyncTenEnv):
+    def __init__(self, ten_env: AsyncTenEnv, tracer: Optional["AgentTracer"] = None):
         self.ten_env = ten_env
+        self._tracer = tracer
         self.input_queue = AsyncQueue()
         self.stopped = False
         self.on_response: Optional[
@@ -96,6 +102,14 @@ class LLMExec:
         async with self.available_tools_lock:
             self.available_tools.append(tool)
             self.tool_registry[tool.name] = source
+
+            # Add tracing event for tool registration
+            if self._tracer:
+                self._tracer.add_session_event(
+                    "tool_registered",
+                    tool_name=tool.name,
+                    tool_source=source
+                )
 
     async def _process_input_queue(self):
         """
@@ -212,67 +226,77 @@ class LLMExec:
                 self.ten_env.log_info(
                     f"_handle_llm_response: invoking tool call {llm_output.name}"
                 )
-                src_extension_name = self.tool_registry.get(llm_output.name)
-                result, _ = await _send_cmd(
-                    self.ten_env,
-                    "tool_call",
-                    src_extension_name,
-                    {
-                        "name": llm_output.name,
-                        "arguments": llm_output.arguments,
-                    },
-                )
+                await self._execute_tool_call(llm_output)
 
-                if result.get_status_code() == StatusCode.OK:
-                    r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
-                    tool_result: LLMToolResult = json.loads(r)
+    async def _execute_tool_call(self, llm_output: LLMResponseToolCall):
+        """Execute a tool call with tracing."""
+        src_extension_name = self.tool_registry.get(llm_output.name)
 
-                    self.ten_env.log_info(f"tool_result: {tool_result}")
+        # Start tool call tracing
+        tool_span = None
+        if self._tracer:
+            async with self._tracer.trace_tool_call(
+                name=llm_output.name,
+                arguments=json.dumps(llm_output.arguments) if llm_output.arguments else ""
+            ) as span:
+                tool_span = span
+                result = await self._do_tool_call(llm_output, src_extension_name, tool_span)
+        else:
+            result = await self._do_tool_call(llm_output, src_extension_name, None)
 
-                    context_function_call = LLMMessageFunctionCall(
-                        name=llm_output.name,
-                        arguments=json.dumps(llm_output.arguments),
-                        call_id=llm_output.tool_call_id,
-                        id=llm_output.response_id,
-                        type="function_call",
+    async def _do_tool_call(self, llm_output: LLMResponseToolCall, src_extension_name: str, tool_span):
+        """Perform the actual tool call."""
+        result, _ = await _send_cmd(
+            self.ten_env,
+            "tool_call",
+            src_extension_name,
+            {
+                "name": llm_output.name,
+                "arguments": llm_output.arguments,
+            },
+        )
+
+        if result.get_status_code() == StatusCode.OK:
+            r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
+            tool_result: LLMToolResult = json.loads(r)
+
+            self.ten_env.log_info(f"tool_result: {tool_result}")
+
+            # Add tool result to span
+            if tool_span:
+                from ..tracing import TraceAttrs
+                tool_span.set_attribute(TraceAttrs.TOOL_OUTPUT, str(tool_result.get("content", ""))[:500])
+                tool_span.set_attribute(TraceAttrs.TOOL_IS_ERROR, False)
+
+            context_function_call = LLMMessageFunctionCall(
+                name=llm_output.name,
+                arguments=json.dumps(llm_output.arguments),
+                call_id=llm_output.tool_call_id,
+                id=llm_output.response_id,
+                type="function_call",
+            )
+            if tool_result["type"] == "llmresult":
+                result_content = tool_result["content"]
+                if isinstance(result_content, str):
+                    await self._queue_context(
+                        self.ten_env, context_function_call
                     )
-                    if tool_result["type"] == "llmresult":
-                        result_content = tool_result["content"]
-                        if isinstance(result_content, str):
-                            await self._queue_context(
-                                self.ten_env, context_function_call
-                            )
-                            await self._send_to_llm(
-                                self.ten_env,
-                                LLMMessageFunctionCallOutput(
-                                    output=result_content,
-                                    call_id=llm_output.tool_call_id,
-                                    type="function_call_output",
-                                ),
-                            )
-                        else:
-                            self.ten_env.log_error(
-                                f"Unknown tool result content: {result_content}"
-                            )
-                    elif tool_result["type"] == "requery":
-                        pass
-                        # self.memory_cache = []
-                        # self.memory_cache.pop()
-                        # result_content = tool_result["content"]
-                        # nonlocal message
-                        # new_message = {
-                        #     "role": "user",
-                        #     "content": self._convert_to_content_parts(
-                        #         message["content"]
-                        #     ),
-                        # }
-                        # new_message["content"] = new_message[
-                        #     "content"
-                        # ] + self._convert_to_content_parts(
-                        #     result_content
-                        # )
-                        # await self.queue_input_item(
-                        #     True, messages=[new_message], no_tool=True
-                        # )
+                    await self._send_to_llm(
+                        self.ten_env,
+                        LLMMessageFunctionCallOutput(
+                            output=result_content,
+                            call_id=llm_output.tool_call_id,
+                            type="function_call_output",
+                        ),
+                    )
                 else:
-                    self.ten_env.log_error("Tool call failed")
+                    self.ten_env.log_error(
+                        f"Unknown tool result content: {result_content}"
+                    )
+            elif tool_result["type"] == "requery":
+                pass
+        else:
+            self.ten_env.log_error("Tool call failed")
+            if tool_span:
+                from ..tracing import TraceAttrs
+                tool_span.set_attribute(TraceAttrs.TOOL_IS_ERROR, True)

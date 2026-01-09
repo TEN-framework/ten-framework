@@ -6,11 +6,17 @@ from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata
 from .events import *
 
+# Import tracer type for type hints
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from ..tracing import AgentTracer
+
 
 class Agent:
-    def __init__(self, ten_env: AsyncTenEnv):
+    def __init__(self, ten_env: AsyncTenEnv, tracer: Optional["AgentTracer"] = None):
         self.ten_env: AsyncTenEnv = ten_env
         self.stopped = False
+        self._tracer = tracer
 
         # Callback registry
         self._callbacks: dict[
@@ -28,7 +34,7 @@ class Agent:
             None  # currently running handler
         )
 
-        self.llm_exec = LLMExec(ten_env)
+        self.llm_exec = LLMExec(ten_env, tracer=tracer)
         self.llm_exec.on_response = (
             self._on_llm_response
         )  # callback handled internally
