@@ -953,13 +953,13 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 		cc := ab.cachedEnv["CC"]
 		if(runtime.GOOS == "windows" && cc != "gcc") {
 			// We use gcc as the C compiler by default when using MinGW.
-			log.Fatalf("
-				Unsupported compiler %s for platform %s, consider using mingw instead.\n
-				Note that MSVC does not support go_binding yet.",
-				cc, runtime.GOOS
-			)
+			log.Printf("Unsupported compiler %s for platform %s, consider using mingw instead.", cc, runtime.GOOS)
+			log.Fatalf("Note that MSVC does not support go_binding yet.")
 		}
 
+		// On Windows with MinGW, static libraries must come before shared library import libraries.
+		// The linker resolves symbols from left to right, so when ten_runtime_go (static) needs
+		// symbols from ten_runtime.dll and ten_utils.dll, those import libraries must come after.
 		flags = "-Lten_packages/system/ten_runtime/lib " +
 			"-Lten_packages/system/ten_runtime_go/lib " +
 			"-lten_utils " +
@@ -975,7 +975,6 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 	}
 
 	ab.cachedEnv[KeyCGOLdflags] = flags
-	log.Printf("🚨🚨🚨flags: %s", flags)
 }
 
 // buildExecEnvs combines the OS environments and GO environments (i.e., go

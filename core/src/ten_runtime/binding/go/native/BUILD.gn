@@ -23,11 +23,6 @@ ten_static_library("ten_runtime_go") {
   # are included in the static library, even if they are not directly referenced.
   complete_static_lib = true
 
-  # Apply config to all sub-modules (value, addon, app, etc.) via public_configs.
-  # Sub-modules call TEN_UTILS_API functions, so they also need TEN_UTILS_EXPORT
-  # to avoid __imp_ symbol references that would cause linking errors.
-  public_configs = [ ":ten_runtime_go_config" ]
-
   # If ten_runtime_library is a shared library, we link its import library.
   # If ten_runtime_library is a static library, we link it directly. (But for now
   # ten_runtime_library is always shared)
