@@ -21,6 +21,8 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   int32_t line_no;
   ten_string_t category;
   ten_string_t msg;
+  uint8_t *fields_buf;
+  size_t fields_buf_size;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
@@ -35,6 +37,8 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
   ctx->line_no = 0;
   TEN_STRING_INIT(ctx->category);
   TEN_STRING_INIT(ctx->msg);
+  ctx->fields_buf = NULL;
+  ctx->fields_buf_size = 0;
 
   return ctx;
 }
@@ -47,6 +51,11 @@ static void ten_env_tester_notify_log_ctx_destroy(
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->category);
   ten_string_deinit(&ctx->msg);
+  if (ctx->fields_buf != NULL) {
+    TEN_FREE(ctx->fields_buf);
+    ctx->fields_buf = NULL;
+  }
+  ctx->fields_buf_size = 0;
 
   TEN_FREE(ctx);
 }
@@ -61,20 +70,24 @@ static void ten_env_tester_proxy_notify_log(ten_env_tester_t *ten_env_tester,
   ten_env_tester_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_tester_log(ten_env_tester, ctx->level,
-                     ten_string_get_raw_str(&ctx->func_name),
-                     ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-                     ten_string_get_raw_str(&ctx->msg),
-                     ten_string_get_raw_str(&ctx->category), NULL, 0, NULL);
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
 
+  ten_env_tester_log(
+      ten_env_tester, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+      ten_string_get_raw_str(&ctx->msg), ten_string_get_raw_str(&ctx->category),
+      ctx->fields_buf, ctx->fields_buf_size, &err);
+
+  ten_error_deinit(&err);
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }
 
 napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
                                                   napi_callback_info info) {
-  const size_t argc = 7;
+  const size_t argc = 8;
   napi_value args[argc];  // ten_env_tester, level, func_name, file_name,
-                          // line_no, category, msg
+                          // line_no, category, msg, fields_buf
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -135,6 +148,38 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
 
   rc = ten_nodejs_get_str_from_js(env, args[6], &notify_info->msg);
   RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get message.");
+
+  // Handle fields_buf (args[7]) - can be Buffer or undefined/null
+  napi_value js_fields_buf = args[7];
+  napi_valuetype fields_buf_type = napi_undefined;
+  status = napi_typeof(env, js_fields_buf, &fields_buf_type);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to get type of fields_buf: %d", status);
+
+  if (fields_buf_type != napi_undefined && fields_buf_type != napi_null) {
+    bool is_buffer = false;
+    status = napi_is_buffer(env, js_fields_buf, &is_buffer);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                  "Failed to check if fields_buf is buffer: %d",
+                                  status);
+
+    if (is_buffer) {
+      void *data = NULL;
+      size_t length = 0;
+      status = napi_get_buffer_info(env, js_fields_buf, &data, &length);
+      RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                    "Failed to get buffer info: %d", status);
+
+      if (length > 0 && data != NULL) {
+        // Copy the buffer data since it may be freed by JavaScript GC
+        notify_info->fields_buf = TEN_MALLOC(length);
+        TEN_ASSERT(notify_info->fields_buf,
+                   "Failed to allocate memory for fields_buf.");
+        memcpy(notify_info->fields_buf, data, length);
+        notify_info->fields_buf_size = length;
+      }
+    }
+  }
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
