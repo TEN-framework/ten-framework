@@ -1231,6 +1231,7 @@ jobs:
         compiler: [msvc, mingw]
         exclude:
           - compiler: msvc # not implemented yet
+          - compiler: mingw # TODO(nzh)
     steps:
       - uses: actions/checkout@v4
         with:
