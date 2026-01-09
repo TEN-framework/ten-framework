@@ -241,6 +241,7 @@ class _TenEnv:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _App:
@@ -296,6 +297,7 @@ class _TenEnvTester:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _ExtensionTester:

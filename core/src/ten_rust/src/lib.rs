@@ -16,6 +16,7 @@ pub mod json_schema;
 pub mod log;
 pub mod pkg_info;
 pub mod utils;
+pub mod value_buffer;
 
 #[cfg(feature = "service-hub")]
 pub mod service_hub;

@@ -230,7 +230,7 @@ TEN_RUST_PRIVATE_API void ten_rust_log(
     int64_t pid, int64_t tid, int level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const ten_log_loc_info_t *loc_info, const char *msg,
-    size_t msg_len);
+    size_t msg_len, const uint8_t *fields_buf, size_t fields_buf_size);
 
 TEN_RUST_PRIVATE_API void ten_rust_log_config_destroy(
     AdvancedLogConfig *config);

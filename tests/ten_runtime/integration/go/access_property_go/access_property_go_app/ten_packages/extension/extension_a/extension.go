@@ -49,6 +49,17 @@ func (ext *baseExtension) OnInit(tenEnv ten.TenEnv) {
 	// Print the json bytes.
 	tenEnv.LogInfo("propJsonBytes: " + string(propJsonBytes))
 
+	// Test log with simple fields
+	simpleFields := ten.NewObjectValue(map[string]ten.Value{
+		"extension_name": ten.NewStringValue("extension_a"),
+		"init_status":    ten.NewStringValue("starting"),
+		"version":        ten.NewIntValue(1),
+	})
+	category := "init"
+	if err := tenEnv.Log(ten.LogLevelInfo, "Extension initialization started", &category, &simpleFields, nil); err != nil {
+		panic("Log with fields failed: " + err.Error())
+	}
+
 	// Parse the json bytes to a map.
 	var predefinedProperty PredefinedProperty
 	if err := json.Unmarshal(propJsonBytes, &predefinedProperty); err != nil {
@@ -145,6 +156,24 @@ func (p *aExtension) OnCmd(
 	tenEnv ten.TenEnv,
 	cmd ten.Cmd,
 ) {
+	cmdName, _ := cmd.GetName()
+
+	// Test log with fields containing various types
+	cmdFields := ten.NewObjectValue(map[string]ten.Value{
+		"cmd_name": ten.NewStringValue(cmdName),
+		"cmd_type": ten.NewIntValue(1),
+		"is_async": ten.NewBoolValue(false),
+		"priority": ten.NewFloat64Value(1.5),
+		"tags": ten.NewArrayValue([]ten.Value{
+			ten.NewStringValue("test"),
+			ten.NewStringValue("integration"),
+		}),
+	})
+	cmdCategory := "command"
+	if err := tenEnv.Log(ten.LogLevelDebug, "Processing command", &cmdCategory, &cmdFields, nil); err != nil {
+		panic("Log with fields failed: " + err.Error())
+	}
+
 	if err := tenEnv.SetProperty("testBool", false); err != nil {
 		panic("Should not happen.")
 	}
@@ -289,6 +318,88 @@ func (p *aExtension) OnCmd(
 	)
 	if err != nil || string(testByteArray) != "hello" {
 		panic("Should not happen.")
+	}
+
+	// Test log with nested object fields
+	nestedFields := ten.NewObjectValue(map[string]ten.Value{
+		"test_results": ten.NewObjectValue(map[string]ten.Value{
+			"total":        ten.NewIntValue(10),
+			"passed":       ten.NewIntValue(9),
+			"failed":       ten.NewIntValue(1),
+			"success_rate": ten.NewFloat64Value(0.9),
+		}),
+		"test_name":   ten.NewStringValue("property_access_test"),
+		"test_status": ten.NewStringValue("completed"),
+	})
+	resultCategory := "test"
+	if err := tenEnv.Log(ten.LogLevelInfo, "Test execution completed", &resultCategory, &nestedFields, nil); err != nil {
+		panic("Log with nested fields failed: " + err.Error())
+	}
+
+	// Test log with different log levels and fields
+	warnFields := ten.NewObjectValue(map[string]ten.Value{
+		"warning_type": ten.NewStringValue("deprecated_api"),
+		"severity":     ten.NewIntValue(2),
+	})
+	if err := tenEnv.Log(ten.LogLevelWarn, "Using deprecated API", nil, &warnFields, nil); err != nil {
+		panic("Log with warn level and fields failed: " + err.Error())
+	}
+
+	// Test log with error level and fields
+	errorFields := ten.NewObjectValue(map[string]ten.Value{
+		"error_code":    ten.NewIntValue(500),
+		"error_message": ten.NewStringValue("Internal server error"),
+		"retry_count":   ten.NewIntValue(3),
+	})
+	if err := tenEnv.Log(ten.LogLevelError, "Error occurred during processing", nil, &errorFields, nil); err != nil {
+		panic("Log with error level and fields failed: " + err.Error())
+	}
+
+	// Test log with all Value types to ensure complete coverage
+	allTypesFields := ten.NewObjectValue(map[string]ten.Value{
+		// Boolean type
+		"bool_field": ten.NewBoolValue(true),
+
+		// Signed integer types
+		"int8_field":  ten.NewInt8Value(8),
+		"int16_field": ten.NewInt16Value(16),
+		"int32_field": ten.NewInt32Value(32),
+		"int64_field": ten.NewInt64Value(64),
+
+		// Unsigned integer types
+		"uint8_field":  ten.NewUint8Value(8),
+		"uint16_field": ten.NewUint16Value(16),
+		"uint32_field": ten.NewUint32Value(32),
+		"uint64_field": ten.NewUint64Value(64),
+
+		// Floating point types
+		"float32_field": ten.NewFloat32Value(32.5),
+		"float64_field": ten.NewFloat64Value(64.5),
+
+		// String types
+		"string_field":      ten.NewStringValue("test_string"),
+		"json_string_field": ten.NewJSONStringValue(`{"key":"value"}`),
+
+		// Bytes type
+		"bytes_field": ten.NewBufValue([]byte("test_bytes")),
+
+		// Array type (containing mixed types)
+		"array_field": ten.NewArrayValue([]ten.Value{
+			ten.NewStringValue("array_item1"),
+			ten.NewIntValue(42),
+			ten.NewBoolValue(true),
+			ten.NewFloat64Value(3.14),
+		}),
+
+		// Nested object type
+		"nested_object": ten.NewObjectValue(map[string]ten.Value{
+			"nested_string": ten.NewStringValue("nested_value"),
+			"nested_int":    ten.NewIntValue(100),
+		}),
+	})
+	allTypesCategory := "all_types"
+	if err := tenEnv.Log(ten.LogLevelInfo, "Testing all Value types", &allTypesCategory, &allTypesFields, nil); err != nil {
+		panic("Log with all types failed: " + err.Error())
 	}
 
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)

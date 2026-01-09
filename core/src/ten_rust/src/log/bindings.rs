@@ -56,7 +56,10 @@ use std::{
     os::raw::c_char,
 };
 
-use crate::log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig};
+use crate::{
+    log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig},
+    value_buffer::{self, Value},
+};
 
 /// FFI-safe structure to pass location information from C to Rust.
 ///
@@ -287,6 +290,8 @@ pub extern "C" fn ten_rust_log(
     loc_info: *const TenLogLocInfo,
     msg: *const c_char,
     msg_len: usize,
+    fields_buf: *const u8,
+    fields_buf_size: usize,
 ) {
     if config.is_null()
         || func_name_len == 0
@@ -331,6 +336,21 @@ pub extern "C" fn ten_rust_log(
         }
     };
 
+    // Deserialize fields_buf (TEN value_buffer protocol) into a `Value`.
+    //
+    // Safety: only form a slice when pointer is non-null and size > 0.
+    let fields_data = if !fields_buf.is_null() && fields_buf_size > 0 {
+        unsafe { std::slice::from_raw_parts(fields_buf, fields_buf_size) }
+    } else {
+        &[]
+    };
+
+    let fields: Option<Value> = if fields_data.is_empty() {
+        None
+    } else {
+        value_buffer::deserialize_from_buffer(fields_data).ok()
+    };
+
     crate::log::ten_log(
         config,
         category_str,
@@ -343,6 +363,7 @@ pub extern "C" fn ten_rust_log(
         app_uri,
         graph_id,
         extension_name,
+        fields.as_ref(),
         msg_str,
     );
 }

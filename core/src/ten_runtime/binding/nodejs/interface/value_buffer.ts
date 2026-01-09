@@ -43,7 +43,7 @@ export interface ValueBufferHeader {
 
 // Convert Node.js ValueType to buffer type.
 function valueTypeToBufferType(valueType: ValueType): number {
-  const mapping: Record<ValueType, number> = {
+  const mapping: Partial<Record<ValueType, number>> = {
     [ValueType.INVALID]: BUFFER_TYPE_INVALID,
     [ValueType.BOOLEAN]: BUFFER_TYPE_BOOL,
     // JavaScript number maps to float64

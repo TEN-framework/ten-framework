@@ -63,6 +63,53 @@ export class Value {
     return new Value(ValueType.JSON_STRING, value);
   }
 
+  /**
+   * Convert native TypeScript/JavaScript types to Value object.
+   * Supports: boolean, number, string, ArrayBuffer, Array, Object, null, undefined
+   */
+  static fromNative(value: unknown): Value {
+    // If it's already a Value object, return a new instance
+    if (value instanceof Value) {
+      return new Value(value._type, value._data);
+    }
+
+    // Handle primitive types
+    if (typeof value === "boolean") {
+      return Value.fromBoolean(value);
+    }
+    if (typeof value === "number") {
+      return Value.fromNumber(value);
+    }
+    if (typeof value === "string") {
+      return Value.fromString(value);
+    }
+
+    // Handle ArrayBuffer
+    if (value instanceof ArrayBuffer) {
+      return Value.fromBuf(value);
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return Value.fromArray(
+        value.map((item) => Value.fromNative(item)),
+      );
+    }
+
+    // Handle objects (including null, which will be converted to string)
+    if (typeof value === "object" && value !== null) {
+      const obj: Record<string, Value> = {};
+      for (const [key, val] of Object.entries(value)) {
+        obj[key] = Value.fromNative(val);
+      }
+      return Value.fromObject(obj);
+    }
+
+    // For other types (including null and undefined), convert to string
+    // This matches Python's behavior where None is converted to string
+    return Value.fromString(String(value));
+  }
+
   getType(): ValueType {
     return this._type;
   }

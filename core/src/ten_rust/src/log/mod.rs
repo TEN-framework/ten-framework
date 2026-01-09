@@ -28,11 +28,14 @@ use tracing_subscriber::{
     Layer, Registry,
 };
 
-use crate::log::{
-    dynamic_filter::DynamicTargetFilterLayer,
-    encryption::{EncryptMakeWriter, EncryptionConfig},
-    file_appender::FileAppenderGuard,
-    formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+use crate::{
+    log::{
+        dynamic_filter::DynamicTargetFilterLayer,
+        encryption::{EncryptMakeWriter, EncryptionConfig},
+        file_appender::FileAppenderGuard,
+        formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+    },
+    value_buffer,
 };
 
 // Encryption types and writer are moved to `encryption.rs`
@@ -479,9 +482,13 @@ pub fn ten_log(
     app_uri: &str,
     graph_id: &str,
     extension_name: &str,
+    fields: Option<&value_buffer::Value>,
     msg: &str,
 ) {
     let tracing_level = level.to_tracing_level();
+
+    // Convert Value to JSON string for formatter to parse
+    let fields_json: Option<String> = fields.map(|v| v.to_json().to_string());
 
     // Extract just the filename from the full path
     let filename =
@@ -499,6 +506,7 @@ pub fn ten_log(
                 ten_func_name = func_name,
                 ten_file_name = filename,
                 ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
@@ -514,6 +522,7 @@ pub fn ten_log(
                 ten_func_name = func_name,
                 ten_file_name = filename,
                 ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
@@ -529,6 +538,7 @@ pub fn ten_log(
                 ten_func_name = func_name,
                 ten_file_name = filename,
                 ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
@@ -544,6 +554,7 @@ pub fn ten_log(
                 ten_func_name = func_name,
                 ten_file_name = filename,
                 ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
@@ -559,6 +570,7 @@ pub fn ten_log(
                 ten_func_name = func_name,
                 ten_file_name = filename,
                 ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
