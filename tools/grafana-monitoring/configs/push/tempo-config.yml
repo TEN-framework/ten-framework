@@ -1,10 +1,11 @@
 # Tempo Configuration - Push Mode
-# Receives traces from OpenTelemetry Collector
+# Receives traces from OpenTelemetry Collector via internal network
 
 server:
   http_listen_port: 3200
   grpc_listen_port: 9095
 
+# Tempo receives traces from OTel Collector via OTLP
 distributor:
   receivers:
     otlp:
@@ -16,6 +17,9 @@ distributor:
 
 ingester:
   max_block_duration: 5m
+  lifecycler:
+    ring:
+      replication_factor: 1
 
 compactor:
   compaction:
@@ -33,10 +37,8 @@ querier:
   search:
     query_timeout: 30s
 
-metrics_generator:
-  registry:
-    external_labels:
-      source: tempo
-  storage:
-    path: /tmp/tempo/generator/wal
-    remote_write: []
+# Disable overrides for standalone deployment
+overrides:
+  defaults:
+    metrics_generator:
+      processors: []

@@ -11,17 +11,15 @@ allowing visualization of the complete message flow in a tracing backend.
 """
 
 import os
-import json
 from contextlib import asynccontextmanager
-from typing import Optional, Dict, Any
-from dataclasses import dataclass, field
+from typing import Optional
 
-from opentelemetry import trace, context as otel_context
+from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-from opentelemetry.trace import Span, StatusCode as OtelStatusCode
+from opentelemetry.trace import Span, SpanKind, StatusCode as OtelStatusCode
 
 
 # Trace attribute names (following OpenTelemetry semantic conventions)
@@ -61,12 +59,17 @@ class TraceAttrs:
     INTERRUPTED = "ten.interrupted"
 
 
-@dataclass
 class TracingConfig:
     """Configuration for tracing."""
-    enabled: bool = True
-    otlp_endpoint: str = "http://localhost:4317"
-    service_name: str = "ten-voice-agent"
+    def __init__(
+        self,
+        enabled: bool = True,
+        otlp_endpoint: str = "http://localhost:4317",
+        service_name: str = "ten-voice-agent",
+    ):
+        self.enabled = enabled
+        self.otlp_endpoint = otlp_endpoint
+        self.service_name = service_name
 
     @classmethod
     def from_env(cls) -> "TracingConfig":
@@ -82,23 +85,8 @@ class AgentTracer:
     """
     Tracer wrapper for TEN Agent, providing easy-to-use tracing APIs.
 
-    Usage:
-        tracer = AgentTracer.initialize(config)
-
-        # Start session span
-        tracer.start_session(session_id="xxx")
-
-        # Start a turn
-        with tracer.trace_turn(turn_id=1, user_input="hello"):
-            with tracer.trace_llm(request_id="xxx"):
-                # LLM processing
-                pass
-            with tracer.trace_tts(text="response"):
-                # TTS processing
-                pass
-
-        # End session
-        tracer.end_session()
+    Key design: Each span stores its own context to ensure proper parent-child
+    relationships, regardless of Python's contextvars behavior in async code.
     """
 
     _instance: Optional["AgentTracer"] = None
@@ -108,14 +96,20 @@ class AgentTracer:
         self._tracer: Optional[trace.Tracer] = None
         self._provider: Optional[TracerProvider] = None
 
-        # Active spans
+        # Active spans - we store both span AND its context
         self._session_span: Optional[Span] = None
-        self._turn_span: Optional[Span] = None
-        self._llm_span: Optional[Span] = None
-        self._tts_span: Optional[Span] = None
+        self._session_ctx = None
 
-        # Context tokens for proper context management
-        self._session_ctx_token = None
+        self._turn_span: Optional[Span] = None
+        self._turn_ctx = None
+
+        self._llm_span: Optional[Span] = None
+        self._llm_ctx = None
+
+        self._asr_span: Optional[Span] = None
+
+        self._tts_span: Optional[Span] = None
+        self._tts_ctx = None
 
         if config.enabled:
             self._initialize_otel()
@@ -145,13 +139,26 @@ class AgentTracer:
         # Configure OTLP exporter
         otlp_exporter = OTLPSpanExporter(
             endpoint=self._config.otlp_endpoint,
-            insecure=True,  # For local development; use secure=True in production
+            insecure=True,
         )
 
-        self._provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
+        # Configure BatchSpanProcessor with shorter intervals for faster export
+        span_processor = BatchSpanProcessor(
+            otlp_exporter,
+            max_queue_size=2048,
+            schedule_delay_millis=1000,  # Export every 1 second
+            max_export_batch_size=512,
+        )
+        self._provider.add_span_processor(span_processor)
         trace.set_tracer_provider(self._provider)
 
         self._tracer = trace.get_tracer(self._config.service_name)
+
+    def force_flush(self, timeout_millis: int = 5000) -> bool:
+        """Force flush all pending spans to the exporter."""
+        if self._provider:
+            return self._provider.force_flush(timeout_millis)
+        return False
 
     @property
     def enabled(self) -> bool:
@@ -168,20 +175,26 @@ class AgentTracer:
         if not self.enabled:
             return None
 
-        self._session_span = self._tracer.start_span("agent_session")
+        # Create session span (root, no parent)
+        self._session_span = self._tracer.start_span(
+            "agent_session",
+            kind=SpanKind.SERVER,
+        )
         self._session_span.set_attribute(TraceAttrs.SESSION_ID, session_id)
 
         for key, value in attrs.items():
             self._session_span.set_attribute(key, value)
 
-        # Set as current context
-        ctx = trace.set_span_in_context(self._session_span)
-        self._session_ctx_token = otel_context.attach(ctx)
+        # Store session context for child spans
+        self._session_ctx = trace.set_span_in_context(self._session_span)
 
         return self._session_span
 
     def end_session(self, status: str = "ok", **attrs):
         """End the session span."""
+        # End any child spans first
+        self.end_turn()
+
         if self._session_span:
             for key, value in attrs.items():
                 self._session_span.set_attribute(key, value)
@@ -191,10 +204,7 @@ class AgentTracer:
 
             self._session_span.end()
             self._session_span = None
-
-        if self._session_ctx_token:
-            otel_context.detach(self._session_ctx_token)
-            self._session_ctx_token = None
+            self._session_ctx = None
 
     def add_session_event(self, name: str, **attrs):
         """Add an event to the session span."""
@@ -202,6 +212,10 @@ class AgentTracer:
             self._session_span.add_event(name, attrs)
 
     # ==================== Turn Level ====================
+
+    def has_active_turn(self) -> bool:
+        """Check if there is an active turn span."""
+        return self._turn_span is not None
 
     def start_turn(self, turn_id: int, user_input: str = "", **attrs) -> Optional[Span]:
         """Start a user turn span."""
@@ -211,15 +225,21 @@ class AgentTracer:
         # End previous turn if exists
         self.end_turn()
 
-        parent_ctx = trace.set_span_in_context(self._session_span) if self._session_span else None
-
-        self._turn_span = self._tracer.start_span("user_turn", context=parent_ctx)
+        # Create turn span with session as parent
+        self._turn_span = self._tracer.start_span(
+            "user_turn",
+            context=self._session_ctx,  # Explicit parent context
+            kind=SpanKind.INTERNAL,
+        )
         self._turn_span.set_attribute(TraceAttrs.TURN_ID, turn_id)
         if user_input:
             self._turn_span.set_attribute(TraceAttrs.USER_INPUT, user_input)
 
         for key, value in attrs.items():
             self._turn_span.set_attribute(key, value)
+
+        # Store turn context for child spans (llm, tts)
+        self._turn_ctx = trace.set_span_in_context(self._turn_span)
 
         return self._turn_span
 
@@ -238,6 +258,7 @@ class AgentTracer:
 
             self._turn_span.end()
             self._turn_span = None
+            self._turn_ctx = None
 
     def mark_interrupted(self):
         """Mark the current turn as interrupted."""
@@ -252,14 +273,20 @@ class AgentTracer:
         if not self.enabled:
             return None
 
-        parent_ctx = trace.set_span_in_context(self._turn_span) if self._turn_span else None
-
-        self._llm_span = self._tracer.start_span("llm_node", context=parent_ctx)
+        # Create LLM span with turn as parent
+        self._llm_span = self._tracer.start_span(
+            "llm_node",
+            context=self._turn_ctx,  # Explicit parent context
+            kind=SpanKind.CLIENT,
+        )
         if request_id:
             self._llm_span.set_attribute(TraceAttrs.LLM_REQUEST_ID, request_id)
 
         for key, value in attrs.items():
             self._llm_span.set_attribute(key, value)
+
+        # Store LLM context for child spans (tool calls)
+        self._llm_ctx = trace.set_span_in_context(self._llm_span)
 
         return self._llm_span
 
@@ -267,7 +294,7 @@ class AgentTracer:
         """End the LLM span."""
         if self._llm_span:
             if response_text:
-                self._llm_span.set_attribute(TraceAttrs.LLM_RESPONSE_TEXT, response_text[:1000])  # Truncate
+                self._llm_span.set_attribute(TraceAttrs.LLM_RESPONSE_TEXT, response_text[:1000])
 
             for key, value in attrs.items():
                 self._llm_span.set_attribute(key, value)
@@ -277,11 +304,56 @@ class AgentTracer:
 
             self._llm_span.end()
             self._llm_span = None
+            self._llm_ctx = None
 
     def add_llm_event(self, name: str, **attrs):
         """Add an event to the LLM span."""
         if self._llm_span:
             self._llm_span.add_event(name, attrs)
+
+    # ==================== ASR Level ====================
+
+    def start_asr(self, request_id: str = "", **attrs) -> Optional[Span]:
+        """Start an ASR recognition span."""
+        if not self.enabled:
+            return None
+
+        # Create ASR span with turn as parent (or session if no turn yet)
+        parent_ctx = self._turn_ctx if self._turn_ctx else self._session_ctx
+
+        self._asr_span = self._tracer.start_span(
+            "asr_node",
+            context=parent_ctx,
+            kind=SpanKind.CLIENT,
+        )
+        if request_id:
+            self._asr_span.set_attribute("ten.asr.request_id", request_id)
+
+        for key, value in attrs.items():
+            self._asr_span.set_attribute(key, value)
+
+        return self._asr_span
+
+    def end_asr(self, status: str = "ok", text: str = "", is_final: bool = False, **attrs):
+        """End the ASR span."""
+        if self._asr_span:
+            if text:
+                self._asr_span.set_attribute(TraceAttrs.ASR_TEXT, text[:500])
+            self._asr_span.set_attribute(TraceAttrs.ASR_FINAL, is_final)
+
+            for key, value in attrs.items():
+                self._asr_span.set_attribute(key, value)
+
+            if status == "error":
+                self._asr_span.set_status(OtelStatusCode.ERROR)
+
+            self._asr_span.end()
+            self._asr_span = None
+
+    def add_asr_event(self, name: str, **attrs):
+        """Add an event to the ASR span."""
+        if self._asr_span:
+            self._asr_span.add_event(name, attrs)
 
     # ==================== TTS Level ====================
 
@@ -290,16 +362,22 @@ class AgentTracer:
         if not self.enabled:
             return None
 
-        parent_ctx = trace.set_span_in_context(self._turn_span) if self._turn_span else None
-
-        self._tts_span = self._tracer.start_span("tts_node", context=parent_ctx)
+        # Create TTS span with turn as parent
+        self._tts_span = self._tracer.start_span(
+            "tts_node",
+            context=self._turn_ctx,  # Explicit parent context
+            kind=SpanKind.CLIENT,
+        )
         if text:
-            self._tts_span.set_attribute(TraceAttrs.TTS_INPUT_TEXT, text[:500])  # Truncate
+            self._tts_span.set_attribute(TraceAttrs.TTS_INPUT_TEXT, text[:500])
         if request_id:
             self._tts_span.set_attribute(TraceAttrs.TTS_REQUEST_ID, request_id)
 
         for key, value in attrs.items():
             self._tts_span.set_attribute(key, value)
+
+        # Store TTS context
+        self._tts_ctx = trace.set_span_in_context(self._tts_span)
 
         return self._tts_span
 
@@ -314,6 +392,7 @@ class AgentTracer:
 
             self._tts_span.end()
             self._tts_span = None
+            self._tts_ctx = None
 
     # ==================== Tool Calls ====================
 
@@ -324,9 +403,12 @@ class AgentTracer:
             yield None
             return
 
-        parent_ctx = trace.set_span_in_context(self._llm_span) if self._llm_span else None
-
-        span = self._tracer.start_span("tool_call", context=parent_ctx)
+        # Create tool span with LLM as parent
+        span = self._tracer.start_span(
+            "tool_call",
+            context=self._llm_ctx,  # Explicit parent context
+            kind=SpanKind.CLIENT,
+        )
         span.set_attribute(TraceAttrs.TOOL_NAME, name)
         if arguments:
             span.set_attribute(TraceAttrs.TOOL_ARGUMENTS, arguments[:500])
@@ -351,7 +433,7 @@ class AgentTracer:
         self.start_turn(turn_id, user_input, **attrs)
         try:
             yield self._turn_span
-        except Exception as e:
+        except Exception:
             self.end_turn(status="error")
             raise
         else:
@@ -363,7 +445,7 @@ class AgentTracer:
         self.start_llm(request_id, **attrs)
         try:
             yield self._llm_span
-        except Exception as e:
+        except Exception:
             self.end_llm(status="error")
             raise
         else:
@@ -375,7 +457,7 @@ class AgentTracer:
         self.start_tts(text, request_id, **attrs)
         try:
             yield self._tts_span
-        except Exception as e:
+        except Exception:
             self.end_tts(status="error")
             raise
         else:

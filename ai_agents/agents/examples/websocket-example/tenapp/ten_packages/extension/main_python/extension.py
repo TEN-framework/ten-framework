@@ -89,14 +89,10 @@ class MainControlExtension(AsyncExtension):
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1
 
-        # Start session span when first user joins
-        if self._rtc_user_count == 1:
-            self._tracer.start_session(
-                session_id=self.session_id,
-                **{TraceAttrs.AGENT_NAME: self.name}
-            )
-            self._tracer.add_session_event("user_joined")
+        # Add user joined event to session span
+        self._tracer.add_session_event("user_joined")
 
+        if self._rtc_user_count == 1:
             if self.config and self.config.greeting:
                 await self._send_to_tts(self.config.greeting, True)
                 await self._send_transcript(
@@ -120,6 +116,9 @@ class MainControlExtension(AsyncExtension):
     async def _on_asr_result(self, event: ASRResultEvent):
         self.session_id = event.metadata.get("session_id", "100")
         stream_id = int(self.session_id)
+
+        self.ten_env.log_info(f"[MainControlExtension] ASR result: text='{event.text}', final={event.final}")
+
         if not event.text:
             return
 
@@ -128,11 +127,20 @@ class MainControlExtension(AsyncExtension):
             await self._interrupt()
 
         if event.final:
+            # Create ASR span only for final results with text
+            asr_id = event.metadata.get("id", f"asr-{self.turn_id}")
+            self._tracer.start_asr(
+                request_id=asr_id,
+                **{"ten.asr.language": event.metadata.get("language", "unknown")}
+            )
+            self._tracer.end_asr(text=event.text, is_final=True)
+
             # End previous turn if exists
             self._tracer.end_turn()
 
             # Start new turn
             self.turn_id += 1
+            self.ten_env.log_info(f"[MainControlExtension] Starting turn {self.turn_id} with input: {event.text}")
             self._tracer.start_turn(
                 turn_id=self.turn_id,
                 user_input=event.text,
@@ -151,6 +159,19 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
+        # Lazily create turn and LLM spans if not yet created
+        # This handles the greeting flow which bypasses ASR
+        if not self._tracer.has_active_turn() and event.type == "message":
+            self.turn_id += 1
+            self.ten_env.log_info(f"[MainControlExtension] Starting turn {self.turn_id} (from LLM greeting)")
+            self._tracer.start_turn(
+                turn_id=self.turn_id,
+                user_input="(greeting)",
+            )
+            self._llm_response_text = ""
+            self._tts_started = False
+            self._tracer.start_llm(request_id=f"llm-greeting-{self.turn_id}")
+
         if not event.is_final and event.type == "message":
             sentences, self.sentence_fragment = parse_sentences(
                 self.sentence_fragment, event.delta
@@ -186,6 +207,11 @@ class MainControlExtension(AsyncExtension):
             # End TTS span
             self._tracer.end_tts()
 
+            # End turn span and flush to ensure traces are sent
+            self._tracer.end_turn()
+            self._tracer.force_flush(2000)  # Flush with 2 second timeout
+            self.ten_env.log_info(f"[MainControlExtension] Turn {self.turn_id} completed, traces flushed")
+
         await self._send_transcript(
             "assistant",
             event.text,
@@ -196,6 +222,13 @@ class MainControlExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
+
+        # Start session span immediately when extension starts
+        self._tracer.start_session(
+            session_id=self.session_id,
+            **{TraceAttrs.AGENT_NAME: self.name}
+        )
+        ten_env.log_info(f"[MainControlExtension] Session span started, session_id={self.session_id}")
 
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
