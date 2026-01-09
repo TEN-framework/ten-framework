@@ -41,7 +41,7 @@ AGORA_APP_CERTIFICATE=your_agora_certificate_here
 ### 2. Install Dependencies
 
 ```bash
-cd agents/examples/speechmatics-diarization
+cd agents/examples/speaker-diarization
 task install
 ```
 
@@ -53,7 +53,7 @@ This command will:
 ### 3. Run the Agent
 
 ```bash
-cd agents/examples/speechmatics-diarization
+cd agents/examples/speaker-diarization
 task run
 ```
 
@@ -144,7 +144,7 @@ The playground UI automatically displays speaker labels in the transcript. To fu
 ```bash
 # Run at project root
 cd ai_agents
-docker build -f agents/examples/speechmatics-diarization/Dockerfile -t speechmatics-diarization-app .
+docker build -f agents/examples/speaker-diarization/Dockerfile -t speaker-diarization-app .
 ```
 
 ### Run container
@@ -154,7 +154,7 @@ docker run --rm -it \
   --env-file .env \
   -p 8080:8080 \
   -p 3000:3000 \
-  speechmatics-diarization-app
+  speaker-diarization-app
 ```
 
 ### Access

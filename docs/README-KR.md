@@ -580,7 +580,7 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
-[speechmatics-diarization-example]: ../ai_agents/agents/examples/speechmatics-diarization
+[speechmatics-diarization-example]: ../ai_agents/agents/examples/speaker-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d

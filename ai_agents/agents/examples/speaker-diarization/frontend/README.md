@@ -4,7 +4,7 @@ Standalone UI for the Speechmatics diarization agent. Launches the `diarization_
 
 Setup
 - In this folder, create `.env` with `AGENT_SERVER_URL=http://localhost:8080` (or your TEN server base URL).
-- From the repo root run `task use AGENT=speechmatics-diarization` so the server exposes this graph.
+- From the repo root run `task use AGENT=speaker-diarization` so the server exposes this graph.
 - Ensure server-side `.env` at repo root has `AGORA_APP_ID`, Speechmatics, ElevenLabs, and OpenAI keys configured.
 
 Run
