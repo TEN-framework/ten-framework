@@ -19,6 +19,10 @@ ten_package("default_app_go") {
     "property.json",
   ]
 
+  if(is_win){
+    resources += ["bin/start.py"]
+  }
+
   docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                            [
                              "--dir",

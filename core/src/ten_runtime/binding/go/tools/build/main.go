@@ -675,11 +675,15 @@ func (ab *AppBuilder) runTidyAndGenerate(envs []string) error {
 
 func (ab *AppBuilder) buildGoApp(envs []string) error {
 	// go build -o bin/<app> -v .
+	outputName := ab.pkgName
+	if runtime.GOOS == "windows" {
+		outputName = ab.pkgName + ".exe"
+	}
 	cmdline := []string{
 		"go",
 		"build",
 		"-o",
-		fmt.Sprintf("bin/%s", ab.pkgName),
+		fmt.Sprintf("bin/%s", outputName),
 	}
 
 	if ab.options.BuildFlags != "" {
@@ -949,14 +953,22 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 	var flags string
 
 	switch runtime.GOOS {
-	case "linux":
-		flags = "-Lten_packages/system/ten_runtime_go/lib " +
-			"-lten_runtime_go " +
-			"-Wl,-rpath=$ORIGIN/../ten_packages/system/ten_runtime_go/lib"
-	case "darwin":
-		flags = "-Lten_packages/system/ten_runtime_go/lib " +
-			"-lten_runtime_go " +
-			"-Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime_go/lib"
+	case "linux", "darwin", "windows":
+		cc := ab.cachedEnv["CC"]
+		if(runtime.GOOS == "windows" && cc != "gcc") {
+			// We use gcc as the C compiler by default when using MinGW.
+			log.Printf("Unsupported compiler %s for platform %s, consider using mingw instead.", cc, runtime.GOOS)
+			log.Fatalf("Note that MSVC does not support go_binding yet.")
+		}
+
+		// On Windows with MinGW, static libraries must come before shared library import libraries.
+		// The linker resolves symbols from left to right, so when ten_runtime_go (static) needs
+		// symbols from ten_runtime.dll and ten_utils.dll, those import libraries must come after.
+		flags = "-Lten_packages/system/ten_runtime/lib " +
+			"-Lten_packages/system/ten_runtime_go/lib " +
+			"-lten_utils " +
+			"-lten_runtime " +
+			"-lten_runtime_go"
 	default:
 		log.Fatalf("Unsupported platform %s.\n", runtime.GOOS)
 	}
