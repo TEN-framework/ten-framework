@@ -14,6 +14,7 @@
 #include "ten_utils/lib/json.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/value/type_operation.h"
 
 TEN_TYPE ten_type_from_string(const char *type_str) {
   TEN_ASSERT(type_str, "Invalid argument.");
