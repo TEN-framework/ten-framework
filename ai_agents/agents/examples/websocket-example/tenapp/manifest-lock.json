@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.48",
-      "hash": "d3bcf69707f7157f3e2cea6132534698d1fbaf8a9e7db32699a4015879a0e8e1",
+      "version": "0.11.50",
+      "hash": "6e15537298f2ccf7bafb1643eb11ee051aa6f99899e30c7b8be00f5f224a6f2f",
       "dependencies": [
         {
           "type": "system",
@@ -14,7 +14,7 @@
       ],
       "supports": [
         {
-          "os": "linux",
+          "os": "mac",
           "arch": "x64"
         }
       ]
@@ -22,8 +22,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.30",
-      "hash": "1608448d02897a411f6b863974fcaf12a695e0f588ceab1250e5581344dd0280",
+      "version": "0.7.33",
+      "hash": "c7d9dde401a1680a13816d841c438871b986a559a43eeb004d10bffc44796cce",
       "dependencies": [
         {
           "type": "system",
@@ -115,8 +115,8 @@
     {
       "type": "extension",
       "name": "azure_asr_python",
-      "version": "0.2.3",
-      "hash": "0c1e2e925654da96ddefd4c7ef380eb98c4face335ad5695e8378e9b70a3cedd",
+      "version": "0.2.4",
+      "hash": "852cc92bc3e6b5189e737713c0a711f36ba539a52bc306397e6a69deaf3cb585",
       "dependencies": [
         {
           "type": "system",
@@ -149,8 +149,8 @@
     {
       "type": "extension",
       "name": "bytedance_llm_based_asr",
-      "version": "0.3.10",
-      "hash": "8832ce05b9b162569d3a1dcea9c7ba85eee0df35e27d13a6df7a462e98cd993c",
+      "version": "0.3.12",
+      "hash": "3f776b51daa594c0db8132e4157735f32173bff25e75a217d54cf7b597aaa24e",
       "dependencies": [
         {
           "type": "system",
@@ -166,8 +166,8 @@
     {
       "type": "extension",
       "name": "deepgram_asr_python",
-      "version": "0.2.2",
-      "hash": "635fa11ecbad2afcfdf43d643c23168db3077ebe3acfb862f46bffb15d082834",
+      "version": "0.3.0",
+      "hash": "9563baaff0bf67e385175ee3a4f775381df0f2f6f394f918142fc9edcaee4416",
       "dependencies": [
         {
           "type": "system",
@@ -234,8 +234,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.6",
-      "hash": "08507a5b6436a97bc58d59122e9b0d6d84dc9033e2c5e83ae8b41fc7d6527645",
+      "version": "0.3.8",
+      "hash": "c31d000141217858a709d065e8ab6bcaf7121ff2f3881f7d3fd0e0dab4bc37b2",
       "dependencies": [
         {
           "type": "system",
@@ -698,8 +698,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.48",
-      "hash": "2521c4a3688a72bbdb4cbaf5c7322e57215032b64877e0f2f17d4805daad9b10",
+      "version": "0.11.50",
+      "hash": "10c35b5d98f1853c8c3b6079d3f63fa7ebb1368bc7783e0f03e19b62dc74f150",
       "dependencies": [
         {
           "type": "system",
@@ -712,7 +712,7 @@
       ],
       "supports": [
         {
-          "os": "linux",
+          "os": "mac",
           "arch": "x64"
         }
       ]
@@ -720,11 +720,11 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.48",
-      "hash": "dbc6546da55feccb3758bd39ef5339ed2ce185c7c55a171be75ae54a92a25e66",
+      "version": "0.11.50",
+      "hash": "0fefd2a47ed7a74f6fe741e0e690b9eeb8270a75d79070959cdc992685793b41",
       "supports": [
         {
-          "os": "linux",
+          "os": "mac",
           "arch": "x64"
         }
       ]
@@ -732,8 +732,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.48",
-      "hash": "d8d8eab144df43b85fa9eb477cd450d3d6fd15968922e17bc423cc42761c6c73",
+      "version": "0.11.50",
+      "hash": "1dd97a47f2e957ebd1fed66070d747e793d0fb9d608fdaab2d4aeb8fff56e60b",
       "dependencies": [
         {
           "type": "system",
@@ -746,7 +746,7 @@
       ],
       "supports": [
         {
-          "os": "linux",
+          "os": "mac",
           "arch": "x64"
         }
       ]

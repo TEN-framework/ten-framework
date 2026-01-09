@@ -1,0 +1,4 @@
+# OpenTelemetry dependencies for tracing
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp-proto-grpc>=1.20.0

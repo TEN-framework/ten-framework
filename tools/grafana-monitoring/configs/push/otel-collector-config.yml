@@ -1,5 +1,5 @@
 # OpenTelemetry Collector Configuration - Push Mode
-# Receives OTLP metrics and logs, exports to Prometheus and Loki
+# Receives OTLP metrics, logs, and traces, exports to Prometheus, Loki, and Tempo
 
 receivers:
   otlp:
@@ -40,6 +40,12 @@ exporters:
     tls:
       insecure: true
 
+  # Export traces to Tempo via OTLP
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
   # For debugging: output to logs
   debug:
     verbosity: normal
@@ -59,6 +65,12 @@ service:
       receivers: [otlp]
       processors: [batch, resource]
       exporters: [otlphttp/loki, debug]
+
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [otlp/tempo, debug]
 
   telemetry:
     logs:

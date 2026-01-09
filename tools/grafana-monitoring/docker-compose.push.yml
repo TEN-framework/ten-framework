@@ -2,10 +2,11 @@
 # Use Case: Application uses OTLP exporter, cloud-native deployment
 #
 # Components:
-#   - OpenTelemetry Collector: Receives OTLP metrics and logs
+#   - OpenTelemetry Collector: Receives OTLP metrics, logs, and traces
 #   - Prometheus: Stores metrics (pulled from OTel Collector)
 #   - Loki: Stores logs (receives from OTel Collector via OTLP)
-#   - Grafana: Visualizes metrics and logs
+#   - Tempo: Stores traces (receives from OTel Collector via OTLP)
+#   - Grafana: Visualizes metrics, logs, and traces
 #
 # Usage:
 #   docker-compose -f docker-compose.push.yml up -d
@@ -31,23 +32,25 @@
 #         "service_name": "my-service"
 #       }
 #     }
+#   Traces:
+#     Send OTLP traces to http://localhost:4317 (gRPC) or http://localhost:4318 (HTTP)
 
 networks:
   monitoring:
     driver: bridge
 
 services:
-  # OpenTelemetry Collector - Receives OTLP metrics and logs
+  # OpenTelemetry Collector - Receives OTLP metrics, logs, and traces
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: ten_otel_collector_push
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8889:8889"   # Prometheus exporter
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8889:8889" # Prometheus exporter
     volumes:
       - ./configs/push/otel-collector-config.yml:/etc/otelcol-contrib/config.yaml
-    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    command: [ "--config=/etc/otelcol-contrib/config.yaml" ]
     networks:
       - monitoring
     extra_hosts:
@@ -59,11 +62,26 @@ services:
     image: grafana/loki:latest
     container_name: ten_loki_push
     ports:
-      - "3100:3100"   # Loki HTTP
+      - "3100:3100" # Loki HTTP
     volumes:
       - loki_data:/loki
       - ./configs/push/loki-config.yml:/etc/loki/local-config.yaml
-    command: ["-config.file=/etc/loki/local-config.yaml"]
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Tempo - Distributed tracing backend
+  tempo:
+    image: grafana/tempo:latest
+    container_name: ten_tempo_push
+    ports:
+      - "3200:3200" # Tempo HTTP
+      - "9095:9095" # Tempo gRPC
+    volumes:
+      - tempo_data:/tmp/tempo
+      - ./configs/push/tempo-config.yml:/etc/tempo/tempo.yaml
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
     networks:
       - monitoring
     restart: unless-stopped
@@ -88,7 +106,7 @@ services:
       - otel-collector
     restart: unless-stopped
 
-  # Grafana - Visualization (metrics + traces/logs)
+  # Grafana - Visualization (metrics + traces + logs)
   grafana:
     image: grafana/grafana:latest
     container_name: ten_grafana_push
@@ -107,9 +125,11 @@ services:
     depends_on:
       - prometheus
       - loki
+      - tempo
     restart: unless-stopped
 
 volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  tempo_data:

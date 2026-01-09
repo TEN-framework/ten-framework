@@ -61,10 +61,16 @@ class MainControlExtension(AsyncExtension):
         self.config = MainControlConfig.model_validate_json(config_json)
 
         # Initialize tracing
+        # Configure OTLP endpoint to send traces to OpenTelemetry Collector
+        # The collector forwards traces to Tempo for visualization in Grafana
+        # Default: localhost:4317 (for local grafana-monitoring stack)
+        # Remote: Set TEN_OTLP_ENDPOINT environment variable
+        import os
+        otlp_endpoint = os.getenv("TEN_OTLP_ENDPOINT", "http://10.100.1.211:4317")
         tracing_config = TracingConfig(
-            enabled=True,
-            otlp_endpoint="http://localhost:4317",
-            service_name="ten-voice-agent",
+            enabled=os.getenv("TEN_TRACING_ENABLED", "true").lower() == "true",
+            otlp_endpoint=otlp_endpoint,
+            service_name=os.getenv("TEN_SERVICE_NAME", "ten-voice-agent"),
         )
         self._tracer = initialize_tracing(tracing_config)
         ten_env.log_info(f"[MainControlExtension] Tracing initialized, enabled={self._tracer.enabled}")
