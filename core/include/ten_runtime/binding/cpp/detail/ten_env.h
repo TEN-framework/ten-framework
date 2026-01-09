@@ -619,7 +619,7 @@ class ten_env_t {
 //
 // Note: Use in a single statement for immediate logging. Do not store
 // the builder in a variable as it would delay log output.
-#if 0
+#if false
   class ten_log_builder_t {
    public:
     ten_log_builder_t(ten_env_t &env, TEN_LOG_LEVEL level,
