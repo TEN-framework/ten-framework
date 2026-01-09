@@ -675,11 +675,15 @@ func (ab *AppBuilder) runTidyAndGenerate(envs []string) error {
 
 func (ab *AppBuilder) buildGoApp(envs []string) error {
 	// go build -o bin/<app> -v .
+	outputName := ab.pkgName
+	if runtime.GOOS == "windows" {
+		outputName = ab.pkgName + ".exe"
+	}
 	cmdline := []string{
 		"go",
 		"build",
 		"-o",
-		fmt.Sprintf("bin/%s", ab.pkgName),
+		fmt.Sprintf("bin/%s", outputName),
 	}
 
 	if ab.options.BuildFlags != "" {
