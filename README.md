@@ -28,7 +28,7 @@
 
 </div>
 
-> [!INFO]
+> [!NOTE]
 >
 > We are collaborating with four open-source projects to launch the 2026 New Year PR Challenge. 🎉 Between January 8–18, contributors can submit PRs to TEN Framework and earn cash rewards. 🎁
 >
