@@ -373,25 +373,40 @@ class DeepgramASRExtension(
             category=LOG_CATEGORY_VENDOR,
         )
 
-        # Send error information
-        await self.send_asr_error(
-            ModuleError(
-                module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=error_msg,
-            ),
-            ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=str(error_code) if error_code else "unknown",
-                message=error_msg,
-            ),
-        )
-
-        if not self.stopped and not self.is_connected():
-            self.ten_env.log_warn(
-                "Deepgram connection error unexpectedly. Reconnecting..."
+        if "401" in error_msg:
+            # Send error information
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=error_msg,
+                ),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=str(error_code) if error_code else "unknown",
+                    message=error_msg,
+                ),
             )
-            await self._handle_reconnect()
+        else:
+            # Send error information
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=error_msg,
+                ),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=str(error_code) if error_code else "unknown",
+                    message=error_msg,
+                ),
+            )
+
+            if not self.stopped and not self.is_connected():
+                self.ten_env.log_warn(
+                    "Deepgram connection error unexpectedly. Reconnecting..."
+                )
+                await self._handle_reconnect()
 
     @override
     async def on_close(self) -> None:
