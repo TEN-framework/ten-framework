@@ -649,15 +649,19 @@ class AgoraAnamRecorder:
             self._speak_end_timer_task.cancel()
             self._speak_end_timer_task = None
 
+        event_id = str(uuid.uuid4())
         interrupt_msg = {
             "command": "voice_interrupt",
-            "event_id": str(uuid.uuid4()),
+            "event_id": event_id,
         }
 
         success = await self._send_message(interrupt_msg)
         if success:
-            self.ten_env.log_info("Sent voice_interrupt command")
+            self.ten_env.log_info(
+                f"[ANAM_CMD] voice_interrupt sent (event_id={event_id[:8]})"
+            )
         else:
+            self.ten_env.log_error("[ANAM_CMD] voice_interrupt FAILED")
             await self._handle_error(
                 "Failed to send interrupt message",
                 code=ERROR_CODE_FAILED_TO_SEND_INTERRUPT_MESSAGE,
@@ -665,25 +669,31 @@ class AgoraAnamRecorder:
 
         return success
 
-    async def send_voice_end(self) -> bool:
+    async def send_voice_end(self, source: str = "unknown") -> bool:
         """
         Send voice_end message to Anam immediately.
         Called when tts_audio_end (reason=1) is received, indicating TTS generation complete.
+
+        Args:
+            source: Caller identifier for logging (e.g., "tts_audio_end", "interrupt")
         """
         # Cancel any pending debounce timer
         if self._speak_end_timer_task and not self._speak_end_timer_task.done():
             self._speak_end_timer_task.cancel()
             self._speak_end_timer_task = None
 
-        end_message = {"command": "voice_end", "event_id": str(uuid.uuid4())}
+        event_id = str(uuid.uuid4())
+        end_message = {"command": "voice_end", "event_id": event_id}
         success = await self._send_message(end_message)
 
         if success:
             self.ten_env.log_info(
-                "[ANAM] Sent voice_end (triggered by tts_audio_end reason=1)"
+                f"[ANAM_CMD] voice_end sent (source={source}, event_id={event_id[:8]})"
             )
         else:
-            self.ten_env.log_error("Failed to send voice_end message")
+            self.ten_env.log_error(
+                f"[ANAM_CMD] voice_end FAILED (source={source})"
+            )
 
         return success
 

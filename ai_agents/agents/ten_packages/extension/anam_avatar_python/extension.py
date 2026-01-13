@@ -74,6 +74,7 @@ class AnamAvatarExtension(AsyncExtension):
         self._voice_end_sent_for_request = (
             None  # Track request_id that voice_end was sent for
         )
+        self._interrupt_sent = False  # Prevent duplicate interrupts
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -196,6 +197,12 @@ class AnamAvatarExtension(AsyncExtension):
                     await self.recorder.send(
                         base64_audio_data, sample_rate=target_rate
                     )
+                    # Clear interrupt flag when new audio is sent
+                    if self._interrupt_sent:
+                        self._interrupt_sent = False
+                        self.ten_env.log_debug(
+                            "[ANAM_CMD] Interrupt flag cleared - new audio sent"
+                        )
 
                 except Exception as e:
                     self.ten_env.log_error(f"Error processing audio frame: {e}")
@@ -225,21 +232,26 @@ class AnamAvatarExtension(AsyncExtension):
 
     async def _handle_interrupt(self) -> None:
         """Handle interrupt by clearing audio queue and sending interrupt command."""
-        self.ten_env.log_info("Handling interrupt")
+        # Always clear audio queue
         await self._clear_audio_queue()
+
+        # Skip if interrupt already sent (prevents duplicate voice_end spam)
+        if self._interrupt_sent:
+            self.ten_env.log_info(
+                "[ANAM_CMD] Interrupt already sent, skipping duplicate"
+            )
+            return
+
+        self.ten_env.log_info("Handling interrupt")
 
         if self.recorder and self.recorder.ws_connected():
             # Send voice_end BEFORE interrupt (per Anam requirements)
-            # Always send voice_end on interrupt since user interrupted mid-speech
-            await self.recorder.send_voice_end()
-            self.ten_env.log_info("Sent voice_end before interrupt")
+            await self.recorder.send_voice_end(source="interrupt")
 
             # Then send interrupt command
             success = await self.recorder.interrupt()
             if success:
-                self.ten_env.log_info(
-                    "Successfully sent voice_interrupt command"
-                )
+                self._interrupt_sent = True  # Mark interrupt as sent
             else:
                 self.ten_env.log_error("Failed to send voice_interrupt command")
 
@@ -329,7 +341,9 @@ class AnamAvatarExtension(AsyncExtension):
                             ten_env.log_info(
                                 f"[ANAM_TTS_END] TTS complete - sending voice_end for {request_id}"
                             )
-                            await self.recorder.send_voice_end()
+                            await self.recorder.send_voice_end(
+                                source="tts_audio_end"
+                            )
                             self._voice_end_sent_for_request = request_id
                         else:
                             ten_env.log_info(

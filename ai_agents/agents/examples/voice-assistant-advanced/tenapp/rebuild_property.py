@@ -575,6 +575,63 @@ main_control_eliza = {
 
 # ============ END ELIZA CONFIGURATION ============
 
+# ============ BELLA QUIZ MASTER CONFIGURATION ============
+
+bella_prompt = "You are Bella, a quiz master who asks capital city questions. Keep responses under 30 words and immediately ask the next question after announcing the result."
+bella_greeting = "Hey there, I am Quiz Master Bella, would you like me to quiz you on capital cities?"
+
+gpt51_llm_bella = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": bella_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": bella_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_bella = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": bella_greeting},
+}
+
+# Bella uses same avatar as hellos
+anam_avatar_bella = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "1bed9d5e-5e81-4d98-a04a-21e346bea528",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# ============ END BELLA CONFIGURATION ============
+
 # ============ HELLOS-ONLY CONFIGURATION ============
 
 # Hellos prompt - simplified version for wellness metrics only (no reading phase, no clinical indicators)
@@ -1346,6 +1403,22 @@ new_graphs.append(
         llm_config=gpt51_llm_octopus,
         tts_config=elevenlabs_tts,
         main_control_config=main_control_octopus,
+    )
+)
+
+# Group 10: Bella quiz master with Anam avatar
+print("Creating Bella quiz master graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_gpt_5_1_cartesia_anam",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_bella,
+        tts_config=cartesia_tts_sonic3,
+        main_control_config=main_control_bella,
+        avatar_config=anam_avatar_bella,
     )
 )
 
