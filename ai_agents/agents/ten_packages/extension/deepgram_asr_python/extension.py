@@ -373,7 +373,8 @@ class DeepgramASRExtension(
             category=LOG_CATEGORY_VENDOR,
         )
 
-        if "401" in error_msg:
+        error_criteria = ["400", "401", "402", "403", "404"]
+        if any(code in error_msg for code in error_criteria):
             # Send error information
             await self.send_asr_error(
                 ModuleError(
