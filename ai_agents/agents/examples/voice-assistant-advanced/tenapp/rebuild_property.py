@@ -632,6 +632,62 @@ anam_avatar_bella = {
 
 # ============ END BELLA CONFIGURATION ============
 
+# ============ HALEY BINGO HOST CONFIGURATION ============
+
+haley_prompt = "You are Haley, an energetic and fun bingo host. Call out bingo numbers with enthusiasm, celebrate winners, and keep the energy high. Use phrases like 'Eyes down!', 'Two fat ladies - 88!', 'Legs eleven!'. Keep responses short and punchy under 30 words."
+haley_greeting = "Welcome to Bingo Night! I'm your host Haley. Are you ready to play? Eyes down, let's go!"
+
+gpt51_llm_haley = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": haley_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": haley_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_haley = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": haley_greeting},
+}
+
+anam_avatar_haley = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "a951b7a8-79c8-4fb7-9ff7-c4f79aa6c097",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
+# ============ END HALEY CONFIGURATION ============
+
 # ============ HELLOS-ONLY CONFIGURATION ============
 
 # Hellos prompt - simplified version for wellness metrics only (no reading phase, no clinical indicators)
@@ -1419,6 +1475,22 @@ new_graphs.append(
         tts_config=cartesia_tts_sonic3,
         main_control_config=main_control_bella,
         avatar_config=anam_avatar_bella,
+    )
+)
+
+# Group 11: Haley bingo host with Anam avatar
+print("Creating Haley bingo host graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "haley",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_haley,
+        tts_config=cartesia_tts_sonic3,
+        main_control_config=main_control_haley,
+        avatar_config=anam_avatar_haley,
     )
 )
 

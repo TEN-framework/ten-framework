@@ -33,6 +33,22 @@ curl -s http://localhost:8080/health && echo " API OK"
 curl -s http://localhost:8080/graphs | jq -r '.data[].name'
 ```
 
+### 1a. Optional: Run Playground in Prod Mode (Faster)
+
+After nuclear restart, optionally switch playground to prod mode for faster loading:
+
+```bash
+# Kill only playground (keep API and gd-server running)
+sudo docker exec ten_agent_dev bash -c "kill -9 \$(pgrep -f 'next-server') 2>/dev/null"
+sleep 2
+
+# Start prod playground
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && bun run start > /tmp/playground.log 2>&1"
+```
+
+**Note:** Prod mode requires gd-server (tman designer) on port 49483. If graphs don't appear, do full nuclear restart first.
+
 ### 2. Container Restart Required After .env Changes
 
 ```bash
