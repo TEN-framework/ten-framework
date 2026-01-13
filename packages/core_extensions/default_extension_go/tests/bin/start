@@ -20,23 +20,21 @@ if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
   exit 1
 fi
 
-# Get the .ten/app/ten_packages/system absolute path.
-app_base_dir=$(realpath .ten/app)
-ten_runtime_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime/lib)
-ten_runtime_go_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime_go/lib)
-
 # Jump to the extension directory.
 cd ".ten/app/ten_packages/extension/$extension_name"
 
-export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+# The executable is in .ten/app/bin/, and libraries are in .ten/app/ten_packages/system/ten_runtime/lib/
+# So rpath should be: @loader_path/../ten_packages/system/ten_runtime/lib (macOS) or $ORIGIN/../ten_packages/system/ten_runtime/lib (Linux)
+if [[ "$(uname)" == "Darwin" ]]; then
+  export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime/lib"
+else
+  export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,\$ORIGIN/../ten_packages/system/ten_runtime/lib"
+fi
 
 # Print the current directory.
 echo "Current directory: $(pwd)"
 
 go test -c ./tests/... -o ./.ten/app/bin/"${extension_name}"_test "$@"
-
-export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
-export DYLD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
 
 # Run the test case.
 ./.ten/app/bin/"${extension_name}"_test -test.v

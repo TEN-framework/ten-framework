@@ -969,6 +969,17 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 			"-lten_utils " +
 			"-lten_runtime " +
 			"-lten_runtime_go"
+
+		// Add rpath for runtime library loading.
+		// The executable is in bin/, and libraries are in ten_packages/system/ten_runtime/lib/
+		// Note: Use $ORIGIN directly. Go CGO should pass it through to the linker.
+		// In bash scripts, \$ORIGIN is used because bash interprets $, but in Go code,
+		// we set the environment variable directly, so we can use $ORIGIN without escaping.
+		if runtime.GOOS == "linux" {
+			flags += " -Wl,-rpath,$ORIGIN/../ten_packages/system/ten_runtime/lib"
+		} else if runtime.GOOS == "darwin" {
+			flags += " -Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime/lib"
+		}
 	default:
 		log.Fatalf("Unsupported platform %s.\n", runtime.GOOS)
 	}
