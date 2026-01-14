@@ -70,6 +70,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.last_transcript_start_ms: int = 0
         self.last_transcript_duration_ms: int = 0
         self.last_transcript_is_final: bool = False
+        self.last_transcript_id: str = ""
 
         self.holding = False
         self.holding_final_tokens: list[SonioxTranscriptToken] = []
@@ -458,12 +459,14 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 and translation_tokens
                 and self.last_transcript_text
             ):
+                # Use the saved id from the last transcript
                 await self._send_translation_results(
                     translation_tokens,
                     self.last_transcript_is_final,
                     self.last_transcript_text,
                     self.last_transcript_start_ms,
                     self.last_transcript_duration_ms,
+                    result_id=self.last_transcript_id,
                 )
             # Process transcript and translation pairs
             elif transcript_tokens:
@@ -524,12 +527,19 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         for result in asr_results:
             await self.send_asr_result(result)
+            # After send_asr_result, result.id is set to the correct uuid
+            # (self.uuid may have been reset if result.final is True)
+            # result.id is guaranteed to be set by send_asr_result (it's set to self.uuid)
+            result_id: str = (
+                result.id or self.uuid
+            )  # Fallback to self.uuid if None
 
             # Store last transcript info for potential standalone translations
             self.last_transcript_text = result.text
             self.last_transcript_start_ms = result.start_ms
             self.last_transcript_duration_ms = result.duration_ms
             self.last_transcript_is_final = is_final
+            self.last_transcript_id = result_id
 
             # NOTE: it seems weird to send translation multiple times, but this complexity come from
             # the need to seperate multi-language tokens into multiple asr_result.
@@ -540,6 +550,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                     result.text,
                     result.start_ms,
                     result.duration_ms,
+                    result_id,
                 )
 
     async def _send_translation_results(
@@ -549,6 +560,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         source_text: str,
         start_ms: int,
         duration_ms: int,
+        result_id: str | None = None,
     ) -> None:
         """Send translation results with timing from corresponding transcript."""
         if not translation_tokens:
@@ -557,8 +569,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         # Combine all translation tokens into one text
         text = "".join(token.text for token in translation_tokens)
 
+        # Use provided result_id if available, otherwise fall back to self.uuid
+        # result_id should match the corresponding asr_result.id
+        translation_id = result_id if result_id is not None else self.uuid
+
         translation_result = ASRTranslationResult(
-            id=self.uuid,
+            id=translation_id,
             text=text,
             source_text=source_text,
             final=is_final,
@@ -575,6 +591,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         # Send as Data message with name 'asr_translation_result'
         data = Data.create("asr_translation_result")
         data.set_property_from_json("", translation_result.model_dump_json())
+
+        self.ten_env.log_info(
+            f"send_asr_translation_result: {translation_result.model_dump_json()}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
         await self.ten_env.send_data(data)
 
     def _create_asr_results(
