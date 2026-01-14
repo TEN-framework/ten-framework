@@ -62,21 +62,18 @@ if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
   exit 1
 fi
 
-# Get the .ten/app/ten_packages/system absolute path.
-app_base_dir=$(realpath .ten/app)
-ten_runtime_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime/lib)
-ten_runtime_go_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime_go/lib)
-
 # Jump to the extension directory.
 cd ".ten/app/ten_packages/extension/$extension_name"
 
 # Base CGO flags
 BASE_CGO_CFLAGS=""
+# ten_runtime_go is now a static library, so it doesn't need rpath.
+# Only ten_runtime (shared library) needs rpath for runtime loading.
 # Note: On macOS, we use single -rpath and deduplicated library flags to avoid warnings
 if [[ "$(uname)" == "Darwin" ]]; then
-  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib"
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime/lib"
 else
-  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,\$ORIGIN/../ten_packages/system/ten_runtime/lib"
 fi
 
 # Add sanitizer flags if requested
@@ -104,9 +101,6 @@ echo "GOEXPERIMENT=$GOEXPERIMENT"
 
 go mod tidy
 go test -c $RACE_FLAG -gcflags=all=-d=checkptr=1 ./tests/... -o ./.ten/app/bin/"${extension_name}"_test
-
-export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
-export DYLD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
 
 export GOGC=1
 

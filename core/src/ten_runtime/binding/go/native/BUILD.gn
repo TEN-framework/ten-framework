@@ -7,12 +7,11 @@
 import("//build/options.gni")
 import("//build/ten_runtime/ten.gni")
 
-ten_shared_library("ten_runtime_go") {
-  if (is_mac || is_linux) {
-    add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
-    remove_configs = [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
-  }
-
+# Use static library for ten_runtime_go to prevent undefined symbol error
+# on Windows, because the MinGW linker cannot make --allow-shlib-undefined
+# option work on Windows. Also, the architecture makes more sense for go apps,
+# so we change the library from shared to static for other platforms, too.
+ten_static_library("ten_runtime_go") {
   include_dirs = ten_runtime_common_includes
   include_dirs += [
     "//src",
@@ -20,40 +19,13 @@ ten_shared_library("ten_runtime_go") {
     "${root_gen_dir}/cmake/yyjson/include",
   ]
 
-  cflags = []
+  # Use complete_static_lib to ensure all object files from source_set dependencies
+  # are included in the static library, even if they are not directly referenced.
+  complete_static_lib = true
 
-  # -fPIC are ignored because they are unused for Windows
-  # Ref: https://stackoverflow.com/questions/5674613/compiling-a-dynamically-linked-library
-  #      https://stackoverflow.com/questions/4787069/autoconf-set-fpic-only-when-necessary
-  if (!is_win) {
-    cflags += [ "-fPIC" ]
-  }
-
-  if (!defined(ldflags)) {
-    ldflags = []
-  }
-
-  # Add rpath to find ten_runtime library.
-  if (is_mac) {
-    ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
-  } else if (is_linux || is_mingw) {
-    # MinGW also uses GNU ld and supports rpath
-    ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
-  }
-
-  # Only export "ten" relevant symbols.
-  if (is_mac) {
-    ldflags += [
-      "-Xlinker",
-      "-exported_symbols_list",
-      "-Xlinker",
-      rebase_path("//build/ten_runtime/ld_script/mac"),
-    ]
-  } else if (is_linux) {
-    ldflags += [ "-Wl,--version-script=" +
-                 rebase_path("//build/ten_runtime/ld_script/linux") ]
-  }
-
+  # If ten_runtime_library is a shared library, we link its import library.
+  # If ten_runtime_library is a static library, we link it directly. (But for now
+  # ten_runtime_library is always shared)
   deps = [
     "addon",
     "app",
