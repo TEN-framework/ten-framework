@@ -52,7 +52,7 @@ group("go") {
       deps += [ "exit_signal_go" ]
     }
 
-    if (is_debug) {
+    if (is_debug && !is_win) {
       deps += [ "leak_check_go" ]
     }
   }
