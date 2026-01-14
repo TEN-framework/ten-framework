@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import asyncio
 from typing import Dict, Any
 
 from typing_extensions import override
@@ -27,7 +28,6 @@ from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
 )
 
-from .const import TIMEOUT_CODE
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .recognition import DeepgramASRRecognition, DeepgramASRRecognitionCallback
@@ -141,7 +141,7 @@ class DeepgramASRExtension(
                 callback=self,
             )
 
-            await self.recognition.start()
+            asyncio.create_task(self.recognition.start(timeout=10))
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to start Deepgram connection: {e}")
@@ -372,8 +372,22 @@ class DeepgramASRExtension(
             f"vendor_error: code: {error_code}, reason: {error_msg}",
             category=LOG_CATEGORY_VENDOR,
         )
-        if error_code == TIMEOUT_CODE:
-            await self._handle_reconnect()
+
+        error_criteria = ["400", "401", "402", "403", "404"]
+        if any(code in error_msg for code in error_criteria):
+            # Send error information
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=error_msg,
+                ),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=str(error_code) if error_code else "unknown",
+                    message=error_msg,
+                ),
+            )
         else:
             # Send error information
             await self.send_asr_error(
@@ -388,6 +402,12 @@ class DeepgramASRExtension(
                     message=error_msg,
                 ),
             )
+
+            if not self.stopped and not self.is_connected():
+                self.ten_env.log_warn(
+                    "Deepgram connection error unexpectedly. Reconnecting..."
+                )
+                await self._handle_reconnect()
 
     @override
     async def on_close(self) -> None:
