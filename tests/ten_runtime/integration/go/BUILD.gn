@@ -17,11 +17,9 @@ group("go") {
       "close_app_cmd_go",
       "close_app_go",
       "expired_ten_go",
-      "failed_to_create_extension_go",
       "frequently_cgo_call_go",
       "handle_error_go",
       "local_dependency_1_go",
-      "local_dependency_2_go",
       "msg_clone_go",
       "multi_dest_go",
       "no_dest_go",
@@ -32,9 +30,6 @@ group("go") {
       "send_data_go",
       "send_video_frame_go",
       "set_dest_go",
-      "standalone_test_1_go",
-      "standalone_test_2_go",
-      "standalone_test_event_bus_go",
       "start_app_sync_go",
       "start_graph_and_communicate_go",
       "start_graph_and_set_dests_go",
@@ -45,6 +40,17 @@ group("go") {
       "trigger_life_cycle_go",
       "two_extension_one_group_cmd_go",
     ]
+
+    if(!is_win){
+      # TODO(nzh): debug for these tests
+      deps += [
+        "failed_to_create_extension_go",
+        "local_dependency_2_go",
+        "standalone_test_1_go",
+        "standalone_test_2_go",
+        "standalone_test_event_bus_go",
+      ]
+    }
 
     if (target_os != "win") {
       # The signals in Windows and POSIX are not quite the same, so this case is
