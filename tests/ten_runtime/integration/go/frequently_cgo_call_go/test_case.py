@@ -16,22 +16,6 @@ def test_frequently_cgo_call_go():
 
     my_env = os.environ.copy()
 
-    if sys.platform == "win32":
-        print("test_frequently_cgo_call_go doesn't support win32")
-        assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path,
-            "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path,
-            "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
-        )
-
     app_dir_name = "frequently_cgo_call_go_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "go"
@@ -55,12 +39,48 @@ def test_frequently_cgo_call_go():
     if rc != 0:
         assert False, "Failed to build package."
 
-    server_cmd = os.path.join(base_path, "frequently_cgo_call_go_app/bin/start")
-    client_cmd = os.path.join(base_path, "frequently_cgo_call_go_app_client")
+    if sys.platform == "win32":
+        # client depends on ten_runtime.dll and ten_utils.dll in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
+            )
+            + os.pathsep
+            + my_env.get("PATH", "")
+        )
+    elif sys.platform == "darwin":
+        # client depends on some libraries in the TEN app.
+        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
+            base_path,
+            "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
+        )
+    else:
+        # client depends on some libraries in the TEN app.
+        my_env["LD_LIBRARY_PATH"] = os.path.join(
+            base_path,
+            "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
+        )
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+    if sys.platform == "win32":
+        start_py = os.path.join(
+            base_path, "frequently_cgo_call_go_app/bin/start.py"
+        )
+        server_cmd = [sys.executable, start_py]
+        client_cmd = os.path.join(
+            base_path, "frequently_cgo_call_go_app_client.exe"
+        )
+
+        if not os.path.isfile(start_py):
+            print(f"Server command '{start_py}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(base_path, "frequently_cgo_call_go_app/bin/start")
+        client_cmd = os.path.join(base_path, "frequently_cgo_call_go_app_client")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     if not os.path.isfile(client_cmd):
         print(f"Client command '{client_cmd}' does not exist.")
