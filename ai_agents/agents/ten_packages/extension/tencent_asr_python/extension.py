@@ -56,6 +56,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("on_init")
+
         await super().on_init(ten_env)
         config_json, _ = await ten_env.get_property_to_json()
         dump_file_path = None
@@ -87,7 +89,11 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 ),
             )
 
-        assert self.config is not None
+        if self.config is None:
+            self.ten_env.log_error(
+                "config is None, skip init", category=LOG_CATEGORY_KEY_POINT
+            )
+            return
 
         try:
             log_path = None
@@ -117,7 +123,6 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 f"vendor_error: failed to create TencentAsrClient {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            self.config = None
             await self.send_asr_error(
                 ModuleError(
                     module="asr",
@@ -268,7 +273,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         await self.send_asr_error(
             ModuleError(
                 module="asr",
-                code=ModuleErrorCode.FATAL_ERROR.value,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=response.result or "unknown error",
             ),
         )
