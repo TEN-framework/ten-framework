@@ -18,13 +18,13 @@ pub(crate) struct CategoryExtractor {
 
 impl tracing_subscriber::field::Visit for CategoryExtractor {
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
-        if field.name() == "category" {
+        if field.name() == "ten_category" {
             self.category = Some(value.to_string());
         }
     }
 
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
-        if field.name() == "category" {
+        if field.name() == "ten_category" {
             self.category = Some(format!("{value:?}").trim_matches('"').to_string());
         }
     }
