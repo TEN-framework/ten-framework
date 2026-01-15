@@ -39,13 +39,33 @@ def test_failed_to_create_extension_go():
     if rc != 0:
         assert False, "Failed to build package."
 
-    server_cmd = os.path.join(
-        base_path, "failed_to_create_extension_go_app/bin/start"
-    )
+    if sys.platform == "win32":
+        # server (main.exe) depends on ten_runtime.dll and ten_utils.dll in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                (
+                    "failed_to_create_extension_go_app/ten_packages/"
+                    "system/ten_runtime/lib"
+                ),
+            )
+            + os.pathsep
+            + my_env.get("PATH", "")
+        )
+        start_py = os.path.join(base_path, "failed_to_create_extension_go_app/bin/start.py")
+        server_cmd = [sys.executable, start_py]
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        if not os.path.isfile(start_py):
+            print(f"Server command '{start_py}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(
+            base_path, "failed_to_create_extension_go_app/bin/start"
+        )
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,
