@@ -890,10 +890,10 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should be logged (matching configured rules)
-        info!(category = "auth", "Auth service started"); // Matches auth + info
-        debug!(category = "auth", "Auth service debug message"); // Won't match any configured rules
-        debug!(category = "database", "DB connection pool initialized"); // Matches database + debug
-        info!(category = "unknown", "unknown target message"); // Won't match any configured rules
+        info!(ten_category = "auth", "Auth service started"); // Matches auth + info
+        debug!(ten_category = "auth", "Auth service debug message"); // Won't match any configured rules
+        debug!(ten_category = "database", "DB connection pool initialized"); // Matches database + debug
+        info!(ten_category = "unknown", "unknown target message"); // Won't match any configured rules
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -947,12 +947,12 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should not be logged (level mismatch)
-        debug!(category = "auth", "Auth debug message"); // Won't match: auth only allows info
-        trace!(category = "database", "DB trace message"); // Won't match: database only allows debug
+        debug!(ten_category = "auth", "Auth debug message"); // Won't match: auth only allows info
+        trace!(ten_category = "database", "DB trace message"); // Won't match: database only allows debug
 
         // Messages that should not be logged (category not configured)
-        info!(category = "network", "Network info message");
-        debug!(category = "network", "Network debug message");
+        info!(ten_category = "network", "Network info message");
+        debug!(ten_category = "network", "Network debug message");
 
         // Messages that should not be logged (default category)
         info!("Default category info message");
@@ -1015,18 +1015,18 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Auth logs at different levels
-        info!(category = "auth", "User login successful"); // Should appear in auth_file
-        warn!(category = "auth", "Failed login attempt"); // Should appear in auth_file
-        debug!(category = "auth", "Auth token details"); // Should NOT appear in auth_file
+        info!(ten_category = "auth", "User login successful"); // Should appear in auth_file
+        warn!(ten_category = "auth", "Failed login attempt"); // Should appear in auth_file
+        debug!(ten_category = "auth", "Auth token details"); // Should NOT appear in auth_file
 
         // Database logs at different levels
-        info!(category = "database", "Connection established"); // Should appear in db_file
-        debug!(category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
-        debug!(category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
+        info!(ten_category = "database", "Connection established"); // Should appear in db_file
+        debug!(ten_category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
+        debug!(ten_category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
 
         // Other category logs (should not appear in either file)
-        info!(category = "network", "Server started");
-        debug!(category = "network", "Socket initialized");
+        info!(ten_category = "network", "Server started");
+        debug!(ten_category = "network", "Socket initialized");
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1550,11 +1550,11 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be dropped due to auth=off
-        debug!(category = "auth", "auth-debug-should-not-appear");
-        info!(category = "auth", "auth-info-should-not-appear");
+        debug!(ten_category = "auth", "auth-debug-should-not-appear");
+        info!(ten_category = "auth", "auth-info-should-not-appear");
         // This should pass due to default debug for other categories
-        debug!(category = "database", "db-debug-should-appear");
-        info!(category = "database", "db-info-should-appear");
+        debug!(ten_category = "database", "db-debug-should-appear");
+        info!(ten_category = "database", "db-info-should-appear");
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
