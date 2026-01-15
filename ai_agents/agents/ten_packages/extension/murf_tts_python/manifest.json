@@ -34,7 +34,41 @@
       "properties": {
         "params": {
           "type": "object",
-          "properties": {}
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "voiceId": {
+              "type": "string"
+            },
+            "multiNativeLocale": {
+              "type": "string"
+            },
+            "style": {
+              "type": "string"
+            },
+            "rate": {
+              "type": "float64"
+            },
+            "pitch": {
+              "type": "float64"
+            },
+            "variation": {
+              "type": "float64"
+            },
+            "model": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            }
+          }
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
         }
       }
     }

@@ -26,7 +26,8 @@ class MurfTTSConfig(BaseModel):
             if key in self.params:
                 del self.params[key]
 
-        for key, value in list(self.params.items()):
+        params = dict(self.params)
+        for key, value in params.items():
             if hasattr(self, key):
                 setattr(self, key, value)
                 del self.params[key]

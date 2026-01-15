@@ -14,6 +14,10 @@ from .config import MurfTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.struct import TTSTextInput
 
+MAX_RETRY_TIMES_FOR_TRANSPORT = 5
+WS_MAX_MESSAGE_BYTES = 100_000_000
+TEXT_QUEUE_MAXSIZE = 100
+
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_TTFB_METRIC = 3
@@ -34,14 +38,13 @@ class MurfTTSynthesizer:
         self.ws: WebSocketClientProtocol | None = None
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
-        self.response_msgs: asyncio.Queue[tuple[int, bytes | int]] | None = (
-            response_msgs
-        )
+        self.response_msgs = response_msgs
 
         # Connection management
         self._session_closing = False
         self.first_chunk_of_connection = True
         self._connect_exp_cnt = 0
+        self._max_retries_exceeded = False
         self.websocket_task = None
         self.channel_tasks = []
         self.latest_context_id: str | None = None
@@ -51,7 +54,9 @@ class MurfTTSynthesizer:
         )  # request_id -> first chunk sent time with mark done flag
 
         # Queue for pending text to be sent
-        self.text_input_queue = asyncio.Queue[TTSTextInput]()
+        self.text_input_queue = asyncio.Queue[TTSTextInput](
+            maxsize=TEXT_QUEUE_MAXSIZE
+        )
 
         # Event synchronization
         self._receive_ready_event = asyncio.Event()
@@ -69,17 +74,30 @@ class MurfTTSynthesizer:
         model = self.config.model
 
         # Build query string
-        query_string = f"api-key={self.api_key}&model={model}&sample_rate={sample_rate}&format={audio_format}"
+        query_string = (
+            f"model={model}&sample_rate={sample_rate}&format={audio_format}"
+        )
         return f"{self.base_url}?{query_string}"
+
+    def _build_websocket_headers(self) -> dict[str, str]:
+        """Build WebSocket headers for authentication"""
+        return {"api-key": self.api_key}
+
+    def _format_exception(self, exp: Exception) -> str:
+        return f"{type(exp).__name__}: {exp}"
 
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
         self.ten_env.log_warn(
-            f"Websocket internal error during connecting: {exp}."
+            f"Websocket internal error during connecting: {self._format_exception(exp)}."
         )
         self._connect_exp_cnt += 1
-        if self._connect_exp_cnt > 5:  # MAX_RETRY_TIMES_FOR_TRANSPORT
-            self.ten_env.log_error(f"Max retries (5) exceeded: {str(exp)}")
+        if self._connect_exp_cnt > MAX_RETRY_TIMES_FOR_TRANSPORT:
+            self._max_retries_exceeded = True
+            self._session_closing = True
+            self.ten_env.log_error(
+                f"Max retries ({MAX_RETRY_TIMES_FOR_TRANSPORT}) exceeded: {self._format_exception(exp)}"
+            )
             return exp
         return None  # Return None to continue reconnection
 
@@ -93,9 +111,10 @@ class MurfTTSynthesizer:
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
                 uri=self._build_websocket_url(),
-                max_size=100_000_000,
+                max_size=WS_MAX_MESSAGE_BYTES,
                 compression=None,
                 process_exception=self._process_ws_exception,
+                additional_headers=self._build_websocket_headers(),
             ):
                 self.ws = ws
                 self.first_chunk_of_connection = True
@@ -123,6 +142,11 @@ class MurfTTSynthesizer:
                     self.ten_env.log_debug(
                         f"MURF TTS websocket connection closed: {e}."
                     )
+                    if self._max_retries_exceeded:
+                        self.ten_env.log_error(
+                            "Max retries exceeded, stop reconnecting."
+                        )
+                        return
                     if not self._session_closing:
                         self.ten_env.log_warn(
                             "MURF TTS websocket connection closed, will reconnect."
@@ -153,9 +177,15 @@ class MurfTTSynthesizer:
                         self._connect_exp_cnt = 0
                         continue
 
+            if self._max_retries_exceeded:
+                self.ten_env.log_error(
+                    "Max retries exceeded, websocket loop stopped."
+                )
+                return
+
         except Exception as e:
             self.ten_env.log_error(
-                f"Exception in MURF TTS websocket process: {e}"
+                f"Exception in MURF TTS websocket process: {self._format_exception(e)}"
             )
         finally:
             if self.ws:
@@ -183,6 +213,14 @@ class MurfTTSynthesizer:
         # Send clear command to MURF TTS
         asyncio.create_task(self._send_clear_command(context_id))
 
+    def clear_synthesizer(self, context_id: str) -> None:
+        """Public wrapper to clear synthesizer for context ID"""
+        self._clear_synthesizer(context_id)
+
+    def clear_text_queue(self) -> None:
+        """Public wrapper to clear pending text queue"""
+        self._clear_text_queue()
+
     async def _send_clear_command(self, context_id: str) -> None:
         """Send clear command to MURF TTS"""
         try:
@@ -195,7 +233,7 @@ class MurfTTSynthesizer:
                 )
         except Exception as e:
             self.ten_env.log_error(
-                f"Exception in MURF TTS send_clear_command: {e}"
+                f"Exception in MURF TTS send_clear_command: {self._format_exception(e)}"
             )
             raise e
 
@@ -261,7 +299,7 @@ class MurfTTSynthesizer:
                 except ModuleVendorException as e:
                     # Vendor errors should be propagated to the extension
                     self.ten_env.log_error(
-                        f"Vendor error handling MURF TTS server message: {e}"
+                        f"Vendor error handling MURF TTS server message: {self._format_exception(e)}"
                     )
                     if self.response_msgs:
                         await self.response_msgs.put(
@@ -269,14 +307,16 @@ class MurfTTSynthesizer:
                         )
                 except Exception as e:
                     self.ten_env.log_error(
-                        f"Error handling MURF TTS server message: {e}"
+                        f"Error handling MURF TTS server message: {self._format_exception(e)}"
                     )
 
         except asyncio.CancelledError:
             self.ten_env.log_debug("MURF TTS receive loop cancelled")
             raise
         except Exception as e:
-            self.ten_env.log_error(f"Exception in MURF TTS receive_loop: {e}")
+            self.ten_env.log_error(
+                f"Exception in MURF TTS receive_loop: {self._format_exception(e)}"
+            )
             raise e
 
     async def _handle_server_message(self, message):
@@ -288,9 +328,14 @@ class MurfTTSynthesizer:
 
             if "audio" in data:
                 audio_data = base64.b64decode(data["audio"])
-                # if it is first packet then remove 44 byte header
-                if self.first_chunk_of_connection and len(audio_data) > 44:
-                    audio_data = audio_data[44:]
+                # First packet may contain a 44-byte header
+                if self.first_chunk_of_connection:
+                    if len(audio_data) > 44:
+                        audio_data = audio_data[44:]
+                    else:
+                        self.ten_env.log_warn(
+                            "First audio chunk too small to strip header; passing through."
+                        )
                     self.first_chunk_of_connection = False
                 # if context is in cleared context ids then skip
                 if context_id in self.cleared_context_ids:
@@ -334,8 +379,12 @@ class MurfTTSynthesizer:
         except ModuleVendorException:
             raise
         except Exception as e:
-            self.ten_env.log_error(f"Failed to parse MURF TTS message: {e}")
-            raise RuntimeError(f"Failed to parse MURF TTS message: {e}") from e
+            self.ten_env.log_error(
+                f"Failed to parse MURF TTS message: {self._format_exception(e)}"
+            )
+            raise RuntimeError(
+                f"Failed to parse MURF TTS message: {self._format_exception(e)}"
+            ) from e
 
     async def _check_for_ttfb(self, context_id: str) -> None:
         """Check for TTFB metric"""
@@ -467,8 +516,8 @@ class MurfTTSClient:
             )
 
         if self.synthesizer:
-            self.synthesizer._clear_text_queue()
-            self.synthesizer._clear_synthesizer(request_id)
+            self.synthesizer.clear_text_queue()
+            self.synthesizer.clear_synthesizer(request_id)
 
         self.ten_env.log_debug(
             f"MurfTTS synthesizer cleared successfully for request_id: {request_id}"
@@ -481,7 +530,7 @@ class MurfTTSClient:
     def clear_synthesizer(self, request_id: str):
         """Clear MurfTTS synthesizer for request_id"""
         if self.synthesizer:
-            self.synthesizer._clear_synthesizer(request_id)
+            self.synthesizer.clear_synthesizer(request_id)
 
         self.ten_env.log_debug(
             f"MurfTTS synthesizer cleared successfully for request_id: {request_id}"
