@@ -5,6 +5,7 @@ Test standalone_test_1_go.
 import platform
 import subprocess
 import os
+import sys
 from sys import stdout
 from .utils import build_config, fs_utils
 
@@ -81,9 +82,15 @@ def test_standalone_test_1_go():
     # Step 3:
     #
     # Run the test.
-    test_cmd = [
-        "tests/bin/start",
-    ]
+    if sys.platform == "win32":
+        test_cmd = [
+            sys.executable,
+            "tests/bin/start.py"
+        ]
+    else:
+        test_cmd = [
+            "tests/bin/start",
+        ]
 
     build_config_args = build_config.parse_build_config(
         os.path.join(root_dir, "tgn_args.txt"),
