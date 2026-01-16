@@ -143,8 +143,25 @@ ten_shared_library("ten_runtime_python") {
     output_extension = "so"
   } else if (is_win) {
     # On Windows, Python C extensions must be .pyd files.
-    # We also prepend "lib" to match the module name "libten_runtime_python".
-    output_name = "libten_runtime_python"
+    # Python requires the module name: "from libten_runtime_python import ..."
+    # For MinGW: Use output_name="ten_runtime_python" to generate:
+    #   - ten_runtime_python.pyd (will be renamed to libten_runtime_python.pyd)
+    #   - libten_runtime_python.pyd.a (import library with auto "lib" prefix)
+    # For MSVC: Use output_name="libten_runtime_python" directly.
+    if (is_mingw) {
+      output_name = "ten_runtime_python"
+    } else {
+      output_name = "libten_runtime_python"
+    }
     output_extension = "pyd"
+  }
+}
+
+# For MinGW, rename the .pyd file to include "lib" prefix for Python import
+if (is_win && is_mingw) {
+  copy("ten_runtime_python_rename") {
+    sources = [ "${root_out_dir}/ten_runtime_python.pyd" ]
+    outputs = [ "${root_out_dir}/libten_runtime_python.pyd" ]
+    deps = [ ":ten_runtime_python" ]
   }
 }

@@ -61,6 +61,11 @@ ten_package("ten_python_binding_system_package") {
   }
 
   deps = [ "native:ten_runtime_python" ]
+
+  # For MinGW, also depend on the rename target to ensure libten_runtime_python.pyd exists
+  if (is_win && is_mingw) {
+    deps += [ "native:ten_runtime_python_rename" ]
+  }
 }
 
 if (ten_enable_ten_manager) {
