@@ -103,6 +103,8 @@ See the [Example code][voice-assistant-example] for more details.
 
 [Example code][doodler-example]
 
+<br>
+
 ![divider][divider-light]
 ![divider][divider-dark]
 
