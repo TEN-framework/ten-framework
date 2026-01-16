@@ -189,7 +189,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     message=str(e),
                 ),
                 ModuleErrorVendorInfo(
-                    vendor="bytedance_llm_based_asr",
+                    vendor=self.vendor(),
                     code="CONFIG_ERROR",
                     message=f"Configuration validation failed: {str(e)}",
                 ),
@@ -426,7 +426,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     message=str(error),
                 ),
                 ModuleErrorVendorInfo(
-                    vendor="bytedance_llm_based_asr",
+                    vendor=self.vendor(),
                     code=str(error_code),
                     message=str(error),
                 ),
@@ -504,7 +504,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         asr_info = copy.deepcopy(base_metadata)
 
         # Add vendor field to asr_info
-        asr_info["vendor"] = "bytedance_bigmodel"
+        asr_info["vendor"] = self.vendor()
 
         # Add additional fields to asr_info if provided
         if additional_fields:
@@ -711,7 +711,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         message=error_message,
                     ),
                     ModuleErrorVendorInfo(
-                        vendor="bytedance_llm_based_asr",
+                        vendor=self.vendor(),
                         code=str(result.code),
                         message=error_message,
                     ),
@@ -895,7 +895,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
             # Create ModuleErrorVendorInfo object
             vendor_info = ModuleErrorVendorInfo(
-                vendor="bytedance_llm_based_asr",
+                vendor=self.vendor(),
                 code=str(error_code),
                 message=error_message,
             )
