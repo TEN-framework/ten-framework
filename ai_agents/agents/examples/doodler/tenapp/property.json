@@ -2,7 +2,7 @@
   "ten": {
     "predefined_graphs": [
       {
-        "name": "voice_assistant",
+        "name": "voice_image_kids",
         "auto_start": true,
         "graph": {
           "nodes": [
@@ -14,7 +14,7 @@
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
+                "channel": "voice_image_kids",
                 "stream_id": 1234,
                 "remote_stream_id": 123,
                 "subscribe_audio": true,
@@ -26,46 +26,56 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "deepgram_asr_python",
+              "addon": "openai_asr_python",
               "extension_group": "stt",
               "property": {
-                "params": {
-                  "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US",
-                  "model": "nova-3"
-                }
+                "api_key": "${env:OPENAI_API_KEY}",
+                "model": "whisper-1",
+                "language": "en"
               }
             },
             {
               "type": "extension",
               "name": "llm",
               "addon": "openai_llm2_python",
-              "extension_group": "chatgpt",
+              "extension_group": "llm",
               "property": {
                 "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
-                "frequency_penalty": 0.9,
-                "model": "${env:OPENAI_MODEL}",
+                "model": "${env:OPENAI_MODEL|gpt-4o-mini}",
                 "max_tokens": 512,
-                "prompt": "",
-                "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "TEN Agent connected. How can I help you today?",
+                "prompt": "You are a friendly AI art assistant for kids! When children describe what they want to draw, help them create amazing doodles.\n\nGuidelines:\n- Keep responses short, fun, and encouraging\n- When they describe an image idea, use the generate_image tool immediately\n- Always request simple hand-drawn doodle line art on white paper\n- Use only two colors: the line color and the white background (no shading, gradients, or fills)\n- Default to black lines unless the child or UI specifies another line color\n- Avoid 3D, animation, realism, or painterly rendering\n- Always say \"drawing\" instead of \"generating\"\n- After drawing, celebrate their creativity!\n- If the image can't be created, gently suggest something similar\n\nExample:\nKid: \"I want a purple dragon!\"\nYou: \"Ooh, a purple dragon! Let me draw that for you!\" [calls generate_image with a simple doodle prompt: purple lines on white paper, two colors only]",
+                "greeting": "Hey doodle buddy! Ready to draw together? Tell me what you want to doodle!",
                 "max_memory_length": 10
               }
             },
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "openai_tts2_python",
               "extension_group": "tts",
               "property": {
-                "dump": false,
-                "dump_path": "./",
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
+                  "api_key": "${env:OPENAI_API_KEY}",
+                  "model": "tts-1",
+                  "voice": "nova",
+                  "speed": 1.0
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "image_gen_tool",
+              "addon": "openai_gpt_image_python",
+              "extension_group": "tools",
+              "property": {
+                "params": {
+                  "api_key": "${env:OPENAI_API_KEY}",
+                  "model": "dall-e-3",
+                  "size": "1024x1024",
+                  "quality": "standard",
+                  "response_format": "url",
+                  "fallback_model": "dall-e-3"
                 }
               }
             },
@@ -75,7 +85,7 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "Hey doodle buddy! Ready to draw together? Tell me what you want to doodle!"
               }
             },
             {
@@ -84,38 +94,6 @@
               "addon": "message_collector2",
               "extension_group": "transcriber",
               "property": {}
-            },
-            {
-              "type": "extension",
-              "name": "weatherapi_tool_python",
-              "addon": "weatherapi_tool_python",
-              "extension_group": "default",
-              "property": {
-                "api_key": "${env:WEATHERAPI_API_KEY|}"
-              }
-            },
-            {
-              "type": "extension",
-              "name": "openai_gpt_image_python",
-              "addon": "openai_gpt_image_python",
-              "extension_group": "default",
-              "property": {
-                "params": {
-                  "api_key": "${env:OPENAI_API_KEY|}",
-                  "base_url": "${env:OPENAI_IMAGE_BASE_URL|}",
-                  "model": "gpt-image-1.5",
-                  "size": "1024x1024",
-                  "quality": "standard",
-                  "n": 1,
-                  "response_format": "url",
-                  "vendor": "openai",
-                  "azure_endpoint": "${env:AZURE_OPENAI_IMAGE_ENDPOINT|}",
-                  "azure_api_version": "${env:AZURE_OPENAI_IMAGE_API_VERSION|}",
-                  "fallback_model": "dall-e-3"
-                },
-                "dump": false,
-                "dump_path": "./openai_image_responses.json"
-              }
             },
             {
               "type": "extension",
@@ -145,10 +123,7 @@
                   ],
                   "source": [
                     {
-                      "extension": "weatherapi_tool_python"
-                    },
-                    {
-                      "extension": "openai_gpt_image_python"
+                      "extension": "image_gen_tool"
                     }
                   ]
                 }
@@ -159,6 +134,32 @@
                   "source": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "content_data",
+                  "source": [
+                    {
+                      "extension": "image_gen_tool"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "message",
+                  "source": [
+                    {
+                      "extension": "image_gen_tool"
                     }
                   ]
                 }
@@ -190,19 +191,6 @@
                   "source": [
                     {
                       "extension": "message_collector"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "message_collector",
-              "data": [
-                {
-                  "name": "content_data",
-                  "source": [
-                    {
-                      "extension": "openai_gpt_image_python"
                     }
                   ]
                 }

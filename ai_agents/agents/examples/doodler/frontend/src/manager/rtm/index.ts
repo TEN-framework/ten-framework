@@ -34,6 +34,36 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     this._client = null;
   }
 
+  private async _sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async _subscribeWithRetry(
+    rtm: RTMClient,
+    channel: string,
+    options: {
+      withMessage: boolean;
+      withPresence: boolean;
+      beQuiet: boolean;
+      withMetadata: boolean;
+      withLock: boolean;
+    }
+  ) {
+    const delays = [150, 400, 800];
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < delays.length + 1; attempt += 1) {
+      try {
+        return await rtm.subscribe(channel, options);
+      } catch (err) {
+        lastError = err;
+        if (attempt < delays.length) {
+          await this._sleep(delays[attempt]);
+        }
+      }
+    }
+    throw lastError;
+  }
+
   async init({
     channel,
     userId,
@@ -59,9 +89,18 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     await rtm.login({ token });
     try {
       // subscribe message channel(will be created automatically)
-      const subscribeResult = await rtm.subscribe(channel, {
+      const subscribeOptions = {
         withMessage: true,
-      });
+        withPresence: false,
+        beQuiet: false,
+        withMetadata: false,
+        withLock: false,
+      };
+      const subscribeResult = await this._subscribeWithRetry(
+        rtm,
+        channel,
+        subscribeOptions
+      );
       console.log(
         "[RTM] Subscribe Message Channel success!: ",
         subscribeResult
@@ -74,6 +113,11 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       this._listenRtmEvents();
     } catch (status) {
       console.error("Failed to Create/Join Message Channel", status);
+      try {
+        await rtm.logout();
+      } catch {
+        // ignore
+      }
     }
   }
 

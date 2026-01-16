@@ -1,0 +1,568 @@
+@import "tailwindcss";
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@layer utilities {
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html,
+  body {
+    color-scheme: light;
+    font-family: ui-rounded, "PingFang SC", system-ui, -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    height: 100%;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  html {
+    background-color: hsl(var(--background));
+  }
+}
+
+@layer base {
+  :root {
+    --background: 43 100% 97%;
+    --foreground: 24 22% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 22% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 22% 12%;
+    --primary: 20 92% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 52% 92%;
+    --secondary-foreground: 24 22% 12%;
+    --muted: 40 35% 90%;
+    --muted-foreground: 24 10% 38%;
+    --accent: 190 70% 92%;
+    --accent-foreground: 24 22% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 24 18% 82%;
+    --input: 24 18% 82%;
+    --ring: 20 92% 55%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.75rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .doodle-paper {
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(
+        1200px 820px at 10% 10%,
+        rgba(255, 214, 165, 0.55),
+        transparent 65%
+      ),
+      radial-gradient(
+        1000px 700px at 86% 18%,
+        rgba(168, 231, 255, 0.4),
+        transparent 62%
+      ),
+      radial-gradient(
+        980px 740px at 28% 92%,
+        rgba(255, 168, 214, 0.26),
+        transparent 62%
+      ),
+      radial-gradient(
+        820px 580px at 72% 72%,
+        rgba(255, 235, 140, 0.24),
+        transparent 60%
+      ),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.55));
+  }
+
+  .doodle-wash {
+    background-image:
+      radial-gradient(circle at 12% 22%, rgba(255, 110, 180, 0.16), transparent 52%),
+      radial-gradient(circle at 88% 18%, rgba(96, 211, 255, 0.18), transparent 48%),
+      radial-gradient(circle at 30% 82%, rgba(121, 235, 178, 0.16), transparent 52%),
+      radial-gradient(circle at 72% 82%, rgba(255, 210, 120, 0.14), transparent 50%);
+    mix-blend-mode: multiply;
+    filter: blur(18px);
+    opacity: 0.55;
+  }
+
+  .doodle-tile {
+    background-image:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27320%27%20height%3D%27320%27%20viewBox%3D%270%200%20320%20320%27%20fill%3D%27none%27%20stroke%3D%27%23111%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%2732%27%20cy%3D%2732%27%20r%3D%2710%27/%3E%3Cpath%20d%3D%27M32%206v8M32%2050v8M6%2032h8M50%2032h8M14%2014l6%206M44%2044l6%206M50%2014l-6%206M14%2050l6-6%27/%3E%3Cpath%20d%3D%27M96%2020l6%2014%2014%206-14%206-6%2014-6-14-14-6%2014-6%206-14z%27/%3E%3Cpath%20d%3D%27M144%2044l4%2010%2010%204-10%204-4%2010-4-10-10-4%2010-4%204-10z%27/%3E%3Cpath%20d%3D%27M232%2022c-8-10-24-6-24%206%200%2014%2024%2026%2024%2026s24-12%2024-26c0-12-16-16-24-6z%27/%3E%3Cpath%20d%3D%27M68%20104c0-8%208-14%2016-10%206-10%2024-6%2022%208%2010%202%2012%2016%200%2018-8%202-28%202-38-2-8-4-6-14%200-14z%27/%3E%3Cpath%20d%3D%27M200%2088l30-8%2020%2018-8%2024-26%204-18-18%202-20z%27/%3E%3Cpath%20d%3D%27M34%20170c24-18%2044-12%2062-2%27/%3E%3Cpath%20d%3D%27M90%20158l12%204-8%2010%27/%3E%3Cpath%20d%3D%27M140%20150c8-10%2024-14%2036-4-8%2012-20%2018-36%2012%200-4%202-6%204-8%27/%3E%3Cpath%20d%3D%27M220%20164l10%2018%2020%204-16%2010-4%2020-10-16-20-4%2016-10%204-20z%27/%3E%3Cpath%20d%3D%27M80%20228c-10-6-22-4-28%206%2010%208%2022%2010%2030%206%27/%3E%3Cpath%20d%3D%27M160%20230c-6-16%204-34%2022-38-16%2010-18%2032-4%2044-12%204-22%200-18-6z%27/%3E%3Cpath%20d%3D%27M230%20236l0%2030%27/%3E%3Cpath%20d%3D%27M218%20252l24%200%27/%3E%3Cpath%20d%3D%27M252%20244l12%208-12%208%27/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 240px 240px;
+    background-position: 0 0;
+    mix-blend-mode: multiply;
+    opacity: 0.24;
+  }
+
+  .crayon-border {
+    position: relative;
+    border-radius: 22px;
+    border: 2px solid rgba(18, 18, 18, 0.55);
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+
+  .crayon-border::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 2px dashed rgba(18, 18, 18, 0.2);
+    opacity: 0.6;
+    transform: rotate(-0.4deg);
+    pointer-events: none;
+  }
+
+  .crayon-control {
+    position: relative;
+    border: 2px solid rgba(18, 18, 18, 0.55);
+    border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(18, 18, 18, 0.08);
+  }
+
+  .crayon-control::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px dashed rgba(18, 18, 18, 0.2);
+    opacity: 0.55;
+    transform: rotate(-0.25deg);
+    pointer-events: none;
+  }
+
+  .crayon-bubble {
+    position: relative;
+    border-radius: 18px;
+    border-width: 2px;
+    border-style: solid;
+    box-shadow: 0 3px 0 rgba(18, 18, 18, 0.08);
+  }
+
+  .crayon-bubble::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px dashed rgba(18, 18, 18, 0.18);
+    opacity: 0.55;
+    transform: rotate(0.3deg);
+    pointer-events: none;
+  }
+
+  .doodle-image-frame {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 30px;
+    overflow: hidden;
+  }
+
+  .doodle-image-frame::after {
+    content: none;
+  }
+
+  .doodle-dream {
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(124, 255, 250, 0.38), transparent 55%),
+      radial-gradient(circle at 80% 25%, rgba(255, 122, 216, 0.3), transparent 55%),
+      radial-gradient(circle at 45% 75%, rgba(255, 204, 102, 0.26), transparent 60%),
+      radial-gradient(circle at 70% 80%, rgba(116, 198, 255, 0.26), transparent 65%);
+    filter: blur(22px) saturate(1.15);
+    transform: scale(1.08);
+  }
+
+  .doodle-dream--classic {
+    filter: blur(24px) saturate(1.05);
+  }
+
+  .doodle-dream--neon {
+    filter: blur(18px) saturate(1.45) contrast(1.06);
+  }
+
+  .doodle-vignette {
+    background: radial-gradient(
+      closest-side at 50% 44%,
+      transparent 68%,
+      rgba(32, 16, 8, 0.14)
+    );
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+
+  .doodle-board {
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.52)),
+      radial-gradient(
+        900px 600px at 20% 0%,
+        rgba(255, 237, 213, 0.6),
+        transparent 62%
+      ),
+      radial-gradient(
+        900px 600px at 80% 100%,
+        rgba(230, 245, 255, 0.58),
+        transparent 62%
+      );
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    box-shadow: 0 28px 70px rgba(34, 18, 10, 0.18);
+    backdrop-filter: blur(10px);
+  }
+
+  .doodle-board-grid {
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.04) 0,
+        rgba(0, 0, 0, 0.04) 1px,
+        transparent 1px,
+        transparent 32px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.04) 0,
+        rgba(0, 0, 0, 0.04) 1px,
+        transparent 1px,
+        transparent 32px
+      );
+    opacity: 0.45;
+  }
+
+  .doodle-palette {
+    border: 1px solid rgba(0, 0, 0, 0.11);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 18px 50px rgba(34, 18, 10, 0.18);
+    padding: 14px;
+    backdrop-filter: blur(12px);
+  }
+
+  .doodle-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 10px 14px;
+    border-radius: 9999px;
+    box-shadow: 0 8px 24px rgba(34, 18, 10, 0.12);
+    backdrop-filter: blur(12px);
+  }
+
+  .doodle-logo__mark {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #f97316, #ff7ad8);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .doodle-logo__text {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .toy-board-frame {
+    border-radius: 56px;
+    padding: 18px 18px 14px;
+    background: linear-gradient(180deg, #4b86ff 0%, #2e59d9 60%, #254ab8 100%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+      0 26px 70px rgba(24, 25, 58, 0.25),
+      inset 0 10px 22px rgba(255, 255, 255, 0.18),
+      inset 0 -14px 30px rgba(0, 0, 0, 0.18);
+    position: relative;
+    z-index: 0;
+  }
+
+  .toy-board-frame::before {
+    content: "";
+    position: absolute;
+    inset: 12px 12px auto 12px;
+    height: 84px;
+    border-radius: 48px;
+    background: radial-gradient(
+      700px 120px at 50% 0%,
+      rgba(255, 255, 255, 0.22),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .toy-board-frame::after {
+    content: "";
+    position: absolute;
+    inset: 18px 22px 10px 22px;
+    border-radius: 54px;
+    background: rgba(16, 22, 56, 0.28);
+    transform: translateY(22px);
+    filter: blur(22px);
+    opacity: 0.65;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .toy-board-sticker {
+    height: 44px;
+    width: 44px;
+    border-radius: 9999px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow:
+      0 10px 22px rgba(0, 0, 0, 0.18),
+      inset 0 10px 18px rgba(255, 255, 255, 0.28);
+    position: relative;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  .toy-board-sticker:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 14px 26px rgba(0, 0, 0, 0.2),
+      inset 0 10px 18px rgba(255, 255, 255, 0.28);
+  }
+
+  .toy-board-sticker__shine {
+    position: absolute;
+    inset: 9px 10px auto 10px;
+    height: 14px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.38);
+    transform: rotate(-14deg);
+    pointer-events: none;
+  }
+
+  .toy-board-bezel {
+    border-radius: 48px;
+    padding: 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(233, 238, 248, 0.9));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+      inset 0 16px 28px rgba(255, 255, 255, 0.5),
+      inset 0 -18px 26px rgba(0, 0, 0, 0.12);
+  }
+
+  .toy-board-screen {
+    border-radius: 38px;
+    background: linear-gradient(180deg, rgba(248, 248, 248, 0.95), rgba(236, 236, 236, 0.95));
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -18px 40px rgba(0, 0, 0, 0.18);
+    position: relative;
+  }
+
+  .toy-board-screen::after {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 30px;
+    border: 2px dashed rgba(17, 17, 17, 0.2);
+    box-shadow: 0 3px 0 rgba(18, 18, 18, 0.08);
+    pointer-events: none;
+  }
+
+  .toy-board-pen-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toy-board-pen-slot__well {
+    width: 100%;
+    height: 100%;
+    border-radius: 44px;
+    background: linear-gradient(180deg, #2b56d3, #2244b6 75%, #1a3795);
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    box-shadow:
+      inset 0 16px 24px rgba(255, 255, 255, 0.16),
+      inset 0 -18px 30px rgba(0, 0, 0, 0.22);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .toy-board-pen-slot__cord {
+    position: absolute;
+    left: 8px;
+    top: 34px;
+    width: 28px;
+    height: 10px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    transform: rotate(6deg);
+  }
+
+  .toy-board-pen-slot__stylus {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 10px;
+  }
+
+  .toy-board-bottom {
+    position: relative;
+    margin-top: 14px;
+    height: 44px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(28, 54, 148, 0.55), rgba(12, 22, 70, 0.28));
+    box-shadow:
+      inset 0 10px 18px rgba(255, 255, 255, 0.12),
+      inset 0 -14px 22px rgba(0, 0, 0, 0.25);
+  }
+
+  .toy-board-bottom__rail {
+    position: absolute;
+    left: 16px;
+    right: 66px;
+    top: 16px;
+    height: 12px;
+    border-radius: 9999px;
+    background: rgba(11, 18, 32, 0.22);
+    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.25);
+  }
+
+  .toy-board-bottom__knob {
+    position: absolute;
+    right: 14px;
+    top: 8px;
+    height: 28px;
+    width: 44px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, #ffe16f, #ffb000);
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    box-shadow:
+      0 10px 18px rgba(0, 0, 0, 0.22),
+      inset 0 10px 14px rgba(255, 255, 255, 0.26);
+  }
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
+}
