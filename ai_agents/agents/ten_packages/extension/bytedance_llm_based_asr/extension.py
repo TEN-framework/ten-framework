@@ -415,22 +415,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         """Handle ASR errors."""
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
 
-        # Check if error is reconnectable
+        # Always send error regardless of whether it's reconnectable
+        await self.send_asr_error(
+            ModuleError(
+                module=ModuleType.ASR,
+                code=error_code,
+                message=str(error),
+            ),
+            ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(error_code),
+                message=str(error),
+            ),
+        )
+
+        # If error is reconnectable and not stopped, attempt reconnection
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
-        else:
-            await self.send_asr_error(
-                ModuleError(
-                    module=ModuleType.ASR,
-                    code=error_code,
-                    message=str(error),
-                ),
-                ModuleErrorVendorInfo(
-                    vendor=self.vendor(),
-                    code=str(error_code),
-                    message=str(error),
-                ),
-            )
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic with exponential backoff (min delay: 0.5s, max delay: max_retry_delay).
@@ -883,24 +884,22 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
 
-        # Check if error is reconnectable
+        # Always send error regardless of whether it's reconnectable
+        module_error = ModuleError(
+            module=ModuleType.ASR,
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=error_message,
+        )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(error_code),
+            message=error_message,
+        )
+        await self.send_asr_error(module_error, vendor_info)
+
+        # If error is reconnectable and not stopped, attempt reconnection
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
-        else:
-            # Create ModuleError object
-            module_error = ModuleError(
-                module=ModuleType.ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=error_message,
-            )
-            # Create ModuleErrorVendorInfo object
-            vendor_info = ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=str(error_code),
-                message=error_message,
-            )
-            # Call send_asr_error
-            await self.send_asr_error(module_error, vendor_info)
 
     def _on_connection_error(self, exception: Exception) -> None:
         """Handle connection-level errors (HTTP stage)."""
