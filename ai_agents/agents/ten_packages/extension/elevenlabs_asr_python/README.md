@@ -17,7 +17,7 @@ ElevenLabs Speech Recognition Extension based on ElevenLabs real-time speech-to-
 | `ws_url` | string | `wss://api.elevenlabs.io/v1/speech-to-text/realtime` | WebSocket endpoint URL |
 | `sample_rate` | int | `16000` | Audio sample rate |
 | `audio_format` | string | `pcm_16000` | Audio format |
-| `model_id` | string | `scribe_v2_realtime` | ElevenLabs model ID |
+| `model_id` | string | `scribe_v2` | ElevenLabs model ID |
 | `language_code` | string | `en` | Language code |
 | `include_timestamps` | bool | `true` | Whether to include timestamps |
 | `commit_strategy` | string | `manual` | Commit strategy |
@@ -34,7 +34,7 @@ ElevenLabs Speech Recognition Extension based on ElevenLabs real-time speech-to-
         "ws_url": "wss://api.elevenlabs.io/v1/speech-to-text/realtime",
         "sample_rate": 16000,
         "audio_format": "pcm_16000",
-        "model_id": "scribe_v2_realtime",
+        "model_id": "scribe_v2",
         "language_code": "en",
         "include_timestamps": true,
         "commit_strategy": "manual",
