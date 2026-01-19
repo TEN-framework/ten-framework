@@ -815,6 +815,24 @@ elevenlabs_tts = {
     },
 }
 
+# Inworld TTS config
+inworld_tts = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "inworld_http_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:INWORLD_TTS_API_KEY|}",
+            "voice": "Deborah",
+            "sampleRate": 16000,
+            "encoding": "LINEAR16",
+        },
+    },
+}
+
 # Richard (Celeste) - Psychic advisor prompt
 richard_prompt = """You are Celeste, a warm and mystical psychic advisor who reads the stars. Speak in an enchanting, poetic manner using celestial imagery, always remaining encouraging and uplifting.
 
@@ -1496,6 +1514,69 @@ new_graphs.append(
         tts_config=cartesia_tts_sonic3,
         main_control_config=main_control_haley,
         avatar_config=anam_avatar_haley,
+    )
+)
+
+# ============ INWORLD TTS TEST CONFIGURATION ============
+
+inworld_test_prompt = "You are a friendly voice assistant testing Inworld TTS. Keep responses under 30 words."
+inworld_test_greeting = "Hello! I'm testing the Inworld TTS service. How can I help you today?"
+
+gpt51_llm_inworld_test = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": inworld_test_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": inworld_test_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_inworld_test = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": inworld_test_greeting},
+}
+
+# ============ END INWORLD TTS TEST CONFIGURATION ============
+
+# Group 12: Inworld TTS test graph with Anam avatar
+print("Creating Inworld TTS test graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "inworld_test",
+        has_avatar=True,
+        avatar_type="anam",
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_inworld_test,
+        tts_config=inworld_tts,
+        main_control_config=main_control_inworld_test,
+        avatar_config=anam_avatar,
+    )
+)
+
+# Group 13: Inworld TTS simple test (NO avatar)
+print("Creating Inworld TTS simple test graph (no avatar)...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "inworld_simple",
+        has_avatar=False,
+        stt_config=flux_stt,
+        llm_config=gpt51_llm_inworld_test,
+        tts_config=inworld_tts,
+        main_control_config=main_control_inworld_test,
     )
 )
 

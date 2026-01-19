@@ -1,0 +1,10 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "api_key": "${env:INWORLD_TTS_API_KEY|}",
+        "voice": "en-us-f-1",
+        "sampleRate": 16000,
+        "encoding": "LINEAR16"
+    }
+}

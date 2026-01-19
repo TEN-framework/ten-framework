@@ -155,6 +155,9 @@
     },
     {
       "path": "../../../ten_packages/extension/cartesia_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/inworld_http_tts"
     }
   ],
   "scripts": {
