@@ -5,8 +5,53 @@
         "enabled": true
       },
       "telemetry": {
-        "enabled": true
+        "enabled": true,
+        "metrics": {
+          "enabled": true,
+          "exporter": {
+            "type": "console"
+          }
+        }
       }
+    },
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        },
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "json",
+            "colored": false
+          },
+          "emitter": {
+            "type": "otlp",
+            "config": {
+              "endpoint": "http://localhost:4317",
+              "service_name": "my-custom-service-name"
+            }
+          }
+        }
+      ]
     },
     "predefined_graphs": [
       {

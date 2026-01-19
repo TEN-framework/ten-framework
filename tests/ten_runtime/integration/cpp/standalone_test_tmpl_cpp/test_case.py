@@ -78,6 +78,24 @@ def test_standalone_test_tmpl_cpp():
     # Step 3:
     #
     # Execute tgn gen to generate the build files.
+    extra_args = []
+
+    extra_args.append("ten_enable_standalone_test=true")
+
+    if build_config_args.is_clang:
+        extra_args.append("is_clang=true")
+
+    if build_config_args.is_mingw:
+        if build_config_args.is_clang:
+            assert (
+                False
+            ), "is_clang and is_mingw cannot be true at the same time"
+        extra_args.append("is_mingw=true")
+        extra_args.append("is_clang=false")
+
+    if build_config_args.enable_sanitizer:
+        extra_args.append("enable_sanitizer=true")
+
     tgn_gen_cmd = [
         "tgn",
         "gen",
@@ -85,11 +103,11 @@ def test_standalone_test_tmpl_cpp():
         build_config_args.target_cpu,
         build_config_args.target_build,
         "--",
-        "ten_enable_standalone_test=true",
+        *extra_args,
     ]
 
     if sys.platform == "win32":
-        if build_config_args.vs_version:
+        if build_config_args.vs_version and not build_config_args.is_mingw:
             tgn_gen_cmd.append(f"vs_version={build_config_args.vs_version}")
         tgn_gen_cmd = ["cmd", "/c"] + tgn_gen_cmd
 

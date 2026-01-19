@@ -4,7 +4,7 @@
         "ws_url": "wss://api.elevenlabs.io/v1/speech-to-text/realtime",
         "sample_rate": 16000,
         "audio_format": "pcm_16000",
-        "model_id": "scribe_v2_realtime",
+        "model_id": "scribe_v2",
         "language_code": "zh",
         "include_timestamps": true,
         "commit_strategy": "manual",

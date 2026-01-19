@@ -14,7 +14,8 @@ from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
     LogLevel,
-    TenError, TenErrorCode
+    TenError,
+    TenErrorCode,
 )
 
 
@@ -102,6 +103,12 @@ def test_failure():
     assert err.error_code() == TenErrorCode.ErrorCodeGeneric
     assert err.error_message() == "error response"
 
+    # Test __str__ method
+    err_str = str(err)
+    assert "error_code:" in err_str
+    assert "error response" in err_str
+    print(f"Error string representation: {err}")
+
 
 def test_timeout():
     tester = AsyncExtensionTesterTimeout()
@@ -112,6 +119,11 @@ def test_timeout():
     assert err is not None
     assert err.error_code() == TenErrorCode.ErrorCodeTimeout
 
+    # Test __str__ method
+    err_str = str(err)
+    assert "error_code:" in err_str
+    print(f"Timeout error string representation: {err}")
+
 
 def test_timeout2():
     tester = AsyncExtensionTesterTimeout()
@@ -121,3 +133,8 @@ def test_timeout2():
 
     assert err is not None
     assert err.error_code() == TenErrorCode.ErrorCodeTimeout
+
+    # Test __str__ method
+    err_str = str(err)
+    assert "error_code:" in err_str
+    print(f"Timeout2 error string representation: {err}")

@@ -18,6 +18,7 @@ ten_package("ollama_python") {
     "extension.py",
     "manifest.json",
     "property.json",
+    "pyproject.toml",
     "requirements.txt",
   ]
 

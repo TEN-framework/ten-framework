@@ -97,6 +97,19 @@ Consulta il [codice di esempio][voice-assistant-example] per maggiori dettagli.
 
 <br>
 
+![Image][doodler-image]
+
+<strong>Doodler</strong> — Una lavagna di scarabocchi che trasforma prompt vocali o digitati in semplici schizzi a mano, con una palette di pastelli e disegno in tempo reale.
+
+[Codice di esempio][doodler-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 ![Image][lip-sync-image]
 
 <strong>Avatar con lip sync</strong> — Supporta diversi provider di avatar. La demo mostra Kei, un personaggio anime con sincronizzazione labiale Live2D, e presto includerà avatar realistici di Trulience, HeyGen e Tavus.
@@ -580,11 +593,13 @@ Le contribuzioni sono benvenute! Leggi prima le [linee guida per contribuire][co
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
-[speechmatics-diarization-example]: ../ai_agents/agents/examples/speechmatics-diarization
+[speechmatics-diarization-example]: ../ai_agents/agents/examples/speaker-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ../ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ../ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ../ai_agents/esp32-client
 

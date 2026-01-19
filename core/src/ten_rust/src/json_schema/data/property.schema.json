@@ -832,13 +832,126 @@
                 "enabled": {
                   "type": "boolean"
                 },
-                "host": {
-                  "type": "string"
-                },
-                "port": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 65535
+                "metrics": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "exporter": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "type"
+                      ],
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "prometheus",
+                            "otlp",
+                            "console"
+                          ]
+                        },
+                        "config": {
+                          "type": "object"
+                        }
+                      },
+                      "allOf": [
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "prometheus"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "endpoint": {
+                                    "type": "string",
+                                    "pattern": "^[^:]+:[0-9]+$",
+                                    "description": "HTTP server endpoint in format 'host:port'"
+                                  },
+                                  "path": {
+                                    "type": "string",
+                                    "pattern": "^/.*$"
+                                  },
+                                  "service_name": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "otlp"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "endpoint": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "protocol": {
+                                    "type": "string",
+                                    "enum": [
+                                      "grpc",
+                                      "http"
+                                    ]
+                                  },
+                                  "headers": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                      "^[A-Za-z0-9_-]+$": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "service_name": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "if": {
+                            "properties": {
+                              "type": {
+                                "const": "console"
+                              }
+                            }
+                          },
+                          "then": {
+                            "properties": {
+                              "config": {
+                                "additionalProperties": false,
+                                "properties": {}
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             },
@@ -1201,7 +1314,8 @@
           "type": "string",
           "enum": [
             "console",
-            "file"
+            "file",
+            "otlp"
           ]
         },
         "config": {
@@ -1262,6 +1376,51 @@
                   },
                   "encryption": {
                     "$ref": "#/$defs/encryptionConfiguration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "otlp"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "config": {
+                "additionalProperties": false,
+                "required": [
+                  "endpoint"
+                ],
+                "properties": {
+                  "endpoint": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "enum": [
+                      "grpc",
+                      "http"
+                    ]
+                  },
+                  "headers": {
+                    "type": "object",
+                    "patternProperties": {
+                      "^[A-Za-z0-9_-]+$": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "service_name": {
+                    "type": "string",
+                    "minLength": 1
                   }
                 }
               }

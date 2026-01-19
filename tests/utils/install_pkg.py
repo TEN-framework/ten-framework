@@ -52,7 +52,7 @@ def main(args: ArgumentInfo) -> int:
         ]
 
         if args.log_level > 0:
-            cmd += ["--verbose"]
+            cmd += ["--verbose", "--tracing", "all"]
 
         if args.config_file is not None:
             list.append(cmd, "--config-file=" + args.config_file)

@@ -139,11 +139,21 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
-          rustup default nightly-2025-09-18
+          # Set Rust toolchain based on build type
+          # Linux debug uses nightly (for ASAN support)
+          # Linux release, Mac, and Windows use stable
+          if [ "${{ matrix.build_type }}" = "debug" ]; then
+            echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
+            rustup update nightly
+            rustup default nightly
+          else
+            echo "Setting Rust toolchain to stable for Linux release build"
+            rustup default stable
+          fi
 
           df -h .
 
-          EXTRA_ARGS="is_clang=true log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true"
+          EXTRA_ARGS="is_clang=true log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true"
 
           echo $EXTRA_ARGS
 

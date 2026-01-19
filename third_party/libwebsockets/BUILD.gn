@@ -38,7 +38,7 @@ cmake_project("websockets") {
   deps = [ ":websockets_copy_mbedtls" ]
 
   project_path = "."
-  if (is_win) {
+  if (is_win && !is_mingw) {
     project_name = "ALL_BUILD"
   } else {
     project_name = "all"

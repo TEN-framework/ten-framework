@@ -43,13 +43,16 @@ TEN_UTILS_PRIVATE_API const char *filename(const char *path, size_t path_len,
 TEN_UTILS_API void ten_log_log(ten_log_t *self, TEN_LOG_LEVEL level,
                                const char *func_name, const char *file_name,
                                size_t line_no, const char *msg,
-                               const char *category, ten_value_t *fields);
+                               const char *category, const uint8_t *fields_buf,
+                               size_t fields_buf_size,
+                               const ten_log_loc_info_t *loc_info);
 
 TEN_UTILS_API void ten_log_log_with_size(
     ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *msg, size_t msg_len, const char *category,
-    size_t category_len, ten_value_t *fields);
+    size_t category_len, const uint8_t *fields_buf, size_t fields_buf_size,
+    const ten_log_loc_info_t *loc_info);
 
 TEN_UTILS_API void ten_log_global_init(bool enable_advanced_log);
 

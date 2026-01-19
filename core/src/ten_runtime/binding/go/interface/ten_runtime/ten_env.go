@@ -412,6 +412,25 @@ func (p *tenEnv) logInternal(
 		cCategoryLen = len(*category)
 	}
 
+	// Serialize fields Value to buffer if provided
+	var cFieldsBuf unsafe.Pointer
+	var cFieldsBufSize int = 0
+	var fieldsBuf []byte
+	if fields != nil {
+		var err error
+		fieldsBuf, err = fields.serializeToBuffer()
+		if err != nil {
+			return NewTenError(
+				ErrorCodeGeneric,
+				"failed to serialize fields: "+err.Error(),
+			)
+		}
+		if len(fieldsBuf) > 0 {
+			cFieldsBuf = unsafe.Pointer(&fieldsBuf[0])
+			cFieldsBufSize = len(fieldsBuf)
+		}
+	}
+
 	cStatus := C.ten_go_ten_env_log(
 		p.cPtr,
 		C.int(level),
@@ -424,6 +443,8 @@ func (p *tenEnv) logInternal(
 		C.int(len(msg)),
 		cCategory,
 		C.int(cCategoryLen),
+		cFieldsBuf,
+		C.int(cFieldsBufSize),
 	)
 
 	return withCGoError(&cStatus)

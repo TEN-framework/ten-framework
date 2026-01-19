@@ -4,12 +4,152 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+//! FFI bindings for TEN logging system.
+//!
+//! This module provides Foreign Function Interface (FFI) bindings between C and
+//! Rust for the TEN Framework's logging functionality.
+//!
+//! # Critical Safety Requirements
+//!
+//! ## Structure Layout Synchronization
+//!
+//! The [`TenLogLocInfo`] struct in this module MUST be kept in sync with the C
+//! struct `ten_log_loc_info_t` defined in `core/include/ten_utils/log/log.h`.
+//!
+//! ### Verification Methods
+//!
+//! 1. **Compile-time checks**: The code includes `const` assertions that
+//!    verify:
+//!    - Total struct size matches expected layout
+//!    - Struct alignment matches pointer alignment
+//!    - These checks will cause compilation to FAIL if layout is incorrect
+//!
+//! 2. **Runtime tests**: Run the following command to verify memory layout:
+//!    ```bash cargo test test_ten_log_loc_info_layout -- --nocapture ``` This
+//!    test verifies:
+//!    - Total struct size (48 bytes on 64-bit, 24 bytes on 32-bit)
+//!    - Struct alignment (8 bytes on 64-bit, 4 bytes on 32-bit)
+//!    - Individual field offsets match expected C layout
+//!
+//!    Note: The actual test implementation is in
+//!    `tests/test_case/log/mod.rs::test_ten_log_loc_info_layout`
+//!
+//! ### Maintenance Workflow
+//!
+//! **When modifying `TenLogLocInfo` (Rust side):**
+//! 1. Update the C definition in `core/include/ten_utils/log/log.h`
+//! 2. Run `cargo test test_ten_log_loc_info_layout` to verify
+//! 3. Run full C/C++ compilation to ensure compatibility
+//!
+//! **When modifying `ten_log_loc_info_t` (C side):**
+//! 1. Update the Rust definition in this file
+//! 2. Run `cargo test test_ten_log_loc_info_layout` to verify
+//! 3. Run full C/C++ compilation to ensure compatibility
+//!
+//! ### What Happens If They Diverge?
+//!
+//! - **At compile time**: Const assertions will fail, preventing compilation
+//! - **At runtime**: Undefined behavior, memory corruption, crashes
+//! - **In tests**: Layout verification test will fail with detailed diagnostics
 use std::{
     ffi::{CStr, CString},
     os::raw::c_char,
 };
 
-use crate::log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig};
+use crate::{
+    log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig},
+    value_buffer::{self, Value},
+};
+
+/// FFI-safe structure to pass location information from C to Rust.
+///
+/// # CRITICAL: Keep in sync with C definition
+///
+/// This struct MUST exactly match the C struct `ten_log_loc_info_t` defined in:
+/// `core/include/ten_utils/log/log.h`
+///
+/// ## C Definition (for reference):
+/// ```c
+/// typedef struct ten_log_loc_info_t {
+///   const char *app_uri;
+///   size_t app_uri_len;
+///   const char *graph_id;
+///   size_t graph_id_len;
+///   const char *extension_name;
+///   size_t extension_name_len;
+/// } ten_log_loc_info_t;
+/// ```
+///
+/// ## Memory Layout Requirements:
+/// - Field order must match exactly
+/// - Field types must have same size and alignment as C counterparts
+/// - `#[repr(C)]` ensures C-compatible memory layout
+///
+/// ## Safety:
+/// - Modifying this struct requires updating the C definition
+/// - Modifying the C definition requires updating this struct
+/// - Static assertions below verify size and alignment at compile time
+///
+/// ## Verification:
+/// Run `cargo test test_ten_log_loc_info_layout` to verify layout
+/// compatibility.
+#[repr(C)]
+pub struct TenLogLocInfo {
+    pub app_uri: *const c_char,
+    pub app_uri_len: usize,
+    pub graph_id: *const c_char,
+    pub graph_id_len: usize,
+    pub extension_name: *const c_char,
+    pub extension_name_len: usize,
+}
+
+// Compile-time assertions to ensure struct layout matches C definition.
+// These will cause compilation to fail if the struct layout changes
+// unexpectedly.
+#[allow(clippy::no_effect)]
+const _: () = {
+    // Expected size: 6 fields * pointer/usize size
+    // On 64-bit: 6 * 8 = 48 bytes
+    // On 32-bit: 6 * 4 = 24 bytes
+    const EXPECTED_SIZE: usize = core::mem::size_of::<*const c_char>() * 6;
+    const ACTUAL_SIZE: usize = core::mem::size_of::<TenLogLocInfo>();
+
+    // This will cause a compile error if sizes don't match
+    const SIZE_MATCHES: bool = EXPECTED_SIZE == ACTUAL_SIZE;
+    [(); 1][!SIZE_MATCHES as usize];
+
+    // Verify alignment matches pointer alignment
+    const EXPECTED_ALIGN: usize = core::mem::align_of::<*const c_char>();
+    const ACTUAL_ALIGN: usize = core::mem::align_of::<TenLogLocInfo>();
+
+    const ALIGN_MATCHES: bool = EXPECTED_ALIGN == ACTUAL_ALIGN;
+    [(); 1][!ALIGN_MATCHES as usize];
+};
+
+impl TenLogLocInfo {
+    /// Helper to safely extract strings from the C struct.
+    pub fn to_strings(&self) -> (&str, &str, &str) {
+        let app_uri = if self.app_uri_len > 0 && !self.app_uri.is_null() {
+            unsafe { CStr::from_ptr(self.app_uri).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        let graph_id = if self.graph_id_len > 0 && !self.graph_id.is_null() {
+            unsafe { CStr::from_ptr(self.graph_id).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        let extension_name = if self.extension_name_len > 0 && !self.extension_name.is_null() {
+            unsafe { CStr::from_ptr(self.extension_name).to_str().unwrap_or("") }
+        } else {
+            ""
+        };
+
+        (app_uri, graph_id, extension_name)
+    }
+}
 
 /// Configure the log.
 ///
@@ -147,8 +287,11 @@ pub extern "C" fn ten_rust_log(
     file_name: *const c_char,
     file_name_len: usize,
     line_no: u32,
+    loc_info: *const TenLogLocInfo,
     msg: *const c_char,
     msg_len: usize,
+    fields_buf: *const u8,
+    fields_buf_size: usize,
 ) {
     if config.is_null()
         || func_name_len == 0
@@ -164,6 +307,10 @@ pub extern "C" fn ten_rust_log(
     let config = unsafe { &*config };
 
     let log_level = crate::log::LogLevel::from(level as u8);
+
+    // Parse location info.
+    let (app_uri, graph_id, extension_name) =
+        if !loc_info.is_null() { unsafe { (*loc_info).to_strings() } } else { ("", "", "") };
 
     let func_name_str = match unsafe { CStr::from_ptr(func_name) }.to_str() {
         Ok(s) => s,
@@ -189,6 +336,21 @@ pub extern "C" fn ten_rust_log(
         }
     };
 
+    // Deserialize fields_buf (TEN value_buffer protocol) into a `Value`.
+    //
+    // Safety: only form a slice when pointer is non-null and size > 0.
+    let fields_data = if !fields_buf.is_null() && fields_buf_size > 0 {
+        unsafe { std::slice::from_raw_parts(fields_buf, fields_buf_size) }
+    } else {
+        &[]
+    };
+
+    let fields: Option<Value> = if fields_data.is_empty() {
+        None
+    } else {
+        value_buffer::deserialize_from_buffer(fields_data).ok()
+    };
+
     crate::log::ten_log(
         config,
         category_str,
@@ -198,6 +360,10 @@ pub extern "C" fn ten_rust_log(
         func_name_str,
         file_name_str,
         line_no,
+        app_uri,
+        graph_id,
+        extension_name,
+        fields.as_ref(),
         msg_str,
     );
 }

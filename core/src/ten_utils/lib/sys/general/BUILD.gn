@@ -12,9 +12,13 @@ ten_utils_glob("general") {
     "//third_party/yyjson",
   ]
 
-  if (is_win) {
+  if (is_win && !is_mingw) {
+    # MSVC uses bcrypt.lib
     libs = [ "bcrypt.lib" ]
-  } else if (is_mac || is_win) {
+  } else if (is_win && is_mingw) {
+    # MinGW uses bcrypt (without .lib extension)
+    libs = [ "bcrypt" ]
+  } else if (is_mac) {
     frameworks = [ "Security.framework" ]
   }
 }

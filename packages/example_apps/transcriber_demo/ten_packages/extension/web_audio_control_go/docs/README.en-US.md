@@ -27,7 +27,7 @@ User Browser <--HTTP/WebSocket--> Web Server (Go Extension) <--TEN Protocol--> T
 
 ## Configuration Properties
 
-### `http_port` (int64, optional, default: 8080)
+### `http_port` (int64, optional, default: 8001)
 
 HTTP server listening port.
 
@@ -35,7 +35,7 @@ Example:
 
 ```json
 {
-  "http_port": 8080
+  "http_port": 8001
 }
 ```
 
@@ -74,7 +74,7 @@ Receive transcription text data.
       "name": "web_control",
       "addon": "web_audio_control_go",
       "property": {
-        "http_port": 8080
+        "http_port": 8001
       }
     },
     {
@@ -137,7 +137,7 @@ Receive transcription text data.
 After starting the application, visit in your browser:
 
 ```text
-http://localhost:8080
+http://localhost:8001
 ```
 
 ### 3. Using the Interface

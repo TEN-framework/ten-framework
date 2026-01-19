@@ -27,7 +27,7 @@
 
 ## 配置属性
 
-### `http_port` (int64, 可选，默认: 8080)
+### `http_port` (int64, 可选，默认: 8001)
 
 HTTP 服务器监听端口。
 
@@ -35,7 +35,7 @@ HTTP 服务器监听端口。
 
 ```json
 {
-  "http_port": 8080
+  "http_port": 8001
 }
 ```
 
@@ -74,7 +74,7 @@ HTTP 服务器监听端口。
       "name": "web_control",
       "addon": "web_audio_control_go",
       "property": {
-        "http_port": 8080
+        "http_port": 8001
       }
     },
     {
@@ -137,7 +137,7 @@ HTTP 服务器监听端口。
 启动应用后，在浏览器中访问：
 
 ```text
-http://localhost:8080
+http://localhost:8001
 ```
 
 ### 3. 使用界面

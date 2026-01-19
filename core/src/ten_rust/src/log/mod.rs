@@ -10,6 +10,7 @@ pub mod dynamic_filter;
 pub mod encryption;
 pub mod file_appender;
 pub mod formatter;
+pub mod otel;
 pub mod reloadable;
 
 use std::{fmt, io};
@@ -27,11 +28,14 @@ use tracing_subscriber::{
     Layer, Registry,
 };
 
-use crate::log::{
-    dynamic_filter::DynamicTargetFilterLayer,
-    encryption::{EncryptMakeWriter, EncryptionConfig},
-    file_appender::FileAppenderGuard,
-    formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+use crate::{
+    log::{
+        dynamic_filter::DynamicTargetFilterLayer,
+        encryption::{EncryptMakeWriter, EncryptionConfig},
+        file_appender::FileAppenderGuard,
+        formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+    },
+    value_buffer,
 };
 
 // Encryption types and writer are moved to `encryption.rs`
@@ -136,12 +140,38 @@ pub struct FileEmitterConfig {
     pub encryption: Option<EncryptionConfig>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum OtlpProtocol {
+    Grpc,
+    Http,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OtlpEmitterConfig {
+    pub endpoint: String,
+
+    #[serde(default = "default_otlp_protocol")]
+    pub protocol: OtlpProtocol,
+
+    #[serde(default)]
+    pub headers: std::collections::HashMap<String, String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
+}
+
+fn default_otlp_protocol() -> OtlpProtocol {
+    OtlpProtocol::Grpc
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "config")]
 #[serde(rename_all = "lowercase")]
 pub enum AdvancedLogEmitter {
     Console(ConsoleEmitterConfig),
     File(FileEmitterConfig),
+    Otlp(OtlpEmitterConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -326,6 +356,15 @@ fn create_layer_with_dynamic_filter(handler: &AdvancedLogHandler) -> LayerWithGu
                 guard: Some(Box::new(composite_guard)),
             }
         }
+        AdvancedLogEmitter::Otlp(otlp_config) => {
+            eprintln!("[DEBUG] Creating OTLP layer for endpoint: {}", otlp_config.endpoint);
+            let (layer, guard) = otel::create_otlp_layer(otlp_config);
+            eprintln!("[DEBUG] OTLP layer created successfully");
+            LayerWithGuard {
+                layer,
+                guard: Some(Box::new(guard)),
+            }
+        }
     };
 
     // Wrap the base layer with our dynamic category filter
@@ -440,9 +479,16 @@ pub fn ten_log(
     func_name: &str,
     file_name: &str,
     line_no: u32,
+    app_uri: &str,
+    graph_id: &str,
+    extension_name: &str,
+    fields: Option<&value_buffer::Value>,
     msg: &str,
 ) {
     let tracing_level = level.to_tracing_level();
+
+    // Convert Value to JSON string for formatter to parse
+    let fields_json: Option<String> = fields.map(|v| v.to_json().to_string());
 
     // Extract just the filename from the full path
     let filename =
@@ -451,60 +497,80 @@ pub fn ten_log(
     match tracing_level {
         tracing::Level::TRACE => {
             tracing::trace!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
         }
         tracing::Level::DEBUG => {
             tracing::debug!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
         }
         tracing::Level::INFO => {
             tracing::info!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
         }
         tracing::Level::WARN => {
             tracing::warn!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )
         }
         tracing::Level::ERROR => {
             tracing::error!(
-                category = category,
-                pid = pid,
-                tid = tid,
-                func_name = func_name,
-                file_name = filename,
-                line_no = line_no,
+                ten_category = category,
+                ten_app_uri = app_uri,
+                ten_graph_id = graph_id,
+                ten_extension_name = extension_name,
+                ten_pid = pid,
+                ten_tid = tid,
+                ten_func_name = func_name,
+                ten_file_name = filename,
+                ten_line_no = line_no,
+                ten_user_fields = fields_json.as_deref().unwrap_or(""),
                 "{}",
                 msg
             )

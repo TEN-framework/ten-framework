@@ -11,14 +11,25 @@ use std::{fs::File, path::Path};
 use anyhow::{Context, Result};
 use flate2::{write::GzEncoder, Compression};
 use tar::{Builder as TarBuilder, Header};
+use tracing::instrument;
 
+#[instrument(skip_all, name = "tar_gz_files", fields(file_count = files.len(), output = output_tar_gz_file_path))]
 pub fn tar_gz_files_to_file<P: AsRef<Path>>(
     files: Vec<P>,
     prefix: &Path,
     output_tar_gz_file_path: &String,
 ) -> Result<()> {
     let output_file = File::create(output_tar_gz_file_path)?;
-    let mut gz_encoder = GzEncoder::new(output_file, Compression::default());
+
+    // Use faster compression in debug mode to speed up development/testing
+    // Release builds will use default compression for better compression ratio
+    #[cfg(debug_assertions)]
+    let compression_level = Compression::fast();
+
+    #[cfg(not(debug_assertions))]
+    let compression_level = Compression::default();
+
+    let mut gz_encoder = GzEncoder::new(output_file, compression_level);
 
     {
         let mut tar_builder = TarBuilder::new(&mut gz_encoder);

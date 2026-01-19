@@ -13,10 +13,7 @@ MESSAGE_TYPE_SERVER_FULL_RESPONSE = 0b1001
 MESSAGE_TYPE_SERVER_ERROR_RESPONSE = 0b1111
 
 # Message type specific flags
-MESSAGE_TYPE_SPECIFIC_FLAGS_NO_SEQUENCE = 0b0000
 MESSAGE_TYPE_SPECIFIC_FLAGS_POS_SEQUENCE = 0b0001
-MESSAGE_TYPE_SPECIFIC_FLAGS_NEG_SEQUENCE = 0b0010
-MESSAGE_TYPE_SPECIFIC_FLAGS_NEG_WITH_SEQUENCE = 0b0011
 MESSAGE_TYPE_SPECIFIC_FLAGS_LAST_AUDIO = 0b0010  # Last audio packet flag
 
 # Serialization types
@@ -24,8 +21,10 @@ SERIALIZATION_TYPE_NO_SERIALIZATION = 0b0000
 SERIALIZATION_TYPE_JSON = 0b0001
 
 # Compression types
-COMPRESSION_TYPE_NO_COMPRESSION = 0b0000
 COMPRESSION_TYPE_GZIP = 0b0001
+
+# Timing constants
+FINALIZE_GRACE_PERIOD_MS = 5000  # 5 seconds grace period after finalize
 
 # Error codes - Official Volcengine ASR LLM error codes
 VOLCENGINE_ERROR_CODES = {
@@ -64,39 +63,28 @@ RECONNECTABLE_ERROR_CODES = {
     ],  # Server busy - temporary overload, retryable
 }
 
-# Fatal error codes - errors that should not be retried
-FATAL_ERROR_CODES = {
+NON_RECONNECTABLE_ERROR_CODES = [
     VOLCENGINE_ERROR_CODES[
         "INVALID_PARAMETER"
-    ],  # Invalid parameters - configuration issue, retry won't help
-}
-
-# Default values
-DEFAULT_SAMPLE_RATE = 16000
-DEFAULT_SEGMENT_DURATION_MS = 100
-DEFAULT_END_WINDOW_SIZE_MS = 300
-DEFAULT_MAX_RETRIES = 5
-DEFAULT_BASE_DELAY = 0.3
+    ],  # Invalid request parameters - retry won't help
+]
 
 
 def is_reconnectable_error(error_code: int) -> bool:
     """
     Check if an error code should trigger reconnection.
+    By default, all errors are considered retryable unless explicitly marked as non-retryable.
 
     Args:
         error_code: The error code to check
 
     Returns:
-        True if the error should trigger reconnection, False otherwise
+        True if the error should trigger reconnection (default), False if retry cannot solve the problem
     """
-    # Check exact matches first (includes all original RECONNECTABLE_ERROR_CODES)
-    if error_code in RECONNECTABLE_ERROR_CODES:
-        return True
+    # Check if this error code is explicitly marked as non-retryable
+    # These are errors where retry cannot solve the problem (e.g., invalid parameters)
+    if error_code in NON_RECONNECTABLE_ERROR_CODES:
+        return False
 
-    # Check range matches for specific error patterns
-    # INTERNAL_ERROR: 550xxxxx (all server internal errors)
-    # This covers all 550xxxxx errors, not just the specific 55000000
-    if 55000000 <= error_code <= 55099999:
-        return True
-
-    return False
+    # Default: return True - assume all errors are retryable unless proven otherwise
+    return True

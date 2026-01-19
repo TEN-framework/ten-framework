@@ -111,6 +111,19 @@ PyObject *ten_py_error_get_error_message(PyObject *self,
   return PyUnicode_FromString(ten_error_message(&py_error->c_error));
 }
 
+PyObject *ten_py_error_str(PyObject *self) {
+  ten_py_error_t *py_error = (ten_py_error_t *)self;
+  if (!py_error) {
+    return PyUnicode_FromString("<TenError: invalid>");
+  }
+
+  ten_error_code_t error_code = ten_error_code(&py_error->c_error);
+  const char *error_message = ten_error_message(&py_error->c_error);
+
+  return PyUnicode_FromFormat("error_code: %d, error_message: %s", error_code,
+                              error_message ? error_message : "");
+}
+
 static void ten_py_print_py_error(void) {
   PyObject *ptype = NULL;
   PyObject *pvalue = NULL;

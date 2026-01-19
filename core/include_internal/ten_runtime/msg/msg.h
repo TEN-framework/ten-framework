@@ -62,6 +62,11 @@ typedef struct ten_msg_t {
   ten_list_t locked_res;
 
   int64_t timestamp;
+
+  // The timestamp (in microseconds) when the message starts being processed
+  // (e.g., when on_cmd, on_data, etc. is called on the extension).
+  // This is used to measure message processing duration.
+  int64_t processing_start_timestamp_us;
 } ten_msg_t;
 
 TEN_RUNTIME_API bool ten_raw_msg_check_integrity(ten_msg_t *self);

@@ -61,10 +61,6 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       // subscribe message channel(will be created automatically)
       const subscribeResult = await rtm.subscribe(channel, {
         withMessage: true,
-        withPresence: true,
-        beQuiet: false,
-        withMetadata: true,
-        withLock: true,
       });
       console.log(
         "[RTM] Subscribe Message Channel success!: ",

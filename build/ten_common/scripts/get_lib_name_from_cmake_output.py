@@ -14,6 +14,7 @@ class ArgumentInfo(argparse.Namespace):
 
         self.libs: list[str]
         self.target_os: str
+        self.is_mingw: bool
 
 
 class LibFilter:
@@ -30,7 +31,9 @@ class LibFilter:
 
     def get_link_lib_name(self, lib_path: str) -> str | None:
         lib_basename = os.path.basename(lib_path)
-        if self.args.target_os == "win":
+        # MinGW uses GNU ld like Linux/macOS, so it should strip lib prefix and extension
+        # MSVC on Windows uses full filename
+        if self.args.target_os == "win" and not self.args.is_mingw:
             return lib_basename
 
         basename = lib_basename
@@ -60,6 +63,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--libs", type=str, action="append", default=[])
     parser.add_argument("--target-os", type=str, default="")
+    parser.add_argument("--is-mingw", action="store_true", default=False)
 
     arg_info = ArgumentInfo()
     args = parser.parse_args(namespace=arg_info)

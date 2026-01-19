@@ -170,12 +170,10 @@ TEN_RUST_PRIVATE_API bool ten_validate_property_json_file(
     const char *property_file, const char **out_err_msg);
 
 TEN_RUST_PRIVATE_API ServiceHub *ten_service_hub_create(
-    const char *telemetry_host, uint32_t telemetry_port, const char *api_host,
-    uint32_t api_port, ten_app_t *app);
+    const char *services_config_json, const char *runtime_version,
+    const char *log_path);
 
 TEN_RUST_PRIVATE_API void ten_service_hub_shutdown(ServiceHub *service_hub_ptr);
-
-TEN_RUST_PRIVATE_API const char *ten_get_runtime_version(void);
 
 TEN_RUST_PRIVATE_API MetricHandle *ten_metric_create(
     ServiceHub *system_ptr, uint32_t metric_type, const char *name,
@@ -231,7 +229,8 @@ TEN_RUST_PRIVATE_API void ten_rust_log(
     AdvancedLogConfig *config, const char *category, size_t category_len,
     int64_t pid, int64_t tid, int level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
-    size_t line_no, const char *msg, size_t msg_len);
+    size_t line_no, const ten_log_loc_info_t *loc_info, const char *msg,
+    size_t msg_len, const uint8_t *fields_buf, size_t fields_buf_size);
 
 TEN_RUST_PRIVATE_API void ten_rust_log_config_destroy(
     AdvancedLogConfig *config);

@@ -16,10 +16,16 @@ ten_package_test_prepare_app("local_dependency_2_go_app") {
     "local_dependency_2_go_app/manifest.json",
     "local_dependency_2_go_app/property.json",
     "local_dependency_2_go_app/extension_a/extension.go",
-    "local_dependency_2_go_app/extension_a/go.mod",
     "local_dependency_2_go_app/extension_a/manifest.json",
     "local_dependency_2_go_app/extension_a/property.json",
   ]
+
+  # Windows resolves symlinks from link location; Linux/Mac from the file's actual location.
+  if(is_win) {
+    replace_paths_after_install_app += [ "local_dependency_2_go_app/extension_a/go_win.mod=>local_dependency_2_go_app/extension_a/go.mod" ]
+  } else {
+    replace_paths_after_install_app += [ "local_dependency_2_go_app/extension_a/go.mod" ]
+  }
 
   if (ten_enable_go_app_leak_check) {
     replace_paths_after_install_app += [ "local_dependency_2_go_app/main_with_leak_check.go=>local_dependency_2_go_app/main.go" ]

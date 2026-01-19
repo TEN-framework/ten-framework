@@ -37,7 +37,7 @@ group("go") {
       "standalone_test_event_bus_go",
       "start_app_sync_go",
       "start_graph_and_communicate_go",
-      "start_graph_and_set_dests_from_new_graph_go",
+      "start_graph_and_set_dests_go",
       "start_graph_go",
       "start_predefined_graph_go",
       "three_extension_cmd_go",
@@ -52,7 +52,7 @@ group("go") {
       deps += [ "exit_signal_go" ]
     }
 
-    if (is_debug) {
+    if (is_debug && !is_win) {
       deps += [ "leak_check_go" ]
     }
   }

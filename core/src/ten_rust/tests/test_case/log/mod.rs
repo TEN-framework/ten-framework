@@ -137,6 +137,10 @@ mod tests {
             "test_func",
             "test.rs",
             100,
+            "",
+            "",
+            "",
+            None,
             "Trace message",
         );
         ten_log(
@@ -148,6 +152,10 @@ mod tests {
             "test_func",
             "test.rs",
             101,
+            "",
+            "",
+            "",
+            None,
             "Debug message",
         );
         ten_log(
@@ -159,6 +167,10 @@ mod tests {
             "test_func",
             "test.rs",
             102,
+            "",
+            "",
+            "",
+            None,
             "Info message",
         );
         ten_log(
@@ -170,6 +182,10 @@ mod tests {
             "test_func",
             "test.rs",
             103,
+            "",
+            "",
+            "",
+            None,
             "Warn message",
         );
         ten_log(
@@ -181,6 +197,10 @@ mod tests {
             "test_func",
             "test.rs",
             104,
+            "",
+            "",
+            "",
+            None,
             "Error message",
         );
 
@@ -230,6 +250,10 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             50,
+            "",
+            "",
+            "",
+            None,
             "Error message in red",
         );
 
@@ -242,6 +266,10 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             51,
+            "",
+            "",
+            "",
+            None,
             "Warning message in yellow",
         );
 
@@ -254,6 +282,10 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             52,
+            "",
+            "",
+            "",
+            None,
             "Info message in default color",
         );
 
@@ -266,6 +298,10 @@ mod tests {
             "test_plain_colored",
             "formatter.rs",
             53,
+            "",
+            "",
+            "",
+            None,
             "Debug message in blue",
         );
     }
@@ -299,6 +335,10 @@ mod tests {
             "test_plain_no_color",
             "formatter.rs",
             51,
+            "",
+            "",
+            "",
+            None,
             "Plain no color message",
         );
     }
@@ -331,6 +371,10 @@ mod tests {
             "test_json",
             "formatter.rs",
             52,
+            "",
+            "",
+            "",
+            None,
             "JSON formatted message",
         );
     }
@@ -363,6 +407,10 @@ mod tests {
             "test_json_colored",
             "formatter.rs",
             53,
+            "",
+            "",
+            "",
+            None,
             "JSON colored message",
         );
 
@@ -375,6 +423,10 @@ mod tests {
             "test_json_colored",
             "formatter.rs",
             54,
+            "",
+            "",
+            "",
+            None,
             "JSON colored message",
         );
     }
@@ -407,6 +459,10 @@ mod tests {
             "test_stdout",
             "emitter.rs",
             60,
+            "",
+            "",
+            "",
+            None,
             "Message to stdout",
         );
     }
@@ -439,6 +495,10 @@ mod tests {
             "test_stderr",
             "emitter.rs",
             61,
+            "",
+            "",
+            "",
+            None,
             "Warning message to stderr",
         );
     }
@@ -474,6 +534,10 @@ mod tests {
             "test_file_plain",
             "file_emitter.rs",
             70,
+            "",
+            "",
+            "",
+            None,
             "Plain message to file",
         );
         ten_log(
@@ -485,6 +549,10 @@ mod tests {
             "test_file_plain",
             "file_emitter.rs",
             71,
+            "",
+            "",
+            "",
+            None,
             "Warning message to file",
         );
 
@@ -530,6 +598,10 @@ mod tests {
             "test_file_json",
             "file_emitter.rs",
             80,
+            "",
+            "",
+            "",
+            None,
             "JSON message to file",
         );
 
@@ -590,6 +662,10 @@ mod tests {
             "before_fn",
             "before.rs",
             1,
+            "",
+            "",
+            "",
+            None,
             "before-1",
         );
         ten_log(
@@ -601,6 +677,10 @@ mod tests {
             "before_fn",
             "before.rs",
             2,
+            "",
+            "",
+            "",
+            None,
             "before-2",
         );
 
@@ -615,8 +695,36 @@ mod tests {
         ten_rust::log::ten_log_reopen_all(&mut config, true);
 
         // Write more lines after reopen request
-        ten_log(&config, "test_reopen", 1, 1, LogLevel::Info, "after_fn", "after.rs", 3, "after-1");
-        ten_log(&config, "test_reopen", 1, 1, LogLevel::Warn, "after_fn", "after.rs", 4, "after-2");
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Info,
+            "after_fn",
+            "after.rs",
+            3,
+            "",
+            "",
+            "",
+            None,
+            "after-1",
+        );
+        ten_log(
+            &config,
+            "test_reopen",
+            1,
+            1,
+            LogLevel::Warn,
+            "after_fn",
+            "after.rs",
+            4,
+            "",
+            "",
+            "",
+            None,
+            "after-2",
+        );
 
         // Force flush: disable all handlers to drop worker guard(s)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -688,6 +796,10 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
+            None,
             msg,
         );
         ten_log(
@@ -699,6 +811,10 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
+            None,
             "My card number is 1234567890",
         );
         ten_log(
@@ -710,6 +826,10 @@ mod tests {
             "encrypt_test",
             "encrypt.rs",
             1,
+            "",
+            "",
+            "",
+            None,
             "My phone number is 9876543210",
         );
 
@@ -770,10 +890,10 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should be logged (matching configured rules)
-        info!(category = "auth", "Auth service started"); // Matches auth + info
-        debug!(category = "auth", "Auth service debug message"); // Won't match any configured rules
-        debug!(category = "database", "DB connection pool initialized"); // Matches database + debug
-        info!(category = "unknown", "unknown target message"); // Won't match any configured rules
+        info!(ten_category = "auth", "Auth service started"); // Matches auth + info
+        debug!(ten_category = "auth", "Auth service debug message"); // Won't match any configured rules
+        debug!(ten_category = "database", "DB connection pool initialized"); // Matches database + debug
+        info!(ten_category = "unknown", "unknown target message"); // Won't match any configured rules
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -827,12 +947,12 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should not be logged (level mismatch)
-        debug!(category = "auth", "Auth debug message"); // Won't match: auth only allows info
-        trace!(category = "database", "DB trace message"); // Won't match: database only allows debug
+        debug!(ten_category = "auth", "Auth debug message"); // Won't match: auth only allows info
+        trace!(ten_category = "database", "DB trace message"); // Won't match: database only allows debug
 
         // Messages that should not be logged (category not configured)
-        info!(category = "network", "Network info message");
-        debug!(category = "network", "Network debug message");
+        info!(ten_category = "network", "Network info message");
+        debug!(ten_category = "network", "Network debug message");
 
         // Messages that should not be logged (default category)
         info!("Default category info message");
@@ -895,18 +1015,18 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Auth logs at different levels
-        info!(category = "auth", "User login successful"); // Should appear in auth_file
-        warn!(category = "auth", "Failed login attempt"); // Should appear in auth_file
-        debug!(category = "auth", "Auth token details"); // Should NOT appear in auth_file
+        info!(ten_category = "auth", "User login successful"); // Should appear in auth_file
+        warn!(ten_category = "auth", "Failed login attempt"); // Should appear in auth_file
+        debug!(ten_category = "auth", "Auth token details"); // Should NOT appear in auth_file
 
         // Database logs at different levels
-        info!(category = "database", "Connection established"); // Should appear in db_file
-        debug!(category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
-        debug!(category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
+        info!(ten_category = "database", "Connection established"); // Should appear in db_file
+        debug!(ten_category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
+        debug!(ten_category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
 
         // Other category logs (should not appear in either file)
-        info!(category = "network", "Server started");
-        debug!(category = "network", "Socket initialized");
+        info!(ten_category = "network", "Server started");
+        debug!(ten_category = "network", "Socket initialized");
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -969,6 +1089,10 @@ mod tests {
             "test_default",
             "default.rs",
             100,
+            "",
+            "",
+            "",
+            None,
             "Default config info",
         );
     }
@@ -1024,6 +1148,10 @@ mod tests {
                     "test_fn",
                     "test.rs",
                     1,
+                    "",
+                    "",
+                    "",
+                    None,
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1112,6 +1240,10 @@ mod tests {
                     "test_fn",
                     "test.rs",
                     1,
+                    "",
+                    "",
+                    "",
+                    None,
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1192,6 +1324,10 @@ mod tests {
             "main",
             "app.rs",
             10,
+            "",
+            "",
+            "",
+            None,
             "Application started",
         );
         ten_log(
@@ -1203,6 +1339,10 @@ mod tests {
             "auth",
             "auth.rs",
             25,
+            "",
+            "",
+            "",
+            None,
             "User login successful",
         );
         ten_log(
@@ -1214,6 +1354,10 @@ mod tests {
             "db",
             "database.rs",
             50,
+            "",
+            "",
+            "",
+            None,
             "Database connection pool almost full",
         );
         ten_log(
@@ -1225,6 +1369,10 @@ mod tests {
             "network",
             "network.rs",
             75,
+            "",
+            "",
+            "",
+            None,
             "Network connection timeout",
         );
 
@@ -1237,6 +1385,10 @@ mod tests {
             "parser",
             "json_parser.rs",
             100,
+            "",
+            "",
+            "",
+            None,
             "Parse JSON: {\"key\": \"value\"}",
         );
     }
@@ -1269,9 +1421,51 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 1, "global-off-info");
-        ten_log(&config, "any", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "global-off-warn");
-        ten_log(&config, "any", 1, 1, LogLevel::Error, "f", "f.rs", 3, "global-off-error");
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            1,
+            "",
+            "",
+            "",
+            None,
+            "global-off-info",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Warn,
+            "f",
+            "f.rs",
+            2,
+            "",
+            "",
+            "",
+            None,
+            "global-off-warn",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Error,
+            "f",
+            "f.rs",
+            3,
+            "",
+            "",
+            "",
+            None,
+            "global-off-error",
+        );
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1309,10 +1503,7 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "aaa");
-        ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "bbb");
-        ten_log(&config, "database", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ccc");
-        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ddd");
+        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", None, "ddd");
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1359,11 +1550,11 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be dropped due to auth=off
-        debug!(category = "auth", "auth-debug-should-not-appear");
-        info!(category = "auth", "auth-info-should-not-appear");
+        debug!(ten_category = "auth", "auth-debug-should-not-appear");
+        info!(ten_category = "auth", "auth-info-should-not-appear");
         // This should pass due to default debug for other categories
-        debug!(category = "database", "db-debug-should-appear");
-        info!(category = "database", "db-info-should-appear");
+        debug!(ten_category = "database", "db-debug-should-appear");
+        info!(ten_category = "database", "db-info-should-appear");
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1415,8 +1606,36 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be written (effective level is DEBUG)
-        ten_log(&config, "any", 1, 1, LogLevel::Debug, "f", "f.rs", 1, "off-then-debug-debug");
-        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 2, "off-then-debug-info");
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Debug,
+            "f",
+            "f.rs",
+            1,
+            "",
+            "",
+            "",
+            None,
+            "off-then-debug-debug",
+        );
+        ten_log(
+            &config,
+            "any",
+            1,
+            1,
+            LogLevel::Info,
+            "f",
+            "f.rs",
+            2,
+            "",
+            "",
+            "",
+            None,
+            "off-then-debug-info",
+        );
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1427,5 +1646,151 @@ mod tests {
         // Expect log output present
         assert!(content.contains("off-then-debug-debug"));
         assert!(content.contains("off-then-debug-info"));
+    }
+
+    /// Comprehensive compile-time and runtime verification of TenLogLocInfo
+    /// layout.
+    ///
+    /// This test ensures that the Rust struct `TenLogLocInfo` has the exact
+    /// same memory layout as the C struct `ten_log_loc_info_t`.
+    ///
+    /// ## Checks performed:
+    /// 1. Total struct size
+    /// 2. Struct alignment
+    /// 3. Individual field offsets
+    /// 4. Field sizes
+    ///
+    /// If this test fails, it means the Rust and C structs are out of sync.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_layout() {
+        use std::{
+            mem::{align_of, offset_of, size_of},
+            os::raw::c_char,
+        };
+
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        // Verify overall size
+        // Expected: 6 fields of pointer-sized values
+        // On 64-bit: 48 bytes (6 * 8)
+        // On 32-bit: 24 bytes (6 * 4)
+        let ptr_size = size_of::<*const c_char>();
+        let expected_size = ptr_size * 6;
+        assert_eq!(
+            size_of::<TenLogLocInfo>(),
+            expected_size,
+            "TenLogLocInfo size mismatch: expected {}, got {}",
+            expected_size,
+            size_of::<TenLogLocInfo>()
+        );
+
+        // Verify alignment (should match pointer alignment)
+        assert_eq!(
+            align_of::<TenLogLocInfo>(),
+            align_of::<*const c_char>(),
+            "TenLogLocInfo alignment mismatch"
+        );
+
+        // Verify field offsets match expected C struct layout
+        // In C: fields are laid out sequentially without padding (for this struct)
+        assert_eq!(offset_of!(TenLogLocInfo, app_uri), 0, "app_uri offset should be 0");
+        assert_eq!(
+            offset_of!(TenLogLocInfo, app_uri_len),
+            ptr_size,
+            "app_uri_len offset should be {}",
+            ptr_size
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, graph_id),
+            ptr_size * 2,
+            "graph_id offset should be {}",
+            ptr_size * 2
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, graph_id_len),
+            ptr_size * 3,
+            "graph_id_len offset should be {}",
+            ptr_size * 3
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, extension_name),
+            ptr_size * 4,
+            "extension_name offset should be {}",
+            ptr_size * 4
+        );
+        assert_eq!(
+            offset_of!(TenLogLocInfo, extension_name_len),
+            ptr_size * 5,
+            "extension_name_len offset should be {}",
+            ptr_size * 5
+        );
+
+        // Verify individual field sizes
+        assert_eq!(size_of::<*const c_char>(), ptr_size, "Pointer size mismatch");
+        assert_eq!(
+            size_of::<usize>(),
+            ptr_size,
+            "usize should match pointer size on this platform"
+        );
+
+        println!("✓ TenLogLocInfo layout verification passed");
+        println!("  Size: {} bytes", size_of::<TenLogLocInfo>());
+        println!("  Alignment: {} bytes", align_of::<TenLogLocInfo>());
+        println!("  Field offsets:");
+        println!("    app_uri:        {}", offset_of!(TenLogLocInfo, app_uri));
+        println!("    app_uri_len:    {}", offset_of!(TenLogLocInfo, app_uri_len));
+        println!("    graph_id:       {}", offset_of!(TenLogLocInfo, graph_id));
+        println!("    graph_id_len:   {}", offset_of!(TenLogLocInfo, graph_id_len));
+        println!("    extension_name: {}", offset_of!(TenLogLocInfo, extension_name));
+        println!("    extension_name_len: {}", offset_of!(TenLogLocInfo, extension_name_len));
+    }
+
+    /// Test the to_strings method with NULL pointers and empty strings.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_to_strings_null() {
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        let loc_info = TenLogLocInfo {
+            app_uri: std::ptr::null(),
+            app_uri_len: 0,
+            graph_id: std::ptr::null(),
+            graph_id_len: 0,
+            extension_name: std::ptr::null(),
+            extension_name_len: 0,
+        };
+
+        let (app_uri, graph_id, extension_name) = loc_info.to_strings();
+        assert_eq!(app_uri, "");
+        assert_eq!(graph_id, "");
+        assert_eq!(extension_name, "");
+    }
+
+    /// Test the to_strings method with valid C strings.
+    #[test]
+    #[serial]
+    fn test_ten_log_loc_info_to_strings_valid() {
+        use std::ffi::CString;
+
+        use ten_rust::log::bindings::TenLogLocInfo;
+
+        let app_uri_str = CString::new("msgpack://127.0.0.1:8001/").unwrap();
+        let graph_id_str = CString::new("default").unwrap();
+        let ext_name_str = CString::new("test_extension").unwrap();
+
+        let loc_info = TenLogLocInfo {
+            app_uri: app_uri_str.as_ptr(),
+            app_uri_len: app_uri_str.as_bytes().len(),
+            graph_id: graph_id_str.as_ptr(),
+            graph_id_len: graph_id_str.as_bytes().len(),
+            extension_name: ext_name_str.as_ptr(),
+            extension_name_len: ext_name_str.as_bytes().len(),
+        };
+
+        let (app_uri, graph_id, extension_name) = loc_info.to_strings();
+        assert_eq!(app_uri, "msgpack://127.0.0.1:8001/");
+        assert_eq!(graph_id, "default");
+        assert_eq!(extension_name, "test_extension");
     }
 }

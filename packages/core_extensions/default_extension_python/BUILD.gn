@@ -22,6 +22,8 @@ ten_package("default_extension_python") {
     "manifest.json",
     "manifest.json.tent",
     "property.json",
+    "pyproject.toml",
+    "pyproject.toml.tent",
     "requirements.txt",
   ]
 

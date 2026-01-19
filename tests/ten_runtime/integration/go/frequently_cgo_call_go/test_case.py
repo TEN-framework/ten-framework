@@ -16,9 +16,39 @@ def test_frequently_cgo_call_go():
 
     my_env = os.environ.copy()
 
+    app_dir_name = "frequently_cgo_call_go_app"
+    app_root_path = os.path.join(base_path, app_dir_name)
+    app_language = "go"
+
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
+
+    print(f'Assembling and building package "{app_dir_name}".')
+
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
+    )
+    if rc != 0:
+        assert False, "Failed to build package."
+
     if sys.platform == "win32":
-        print("test_frequently_cgo_call_go doesn't support win32")
-        assert False
+        # client depends on ten_runtime.dll and ten_utils.dll in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
+            )
+            + os.pathsep
+            + my_env.get("PATH", "")
+        )
     elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
@@ -32,56 +62,25 @@ def test_frequently_cgo_call_go():
             "frequently_cgo_call_go_app/ten_packages/system/ten_runtime/lib",
         )
 
-    app_dir_name = "frequently_cgo_call_go_app"
-    app_root_path = os.path.join(base_path, app_dir_name)
-    app_language = "go"
-
-    build_config_args = build_config.parse_build_config(
-        os.path.join(root_dir, "tgn_args.txt"),
-    )
-
-    if build_config_args.ten_enable_integration_tests_prebuilt is False:
-        # Before starting, cleanup the old app package.
-        fs_utils.remove_tree(app_root_path)
-
-        print(f'Assembling and building package "{app_dir_name}".')
-
-        rc = build_pkg.prepare_and_build_app(
-            build_config_args,
-            root_dir,
-            base_path,
-            app_dir_name,
-            app_language,
+    if sys.platform == "win32":
+        start_py = os.path.join(
+            base_path, "frequently_cgo_call_go_app/bin/start.py"
         )
-        if rc != 0:
-            assert False, "Failed to build package."
+        server_cmd = [sys.executable, start_py]
+        client_cmd = os.path.join(
+            base_path, "frequently_cgo_call_go_app_client.exe"
+        )
 
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
+        if not os.path.isfile(start_py):
+            print(f"Server command '{start_py}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(base_path, "frequently_cgo_call_go_app/bin/start")
+        client_cmd = os.path.join(base_path, "frequently_cgo_call_go_app_client")
 
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
-    )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
-
-    server_cmd = os.path.join(base_path, "frequently_cgo_call_go_app/bin/start")
-    client_cmd = os.path.join(base_path, "frequently_cgo_call_go_app_client")
-
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     if not os.path.isfile(client_cmd):
         print(f"Client command '{client_cmd}' does not exist.")

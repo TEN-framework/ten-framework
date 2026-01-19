@@ -12,6 +12,5 @@ mod log;
 mod path;
 mod pkg_info;
 mod schema;
-
-// Include mock implementations for external functions.
-mod test_mock;
+mod telemetry;
+mod value_buffer_test;

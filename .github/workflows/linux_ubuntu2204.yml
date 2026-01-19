@@ -146,21 +146,39 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
 
+          # $HOME could be different in different commands, causing path conflicts.
+          export CARGO_HOME=/root/.cargo
+          export RUSTUP_HOME=/root/.rustup
+
           if [ "${{ matrix.arch }}" = "x64" ]; then
             go env -w GOFLAGS="-buildvcs=false"
             go install golang.org/dl/go1.24.3@latest
             export PATH=$PATH:$(go env GOPATH)/bin
             go1.24.3 download
             go1.24.3 version
-            rustup default nightly-2025-09-18
+
+            # Set Rust toolchain based on build type
+            # Linux debug uses nightly (for ASAN support)
+            # Linux release, Mac, and Windows use stable
+            if [ "${{ matrix.build_type }}" = "debug" ]; then
+              echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
+              rustup update nightly
+              rustup default nightly
+            else
+              echo "Setting Rust toolchain to stable for Linux release build"
+              rustup default stable
+            fi
+
+            rustc --version
+            cargo --version
           fi
 
           df -h .
 
           if [ "${{ matrix.arch }}" = "x86" ]; then
-            EXTRA_ARGS="is_clang=false ten_enable_ten_rust=false ten_enable_ten_manager=false ten_manager_enable_tests=false ten_enable_go_binding=false ten_enable_python_binding=false ten_enable_nodejs_binding=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false"
+            EXTRA_ARGS="is_clang=false ten_enable_ten_rust=false ten_enable_ten_manager=false ten_manager_enable_tests=false ten_enable_go_binding=false ten_enable_python_binding=false ten_enable_nodejs_binding=false ten_manager_enable_frontend=false"
           else
-            EXTRA_ARGS="is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true"
+            EXTRA_ARGS="is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_ffmpeg_extensions=true"
           fi
 
           echo $EXTRA_ARGS
@@ -1152,15 +1170,80 @@ jobs:
 
   test-integration-python:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         compiler: [gcc, clang]
         build_type: [debug, release]
         arch: [x64]
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            autoconf \
+            libtool \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm \
+            uuid-dev \
+            libexpat1-dev \
+            libcurl4-openssl-dev \
+            zlib1g-dev \
+            libncurses5-dev \
+            libffi-dev \
+            libreadline-dev \
+            libmsgpack-dev \
+            libcrypto++-dev
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
         with:
@@ -1211,6 +1294,46 @@ jobs:
               console.log('Error details:', error);
               console.log('Continuing matrix execution due to error...');
             }
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          sudo apt-get update
+
+          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21
+          sudo apt-get purge -y clang-13 clang-14 clang-15 \
+            llvm-13-dev llvm-13-runtime llvm-13 \
+            llvm-14-dev llvm-14-runtime llvm-14 \
+            llvm-15-dev llvm-15-runtime llvm-15 || true
+          sudo apt-get autopurge -y || true
+
+          # Now install LLVM 21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          # Create symlinks to make clang-21 available without version suffix
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Verify installation
+          echo "=== Verifying LLVM 21 installation ==="
+          which clang
+          clang --version | head -1
 
       - uses: actions/checkout@v4
         with:
@@ -1265,7 +1388,7 @@ jobs:
           fi
 
           # Adjust somaxconn; ignore failure if not permitted.
-          if ! sysctl -w net.core.somaxconn=8192; then
+          if ! sudo sysctl -w net.core.somaxconn=8192; then
             echo "WARNING: failed to set net.core.somaxconn, continuing."
           fi
         shell: bash

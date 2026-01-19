@@ -1,0 +1,193 @@
+"""
+Test go_app_raise_exception_python.
+"""
+
+import subprocess
+import os
+import sys
+import time
+from sys import stdout
+from .utils import http, build_config, build_pkg, fs_utils
+
+
+def http_request():
+    return http.post(
+        "http://127.0.0.1:8002/",
+        {
+            "ten": {
+                "name": "test",
+            },
+        },
+    )
+
+
+def test_go_app_raise_exception_python():
+    """Test client and app server."""
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.join(base_path, "../../../../../")
+
+    my_env = os.environ.copy()
+
+    # Set the required environment variables for the test.
+    my_env["PYTHONMALLOC"] = "malloc"
+    my_env["PYTHONDEVMODE"] = "1"
+
+    app_dir_name = "go_app_raise_exception_python_app"
+    app_root_path = os.path.join(base_path, app_dir_name)
+    app_language = "go"
+
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
+
+    print(f'Assembling and building package "{app_dir_name}".')
+
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
+    )
+    if rc != 0:
+        assert False, "Failed to build package."
+
+    # Step 1: Bootstrap Python dependencies (update pyproject.toml and sync)
+    print("Bootstrapping Python dependencies...")
+    rc = build_pkg.bootstrap_python_dependencies(
+        app_root_path, my_env, log_level=1
+    )
+    if rc != 0:
+        assert False, "Failed to bootstrap Python dependencies."
+
+    # Step 2: Activate virtual environment for Go/C++ app
+    # Go/C++ app needs to find Python packages in the uv-managed venv
+    venv_path = os.path.join(app_root_path, ".venv")
+    if os.path.exists(venv_path):
+        my_env["VIRTUAL_ENV"] = venv_path
+        if sys.platform == "win32":
+            venv_bin_dir = os.path.join(venv_path, "Scripts")
+
+            # Add site-packages to PYTHONPATH so embedded Python can find dependencies
+            site_packages = os.path.join(venv_path, "Lib", "site-packages")
+            if os.path.exists(site_packages):
+                my_env["PYTHONPATH"] = (
+                    site_packages + os.pathsep + my_env.get("PYTHONPATH", "")
+                )
+        else:
+            venv_bin_dir = os.path.join(venv_path, "bin")
+        my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
+        print(f"Activated virtual environment at {venv_path}")
+
+    # Step 3: Setup AddressSanitizer if needed
+    if sys.platform == "linux":
+        if (
+            build_config_args.enable_sanitizer
+            and not build_config_args.is_clang
+        ):
+            libasan_path = os.path.join(
+                base_path,
+                (
+                    "go_app_raise_exception_python_app/ten_packages/system/"
+                    "ten_runtime/lib/libasan.so"
+                ),
+            )
+
+            if os.path.exists(libasan_path):
+                print("Using AddressSanitizer library.")
+                my_env["LD_PRELOAD"] = libasan_path
+
+    if sys.platform == "win32":
+        start_script = os.path.join(app_root_path, "bin", "start.py")
+
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
+
+        server_cmd = [sys.executable, start_script]
+    else:
+        server_cmd = os.path.join(app_root_path, "bin/start")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
+
+    server = subprocess.Popen(
+        server_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=app_root_path,
+    )
+
+    is_started = http.is_app_started("127.0.0.1", 8002, 30)
+    if not is_started:
+        print(
+            "The go_app_raise_exception_python is not started after 30 seconds."
+        )
+
+        server.kill()
+        exit_code = server.wait()
+        print("The exit code of go_app_raise_exception_python: ", exit_code)
+
+        assert exit_code == 0
+        assert False
+
+        return
+
+    try:
+        resp = http_request()
+        print(resp)
+
+        # Wait for the app to crash due to the unhandled exception
+        # We expect it to exit with non-zero code because we raised an exception
+        # But since we are catching it in async_extension.py and calling os._exit(1),
+        # we need to wait for the process to terminate.
+
+        max_retries = 10
+        for _ in range(max_retries):
+            if server.poll() is not None:
+                break
+            time.sleep(1)
+
+        exit_code = server.wait()
+        print("The exit code of go_app_raise_exception_python: ", exit_code)
+
+        # We expect exit code 1 because _exit_on_exception calls os._exit(1)
+        assert exit_code == 1, f"Expected exit code 1, but got {exit_code}"
+
+        # Verify the log file contains the exception message
+        log_file_path = os.path.join(app_root_path, "test.log")
+        if os.path.exists(log_file_path):
+            with open(log_file_path, "r") as f:
+                log_content = f.read()
+                expected_msg = (
+                    "Test CancelledError for BaseException catch verification"
+                )
+                if expected_msg in log_content:
+                    print(
+                        f"Found expected exception message in log: {expected_msg}"
+                    )
+                else:
+                    print(f"Log content: {log_content}")
+                    assert (
+                        False
+                    ), f"Expected exception message '{expected_msg}' not found in log"
+        else:
+            assert False, f"Log file not found at {log_file_path}"
+
+    finally:
+        # If the server is still running (test failed), try to stop it gracefully
+        if server.poll() is None:
+            is_stopped = http.stop_app("127.0.0.1", 8002, 5)
+            if not is_stopped:
+                server.kill()
+            server.wait()
+
+        if build_config_args.ten_enable_tests_cleanup is True:
+            # Testing complete. If builds are only created during the testing
+            # phase, we can clear the build results to save disk space.
+            fs_utils.remove_tree(app_root_path)

@@ -31,7 +31,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       matrix:
         compiler: [gcc]
@@ -111,45 +111,32 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Create out directory
-        run: |
-          # Due to the use of QEMU, running as root inside the Docker container
-          # is required. However, outside the container, the user is not root.
-          # This causes issues when trying to handle the contents of the out/
-          # folder from outside the container. To resolve this, the out/ folder
-          # is first created by a regular non-root user to prevent it from being
-          # created during the build stage, thus avoiding permission issues with
-          # the out/ folder being created by the root user.
-          mkdir -p out/linux/arm64
-        shell: bash
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Build
         run: |
-          docker run --rm --platform linux/arm64 \
-            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
-            ghcr.io/ten-framework/ten_building_ubuntu2204 \
-            bash -c "\
-              export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
-              echo $PATH && \
-              go env -w GOFLAGS="-buildvcs=false" && \
-              go install golang.org/dl/go1.24.3@latest && \
-              go1.24.3 download && \
-              apt-get install -y curl && \
-              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
-              bash nodesource_setup.sh && \
-              apt-get install -y nodejs && \
-              rustup default nightly-2025-09-18 && \
-              df -h . && \
-              tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false && \
-              tgn build linux arm64 ${{ matrix.build_type }} && \
-              df -h . && \
-              tree -I 'gen|obj' out \
-            "
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          echo $PATH
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
+
+          sudo apt-get install -y curl
+          curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+          bash nodesource_setup.sh
+          sudo apt-get install -y nodejs
+
+          rustup default nightly-2025-09-18
+
+          pip3 install --use-pep517 python-dotenv jinja2
+
+          df -h .
+
+          tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false
+          tgn build linux arm64 ${{ matrix.build_type }}
+
+          df -h .
+          tree -I 'gen|obj' out
 
       - name: Fix permissions for build outputs
         run: |
@@ -264,94 +251,86 @@ jobs:
         if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.compiler == 'gcc' && matrix.build_type == 'release' }}
         continue-on-error: true
         run: |
-          docker run --rm --platform linux/arm64 \
-              -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} --entrypoint /bin/bash \
-              ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
-              set -x && \
-              TMAN_BIN=$(pwd)/out/linux/arm64/ten_manager/bin/tman && \
-              cd out/linux/arm64 && \
-              ARRAY=(
-                \"ten_packages/system/ten_runtime\"
-                \"ten_packages/system/ten_runtime_go\"
-                \"ten_packages/system/ten_runtime_python\"
-                \"ten_packages/system/ten_runtime_nodejs\"
-                \"ten_packages/addon_loader/python_addon_loader\"
-                \"ten_packages/addon_loader/nodejs_addon_loader\"
-              ) && \
-              SUCCESSFUL_PUBLISHES=0 && \
-              FAILED_PUBLISHES=0 && \
-              for item in \"\${ARRAY[@]}\"; do
-                echo \"Processing: \$item\" && \
-                if [ ! -d \"\$item\" ]; then
-                  echo \"✗ Directory not found: \$item, skipping...\" && \
-                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1)) && \
-                  continue
-                fi && \
-                cd \"\$item\" || {
-                  echo \"✗ Failed to enter directory: \$item, skipping...\" && \
-                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1)) && \
-                  continue
-                } && \
-                if identity=\$(\"\$TMAN_BIN\" package --get-identity 2>/dev/null); then
-                  echo \"Identity: \$identity\" && \
-                  echo \"Attempting to delete existing package...\" && \
-                  read -r pkg_type pkg_name pkg_version pkg_hash <<< \"\$identity\" && \
-                  \"\$TMAN_BIN\" --verbose --admin-token '${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }}' delete \"\$pkg_type\" \"\$pkg_name\" \"\$pkg_version\" \"\$pkg_hash\" || {
-                    echo \"Warning: Failed to delete existing package (this is normal if package doesn't exist)\"
-                  } && \
-                  echo \"Attempting to publish package...\" && \
-                  if \"\$TMAN_BIN\" --verbose --user-token '${{ secrets.TEN_CLOUD_STORE }}' publish; then
-                    echo \"✓ Successfully published: \$item\" && \
-                    SUCCESSFUL_PUBLISHES=\$((SUCCESSFUL_PUBLISHES + 1))
-                  else
-                    echo \"✗ Failed to publish: \$item\" && \
-                    FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1))
-                  fi
-                else
-                  echo \"✗ Failed to get identity for: \$item\" && \
-                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1))
-                fi && \
-                cd - >/dev/null
-              done && \
-              echo \"Publication summary: \$SUCCESSFUL_PUBLISHES successful, \$FAILED_PUBLISHES failed\" && \
-              df -h . \
-          "
+          set -x
+          TMAN_BIN=$(pwd)/out/linux/arm64/ten_manager/bin/tman
+          cd out/linux/arm64
+          ARRAY=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+          SUCCESSFUL_PUBLISHES=0
+          FAILED_PUBLISHES=0
+          for item in "${ARRAY[@]}"; do
+            echo "Processing: $item"
+            if [ ! -d "$item" ]; then
+              echo "✗ Directory not found: $item, skipping..."
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              continue
+            fi
+            cd "$item" || {
+              echo "✗ Failed to enter directory: $item, skipping..."
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              continue
+            }
+            if identity=$("$TMAN_BIN" package --get-identity 2>/dev/null); then
+              echo "Identity: $identity"
+              echo "Attempting to delete existing package..."
+              read -r pkg_type pkg_name pkg_version pkg_hash <<< "$identity"
+              "$TMAN_BIN" --verbose --admin-token '${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }}' delete "$pkg_type" "$pkg_name" "$pkg_version" "$pkg_hash" || {
+                echo "Warning: Failed to delete existing package (this is normal if package doesn't exist)"
+              }
+              echo "Attempting to publish package..."
+              if "$TMAN_BIN" --verbose --user-token '${{ secrets.TEN_CLOUD_STORE }}' publish; then
+                echo "✓ Successfully published: $item"
+                SUCCESSFUL_PUBLISHES=$((SUCCESSFUL_PUBLISHES + 1))
+              else
+                echo "✗ Failed to publish: $item"
+                FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              fi
+            else
+              echo "✗ Failed to get identity for: $item"
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+            fi
+            cd - >/dev/null
+          done
+          echo "Publication summary: $SUCCESSFUL_PUBLISHES successful, $FAILED_PUBLISHES failed"
+          df -h .
         shell: bash
 
       - name: Clean up
         if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.compiler == 'gcc' && matrix.build_type == 'release' }}
         continue-on-error: true
         run: |
-          docker run --rm --platform linux/arm64 \
-              -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} --entrypoint /bin/bash \
-              ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
-              cd out/linux/arm64 && \
-              ARRAY=(
-                \"ten_packages/system/ten_runtime\"
-                \"ten_packages/system/ten_runtime_go\"
-                \"ten_packages/system/ten_runtime_python\"
-                \"ten_packages/system/ten_runtime_nodejs\"
-                \"ten_packages/addon_loader/python_addon_loader\"
-                \"ten_packages/addon_loader/nodejs_addon_loader\"
-              ) && \
-              SUCCESSFUL_CLEANUPS=0 && \
-              FAILED_CLEANUPS=0 && \
-              for item in \"\${ARRAY[@]}\"; do
-                echo \"Cleaning up: \$item\" && \
-                if [ -e \"\$item\" ]; then
-                  if rm -rf \"\$item\"; then
-                    echo \"✓ Successfully removed: \$item\" && \
-                    SUCCESSFUL_CLEANUPS=\$((SUCCESSFUL_CLEANUPS + 1))
-                  else
-                    echo \"✗ Failed to remove: \$item\" && \
-                    FAILED_CLEANUPS=\$((FAILED_CLEANUPS + 1))
-                  fi
-                else
-                  echo \"• Already absent: \$item\" && \
-                  SUCCESSFUL_CLEANUPS=\$((SUCCESSFUL_CLEANUPS + 1))
-                fi
-              done && \
-              echo \"Cleanup summary: \$SUCCESSFUL_CLEANUPS successful, \$FAILED_CLEANUPS failed\" && \
-              df -h . \
-          "
+          cd out/linux/arm64
+          ARRAY=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+          SUCCESSFUL_CLEANUPS=0
+          FAILED_CLEANUPS=0
+          for item in "${ARRAY[@]}"; do
+            echo "Cleaning up: $item"
+            if [ -e "$item" ]; then
+              if rm -rf "$item"; then
+                echo "✓ Successfully removed: $item"
+                SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
+              else
+                echo "✗ Failed to remove: $item"
+                FAILED_CLEANUPS=$((FAILED_CLEANUPS + 1))
+              fi
+            else
+              echo "• Already absent: $item"
+              SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
+            fi
+          done
+          echo "Cleanup summary: $SUCCESSFUL_CLEANUPS successful, $FAILED_CLEANUPS failed"
+          df -h .
         shell: bash

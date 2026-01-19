@@ -42,7 +42,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 pub struct LocaleContent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
@@ -116,9 +116,69 @@ impl LocaleContent {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LocalizedField {
     pub locales: HashMap<String, LocaleContent>,
+}
+
+/// Represents a field that can be either a simple string or a localized field.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StringOrLocalizedField {
+    String(String),
+    Localized(LocalizedField),
+}
+
+impl StringOrLocalizedField {
+    /// Get the locales map if this is a localized field, otherwise None
+    pub fn as_localized(&self) -> Option<&LocalizedField> {
+        match self {
+            StringOrLocalizedField::Localized(field) => Some(field),
+            _ => None,
+        }
+    }
+
+    /// Get the string value if this is a simple string, otherwise None
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            StringOrLocalizedField::String(s) => Some(s),
+            _ => None,
+        }
+    }
+}
+
+impl Serialize for StringOrLocalizedField {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            StringOrLocalizedField::String(s) => serializer.serialize_str(s),
+            StringOrLocalizedField::Localized(field) => field.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for StringOrLocalizedField {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde_json::Value;
+
+        let value = Value::deserialize(deserializer)?;
+
+        match value {
+            Value::String(s) => Ok(StringOrLocalizedField::String(s)),
+            Value::Object(_) => {
+                let field: LocalizedField =
+                    serde_json::from_value(value).map_err(serde::de::Error::custom)?;
+                Ok(StringOrLocalizedField::Localized(field))
+            }
+            _ => Err(serde::de::Error::custom(
+                "description must be either a string or a localized field object",
+            )),
+        }
+    }
 }
 
 // Define a structure that mirrors the structure of the JSON file.

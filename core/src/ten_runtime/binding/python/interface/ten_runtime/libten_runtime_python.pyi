@@ -20,6 +20,7 @@ class _TenError:
     def __new__(
         cls, error_code: int, error_message: str | None
     ) -> "_TenError": ...
+    def __str__(self) -> str: ...
     def error_code(self) -> int: ...
     def error_message(self) -> str: ...
 
@@ -240,6 +241,7 @@ class _TenEnv:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _App:
@@ -295,6 +297,7 @@ class _TenEnvTester:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _ExtensionTester:

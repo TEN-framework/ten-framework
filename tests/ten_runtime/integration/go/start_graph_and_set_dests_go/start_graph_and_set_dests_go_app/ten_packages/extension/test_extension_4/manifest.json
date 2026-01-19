@@ -1,0 +1,13 @@
+{
+  "type": "extension",
+  "name": "test_extension_4",
+  "version": "0.10.31",
+  "api": {},
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11.51"
+    }
+  ]
+}

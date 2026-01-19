@@ -48,11 +48,8 @@ template("rust_target") {
       _rustflags = invoker._rustflags
     }
 
-    # Inject Rust coverage instrumentation globally for TEN Rust crates when
-    # enabled. Exclude tman (TEN Manager) from coverage instrumentation to
-    # reduce memory usage (Because it will consume a lot of disk space when
-    # running in Github CI).
-    if (enable_coverage && _target_name != "tman") {
+    # Inject Rust coverage instrumentation globally for TEN Rust crates.
+    if (enable_coverage) {
       assert(is_linux && target_cpu == "x64",
              "Coverage instrumentation should only be enabled in Linux + x64")
 
@@ -85,6 +82,11 @@ template("rust_target") {
       _rustflags = "${_rustflags} ${flags}"
     }
 
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
+    }
+
     if (_rustflags != "") {
       args += [
         "--env",
@@ -106,12 +108,24 @@ template("rust_target") {
     # and there might be asan conflict with the shared libraries depended by
     # the dependencies.
     if (is_win) {
-      if (target_cpu == "x86") {
-        target = "i686-pc-windows-msvc"
-      } else if (target_cpu == "x64") {
-        target = "x86_64-pc-windows-msvc"
-      } else if (target_cpu == "arm64") {
-        target = "aarch64-pc-windows-msvc"
+      if (is_mingw) {
+        # MinGW target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-gnu"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-gnu"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-gnullvm"
+        }
+      } else {
+        # MSVC target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-msvc"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-msvc"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-msvc"
+        }
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -251,10 +265,8 @@ template("rust_test") {
       _rustflags = invoker._rustflags
     }
 
-    # Inject Rust coverage instrumentation globally for TEN Rust crates when
-    # enabled. Exclude tman tests from coverage instrumentation (Because it will
-    # consume a lot of disk space when running in Github CI).
-    if (enable_coverage && _target_name != "tman_test_cargo_build") {
+    # Inject Rust coverage instrumentation globally for TEN Rust crates.
+    if (enable_coverage) {
       assert(is_linux && target_cpu == "x64",
              "Coverage instrumentation should only be enabled in Linux + x64")
 
@@ -287,6 +299,11 @@ template("rust_test") {
       _rustflags = "${_rustflags} ${flags}"
     }
 
+    # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
+    if (is_win && is_mingw) {
+      _rustflags = "${_rustflags} -C link-arg=-lntdll"
+    }
+
     if (_rustflags != "") {
       args += [
         "--env",
@@ -308,12 +325,24 @@ template("rust_test") {
     # and there might be asan conflict with the shared libraries depended by
     # the dependencies.
     if (is_win) {
-      if (target_cpu == "x86") {
-        target = "i686-pc-windows-msvc"
-      } else if (target_cpu == "x64") {
-        target = "x86_64-pc-windows-msvc"
-      } else if (target_cpu == "arm64") {
-        target = "aarch64-pc-windows-msvc"
+      if (is_mingw) {
+        # MinGW target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-gnu"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-gnu"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-gnullvm"
+        }
+      } else {
+        # MSVC target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-msvc"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-msvc"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-msvc"
+        }
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -460,12 +489,24 @@ template("rust_gen_cargo_config") {
     }
 
     if (is_win) {
-      if (target_cpu == "x86") {
-        target = "i686-pc-windows-msvc"
-      } else if (target_cpu == "x64") {
-        target = "x86_64-pc-windows-msvc"
-      } else if (target_cpu == "arm64") {
-        target = "aarch64-pc-windows-msvc"
+      if (is_mingw) {
+        # MinGW target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-gnu"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-gnu"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-gnullvm"
+        }
+      } else {
+        # MSVC target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-msvc"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-msvc"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-msvc"
+        }
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {
@@ -548,12 +589,24 @@ template("rust_clean") {
     ]
 
     if (is_win) {
-      if (target_cpu == "x86") {
-        target = "i686-pc-windows-msvc"
-      } else if (target_cpu == "x64") {
-        target = "x86_64-pc-windows-msvc"
-      } else if (target_cpu == "arm64") {
-        target = "aarch64-pc-windows-msvc"
+      if (is_mingw) {
+        # MinGW target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-gnu"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-gnu"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-gnullvm"
+        }
+      } else {
+        # MSVC target for Windows
+        if (target_cpu == "x86") {
+          target = "i686-pc-windows-msvc"
+        } else if (target_cpu == "x64") {
+          target = "x86_64-pc-windows-msvc"
+        } else if (target_cpu == "arm64") {
+          target = "aarch64-pc-windows-msvc"
+        }
       }
     } else if (is_linux) {
       if (target_cpu == "arm64") {

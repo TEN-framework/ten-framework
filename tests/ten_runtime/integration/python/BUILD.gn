@@ -78,6 +78,7 @@ group("python") {
           "go_app_log_rotate_python",
           "go_app_partially_cythonize",
           "go_app_python",
+          "go_app_raise_exception_python",
           "unused_addon_python",
         ]
       }

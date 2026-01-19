@@ -6,9 +6,13 @@
 #
 yyjson_output_libs = []
 
-if (is_win) {
+if (is_win && !is_mingw) {
   yyjson_output_libs +=
       [ "${root_gen_dir}/cmake/yyjson/install/lib/yyjson.lib" ]
+} else if (is_win && is_mingw) {
+  # MinGW generates libyyjson.a with GNU ar format
+  yyjson_output_libs +=
+      [ "${root_gen_dir}/cmake/yyjson/install/lib/libyyjson.a" ]
 } else if (is_mac) {
   yyjson_output_libs +=
       [ "${root_gen_dir}/cmake/yyjson/install/lib/libyyjson.a" ]

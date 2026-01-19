@@ -10,6 +10,14 @@ import websockets
 
 
 @dataclass
+class QueueItem:
+    """Queue item that can carry a callback to be executed before sending."""
+
+    message: str | bytes
+    before_send_callback: Callable
+
+
+@dataclass
 class SonioxTranscriptToken:
     text: str
     start_ms: int
@@ -98,6 +106,9 @@ class SonioxWebsocketClient:
         self._last_audio_time = 0.0
         self._keepalive_task = None
 
+        self._total_sent_audio_bytes = 0
+        self._connection_attempt_start_time = 0
+
     async def connect(self):
         self._reset_client_state()
         while (
@@ -107,10 +118,15 @@ class SonioxWebsocketClient:
             try:
                 self._reset_session_state()
                 self.state = self.State.CONNECTING
+                # Record timestamp before each connection attempt
+                self._connection_attempt_start_time = int(time.time() * 1000)
                 async with websockets.connect(self.url) as ws:
                     await ws.send(self.start_request)
                     self.state = self.State.CONNECTED
-                    await self._call(SonioxWebsocketEvents.OPEN)
+                    await self._call(
+                        SonioxWebsocketEvents.OPEN,
+                        self._connection_attempt_start_time,
+                    )
                     # Start keepalive task when connection is established and keepalive is enabled
                     if self.enable_keepalive:
                         self._start_keepalive_task(ws)
@@ -173,11 +189,7 @@ class SonioxWebsocketClient:
 
     async def _exponential_backoff(self):
         if self._attempt_count >= self.max_attempts:
-            self.state = self.State.STOPPED
-            await self._call(
-                SonioxWebsocketEvents.EXCEPTION,
-                Exception("max attempts reached"),
-            )
+            await asyncio.sleep(self.max_delay)
             return
 
         self._attempt_count += 1
@@ -274,16 +286,34 @@ class SonioxWebsocketClient:
                 )
         assert False, f"Invalid token: {token}"
 
-    async def _handle_send(self, ws, message: str):
-        await ws.send(message)
+    async def _handle_send(self, ws, item: str | bytes | QueueItem):
+        if isinstance(item, QueueItem):
+            await item.before_send_callback(self._total_sent_audio_bytes)
+            await ws.send(item.message)
+        elif isinstance(item, bytes):
+            self._total_sent_audio_bytes += len(item)
+            await ws.send(item)
+        else:  # str
+            await ws.send(item)
 
-    async def finalize(self, trailing_silence_ms: int | None = None):
+    async def finalize(
+        self,
+        trailing_silence_ms: int | None = None,
+        before_send_callback: Optional[Callable] = None,
+    ):
         q: dict[str, Any] = {
             "type": "finalize",
         }
         if trailing_silence_ms is not None:
             q["trailing_silence_ms"] = trailing_silence_ms
-        await self._send_queue.put(json.dumps(q))
+
+        message = json.dumps(q)
+
+        # Only use QueueItem if callback provided
+        if before_send_callback:
+            await self._send_queue.put(QueueItem(message, before_send_callback))
+        else:
+            await self._send_queue.put(message)
 
     async def stop(self, wait: bool = True):
         self.state = self.State.STOPPING
@@ -310,7 +340,7 @@ class SonioxWebsocketClient:
         EXCEPTION:
             - Exception: the exception object
         OPEN:
-            - None
+            - connection_start_timestamp: int (milliseconds)
         CLOSE:
             - None
         ERROR:

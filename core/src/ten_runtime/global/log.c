@@ -31,7 +31,8 @@ void ten_log_rust_log_func(ten_log_t *self, TEN_LOG_LEVEL level,
                            const char *func_name, size_t func_name_len,
                            const char *file_name, size_t file_name_len,
                            size_t line_no, const char *msg, size_t msg_len,
-                           ten_value_t *fields) {
+                           const uint8_t *fields_buf, size_t fields_buf_size,
+                           const ten_log_loc_info_t *loc_info) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(self->advanced_impl.impl, "Invalid argument.");
@@ -42,7 +43,7 @@ void ten_log_rust_log_func(ten_log_t *self, TEN_LOG_LEVEL level,
   ten_get_pid_tid(&pid, &tid);
   ten_rust_log(self->advanced_impl.config, category, category_len, pid, tid,
                level, func_name, func_name_len, file_name, file_name_len,
-               line_no, msg, msg_len);
+               line_no, loc_info, msg, msg_len, fields_buf, fields_buf_size);
 #endif
 }
 

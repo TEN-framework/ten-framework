@@ -32,40 +32,44 @@ struct FieldVisitor {
     line_no: Option<u32>,
     message: String,
     category: Option<String>,
+    user_fields: Option<String>,
 }
 
 impl Visit for FieldVisitor {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn fmt::Debug) {
         match field.name() {
-            "pid" => {
+            "ten_pid" => {
                 if let Ok(pid) = format!("{value:?}").parse::<i64>() {
                     self.pid = Some(pid);
                 }
             }
-            "tid" => {
+            "ten_tid" => {
                 if let Ok(tid) = format!("{value:?}").parse::<i64>() {
                     self.tid = Some(tid);
                 }
             }
-            "func_name" => {
+            "ten_func_name" => {
                 self.func_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "file_name" => {
+            "ten_file_name" => {
                 self.file_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "line_no" => {
+            "ten_line_no" => {
                 if let Ok(line) = format!("{value:?}").parse::<u32>() {
                     self.line_no = Some(line);
                 }
             }
-            "category" => {
+            "ten_category" => {
                 self.category = Some(format!("{value:?}").trim_matches('"').to_string());
             }
-            "message" => {
+            "ten_message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
                 self.message.push_str(format!("{value:?}").trim_matches('"'));
+            }
+            "ten_user_fields" => {
+                self.user_fields = Some(format!("{value:?}"));
             }
             _ => {
                 // This might be the actual log message
@@ -81,20 +85,23 @@ impl Visit for FieldVisitor {
 
     fn record_str(&mut self, field: &tracing::field::Field, value: &str) {
         match field.name() {
-            "func_name" => {
+            "ten_func_name" => {
                 self.func_name = Some(value.to_string());
             }
-            "file_name" => {
+            "ten_file_name" => {
                 self.file_name = Some(value.to_string());
             }
-            "category" => {
+            "ten_category" => {
                 self.category = Some(value.to_string());
             }
-            "message" => {
+            "ten_message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
                 self.message.push_str(value);
+            }
+            "ten_user_fields" => {
+                self.user_fields = Some(value.to_string());
             }
             _ => {
                 // This might be the actual log message
@@ -106,17 +113,17 @@ impl Visit for FieldVisitor {
     }
 
     fn record_u64(&mut self, field: &tracing::field::Field, value: u64) {
-        if field.name() == "line_no" {
+        if field.name() == "ten_line_no" {
             self.line_no = Some(value as u32);
         }
     }
 
     fn record_i64(&mut self, field: &tracing::field::Field, value: i64) {
         match field.name() {
-            "pid" => {
+            "ten_pid" => {
                 self.pid = Some(value);
             }
-            "tid" => {
+            "ten_tid" => {
                 self.tid = Some(value);
             }
             _ => {}
@@ -274,6 +281,23 @@ where
             ctx.field_format().format_fields(writer.by_ref(), event)?;
             if self.ansi {
                 write!(writer, "{}", self.reset_color())?;
+            }
+        }
+
+        // Append user_fields as key-value pairs (e.g., a=111 b="ccc")
+        if let Some(user_fields_str) = visitor.user_fields.as_deref() {
+            if !user_fields_str.is_empty() {
+                // Try to parse as JSON object and expand
+                if let Ok(serde_json::Value::Object(obj)) =
+                    serde_json::from_str::<serde_json::Value>(user_fields_str)
+                {
+                    for (k, v) in obj.iter() {
+                        write!(writer, " {}={}", k, v)?;
+                    }
+                } else {
+                    // Fallback: print as raw JSON
+                    write!(writer, " {}", user_fields_str)?;
+                }
             }
         }
 

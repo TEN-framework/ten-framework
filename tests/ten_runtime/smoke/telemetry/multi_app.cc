@@ -91,7 +91,13 @@ class test_app_1 : public ten::app_t {
                         },
                         "services": {
                           "telemetry": {
-                            "enabled": true
+                            "enabled": true,
+                            "metrics": {
+                              "enabled": true,
+                              "exporter": {
+                                "type": "console"
+                              }
+                            }
                           }
                         }
                       }
@@ -138,8 +144,12 @@ class test_app_2 : public ten::app_t {
                         "services": {
                           "telemetry": {
                             "enabled": true,
-                            "host": "0.0.0.0",
-                            "port": 49485
+                            "metrics": {
+                              "enabled": true,
+                              "exporter": {
+                                "type": "console"
+                              }
+                            }
                           }
                         }
                       }

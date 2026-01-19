@@ -15,9 +15,6 @@
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
 
-#define TEN_SERVICE_HUB_DEFAULT_HOST "0.0.0.0"
-#define TEN_SERVICE_HUB_DEFAULT_PORT 49484
-
 typedef struct ServiceHub ServiceHub;
 typedef struct MetricHandle MetricHandle;
 
@@ -25,6 +22,9 @@ typedef struct ten_service_hub_t {
   ServiceHub *service_hub;
 
   MetricHandle *metric_extension_thread_msg_queue_stay_time_us;
+  MetricHandle *metric_extension_lifecycle_duration_us;
+  MetricHandle *metric_extension_cmd_processing_duration_us;
+  MetricHandle *metric_extension_callback_execution_duration_us;
 } ten_service_hub_t;
 
 TEN_RUNTIME_PRIVATE_API void ten_service_hub_init(ten_service_hub_t *self);

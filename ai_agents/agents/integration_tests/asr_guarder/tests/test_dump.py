@@ -206,6 +206,55 @@ class DumpTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
+def get_dump_file_path(temp_dir: Path, original_audio_file_path: str) -> Path:
+    """Factory function to get dump file path by matching file size with original audio.
+
+    Finds all .pcm files in the dump directory and returns the one that matches
+    the size of the original audio file. Ensures exactly one match exists.
+
+    Args:
+        temp_dir: Temporary directory where dump files are stored
+        original_audio_file_path: Path to the original audio file for size comparison
+
+    Returns:
+        Path to the dump file to verify
+
+    Raises:
+        AssertionError: If no matching dump file is found or multiple matches exist
+    """
+    # Get original audio file size
+    if not os.path.exists(original_audio_file_path):
+        raise FileNotFoundError(
+            f"Original audio file not found: {original_audio_file_path}"
+        )
+    original_file_size = os.path.getsize(original_audio_file_path)
+
+    # Find all .pcm files in the dump directory
+    pcm_files = list(temp_dir.glob("*.pcm"))
+    assert (
+        len(pcm_files) > 0
+    ), f"No .pcm files found in dump directory: {temp_dir}"
+
+    # Find files with matching size
+    matching_files = [
+        pcm_file
+        for pcm_file in pcm_files
+        if pcm_file.stat().st_size == original_file_size
+    ]
+
+    # Ensure exactly one match
+    assert len(matching_files) == 1, (
+        f"Expected exactly one dump file with size {original_file_size} bytes, "
+        f"but found {len(matching_files)}: {[str(f) for f in matching_files]}"
+    )
+
+    dump_file_path = matching_files[0]
+    print(
+        f"Found matching dump file: {dump_file_path} (size: {original_file_size} bytes)"
+    )
+    return dump_file_path
+
+
 def test_dump(extension_name: str, config_dir: str) -> None:
     """Verify ASR dump functionality with audio file output."""
 
@@ -249,15 +298,9 @@ def test_dump(extension_name: str, config_dir: str) -> None:
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
 
-    # Find dump file in the directory
-    pcm_files = list(temp_dir.glob("*.pcm"))
-    assert (
-        len(pcm_files) > 0
-    ), f"No .pcm files found in dump directory: {temp_dir}"
-
-    # Use the first .pcm file found
-    dump_file_path = pcm_files[0]
-    print(f"Found dump file: {dump_file_path}")
+    # Find dump file in the directory using factory function
+    # Match by file size first, then verify byte-by-byte comparison
+    dump_file_path = get_dump_file_path(temp_dir, audio_file_path)
 
     # Validate dump file content
     file_size = dump_file_path.stat().st_size

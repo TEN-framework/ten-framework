@@ -16,8 +16,6 @@ from ten_runtime import (
 )
 from typing_extensions import override
 
-from .mock import patch_soniox_ws  # noqa: F401
-
 
 class SonioxAsrInvalidParamsTester(AsyncExtensionTester):
 
@@ -96,25 +94,11 @@ class SonioxAsrInvalidParamsTester(AsyncExtensionTester):
 
 def test_invalid_params_empty_config(patch_soniox_ws):
     """Test with completely empty configuration"""
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
 
-    async def fake_connect():
-        # Should not be called with invalid config
-        await asyncio.sleep(0)
-
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    # Use default mocks (should not be called with invalid config)
+    mocks = create_fake_websocket_mocks(patch_soniox_ws)
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     # Empty configuration should cause an error
     property_json = {}
@@ -127,25 +111,11 @@ def test_invalid_params_empty_config(patch_soniox_ws):
 
 def test_invalid_params_missing_api_key(patch_soniox_ws):
     """Test with missing API key"""
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
 
-    async def fake_connect():
-        # Should not be called with invalid config
-        await asyncio.sleep(0)
-
-    async def fake_send_audio(_audio_data):
-        await asyncio.sleep(0)
-
-    async def fake_finalize(trailing_silence_ms=None):
-        await asyncio.sleep(0)
-
-    async def fake_stop():
-        await asyncio.sleep(0)
-
-    # Inject into websocket client
-    patch_soniox_ws.websocket_client.connect.side_effect = fake_connect
-    patch_soniox_ws.websocket_client.send_audio.side_effect = fake_send_audio
-    patch_soniox_ws.websocket_client.finalize.side_effect = fake_finalize
-    patch_soniox_ws.websocket_client.stop.side_effect = fake_stop
+    # Use default mocks (should not be called with invalid config)
+    mocks = create_fake_websocket_mocks(patch_soniox_ws)
+    inject_websocket_mocks(patch_soniox_ws, mocks)
 
     # Configuration without API key should cause an error
     property_json = {

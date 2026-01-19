@@ -17,6 +17,7 @@ ten_package("websocket_server_python") {
     "main.py",
     "manifest.json",
     "property.json",
+    "pyproject.toml",
     "requirements.txt",
   ]
 

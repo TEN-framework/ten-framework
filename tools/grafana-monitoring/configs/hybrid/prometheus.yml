@@ -1,0 +1,29 @@
+# Prometheus Configuration - Hybrid Mode
+# Scrapes metrics from both application and OTEL Collector for comparison
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ten-framework-monitor'
+
+scrape_configs:
+  # Pull mode: scrapes metrics directly from application (prometheus exporter)
+  - job_name: 'ten-framework-pull'
+    static_configs:
+      - targets: ['host.docker.internal:49484']
+        labels:
+          group: 'ten_runtime'
+          mode: 'pull'
+    scrape_interval: 5s
+    scrape_timeout: 5s
+
+  # Push mode: scrapes metrics from OTEL Collector (OTLP exporter)
+  - job_name: 'ten-framework-push'
+    static_configs:
+      - targets: ['otel-collector:8889']
+        labels:
+          group: 'ten_runtime'
+          mode: 'push'
+    scrape_interval: 5s
+    scrape_timeout: 5s

@@ -28,6 +28,12 @@
 
 </div>
 
+> [!NOTE]
+>
+> We are collaborating with four open-source projects to launch the 2026 New Year PR Challenge. 🎉 Between January 8–18, contributors can submit PRs to TEN Framework and earn cash rewards. 🎁
+>
+> [Check here](https://memu.pro/hackathon/rules/tenframework)
+
 <br>
 
 <details open>
@@ -90,12 +96,12 @@ See the [Example code][voice-assistant-example] for more details.
 
 <br>
 
-![Image][lip-sync-image]
 
+![Image][doodler-image]
 
-<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the main character features Kei, an anime character with MotionSync-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus.
+<strong>Doodler</strong> — A doodle board that turns spoken or typed prompts into simple hand-drawn sketches, complete with a crayon palette and real-time drawing.
 
-See the [Example code][voice-assistant-live2d-example] for different Live2D characters.
+[Example code][doodler-example]
 
 <br>
 
@@ -104,11 +110,25 @@ See the [Example code][voice-assistant-live2d-example] for different Live2D char
 
 <br>
 
-![Image][speech-diarization-image]
+![Image][speaker-diarization-image]
 
-<strong>Speech Diarization</strong> — Real-time diarization that detects and labels speakers, the Who Likes What game shows an interactive use case.
+<strong>Speaker Diarization</strong> — Real-time diarization that detects and labels speakers, the Who Likes What game shows an interactive use case.
 
 [Example code][speechmatics-diarization-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
+![Image][lip-sync-image]
+
+
+<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the main character features Kei, an anime character with MotionSync-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus.
+
+See the [Example code][voice-assistant-live2d-example] for different Live2D characters.
 
 <br>
 
@@ -434,7 +454,7 @@ Contributions are welcome! Please read the [contribution guidelines][contributio
 
 ### License
 
-1. The entire TEN framework (except for the folders explicitly listed below) is released under the Apache License, Version 2.0, with additional restrictions. For details, please refer to the [LICENSE][license-file] file located in the root directory of the TEN framework.
+1. The entire TEN framework (except for the folders explicitly listed below) is released pursuant the Apache License, Version 2.0, with additional restrictions. For details, please refer to the [LICENSE][license-file] file located in the root directory of the TEN framework.
 
 2. The components within the `packages` directory are released under the Apache License, Version 2.0. For details, please refer to the `LICENSE` file located in each package's root directory.
 
@@ -538,12 +558,14 @@ Contributions are welcome! Please read the [contribution guidelines][contributio
 [divider-dark]: https://github.com/user-attachments/assets/d57fad08-4f49-4a1c-bdfc-f659a5d86150#gh-dark-mode-only
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ai_agents/agents/examples/voice-assistant-live2d
-[speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
-[speechmatics-diarization-example]: ai_agents/agents/examples/speechmatics-diarization
+[speaker-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
+[speechmatics-diarization-example]: ai_agents/agents/examples/speaker-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ai_agents/esp32-client
 

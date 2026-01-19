@@ -11,20 +11,18 @@ class BuildConfig:
         target_cpu,
         target_build,
         is_clang,
+        is_mingw,
         enable_sanitizer,
         vs_version,
-        ten_enable_integration_tests_prebuilt,
         ten_enable_tests_cleanup,
     ):
         self.target_os = target_os
         self.target_cpu = target_cpu
         self.target_build = target_build
         self.is_clang = is_clang
+        self.is_mingw = is_mingw
         self.enable_sanitizer = enable_sanitizer
         self.vs_version = vs_version
-        self.ten_enable_integration_tests_prebuilt = (
-            ten_enable_integration_tests_prebuilt
-        )
         self.ten_enable_tests_cleanup = ten_enable_tests_cleanup
 
 
@@ -33,9 +31,9 @@ def parse_build_config(file_path: str) -> BuildConfig:
     target_cpu = None
     is_debug = None
     is_clang = None
+    is_mingw = None
     enable_sanitizer = None
     vs_version = None
-    ten_enable_integration_tests_prebuilt = None
     ten_enable_tests_cleanup = None
 
     with open(file_path, "r", encoding="utf-8") as file:
@@ -49,14 +47,12 @@ def parse_build_config(file_path: str) -> BuildConfig:
                 is_debug = line.split("=")[1].strip().lower() == "true"
             elif line.startswith("is_clang"):
                 is_clang = line.split("=")[1].strip().lower() == "true"
+            elif line.startswith("is_mingw"):
+                is_mingw = line.split("=")[1].strip().lower() == "true"
             elif line.startswith("enable_sanitizer"):
                 enable_sanitizer = line.split("=")[1].strip().lower() == "true"
             elif line.startswith("vs_version"):
                 vs_version = line.split("=")[1].strip().strip('"')
-            elif line.startswith("ten_enable_integration_tests_prebuilt"):
-                ten_enable_integration_tests_prebuilt = (
-                    line.split("=")[1].strip().lower() == "true"
-                )
             elif line.startswith("ten_enable_tests_cleanup"):
                 ten_enable_tests_cleanup = (
                     line.split("=")[1].strip().lower() == "true"
@@ -69,8 +65,8 @@ def parse_build_config(file_path: str) -> BuildConfig:
         target_cpu,
         target_build,
         is_clang,
+        is_mingw,
         enable_sanitizer,
         vs_version,
-        ten_enable_integration_tests_prebuilt,
         ten_enable_tests_cleanup,
     )

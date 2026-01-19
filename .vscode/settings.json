@@ -5,6 +5,9 @@
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features"
   },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
   "[markdown]": {
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
