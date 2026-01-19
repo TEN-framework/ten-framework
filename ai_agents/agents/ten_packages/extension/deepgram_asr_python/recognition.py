@@ -57,7 +57,8 @@ class DeepgramASRRecognition:
         self.config = config
         if self.config is None:
             self.config = {}
-        self.config["mip_opt_out"] = True
+        if self.config.get("mip_opt_out") is None:
+            self.config["mip_opt_out"] = True
 
         self.callback = callback
 
