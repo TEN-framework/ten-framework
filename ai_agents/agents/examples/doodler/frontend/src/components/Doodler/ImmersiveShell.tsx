@@ -93,6 +93,7 @@ export default function ImmersiveShell() {
   const [crayonId, setCrayonId] = React.useState(
     DEFAULT_CRAYON_SWATCHES[0]?.id ?? "crayon"
   );
+  const [clearedAt, setClearedAt] = React.useState(0);
   const activeCrayon = React.useMemo(
     () =>
       DEFAULT_CRAYON_SWATCHES.find((swatch) => swatch.id === crayonId) ??
@@ -151,6 +152,11 @@ export default function ImmersiveShell() {
   );
 
   const latestImage = React.useMemo(() => getLatestImage(chatItems), [chatItems]);
+  const visibleImage = React.useMemo(() => {
+    if (!latestImage) return undefined;
+    if (clearedAt && latestImage.time <= clearedAt) return undefined;
+    return latestImage;
+  }, [clearedAt, latestImage]);
   const lastUserTime = React.useMemo(
     () =>
       getLastTime(
@@ -449,6 +455,9 @@ export default function ImmersiveShell() {
   }, [isBoardGenerating, reducedMotion]);
   const penBodyColor = activeCrayon?.penBody;
   const penTopColor = activeCrayon?.penTop;
+  const handleErase = React.useCallback(() => {
+    setClearedAt(Date.now());
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -487,7 +496,7 @@ export default function ImmersiveShell() {
                 transition={boardPoseTransition as any}
               >
                 <BoardStage
-                  imageUrl={latestImage?.text}
+                  imageUrl={visibleImage?.text}
                   caption="latest doodle"
                   phase={phase}
                   reducedMotion={reducedMotion}
@@ -496,6 +505,8 @@ export default function ImmersiveShell() {
                   onSwatchSelect={setCrayonId}
                   penBodyColor={penBodyColor}
                   penTopColor={penTopColor}
+                  onErase={handleErase}
+                  eraseDisabled={!visibleImage}
                 />
               </motion.div>
             </motion.div>
