@@ -162,16 +162,52 @@ function DoodleRevealImage(props: {
     lineColor = "#111111",
     reducedMotion,
   } = props;
+  const label = caption ?? "doodle";
   const maskId = React.useId();
   const inkFilterId = React.useId();
 
+  const inkFilter = (
+    <filter id={inkFilterId} colorInterpolationFilters="sRGB">
+      <feColorMatrix
+        type="matrix"
+        values="
+          1 0 0 0 0
+          0 1 0 0 0
+          0 0 1 0 0
+          -0.2126 -0.7152 -0.0722 1 0
+        "
+        result="lineAlpha"
+      />
+      <feComponentTransfer in="lineAlpha" result="inkAlpha">
+        <feFuncA type="gamma" amplitude="1" exponent="1.6" offset="0" />
+      </feComponentTransfer>
+      <feFlood floodColor={lineColor} result="inkColor" />
+      <feComposite in="inkColor" in2="inkAlpha" operator="in" result="ink" />
+    </filter>
+  );
+
   if (reducedMotion) {
     return (
-      <img
-        src={imageUrl}
-        alt={caption ?? "doodle"}
-        className="block h-full w-full rounded-[30px] object-cover"
-      />
+      <svg
+        className="block h-full w-full rounded-[30px]"
+        viewBox="0 0 1000 1000"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label={label}
+      >
+        <title>{label}</title>
+        <defs>{inkFilter}</defs>
+        <image
+          href={imageUrl}
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid slice"
+          filter={`url(#${inkFilterId})`}
+          style={{
+            opacity: 0.94,
+            mixBlendMode: "multiply",
+          }}
+        />
+      </svg>
     );
   }
 
@@ -180,9 +216,9 @@ function DoodleRevealImage(props: {
       className="block h-full w-full rounded-[30px]"
       viewBox="0 0 1000 1000"
       preserveAspectRatio="xMidYMid meet"
-      aria-label={caption ?? "doodle"}
+      aria-label={label}
     >
-      <title>{caption ?? "doodle"}</title>
+      <title>{label}</title>
       <defs>
         <mask id={maskId}>
           <rect width="100%" height="100%" fill="black" />
@@ -217,23 +253,7 @@ function DoodleRevealImage(props: {
             }}
           />
         </mask>
-        <filter
-          id={inkFilterId}
-          colorInterpolationFilters="sRGB"
-        >
-          <feColorMatrix
-            type="matrix"
-            values="
-              1 0 0 0 0
-              0 1 0 0 0
-              0 0 1 0 0
-              -0.2126 -0.7152 -0.0722 1 0
-            "
-          />
-          <feComponentTransfer>
-            <feFuncA type="gamma" amplitude="1" exponent="1.6" offset="0" />
-          </feComponentTransfer>
-        </filter>
+        {inkFilter}
       </defs>
 
       <image
@@ -483,6 +503,8 @@ export default function BoardStage(props: {
   onSwatchSelect?: (id: string) => void;
   penBodyColor?: string;
   penTopColor?: string;
+  onErase?: () => void;
+  eraseDisabled?: boolean;
 }) {
   const {
     imageUrl,
@@ -496,6 +518,8 @@ export default function BoardStage(props: {
     onSwatchSelect,
     penBodyColor,
     penTopColor,
+    onErase,
+    eraseDisabled = false,
   } = props;
   const drawingActive = Boolean(phase && phase !== "idle");
   const resolvedActiveId = activeSwatchId ?? swatches[0]?.id;
@@ -503,6 +527,56 @@ export default function BoardStage(props: {
     swatches.find((swatch) => swatch.id === resolvedActiveId) ?? swatches[0];
   const resolvedPenBody = penBodyColor ?? activeSwatch?.penBody ?? "#F97316";
   const resolvedPenTop = penTopColor ?? activeSwatch?.penTop ?? "#FB923C";
+  const canErase = Boolean(onErase) && !eraseDisabled;
+  const [eraseProgress, setEraseProgress] = React.useState(0);
+  const eraseTriggeredRef = React.useRef(false);
+  const eraseTimerRef = React.useRef<number | null>(null);
+
+  const triggerErase = React.useCallback(() => {
+    if (!onErase || eraseTriggeredRef.current) return;
+    eraseTriggeredRef.current = true;
+    onErase();
+    if (eraseTimerRef.current !== null) {
+      window.clearTimeout(eraseTimerRef.current);
+    }
+    eraseTimerRef.current = window.setTimeout(() => {
+      eraseTriggeredRef.current = false;
+      setEraseProgress(0);
+      eraseTimerRef.current = null;
+    }, 420);
+  }, [onErase]);
+
+  const handleEraseChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (!canErase) return;
+      const next = Number(event.target.value);
+      setEraseProgress(next);
+      if (next >= 96) {
+        triggerErase();
+      }
+    },
+    [canErase, triggerErase]
+  );
+
+  const resetErase = React.useCallback(() => {
+    if (eraseTriggeredRef.current) return;
+    setEraseProgress(0);
+  }, []);
+
+  React.useEffect(() => {
+    if (!canErase) {
+      setEraseProgress(0);
+      eraseTriggeredRef.current = false;
+    }
+  }, [canErase]);
+
+  React.useEffect(() => {
+    return () => {
+      if (eraseTimerRef.current !== null) {
+        window.clearTimeout(eraseTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className={cn("relative w-full", className)}>
@@ -620,7 +694,25 @@ export default function BoardStage(props: {
 
         <div className="toy-board-bottom">
           <div className="toy-board-bottom__rail" aria-hidden />
-          <div className="toy-board-bottom__knob" aria-hidden />
+          <span className="toy-board-bottom__label" aria-hidden>
+            Erase
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={canErase ? eraseProgress : 0}
+            onChange={handleEraseChange}
+            onPointerUp={resetErase}
+            onPointerCancel={resetErase}
+            onMouseUp={resetErase}
+            onTouchEnd={resetErase}
+            onBlur={resetErase}
+            disabled={!canErase}
+            className="toy-board-erase__slider"
+            aria-label="Slide to erase"
+          />
         </div>
       </div>
     </div>
