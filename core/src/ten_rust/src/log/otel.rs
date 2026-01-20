@@ -11,6 +11,8 @@ use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{logs::SdkLoggerProvider, Resource};
 use tracing::{Event, Subscriber};
 use tracing_subscriber::{field::Visit, layer::Context, registry::LookupSpan, Layer, Registry};
+use tracing_subscriber::filter::Targets;
+use tracing::level_filters::LevelFilter;
 
 use super::{OtlpEmitterConfig, OtlpProtocol};
 
@@ -316,6 +318,23 @@ pub fn create_otlp_layer(
 
     // Create our custom TEN OpenTelemetry layer
     let layer = TenOtelLayer::new(provider.clone());
+
+    // Prevent infinite recursion by filtering out logs from the OTLP exporter's underlying libraries.
+    // This uses a declarative filter wrapper which is more efficient and semantically correct
+    // than checking targets manually inside the layer.
+    // We default to TRACE specifically for this filter to allow the parent `DynamicTargetFilterLayer`
+    // to control the actual logging level based on user config.
+    let recursion_filter = Targets::new()
+        .with_target("opentelemetry", LevelFilter::OFF)
+        .with_target("tonic", LevelFilter::OFF)
+        .with_target("h2", LevelFilter::OFF)
+        .with_target("hyper", LevelFilter::OFF)
+        .with_target("tower", LevelFilter::OFF)
+        .with_target("reqwest", LevelFilter::OFF)
+        .with_target("rustls", LevelFilter::OFF)
+        .with_default(LevelFilter::TRACE);
+
+    let layer = layer.with_filter(recursion_filter);
 
     eprintln!("[OTLP] OTLP log layer created and ready");
     eprintln!("[OTLP] User fields will be expanded into individual attributes");
