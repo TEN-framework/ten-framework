@@ -16,7 +16,9 @@ class SpeechmaticsTTSConfig(AsyncTTS2HttpConfig):
 
     dump: bool = Field(default=False, description="Speechmatics TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "speechmatics_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "speechmatics_tts_in.pcm"
+        ),
         description="Speechmatics TTS dump path",
     )
     params: dict[str, Any] = Field(

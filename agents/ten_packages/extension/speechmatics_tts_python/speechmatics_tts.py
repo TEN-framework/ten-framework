@@ -45,7 +45,9 @@ class SpeechmaticsTTSClient(AsyncTTS2HttpClient):
                 f"Error when initializing Speechmatics TTS: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            raise RuntimeError(f"Error when initializing Speechmatics TTS: {e}") from e
+            raise RuntimeError(
+                f"Error when initializing Speechmatics TTS: {e}"
+            ) from e
 
     async def cancel(self):
         """Cancel the current TTS request"""
@@ -108,10 +110,17 @@ class SpeechmaticsTTSClient(AsyncTTS2HttpClient):
             )
 
             # Check for authentication errors
-            if "401" in error_message or "authentication" in error_message.lower():
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+            if (
+                "401" in error_message
+                or "authentication" in error_message.lower()
+            ):
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
     async def _synthesize(self, text: str) -> AsyncIterator[bytes]:
         """Internal method to synthesize audio from text"""
@@ -120,7 +129,9 @@ class SpeechmaticsTTSClient(AsyncTTS2HttpClient):
         # Build API endpoint
         voice_id = self.config.params["voice_id"]
         output_format = self.config.params.get("output_format", "wav")
-        base_url = self.config.params.get("base_url", "https://preview.tts.speechmatics.com")
+        base_url = self.config.params.get(
+            "base_url", "https://preview.tts.speechmatics.com"
+        )
 
         url = f"{base_url}/generate/{voice_id}"
         if output_format:
@@ -140,7 +151,9 @@ class SpeechmaticsTTSClient(AsyncTTS2HttpClient):
         )
 
         # Make HTTP request
-        async with self.session.post(url, headers=headers, json=payload) as response:
+        async with self.session.post(
+            url, headers=headers, json=payload
+        ) as response:
             if response.status != 200:
                 error_text = await response.text()
                 raise RuntimeError(

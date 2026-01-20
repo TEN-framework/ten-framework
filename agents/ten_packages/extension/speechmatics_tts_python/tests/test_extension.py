@@ -60,6 +60,7 @@ async def test_create_config():
 def test_extension_inheritance():
     """Test extension inherits from correct base class"""
     from ten_ai_base.tts2_http import AsyncTTS2HttpExtension
+
     extension = SpeechmaticsTTSExtension("test_extension")
     assert isinstance(extension, AsyncTTS2HttpExtension)
 
