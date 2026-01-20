@@ -419,7 +419,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         await self.send_asr_error(
             ModuleError(
                 module=ModuleType.ASR,
-                code=error_code,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=str(error),
             ),
             ModuleErrorVendorInfo(
