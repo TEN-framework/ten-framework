@@ -9,41 +9,46 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { rtmManager } from "@/manager/rtm";
 import { addChatItem } from "@/store/reducers/global";
-import {
-  EMessageDataType,
-  EMessageType,
-  type IRTMTextItem,
-} from "@/types";
+import { EMessageDataType, EMessageType, type IRTMTextItem } from "@/types";
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
-  const [modal2Open, setModal2Open] = React.useState(false);
+  const [_modal2Open, _setModal2Open] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
-  const graphName = useAppSelector((state) => state.global.selectedGraphId);
+  const _graphName = useAppSelector((state) => state.global.selectedGraphId);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
   const options = useAppSelector((state) => state.global.options);
 
   const disableInputMemo = React.useMemo(() => {
     return (
-      !options.channel ||
-      !options.userId ||
-      !rtmConnected ||
-      !agentConnected
+      !options.channel || !options.userId || !rtmConnected || !agentConnected
     );
-  }, [
-    options.channel,
-    options.userId,
-    rtmConnected,
-    agentConnected,
-  ]);
+  }, [options.channel, options.userId, rtmConnected, agentConnected]);
 
   // const chatItems = genRandomChatList(10)
   const chatRef = React.useRef(null);
 
   useAutoScroll(chatRef);
+
+  const onTextChanged = (text: IRTMTextItem) => {
+    console.log("[rtm] onTextChanged", text);
+    if (text.data_type === "transcribe") {
+      dispatch(
+        addChatItem({
+          userId: options.userId,
+          text: text.text,
+          type:
+            text.role === "assistant" ? EMessageType.AGENT : EMessageType.USER,
+          data_type: EMessageDataType.TEXT,
+          isFinal: text.is_final,
+          time: text.text_ts,
+        })
+      );
+    }
+  };
 
   // Register RTM event listener on mount
   React.useEffect(() => {
@@ -58,23 +63,7 @@ export default function ChatCard(props: { className?: string }) {
         rtmManager.off("rtmMessage", onTextChanged);
       }
     };
-  }, [rtmConnected]);
-
-  const onTextChanged = (text: IRTMTextItem) => {
-    console.log("[rtm] onTextChanged", text);
-    if (text.data_type == "transcribe") {
-      dispatch(
-        addChatItem({
-          userId: options.userId,
-          text: text.text,
-          type: text.role === "assistant" ? EMessageType.AGENT : EMessageType.USER,
-          data_type: EMessageDataType.TEXT,
-          isFinal: text.is_final,
-          time: text.text_ts,
-        })
-      );
-    }
-  };
+  }, [rtmConnected, onTextChanged]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -123,7 +112,7 @@ export default function ChatCard(props: { className?: string }) {
                 className={cn(
                   "grow rounded-md border bg-background p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring",
                   {
-                    ["cursor-not-allowed"]: disableInputMemo,
+                    "cursor-not-allowed": disableInputMemo,
                   }
                 )}
               />
@@ -133,8 +122,8 @@ export default function ChatCard(props: { className?: string }) {
                 size="icon"
                 variant="outline"
                 className={cn("bg-transparent", {
-                  ["opacity-50"]: disableInputMemo || inputValue.length === 0,
-                  ["cursor-not-allowed"]: disableInputMemo,
+                  "opacity-50": disableInputMemo || inputValue.length === 0,
+                  "cursor-not-allowed": disableInputMemo,
                 })}
               >
                 <Send className="h-4 w-4" />

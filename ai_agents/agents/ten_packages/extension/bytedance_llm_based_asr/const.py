@@ -63,25 +63,28 @@ RECONNECTABLE_ERROR_CODES = {
     ],  # Server busy - temporary overload, retryable
 }
 
+NON_RECONNECTABLE_ERROR_CODES = [
+    VOLCENGINE_ERROR_CODES[
+        "INVALID_PARAMETER"
+    ],  # Invalid request parameters - retry won't help
+]
+
 
 def is_reconnectable_error(error_code: int) -> bool:
     """
     Check if an error code should trigger reconnection.
+    By default, all errors are considered retryable unless explicitly marked as non-retryable.
 
     Args:
         error_code: The error code to check
 
     Returns:
-        True if the error should trigger reconnection, False otherwise
+        True if the error should trigger reconnection (default), False if retry cannot solve the problem
     """
-    # Check exact matches first (includes all original RECONNECTABLE_ERROR_CODES)
-    if error_code in RECONNECTABLE_ERROR_CODES:
-        return True
+    # Check if this error code is explicitly marked as non-retryable
+    # These are errors where retry cannot solve the problem (e.g., invalid parameters)
+    if error_code in NON_RECONNECTABLE_ERROR_CODES:
+        return False
 
-    # Check range matches for specific error patterns
-    # INTERNAL_ERROR: 550xxxxx (all server internal errors)
-    # This covers all 550xxxxx errors, not just the specific 55000000
-    if 55000000 <= error_code <= 55099999:
-        return True
-
-    return False
+    # Default: return True - assume all errors are retryable unless proven otherwise
+    return True

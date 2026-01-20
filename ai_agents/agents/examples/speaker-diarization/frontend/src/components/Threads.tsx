@@ -1,10 +1,10 @@
+import { Color, Mesh, Program, Renderer, Triangle } from "ogl";
 import {
-  CSSProperties,
-  HTMLAttributes,
+  type CSSProperties,
+  type HTMLAttributes,
   useEffect,
   useRef,
-} from "react"
-import { Renderer, Program, Mesh, Triangle, Color } from "ogl"
+} from "react";
 
 const vertexShader = `
 attribute vec2 position;
@@ -14,7 +14,7 @@ void main() {
   vUv = uv;
   gl_Position = vec4(position, 0.0, 1.0);
 }
-`
+`;
 
 const fragmentShader = `
 precision highp float;
@@ -121,16 +121,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 void main() {
     mainImage(gl_FragColor, gl_FragCoord.xy);
 }
-`
+`;
 
 type ThreadsProps = {
-  color?: [number, number, number]
-  amplitude?: number
-  distance?: number
-  enableMouseInteraction?: boolean
-  className?: string
-  style?: CSSProperties
-} & Omit<HTMLAttributes<HTMLDivElement>, "color">
+  color?: [number, number, number];
+  amplitude?: number;
+  distance?: number;
+  enableMouseInteraction?: boolean;
+  className?: string;
+  style?: CSSProperties;
+} & Omit<HTMLAttributes<HTMLDivElement>, "color">;
 
 export default function Threads({
   color = [1, 1, 1],
@@ -141,22 +141,22 @@ export default function Threads({
   style,
   ...rest
 }: ThreadsProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const container = containerRef.current
+    const container = containerRef.current;
     if (!container) {
-      return
+      return;
     }
 
-    const renderer = new Renderer({ alpha: true })
-    const { gl } = renderer
-    gl.clearColor(0, 0, 0, 0)
-    gl.enable(gl.BLEND)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-    container.appendChild(gl.canvas)
+    const renderer = new Renderer({ alpha: true });
+    const { gl } = renderer;
+    gl.clearColor(0, 0, 0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    container.appendChild(gl.canvas);
 
-    const geometry = new Triangle(gl)
+    const geometry = new Triangle(gl);
     const program = new Program(gl, {
       vertex: vertexShader,
       fragment: fragmentShader,
@@ -166,7 +166,7 @@ export default function Threads({
           value: new Color(
             gl.canvas.width || 1,
             gl.canvas.height || 1,
-            gl.canvas.width / Math.max(gl.canvas.height, 1) || 1,
+            gl.canvas.width / Math.max(gl.canvas.height, 1) || 1
           ),
         },
         uColor: { value: new Color(...color) },
@@ -174,66 +174,66 @@ export default function Threads({
         uDistance: { value: distance },
         uMouse: { value: new Float32Array([0.5, 0.5]) },
       },
-    })
+    });
 
-    const mesh = new Mesh(gl, { geometry, program })
+    const mesh = new Mesh(gl, { geometry, program });
 
     const resize = () => {
-      const { clientWidth, clientHeight } = container
-      renderer.setSize(clientWidth, clientHeight)
-      const resolution = program.uniforms.iResolution.value as Color
-      resolution.r = clientWidth
-      resolution.g = clientHeight
-      resolution.b = clientWidth / Math.max(clientHeight, 1)
-    }
+      const { clientWidth, clientHeight } = container;
+      renderer.setSize(clientWidth, clientHeight);
+      const resolution = program.uniforms.iResolution.value as Color;
+      resolution.r = clientWidth;
+      resolution.g = clientHeight;
+      resolution.b = clientWidth / Math.max(clientHeight, 1);
+    };
 
-    resize()
-    window.addEventListener("resize", resize)
+    resize();
+    window.addEventListener("resize", resize);
 
-    const start = performance.now()
-    let frameId: number
+    const start = performance.now();
+    let frameId: number;
 
     const render = () => {
-      const now = performance.now()
-      const elapsed = (now - start) / 1000
-      program.uniforms.iTime.value = elapsed
-      renderer.render({ scene: mesh })
-      frameId = requestAnimationFrame(render)
-    }
+      const now = performance.now();
+      const elapsed = (now - start) / 1000;
+      program.uniforms.iTime.value = elapsed;
+      renderer.render({ scene: mesh });
+      frameId = requestAnimationFrame(render);
+    };
 
-    render()
+    render();
 
     const handleMouseMove = (event: MouseEvent) => {
       if (!enableMouseInteraction) {
-        return
+        return;
       }
-      const rect = container.getBoundingClientRect()
-      const x = (event.clientX - rect.left) / Math.max(rect.width, 1)
-      const y = (event.clientY - rect.top) / Math.max(rect.height, 1)
-      const mouseUniform = program.uniforms.uMouse.value as Float32Array
-      mouseUniform[0] = x
-      mouseUniform[1] = 1 - y
-    }
+      const rect = container.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / Math.max(rect.width, 1);
+      const y = (event.clientY - rect.top) / Math.max(rect.height, 1);
+      const mouseUniform = program.uniforms.uMouse.value as Float32Array;
+      mouseUniform[0] = x;
+      mouseUniform[1] = 1 - y;
+    };
 
     if (enableMouseInteraction) {
-      window.addEventListener("mousemove", handleMouseMove)
+      window.addEventListener("mousemove", handleMouseMove);
     }
 
     return () => {
       if (frameId) {
-        cancelAnimationFrame(frameId)
+        cancelAnimationFrame(frameId);
       }
-      window.removeEventListener("resize", resize)
+      window.removeEventListener("resize", resize);
       if (enableMouseInteraction) {
-        window.removeEventListener("mousemove", handleMouseMove)
+        window.removeEventListener("mousemove", handleMouseMove);
       }
       if (gl.canvas.parentNode === container) {
-        container.removeChild(gl.canvas)
+        container.removeChild(gl.canvas);
       }
-      geometry.remove()
-      program.remove()
-    }
-  }, [amplitude, color, distance, enableMouseInteraction])
+      geometry.remove();
+      program.remove();
+    };
+  }, [amplitude, color, distance, enableMouseInteraction]);
 
   return (
     <div
@@ -247,5 +247,5 @@ export default function Threads({
       }}
       {...rest}
     />
-  )
+  );
 }

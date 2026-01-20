@@ -1,22 +1,28 @@
 "use client";
 
+import { AlertCircle, Loader2, Play, Square, Wifi } from "lucide-react";
+import { useEffect, useState } from "react";
 import { AudioControls } from "@/components/Agent/AudioControls";
 import { AudioVisualizer } from "@/components/Agent/AudioVisualizer";
 import { ChatHistory } from "@/components/Agent/ChatHistory";
 import { ConnectionStatus } from "@/components/Agent/ConnectionStatus";
 import { TranscriptionDisplay } from "@/components/Agent/TranscriptionDisplay";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAgentLifecycle } from "@/hooks/useAgentLifecycle";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useAgentLifecycle } from "@/hooks/useAgentLifecycle";
-import { useAgentStore } from "@/store/agentStore";
 import { getOrGeneratePort, getWebSocketUrl } from "@/lib/portManager";
-import { useEffect, useState } from "react";
-import { Play, Square, Loader2, Wifi, AlertCircle } from "lucide-react";
+import { useAgentStore } from "@/store/agentStore";
 
 export function WebSocketClient() {
   const [port, setPort] = useState<number | null>(null);
@@ -29,10 +35,22 @@ export function WebSocketClient() {
   }, []);
 
   // Agent lifecycle management
-  const { state: agentState, startAgent, stopAgent, reset, isStarting, isRunning, hasError } = useAgentLifecycle();
+  const {
+    state: agentState,
+    startAgent,
+    stopAgent,
+    reset,
+    isStarting,
+    isRunning,
+    hasError,
+  } = useAgentLifecycle();
 
   // WebSocket connection (don't auto-connect, but allow unlimited retries)
-  const { wsManager, connect: connectWebSocket, disconnect: disconnectWebSocket } = useWebSocket({
+  const {
+    wsManager,
+    connect: connectWebSocket,
+    disconnect: disconnectWebSocket,
+  } = useWebSocket({
     url: port ? getWebSocketUrl(port) : "ws://localhost:8765",
     autoConnect: false,
     maxReconnectAttempts: -1, // Unlimited retries
@@ -60,7 +78,7 @@ export function WebSocketClient() {
     };
     autoStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  }, [startRecording]); // Only run on mount
 
   // Handle start agent
   const handleStartAgent = async () => {
@@ -80,7 +98,9 @@ export function WebSocketClient() {
       }, 2000); // 2 second delay to allow server to start
     } catch (error) {
       console.error("Failed to start agent:", error);
-      setInitError(error instanceof Error ? error.message : "Failed to start agent");
+      setInitError(
+        error instanceof Error ? error.message : "Failed to start agent"
+      );
     }
   };
 
@@ -113,15 +133,15 @@ export function WebSocketClient() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-6xl py-6 px-4">
+      <div className="container mx-auto max-w-6xl px-4 py-6">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              <h1 className="font-bold text-3xl text-foreground tracking-tight">
                 WebSocket Voice Assistant
               </h1>
-              <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
                 <span>Real-time voice interaction with AI assistant</span>
                 {port && (
                   <Badge variant="secondary" className="font-normal">
@@ -134,7 +154,7 @@ export function WebSocketClient() {
           </div>
 
           {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             {/* Left column: Connection + Voice */}
             <div className="lg:col-span-1">
               <Card className="shadow-sm">
@@ -184,7 +204,7 @@ export function WebSocketClient() {
                     />
                   </div>
                 </CardHeader>
-                <CardContent className="pt-2 space-y-4">
+                <CardContent className="space-y-4 pt-2">
                   {(initError || agentState.error) && (
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
@@ -196,7 +216,10 @@ export function WebSocketClient() {
                   )}
 
                   {/* Audio Visualizer */}
-                  <div className="relative rounded-xl bg-muted/30 overflow-hidden p-0 ring-1 ring-border/40 border border-border/30" style={{ height: 48 }}>
+                  <div
+                    className="relative overflow-hidden rounded-xl border border-border/30 bg-muted/30 p-0 ring-1 ring-border/40"
+                    style={{ height: 48 }}
+                  >
                     <AudioVisualizer
                       stream={getMediaStream()}
                       isActive={isRecording}
@@ -210,19 +233,19 @@ export function WebSocketClient() {
                   {/* Status Text */}
                   <div className="text-center">
                     {isRunning && !wsConnected && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span>Connecting to WebSocket...</span>
                       </div>
                     )}
                     {isRunning && wsConnected && !isRecording && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         Click the microphone to start speaking
                       </p>
                     )}
                     {isRunning && wsConnected && isRecording && (
                       <div className="flex items-center justify-center gap-2 text-sm text-white">
-                        <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                        <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
                         <span>Listening... Click to stop</span>
                       </div>
                     )}

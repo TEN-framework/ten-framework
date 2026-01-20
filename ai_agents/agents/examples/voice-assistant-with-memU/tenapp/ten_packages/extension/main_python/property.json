@@ -1,11 +1,11 @@
 {
-    "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
-    "agent_id": "voice_assistant_agent",
-    "agent_name": "Voice Assistant with Memory",
-    "user_id": "user",
-    "user_name": "User",
-    "memu_base_url": "https://api.memu.so",
-    "memu_api_key": "",
-    "self_hosting": false,
-    "enable_memorization": true
+  "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
+  "agent_id": "voice_assistant_agent",
+  "agent_name": "Voice Assistant with Memory",
+  "user_id": "user",
+  "user_name": "User",
+  "memu_base_url": "https://api.memu.so",
+  "memu_api_key": "",
+  "self_hosting": false,
+  "enable_memorization": true
 }

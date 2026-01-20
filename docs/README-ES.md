@@ -97,6 +97,19 @@ Consulta el [código de ejemplo][voice-assistant-example] para obtener más deta
 
 <br>
 
+![Image][doodler-image]
+
+<strong>Doodler</strong> — Un tablero de garabatos que convierte indicaciones habladas o escritas en bocetos sencillos a mano, con una paleta de crayones y dibujo en tiempo real.
+
+[Código de ejemplo][doodler-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 ![Image][lip-sync-image]
 
 <strong>Avatares con sincronización labial</strong> — Compatible con múltiples proveedores de avatares. La demo incluye a Kei, un personaje anime con sincronización labial gracias a Live2D, y pronto añadirá avatares realistas de Trulience, HeyGen y Tavus.
@@ -585,6 +598,8 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ../ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ../ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ../ai_agents/esp32-client
 

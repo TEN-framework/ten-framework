@@ -9,7 +9,7 @@ import {
 export const getOptionsFromLocal = () => {
   if (typeof window !== "undefined") {
     const data = localStorage.getItem(OPTIONS_KEY);
-    let options = data ? JSON.parse(data) : { ...DEFAULT_OPTIONS };
+    const options = data ? JSON.parse(data) : { ...DEFAULT_OPTIONS };
 
     // Initialize http_port_number if not exists
     if (!options.http_port_number) {
