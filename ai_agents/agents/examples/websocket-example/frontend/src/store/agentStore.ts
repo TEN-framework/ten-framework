@@ -2,8 +2,8 @@
  * Zustand Store for Agent State Management
  */
 
-import type { AgentStatus, ChatMessage, RecordingState } from "@/types";
 import { create } from "zustand";
+import type { AgentStatus, ChatMessage, RecordingState } from "@/types";
 
 interface AgentStore {
   // Connection state

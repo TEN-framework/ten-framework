@@ -1,0 +1,15 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "api_key": "${env:MURF_TTS_KEY||}",
+        "voiceId": "Matthew",
+        "multiNativeLocale": "en-US",
+        "style": "Conversation",
+        "rate": 0,
+        "pitch": 0,
+        "variation": 1,
+        "model": "FALCON",
+        "sample_rate": 24000
+    }
+}

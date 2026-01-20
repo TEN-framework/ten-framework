@@ -56,21 +56,60 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
     background-image:
-      radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary)/0.08), transparent),
-      radial-gradient(800px 400px at 100% 0%, hsl(var(--muted)/0.3), transparent);
+      radial-gradient(
+        1200px 600px at 50% -10%,
+        hsl(var(--primary) / 0.08),
+        transparent
+      ),
+      radial-gradient(
+        800px 400px at 100% 0%,
+        hsl(var(--muted) / 0.3),
+        transparent
+      );
     background-repeat: no-repeat;
   }
 }
 
 @layer utilities {
-  .animate-fade-in { animation: fadeIn 0.3s ease-in; }
-  .animate-slide-up { animation: slideUp 0.3s ease-out; }
-  .animate-pulse-subtle { animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  .animate-pulse-subtle {
+    animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes pulseSubtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pulseSubtle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
 }
-

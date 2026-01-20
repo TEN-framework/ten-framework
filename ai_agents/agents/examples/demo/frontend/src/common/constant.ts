@@ -53,7 +53,8 @@ export const DEFAULT_OCEAN_BASE_SETTINGS: IOceanBaseSettings = {
   collection_id: "",
 };
 
-export const DESCRIPTION = "Multi-Purpose Voice Assistant Agent Example Powered by TEN";
+export const DESCRIPTION =
+  "Multi-Purpose Voice Assistant Agent Example Powered by TEN";
 export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   {
     label: "English",
