@@ -45,7 +45,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     if (!this._joined) {
       const res = await apiGenAgoraData({ channel, userId });
       const { code, data } = res;
-      if (code != 0) {
+      if (code !== 0) {
         throw new Error("Failed to get Agora token");
       }
       const { appId, token } = data;
@@ -166,12 +166,12 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         videoTrack: user.videoTrack,
       });
     });
-    this.client.on("stream-message", (uid: UID, stream: any) => {
+    this.client.on("stream-message", (_uid: UID, stream: any) => {
       this._parseData(stream);
     });
   }
 
-  private _parseData(data: any): ITextItem | void {
+  private _parseData(data: any): void {
     const ascii = String.fromCharCode(...new Uint8Array(data));
 
     console.log("[test] textstream raw data", ascii);

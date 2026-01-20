@@ -14,7 +14,7 @@ import type { VoiceType } from "@/types";
 
 export default function AgentVoicePresetSelect() {
   const dispatch = useAppDispatch();
-  const options = useAppSelector((state) => state.global.options);
+  const _options = useAppSelector((state) => state.global.options);
   const voiceType = useAppSelector((state) => state.global.voiceType);
 
   const onVoiceChange = (value: string) => {

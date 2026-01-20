@@ -97,6 +97,19 @@ TEN は音声会話型 AI エージェント向けのオープンソースフレ
 
 <br>
 
+![Image][doodler-image]
+
+<strong>Doodler</strong> — 音声またはテキストのプロンプトを手描き風のシンプルなスケッチに変換するお絵かきボード。クレヨンのパレットとリアルタイム描画を備えています。
+
+[サンプルコード][doodler-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 ![Image][lip-sync-image]
 
 <strong>リップシンク対応アバター</strong> — 複数のアバタープロバイダーに対応。デモでは Live2D のリップシンクを備えたアニメキャラクター Kei を紹介し、今後 Trulience、HeyGen、Tavus のリアルアバターにも対応予定です。
@@ -585,6 +598,8 @@ TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されて
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ../ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ../ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ../ai_agents/esp32-client
 

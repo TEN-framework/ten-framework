@@ -1,57 +1,57 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import type { CSSProperties } from "react"
 import type {
-  IRemoteAudioTrack,
   IAgoraRTCClient,
   IMicrophoneAudioTrack,
+  IRemoteAudioTrack,
   UID,
-} from "agora-rtc-sdk-ng"
+} from "agora-rtc-sdk-ng";
+import type { CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Threads from "@/components/Threads";
 import {
   apiGenAgoraData,
   apiPing,
   apiStartService,
   apiStopService,
-} from "../common/request"
-import Threads from "@/components/Threads"
+} from "../common/request";
 
 type ChatItem = {
-  id: string
-  text: string
-  speaker?: string
-  isFinal: boolean
-  role: "user" | "assistant"
-  ts: number
-}
+  id: string;
+  text: string;
+  speaker?: string;
+  isFinal: boolean;
+  role: "user" | "assistant";
+  ts: number;
+};
 
 type TextChunk = {
-  message_id: string
-  part_index: number
-  total_parts: number
-  content: string
-}
+  message_id: string;
+  part_index: number;
+  total_parts: number;
+  content: string;
+};
 
-type StatusTone = "positive" | "neutral" | "warning" | "muted"
+type StatusTone = "positive" | "neutral" | "warning" | "muted";
 
-const DEFAULT_CHANNEL = "ten_diarization_who_likes_what"
+const DEFAULT_CHANNEL = "ten_diarization_who_likes_what";
 
-const SPEAKER_REGEX = /^\[([^\]]+)\]\s*/
+const SPEAKER_REGEX = /^\[([^\]]+)\]\s*/;
 
-const KNOWN_SPEAKERS = ["Elliot", "Taytay", "Musk"] as const
+const KNOWN_SPEAKERS = ["Elliot", "Taytay", "Musk"] as const;
 
 const SPEAKER_ACCENTS: Record<string, string> = {
   Elliot: "#111827",
   Taytay: "#4b5563",
   Musk: "#9ca3af",
-}
+};
 
-const PAGE_BACKGROUND = "#f8fafc"
-const PANEL_BACKGROUND = "#ffffff"
-const PANEL_BORDER_COLOR = "#e5e7eb"
-const PANEL_SHADOW = "0 10px 30px rgba(15, 23, 42, 0.08)"
-const TEXT_PRIMARY = "#111827"
-const TEXT_MUTED = "#6b7280"
+const PAGE_BACKGROUND = "#f8fafc";
+const PANEL_BACKGROUND = "#ffffff";
+const PANEL_BORDER_COLOR = "#e5e7eb";
+const PANEL_SHADOW = "0 10px 30px rgba(15, 23, 42, 0.08)";
+const TEXT_PRIMARY = "#111827";
+const TEXT_MUTED = "#6b7280";
 
 const panelBaseStyle: CSSProperties = {
   borderRadius: 20,
@@ -60,20 +60,20 @@ const panelBaseStyle: CSSProperties = {
   boxShadow: PANEL_SHADOW,
   padding: "24px 28px",
   color: TEXT_PRIMARY,
-}
+};
 
 const sectionTitleStyle: CSSProperties = {
   margin: 0,
   fontSize: 17,
   fontWeight: 600,
-}
+};
 
-const sectionSubtitleStyle: CSSProperties = {
+const _sectionSubtitleStyle: CSSProperties = {
   marginTop: 6,
   fontSize: 14,
   color: TEXT_MUTED,
   maxWidth: 600,
-}
+};
 
 const errorBannerStyle: CSSProperties = {
   ...panelBaseStyle,
@@ -84,205 +84,204 @@ const errorBannerStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: 12,
-}
+};
 
-const transcriptBorderColor = "#e5e7eb"
+const transcriptBorderColor = "#e5e7eb";
 
 const generateUserId = () => {
   if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
-    const array = new Uint32Array(1)
-    window.crypto.getRandomValues(array)
-    return 100000 + (array[0] % 900000)
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    return 100000 + (array[0] % 900000);
   }
-  const fallback = Date.now() % 900000
-  return 100000 + fallback
-}
+  const fallback = Date.now() % 900000;
+  return 100000 + fallback;
+};
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false)
-  const [channel, setChannel] = useState<string>(DEFAULT_CHANNEL)
-  const [userId, setUserId] = useState<number>(0)
-  const [joined, setJoined] = useState<boolean>(false)
-  const [items, setItems] = useState<ChatItem[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [pending, setPending] = useState<boolean>(false)
-  const [micEnabled, setMicEnabled] = useState<boolean>(false)
-  const [lastReplySpeaker, setLastReplySpeaker] = useState<string | null>(null)
-  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false);
+  const [channel, _setChannel] = useState<string>(DEFAULT_CHANNEL);
+  const [userId, setUserId] = useState<number>(0);
+  const [joined, setJoined] = useState<boolean>(false);
+  const [items, setItems] = useState<ChatItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<boolean>(false);
+  const [_micEnabled, setMicEnabled] = useState<boolean>(false);
+  const [lastReplySpeaker, setLastReplySpeaker] = useState<string | null>(null);
+  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null);
 
-  const clientRef = useRef<IAgoraRTCClient | null>(null)
-  const audioRef = useRef<IMicrophoneAudioTrack | null>(null)
-  const remoteTracksRef = useRef<Map<string, IRemoteAudioTrack>>(new Map())
-  const cacheRef = useRef<Record<string, TextChunk[]>>({})
-  const transcriptContainerRef = useRef<HTMLDivElement | null>(null)
-  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const clientRef = useRef<IAgoraRTCClient | null>(null);
+  const audioRef = useRef<IMicrophoneAudioTrack | null>(null);
+  const remoteTracksRef = useRef<Map<string, IRemoteAudioTrack>>(new Map());
+  const cacheRef = useRef<Record<string, TextChunk[]>>({});
+  const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const appendOrUpdateItem = useCallback((incoming: ChatItem) => {
     setItems((prev) => {
-      const idx = prev.findIndex((item) => item.id === incoming.id)
+      const idx = prev.findIndex((item) => item.id === incoming.id);
       if (idx === -1) {
-        return [...prev, incoming].sort((a, b) => a.ts - b.ts)
+        return [...prev, incoming].sort((a, b) => a.ts - b.ts);
       }
-      const next = [...prev]
-      next[idx] = { ...next[idx], ...incoming }
-      return next.sort((a, b) => a.ts - b.ts)
-    })
+      const next = [...prev];
+      next[idx] = { ...next[idx], ...incoming };
+      return next.sort((a, b) => a.ts - b.ts);
+    });
 
     if (incoming.speaker) {
-      setActiveSpeaker(incoming.speaker)
+      setActiveSpeaker(incoming.speaker);
     }
     if (incoming.role === "assistant" && incoming.isFinal && incoming.speaker) {
-      setLastReplySpeaker(incoming.speaker)
+      setLastReplySpeaker(incoming.speaker);
     }
-  }, [])
+  }, []);
 
   const recognisedSpeakers = useMemo(() => {
-    const names = new Set<string>()
+    const names = new Set<string>();
     items.forEach((item) => {
       if (item.speaker) {
-        names.add(item.speaker)
+        names.add(item.speaker);
       }
-    })
-    return Array.from(names)
-  }, [items])
+    });
+    return Array.from(names);
+  }, [items]);
   const lastSpeakerLines = useMemo(() => {
-    const entries = new Map<string, string>()
+    const entries = new Map<string, string>();
     items.forEach((item) => {
       if (item.speaker && item.text) {
-        entries.set(item.speaker, item.text)
+        entries.set(item.speaker, item.text);
       }
-    })
-    return entries
-  }, [items])
+    });
+    return entries;
+  }, [items]);
 
   const speakerTranscriptMap = useMemo(() => {
-    const map = new Map<string, ChatItem[]>()
+    const map = new Map<string, ChatItem[]>();
     items.forEach((item) => {
       if (!item.speaker || !item.text || !item.isFinal) {
-        return
+        return;
       }
-      const current = map.get(item.speaker) || []
-      current.push(item)
-      map.set(item.speaker, current)
-    })
+      const current = map.get(item.speaker) || [];
+      current.push(item);
+      map.set(item.speaker, current);
+    });
     map.forEach((list, speaker) => {
-      const sorted = [...list].sort((a, b) => b.ts - a.ts)
-      map.set(speaker, sorted)
-    })
-    return map
-  }, [items])
+      const sorted = [...list].sort((a, b) => b.ts - a.ts);
+      map.set(speaker, sorted);
+    });
+    return map;
+  }, [items]);
 
-  const focusSpeaker = activeSpeaker || lastReplySpeaker
+  const focusSpeaker = activeSpeaker || lastReplySpeaker;
 
   type SpeakerCard = {
-    name: string
-    accent: string
-    transcriptLines: string[]
-    tagline: string
-    status: "active" | "idle" | "waiting"
-  }
+    name: string;
+    accent: string;
+    transcriptLines: string[];
+    tagline: string;
+    status: "active" | "idle" | "waiting";
+  };
 
   const speakerCards = useMemo<SpeakerCard[]>(() => {
-    const currentFocus = focusSpeaker
+    const currentFocus = focusSpeaker;
     const base: SpeakerCard[] = KNOWN_SPEAKERS.map((name) => {
-      const recognised = recognisedSpeakers.includes(name)
-      const accent = recognised ? SPEAKER_ACCENTS[name] || "#4b5563" : "#d1d5db"
-      const transcriptEntries = speakerTranscriptMap.get(name) || []
+      const recognised = recognisedSpeakers.includes(name);
+      const accent = recognised
+        ? SPEAKER_ACCENTS[name] || "#4b5563"
+        : "#d1d5db";
+      const transcriptEntries = speakerTranscriptMap.get(name) || [];
       const transcriptLines = transcriptEntries
         .slice(0, 4)
         .map((entry) => entry.text?.trim() || "")
-        .filter((line) => line.length > 0)
-      const fallbackDetail = lastSpeakerLines.get(name)
+        .filter((line) => line.length > 0);
+      const fallbackDetail = lastSpeakerLines.get(name);
       if (transcriptLines.length === 0) {
         if (fallbackDetail) {
-          transcriptLines.push(fallbackDetail)
+          transcriptLines.push(fallbackDetail);
         } else if (recognised) {
-          transcriptLines.push("Listening for next utterance.")
+          transcriptLines.push("Listening for next utterance.");
         } else {
-          transcriptLines.push("Waiting for enrollment phrase.")
+          transcriptLines.push("Waiting for enrollment phrase.");
         }
       }
       const status: "active" | "idle" | "waiting" =
-        currentFocus === name
-          ? "active"
-          : recognised
-            ? "idle"
-            : "waiting"
+        currentFocus === name ? "active" : recognised ? "idle" : "waiting";
       const tagline =
         status === "active"
           ? "Speaking now"
           : status === "idle"
             ? "Ready and enrolled"
-            : "Not yet enrolled"
+            : "Not yet enrolled";
       return {
         name,
         accent,
         transcriptLines,
         tagline,
         status,
-      }
-    })
+      };
+    });
 
     if (base.length <= 1) {
-      return base
+      return base;
     }
 
     if (currentFocus) {
-      const activeIndex = base.findIndex((card) => card.name === currentFocus)
+      const activeIndex = base.findIndex((card) => card.name === currentFocus);
       if (activeIndex !== -1) {
-        const leftIndex = (activeIndex - 1 + base.length) % base.length
-        const rightIndex = (activeIndex + 1) % base.length
-        const ordered = [
-          base[leftIndex],
-          base[activeIndex],
-          base[rightIndex],
-        ]
-        const seen = new Set<string>()
+        const leftIndex = (activeIndex - 1 + base.length) % base.length;
+        const rightIndex = (activeIndex + 1) % base.length;
+        const ordered = [base[leftIndex], base[activeIndex], base[rightIndex]];
+        const seen = new Set<string>();
         const unique = ordered.filter((card) => {
           if (seen.has(card.name)) {
-            return false
+            return false;
           }
-          seen.add(card.name)
-          return true
-        })
+          seen.add(card.name);
+          return true;
+        });
         if (unique.length < base.length) {
           base.forEach((card) => {
             if (!seen.has(card.name)) {
-              unique.push(card)
-              seen.add(card.name)
+              unique.push(card);
+              seen.add(card.name);
             }
-          })
+          });
         }
-        return unique
+        return unique;
       }
     }
 
-    return base
-  }, [recognisedSpeakers, speakerTranscriptMap, lastSpeakerLines, focusSpeaker, activeSpeaker, lastReplySpeaker])
+    return base;
+  }, [
+    recognisedSpeakers,
+    speakerTranscriptMap,
+    lastSpeakerLines,
+    focusSpeaker,
+  ]);
 
   useEffect(() => {
-    const focus = focusSpeaker
-    if (!focus) return
-    const node = cardRefs.current[focus]
+    const focus = focusSpeaker;
+    if (!focus) return;
+    const node = cardRefs.current[focus];
     if (node) {
       node.scrollIntoView({
         behavior: "smooth",
         inline: "center",
         block: "nearest",
-      })
+      });
     }
-  }, [focusSpeaker, speakerCards])
+  }, [focusSpeaker]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      return
+      return;
     }
-    const styleId = "spotlight-slide-style"
+    const styleId = "spotlight-slide-style";
     if (document.getElementById(styleId)) {
-      return
+      return;
     }
-    const style = document.createElement("style")
-    style.id = styleId
+    const style = document.createElement("style");
+    style.id = styleId;
     style.innerHTML = `
 @keyframes spotlight-slide-in {
   0% {
@@ -297,24 +296,24 @@ export default function HomePage() {
     transform: translateY(0);
     opacity: 1;
   }
-}`
-    document.head.appendChild(style)
-  }, [])
+}`;
+    document.head.appendChild(style);
+  }, []);
 
   const handleStreamMessage = useCallback(
     (stream: ArrayBuffer) => {
       try {
-        const ascii = String.fromCharCode(...new Uint8Array(stream))
+        const ascii = String.fromCharCode(...new Uint8Array(stream));
         const [message_id, partIndexStr, totalPartsStr, content] =
-          ascii.split("|")
-        const part_index = parseInt(partIndexStr, 10)
+          ascii.split("|");
+        const part_index = parseInt(partIndexStr, 10);
         const total_parts =
-          totalPartsStr === "???" ? -1 : parseInt(totalPartsStr, 10)
+          totalPartsStr === "???" ? -1 : parseInt(totalPartsStr, 10);
         if (Number.isNaN(part_index) || Number.isNaN(total_parts)) {
-          return
+          return;
         }
         if (total_parts === -1) {
-          return
+          return;
         }
 
         const chunk: TextChunk = {
@@ -322,19 +321,19 @@ export default function HomePage() {
           part_index,
           total_parts,
           content,
-        }
-        const cache = cacheRef.current
+        };
+        const cache = cacheRef.current;
         if (!cache[message_id]) {
-          cache[message_id] = []
+          cache[message_id] = [];
         }
-        cache[message_id].push(chunk)
+        cache[message_id].push(chunk);
 
         if (cache[message_id].length === total_parts) {
-          const payloadRaw = reconstructMessage(cache[message_id])
-          const payload = JSON.parse(base64ToUtf8(payloadRaw))
-          const { text, is_final, text_ts, role } = payload
+          const payloadRaw = reconstructMessage(cache[message_id]);
+          const payload = JSON.parse(base64ToUtf8(payloadRaw));
+          const { text, is_final, text_ts, role } = payload;
           if (text && String(text).trim().length > 0) {
-            const parsed = extractSpeaker(text)
+            const parsed = extractSpeaker(text);
             appendOrUpdateItem({
               id: message_id,
               text: parsed.text,
@@ -342,202 +341,202 @@ export default function HomePage() {
               isFinal: !!is_final,
               role: role === "user" ? "user" : "assistant",
               ts: text_ts || Date.now(),
-            })
+            });
           }
-          delete cache[message_id]
+          delete cache[message_id];
         }
       } catch (e) {
-        console.warn("[UI] Failed to parse stream-message", e)
+        console.warn("[UI] Failed to parse stream-message", e);
       }
     },
-    [appendOrUpdateItem],
-  )
+    [appendOrUpdateItem]
+  );
+
+  const stop = useCallback(async () => {
+    setPending(true);
+    try {
+      cacheRef.current = {};
+      setItems([]);
+      setLastReplySpeaker(null);
+      if (audioRef.current) {
+        try {
+          await audioRef.current.setEnabled(false);
+        } catch {}
+        audioRef.current.close();
+        audioRef.current = null;
+      }
+      remoteTracksRef.current.forEach((track) => track.stop());
+      remoteTracksRef.current.clear();
+      if (clientRef.current) {
+        try {
+          await clientRef.current.leave();
+        } catch {}
+        clientRef.current.removeAllListeners();
+        clientRef.current = null;
+      }
+      await apiStopService(channel);
+    } catch (err: any) {
+      console.warn("[UI] stop error", err);
+    } finally {
+      setJoined(false);
+      setMicEnabled(false);
+      setActiveSpeaker(null);
+      setPending(false);
+    }
+  }, [channel]);
 
   const join = useCallback(async () => {
-    if (joined || pending) return
-    setPending(true)
+    if (joined || pending) return;
+    setPending(true);
     try {
-      setError(null)
+      setError(null);
       const { ok, code, data, msg } = await apiGenAgoraData({
         channel,
         userId,
-      })
+      });
       if (!ok || !data) {
-        throw new Error(`Token error: ${String(msg)} (code=${String(code)})`)
+        throw new Error(`Token error: ${String(msg)} (code=${String(code)})`);
       }
 
-      const { default: AgoraRTC } = await import("agora-rtc-sdk-ng")
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" })
-      clientRef.current = client
+      const { default: AgoraRTC } = await import("agora-rtc-sdk-ng");
+      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      clientRef.current = client;
 
       client.on("stream-message", (_uid: UID, stream: ArrayBuffer) => {
-        handleStreamMessage(stream)
-      })
+        handleStreamMessage(stream);
+      });
 
       client.on("user-published", async (user, mediaType) => {
-        if (mediaType !== "audio") return
-        await client.subscribe(user, mediaType)
-        const track = user.audioTrack
+        if (mediaType !== "audio") return;
+        await client.subscribe(user, mediaType);
+        const track = user.audioTrack;
         if (track) {
-          track.play()
-          remoteTracksRef.current.set(String(user.uid), track)
+          track.play();
+          remoteTracksRef.current.set(String(user.uid), track);
         }
-      })
+      });
 
       client.on("user-unpublished", (user) => {
-        const track = remoteTracksRef.current.get(String(user.uid))
-        track?.stop()
-        remoteTracksRef.current.delete(String(user.uid))
-      })
+        const track = remoteTracksRef.current.get(String(user.uid));
+        track?.stop();
+        remoteTracksRef.current.delete(String(user.uid));
+      });
 
       client.on("user-left", (user) => {
-        const track = remoteTracksRef.current.get(String(user.uid))
-        track?.stop()
-        remoteTracksRef.current.delete(String(user.uid))
-      })
+        const track = remoteTracksRef.current.get(String(user.uid));
+        track?.stop();
+        remoteTracksRef.current.delete(String(user.uid));
+      });
 
-      await client.join(data.appId, channel, data.token, userId)
+      await client.join(data.appId, channel, data.token, userId);
 
-      const micTrack = await AgoraRTC.createMicrophoneAudioTrack()
-      audioRef.current = micTrack
-      await client.publish([micTrack])
-      setMicEnabled(true)
-      setJoined(true)
+      const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      audioRef.current = micTrack;
+      await client.publish([micTrack]);
+      setMicEnabled(true);
+      setJoined(true);
     } catch (err: any) {
-      console.error("[UI] join error", err)
-      setError(err?.message || String(err))
-      await stop() // ensure state is clean
-      throw err
+      console.error("[UI] join error", err);
+      setError(err?.message || String(err));
+      await stop(); // ensure state is clean
+      throw err;
     } finally {
-      setPending(false)
+      setPending(false);
     }
-  }, [channel, userId, joined, pending, handleStreamMessage])
+  }, [channel, userId, joined, pending, handleStreamMessage, stop]);
 
   const start = useCallback(async () => {
-    if (joined || pending) return
-    setPending(true)
+    if (joined || pending) return;
+    setPending(true);
     try {
       const { ok, msg } = await apiStartService({
         channel,
         userId,
         graphName: "diarization_demo",
-      })
+      });
       if (!ok) {
-        throw new Error(msg || "Failed to start agent")
+        throw new Error(msg || "Failed to start agent");
       }
-      await join()
+      await join();
     } catch (err: any) {
-      console.error("[UI] start error", err)
-      setError(err?.message || "Unable to start session")
-      setPending(false)
+      console.error("[UI] start error", err);
+      setError(err?.message || "Unable to start session");
+      setPending(false);
     } finally {
-      setPending(false)
+      setPending(false);
     }
-  }, [channel, userId, join, joined, pending])
-
-  const stop = useCallback(async () => {
-    setPending(true)
-    try {
-      cacheRef.current = {}
-      setItems([])
-      setLastReplySpeaker(null)
-      if (audioRef.current) {
-        try {
-          await audioRef.current.setEnabled(false)
-        } catch { }
-        audioRef.current.close()
-        audioRef.current = null
-      }
-      remoteTracksRef.current.forEach((track) => track.stop())
-      remoteTracksRef.current.clear()
-      if (clientRef.current) {
-        try {
-          await clientRef.current.leave()
-        } catch { }
-        clientRef.current.removeAllListeners()
-        clientRef.current = null
-      }
-      await apiStopService(channel)
-    } catch (err: any) {
-      console.warn("[UI] stop error", err)
-    } finally {
-      setJoined(false)
-      setMicEnabled(false)
-      setActiveSpeaker(null)
-      setPending(false)
-    }
-  }, [channel])
+  }, [channel, userId, join, joined, pending]);
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true);
     if (!userId) {
-      const saved = Number(localStorage.getItem("diarization_uid") || "0")
-      const id = saved || generateUserId()
-      setUserId(id)
-      localStorage.setItem("diarization_uid", String(id))
+      const saved = Number(localStorage.getItem("diarization_uid") || "0");
+      const id = saved || generateUserId();
+      setUserId(id);
+      localStorage.setItem("diarization_uid", String(id));
     }
-  }, [userId])
+  }, [userId]);
 
   useEffect(() => {
-    if (!joined || items.length === 0) return
-    const container = transcriptContainerRef.current
-    if (!container) return
+    if (!joined || items.length === 0) return;
+    const container = transcriptContainerRef.current;
+    if (!container) return;
     container.scrollTo({
       top: container.scrollHeight,
       behavior: "smooth",
-    })
-  }, [items, joined])
+    });
+  }, [items, joined]);
 
   useEffect(() => {
     if (!joined) {
-      return
+      return;
     }
 
-    let cancelled = false
-    let pingInFlight = false
+    let cancelled = false;
+    let pingInFlight = false;
 
     const sendPing = async () => {
       if (pingInFlight || cancelled) {
-        return
+        return;
       }
-      pingInFlight = true
+      pingInFlight = true;
       try {
-        await apiPing(channel)
+        await apiPing(channel);
       } catch (err) {
-        console.warn("[UI] ping error", err)
+        console.warn("[UI] ping error", err);
       } finally {
-        pingInFlight = false
+        pingInFlight = false;
       }
-    }
+    };
 
-    void sendPing()
+    void sendPing();
     const timer = setInterval(() => {
-      void sendPing()
-    }, 20000)
+      void sendPing();
+    }, 20000);
 
     return () => {
-      cancelled = true
-      clearInterval(timer)
-    }
-  }, [joined, channel])
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [joined, channel]);
 
   useEffect(() => {
     return () => {
       if (audioRef.current) {
-        audioRef.current.close()
+        audioRef.current.close();
       }
-      remoteTracksRef.current.forEach((track) => track.stop())
-      remoteTracksRef.current.clear()
+      remoteTracksRef.current.forEach((track) => track.stop());
+      remoteTracksRef.current.clear();
       if (clientRef.current) {
-        clientRef.current.leave().catch(() => { })
-        clientRef.current.removeAllListeners()
-        clientRef.current = null
+        clientRef.current.leave().catch(() => {});
+        clientRef.current.removeAllListeners();
+        clientRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   if (!mounted) {
-    return null
+    return null;
   }
 
   return (
@@ -649,7 +648,8 @@ export default function HomePage() {
                   maxWidth: 360,
                 }}
               >
-                Active speaker centers automatically; cards capture the latest lines.
+                Active speaker centers automatically; cards capture the latest
+                lines.
               </span>
             </div>
             <div
@@ -685,7 +685,8 @@ export default function HomePage() {
               padding: "0 16px 28px",
               margin: "0 auto",
               alignItems: "stretch",
-              animation: "spotlight-slide-in 0.95s cubic-bezier(0.16, 0.72, 0.24, 1)",
+              animation:
+                "spotlight-slide-in 0.95s cubic-bezier(0.16, 0.72, 0.24, 1)",
             }}
           >
             {speakerCards.map((card) => (
@@ -695,13 +696,16 @@ export default function HomePage() {
                   display: "flex",
                   justifyContent: "center",
                   transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                  transform: card.status === "active" ? "translateY(-8px)" : "translateY(0)",
+                  transform:
+                    card.status === "active"
+                      ? "translateY(-8px)"
+                      : "translateY(0)",
                 }}
                 ref={(el) => {
                   if (el) {
-                    cardRefs.current[card.name] = el
+                    cardRefs.current[card.name] = el;
                   } else {
-                    delete cardRefs.current[card.name]
+                    delete cardRefs.current[card.name];
                   }
                 }}
               >
@@ -710,7 +714,10 @@ export default function HomePage() {
                     width: "100%",
                     maxWidth: 320,
                     borderRadius: 16,
-                    border: card.status === "active" ? "2px solid #1f2937" : "1px solid #e5e7eb",
+                    border:
+                      card.status === "active"
+                        ? "2px solid #1f2937"
+                        : "1px solid #e5e7eb",
                     background: "#ffffff",
                     boxShadow:
                       card.status === "active"
@@ -722,8 +729,10 @@ export default function HomePage() {
                     gap: 16,
                     minHeight: 420,
                     transformOrigin: "center",
-                    transform: card.status === "active" ? "scale(1.02)" : "scale(1)",
-                    transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease",
+                    transform:
+                      card.status === "active" ? "scale(1.02)" : "scale(1)",
+                    transition:
+                      "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease",
                   }}
                 >
                   <div
@@ -871,15 +880,15 @@ export default function HomePage() {
         </section>
       </div>
     </div>
-  )
+  );
 }
 
 function extractSpeaker(text: string): { speaker?: string; text: string } {
-  const match = text.match(SPEAKER_REGEX)
+  const match = text.match(SPEAKER_REGEX);
   if (match?.[1]) {
-    return { speaker: match[1], text: text.slice(match[0].length) }
+    return { speaker: match[1], text: text.slice(match[0].length) };
   }
-  return { text }
+  return { text };
 }
 
 function TranscriptRow({ item }: { item: ChatItem }) {
@@ -887,9 +896,9 @@ function TranscriptRow({ item }: { item: ChatItem }) {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-  })
-  const isAssistant = item.role === "assistant"
-  const accent = isAssistant ? "#111827" : "#4b5563"
+  });
+  const isAssistant = item.role === "assistant";
+  const accent = isAssistant ? "#111827" : "#4b5563";
   return (
     <div
       style={{
@@ -947,17 +956,17 @@ function TranscriptRow({ item }: { item: ChatItem }) {
         {item.text}
       </div>
     </div>
-  )
+  );
 }
 
-function StatusCard({
+function _StatusCard({
   title,
   value,
   tone = "neutral",
 }: {
-  title: string
-  value: string
-  tone?: StatusTone
+  title: string;
+  value: string;
+  tone?: StatusTone;
 }) {
   const toneStyles: Record<
     StatusTone,
@@ -987,9 +996,9 @@ function StatusCard({
       label: "#9ca3af",
       value: "#6b7280",
     },
-  }
+  };
 
-  const styles = toneStyles[tone]
+  const styles = toneStyles[tone];
   return (
     <div
       style={{
@@ -1024,7 +1033,7 @@ function StatusCard({
         {value}
       </span>
     </div>
-  )
+  );
 }
 
 function primaryButtonStyle(disabled: boolean): CSSProperties {
@@ -1039,7 +1048,7 @@ function primaryButtonStyle(disabled: boolean): CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     minWidth: 160,
     transition: "background 0.2s ease, color 0.2s ease",
-  }
+  };
 }
 
 function dangerButtonStyle(disabled: boolean): CSSProperties {
@@ -1054,19 +1063,19 @@ function dangerButtonStyle(disabled: boolean): CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     minWidth: 160,
     transition: "background 0.2s ease, color 0.2s ease",
-  }
+  };
 }
 
 function reconstructMessage(chunks: TextChunk[]): string {
-  const ordered = [...chunks].sort((a, b) => a.part_index - b.part_index)
-  return ordered.map((chunk) => chunk.content).join("")
+  const ordered = [...chunks].sort((a, b) => a.part_index - b.part_index);
+  return ordered.map((chunk) => chunk.content).join("");
 }
 
 function base64ToUtf8(base64: string): string {
-  const binaryString = atob(base64)
-  const bytes = new Uint8Array(binaryString.length)
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
+    bytes[i] = binaryString.charCodeAt(i);
   }
-  return new TextDecoder("utf-8").decode(bytes)
+  return new TextDecoder("utf-8").decode(bytes);
 }

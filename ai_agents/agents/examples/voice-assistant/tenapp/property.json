@@ -96,6 +96,29 @@
             },
             {
               "type": "extension",
+              "name": "openai_gpt_image_python",
+              "addon": "openai_gpt_image_python",
+              "extension_group": "default",
+              "property": {
+                "params": {
+                  "api_key": "${env:OPENAI_API_KEY|}",
+                  "base_url": "${env:OPENAI_IMAGE_BASE_URL|}",
+                  "model": "gpt-image-1.5",
+                  "size": "1024x1024",
+                  "quality": "standard",
+                  "n": 1,
+                  "response_format": "url",
+                  "vendor": "openai",
+                  "azure_endpoint": "${env:AZURE_OPENAI_IMAGE_ENDPOINT|}",
+                  "azure_api_version": "${env:AZURE_OPENAI_IMAGE_API_VERSION|}",
+                  "fallback_model": "dall-e-3"
+                },
+                "dump": false,
+                "dump_path": "./openai_image_responses.json"
+              }
+            },
+            {
+              "type": "extension",
               "name": "streamid_adapter",
               "addon": "streamid_adapter",
               "property": {}
@@ -106,10 +129,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -117,12 +137,13 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
+                    },
+                    {
+                      "extension": "openai_gpt_image_python"
                     }
                   ]
                 }
@@ -164,6 +185,19 @@
                   "source": [
                     {
                       "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "content_data",
+                  "source": [
+                    {
+                      "extension": "openai_gpt_image_python"
                     }
                   ]
                 }

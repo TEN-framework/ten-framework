@@ -1,55 +1,55 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { EraserIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react";
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+import {
+  DEFAULT_DIFY_SETTINGS,
+  DEFAULT_OCEAN_BASE_SETTINGS,
+  ECozeBaseUrl,
+} from "@/common/constant";
+import { useAppDispatch, useAppSelector } from "@/common/hooks";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { SettingsIcon, EraserIcon, ShieldCheckIcon } from "lucide-react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { toast } from "sonner"
-import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import { DEFAULT_DIFY_SETTINGS, DEFAULT_OCEAN_BASE_SETTINGS, ECozeBaseUrl } from "@/common/constant"
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  setAgentSettings,
-  setCozeSettings,
   resetCozeSettings,
   resetDifySettings,
-  setGlobalSettingsDialog,
-  setDifySettings,
-  setOceanBaseSettings,
   resetOceanBaseSettings,
-} from "@/store/reducers/global"
+  setAgentSettings,
+  setCozeSettings,
+  setDifySettings,
+  setGlobalSettingsDialog,
+  setOceanBaseSettings,
+} from "@/store/reducers/global";
 
 const TABS_OPTIONS = [
   {
@@ -64,95 +64,99 @@ const TABS_OPTIONS = [
     label: "Dify",
     value: "dify",
   },
-]
+];
 
 export const useSettingsTabs = () => {
-  const [tabs, setTabs] = React.useState(TABS_OPTIONS)
+  const [tabs, setTabs] = React.useState(TABS_OPTIONS);
 
-  const graphName = useAppSelector((state) => state.global.graphName)
+  const graphName = useAppSelector((state) => state.global.graphName);
 
   const enableCozeSettingsMemo = React.useMemo(() => {
-    return isCozeGraph(graphName)
-  }, [graphName])
+    return isCozeGraph(graphName);
+  }, [graphName]);
 
   const enableDifySettingsMemo = React.useMemo(() => {
-    return isDifyGraph(graphName)
-  }, [graphName])
+    return isDifyGraph(graphName);
+  }, [graphName]);
 
   const enableOceanBaseSettingsMemo = React.useMemo(() => {
-    return isOceanBaseGraph(graphName)
-  }, [graphName])
+    return isOceanBaseGraph(graphName);
+  }, [graphName]);
 
-  const enableGreetingsOrPromptMemo: { greeting: boolean, prompt: boolean } = React.useMemo(() => {
-    if (graphName === "va_gemini_v2v") {
+  const enableGreetingsOrPromptMemo: { greeting: boolean; prompt: boolean } =
+    React.useMemo(() => {
+      if (graphName === "va_gemini_v2v") {
+        return {
+          greeting: false,
+          prompt: true,
+        };
+      } else if (graphName === "va_dify_azure") {
+        return {
+          greeting: true,
+          prompt: false,
+        };
+      } else if (graphName === "story_teller_stt_integrated") {
+        return {
+          greeting: true,
+          prompt: false,
+        };
+      }
+
       return {
-        greeting: false,
+        greeting: true,
         prompt: true,
-      }
-    } else if (graphName === "va_dify_azure") {
-      return {
-        greeting: true,
-        prompt: false,
-      }
-    } else if (graphName === "story_teller_stt_integrated") {
-      return {
-        greeting: true,
-        prompt: false,
-      }
-    }
-
-    return {
-      greeting: true,
-      prompt: true,
-    }
-  }, [graphName])
-
-
+      };
+    }, [graphName]);
 
   React.useEffect(() => {
     if (enableCozeSettingsMemo) {
-      setTabs((prev) =>
-        [
-          { label: "Agent", value: "agent" },
-          { label: "Coze", value: "coze" },
-        ]
-      )
+      setTabs((_prev) => [
+        { label: "Agent", value: "agent" },
+        { label: "Coze", value: "coze" },
+      ]);
     } else if (enableDifySettingsMemo) {
-      setTabs((prev) =>
-        [
-          { label: "Agent", value: "agent" },
-          { label: "Dify", value: "dify" },
-        ]
-      )
+      setTabs((_prev) => [
+        { label: "Agent", value: "agent" },
+        { label: "Dify", value: "dify" },
+      ]);
     } else if (enableOceanBaseSettingsMemo) {
-      setTabs((prev) =>
-        [
-          { label: "Agent", value: "agent" },
-          { label: "OceanBase", value: "oceanbase" },
-        ]
-      )
+      setTabs((_prev) => [
+        { label: "Agent", value: "agent" },
+        { label: "OceanBase", value: "oceanbase" },
+      ]);
     } else {
-      setTabs((prev) => prev.filter((tab) => tab.value !== "coze" && tab.value !== "dify" && tab.value !== "oceanbase"))
+      setTabs((prev) =>
+        prev.filter(
+          (tab) =>
+            tab.value !== "coze" &&
+            tab.value !== "dify" &&
+            tab.value !== "oceanbase"
+        )
+      );
     }
-  }, [enableCozeSettingsMemo, enableDifySettingsMemo, enableOceanBaseSettingsMemo])
+  }, [
+    enableCozeSettingsMemo,
+    enableDifySettingsMemo,
+    enableOceanBaseSettingsMemo,
+  ]);
 
   return {
     tabs,
     enableGreetingsOrPromptMemo,
-  }
-}
+  };
+};
 
 export default function SettingsDialog() {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const globalSettingsDialog = useAppSelector(
-    (state) => state.global.globalSettingsDialog,
-  )
+    (state) => state.global.globalSettingsDialog
+  );
 
-  const { tabs, enableGreetingsOrPromptMemo } = useSettingsTabs()
+  const { tabs, enableGreetingsOrPromptMemo } = useSettingsTabs();
 
   const handleClose = () => {
-    dispatch(setGlobalSettingsDialog({ open: false, tab: undefined }))
-  }
+    dispatch(setGlobalSettingsDialog({ open: false, tab: undefined }));
+  };
 
   return (
     <Dialog
@@ -216,24 +220,24 @@ export default function SettingsDialog() {
         </Tabs>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 const formSchema = z.object({
   greeting: z.string().optional(),
   prompt: z.string().optional(),
-})
+});
 
 export function CommonAgentSettingsTab(props: {
-  enableGreeting?: boolean
-  enablePrompt?: boolean
-  handleClose?: () => void
-  handleSubmit?: (values: z.infer<typeof formSchema>) => void
+  enableGreeting?: boolean;
+  enablePrompt?: boolean;
+  handleClose?: () => void;
+  handleSubmit?: (values: z.infer<typeof formSchema>) => void;
 }) {
-  const { handleSubmit, enableGreeting, enablePrompt } = props
+  const { handleSubmit, enableGreeting, enablePrompt } = props;
 
-  const dispatch = useAppDispatch()
-  const agentSettings = useAppSelector((state) => state.global.agentSettings)
+  const dispatch = useAppDispatch();
+  const agentSettings = useAppSelector((state) => state.global.agentSettings);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -241,52 +245,56 @@ export function CommonAgentSettingsTab(props: {
       greeting: agentSettings.greeting,
       prompt: agentSettings.prompt,
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Form Values:", values)
-    dispatch(setAgentSettings(values))
-    handleSubmit?.(values)
+    console.log("Form Values:", values);
+    dispatch(setAgentSettings(values));
+    handleSubmit?.(values);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {enableGreeting && <FormField
-          control={form.control}
-          name="greeting"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Greeting</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter the greeting, leave it blank if you want to use default one."
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />}
-        {enablePrompt && <FormField
-          control={form.control}
-          name="prompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Prompt</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter the prompt, leave it blank if you want to use default one."
-                  className="resize-none"
-                  rows={4}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />}
+        {enableGreeting && (
+          <FormField
+            control={form.control}
+            name="greeting"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Greeting</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter the greeting, leave it blank if you want to use default one."
+                    className="resize-none"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        {enablePrompt && (
+          <FormField
+            control={form.control}
+            name="prompt"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prompt</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter the prompt, leave it blank if you want to use default one."
+                    className="resize-none"
+                    rows={4}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         <DialogFooter>
           <Button type="submit" disabled={!form.formState.isValid}>
             Save Agent Settings
@@ -294,7 +302,7 @@ export function CommonAgentSettingsTab(props: {
         </DialogFooter>
       </form>
     </Form>
-  )
+  );
 }
 
 export const cozeSettingsFormSchema = z.object({
@@ -309,20 +317,20 @@ export const cozeSettingsFormSchema = z.object({
     })
     .min(1),
   base_url: z.nativeEnum(ECozeBaseUrl).default(ECozeBaseUrl.GLOBAL),
-})
+});
 
 export const isCozeGraph = (graphName: string) => {
-  return graphName.toLowerCase().includes("coze")
-}
+  return graphName.toLowerCase().includes("coze");
+};
 
 export function CozeSettingsTab(props: {
-  handleClose?: () => void
-  handleSubmit?: (values: z.infer<typeof cozeSettingsFormSchema>) => void
+  handleClose?: () => void;
+  handleSubmit?: (values: z.infer<typeof cozeSettingsFormSchema>) => void;
 }) {
-  const { handleSubmit } = props
+  const { handleSubmit } = props;
 
-  const dispatch = useAppDispatch()
-  const cozeSettings = useAppSelector((state) => state.global.cozeSettings)
+  const dispatch = useAppDispatch();
+  const cozeSettings = useAppSelector((state) => state.global.cozeSettings);
 
   const form = useForm<z.infer<typeof cozeSettingsFormSchema>>({
     resolver: zodResolver(cozeSettingsFormSchema),
@@ -333,12 +341,12 @@ export function CozeSettingsTab(props: {
         typeof cozeSettingsFormSchema
       >["base_url"],
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof cozeSettingsFormSchema>) {
-    console.log("Coze Form Values:", values)
-    dispatch(setCozeSettings(values))
-    handleSubmit?.(values)
+    console.log("Coze Form Values:", values);
+    dispatch(setCozeSettings(values));
+    handleSubmit?.(values);
   }
 
   return (
@@ -404,15 +412,15 @@ export function CozeSettingsTab(props: {
               variant="destructive"
               size="icon"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
                 form.reset({
                   token: "",
                   bot_id: "",
                   base_url: ECozeBaseUrl.GLOBAL,
-                })
-                dispatch(resetCozeSettings())
-                toast.success("Coze settings reset")
+                });
+                dispatch(resetCozeSettings());
+                toast.success("Coze settings reset");
               }}
             >
               <EraserIcon />
@@ -421,14 +429,14 @@ export function CozeSettingsTab(props: {
               Save Coze Settings
             </Button>
           </div>
-          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-muted-foreground text-xs">
             <ShieldCheckIcon className="me-1 size-3" />
             Settings are saved in your browser only
           </Label>
         </div>
       </form>
     </Form>
-  )
+  );
 }
 
 export const difySettingsFormSchema = z.object({
@@ -441,21 +449,21 @@ export const difySettingsFormSchema = z.object({
     .string({
       message: "Base URL is required",
     })
-    .min(1)
-})
+    .min(1),
+});
 
 export const isDifyGraph = (graphName: string) => {
-  return graphName.toLowerCase().includes("dify")
-}
+  return graphName.toLowerCase().includes("dify");
+};
 
 export function DifySettingsTab(props: {
-  handleClose?: () => void
-  handleSubmit?: (values: z.infer<typeof difySettingsFormSchema>) => void
+  handleClose?: () => void;
+  handleSubmit?: (values: z.infer<typeof difySettingsFormSchema>) => void;
 }) {
-  const { handleSubmit } = props
+  const { handleSubmit } = props;
 
-  const dispatch = useAppDispatch()
-  const difySettings = useAppSelector((state) => state.global.difySettings)
+  const dispatch = useAppDispatch();
+  const difySettings = useAppSelector((state) => state.global.difySettings);
 
   const form = useForm<z.infer<typeof difySettingsFormSchema>>({
     resolver: zodResolver(difySettingsFormSchema),
@@ -463,12 +471,12 @@ export function DifySettingsTab(props: {
       api_key: difySettings.api_key,
       base_url: difySettings.base_url,
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof difySettingsFormSchema>) {
-    console.log("Dify Form Values:", values)
-    dispatch(setDifySettings(values))
-    handleSubmit?.(values)
+    console.log("Dify Form Values:", values);
+    dispatch(setDifySettings(values));
+    handleSubmit?.(values);
   }
 
   return (
@@ -506,11 +514,11 @@ export function DifySettingsTab(props: {
               variant="destructive"
               size="icon"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                form.reset(DEFAULT_DIFY_SETTINGS)
-                dispatch(resetDifySettings())
-                toast.success("Dify settings reset")
+                e.preventDefault();
+                e.stopPropagation();
+                form.reset(DEFAULT_DIFY_SETTINGS);
+                dispatch(resetDifySettings());
+                toast.success("Dify settings reset");
               }}
             >
               <EraserIcon />
@@ -519,21 +527,19 @@ export function DifySettingsTab(props: {
               Save Dify Settings
             </Button>
           </div>
-          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-muted-foreground text-xs">
             <ShieldCheckIcon className="me-1 size-3" />
             Settings are saved in your browser only
           </Label>
         </div>
       </form>
     </Form>
-  )
+  );
 }
-
 
 export const isOceanBaseGraph = (graphName: string) => {
-  return graphName.toLowerCase().includes("oceanbase")
-}
-
+  return graphName.toLowerCase().includes("oceanbase");
+};
 
 export const oceanbaseSettingsFormSchema = z.object({
   api_key: z
@@ -556,16 +562,18 @@ export const oceanbaseSettingsFormSchema = z.object({
       message: "Collection ID is required",
     })
     .min(1),
-})
+});
 
 export function OceanBaseSettingsTab(props: {
-  handleClose?: () => void
-  handleSubmit?: (values: z.infer<typeof oceanbaseSettingsFormSchema>) => void
+  handleClose?: () => void;
+  handleSubmit?: (values: z.infer<typeof oceanbaseSettingsFormSchema>) => void;
 }) {
-  const { handleSubmit } = props
+  const { handleSubmit } = props;
 
-  const dispatch = useAppDispatch()
-  const oceanbaseSettings = useAppSelector((state) => state.global.oceanbaseSettings)
+  const dispatch = useAppDispatch();
+  const oceanbaseSettings = useAppSelector(
+    (state) => state.global.oceanbaseSettings
+  );
 
   const form = useForm<z.infer<typeof oceanbaseSettingsFormSchema>>({
     resolver: zodResolver(oceanbaseSettingsFormSchema),
@@ -575,12 +583,12 @@ export function OceanBaseSettingsTab(props: {
       db_name: oceanbaseSettings.db_name,
       collection_id: oceanbaseSettings.collection_id,
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof oceanbaseSettingsFormSchema>) {
-    console.log("OceanBase Form Values:", values)
-    dispatch(setOceanBaseSettings(values))
-    handleSubmit?.(values)
+    console.log("OceanBase Form Values:", values);
+    dispatch(setOceanBaseSettings(values));
+    handleSubmit?.(values);
   }
 
   return (
@@ -606,7 +614,10 @@ export function OceanBaseSettingsTab(props: {
             <FormItem>
               <FormLabel>Base URL*</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your OceanBase API base URL" {...field} />
+                <Input
+                  placeholder="Enter your OceanBase API base URL"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -619,7 +630,10 @@ export function OceanBaseSettingsTab(props: {
             <FormItem>
               <FormLabel>Database Name*</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your OceanBase database name" {...field} />
+                <Input
+                  placeholder="Enter your OceanBase database name"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -632,7 +646,10 @@ export function OceanBaseSettingsTab(props: {
             <FormItem>
               <FormLabel>Collection ID*</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your OceanBase collection ID" {...field} />
+                <Input
+                  placeholder="Enter your OceanBase collection ID"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -644,11 +661,11 @@ export function OceanBaseSettingsTab(props: {
               variant="destructive"
               size="icon"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                form.reset(DEFAULT_OCEAN_BASE_SETTINGS)
-                dispatch(resetOceanBaseSettings())
-                toast.success("OceanBase settings reset")
+                e.preventDefault();
+                e.stopPropagation();
+                form.reset(DEFAULT_OCEAN_BASE_SETTINGS);
+                dispatch(resetOceanBaseSettings());
+                toast.success("OceanBase settings reset");
               }}
             >
               <EraserIcon />
@@ -657,12 +674,12 @@ export function OceanBaseSettingsTab(props: {
               Save OceanBase Settings
             </Button>
           </div>
-          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-muted-foreground text-xs">
             <ShieldCheckIcon className="me-1 size-3" />
             Settings are saved in your browser only
           </Label>
         </div>
       </form>
     </Form>
-  )
+  );
 }

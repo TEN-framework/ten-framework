@@ -4,7 +4,6 @@ import AgoraRTC, {
   type IAgoraRTCClient,
   type IMicrophoneAudioTrack,
   type IRemoteAudioTrack,
-  type UID,
 } from "agora-rtc-sdk-ng";
 import { apiGenAgoraData, VideoSourceType } from "@/common";
 import { AGEventEmitter } from "../events";
@@ -30,7 +29,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     if (!this._joined) {
       const res = await apiGenAgoraData({ channel, userId });
       const { code, data } = res;
-      if (code != 0) {
+      if (code !== 0) {
         throw new Error("Failed to get Agora token");
       }
       const { appId, token } = data;

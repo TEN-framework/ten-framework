@@ -417,7 +417,6 @@ export const NetworkIconByLevel = (
       return <NetworkAverageIcon {...rest} />;
     case 5:
       return <NetworkPoorIcon {...rest} />;
-    case 6:
     default:
       return <NetworkDisconnectedIcon {...rest} />;
   }

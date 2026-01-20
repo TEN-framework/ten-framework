@@ -1,7 +1,7 @@
 "use client";
 
 import AgoraRTM, { type RTMClient } from "agora-rtm";
-import { type IRTMTextItem } from "@/types";
+import type { IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
 export interface IRtmEvents {
@@ -26,7 +26,9 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   userId: number = 0;
   appId: string = "";
   token: string = "";
-  private _boundHandleRtmMessage: ((e: TRTMMessageEvent) => Promise<void>) | null = null;
+  private _boundHandleRtmMessage:
+    | ((e: TRTMMessageEvent) => Promise<void>)
+    | null = null;
   private _boundHandleRtmPresence: ((e: any) => Promise<void>) | null = null;
 
   constructor() {
@@ -63,7 +65,6 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
         logLevel: "debug",
       });
 
-
       await rtm.login({ token });
       console.log("[RTM] Login successful");
 
@@ -85,9 +86,9 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   private _listenRtmEvents() {
-    this._client!.addEventListener("message", this._boundHandleRtmMessage!);
+    this._client?.addEventListener("message", this._boundHandleRtmMessage!);
     // tmp add presence
-    this._client!.addEventListener("presence", this._boundHandleRtmPresence!);
+    this._client?.addEventListener("presence", this._boundHandleRtmPresence!);
     console.log("[RTM] Listen RTM events success!");
   }
 
@@ -139,7 +140,10 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     try {
       // Remove event listeners
       this._client.removeEventListener("message", this._boundHandleRtmMessage!);
-      this._client.removeEventListener("presence", this._boundHandleRtmPresence!);
+      this._client.removeEventListener(
+        "presence",
+        this._boundHandleRtmPresence!
+      );
 
       // Unsubscribe from channel
       await this._client.unsubscribe(this.channel);
