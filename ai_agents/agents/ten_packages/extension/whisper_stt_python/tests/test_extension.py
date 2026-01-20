@@ -51,11 +51,13 @@ async def test_on_init_success(extension, mock_ten_env):
             "language": "en"
         }
     }"""
-    mock_ten_env.get_property_to_json = AsyncMock(return_value=(config_json, None))
-    
+    mock_ten_env.get_property_to_json = AsyncMock(
+        return_value=(config_json, None)
+    )
+
     extension.ten_env = mock_ten_env
     await extension.on_init(mock_ten_env)
-    
+
     assert extension.config is not None
     assert extension.config.params["model"] == "base"
     assert extension.reconnect_manager is not None
@@ -64,13 +66,15 @@ async def test_on_init_success(extension, mock_ten_env):
 @pytest.mark.asyncio
 async def test_on_init_invalid_config(extension, mock_ten_env):
     """Test initialization with invalid config"""
-    mock_ten_env.get_property_to_json = AsyncMock(return_value=("invalid json", None))
-    
+    mock_ten_env.get_property_to_json = AsyncMock(
+        return_value=("invalid json", None)
+    )
+
     extension.ten_env = mock_ten_env
     extension.send_asr_error = AsyncMock()
-    
+
     await extension.on_init(mock_ten_env)
-    
+
     assert extension.send_asr_error.called
 
 
@@ -78,7 +82,7 @@ def test_input_audio_sample_rate(extension):
     """Test input audio sample rate"""
     extension.config = WhisperSTTConfig(params={"sample_rate": 16000})
     assert extension.input_audio_sample_rate() == 16000
-    
+
     extension.config = WhisperSTTConfig(params={})
     assert extension.input_audio_sample_rate() == 16000
 
@@ -99,7 +103,7 @@ def test_is_connected_with_client(extension):
     mock_client = MagicMock()
     mock_client.is_connected = MagicMock(return_value=True)
     extension.client = mock_client
-    
+
     assert extension.is_connected() is True
 
 
@@ -118,16 +122,20 @@ async def test_start_connection_success(extension, mock_ten_env):
     extension.reconnect_manager = MagicMock()
     extension.reconnect_manager.mark_connection_successful = MagicMock()
     extension.audio_timeline = MagicMock()
-    extension.audio_timeline.get_total_user_audio_duration = MagicMock(return_value=0)
+    extension.audio_timeline.get_total_user_audio_duration = MagicMock(
+        return_value=0
+    )
     extension.audio_timeline.reset = MagicMock()
-    
-    with patch("whisper_stt_python.extension.WhisperClient") as mock_client_class:
+
+    with patch(
+        "whisper_stt_python.extension.WhisperClient"
+    ) as mock_client_class:
         mock_client = AsyncMock()
         mock_client.connect = AsyncMock()
         mock_client_class.return_value = mock_client
-        
+
         await extension.start_connection()
-        
+
         assert extension.client is not None
         assert mock_client.connect.called
 
@@ -139,9 +147,9 @@ async def test_stop_connection(extension, mock_ten_env):
     mock_client = AsyncMock()
     mock_client.disconnect = AsyncMock()
     extension.client = mock_client
-    
+
     await extension.stop_connection()
-    
+
     assert mock_client.disconnect.called
     assert extension.client is None
 
@@ -161,14 +169,14 @@ async def test_send_audio_success(extension):
     mock_client.is_connected = MagicMock(return_value=True)
     mock_client.send_audio = AsyncMock()
     extension.client = mock_client
-    
+
     mock_frame = MagicMock()
     mock_buf = b"audio_data"
     mock_frame.lock_buf = MagicMock(return_value=mock_buf)
     mock_frame.unlock_buf = MagicMock()
-    
+
     result = await extension.send_audio(mock_frame, None)
-    
+
     assert result is True
     assert mock_client.send_audio.called
     assert mock_frame.unlock_buf.called
@@ -182,9 +190,9 @@ async def test_finalize_disconnect_mode(extension, mock_ten_env):
     mock_client = AsyncMock()
     mock_client.finalize = AsyncMock()
     extension.client = mock_client
-    
+
     await extension.finalize(None)
-    
+
     assert mock_client.finalize.called
 
 
@@ -196,9 +204,9 @@ async def test_finalize_silence_mode(extension, mock_ten_env):
     mock_client = AsyncMock()
     mock_client.finalize = AsyncMock()
     extension.client = mock_client
-    
+
     await extension.finalize(None)
-    
+
     assert mock_client.finalize.called
 
 
@@ -208,10 +216,12 @@ async def test_on_result_callback(extension, mock_ten_env):
     extension.config = WhisperSTTConfig(params={"language": "en"})
     extension.ten_env = mock_ten_env
     extension.audio_timeline = MagicMock()
-    extension.audio_timeline.get_audio_duration_before_time = MagicMock(return_value=0)
+    extension.audio_timeline.get_audio_duration_before_time = MagicMock(
+        return_value=0
+    )
     extension.send_asr_result = AsyncMock()
     extension._finalize_end = AsyncMock()
-    
+
     await extension._on_result(
         text="Hello world",
         start_ms=0,
@@ -219,7 +229,7 @@ async def test_on_result_callback(extension, mock_ten_env):
         language="en-US",
         final=True,
     )
-    
+
     assert extension.send_asr_result.called
     assert extension._finalize_end.called
 
@@ -230,8 +240,8 @@ async def test_on_error_callback(extension, mock_ten_env):
     extension.ten_env = mock_ten_env
     extension.send_asr_error = AsyncMock()
     extension._handle_reconnect = AsyncMock()
-    
+
     await extension._on_error("Test error")
-    
+
     assert extension.send_asr_error.called
     assert extension._handle_reconnect.called

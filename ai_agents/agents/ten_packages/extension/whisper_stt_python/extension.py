@@ -68,7 +68,9 @@ class WhisperSTTExtension(AsyncASRBaseExtension):
 
             # Initialize audio dumper if enabled
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
 
@@ -178,7 +180,9 @@ class WhisperSTTExtension(AsyncASRBaseExtension):
         return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
-    async def send_audio(self, frame: AudioFrame, _session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, _session_id: str | None
+    ) -> bool:
         """Send audio data"""
         if not self.is_connected() or not self.client:
             return False
@@ -224,7 +228,9 @@ class WhisperSTTExtension(AsyncASRBaseExtension):
         """Handle disconnect mode finalization"""
         if self.client:
             await self.client.finalize()
-            self.ten_env.log_debug("Whisper finalize completed (disconnect mode)")
+            self.ten_env.log_debug(
+                "Whisper finalize completed (disconnect mode)"
+            )
 
     async def _handle_finalize_silence(self) -> None:
         """Handle silence mode finalization"""
@@ -245,10 +251,14 @@ class WhisperSTTExtension(AsyncASRBaseExtension):
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         """Handle finalization end logic"""
@@ -286,7 +296,9 @@ class WhisperSTTExtension(AsyncASRBaseExtension):
                 final=final,
                 start_ms=actual_start_ms,
                 duration_ms=duration_ms,
-                language=self.config.normalized_language if self.config else language,
+                language=(
+                    self.config.normalized_language if self.config else language
+                ),
                 words=[],
             )
 

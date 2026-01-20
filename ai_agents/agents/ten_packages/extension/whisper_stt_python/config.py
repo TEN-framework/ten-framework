@@ -35,7 +35,9 @@ class WhisperSTTConfig(BaseModel):
             # Mask sensitive keys
             for key in ["api_key", "key", "token", "secret"]:
                 if key in config_dict["params"] and config_dict["params"][key]:
-                    config_dict["params"][key] = encrypt(config_dict["params"][key])
+                    config_dict["params"][key] = encrypt(
+                        config_dict["params"][key]
+                    )
         return str(config_dict)
 
     @property

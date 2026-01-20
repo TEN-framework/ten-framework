@@ -111,12 +111,17 @@ class WhisperClient:
 
             try:
                 # Convert bytes to numpy array
-                audio_np = np.frombuffer(self.audio_buffer, dtype=np.int16).astype(
-                    np.float32
-                ) / 32768.0
+                audio_np = (
+                    np.frombuffer(self.audio_buffer, dtype=np.int16).astype(
+                        np.float32
+                    )
+                    / 32768.0
+                )
 
                 # Limit to max length
-                max_samples = int(self.max_audio_length_ms / 1000 * self.sample_rate)
+                max_samples = int(
+                    self.max_audio_length_ms / 1000 * self.sample_rate
+                )
                 if len(audio_np) > max_samples:
                     audio_np = audio_np[:max_samples]
 
@@ -143,7 +148,9 @@ class WhisperClient:
                         await self.on_result_callback(
                             text=segment.text.strip(),
                             start_ms=int(segment.start * 1000),
-                            duration_ms=int((segment.end - segment.start) * 1000),
+                            duration_ms=int(
+                                (segment.end - segment.start) * 1000
+                            ),
                             language=info.language if info else self.language,
                             final=True,
                         )

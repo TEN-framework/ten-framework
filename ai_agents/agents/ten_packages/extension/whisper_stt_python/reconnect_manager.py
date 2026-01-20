@@ -40,11 +40,11 @@ class ReconnectManager:
         error_handler: Optional[Callable] = None,
     ) -> bool:
         """Handle reconnection with exponential backoff
-        
+
         Args:
             connection_func: Async function to establish connection
             error_handler: Optional async function to handle errors
-            
+
         Returns:
             bool: True if reconnection initiated, False if max attempts reached
         """

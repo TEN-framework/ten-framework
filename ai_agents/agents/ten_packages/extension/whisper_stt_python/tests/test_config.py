@@ -48,9 +48,7 @@ def test_config_update():
 
 def test_config_to_json_no_sensitive():
     """Test JSON serialization without sensitive handling"""
-    config = WhisperSTTConfig(
-        params={"api_key": "secret123", "model": "base"}
-    )
+    config = WhisperSTTConfig(params={"api_key": "secret123", "model": "base"})
     json_str = config.to_json(sensitive_handling=False)
     assert "secret123" in json_str
     assert "model" in json_str
@@ -58,9 +56,7 @@ def test_config_to_json_no_sensitive():
 
 def test_config_to_json_with_sensitive():
     """Test JSON serialization with sensitive data masking"""
-    config = WhisperSTTConfig(
-        params={"api_key": "secret123", "model": "base"}
-    )
+    config = WhisperSTTConfig(params={"api_key": "secret123", "model": "base"})
     json_str = config.to_json(sensitive_handling=True)
     assert "secret123" not in json_str
     assert "model" in json_str
@@ -76,7 +72,7 @@ def test_normalized_language_mapping():
         ("de", "de-DE"),
         ("unknown", "unknown"),
     ]
-    
+
     for lang_code, expected in test_cases:
         config = WhisperSTTConfig(params={"language": lang_code})
         assert config.normalized_language == expected
@@ -108,6 +104,6 @@ def test_finalize_modes():
     """Test valid finalize modes"""
     config1 = WhisperSTTConfig(finalize_mode="disconnect")
     assert config1.finalize_mode == "disconnect"
-    
+
     config2 = WhisperSTTConfig(finalize_mode="silence")
     assert config2.finalize_mode == "silence"
