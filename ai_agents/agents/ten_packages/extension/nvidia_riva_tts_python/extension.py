@@ -10,7 +10,6 @@ This extension implements text-to-speech using NVIDIA Riva Speech Skills.
 It provides high-quality, GPU-accelerated speech synthesis.
 """
 
-import asyncio
 import time
 import traceback
 from typing import Optional

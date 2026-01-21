@@ -4,13 +4,11 @@
 #
 from typing import Any
 import copy
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pathlib import Path
-from ten_ai_base import utils
-from ten_ai_base.tts import AsyncTTSConfig
 
 
-class NvidiaRivaTTSConfig(AsyncTTSConfig):
+class NvidiaRivaTTSConfig(BaseModel):
     """NVIDIA Riva TTS Config"""
 
     dump: bool = Field(default=False, description="NVIDIA Riva TTS dump")
@@ -26,7 +24,6 @@ class NvidiaRivaTTSConfig(AsyncTTSConfig):
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
-        pass
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""

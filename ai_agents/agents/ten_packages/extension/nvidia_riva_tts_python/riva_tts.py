@@ -36,9 +36,7 @@ class NvidiaRivaTTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
 
-            self.auth = riva.client.Auth(
-                ssl_cert=None, use_ssl=use_ssl, uri=server
-            )
+            self.auth = riva.client.Auth(use_ssl=use_ssl, uri=server)
             self.tts_service = riva.client.SpeechSynthesisService(self.auth)
 
             self.ten_env.log_info(
