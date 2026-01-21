@@ -6,7 +6,7 @@
 <button onclick="testConnection()">Test</button>
 <pre id="output"></pre>
 <script>
-async function testConnection() {
+async function _testConnection() {
   const output = document.getElementById("output");
   output.textContent = "Testing...\n";
   
@@ -15,11 +15,11 @@ async function testConnection() {
     const protocol = window.location.protocol;
     const backendURL = (hostname === "localhost" || hostname === "127.0.0.1") 
       ? "http://localhost:8080" 
-      : protocol + "//" + hostname + ":8080";
+      : `${protocol}//${hostname}:8080`;
     
-    output.textContent += "Backend URL: " + backendURL + "\n\n";
+    output.textContent += `Backend URL: ${backendURL}\n\n`;
     
-    const response = await fetch(backendURL + "/token/generate", {
+    const response = await fetch(`${backendURL}/token/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -29,11 +29,11 @@ async function testConnection() {
       })
     });
     
-    output.textContent += "Status: " + response.status + "\n";
+    output.textContent += `Status: ${response.status}\n`;
     const data = await response.json();
     output.textContent += JSON.stringify(data, null, 2);
   } catch (error) {
-    output.textContent += "\nERROR: " + error.message;
+    output.textContent += `\nERROR: ${error.message}`;
   }
 }
 </script>

@@ -1,47 +1,47 @@
-import { genUUID } from "./utils"
-import { IOceanBaseSettings, Language } from "@/types"
-import axios from "axios"
+import axios from "axios";
+import type { IOceanBaseSettings, Language } from "@/types";
+import { genUUID } from "./utils";
 
 export interface StartRequestConfig {
-  channel: string
-  userId: number
-  graphName: string
-  language: Language
-  voiceType: "male" | "female"
-  prompt?: string
-  greeting?: string
-  coze_token?: string
-  coze_bot_id?: string
-  coze_base_url?: string
-  dify_api_key?: string
-  dify_base_url?: string
-  oceanbase_settings?: IOceanBaseSettings
+  channel: string;
+  userId: number;
+  graphName: string;
+  language: Language;
+  voiceType: "male" | "female";
+  prompt?: string;
+  greeting?: string;
+  coze_token?: string;
+  coze_bot_id?: string;
+  coze_base_url?: string;
+  dify_api_key?: string;
+  dify_base_url?: string;
+  oceanbase_settings?: IOceanBaseSettings;
 }
 
 interface GenAgoraDataConfig {
-  userId: string | number
-  channel: string
+  userId: string | number;
+  channel: string;
 }
 
 export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
   // the request will be rewrite at next.config.mjs to send to $AGENT_SERVER_URL
-  const url = `/api/token/generate`
-  const { userId, channel } = config
+  const url = `/api/token/generate`;
+  const { userId, channel } = config;
   const data = {
     request_id: genUUID(),
     uid: userId,
     channel_name: channel,
-  }
-  let resp: any = await axios.post(url, data)
-  resp = resp.data || {}
-  return resp
-}
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};
 
 export const apiStartService = async (
-  config: StartRequestConfig,
+  config: StartRequestConfig
 ): Promise<any> => {
   // look at app/api/agents/start/route.tsx for the server-side implementation
-  const url = `/api/agents/start`
+  const url = `/api/agents/start`;
   const {
     channel,
     userId,
@@ -56,7 +56,7 @@ export const apiStartService = async (
     dify_api_key,
     dify_base_url,
     oceanbase_settings,
-  } = config
+  } = config;
   const data = {
     request_id: genUUID(),
     channel_name: channel,
@@ -72,63 +72,63 @@ export const apiStartService = async (
     dify_api_key: dify_api_key ?? undefined,
     dify_base_url: dify_base_url ?? undefined,
     oceanbase_settings: oceanbase_settings ?? undefined,
-  }
-  let resp: any = await axios.post(url, data)
-  resp = resp.data || {}
-  return resp
-}
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};
 
 export const apiStopService = async (channel: string) => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/agents/stop`
+  const url = `/api/agents/stop`;
   const data = {
     request_id: genUUID(),
     channel_name: channel,
-  }
-  let resp: any = await axios.post(url, data)
-  resp = resp.data || {}
-  return resp
-}
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};
 
 export const apiGetDocumentList = async () => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/vector/document/preset/list`
-  let resp: any = await axios.get(url)
-  resp = resp.data || {}
+  const url = `/api/vector/document/preset/list`;
+  let resp: any = await axios.get(url);
+  resp = resp.data || {};
   if (resp.code !== "0") {
-    throw new Error(resp.msg)
+    throw new Error(resp.msg);
   }
-  return resp
-}
+  return resp;
+};
 
 export const apiUpdateDocument = async (options: {
-  channel: string
-  collection: string
-  fileName: string
+  channel: string;
+  collection: string;
+  fileName: string;
 }) => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/vector/document/update`
-  const { channel, collection, fileName } = options
+  const url = `/api/vector/document/update`;
+  const { channel, collection, fileName } = options;
   const data = {
     request_id: genUUID(),
     channel_name: channel,
     collection: collection,
     file_name: fileName,
-  }
-  let resp: any = await axios.post(url, data)
-  resp = resp.data || {}
-  return resp
-}
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};
 
 // ping/pong
 export const apiPing = async (channel: string) => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
-  const url = `/api/agents/ping`
+  const url = `/api/agents/ping`;
   const data = {
     request_id: genUUID(),
     channel_name: channel,
-  }
-  let resp: any = await axios.post(url, data)
-  resp = resp.data || {}
-  return resp
-}
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};

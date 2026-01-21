@@ -66,14 +66,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -115,10 +109,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -126,9 +117,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -260,14 +249,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -309,10 +292,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -320,9 +300,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -453,14 +431,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -502,10 +474,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -513,9 +482,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -647,14 +614,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -696,10 +657,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -707,9 +665,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -904,10 +860,7 @@
               ],
               "cmd": [
                 {
-                  "names": [
-                    "on_user_left",
-                    "on_user_joined"
-                  ],
+                  "names": ["on_user_left", "on_user_joined"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -915,9 +868,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -1071,10 +1022,7 @@
               ],
               "cmd": [
                 {
-                  "names": [
-                    "on_user_left",
-                    "on_user_joined"
-                  ],
+                  "names": ["on_user_left", "on_user_joined"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -1082,9 +1030,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -1234,10 +1180,7 @@
               ],
               "cmd": [
                 {
-                  "names": [
-                    "on_user_left",
-                    "on_user_joined"
-                  ],
+                  "names": ["on_user_left", "on_user_joined"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -1245,9 +1188,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -1401,10 +1342,7 @@
               ],
               "cmd": [
                 {
-                  "names": [
-                    "on_user_left",
-                    "on_user_joined"
-                  ],
+                  "names": ["on_user_left", "on_user_joined"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -1412,9 +1350,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -1692,14 +1628,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -1741,10 +1671,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -1752,9 +1679,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -1882,14 +1807,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -1931,10 +1850,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -1942,9 +1858,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -2072,14 +1986,8 @@
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ]
                 }
               }
@@ -2121,10 +2029,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -2132,9 +2037,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -2262,14 +2165,8 @@
               "property": {
                 "params": {
                   "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AriaNeural"
-                    ]
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
                   ],
                   "speech_recognition_language": "en-US",
                   "region": "${env:AZURE_TTS_REGION}",
@@ -2315,10 +2212,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -2326,9 +2220,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -2504,10 +2396,7 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
+                  "names": ["on_user_joined", "on_user_left"],
                   "source": [
                     {
                       "extension": "agora_rtc"
@@ -2515,9 +2404,7 @@
                   ]
                 },
                 {
-                  "names": [
-                    "tool_register"
-                  ],
+                  "names": ["tool_register"],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"

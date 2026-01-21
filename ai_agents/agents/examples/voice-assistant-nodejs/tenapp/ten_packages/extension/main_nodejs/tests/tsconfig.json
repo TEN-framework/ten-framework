@@ -16,13 +16,8 @@
     "emitDecoratorMetadata": true,
     "rootDir": "src",
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "exclude": [
-    "node_modules",
-    "src/**/*.spec.*"
-  ],
-  "include": [
-    "src/**/*.ts"
-  ],
+  "exclude": ["node_modules", "src/**/*.spec.*"],
+  "include": ["src/**/*.ts"]
 }

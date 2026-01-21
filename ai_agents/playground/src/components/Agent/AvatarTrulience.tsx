@@ -1,10 +1,12 @@
 "use client";
 
 import { TrulienceAvatar } from "@trulience/react-sdk";
-import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
+import type {
+  IMicrophoneAudioTrack,
+  IRemoteAudioTrack,
+} from "agora-rtc-sdk-ng";
 import { Maximize, Minimize } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/common";
 import { cn } from "@/lib/utils";
 import { Progress, ProgressIndicator } from "../ui/progress";
@@ -38,7 +40,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
       const avatarIdFromURL = urlParams.get("avatarId");
       setFinalAvatarId(avatarIdFromURL || trulienceSettings.avatarId || "");
     }
-  }, []);
+  }, [trulienceSettings.avatarId]);
 
   // Define event callbacks
   const eventCallbacks = useMemo(() => {
@@ -74,7 +76,12 @@ export default function Avatar({ audioTrack }: AvatarProps) {
         height="100%"
       />
     );
-  }, [finalAvatarId, eventCallbacks]);
+  }, [
+    finalAvatarId,
+    eventCallbacks,
+    trulienceSettings.avatarToken,
+    trulienceSettings.trulienceSDK,
+  ]);
 
   // Update the Avatar’s audio stream whenever audioTrack or agentConnected changes
   useEffect(() => {
@@ -104,7 +111,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   return (
     <div
       className={cn("relative h-full w-full overflow-hidden rounded-lg", {
-        ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
+        "absolute top-0 left-0 h-screen w-screen rounded-none": fullscreen,
       })}
     >
       <button

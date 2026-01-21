@@ -2,7 +2,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 // Use environment variable or default to localhost
-const AGENT_SERVER_URL = process.env.AGENT_SERVER_URL || 'http://localhost:8080';
+const AGENT_SERVER_URL =
+  process.env.AGENT_SERVER_URL || "http://localhost:8080";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

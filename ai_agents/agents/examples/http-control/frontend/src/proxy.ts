@@ -19,7 +19,7 @@ if (!TEN_DEV_SERVER_URL) {
  */
 function validatePort(port: string): boolean {
   const portNum = parseInt(port, 10);
-  return !isNaN(portNum) && portNum >= 8000 && portNum <= 9000;
+  return !Number.isNaN(portNum) && portNum >= 8000 && portNum <= 9000;
 }
 
 export async function proxy(req: NextRequest) {
@@ -59,7 +59,7 @@ export async function proxy(req: NextRequest) {
     url.href = `${AGENT_SERVER_URL}${pathname.replace("/api/agents/", "/")}`;
 
     try {
-      const body = await req.json();
+      const _body = await req.json();
       console.log(`Request to ${pathname}`);
     } catch (e) {
       console.log(`Request to ${pathname} ${e}`);
@@ -100,8 +100,5 @@ export async function proxy(req: NextRequest) {
 
 // Configure which routes should be processed by the proxy
 export const config = {
-  matcher: [
-    "/api/:path*",
-    "/proxy/:path*",
-  ],
+  matcher: ["/api/:path*", "/proxy/:path*"],
 };

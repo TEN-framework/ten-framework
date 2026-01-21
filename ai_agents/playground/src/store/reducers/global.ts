@@ -8,17 +8,11 @@ import {
   DEFAULT_OPTIONS,
   DEFAULT_TRULIENCE_OPTIONS,
   EMobileActiveTab,
-  isEditModeOn,
 } from "@/common/constant";
 import type { AddonDef, Graph } from "@/common/graph";
-import { useAppSelector } from "@/common/hooks";
 import {
   apiFetchGraphDetails,
   apiFetchGraphs,
-  apiFetchInstalledAddons,
-  apiLoadApp,
-  apiReloadPackage,
-  apiSaveProperty,
   apiUpdateGraph,
 } from "@/common/request";
 import {
@@ -103,10 +97,10 @@ export const globalSlice = createSlice({
     addChatItem: (state, action: PayloadAction<IChatItem>) => {
       const { userId, text, isFinal, type, time } = action.payload;
       const LastFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId == userId && el.isFinal;
+        return el.userId === userId && el.isFinal;
       });
       const LastNonFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId == userId && !el.isFinal;
+        return el.userId === userId && !el.isFinal;
       });
       const LastFinalItem = state.chatItems[LastFinalIndex];
       const LastNonFinalItem = state.chatItems[LastNonFinalIndex];
@@ -234,7 +228,7 @@ initializeGraphData = createAsyncThunk(
 );
 fetchGraphDetails = createAsyncThunk(
   "global/fetchGraphDetails",
-  async (graphId: string, { dispatch }) => {
+  async (_graphId: string, { dispatch }) => {
     // Do nothing in production
     return;
   }

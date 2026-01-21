@@ -22,7 +22,7 @@ export async function proxy(req: NextRequest) {
     url.href = `${AGENT_SERVER_URL}${pathname.replace("/api/agents/", "/")}`;
 
     try {
-      const body = await req.json();
+      const _body = await req.json();
       console.log(`Request to ${pathname}`);
     } catch (e) {
       console.log(`Request to ${pathname} ${e}`);

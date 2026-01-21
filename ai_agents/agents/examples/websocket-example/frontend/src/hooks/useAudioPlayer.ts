@@ -3,9 +3,9 @@
  * Manages audio playback from WebSocket server
  */
 
+import { useEffect, useRef, useState } from "react";
 import { AudioPlayer, DEFAULT_AUDIO_CONFIG } from "@/lib/audioUtils";
 import type { WebSocketManager } from "@/manager/websocket";
-import { useEffect, useRef, useState } from "react";
 
 export function useAudioPlayer(wsManager: WebSocketManager | null) {
   const [isPlaying, setIsPlaying] = useState(false);

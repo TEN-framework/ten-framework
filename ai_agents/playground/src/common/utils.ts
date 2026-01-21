@@ -19,7 +19,7 @@ export const getRandomUserId = (): number => {
 };
 
 export const getRandomChannel = (number = 6) => {
-  return "agora_" + genRandomString(number);
+  return `agora_${genRandomString(number)}`;
 };
 
 export const sleep = (ms: number) => {

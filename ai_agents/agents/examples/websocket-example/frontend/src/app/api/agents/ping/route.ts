@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
     if (axios.isAxiosError(error)) {
       return NextResponse.json(
         { error: error.response?.data || error.message },
-        { status: error.response?.status || 500 },
+        { status: error.response?.status || 500 }
       );
     }
 
     return NextResponse.json(
       { error: "Failed to ping agent" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

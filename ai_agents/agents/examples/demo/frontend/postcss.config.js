@@ -7,6 +7,6 @@ module.exports = {
       viewportWidth: 375,
       exclude: /node_modules/,
       include: /\/src\/platform\/mobile\//,
-    }
+    },
   },
-}
+};
