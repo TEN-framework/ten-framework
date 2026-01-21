@@ -255,9 +255,30 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             else:
                 await self._real_finalize(silence_duration_ms)
 
+    async def _send_silence_packets(self, duration_ms: int) -> None:
+        """Send silence packets and update audio timeline."""
+        empty_audio_bytes_len = int(
+            duration_ms * self.config.sample_rate / 1000 * 2
+        )
+        frame = bytearray(empty_audio_bytes_len)
+
+        if self.audio_dumper:
+            await self.audio_dumper.push_bytes(bytes(frame))
+
+        if self.websocket:
+            await self.websocket.send_audio(bytes(frame))
+
+        self.audio_timeline.add_silence_audio(duration_ms)
+
     async def _real_finalize(
         self, silence_duration_ms: int | None = None
     ) -> None:
+        # Send silence packets if enabled for DEFAULT mode
+        if self.config.default_finalize_send_silence:
+            await self._send_silence_packets(
+                self.config.default_finalize_silence_duration_ms
+            )
+
         # Create rotation callback if dump rotation is enabled
         callback = None
         if self.config.dump_rotate_on_finalize and self.audio_dumper:
@@ -299,16 +320,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
 
-        empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms
-            * self.config.sample_rate
-            / 1000
-            * 2
-        )
-        frame = bytearray(empty_audio_bytes_len)
-        if self.websocket:
-            await self.websocket.send_audio(bytes(frame))
-        self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+        await self._send_silence_packets(self.config.mute_pkg_duration_ms)
 
         # No need to do stats.
         self.last_finalize_timestamp = 0
