@@ -9,6 +9,12 @@ class FinalizeMode(str, Enum):
     DEFAULT = "default"
     IGNORE = "ignore"
     MUTE_PKG = "mute_pkg"
+    CLOSE = "close"
+
+
+class FinalizeReconnectMode(str, Enum):
+    IMMEDIATE = "immediate"
+    ON_AUDIO = "on_audio"
 
 
 class SonioxASRConfig(BaseModel):
@@ -22,6 +28,9 @@ class SonioxASRConfig(BaseModel):
     finalize_holding: bool = False
     mute_pkg_duration_ms: int = 800
     enable_keepalive: bool = True
+    finalize_reconnect_mode: FinalizeReconnectMode = (
+        FinalizeReconnectMode.IMMEDIATE
+    )
 
     def update(self, params: dict[str, Any]):
         special_params = [
@@ -34,6 +43,7 @@ class SonioxASRConfig(BaseModel):
             "finalize_holding",
             "mute_pkg_duration_ms",
             "enable_keepalive",
+            "finalize_reconnect_mode",
         ]
         for key in special_params:
             if key in params:
