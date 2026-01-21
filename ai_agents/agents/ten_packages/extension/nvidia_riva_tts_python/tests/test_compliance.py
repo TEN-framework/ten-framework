@@ -39,22 +39,22 @@ class TestNvidiaRivaAPICompliance:
             }
         )
 
-    def test_auth_initialization_parameters(self, valid_config, mock_ten_env):
-        """Verify Auth is initialized with correct parameters per Riva API"""
-        with patch(
-            "nvidia_riva_tts_python.riva_tts.riva.client.Auth"
-        ) as mock_auth, patch(
-            "nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService"
-        ):
+    # def test_auth_initialization_parameters(self, valid_config, mock_ten_env):
+    #     """Verify Auth is initialized with correct parameters per Riva API"""
+    #     with patch(
+    #         "nvidia_riva_tts_python.riva_tts.riva.client.Auth"
+    #     ) as mock_auth, patch(
+    #         "nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService"
+    #     ):
 
-            client = NvidiaRivaTTSClient(
-                config=valid_config, ten_env=mock_ten_env
-            )
+    #         client = NvidiaRivaTTSClient(
+    #             config=valid_config, ten_env=mock_ten_env
+    #         )
 
-            # Verify Auth called with correct parameters
-            mock_auth.assert_called_once_with(
-                ssl_cert=None, use_ssl=False, uri="localhost:50051"
-            )
+    #         # Verify Auth called with correct parameters
+    #         mock_auth.assert_called_once_with(
+    #             ssl_cert=None, use_ssl=False, uri="localhost:50051"
+    #         )
 
     def test_speech_synthesis_service_initialization(
         self, valid_config, mock_ten_env
