@@ -72,8 +72,90 @@ typedef struct ten_addon_load_all_extensions_from_app_base_dir_ctx_t {
   void *cb_data;
 } ten_addon_load_all_extensions_from_app_base_dir_ctx_t;
 
+#if defined(OS_WINDOWS) && defined(__MINGW32__)
+// Helper function to add MinGW bin directories from PATH to DLL search path.
+// Must be called BEFORE loading any addon DLLs that depend on MinGW runtime.
+// Without this function, tests that:
+//  1. Based on a go app
+//  2. Needs python_addon_loader.dll
+// will fail with error:
+// "Failed to load module:
+// .../ten_packages\addon_loader\python_addon_loader\lib\python_addon_loader.dll"
+// Because python_addon_loader.dll depends on libgcc_s_seh-1.dll, libstdc++-6.dll
+// and libwinpthread-1.dll, and LoadLibraryExA will not find them in system PATH,
+// so we must use AddDllDirectory.
+static void add_mingw_dll_directories_from_path(void) {
+  static bool already_added = false;
+  if (already_added) {
+    return;
+  }
+  already_added = true;
+
+  const char *path_env = getenv("PATH");
+  if (!path_env || strlen(path_env) == 0) {
+    TEN_LOGW(
+        "PATH environment variable is empty, cannot find MinGW directories");
+    return;
+  }
+
+  TEN_LOGI("Searching for MinGW directories in PATH to add to DLL search path");
+
+  char *path_copy = _strdup(path_env);
+  if (!path_copy) {
+    return;
+  }
+
+  char *token = strtok(path_copy, ";");
+  while (token != NULL) {
+    // Trim leading whitespace.
+    while (*token == ' ' || *token == '\t') {
+      token++;
+    }
+    if (strlen(token) == 0) {
+      token = strtok(NULL, ";");
+      continue;
+    }
+
+    // Check if this looks like a MinGW bin directory (case-insensitive).
+    char token_lower[MAX_PATH];
+    strncpy(token_lower, token, MAX_PATH - 1);
+    token_lower[MAX_PATH - 1] = '\0';
+    _strlwr(token_lower);
+
+    if (strstr(token_lower, "mingw") != NULL &&
+        strstr(token_lower, "bin") != NULL) {
+      // Verify it's a real MinGW directory by checking for gcc.exe.
+      char test_path[MAX_PATH];
+      snprintf(test_path, MAX_PATH, "%s\\gcc.exe", token);
+
+      if (GetFileAttributesA(test_path) != INVALID_FILE_ATTRIBUTES) {
+        // Convert to wide string for AddDllDirectory.
+        wchar_t wpath[MAX_PATH];
+        if (MultiByteToWideChar(CP_UTF8, 0, token, -1, wpath, MAX_PATH) > 0) {
+          DLL_DIRECTORY_COOKIE cookie = AddDllDirectory(wpath);
+          if (cookie != NULL) {
+            TEN_LOGI("Added MinGW DLL directory: %s", token);
+          } else {
+            TEN_LOGW("Failed to add MinGW DLL directory: %s (error: %lu)",
+                     token, GetLastError());
+          }
+        }
+      }
+    }
+
+    token = strtok(NULL, ";");
+  }
+
+  free(path_copy);
+}
+#endif  // OS_WINDOWS && __MINGW32__
+
 static bool load_all_dynamic_libraries_under_path(const char *path) {
   TEN_ASSERT(path, "Invalid argument.");
+
+#if defined(OS_WINDOWS) && defined(__MINGW32__)
+  add_mingw_dll_directories_from_path();
+#endif
 
   bool load_at_least_one = false;
 

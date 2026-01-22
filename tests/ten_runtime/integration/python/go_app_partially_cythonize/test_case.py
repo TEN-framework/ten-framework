@@ -61,11 +61,20 @@ def compile_pyx(app_root_path: str):
         "cython_compiler.py",
     ]
 
+    # Set short TEMP path to avoid Windows MAX_PATH issues with MSVC compiler
+    cython_env = os.environ.copy()
+    if sys.platform == "win32":
+        temp_dir = "C:\\tmp"
+        os.makedirs(temp_dir, exist_ok=True)
+        cython_env["TEMP"] = temp_dir
+        cython_env["TMP"] = temp_dir
+
     cython_compiler_process = subprocess.Popen(
         cython_compiler_cmd,
         stdout=stdout,
         stderr=subprocess.STDOUT,
         cwd=extension_folder,
+        env=cython_env,
     )
     cython_compiler_process.wait()
 
@@ -148,6 +157,16 @@ def test_go_app_partially_cythonize():
             venv_bin_dir = os.path.join(venv_path, "bin")
         my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
         print(f"Activated virtual environment at {venv_path}")
+
+    # Step 2.5: Add ten_runtime lib to PATH for Windows
+    if sys.platform == "win32":
+        ten_runtime_lib = os.path.join(
+            app_root_path, "ten_packages/system/ten_runtime/lib"
+        )
+        if os.path.exists(ten_runtime_lib):
+            my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
+            print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
+
 
     # Step 3: Setup AddressSanitizer if needed
     compile_pyx(app_root_path)

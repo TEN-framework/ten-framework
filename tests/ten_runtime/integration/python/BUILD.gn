@@ -75,13 +75,20 @@ group("python") {
       if (ten_enable_python_binding && ten_enable_go_binding) {
         deps += [
           "go_app_async_extension_python",
-          "go_app_cythonize",
-          "go_app_log_rotate_python",
-          "go_app_partially_cythonize",
           "go_app_python",
           "go_app_raise_exception_python",
           "unused_addon_python",
         ]
+
+        # TODO(nzh): debug
+        # windows: long path limit; signal.SIGHUP does not exist for win; etc.
+        if(!is_mingw){
+          deps += [
+            "go_app_cythonize",
+            "go_app_log_rotate_python",
+            "go_app_partially_cythonize",
+          ]
+        }
       }
 
       if (is_debug && !is_win) {
