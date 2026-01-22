@@ -68,7 +68,30 @@ def test_two_exts_graph_test_python():
 
     tests_dir = os.path.join(app_root_path, "tests")
 
-    # Step 3:
+    # Step 3: Sync dependencies in tests directory
+    #
+    # Run uv sync --all-packages to install dependencies in tests directory.
+    # This is needed to create .venv/bin/python for sanitizer mode.
+    print("Syncing dependencies in tests directory...")
+    uv_sync_cmd = [
+        "uv",
+        "sync",
+        "--all-packages",
+    ]
+
+    uv_sync_process = subprocess.Popen(
+        uv_sync_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=tests_dir,
+    )
+    uv_sync_process.wait()
+    return_code = uv_sync_process.returncode
+    if return_code != 0:
+        assert False, "Failed to sync dependencies with uv."
+
+    # Step 4:
     #
     # Run the test using uv run pytest.
     # When sanitizer is enabled, we need to bypass `uv run` because `uv` itself
