@@ -92,7 +92,6 @@ def test_go_app_log_rotate_python():
             my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
             print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
 
-
     # Step 3: Setup AddressSanitizer if needed
     if sys.platform == "linux":
         if (

@@ -164,7 +164,6 @@ def test_go_app_cythonize():
             my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
             print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
 
-
     # Step 3: Setup AddressSanitizer if needed
     compile_pyx(app_root_path)
 
