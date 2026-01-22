@@ -81,7 +81,7 @@ def test_go_app_async_extension_python():
         my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
         print(f"Activated virtual environment at {venv_path}")
 
-    # Step 2.5: Add ten_runtime lib to PATH for Windows (needed for MinGW DLLs)
+    # Step 2.5: Add ten_runtime lib to PATH for Windows
     if sys.platform == "win32":
         ten_runtime_lib = os.path.join(
             app_root_path, "ten_packages/system/ten_runtime/lib"
