@@ -26,7 +26,7 @@ class PcmFileReaderExtension(AsyncExtension):
         self._audio_frame_name: str = "pcm_frame"
         self._pcm_data: bytes = b""
         self._is_running: bool = False
-        self._send_task: asyncio.Task | None = None
+        self._send_task: asyncio.Task[None] | None = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log(LogLevel.DEBUG, "on_init")
@@ -123,11 +123,11 @@ class PcmFileReaderExtension(AsyncExtension):
         """Send audio frames at specified interval."""
         # Calculate frame size: samples_per_frame * bytes_per_sample * channels
         # samples_per_frame = sample_rate * frame_interval_ms / 1000
-        samples_per_frame = (
-            self._sample_rate * self._frame_interval_ms // 1000
-        )
+        samples_per_frame = self._sample_rate * self._frame_interval_ms // 1000
         frame_size = (
-            samples_per_frame * self._bytes_per_sample * self._number_of_channels
+            samples_per_frame
+            * self._bytes_per_sample
+            * self._number_of_channels
         )
 
         ten_env.log(
@@ -180,7 +180,9 @@ class PcmFileReaderExtension(AsyncExtension):
             )
 
             offset += current_frame_size
-            timestamp += self._frame_interval_ms * 1000  # Convert to microseconds
+            timestamp += (
+                self._frame_interval_ms * 1000
+            )  # Convert to microseconds
 
             # Wait for next frame interval
             if self._is_running and offset < len(self._pcm_data):
@@ -211,7 +213,15 @@ class PcmFileReaderExtension(AsyncExtension):
         cmd_name = cmd.get_name()
         ten_env.log(LogLevel.DEBUG, f"on_cmd name {cmd_name}")
 
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        cmd_result.set_property_string("detail", "ok")
-
-        await ten_env.return_result(cmd_result)
+        if cmd_name == "get_status":
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
+            cmd_result.set_property_string(
+                "status", "running" if self._is_running else "stopped"
+            )
+            await ten_env.return_result(cmd_result)
+        else:
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            cmd_result.set_property_string(
+                "detail", f"Unknown command: {cmd_name}"
+            )
+            await ten_env.return_result(cmd_result)

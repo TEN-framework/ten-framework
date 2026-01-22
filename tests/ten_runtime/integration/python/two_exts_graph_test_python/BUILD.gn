@@ -1,0 +1,83 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_package_test_prepare_app("two_exts_graph_test_python_app") {
+  src_app = "default_app_python"
+  src_app_language = "python"
+  generated_app_src_root_dir_name = "two_exts_graph_test_python_app"
+
+  replace_paths_after_install_app = [
+    "two_exts_graph_test_python_app/manifest.json",
+    "two_exts_graph_test_python_app/property.json",
+  ]
+
+  test_files = exec_script(
+          "//.gnfiles/build/scripts/glob_file.py",
+          [
+            "--dir",
+            rebase_path(
+                "//tests/ten_runtime/integration/python/two_exts_graph_test_python/two_exts_graph_test_python_app/tests/**/*"),
+            "--dir-base",
+            rebase_path(
+                "//tests/ten_runtime/integration/python/two_exts_graph_test_python/two_exts_graph_test_python_app/tests"),
+            "--recursive",
+            "--only-output-file",
+          ],
+          "json")
+
+  replace_paths_after_install_all = []
+  foreach(test_file, test_files) {
+    test_file_rel_path = test_file.relative_path
+    replace_paths_after_install_all +=
+        [ "two_exts_graph_test_python_app/tests/${test_file_rel_path}" ]
+  }
+
+  if (ten_enable_ten_manager) {
+    deps = [
+      "//core/src/ten_manager",
+      "//packages/core_apps/default_app_python:upload_default_app_python_to_server",
+      "//packages/core_systems/pytest_ten:upload_pytest_ten_to_server",
+      "//packages/example_extensions/pcm_file_reader_python:upload_pcm_file_reader_python_to_server",
+      "//packages/example_extensions/simple_echo_python:upload_simple_echo_python_to_server",
+      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
+    ]
+  }
+}
+
+ten_package_test_prepare_auxiliary_resources(
+    "two_exts_graph_test_python_test_files") {
+  resources = [
+    "__init__.py",
+    "test_case.py",
+  ]
+
+  utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("//tests/utils/**/*"),
+                              "--dir-base",
+                              rebase_path("//tests/utils"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(utils_file, utils_files) {
+    utils_file_rel_path = utils_file.relative_path
+    resources +=
+        [ "//tests/utils/${utils_file_rel_path}=>utils/${utils_file_rel_path}" ]
+  }
+}
+
+group("two_exts_graph_test_python") {
+  deps = [
+    ":two_exts_graph_test_python_app",
+    ":two_exts_graph_test_python_test_files",
+  ]
+}

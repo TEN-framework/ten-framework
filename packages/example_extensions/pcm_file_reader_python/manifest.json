@@ -35,25 +35,32 @@
     ],
     "api": {
         "property": {
-            "audio_file_path": {
-                "type": "string"
-            },
-            "sample_rate": {
-                "type": "int32"
-            },
-            "bytes_per_sample": {
-                "type": "int32"
-            },
-            "number_of_channels": {
-                "type": "int32"
-            },
-            "frame_interval_ms": {
-                "type": "int32"
+            "properties": {
+                "audio_file_path": {
+                    "type": "string"
+                },
+                "sample_rate": {
+                    "type": "int32"
+                },
+                "bytes_per_sample": {
+                    "type": "int32"
+                },
+                "number_of_channels": {
+                    "type": "int32"
+                },
+                "frame_interval_ms": {
+                    "type": "int32"
+                }
             }
         },
         "audio_frame_out": [
             {
                 "name": "pcm_frame"
+            }
+        ],
+        "cmd_in": [
+            {
+                "name": "get_status"
             }
         ]
     }

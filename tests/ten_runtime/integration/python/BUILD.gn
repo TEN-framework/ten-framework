@@ -68,6 +68,7 @@ group("python") {
         "trigger_life_cycle_python",
         "two_async_exts_one_group_python",
         "two_async_exts_python",
+        "two_exts_graph_test_python",
         "websocket_server_python",
       ]
 
