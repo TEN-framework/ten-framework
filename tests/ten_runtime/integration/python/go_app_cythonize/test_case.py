@@ -54,20 +54,11 @@ def compile_pyx(app_root_path: str):
         "cython_compiler.py",
     ]
 
-    # Set short TEMP path to avoid Windows MAX_PATH issues with MSVC compiler
-    cython_env = os.environ.copy()
-    if sys.platform == "win32":
-        temp_dir = "C:\\tmp"
-        os.makedirs(temp_dir, exist_ok=True)
-        cython_env["TEMP"] = temp_dir
-        cython_env["TMP"] = temp_dir
-
     cython_compiler_process = subprocess.Popen(
         cython_compiler_cmd,
         stdout=stdout,
         stderr=subprocess.STDOUT,
         cwd=extension_folder,
-        env=cython_env,
     )
     cython_compiler_process.wait()
 
