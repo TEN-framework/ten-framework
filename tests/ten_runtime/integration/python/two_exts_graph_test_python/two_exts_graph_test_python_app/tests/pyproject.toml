@@ -10,7 +10,7 @@ name = "two-exts-graph-test-python-tests"
 description = "Two extensions graph test written in Python tests"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = ["pytest", "ten-runtime-python", "pytest-ten"]
+dependencies = ["pytest", "ten-runtime-python", "pytest-ten", "typing-extensions"]
 
 [tool.pytest.ini_options]
 testpaths = ["."]
