@@ -51,7 +51,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                 f"error when initializing InworldTTS: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            raise RuntimeError(f"error when initializing InworldTTS: {e}") from e
+            raise RuntimeError(
+                f"error when initializing InworldTTS: {e}"
+            ) from e
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         """Ensure aiohttp session exists."""
@@ -87,7 +89,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                 "model": self.config.params.get("model", "inworld-tts-1.5-max"),
                 "outputSpec": {
                     "encoding": self.config.params.get("encoding", "LINEAR16"),
-                    "sampleRateHertz": self.config.params.get("sample_rate", 24000),
+                    "sampleRateHertz": self.config.params.get(
+                        "sample_rate", 24000
+                    ),
                 },
             }
 
@@ -97,7 +101,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
             if "speaking_rate" in self.config.params:
                 payload["speakingRate"] = self.config.params["speaking_rate"]
             if "text_normalization" in self.config.params:
-                payload["textNormalization"] = self.config.params["text_normalization"]
+                payload["textNormalization"] = self.config.params[
+                    "text_normalization"
+                ]
 
             self.ten_env.log_debug(
                 f"InworldTTS: sending request for request_id: {request_id}, "
@@ -151,7 +157,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
 
                         # Check for error in response
                         if "error" in data:
-                            error_message = data["error"].get("message", "Unknown error")
+                            error_message = data["error"].get(
+                                "message", "Unknown error"
+                            )
                             self.ten_env.log_error(
                                 f"InworldTTS: API error: {error_message} "
                                 f"for request_id: {request_id}.",
@@ -163,7 +171,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                             return
 
                         # Extract audio data (base64 encoded)
-                        audio_b64 = data.get("audioContent") or data.get("audio", {}).get("content")
+                        audio_b64 = data.get("audioContent") or data.get(
+                            "audio", {}
+                        ).get("content")
                         if audio_b64:
                             chunk = base64.b64decode(audio_b64)
 
@@ -182,11 +192,15 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                             )
 
                             if left_size > 0:
-                                cache_audio_bytes = bytearray(chunk[-left_size:])
+                                cache_audio_bytes = bytearray(
+                                    chunk[-left_size:]
+                                )
                                 chunk = chunk[:-left_size]
 
                             if len(chunk) > 0:
-                                yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
+                                yield bytes(
+                                    chunk
+                                ), TTS2HttpResponseEventType.RESPONSE
 
                     except json.JSONDecodeError:
                         # Skip non-JSON lines
