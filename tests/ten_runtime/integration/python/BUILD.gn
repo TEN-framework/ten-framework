@@ -76,12 +76,16 @@ group("python") {
         deps += [
           "go_app_async_extension_python",
           "go_app_cythonize",
-          "go_app_log_rotate_python",
           "go_app_partially_cythonize",
           "go_app_python",
           "go_app_raise_exception_python",
           "unused_addon_python",
         ]
+
+        if(!is_win){
+          # SIGHUP signal is not supported on windows
+          deps += ["go_app_log_rotate_python"]
+        }
       }
 
       if (is_debug && !is_win) {
