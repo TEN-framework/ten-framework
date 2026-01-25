@@ -1,0 +1,18 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "sample_rate": 24000,
+    "params": {
+        "model": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "language": "English",
+        "speaker": "Vivian",
+        "instruct": "",
+        "mode": "custom_voice",
+        "ref_audio_path": "",
+        "ref_text": "",
+        "voice_description": "",
+        "device": "cuda:0",
+        "dtype": "bfloat16",
+        "attn_implementation": "flash_attention_2"
+    }
+}
