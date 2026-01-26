@@ -113,13 +113,14 @@ def test_url_and_base_url_configuration(
     MockLimits, MockTimeout, MockAsyncClient
 ):
     """
-    Tests that the endpoint URL is correctly configured based on 'url' or 'base_url' parameters.
+    Tests that the endpoint URL is correctly configured based on 'url' (top-level) or 'base_url' (in params) parameters.
 
     Test cases:
-    1. When 'url' is provided, endpoint should use the url value directly
-    2. When 'base_url' is provided (with trailing slash), endpoint should be {base_url}/audio/speech
-    3. When 'base_url' is provided (without trailing slash), endpoint should be {base_url}/audio/speech
+    1. When 'url' (top-level) is provided, endpoint should use the url value directly
+    2. When 'base_url' (in params) is provided (with trailing slash), endpoint should be {base_url}/audio/speech
+    3. When 'base_url' (in params) is provided (without trailing slash), endpoint should be {base_url}/audio/speech
     4. When neither is provided, endpoint should use default https://api.openai.com/v1/audio/speech
+    5. When both 'url' (top-level) and 'base_url' (in params) are provided, 'url' takes precedence
     """
     print("Starting test_url_and_base_url_configuration with mock...")
 
@@ -149,13 +150,11 @@ def test_url_and_base_url_configuration(
         "voice": "coral",
     }
 
-    # Test Case 1: Using 'url' parameter
-    print("  → Test Case 1: Using 'url' parameter")
+    # Test Case 1: Using 'url' parameter (top-level field)
+    print("  → Test Case 1: Using 'url' parameter (top-level field)")
     config_with_url = OpenAITTSConfig(
-        params={
-            **common_params,
-            "url": "https://custom-server.com/v1/tts",
-        }
+        url="https://custom-server.com/v1/tts",
+        params=common_params,
     )
     client_with_url = OpenAITTSClient(config_with_url, mock_ten_env)
     assert (
@@ -210,11 +209,11 @@ def test_url_and_base_url_configuration(
     # Test Case 5: 'url' takes precedence over 'base_url' when both are provided
     print("  → Test Case 5: 'url' takes precedence over 'base_url'")
     config_both = OpenAITTSConfig(
+        url="https://url-takes-precedence.com/tts",
         params={
             **common_params,
-            "url": "https://url-takes-precedence.com/tts",
             "base_url": "https://base-url-should-be-ignored.com/v1",
-        }
+        },
     )
     client_both = OpenAITTSClient(config_both, mock_ten_env)
     assert (

@@ -44,27 +44,27 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
 
-        # 构建 endpoint URL
-        if "url" in config.params:
-            self.endpoint = config.params["url"]
+        # Set endpoint URL
+        if config.url:
+            self.endpoint = config.url
         else:
             base_url = config.params.get(
                 "base_url", "https://api.openai.com/v1"
             )
-            # 移除末尾的斜杠
+            # Remove trailing slash
             base_url = base_url.rstrip("/")
             self.endpoint = f"{base_url}/audio/speech"
 
-        # 构建 headers
+        # Build headers
         api_key = config.params.get("api_key", "")
         self.headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
-        # 创建 httpx 客户端
+        # Create httpx client
         self.client = AsyncClient(
-            timeout=Timeout(timeout=60.0),  # TTS 可能需要更长时间
+            timeout=Timeout(timeout=60.0),  # TTS may take longer
             limits=Limits(
                 max_connections=100,
                 max_keepalive_connections=20,
@@ -102,15 +102,6 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         """
         self._is_cancelled = False
 
-        if not self.client:
-            self.ten_env.log_error(
-                f"OpenAITTS: client not initialized for request_id: {request_id}.",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            raise RuntimeError(
-                f"OpenAITTS: client not initialized for request_id: {request_id}."
-            )
-
         if len(text.strip()) == 0:
             self.ten_env.log_warn(
                 f"OpenAITTS: empty text for request_id: {request_id}.",
@@ -120,23 +111,23 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             return
 
         try:
-            # 构建请求 payload - 透传所有 params（除了 api_key 和 base_url）
+            # Build request payload - pass through all params (except api_key and base_url)
             payload = {**self.config.params}
-            payload.pop("api_key", None)  # 在 headers 中
-            payload.pop("base_url", None)  # 用于构建 endpoint
+            payload.pop("api_key", None)  # Remove api_key from headers
+            payload.pop("base_url", None)  # Remove base_url from payload
 
-            # 设置 input 为要合成的文本
+            # Set input to the text to be synthesized
             payload["input"] = text
 
             self.ten_env.log_debug(
                 f"OpenAITTS: sending request for request_id: {request_id}"
             )
 
-            # 发起流式请求
+            # Send streaming request
             async with self.client.stream(
                 "POST", self.endpoint, headers=self.headers, json=payload
             ) as response:
-                # 检查取消标志
+                # Check cancellation flag
                 if self._is_cancelled:
                     self.ten_env.log_debug(
                         f"Cancellation detected before processing response for request_id: {request_id}"
@@ -144,7 +135,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return
 
-                # 处理非 200 状态码
+                # Handle non-200 status code
                 if response.status_code != 200:
                     error_body = await response.aread()
                     try:
@@ -161,7 +152,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                         category=LOG_CATEGORY_VENDOR,
                     )
 
-                    # 根据状态码和错误代码分类
+                    # Classify by status code and error code
                     if (
                         response.status_code in (401, 403)
                         or error_code == "invalid_api_key"
@@ -175,7 +166,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                         ), TTS2HttpResponseEventType.ERROR
                     return
 
-                # 流式接收音频数据
+                # Stream audio data
                 cache_audio_bytes = bytearray()
                 async for chunk in response.aiter_bytes():
                     if self._is_cancelled:
@@ -189,8 +180,8 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                         f"OpenAITTS: received chunk, length: {len(chunk)} for request_id: {request_id}"
                     )
 
-                    # 处理音频对齐（确保是完整的音频帧）
-                    # 这对于 PCM 格式很重要，确保每个 chunk 都是完整的采样点
+                    # Process audio alignment (ensure it's a complete audio frame)
+                    # This is important for PCM format, ensure each chunk is a complete sample point
                     if len(cache_audio_bytes) > 0:
                         chunk = cache_audio_bytes + chunk
                         cache_audio_bytes = bytearray()
@@ -206,7 +197,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                     if len(chunk) > 0:
                         yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
 
-                # 发送结束事件
+                # Send END event
                 if not self._is_cancelled:
                     self.ten_env.log_debug(
                         f"OpenAITTS: sending END event for request_id: {request_id}"
@@ -220,7 +211,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                 category=LOG_CATEGORY_VENDOR,
             )
 
-            # 检查是否是认证错误
+            # Check if it's an authentication error
             if (
                 "401" in error_message
                 or "403" in error_message
@@ -230,8 +221,8 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                     "utf-8"
                 ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                # 所有其他错误都作为一般错误（NON_FATAL_ERROR）
-                # 包括网络连接错误（ConnectionRefusedError, TimeoutError 等）
+                # All other errors are treated as general errors (NON_FATAL_ERROR)
+                # Including network connection errors (ConnectionRefusedError, TimeoutError, etc.)
                 yield error_message.encode(
                     "utf-8"
                 ), TTS2HttpResponseEventType.ERROR

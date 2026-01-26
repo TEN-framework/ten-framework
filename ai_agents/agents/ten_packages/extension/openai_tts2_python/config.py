@@ -16,6 +16,10 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         ),
         description="OpenAI TTS dump path",
     )
+    url: str | None = Field(
+        default=None,
+        description="Direct endpoint URL (takes precedence over base_url)",
+    )
     params: dict[str, Any] = Field(
         default_factory=dict, description="OpenAI TTS params"
     )
