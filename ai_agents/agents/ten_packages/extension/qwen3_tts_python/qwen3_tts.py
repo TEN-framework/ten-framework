@@ -52,8 +52,8 @@ class Qwen3TTSClient:
 
     def _load_model(self) -> None:
         """Load the Qwen3 TTS model (runs in executor)"""
-        import torch
-        from qwen_tts import Qwen3TTSModel
+        import torch  # pylint: disable=import-error
+        from qwen_tts import Qwen3TTSModel  # pylint: disable=import-error
 
         # Determine dtype
         if self.config.dtype == "bfloat16":
@@ -217,7 +217,7 @@ class Qwen3TTSClient:
 
         # Try to free GPU memory
         try:
-            import torch
+            import torch  # pylint: disable=import-error
 
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
