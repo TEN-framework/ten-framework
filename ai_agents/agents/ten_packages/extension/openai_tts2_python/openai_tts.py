@@ -44,23 +44,14 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
 
-        # Set endpoint URL
-        if config.url:
-            self.endpoint = config.url
-        else:
-            base_url = config.params.get(
-                "base_url", "https://api.openai.com/v1"
-            )
-            # Remove trailing slash
-            base_url = base_url.rstrip("/")
-            self.endpoint = f"{base_url}/audio/speech"
-
-        # Build headers
-        api_key = config.params.get("api_key", "")
-        self.headers = {
+        # Build headers - merge user-provided headers with defaults
+        api_key = self.config.params.get("api_key", "")
+        default_headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
+        # Merge: user headers override defaults
+        self.headers = {**default_headers, **self.config.headers}
 
         # Create httpx client
         self.client = AsyncClient(
@@ -74,7 +65,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         )
 
         ten_env.log_info(
-            f"OpenAITTS initialized with endpoint: {self.endpoint}"
+            f"OpenAITTS initialized with endpoint: {self.config.url}"
         )
 
     async def cancel(self):
@@ -125,7 +116,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
 
             # Send streaming request
             async with self.client.stream(
-                "POST", self.endpoint, headers=self.headers, json=payload
+                "POST", self.config.url, headers=self.headers, json=payload
             ) as response:
                 # Check cancellation flag
                 if self._is_cancelled:

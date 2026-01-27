@@ -1,9 +1,1 @@
-{
-    "params": {
-        "api_key": "${env:OPENAI_TTS_KEY|}",
-        "model": "gpt-4o-mini-tts",
-        "voice": "coral",
-        "speed": 1.0,
-        "instructions": ""
-    }
-}
+{}
