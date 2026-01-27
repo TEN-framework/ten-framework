@@ -237,20 +237,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 await self.log_id_dumper_manager.create_dumper()
 
             await self.client.connect()
-            self.connected = True
-            self.sent_user_audio_duration_ms_before_last_reset += (
-                self.audio_timeline.get_total_user_audio_duration()
-            )
-            self.audio_timeline.reset()
-            self.ten_env.log_info(
-                f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
-            )
-
-            self.attempts = 0  # Reset retry attempts on successful connection
-
-            self.ten_env.log_info(
-                "Successfully connected to Volcengine ASR service"
-            )
+            # Do NOT set self.connected = True here (callback-driven pattern)
+            # Connection state will be set in _on_connected() callback when server confirms
+            # This matches azure_asr_python pattern where state is set in event handler
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
@@ -967,12 +956,46 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         error_message = str(exception)
         asyncio.create_task(self._on_asr_error(error_code, error_message))
 
+    def _initialize_connection_state(self) -> None:
+        """Initialize connection state after server confirmation.
+
+        This method performs initialization that was previously in start_connection():
+        - Updates sent_user_audio_duration_ms_before_last_reset
+        - Resets audio timeline
+        - Resets retry attempts counter
+        - Logs connection success
+        """
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
+        self.ten_env.log_info(
+            f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
+        )
+
+        self.attempts = 0  # Reset retry attempts on successful connection
+
+        self.ten_env.log_info(
+            "Successfully connected to Volcengine ASR service"
+        )
+
     def _on_connected(self) -> None:
-        """Handle connection established."""
+        """Handle connection established (callback-driven state change).
+
+        Called by client when server sends MESSAGE_TYPE_SERVER_FULL_RESPONSE with code=0.
+        This matches azure_asr_python pattern where _azure_event_handler_on_session_started()
+        sets connected=True.
+        """
         self.ten_env.log_info(
             f"vendor_status_changed: session_id: {self.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        # Set connected=True here (callback-driven pattern)
+        self.connected = True
+
+        # Perform initialization that was previously in start_connection()
+        self._initialize_connection_state()
 
     def _on_disconnected(self) -> None:
         """Handle connection lost."""
