@@ -1,0 +1,9 @@
+{
+    "params": {
+        "server": "${env:NVIDIA_RIVA_SERVER|localhost:50051}",
+        "language_code": "en-US",
+        "voice_name": "English-US.Female-1",
+        "sample_rate": 16000,
+        "use_ssl": false
+    }
+}
