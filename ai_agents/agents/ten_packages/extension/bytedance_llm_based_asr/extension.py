@@ -380,6 +380,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
+            await self._handle_error(e)
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:

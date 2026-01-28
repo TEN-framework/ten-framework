@@ -662,24 +662,7 @@ class VolcengineASRClient:
                     elif response.is_last_package:
                         # Don't break - continue listening for more responses in streaming mode
                         pass
-
-        except websockets.exceptions.ConnectionClosed:
-            # Connection closed by server - this is normal after finalize
-            # Call disconnected callback for normal closure
-            if self.disconnected_callback:
-                try:
-                    self.disconnected_callback()
-                except Exception as callback_error:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in disconnected callback: {callback_error}"
-                        )
-                    else:
-                        logging.error(
-                            f"Error in disconnected callback: {callback_error}"
-                        )
-
-        except Exception as e:
+        except BaseException as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Error listening for responses: {e}")
             else:
