@@ -158,6 +158,8 @@ class WhisperClient:
                 self.audio_buffer.clear()
 
             except Exception as e:
+                # Clear buffer on error to prevent accumulation
+                self.audio_buffer.clear()
                 if self.logger:
                     self.logger.log_error(f"Error processing audio: {e}")
                 if self.on_error_callback:
