@@ -300,9 +300,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     ) -> None:
         # Send silence packets if enabled for DEFAULT mode
         if self.config.default_finalize_send_silence:
-            await self._send_silence_packets(
+            sent_silence_duration_ms = (
                 self.config.default_finalize_silence_duration_ms
             )
+            await self._send_silence_packets(sent_silence_duration_ms)
+            if silence_duration_ms is None:
+                silence_duration_ms = 0
+            silence_duration_ms += sent_silence_duration_ms
 
         # Create rotation callback if dump rotation is enabled
         callback = None
