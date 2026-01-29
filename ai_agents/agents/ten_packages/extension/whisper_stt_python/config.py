@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 #
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 

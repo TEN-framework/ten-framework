@@ -5,9 +5,8 @@
 
 import asyncio
 import numpy as np
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Callable
 from faster_whisper import WhisperModel
-import io
 
 
 class WhisperClient:
