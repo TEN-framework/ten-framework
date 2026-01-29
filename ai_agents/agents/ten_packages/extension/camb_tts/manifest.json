@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "camb_tts_python",
+  "name": "camb_tts",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -47,13 +47,10 @@
             "speech_model": {
               "type": "string"
             },
-            "speed": {
-              "type": "float64"
-            },
-            "format": {
+            "user_instructions": {
               "type": "string"
             },
-            "endpoint": {
+            "format": {
               "type": "string"
             }
           }

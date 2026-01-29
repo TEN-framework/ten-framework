@@ -10,7 +10,7 @@ from ten_runtime import (
 )
 
 
-@register_addon_as_extension("camb_tts_python")
+@register_addon_as_extension("camb_tts")
 class CambTTSExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:

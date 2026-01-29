@@ -21,16 +21,13 @@ class CambTTSConfig(AsyncTTS2HttpConfig):
         default_factory=lambda: str(Path(__file__).parent / "camb_tts_in.pcm"),
         description="Camb TTS dump path",
     )
-    params: dict[str, Any] = Field(
-        default_factory=dict, description="Camb TTS params"
-    )
+    params: dict[str, Any] = Field(default_factory=dict, description="Camb TTS params")
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
         # Keys to exclude from params after processing (not passthrough params)
         blacklist_keys = [
             "text",
-            "endpoint",
         ]
 
         # Remove blacklisted keys from params

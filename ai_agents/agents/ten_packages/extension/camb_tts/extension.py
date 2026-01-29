@@ -6,8 +6,13 @@
 """
 Camb.ai TTS Extension
 
-This extension implements text-to-speech using the Camb.ai MARS-8 TTS API.
+This extension implements text-to-speech using the Camb.ai MARS TTS API.
 It extends the AsyncTTS2HttpExtension for HTTP-based TTS services.
+
+Models:
+    - mars-flash: Fast inference, 22.05kHz output (default)
+    - mars-pro: High quality, 48kHz output
+    - mars-instruct: Supports user_instructions, 22.05kHz output
 """
 
 from ten_ai_base.tts2_http import (
@@ -18,14 +23,14 @@ from ten_ai_base.tts2_http import (
 from ten_runtime import AsyncTenEnv
 
 from .config import CambTTSConfig
-from .camb_tts import CambTTSClient
+from .camb_tts import CambTTSClient, MODEL_SAMPLE_RATES, DEFAULT_MODEL
 
 
 class CambTTSExtension(AsyncTTS2HttpExtension):
     """
     Camb.ai TTS Extension implementation.
 
-    Provides text-to-speech synthesis using Camb.ai's MARS-8 HTTP API.
+    Provides text-to-speech synthesis using Camb.ai's MARS HTTP API.
     Inherits all common HTTP TTS functionality from AsyncTTS2HttpExtension.
     """
 
@@ -56,6 +61,12 @@ class CambTTSExtension(AsyncTTS2HttpExtension):
     def synthesize_audio_sample_rate(self) -> int:
         """Return the sample rate for synthesized audio.
 
-        Camb.ai outputs 24kHz audio.
+        Returns model-specific sample rate:
+        - mars-flash: 22050 Hz
+        - mars-pro: 48000 Hz
+        - mars-instruct: 22050 Hz
         """
-        return 24000
+        if self.client:
+            return self.client.get_sample_rate()
+        # Fallback to default model's sample rate
+        return MODEL_SAMPLE_RATES.get(DEFAULT_MODEL, 22050)
