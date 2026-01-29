@@ -209,18 +209,19 @@ class DumpTester(AsyncExtensionTester):
 def get_dump_file_path(temp_dir: Path, original_audio_file_path: str) -> Path:
     """Factory function to get dump file path by matching file size with original audio.
 
-    Finds all .pcm files in the dump directory and returns the one that matches
-    the size of the original audio file. Ensures exactly one match exists.
+    Finds all .pcm files in the dump directory and returns one that matches
+    the size of the original audio file. ASR plugin may produce additional dump
+    files; it is sufficient that at least one dump file matches the expected size.
 
     Args:
         temp_dir: Temporary directory where dump files are stored
         original_audio_file_path: Path to the original audio file for size comparison
 
     Returns:
-        Path to the dump file to verify
+        Path to one of the matching dump files to verify
 
     Raises:
-        AssertionError: If no matching dump file is found or multiple matches exist
+        AssertionError: If no matching dump file is found
     """
     # Get original audio file size
     if not os.path.exists(original_audio_file_path):
@@ -235,16 +236,16 @@ def get_dump_file_path(temp_dir: Path, original_audio_file_path: str) -> Path:
         len(pcm_files) > 0
     ), f"No .pcm files found in dump directory: {temp_dir}"
 
-    # Find files with matching size
+    # Find files with matching size (ASR plugin may produce multiple dumps)
     matching_files = [
         pcm_file
         for pcm_file in pcm_files
         if pcm_file.stat().st_size == original_file_size
     ]
 
-    # Ensure exactly one match
-    assert len(matching_files) == 1, (
-        f"Expected exactly one dump file with size {original_file_size} bytes, "
+    # Ensure at least one match
+    assert len(matching_files) >= 1, (
+        f"Expected at least one dump file with size {original_file_size} bytes, "
         f"but found {len(matching_files)}: {[str(f) for f in matching_files]}"
     )
 

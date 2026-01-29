@@ -1,8 +1,8 @@
 {
     "params": {
-        "app_key": "${env:BYTEDANCE_ASR_APP_KEY}",
-        "access_key": "${env:BYTEDANCE_ASR_ACCESS_KEY}",
-        "resource_id": "${env:BYTEDANCE_ASR_RESOURCE_ID}",
+        "app_key": "${env:BYTEDANCE_ASR_LLM_APP_KEY}",
+        "access_key": "${env:BYTEDANCE_ASR_LLM_ACCESS_KEY}",
+        "resource_id": "${env:BYTEDANCE_ASR_LLM_RESOURCE_ID}",
         "language": "en-US",
         "model_version": "400"
     }
