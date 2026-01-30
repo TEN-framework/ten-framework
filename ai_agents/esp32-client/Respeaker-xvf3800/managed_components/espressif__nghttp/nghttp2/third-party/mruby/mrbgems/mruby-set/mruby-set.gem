@@ -1,0 +1,6 @@
+name: mruby-set
+description: Set class
+author: yui-knk
+website: https://github.com/yui-knk/mruby-set
+protocol: git
+repository: https://github.com/yui-knk/mruby-set.git

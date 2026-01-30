@@ -1,0 +1,17 @@
+{
+    "CN": "ca.nghttp2.org",
+    "key": {
+	"algo": "rsa",
+	"size": 2048
+    },
+    "ca": {
+	"expiry": "87600h"
+    },
+    "names": [
+	{
+	    "C": "AU",
+	    "ST": "Some-State",
+	    "O": "Internet Widgits Pty Ltd"
+	}
+    ]
+}

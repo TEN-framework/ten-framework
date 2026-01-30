@@ -1,0 +1,34 @@
+# About this file, see:
+#   Website: https://editorconfig.org/
+#   For Emacs users: https://github.com/editorconfig/editorconfig-emacs
+#   For Vim users: https://github.com/editorconfig/editorconfig-vim
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+tab_width = 8
+trim_trailing_whitespace = true
+
+[{Makefile,Makefile.*,makefile,*.mk}]
+indent_style = tab
+#max_line_length = 80
+
+#[*.{c,cc,C,cxx,cpp,h,hh,H,hxx,hpp,inc,y}]
+#max_line_length = 120
+
+#[{*.rb,Rakefile,rakefile,*.rake,*.gemspec,*.gembox}]
+#max_line_length = 120
+
+# limitation to US-ASCII
+[*.bat]
+end_of_line = crlf
+#max_line_length = 80
+
+#[*.{yaml,yml}]
+
+#[*.md]

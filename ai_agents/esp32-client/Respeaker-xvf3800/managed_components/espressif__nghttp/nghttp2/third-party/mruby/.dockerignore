@@ -1,0 +1,14 @@
+.DS_Store
+.idea
+.vscode
+*.bak
+*.iml
+*.ipr
+*.swp
+*.tmp
+
+/.yardoc
+/bin
+/build
+/doc/api
+/doc/capi

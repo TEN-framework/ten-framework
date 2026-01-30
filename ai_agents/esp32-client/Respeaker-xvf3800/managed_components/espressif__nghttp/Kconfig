@@ -1,0 +1,12 @@
+menu "NGHTTP configuration"
+
+    config ESP_NGHTTP2_INBOUND_BUFFER_LENGTH
+        int "Nghttp2 inbound buffer length"
+        default 4096
+        help
+            Set the size of the inbound buffer for nghttp2. This buffer is used to store incoming HTTP/2 frames.
+            The default value is 16KB as per nghttp2 library configuration but here we have set it to 4KB. The
+            receive buffer gets placed on the stack and hence adjust this value based on your application needs
+            and available stack size.
+
+endmenu

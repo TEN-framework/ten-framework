@@ -1,0 +1,4 @@
+dependencies:
+  espressif/esp-dsp:
+    override_path: "../../../"
+    version: "*"

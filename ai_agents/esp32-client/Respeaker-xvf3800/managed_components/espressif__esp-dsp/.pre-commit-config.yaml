@@ -1,0 +1,19 @@
+repos:
+-   repo: https://github.com/espressif/astyle_py
+    rev: v1.0.5
+    hooks:
+    -   id: astyle_py
+        args: ['--style=otbs', '--attach-namespaces', '--attach-classes', '--indent=spaces=4', '--convert-tabs', '--align-pointer=name', '--align-reference=name', '--keep-one-line-statements', '--pad-header', '--pad-oper']
+
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.3.0
+    hooks:
+    -   id: trailing-whitespace
+        types_or: [c, c++]
+    -   id: end-of-file-fixer
+        types_or: [c, c++]
+    -   id: check-merge-conflict
+    -   id: mixed-line-ending
+        types_or: [c, c++]
+        args: ['--fix=lf']
+        description: Forces to replace line ending by the UNIX 'lf' character

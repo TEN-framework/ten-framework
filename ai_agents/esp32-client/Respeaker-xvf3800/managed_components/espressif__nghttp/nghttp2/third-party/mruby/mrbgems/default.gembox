@@ -1,0 +1,25 @@
+MRuby::GemBox.new do |conf|
+  conf.gembox "stdlib"
+  conf.gembox "stdlib-ext"
+  conf.gembox "stdlib-io"
+  conf.gembox "math"
+  conf.gembox "metaprog"
+
+  # Generate mrbc command
+  conf.gem :core => "mruby-bin-mrbc"
+
+  # Generate mrdb command
+  conf.gem :core => "mruby-bin-debugger"
+
+  # Generate mirb command
+  conf.gem :core => "mruby-bin-mirb"
+
+  # Generate mruby command
+  conf.gem :core => "mruby-bin-mruby"
+
+  # Generate mruby-strip command
+  conf.gem :core => "mruby-bin-strip"
+
+  # Generate mruby-config command
+  conf.gem :core => "mruby-bin-config"
+end

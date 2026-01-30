@@ -1,0 +1,19 @@
+_h2load()
+{
+    local cur prev split=false
+    COMPREPLY=()
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//=}
+
+    cmd=${COMP_WORDS[0]}
+    _get_comp_words_by_ref cur prev
+    case $cur in
+        -*)
+            COMPREPLY=( $( compgen -W '--requests --clients --threads --input-file --max-concurrent-streams --max-frame-size --window-bits --connection-window-bits --header --ciphers --tls13-ciphers --no-tls-proto --data --rate --rate-period --duration --warm-up-time --connection-active-timeout --connection-inactivity-timeout --timing-script-file --base-uri --alpn-list --h1 --header-table-size --encoder-header-table-size --log-file --qlog-file-base --connect-to --rps --groups --no-udp-gso --max-udp-payload-size --ktls --sni --verbose --version --help ' -- "$cur" ) )
+            ;;
+        *)
+            _filedir
+            return 0
+    esac
+    return 0
+}
+complete -F _h2load h2load

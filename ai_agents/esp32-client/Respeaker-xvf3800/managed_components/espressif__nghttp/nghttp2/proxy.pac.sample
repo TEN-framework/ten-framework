@@ -1,0 +1,6 @@
+function FindProxyForURL(url, host) {
+  // For SPDY proxy
+  return "HTTPS localhost:3000";
+  // For conventional HTTP proxy
+  // return "PROXY localhost:3000";
+}

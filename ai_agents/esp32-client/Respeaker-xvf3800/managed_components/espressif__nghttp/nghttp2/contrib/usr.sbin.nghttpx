@@ -1,0 +1,16 @@
+#include <tunables/global>
+
+/usr/sbin/nghttpx {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/openssl>
+
+  capability setgid,
+  capability setuid,
+
+  /usr/sbin/nghttpx rmix,      # allow to run itself
+  /etc/nghttpx/nghttpx.conf r, # allow to read the config file
+  /etc/ssl/** r,               # give access to ssl keys
+
+  /{,var/}run/nghttpx.pid lw,  # allow to store a pid file
+}

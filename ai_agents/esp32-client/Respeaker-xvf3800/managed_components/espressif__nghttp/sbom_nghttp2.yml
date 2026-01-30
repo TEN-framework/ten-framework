@@ -1,0 +1,10 @@
+name: nghttp2
+version: 1.65.0
+cpe: cpe:2.3:a:nghttp2:nghttp2:{}:*:*:*:*:*:*:*
+supplier: 'Organization: nghttp2 <https://nghttp2.org/'
+description: nghttp2 - HTTP/2 C Library and tools
+url: https://github.com/nghttp2/nghttp2
+hash: 319bf015de8fa38e21ac271ce2f7d61aa77d90cb
+cve-exclude-list:
+  - cve: CVE-2024-28182
+    reason: Resolved in version v1.61.0

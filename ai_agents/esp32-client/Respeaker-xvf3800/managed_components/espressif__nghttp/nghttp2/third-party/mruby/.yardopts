@@ -1,0 +1,23 @@
+--markup markdown
+--plugin mruby
+--plugin coderay
+--output-dir doc/api
+
+src/**/*.c
+mrblib/**/*.rb
+include/**/*.h
+
+mrbgems/*/src/**/*.c
+mrbgems/*/mrblib/**/*.rb
+mrbgems/*/include/**/*.h
+-
+CONTRIBUTING.md
+SECURITY.md
+TODO.md
+doc/*.md
+doc/guides/*.md
+doc/internal/*.md
+AUTHORS
+LEGAL
+LICENSE
+NEWS

@@ -1,0 +1,3 @@
+img_to_3d_matrix/converted_image/**
+img_to_3d_matrix/example/*.c
+img_to_3d_matrix/example/*.h

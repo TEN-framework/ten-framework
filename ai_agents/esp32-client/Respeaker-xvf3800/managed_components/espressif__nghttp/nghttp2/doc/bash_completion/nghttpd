@@ -1,0 +1,19 @@
+_nghttpd()
+{
+    local cur prev split=false
+    COMPREPLY=()
+    COMP_WORDBREAKS=${COMP_WORDBREAKS//=}
+
+    cmd=${COMP_WORDS[0]}
+    _get_comp_words_by_ref cur prev
+    case $cur in
+        -*)
+            COMPREPLY=( $( compgen -W '--address --daemon --verify-client --htdocs --verbose --no-tls --header-table-size --encoder-header-table-size --color --push --padding --max-concurrent-streams --workers --error-gzip --window-bits --connection-window-bits --dh-param-file --early-response --trailer --hexdump --echo-upload --mime-types-file --no-content-length --ktls --version --help ' -- "$cur" ) )
+            ;;
+        *)
+            _filedir
+            return 0
+    esac
+    return 0
+}
+complete -F _nghttpd nghttpd
