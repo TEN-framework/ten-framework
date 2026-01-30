@@ -69,7 +69,7 @@ if (ten_enable_go_binding) {
           "native:ten_runtime_go_mingw(${_mingw_toolchain})",
           "target_out_dir")
       ten_runtime_go_lib_path =
-          "${ten_runtime_go_target_out_dir}/libten_runtime_go_mingw.a"
+          "${ten_runtime_go_target_out_dir}/libten_runtime_go.a"
     } else {
       ten_runtime_go_target_out_dir = get_label_info("native:ten_runtime_go", "target_out_dir")
       if (is_win && !is_mingw) {
