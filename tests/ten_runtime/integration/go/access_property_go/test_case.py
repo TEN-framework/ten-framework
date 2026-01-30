@@ -41,8 +41,18 @@ def test_access_property_go():
 
     if sys.platform == "win32":
         # client depends on ten_runtime.dll and ten_utils.dll in the TEN app.
+        # When using MinGW for Go binding, the DLLs are in ten_runtime_go/lib/
+        # Otherwise, they are in ten_runtime/lib/
         my_env["PATH"] = (
             os.path.join(
+                base_path,
+                (
+                    "access_property_go_app/ten_packages/"
+                    "system/ten_runtime_go/lib"
+                ),
+            )
+            + os.pathsep
+            + os.path.join(
                 base_path,
                 (
                     "access_property_go_app/ten_packages/"
