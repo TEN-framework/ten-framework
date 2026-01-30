@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import("//build/options.gni")
 import("//build/ten_runtime/glob.gni")
 import("//build/ten_runtime/options.gni")
 
@@ -11,7 +12,7 @@ ten_runtime_glob("metadata") {
   file_list = all_native_files
   deps = [ "default" ]
 
-  if (ten_enable_ten_rust) {
+  if (ten_enable_ten_rust_in_current_toolchain) {
     public_deps = [ "//core/src/ten_rust:ten_rust_binding" ]
   }
 }
