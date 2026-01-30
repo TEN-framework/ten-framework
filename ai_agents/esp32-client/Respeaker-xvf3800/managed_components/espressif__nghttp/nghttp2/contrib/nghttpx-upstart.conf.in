@@ -1,0 +1,8 @@
+# vim: ft=upstart:
+
+description "HTTP/2 reverse proxy"
+
+start on runlevel [2]
+stop on runlevel [016]
+
+exec @bindir@/nghttpx

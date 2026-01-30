@@ -1,0 +1,30 @@
+# Features that can be enabled for cmake (see CMakeLists.txt)
+
+option(ENABLE_WERROR    "Turn on compile time warnings")
+option(ENABLE_DEBUG     "Turn on debug output")
+option(ENABLE_THREADS   "Turn on threading in apps" ON)
+option(ENABLE_APP       "Build applications (nghttp, nghttpd, nghttpx and h2load)"
+  ${ENABLE_APP_DEFAULT})
+option(ENABLE_HPACK_TOOLS "Build HPACK tools"
+  ${ENABLE_HPACK_TOOLS_DEFAULT})
+option(ENABLE_EXAMPLES  "Build examples"
+  ${ENABLE_EXAMPLES_DEFAULT})
+option(ENABLE_FAILMALLOC "Build failmalloc test program" ON)
+option(ENABLE_LIB_ONLY  "Build libnghttp2 only.  This is a short hand for -DENABLE_APP=0 -DENABLE_EXAMPLES=0 -DENABLE_HPACK_TOOLS=0")
+option(BUILD_SHARED_LIBS "Build libnghttp2 as a shared library" ON)
+option(BUILD_STATIC_LIBS "Build libnghttp2 in static mode also" OFF)
+option(ENABLE_STATIC_CRT "Build libnghttp2 against the MS LIBCMT[d]")
+option(ENABLE_HTTP3      "Enable HTTP/3 support" OFF)
+option(ENABLE_DOC "Build documentation" ON)
+cmake_dependent_option(BUILD_TESTING "Enable tests" ON "BUILD_STATIC_LIBS" OFF)
+
+option(WITH_LIBXML2     "Use libxml2"
+  ${WITH_LIBXML2_DEFAULT})
+option(WITH_JEMALLOC    "Use jemalloc"
+  ${WITH_JEMALLOC_DEFAULT})
+option(WITH_MRUBY       "Use mruby")
+option(WITH_NEVERBLEED  "Use neverbleed")
+option(WITH_LIBBPF      "Use libbpf")
+option(WITH_WOLFSSL     "Use wolfSSL")
+
+# vim: ft=cmake:

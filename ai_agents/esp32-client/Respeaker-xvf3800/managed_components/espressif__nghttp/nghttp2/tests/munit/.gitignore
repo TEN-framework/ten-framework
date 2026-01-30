@@ -1,0 +1,8 @@
+*~
+.#*
+/*.o
+/example
+/*.exe
+/*.dll
+.dirstamp
+.deps

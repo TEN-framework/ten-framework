@@ -1,0 +1,120 @@
+.. _h2load-1-output:
+
+OUTPUT
+------
+
+requests
+  total
+    The number of requests h2load was instructed to make.
+  started
+    The number of requests h2load has started.
+  done
+    The number of requests completed.
+  succeeded
+    The number of requests completed successfully.  Only HTTP status
+    code 2xx or3xx are considered as success.
+  failed
+    The number of requests failed, including HTTP level failures
+    (non-successful HTTP status code).
+  errored
+    The number of requests failed, except for HTTP level failures.
+    This is the subset of the number reported in ``failed`` and most
+    likely the network level failures or stream was reset by
+    RST_STREAM.
+  timeout
+    The number of requests whose connection timed out before they were
+    completed.   This  is  the  subset   of  the  number  reported  in
+    ``errored``.
+
+status codes
+  The number of status code h2load received.
+
+traffic
+  total
+    The number of bytes received from the server "on the wire".  If
+    requests were made via TLS, this value is the number of decrypted
+    bytes.
+  headers
+    The  number  of response  header  bytes  from the  server  without
+    decompression.  The  ``space savings`` shows efficiency  of header
+    compression.  Let ``decompressed(headers)`` to the number of bytes
+    used for header fields after decompression.  The ``space savings``
+    is calculated  by (1 - ``headers``  / ``decompressed(headers)``) *
+    100.  For HTTP/1.1, this is usually  0.00%, since it does not have
+    header compression.  For HTTP/2, it shows some insightful numbers.
+  data
+    The number of response body bytes received from the server.
+
+time for request
+  min
+    The minimum time taken for request and response.
+  max
+    The maximum time taken for request and response.
+  mean
+    The mean time taken for request and response.
+  sd
+    The standard deviation of the time taken for request and response.
+  +/- sd
+    The fraction of the number of requests within standard deviation
+    range (mean +/- sd) against total number of successful requests.
+
+time for connect
+  min
+    The minimum time taken to connect to a server including TLS
+    handshake.
+  max
+    The maximum time taken to connect to a server including TLS
+    handshake.
+  mean
+    The mean time taken to connect to a server including TLS
+    handshake.
+  sd
+    The standard deviation of the time taken to connect to a server.
+  +/- sd
+    The  fraction  of  the   number  of  connections  within  standard
+    deviation range (mean  +/- sd) against total  number of successful
+    connections.
+
+time for 1st byte (of (decrypted in case of TLS) application data)
+  min
+    The minimum time taken to get 1st byte from a server.
+  max
+    The maximum time taken to get 1st byte from a server.
+  mean
+    The mean time taken to get 1st byte from a server.
+  sd
+    The standard deviation of the time taken to get 1st byte from a
+    server.
+  +/- sd
+    The fraction of the number of connections within standard
+    deviation range (mean +/- sd) against total number of successful
+    connections.
+
+req/s
+  min
+    The minimum request per second among all clients.
+  max
+    The maximum request per second among all clients.
+  mean
+    The mean request per second among all clients.
+  sd
+    The standard deviation of request per second among all clients.
+    server.
+  +/- sd
+    The fraction of the number of connections within standard
+    deviation range (mean +/- sd) against total number of successful
+    connections.
+
+FLOW CONTROL
+------------
+
+h2load sets large flow control window by default, and effectively
+disables flow control to avoid under utilization of server
+performance.  To set smaller flow control window, use :option:`-w` and
+:option:`-W` options.  For example, use ``-w16 -W16`` to set default
+window size described in HTTP/2 protocol specification.
+
+SEE ALSO
+--------
+
+:manpage:`nghttp(1)`, :manpage:`nghttpd(1)`, :manpage:`nghttpx(1)`

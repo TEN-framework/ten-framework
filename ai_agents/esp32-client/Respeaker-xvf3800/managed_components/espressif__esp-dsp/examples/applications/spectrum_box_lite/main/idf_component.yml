@@ -1,0 +1,6 @@
+dependencies:
+  espressif/esp-box-lite: "^2.0.3"
+  lvgl/lvgl: "^8.3.10"
+  espressif/esp-dsp:
+    version: '*'
+    override_path: "../../../../esp-dsp"

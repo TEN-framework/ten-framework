@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  test:
+    build:
+      context: .
+    command: sh -c 'rake deep_clean && rake -m test:build && rake test:run'
+    environment:
+      - MRUBY_CONFIG=ci/gcc-clang
+      - CC=gcc
+      - CXX=g++
+      - LD=gcc
+      - SKIP=check-executables-have-shebangs
+    working_dir: /app

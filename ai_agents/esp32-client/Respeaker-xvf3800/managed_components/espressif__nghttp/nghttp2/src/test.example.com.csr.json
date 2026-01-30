@@ -1,0 +1,14 @@
+{
+    "CN": "test.example.com",
+    "key": {
+	"algo": "rsa",
+	"size": 2048
+    },
+    "names": [
+	{
+	    "C": "AU",
+	    "ST": "Some-State",
+	    "O": "Internet Widgits Pty Ltd"
+	}
+    ]
+}

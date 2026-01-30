@@ -1,0 +1,46 @@
+#!/bin/sh
+
+print_help()
+{
+  echo "Usage: mruby-config [switches]"
+  echo "  switches:"
+  echo "  --cc                        print C compiler name"
+  echo "  --cflags                    print flags passed to C compiler"
+  echo "  --cxx                       print C++ compiler name"
+  echo "  --cxxflags                  print flags passed to C++ compiler"
+  echo "  --as                        print assembler name"
+  echo "  --asflags                   print flags passed to assembler"
+  echo "  --objc                      print Objective C compiler name"
+  echo "  --objcflags                 print flags passed to Objective C compiler"
+  echo "  --ld                        print linker name"
+  echo "  --ldflags                   print flags passed to linker"
+  echo "  --ldflags-before-libs       print flags passed to linker before linked libraries"
+  echo "  --libs                      print linked libraries"
+  echo "  --libmruby-path             print libmruby path"
+  echo "  --help                      print this help"
+  exit 0
+}
+
+if [ $# -eq 0 ]; then
+   print_help
+fi
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    --cc) echo MRUBY_CC;;
+    --cflags) echo MRUBY_CFLAGS;;
+    --cxx) echo MRUBY_CXX;;
+    --cxxflags) echo MRUBY_CXXFLAGS;;
+    --as) echo MRUBY_AS;;
+    --asflags) echo MRUBY_ASFLAGS;;
+    --objc) echo MRUBY_OBJC;;
+    --objcflags) echo MRUBY_OBJCFLAGS;;
+    --ld) echo MRUBY_LD;;
+    --ldflags) echo MRUBY_LDFLAGS;;
+    --ldflags-before-libs) echo MRUBY_LDFLAGS_BEFORE_LIBS;;
+    --libs) echo MRUBY_LIBS;;
+    --libmruby-path) echo MRUBY_LIBMRUBY_PATH;;
+    *) print_help;;
+  esac
+  shift
+done

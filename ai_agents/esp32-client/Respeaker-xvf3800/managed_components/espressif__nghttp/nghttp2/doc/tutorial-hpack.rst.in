@@ -1,0 +1,6 @@
+.. include:: @top_srcdir@/doc/sources/tutorial-hpack.rst
+
+deflate.c
+---------
+
+.. literalinclude:: @top_srcdir@/examples/deflate.c

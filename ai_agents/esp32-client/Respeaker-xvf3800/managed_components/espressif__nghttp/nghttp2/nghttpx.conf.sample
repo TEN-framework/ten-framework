@@ -1,0 +1,29 @@
+#
+# Sample configuration file for nghttpx.
+#
+# * Line staring '#' is treated as comment.
+#
+# * The option name in the configuration file is the long command-line
+#   option name with leading '--' stripped (e.g., frontend). Put '='
+#   between option name and value. Don't put extra leading or trailing
+#   spaces.
+#
+# * The options which do not take argument in the command-line *take*
+#   argument in the configuration file. Specify 'yes' as argument
+#   (e.g., http2-proxy=yes). If other string is given, it disables the
+#   option.
+#
+# * To specify private key and certificate file, use private-key-file
+#   and certificate-file. See the examples below.
+#
+# * conf option cannot be used in the configuration file. It will be
+#   ignored.
+#
+# Examples:
+#
+# frontend=0.0.0.0,3000
+# backend=127.0.0.1,80
+# private-key-file=/path/to/server.key
+# certificate-file=/path/to/server.crt
+# http2-proxy=no
+# workers=1

@@ -1,0 +1,8 @@
+## IDF Component Manager Manifest File
+description: ESP-DSP azure board application 3d graphics
+dependencies:
+  espressif/esp-dsp:
+    version: '*'
+    override_path: ../../../../../../esp-dsp
+
+  espressif/m5stack_core_s3: '*'

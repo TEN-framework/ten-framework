@@ -1,0 +1,719 @@
+FILES
+-----
+
+*/etc/nghttpx/nghttpx.conf*
+  The default configuration file path nghttpx searches at startup.
+  The configuration file path can be changed using :option:`--conf`
+  option.
+
+  Those lines which are staring ``#`` are treated as comment.
+
+  The option name in the configuration file is the long command-line
+  option name with leading ``--`` stripped (e.g., ``frontend``).  Put
+  ``=`` between option name and value.  Don't put extra leading or
+  trailing spaces.
+
+  When specifying arguments including characters which have special
+  meaning to a shell, we usually use quotes so that shell does not
+  interpret them.  When writing this configuration file, quotes for
+  this purpose must not be used.  For example, specify additional
+  request header field, do this:
+
+  .. code-block:: text
+
+    add-request-header=foo: bar
+
+  instead of:
+
+  .. code-block:: text
+
+    add-request-header="foo: bar"
+
+  The options which do not take argument in the command-line *take*
+  argument in the configuration file.  Specify ``yes`` as an argument
+  (e.g., ``http2-proxy=yes``).  If other string is given, it is
+  ignored.
+
+  To specify private key and certificate file which are given as
+  positional arguments in command-line, use ``private-key-file`` and
+  ``certificate-file``.
+
+  :option:`--conf` option cannot be used in the configuration file and
+  will be ignored if specified.
+
+Error log
+  Error log is written to stderr by default.  It can be configured
+  using :option:`--errorlog-file`.  The format of log message is as
+  follows:
+
+  <datetime> <main-pid> <current-pid> <thread-id> <level> (<filename>:<line>) <msg>
+
+  <datetime>
+    It is a combination of date and time when the log is written.  It
+    is in ISO 8601 format.
+
+  <main-pid>
+    It is a main process ID.
+
+  <current-pid>
+    It is a process ID which writes this log.
+
+  <thread-id>
+    It is a thread ID which writes this log.  It would be unique
+    within <current-pid>.
+
+  <filename> and <line>
+    They are source file name, and line number which produce this log.
+
+  <msg>
+    It is a log message body.
+
+SIGNALS
+-------
+
+SIGQUIT
+  Shutdown gracefully.  First accept pending connections and stop
+  accepting connection.  After all connections are handled, nghttpx
+  exits.
+
+SIGHUP
+  Reload configuration file given in :option:`--conf`.
+
+SIGUSR1
+  Reopen log files.
+
+SIGUSR2
+
+  Fork and execute nghttpx.  It will execute the binary in the same
+  path with same command-line arguments and environment variables.  As
+  of nghttpx version 1.20.0, the new main process sends SIGQUIT to the
+  original main process when it is ready to serve requests.  For the
+  earlier versions of nghttpx, user has to send SIGQUIT to the
+  original main process.
+
+  The difference between SIGUSR2 (+ SIGQUIT) and SIGHUP is that former
+  is usually used to execute new binary, and the main process is newly
+  spawned.  On the other hand, the latter just reloads configuration
+  file, and the same main process continues to exist.
+
+.. note::
+
+  nghttpx consists of multiple processes: one process for processing
+  these signals, and another one for processing requests.  The former
+  spawns the latter.  The former is called main process, and the
+  latter is called worker process.  If neverbleed is enabled, the
+  worker process spawns neverbleed daemon process which does RSA key
+  processing.  The above signal must be sent to the main process.  If
+  the other processes received one of them, it is ignored.  This
+  behaviour of these processes may change in the future release.  In
+  other words, in the future release, the processes other than main
+  process may terminate upon the reception of these signals.
+  Therefore these signals should not be sent to the processes other
+  than main process.
+
+SERVER PUSH
+-----------
+
+nghttpx supports HTTP/2 server push in default mode with Link header
+field.  nghttpx looks for Link header field (`RFC 5988
+<http://tools.ietf.org/html/rfc5988>`_) in response headers from
+backend server and extracts URI-reference with parameter
+``rel=preload`` (see `preload
+<http://w3c.github.io/preload/#interoperability-with-http-link-header>`_)
+and pushes those URIs to the frontend client. Here is a sample Link
+header field to initiate server push:
+
+.. code-block:: text
+
+  Link: </fonts/font.woff>; rel=preload
+  Link: </css/theme.css>; rel=preload
+
+Currently, the following restriction is applied for server push:
+
+1. The associated stream must have method "GET" or "POST".  The
+   associated stream's status code must be 200.
+
+This limitation may be loosened in the future release.
+
+nghttpx also supports server push if both frontend and backend are
+HTTP/2 in default mode.  In this case, in addition to server push via
+Link header field, server push from backend is forwarded to frontend
+HTTP/2 session.
+
+HTTP/2 server push will be disabled if :option:`--http2-proxy` is
+used.
+
+UNIX DOMAIN SOCKET
+------------------
+
+nghttpx supports UNIX domain socket with a filename for both frontend
+and backend connections.
+
+Please note that current nghttpx implementation does not delete a
+socket with a filename.  And on start up, if nghttpx detects that the
+specified socket already exists in the file system, nghttpx first
+deletes it.  However, if SIGUSR2 is used to execute new binary and
+both old and new configurations use same filename, new binary does not
+delete the socket and continues to use it.
+
+OCSP STAPLING
+-------------
+
+OCSP query is done using external Python script
+``fetch-ocsp-response``, which has been originally developed in Perl
+as part of h2o project (https://github.com/h2o/h2o), and was
+translated into Python.
+
+The script file is usually installed under
+``$(prefix)/share/nghttp2/`` directory.  The actual path to script can
+be customized using :option:`--fetch-ocsp-response-file` option.
+
+If OCSP query is failed, previous OCSP response, if any, is continued
+to be used.
+
+:option:`--fetch-ocsp-response-file` option provides wide range of
+possibility to manage OCSP response.  It can take an arbitrary script
+or executable.  The requirement is that it supports the command-line
+interface of ``fetch-ocsp-response`` script, and it must return a
+valid DER encoded OCSP response on success.  It must return exit code
+0 on success, and 75 for temporary error, and the other error code for
+generic failure.  For large cluster of servers, it is not efficient
+for each server to perform OCSP query using ``fetch-ocsp-response``.
+Instead, you can retrieve OCSP response in some way, and store it in a
+disk or a shared database.  Then specify a program in
+:option:`--fetch-ocsp-response-file` to fetch it from those stores.
+This could provide a way to share the OCSP response between fleet of
+servers, and also any OCSP query strategy can be applied which may be
+beyond the ability of nghttpx itself or ``fetch-ocsp-response``
+script.
+
+TLS SESSION RESUMPTION
+----------------------
+
+nghttpx supports TLS session resumption through both session ID and
+session ticket.
+
+SESSION ID RESUMPTION
+~~~~~~~~~~~~~~~~~~~~~
+
+By default, session ID is shared by all worker threads.
+
+If :option:`--tls-session-cache-memcached` is given, nghttpx will
+insert serialized session data to memcached with
+``nghttpx:tls-session-cache:`` + lowercase hex string of session ID
+as a memcached entry key, with expiry time 12 hours.  Session timeout
+is set to 12 hours.
+
+By default, connections to memcached server are not encrypted.  To
+enable encryption, use ``tls`` keyword in
+:option:`--tls-session-cache-memcached` option.
+
+TLS SESSION TICKET RESUMPTION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, session ticket is shared by all worker threads.  The
+automatic key rotation is also enabled by default.  Every an hour, new
+encryption key is generated, and previous encryption key becomes
+decryption only key.  We set session timeout to 12 hours, and thus we
+keep at most 12 keys.
+
+If :option:`--tls-ticket-key-memcached` is given, encryption keys are
+retrieved from memcached.  nghttpx just reads keys from memcached; one
+has to deploy key generator program to update keys frequently (e.g.,
+every 1 hour).  The example key generator tlsticketupdate.go is
+available under contrib directory in nghttp2 archive.  The memcached
+entry key is ``nghttpx:tls-ticket-key``.  The data format stored in
+memcached is the binary format described below:
+
+.. code-block:: text
+
+    +--------------+-------+----------------+
+    | VERSION (4)  |LEN (2)|KEY(48 or 80) ...
+    +--------------+-------+----------------+
+                   ^                        |
+		   |                        |
+		   +------------------------+
+                   (LEN, KEY) pair can be repeated
+
+All numbers in the above figure is bytes.  All integer fields are
+network byte order.
+
+First 4 bytes integer VERSION field, which must be 1.  The 2 bytes
+integer LEN field gives the length of following KEY field, which
+contains key.  If :option:`--tls-ticket-key-cipher`\=aes-128-cbc is
+used, LEN must be 48.  If
+:option:`--tls-ticket-key-cipher`\=aes-256-cbc is used, LEN must be
+80.  LEN and KEY pair can be repeated multiple times to store multiple
+keys.  The key appeared first is used as encryption key.  All the
+remaining keys are used as decryption only.
+
+By default, connections to memcached server are not encrypted.  To
+enable encryption, use ``tls`` keyword in
+:option:`--tls-ticket-key-memcached` option.
+
+If :option:`--tls-ticket-key-file` is given, encryption key is read
+from the given file.  In this case, nghttpx does not rotate key
+automatically.  To rotate key, one has to restart nghttpx (see
+SIGNALS).
+
+CERTIFICATE TRANSPARENCY
+------------------------
+
+nghttpx supports TLS ``signed_certificate_timestamp`` extension (`RFC
+6962 <https://tools.ietf.org/html/rfc6962>`_).  The relevant options
+are :option:`--tls-sct-dir` and ``sct-dir`` parameter in
+:option:`--subcert`.  They takes a directory, and nghttpx reads all
+files whose extension is ``.sct`` under the directory.  The ``*.sct``
+files are encoded as ``SignedCertificateTimestamp`` struct described
+in `section 3.2 of RFC 69662
+<https://tools.ietf.org/html/rfc6962#section-3.2>`_.  This format is
+the same one used by `nginx-ct
+<https://github.com/grahamedgecombe/nginx-ct>`_ and `mod_ssl_ct
+<https://httpd.apache.org/docs/trunk/mod/mod_ssl_ct.html>`_.
+`ct-submit <https://github.com/grahamedgecombe/ct-submit>`_ can be
+used to submit certificates to log servers, and obtain the
+``SignedCertificateTimestamp`` struct which can be used with nghttpx.
+
+MRUBY SCRIPTING
+---------------
+
+.. warning::
+
+  The current mruby extension API is experimental and not frozen.  The
+  API is subject to change in the future release.
+
+.. warning::
+
+  Almost all string value returned from method, or attribute is a
+  fresh new mruby string, which involves memory allocation, and
+  copies.  Therefore, it is strongly recommended to store a return
+  value in a local variable, and use it, instead of calling method or
+  accessing attribute repeatedly.
+
+nghttpx allows users to extend its capability using mruby scripts.
+nghttpx has 2 hook points to execute mruby script: request phase and
+response phase.  The request phase hook is invoked after all request
+header fields are received from client.  The response phase hook is
+invoked after all response header fields are received from backend
+server.  These hooks allows users to modify header fields, or common
+HTTP variables, like authority or request path, and even return custom
+response without forwarding request to backend servers.
+
+There are 2 levels of mruby script invocations: global and
+per-pattern.  The global mruby script is set by :option:`--mruby-file`
+option and is called for all requests.  The per-pattern mruby script
+is set by "mruby" parameter in :option:`-b` option.  It is invoked for
+a request which matches the particular pattern.  The order of hook
+invocation is: global request phase hook, per-pattern request phase
+hook, per-pattern response phase hook, and finally global response
+phase hook.  If a hook returns a response, any later hooks are not
+invoked.  The global request hook is invoked before the pattern
+matching is made and changing request path may affect the pattern
+matching.
+
+Please note that request and response hooks of per-pattern mruby
+script for a single request might not come from the same script.  This
+might happen after a request hook is executed, backend failed for some
+reason, and at the same time, backend configuration is replaced by API
+request, and then the request uses new configuration on retry.  The
+response hook from new configuration, if it is specified, will be
+invoked.
+
+The all mruby script will be evaluated once per thread on startup, and
+it must instantiate object and evaluate it as the return value (e.g.,
+``App.new``).  This object is called app object.  If app object
+defines ``on_req`` method, it is called with :rb:class:`Nghttpx::Env`
+object on request hook.  Similarly, if app object defines ``on_resp``
+method, it is called with :rb:class:`Nghttpx::Env` object on response
+hook.  For each method invocation, user can can access
+:rb:class:`Nghttpx::Request` and :rb:class:`Nghttpx::Response` objects
+via :rb:attr:`Nghttpx::Env#req` and :rb:attr:`Nghttpx::Env#resp`
+respectively.
+
+.. rb:module:: Nghttpx
+
+.. rb:const:: REQUEST_PHASE
+
+    Constant to represent request phase.
+
+.. rb:const:: RESPONSE_PHASE
+
+    Constant to represent response phase.
+
+.. rb:class:: Env
+
+    Object to represent current request specific context.
+
+    .. rb:attr_reader:: req
+
+        Return :rb:class:`Request` object.
+
+    .. rb:attr_reader:: resp
+
+        Return :rb:class:`Response` object.
+
+    .. rb:attr_reader:: ctx
+
+        Return Ruby hash object.  It persists until request finishes.
+        So values set in request phase hook can be retrieved in
+        response phase hook.
+
+    .. rb:attr_reader:: phase
+
+        Return the current phase.
+
+    .. rb:attr_reader:: remote_addr
+
+        Return IP address of a remote client.  If connection is made
+        via UNIX domain socket, this returns the string "localhost".
+
+    .. rb:attr_reader:: server_addr
+
+        Return address of server that accepted the connection.  This
+	is a string which specified in :option:`--frontend` option,
+	excluding port number, and not a resolved IP address.  For
+	UNIX domain socket, this is a path to UNIX domain socket.
+
+    .. rb:attr_reader:: server_port
+
+        Return port number of the server frontend which accepted the
+        connection from client.
+
+    .. rb:attr_reader:: tls_used
+
+        Return true if TLS is used on the connection.
+
+    .. rb:attr_reader:: tls_sni
+
+        Return the TLS SNI value which client sent in this connection.
+
+    .. rb:attr_reader:: tls_client_fingerprint_sha256
+
+        Return the SHA-256 fingerprint of a client certificate.
+
+    .. rb:attr_reader:: tls_client_fingerprint_sha1
+
+        Return the SHA-1 fingerprint of a client certificate.
+
+    .. rb:attr_reader:: tls_client_issuer_name
+
+        Return the issuer name of a client certificate.
+
+    .. rb:attr_reader:: tls_client_subject_name
+
+        Return the subject name of a client certificate.
+
+    .. rb:attr_reader:: tls_client_serial
+
+        Return the serial number of a client certificate.
+
+    .. rb:attr_reader:: tls_client_not_before
+
+        Return the start date of a client certificate in seconds since
+        the epoch.
+
+    .. rb:attr_reader:: tls_client_not_after
+
+        Return the end date of a client certificate in seconds since
+        the epoch.
+
+    .. rb:attr_reader:: tls_cipher
+
+        Return a TLS cipher negotiated in this connection.
+
+    .. rb:attr_reader:: tls_protocol
+
+        Return a TLS protocol version negotiated in this connection.
+
+    .. rb:attr_reader:: tls_session_id
+
+        Return a session ID for this connection in hex string.
+
+    .. rb:attr_reader:: tls_session_reused
+
+        Return true if, and only if a SSL/TLS session is reused.
+
+    .. rb:attr_reader:: alpn
+
+        Return ALPN identifier negotiated in this connection.
+
+    .. rb:attr_reader:: tls_handshake_finished
+
+        Return true if SSL/TLS handshake has finished.  If it returns
+        false in the request phase hook, the request is received in
+        TLSv1.3 early data (0-RTT) and might be vulnerable to the
+        replay attack.  nghttpx will send Early-Data header field to
+        backend servers to indicate this.
+
+.. rb:class:: Request
+
+    Object to represent request from client.  The modification to
+    Request object is allowed only in request phase hook.
+
+    .. rb:attr_reader:: http_version_major
+
+        Return HTTP major version.
+
+    .. rb:attr_reader:: http_version_minor
+
+        Return HTTP minor version.
+
+    .. rb:attr_accessor:: method
+
+        HTTP method.  On assignment, copy of given value is assigned.
+        We don't accept arbitrary method name.  We will document them
+        later, but well known methods, like GET, PUT and POST, are all
+        supported.
+
+    .. rb:attr_accessor:: authority
+
+        Authority (i.e., example.org), including optional port
+        component .  On assignment, copy of given value is assigned.
+
+    .. rb:attr_accessor:: scheme
+
+        Scheme (i.e., http, https).  On assignment, copy of given
+        value is assigned.
+
+    .. rb:attr_accessor:: path
+
+        Request path, including query component (i.e., /index.html).
+        On assignment, copy of given value is assigned.  The path does
+        not include authority component of URI.  This may include
+        query component.  nghttpx makes certain normalization for
+        path.  It decodes percent-encoding for unreserved characters
+        (see https://tools.ietf.org/html/rfc3986#section-2.3), and
+        resolves ".." and ".".  But it may leave characters which
+        should be percent-encoded as is. So be careful when comparing
+        path against desired string.
+
+    .. rb:attr_reader:: headers
+
+        Return Ruby hash containing copy of request header fields.
+        Changing values in returned hash does not change request
+        header fields actually used in request processing.  Use
+        :rb:meth:`Nghttpx::Request#add_header` or
+        :rb:meth:`Nghttpx::Request#set_header` to change request
+        header fields.
+
+    .. rb:method:: add_header(key, value)
+
+        Add header entry associated with key.  The value can be single
+        string or array of string.  It does not replace any existing
+        values associated with key.
+
+    .. rb:method:: set_header(key, value)
+
+        Set header entry associated with key.  The value can be single
+        string or array of string.  It replaces any existing values
+        associated with key.
+
+    .. rb:method:: clear_headers
+
+        Clear all existing request header fields.
+
+    .. rb:method:: push(uri)
+
+        Initiate to push resource identified by *uri*.  Only HTTP/2
+        protocol supports this feature.  For the other protocols, this
+        method is noop.  *uri* can be absolute URI, absolute path or
+        relative path to the current request.  For absolute or
+        relative path, scheme and authority are inherited from the
+        current request.  Currently, method is always GET.  nghttpx
+        will issue request to backend servers to fulfill this request.
+        The request and response phase hooks will be called for pushed
+        resource as well.
+
+.. rb:class:: Response
+
+    Object to represent response from backend server.
+
+    .. rb:attr_reader:: http_version_major
+
+        Return HTTP major version.
+
+    .. rb:attr_reader:: http_version_minor
+
+        Return HTTP minor version.
+
+    .. rb:attr_accessor:: status
+
+        HTTP status code.  It must be in the range [200, 999],
+        inclusive.  The non-final status code is not supported in
+        mruby scripting at the moment.
+
+    .. rb:attr_reader:: headers
+
+        Return Ruby hash containing copy of response header fields.
+        Changing values in returned hash does not change response
+        header fields actually used in response processing.  Use
+        :rb:meth:`Nghttpx::Response#add_header` or
+        :rb:meth:`Nghttpx::Response#set_header` to change response
+        header fields.
+
+    .. rb:method:: add_header(key, value)
+
+        Add header entry associated with key.  The value can be single
+        string or array of string.  It does not replace any existing
+        values associated with key.
+
+    .. rb:method:: set_header(key, value)
+
+        Set header entry associated with key.  The value can be single
+        string or array of string.  It replaces any existing values
+        associated with key.
+
+    .. rb:method:: clear_headers
+
+        Clear all existing response header fields.
+
+    .. rb:method:: return(body)
+
+        Return custom response *body* to a client.  When this method
+        is called in request phase hook, the request is not forwarded
+        to the backend, and response phase hook for this request will
+        not be invoked.  When this method is called in response phase
+        hook, response from backend server is canceled and discarded.
+        The status code and response header fields should be set
+        before using this method.  To set status code, use
+        :rb:attr:`Nghttpx::Response#status`.  If status code is not
+        set, 200 is used.  To set response header fields,
+        :rb:meth:`Nghttpx::Response#add_header` and
+        :rb:meth:`Nghttpx::Response#set_header`.  When this method is
+        invoked in response phase hook, the response headers are
+        filled with the ones received from backend server.  To send
+        completely custom header fields, first call
+        :rb:meth:`Nghttpx::Response#clear_headers` to erase all
+        existing header fields, and then add required header fields.
+        It is an error to call this method twice for a given request.
+
+    .. rb:method:: send_info(status, headers)
+
+        Send non-final (informational) response to a client.  *status*
+        must be in the range [100, 199], inclusive.  *headers* is a
+        hash containing response header fields.  Its key must be a
+        string, and the associated value must be either string or
+        array of strings.  Since this is not a final response, even if
+        this method is invoked, request is still forwarded to a
+        backend unless :rb:meth:`Nghttpx::Response#return` is called.
+        This method can be called multiple times.  It cannot be called
+        after :rb:meth:`Nghttpx::Response#return` is called.
+
+MRUBY EXAMPLES
+~~~~~~~~~~~~~~
+
+Modify request path:
+
+.. code-block:: ruby
+
+    class App
+      def on_req(env)
+        env.req.path = "/apps#{env.req.path}"
+      end
+    end
+
+    App.new
+
+Don't forget to instantiate and evaluate object at the last line.
+
+Restrict permission of viewing a content to a specific client
+addresses:
+
+.. code-block:: ruby
+
+    class App
+      def on_req(env)
+        allowed_clients = ["127.0.0.1", "::1"]
+
+        if env.req.path.start_with?("/log/") &&
+           !allowed_clients.include?(env.remote_addr) then
+          env.resp.status = 404
+          env.resp.return "permission denied"
+        end
+      end
+    end
+
+    App.new
+
+API ENDPOINTS
+-------------
+
+nghttpx exposes API endpoints to manipulate it via HTTP based API.  By
+default, API endpoint is disabled.  To enable it, add a dedicated
+frontend for API using :option:`--frontend` option with "api"
+parameter.  All requests which come from this frontend address, will
+be treated as API request.
+
+The response is normally JSON dictionary, and at least includes the
+following keys:
+
+status
+  The status of the request processing.  The following values are
+  defined:
+
+  Success
+    The request was successful.
+
+  Failure
+    The request was failed.  No change has been made.
+
+code
+  HTTP status code
+
+Additionally, depending on the API endpoint, ``data`` key may be
+present, and its value contains the API endpoint specific data.
+
+We wrote "normally", since nghttpx may return ordinal HTML response in
+some cases where the error has occurred before reaching API endpoint
+(e.g., header field is too large).
+
+The following section describes available API endpoints.
+
+POST /api/v1beta1/backendconfig
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This API replaces the current backend server settings with the
+requested ones.  The request method should be POST, but PUT is also
+acceptable.  The request body must be nghttpx configuration file
+format.  For configuration file format, see `FILES`_ section.  The
+line separator inside the request body must be single LF (0x0A).
+Currently, only :option:`backend <--backend>` option is parsed, the
+others are simply ignored.  The semantics of this API is replace the
+current backend with the backend options in request body.  Describe
+the desired set of backend severs, and nghttpx makes it happen.  If
+there is no :option:`backend <--backend>` option is found in request
+body, the current set of backend is replaced with the :option:`backend
+<--backend>` option's default value, which is ``127.0.0.1,80``.
+
+The replacement is done instantly without breaking existing
+connections or requests.  It also avoids any process creation as is
+the case with hot swapping with signals.
+
+The one limitation is that only numeric IP address is allowed in
+:option:`backend <--backend>` in request body unless "dns" parameter
+is used while non numeric hostname is allowed in command-line or
+configuration file is read using :option:`--conf`.
+
+GET /api/v1beta1/configrevision
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This API returns configuration revision of the current nghttpx.  The
+configuration revision is opaque string, and it changes after each
+reloading by SIGHUP.  With this API, an external application knows
+that whether nghttpx has finished reloading its configuration by
+comparing the configuration revisions between before and after
+reloading.  It is recommended to disable persistent (keep-alive)
+connection for this purpose in order to avoid to send a request using
+the reused connection which may bound to an old process.
+
+This API returns response including ``data`` key.  Its value is JSON
+object, and it contains at least the following key:
+
+configRevision
+  The configuration revision of the current nghttpx
+
+
+SEE ALSO
+--------
+
+:manpage:`nghttp(1)`, :manpage:`nghttpd(1)`, :manpage:`h2load(1)`

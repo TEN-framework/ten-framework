@@ -1,0 +1,84 @@
+---
+default_stages: [commit, push]
+default_language_version:
+  # force all unspecified Python hooks to run python3
+  python: python3
+minimum_pre_commit_version: "2.18.1"
+repos:
+  - repo: meta
+    hooks:
+      - id: identity
+      - id: check-hooks-apply
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+        exclude: ^test/t/lang\.rb$
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-vcs-permalinks
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: file-contents-sorter
+        args: [--unique]
+        files: ^codespell\.txt$
+      - id: fix-byte-order-marker
+      - id: forbid-submodules
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.4
+    hooks:
+      - id: forbid-tabs
+        exclude: Makefile$|Makefile\..+$|makefile$|\.mk$
+      - id: remove-tabs
+        args: [--whitespaces-count, "2"]
+        exclude: Makefile$|Makefile\..+$|makefile$|\.mk$
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        name: Run codespell
+        description: Check spelling with codespell
+        entry: codespell --ignore-words=codespell.txt
+  - repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 3.0.0
+    hooks:
+      - id: script-must-not-have-extension
+        name: Local policy is to exclude extension from all shell files
+        types: [shell]
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        exclude: ^doc/internal/opcode\.md$
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        name: Run markdownlint
+        description: Checks the style of Markdown files
+        entry: markdownlint -c .github/linters/.markdown-lint.yml .
+        types: [markdown]
+        files: \.(md|mdown|markdown)$
+  - repo: https://github.com/tcort/markdown-link-check
+    rev: v3.11.2
+    hooks:
+      - id: markdown-link-check
+        name: Run markdown-link-check
+        description: Checks hyperlinks in Markdown files
+        args: [-q]
+        types: [markdown]
+        files: \.(md|mdown|markdown)$
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        name: Run yamllint
+        description: Check YAML files with yamllint
+        entry: yamllint --strict -c .github/linters/.yaml-lint.yml
+        types: [yaml]
+        files: \.(yaml|yml)$

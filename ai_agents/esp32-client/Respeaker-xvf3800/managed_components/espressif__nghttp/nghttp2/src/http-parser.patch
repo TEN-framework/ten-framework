@@ -1,0 +1,28 @@
+commit a143133d43420ef89e4ba0d84c73998863cf9f81
+Author: Tatsuhiro Tsujikawa <tatsuhiro.t@gmail.com>
+Date:   Wed Jul 11 18:46:00 2012 +0900
+
+    Use http_parser for tunneling connection transparently
+
+diff --git a/examples/http-parser/http_parser.c b/examples/http-parser/http_parser.c
+index 0c11eb8..610da57 100644
+--- a/examples/http-parser/http_parser.c
++++ b/examples/http-parser/http_parser.c
+@@ -1627,9 +1627,14 @@ size_t http_parser_execute (http_parser *parser,
+ 
+         /* Exit, the rest of the connect is in a different protocol. */
+         if (parser->upgrade) {
+-          parser->state = NEW_MESSAGE();
+-          CALLBACK_NOTIFY(message_complete);
+-          return (p - data) + 1;
++          /* We want to use http_parser for tunneling connection
++             transparently */
++          /* Read body until EOF */
++          parser->state = s_body_identity_eof;
++          break;
++          /* parser->state = NEW_MESSAGE(); */
++          /* CALLBACK_NOTIFY(message_complete); */
++          /* return (p - data) + 1; */
+         }
+ 
+         if (parser->flags & F_SKIPBODY) {
