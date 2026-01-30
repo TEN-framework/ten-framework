@@ -18,6 +18,8 @@ _is_in_mingw_toolchain = current_toolchain == _mingw_toolchain
 if (_is_in_mingw_toolchain) {
   # Building under MinGW toolchain
   static_library("ten_runtime_go_mingw") {
+    output_name = "ten_runtime_go"
+
     include_dirs = [
       "//core",
       "//core/src",
