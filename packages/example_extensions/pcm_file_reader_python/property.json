@@ -1,0 +1,7 @@
+{
+  "audio_file_path": "",
+  "sample_rate": 16000,
+  "bytes_per_sample": 2,
+  "number_of_channels": 1,
+  "frame_interval_ms": 10
+}

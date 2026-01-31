@@ -59,7 +59,48 @@ if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
         "lib",
     )
 
-    for _dir in [_lib_dir, _runtime_lib_dir]:
+    # Collect directories to add to DLL search path
+    _dll_dirs = [_lib_dir, _runtime_lib_dir]
+
+    # Add MinGW bin directories from PATH to support MinGW runtime DLLs
+    # This is needed because:
+    # 1. ten_runtime.dll and ten_utils.dll both depend on libgcc_s_seh-1.dll
+    # 2. libgcc_s_seh-1.dll depend on libwinpthread-1.dll
+    # 3. Python 3.8+ doesn't use PATH for DLL loading by default
+    _path_env = os.environ.get("PATH", "")
+    if _path_env:
+        for _path_dir in _path_env.split(os.pathsep):
+            _path_dir = _path_dir.strip()
+            if not _path_dir:
+                continue
+
+            # Check if this is a MinGW bin directory by examining:
+            # 1. Path contains "mingw" (case-insensitive)
+            # 2. Path ends with "bin"
+            # 3. Directory contains GCC compiler or other MinGW tools
+            _path_dir_lower = _path_dir.lower()
+            _is_mingw_candidate = (
+                "mingw" in _path_dir_lower
+                and _path_dir_lower.endswith("bin")
+            )
+
+            if _is_mingw_candidate and os.path.isdir(_path_dir):
+                # Verify it's a real MinGW directory by checking for compiler
+                # or common MinGW tools
+                _mingw_tools = [
+                    "gcc.exe",
+                    "g++.exe",
+                    "mingw32-make.exe",
+                    "ld.exe",
+                ]
+                for _tool in _mingw_tools:
+                    _tool_path = os.path.join(_path_dir, _tool)
+                    if os.path.isfile(_tool_path):
+                        _dll_dirs.append(_path_dir)
+                        break
+
+    # Add all collected directories to DLL search path
+    for _dir in _dll_dirs:
         _abs_dir = os.path.abspath(_dir)
         if os.path.isdir(_abs_dir):
             try:

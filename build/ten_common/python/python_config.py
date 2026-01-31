@@ -27,6 +27,7 @@ class ArgumentInfo(argparse.Namespace):
         self.target_os: str
         self.config_type: str
         self.log_level: int
+        self.is_mingw: bool = False
         self.ignored_cflags: list[str] = [
             "-DNDEBUG",
             "-Os",
@@ -82,16 +83,23 @@ def get_embed_flags():
     }
 
 
-def transform_flags_for_windows(embed_flags):
+def transform_flags_for_windows(embed_flags, is_mingw=False):
     transformed = {"include_dirs": [], "lib_dirs": [], "libs": [], "cflags": []}
 
     # Transform include directories.
     for include_dir in embed_flags["include_dirs"].split():
-        transformed["include_dirs"].append(f'/I"{include_dir}"')
+        if is_mingw:
+            # MinGW uses GCC-style -I flags
+            transformed["include_dirs"].append(f'-I{include_dir}')
+        else:
+            transformed["include_dirs"].append(f'/I"{include_dir}"')
 
     # Transform library directories.
     for lib_dir in embed_flags["lib_dirs"].split():
-        if sys.platform == "win32":
+        if is_mingw:
+            # MinGW uses GCC-style -L flags
+            transformed["lib_dirs"].append(f"-L{lib_dir}")
+        elif sys.platform == "win32":
             # output without the outer quotes to avoid escaping issues
             transformed["lib_dirs"].append(f"/LIBPATH:{lib_dir}")
         else:
@@ -102,9 +110,15 @@ def transform_flags_for_windows(embed_flags):
         # Remove '-l' if present.
         if lib.startswith("-l"):
             lib = lib[2:]
-        # On Windows platform, we need to remove one pair of quotes because of
-        # the MSVC linker feature.
-        if sys.platform == "win32":
+
+        if is_mingw:
+            # MinGW uses GCC-style -l flags without .lib extension
+            if lib.endswith(".lib"):
+                lib = lib[:-4]  # Remove .lib extension
+            transformed["libs"].append(f"{lib}")
+        elif sys.platform == "win32":
+            # On Windows platform, we need to remove one pair of quotes because of
+            # the MSVC linker feature.
             if not lib.endswith(".lib"):
                 lib = f"{lib}.lib"
             else:
@@ -126,7 +140,7 @@ def transform_flags_for_windows(embed_flags):
 def python_config_for_win(args: ArgumentInfo) -> None:
     # Retrieve embed flags using sysconfig.
     embed_flags = get_embed_flags()
-    transformed_flags = transform_flags_for_windows(embed_flags)
+    transformed_flags = transform_flags_for_windows(embed_flags, args.is_mingw)
 
     if args.config_type == "cflags":
         # Print include directories and any additional CFLAGS.
@@ -323,6 +337,7 @@ if __name__ == "__main__":
     parser.add_argument("--target-os", type=str, required=True)
     parser.add_argument("--config-type", type=str, required=True)
     parser.add_argument("--log-level", type=int, required=True)
+    parser.add_argument("--is-mingw", action="store_true", default=False)
 
     arg_info = ArgumentInfo()
     args = parser.parse_args(namespace=arg_info)

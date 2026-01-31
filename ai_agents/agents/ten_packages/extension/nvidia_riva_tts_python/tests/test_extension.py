@@ -55,7 +55,7 @@ class TestNvidiaRivaTTSExtension:
                 "sample_rate": 16000
             }
         }"""
-        
+
         config = await extension.create_config(config_json)
         assert isinstance(config, NvidiaRivaTTSConfig)
         assert config.params["server"] == "localhost:50051"
@@ -65,7 +65,7 @@ class TestNvidiaRivaTTSExtension:
         """Test sample rate retrieval"""
         extension = NvidiaRivaTTSExtension("test_extension")
         extension.config = valid_config
-        
+
         sample_rate = extension.synthesize_audio_sample_rate()
         assert sample_rate == 16000
 
@@ -73,57 +73,72 @@ class TestNvidiaRivaTTSExtension:
 class TestNvidiaRivaTTSClient:
     """Test cases for NvidiaRivaTTSClient"""
 
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.Auth')
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService')
-    def test_client_initialization(self, mock_service, mock_auth, valid_config, mock_ten_env):
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.Auth")
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService")
+    def test_client_initialization(
+        self, mock_service, mock_auth, valid_config, mock_ten_env
+    ):
         """Test client initialization"""
         client = NvidiaRivaTTSClient(config=valid_config, ten_env=mock_ten_env)
-        
+
         assert client is not None
         assert client.config == valid_config
         mock_auth.assert_called_once()
         mock_service.assert_called_once()
 
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.Auth')
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService')
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.Auth")
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService")
     @pytest.mark.asyncio
-    async def test_cancel(self, mock_service, mock_auth, valid_config, mock_ten_env):
+    async def test_cancel(
+        self, mock_service, mock_auth, valid_config, mock_ten_env
+    ):
         """Test cancellation"""
         client = NvidiaRivaTTSClient(config=valid_config, ten_env=mock_ten_env)
-        
+
         await client.cancel()
         assert client._is_cancelled is True
 
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.Auth')
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService')
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.Auth")
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService")
     @pytest.mark.asyncio
-    async def test_synthesize_empty_text(self, mock_service, mock_auth, valid_config, mock_ten_env):
+    async def test_synthesize_empty_text(
+        self, mock_service, mock_auth, valid_config, mock_ten_env
+    ):
         """Test synthesis with empty text"""
         client = NvidiaRivaTTSClient(config=valid_config, ten_env=mock_ten_env)
-        
+
         # Should return without yielding anything
-        result = [chunk async for chunk in client.synthesize("", "test_request")]
+        result = [
+            chunk async for chunk in client.synthesize("", "test_request")
+        ]
         assert len(result) == 0
 
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.Auth')
-    @patch('nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService')
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.Auth")
+    @patch("nvidia_riva_tts_python.riva_tts.riva.client.SpeechSynthesisService")
     @pytest.mark.asyncio
-    async def test_synthesize_with_text(self, mock_service, mock_auth, valid_config, mock_ten_env):
+    async def test_synthesize_with_text(
+        self, mock_service, mock_auth, valid_config, mock_ten_env
+    ):
         """Test synthesis with valid text"""
         # Mock the service response
         mock_response = Mock()
-        mock_response.audio = b'\x00\x01' * 100  # Mock audio data
-        
+        mock_response.audio = b"\x00\x01" * 100  # Mock audio data
+
         mock_service_instance = Mock()
-        mock_service_instance.synthesize_online = Mock(return_value=[mock_response])
+        mock_service_instance.synthesize_online = Mock(
+            return_value=[mock_response]
+        )
         mock_service.return_value = mock_service_instance
-        
+
         client = NvidiaRivaTTSClient(config=valid_config, ten_env=mock_ten_env)
         client.tts_service = mock_service_instance
-        
+
         # Synthesize text
-        chunks = [chunk async for chunk in client.synthesize("Hello world", "test_request")]
-        
+        chunks = [
+            chunk
+            async for chunk in client.synthesize("Hello world", "test_request")
+        ]
+
         assert len(chunks) > 0
         assert isinstance(chunks[0], bytes)
         mock_service_instance.synthesize_online.assert_called_once()
@@ -131,4 +146,3 @@ class TestNvidiaRivaTTSClient:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
-

@@ -39,7 +39,10 @@ if (is_linux) {
       [ "${root_out_dir}/libten_runtime_python.so" ]
 } else if (is_win) {
   if (is_mingw) {
-    # For .pyd files, the import library is .pyd.a (see mingw.gni:123)
+    # MinGW: output_name="ten_runtime_python" generates:
+    # - .pyd file: ten_runtime_python.pyd (renamed to libten_runtime_python.pyd by copy target)
+    # - import lib: libten_runtime_python.pyd.a (auto "lib" prefix from mingw.gni)
+    # The final files used by the package are:
     ten_runtime_python_output_libs = [
       "${root_out_dir}/libten_runtime_python.pyd",
       "${root_out_dir}/libten_runtime_python.pyd.a",
