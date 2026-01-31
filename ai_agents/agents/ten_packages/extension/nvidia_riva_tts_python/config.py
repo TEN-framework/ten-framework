@@ -4,18 +4,18 @@
 #
 from typing import Any
 import copy
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pathlib import Path
-from ten_ai_base import utils
-from ten_ai_base.tts import AsyncTTSConfig
 
 
-class NvidiaRivaTTSConfig(AsyncTTSConfig):
+class NvidiaRivaTTSConfig(BaseModel):
     """NVIDIA Riva TTS Config"""
 
     dump: bool = Field(default=False, description="NVIDIA Riva TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "nvidia_riva_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "nvidia_riva_tts_in.pcm"
+        ),
         description="NVIDIA Riva TTS dump path",
     )
     params: dict[str, Any] = Field(
@@ -24,7 +24,6 @@ class NvidiaRivaTTSConfig(AsyncTTSConfig):
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
-        pass
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
@@ -38,7 +37,10 @@ class NvidiaRivaTTSConfig(AsyncTTSConfig):
         """Validate NVIDIA Riva-specific configuration."""
         if "server" not in self.params or not self.params["server"]:
             raise ValueError("Server address is required for NVIDIA Riva TTS")
-        if "language_code" not in self.params or not self.params["language_code"]:
+        if (
+            "language_code" not in self.params
+            or not self.params["language_code"]
+        ):
             raise ValueError("Language code is required for NVIDIA Riva TTS")
         if "voice_name" not in self.params or not self.params["voice_name"]:
             raise ValueError("Voice name is required for NVIDIA Riva TTS")

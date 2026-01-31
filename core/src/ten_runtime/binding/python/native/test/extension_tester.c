@@ -457,6 +457,32 @@ static PyObject *ten_py_extension_tester_set_test_mode_single(PyObject *self,
   Py_RETURN_NONE;
 }
 
+static PyObject *ten_py_extension_tester_set_test_mode_graph(PyObject *self,
+                                                             PyObject *args) {
+  ten_py_extension_tester_t *py_extension_tester =
+      (ten_py_extension_tester_t *)self;
+  TEN_ASSERT(py_extension_tester, "Invalid argument.");
+  TEN_ASSERT(ten_py_extension_tester_check_integrity(py_extension_tester),
+             "Invalid argument.");
+
+  if (PyTuple_GET_SIZE(args) != 1) {
+    return ten_py_raise_py_value_error_exception(
+        "Invalid argument count when extension_tester.set_test_mode_graph.");
+  }
+
+  const char *graph_json = NULL;
+  if (!PyArg_ParseTuple(args, "s", &graph_json)) {
+    return ten_py_raise_py_value_error_exception(
+        "Failed to parse arguments when "
+        "extension_tester.set_test_mode_graph.");
+  }
+
+  ten_extension_tester_set_test_mode_graph(
+      py_extension_tester->c_extension_tester, graph_json);
+
+  Py_RETURN_NONE;
+}
+
 static PyObject *ten_py_extension_tester_set_timeout(PyObject *self,
                                                      PyObject *args) {
   ten_py_extension_tester_t *py_extension_tester =
@@ -525,6 +551,8 @@ static PyTypeObject *ten_py_extension_tester_py_type(void) {
   static PyMethodDef py_methods[] = {
       {"set_test_mode_single_internal",
        ten_py_extension_tester_set_test_mode_single, METH_VARARGS, NULL},
+      {"set_test_mode_graph_internal",
+       ten_py_extension_tester_set_test_mode_graph, METH_VARARGS, NULL},
       {"set_timeout", ten_py_extension_tester_set_timeout, METH_VARARGS, NULL},
       {"run_internal", ten_py_extension_tester_run, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},

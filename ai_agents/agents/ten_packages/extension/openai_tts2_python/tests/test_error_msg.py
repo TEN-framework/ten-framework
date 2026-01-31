@@ -143,17 +143,33 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("openai_tts2_python.openai_tts.AsyncOpenAI")
-def test_invalid_api_key_error(MockOpenaiTTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_invalid_api_key_error(MockAsyncClient):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
 
-    # Mock API key error by raising exception in create() method
-    mock_client = MockOpenaiTTSClient.return_value
-    mock_client.clean = AsyncMock()
-    mock_client.audio.speech.with_streaming_response.create.side_effect = Exception(
-        "Error code: 401 - {'error': {'message': 'Incorrect API key provided: 'invalid_api_key_test', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"
+    # Mock API key error response
+    error_response = {
+        "error": {
+            "message": "Incorrect API key provided: 'invalid_api_key_test'",
+            "type": "invalid_request_error",
+            "param": None,
+            "code": "invalid_api_key",
+        }
+    }
+
+    mock_response = AsyncMock()
+    mock_response.status_code = 401
+    mock_response.aread = AsyncMock(
+        return_value=json.dumps(error_response).encode()
     )
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_client = AsyncMock()
+    mock_client.stream = MagicMock(return_value=mock_response)
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # Config with invalid API key (in params)
     invalid_key_config = {

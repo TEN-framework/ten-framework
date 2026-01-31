@@ -44,7 +44,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
-            text_input_end=True,
+            text_input_end=True,  # Set to True so error handler can properly finish request
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
@@ -109,8 +109,12 @@ class ExtensionTesterRobustness(ExtensionTester):
                 ten_env.stop_test()
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_reconnect_after_connection_drop(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.Limits")
+@patch("openai_tts2_python.openai_tts.Timeout")
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_reconnect_after_connection_drop(
+    MockAsyncClient, MockTimeout, MockLimits
+):
     """
     Tests that the extension can recover from a connection drop, report a
     NON_FATAL_ERROR, and then successfully reconnect and process a new request.
@@ -118,27 +122,65 @@ def test_reconnect_after_connection_drop(MockOpenAITTSClient):
     print("Starting test_reconnect_after_connection_drop with mock...")
 
     # --- Mock State ---
-    # Use a simple counter to track how many times get() is called
-    get_call_count = 0
+    # Use a simple counter to track how many times stream() is called
+    stream_call_count = 0
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenAITTSClient.return_value
-    mock_instance.clean = AsyncMock()
+    def create_mock_response(*args, **kwargs):
+        """Create mock response for httpx.AsyncClient.stream() calls."""
+        nonlocal stream_call_count
+        stream_call_count += 1
 
-    # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str, request_id: str):
-        nonlocal get_call_count
-        get_call_count += 1
+        if stream_call_count == 1:
+            # First call: simulate connection drop
+            # httpx.stream() returns an async context manager
+            # When entering the context, raise ConnectionRefusedError
+            mock_context = AsyncMock()
 
-        if get_call_count == 1:
-            # On the first call, simulate a connection drop
-            raise ConnectionRefusedError("Simulated connection drop from test")
+            async def raise_error():
+                raise ConnectionRefusedError(
+                    "Simulated connection drop from test"
+                )
+
+            mock_context.__aenter__ = raise_error
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            return mock_context
         else:
-            # On the second call, simulate a successful audio stream
-            yield (b"\x44\x55\x66", TTS2HttpResponseEventType.RESPONSE)
-            yield (None, TTS2HttpResponseEventType.END)
+            # Second call: successful response
+            mock_response = AsyncMock()
+            mock_response.status_code = 200
 
-    mock_instance.get.side_effect = mock_get_stateful
+            # Mock aread() for error body reading (not used in success case)
+            mock_response.aread = AsyncMock(return_value=b"")
+
+            # Mock aiter_bytes() for streaming audio data
+            async def mock_aiter_bytes():
+                yield b"\x44\x55\x66"
+
+            mock_response.aiter_bytes = mock_aiter_bytes
+
+            # __aenter__ should be an async function that returns the response itself
+            async def mock_aenter():
+                return mock_response
+
+            mock_response.__aenter__ = mock_aenter
+            mock_response.__aexit__ = AsyncMock(return_value=None)
+
+            # Return a context manager that yields the mock_response
+            mock_context = AsyncMock()
+            mock_context.__aenter__ = mock_aenter
+            mock_context.__aexit__ = AsyncMock(return_value=None)
+            return mock_context
+
+    # Mock Timeout and Limits to avoid issues
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+
+    mock_client = AsyncMock()
+    # httpx.AsyncClient.stream() is called with method, url, headers, json
+    mock_client.stream = MagicMock(side_effect=create_mock_response)
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # --- Test Setup ---
     config = {
@@ -167,9 +209,10 @@ def test_reconnect_after_connection_drop(MockOpenAITTSClient):
         vendor_info.get("vendor") == "openai"
     ), f"Expected vendor 'openai', got {vendor_info.get('vendor')}"
 
-    # 3. Verify that the client's start method was called twice (initial + reconnect)
-    # This assertion is tricky because the reconnection logic might be inside the client.
-    # A better assertion is to check if the second request succeeded.
+    # 3. Verify that stream() was called twice (initial + reconnect)
+    assert (
+        stream_call_count == 2
+    ), f"Expected stream() to be called twice, but was called {stream_call_count} times"
 
     # 4. Verify that the second TTS request was successful
     assert (

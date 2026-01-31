@@ -59,7 +59,7 @@ def test_config_defaults():
             "voice_name": "English-US.Female-1",
         }
     )
-    
+
     assert config.dump is False
     assert "nvidia_riva_tts_in.pcm" in config.dump_path
     assert config.params["server"] == "localhost:50051"

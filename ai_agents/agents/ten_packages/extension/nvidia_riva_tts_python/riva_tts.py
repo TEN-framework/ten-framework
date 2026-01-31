@@ -30,15 +30,15 @@ class NvidiaRivaTTSClient:
             # Initialize Riva client
             server = config.params["server"]
             use_ssl = config.params.get("use_ssl", False)
-            
+
             self.ten_env.log_info(
                 f"Initializing NVIDIA Riva TTS client with server: {server}, SSL: {use_ssl}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            
-            self.auth = riva.client.Auth(ssl_cert=None, use_ssl=use_ssl, uri=server)
+
+            self.auth = riva.client.Auth(use_ssl=use_ssl, uri=server)
             self.tts_service = riva.client.SpeechSynthesisService(self.auth)
-            
+
             self.ten_env.log_info(
                 "NVIDIA Riva TTS client initialized successfully",
                 category=LOG_CATEGORY_VENDOR,
@@ -48,26 +48,30 @@ class NvidiaRivaTTSClient:
                 f"Error when initializing NVIDIA Riva TTS: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            raise RuntimeError(f"Error when initializing NVIDIA Riva TTS: {e}") from e
+            raise RuntimeError(
+                f"Error when initializing NVIDIA Riva TTS: {e}"
+            ) from e
 
     async def cancel(self):
         """Cancel the current TTS request"""
         self.ten_env.log_debug("NVIDIA Riva TTS: cancel() called.")
         self._is_cancelled = True
 
-    async def synthesize(self, text: str, request_id: str) -> AsyncIterator[bytes]:
+    async def synthesize(
+        self, text: str, request_id: str
+    ) -> AsyncIterator[bytes]:
         """
         Synthesize speech from text using NVIDIA Riva TTS.
-        
+
         Args:
             text: Text to synthesize
             request_id: Unique request identifier
-            
+
         Yields:
             Audio data as bytes (PCM format)
         """
         self._is_cancelled = False
-        
+
         if not self.tts_service:
             self.ten_env.log_error(
                 f"NVIDIA Riva TTS: service not initialized for request_id: {request_id}",
@@ -88,7 +92,7 @@ class NvidiaRivaTTSClient:
             language_code = self.config.params["language_code"]
             voice_name = self.config.params["voice_name"]
             sample_rate = self.config.params.get("sample_rate", 16000)
-            
+
             self.ten_env.log_debug(
                 f"NVIDIA Riva TTS: synthesizing text (length: {len(text)}) "
                 f"with voice: {voice_name}, language: {language_code}, "
@@ -116,13 +120,13 @@ class NvidiaRivaTTSClient:
                 # Convert audio bytes to numpy array and back to bytes
                 # This ensures proper format
                 audio_data = np.frombuffer(response.audio, dtype=np.int16)
-                
+
                 self.ten_env.log_debug(
                     f"NVIDIA Riva TTS: yielding audio chunk, "
                     f"length: {len(audio_data)} samples, request_id: {request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
-                
+
                 yield audio_data.tobytes()
 
             if not self._is_cancelled:
