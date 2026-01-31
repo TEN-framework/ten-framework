@@ -41,7 +41,7 @@
                             "type": "string"
                         },
                         "sample_rate": {
-                            "type": "integer"
+                            "type": "int64"
                         }
                     }
                 }
