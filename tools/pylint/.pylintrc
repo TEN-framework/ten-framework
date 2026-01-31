@@ -5,6 +5,7 @@ disable=
   C0116, # missing-function-docstring
   W0718, # broad-exception-caught
   W0621, # redefined-outer-name
+  E0401, # import-error - extension dependencies not installed during lint
 
 [MAIN]
 analyse-fallback-blocks=no
