@@ -70,18 +70,6 @@ if (ten_enable_go_binding) {
           "target_out_dir")
       ten_runtime_go_lib_path =
           "${ten_runtime_go_target_out_dir}/libten_runtime_go.a"
-
-      # Get the MinGW toolchain root_out_dir for shared libraries
-      # MinGW shared libraries are output to root_out_dir, not target_out_dir
-      _mingw_root_out_dir = get_label_info(
-          "//core/src/ten_runtime:ten_runtime_shared_for_go(${_mingw_toolchain})",
-          "root_out_dir")
-
-      # MinGW-compiled shared libraries and their import libraries
-      ten_runtime_mingw_dll = "${_mingw_root_out_dir}/ten_runtime.dll"
-      ten_runtime_mingw_implib = "${_mingw_root_out_dir}/libten_runtime.dll.a"
-      ten_utils_mingw_dll = "${_mingw_root_out_dir}/ten_utils.dll"
-      ten_utils_mingw_implib = "${_mingw_root_out_dir}/libten_utils.dll.a"
     } else {
       ten_runtime_go_target_out_dir = get_label_info("native:ten_runtime_go", "target_out_dir")
       if (is_win && !is_mingw) {
@@ -96,17 +84,6 @@ if (ten_enable_go_binding) {
     # Build ten_runtime_go_output_libs for use in resources
     ten_runtime_go_output_libs = [ ten_runtime_go_lib_path ]
 
-    # When using MinGW for Go binding, also include the MinGW-compiled
-    # shared libraries and their import libraries
-    if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
-      ten_runtime_go_output_libs += [
-        ten_runtime_mingw_dll,
-        ten_runtime_mingw_implib,
-        ten_utils_mingw_dll,
-        ten_utils_mingw_implib,
-      ]
-    }
-
     foreach(lib, ten_runtime_go_output_libs) {
       libname = get_path_info(rebase_path(lib), "file")
       resources += [ "${lib}=>lib/${libname}" ]
@@ -114,13 +91,9 @@ if (ten_enable_go_binding) {
 
     deps = [ "native:ten_runtime_go" ]
 
-    # Add explicit dependency on MinGW targets when forcing MinGW
+    # Add explicit dependency on MinGW target when forcing MinGW
     if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
-      deps += [
-        "native:ten_runtime_go_mingw(${_mingw_toolchain})",
-        "//core/src/ten_runtime:ten_runtime_shared_for_go(${_mingw_toolchain})",
-        "//core/src/ten_utils:ten_utils_shared_for_go(${_mingw_toolchain})",
-      ]
+      deps += [ "native:ten_runtime_go_mingw(${_mingw_toolchain})" ]
     }
 
     if (ten_enable_go_lint) {

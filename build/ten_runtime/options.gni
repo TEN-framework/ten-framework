@@ -60,12 +60,7 @@ if (ten_enable_memory_check) {
   ten_runtime_common_defines += [ "TEN_ENABLE_MEMORY_CHECK" ]
 }
 
-# Enable Rust APIs only when:
-# 1. ten_enable_ten_rust is true
-# 2. We're not in MinGW toolchain (because Rust library is compiled with MSVC/Clang,
-#    not MinGW, and linking them together would cause ABI issues)
-_mingw_toolchain = "//.gnfiles/build/toolchain/mingw:mingw"
-if (ten_enable_ten_rust && current_toolchain != _mingw_toolchain) {
+if (ten_enable_ten_rust) {
   ten_runtime_common_defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
 }
 
