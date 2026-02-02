@@ -13,7 +13,9 @@ class InworldTTSConfig(AsyncTTS2HttpConfig):
     # Debug and logging
     dump: bool = Field(default=False, description="Inworld TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "inworld_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "inworld_tts_in.pcm"
+        ),
         description="Inworld TTS dump path",
     )
     params: dict[str, Any] = Field(

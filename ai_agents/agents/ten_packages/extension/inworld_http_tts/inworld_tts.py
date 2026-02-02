@@ -77,7 +77,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                 "voiceId": self.config.params.get("voice", ""),
                 "modelId": self.config.params.get("modelId", "inworld-tts-1"),
                 "audioConfig": {
-                    "sampleRateHertz": self.config.params.get("sampleRate", 16000),
+                    "sampleRateHertz": self.config.params.get(
+                        "sampleRate", 16000
+                    ),
                     "audioEncoding": "LINEAR16",
                 },
             }
@@ -132,7 +134,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                     try:
                         data = json.loads(line)
                         # Extract audioContent from result object
-                        audio_content_b64 = data.get("result", {}).get("audioContent")
+                        audio_content_b64 = data.get("result", {}).get(
+                            "audioContent"
+                        )
                         if audio_content_b64:
                             # Base64 decode the audio content
                             chunk_data = base64.b64decode(audio_content_b64)
@@ -159,7 +163,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                     self.ten_env.log_info(
                         f"InworldTTS: sending {len(all_audio_data)} bytes PCM audio for request_id: {request_id}."
                     )
-                    yield bytes(all_audio_data), TTS2HttpResponseEventType.RESPONSE
+                    yield bytes(
+                        all_audio_data
+                    ), TTS2HttpResponseEventType.RESPONSE
                 else:
                     self.ten_env.log_warn(
                         f"InworldTTS: no audio data extracted for request_id: {request_id}.",
@@ -184,7 +190,9 @@ class InworldTTSClient(AsyncTTS2HttpClient):
                     "utf-8"
                 ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
         """Clean up resources."""

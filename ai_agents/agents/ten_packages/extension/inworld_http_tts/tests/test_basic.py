@@ -104,7 +104,9 @@ def test_basic_tts(MockInworldTTSClient):
     print("Basic test completed.")
 
     assert tester.audio_end_received, "Expected to receive tts_audio_end"
-    assert len(tester.received_audio_chunks) > 0, "Expected to receive audio chunks"
+    assert (
+        len(tester.received_audio_chunks) > 0
+    ), "Expected to receive audio chunks"
 
     print(
         f"Basic TTS test passed: received {len(tester.received_audio_chunks)} audio chunks"
@@ -188,7 +190,9 @@ def test_flush_logic(MockInworldTTSClient):
     mock_instance.clean = AsyncMock()
     mock_instance.cancel = AsyncMock()
 
-    async def mock_get_long_audio_stream(text: str, request_id: str | None = None):
+    async def mock_get_long_audio_stream(
+        text: str, request_id: str | None = None
+    ):
         for _ in range(20):
             if mock_instance.cancel.called:
                 print("Mock detected cancel call, sending EVENT_TTS_FLUSH.")

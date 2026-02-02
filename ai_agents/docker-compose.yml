@@ -7,9 +7,9 @@ services:
     stdin_open: true
     restart: always
     ports:
-      - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
-      - "3000:3000"
-      - 8000-9001:8000-9001
+      - "127.0.0.1:${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:8000-9001:8000-9001"
     volumes:
       - ./:/app
       - ${LOG_PATH}:${LOG_PATH}
