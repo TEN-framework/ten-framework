@@ -159,6 +159,20 @@ TEN_RUNTIME_PRIVATE_API void ten_msg_clear_and_set_dest_from_extension_info(
 TEN_RUNTIME_PRIVATE_API void ten_msg_correct_dest(ten_shared_ptr_t *msg,
                                                   ten_engine_t *engine);
 
+// On Windows with MSVC, we need to export these functions from the DLL for
+// MinGW-compiled Go bindings to link against. MSVC doesn't export inline
+// functions, so we declare them as TEN_RUNTIME_API and define them in
+// inline_assets.c. On other platforms or with MinGW, we use inline definitions.
+#if defined(_WIN32) && defined(_MSC_VER)
+
+TEN_RUNTIME_API bool ten_raw_msg_is_cmd_and_result(ten_msg_t *self);
+
+TEN_RUNTIME_API bool ten_raw_msg_is_cmd(ten_msg_t *self);
+
+TEN_RUNTIME_API bool ten_raw_msg_is_cmd_result(ten_msg_t *self);
+
+#else
+
 inline bool ten_raw_msg_is_cmd_and_result(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
@@ -236,6 +250,8 @@ inline bool ten_raw_msg_is_cmd_result(ten_msg_t *self) {
     return false;
   }
 }
+
+#endif
 
 TEN_RUNTIME_PRIVATE_API bool ten_msg_has_locked_res(ten_shared_ptr_t *self);
 
@@ -326,6 +342,34 @@ TEN_RUNTIME_PRIVATE_API bool ten_msg_set_name_with_len(ten_shared_ptr_t *self,
                                                        size_t msg_name_len,
                                                        ten_error_t *err);
 
+// On Windows with MSVC, we need to export these functions from the DLL for
+// MinGW-compiled Go bindings to link against. MSVC doesn't export inline
+// functions, so we declare them as TEN_RUNTIME_API and define them in
+// inline_assets.c. On other platforms or with MinGW, we use inline definitions.
+#if defined(_WIN32) && defined(_MSC_VER)
+
+TEN_RUNTIME_API TEN_MSG_TYPE ten_raw_msg_get_type(ten_msg_t *self);
+
+TEN_RUNTIME_API ten_msg_t *ten_msg_get_raw_msg(ten_shared_ptr_t *self);
+
+TEN_RUNTIME_API bool ten_msg_is_cmd_and_result(ten_shared_ptr_t *self);
+
+TEN_RUNTIME_API bool ten_msg_is_cmd(ten_shared_ptr_t *self);
+
+TEN_RUNTIME_API bool ten_msg_is_cmd_result(ten_shared_ptr_t *self);
+
+TEN_RUNTIME_API void ten_raw_msg_set_timestamp(ten_msg_t *self,
+                                               int64_t timestamp);
+
+TEN_RUNTIME_API int64_t ten_raw_msg_get_timestamp(ten_msg_t *self);
+
+TEN_RUNTIME_API void ten_msg_set_timestamp(ten_shared_ptr_t *self,
+                                           int64_t timestamp);
+
+TEN_RUNTIME_API int64_t ten_msg_get_timestamp(ten_shared_ptr_t *self);
+
+#else
+
 inline TEN_MSG_TYPE ten_raw_msg_get_type(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
@@ -379,3 +423,5 @@ inline int64_t ten_msg_get_timestamp(ten_shared_ptr_t *self) {
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   return ten_raw_msg_get_timestamp(ten_msg_get_raw_msg(self));
 }
+
+#endif

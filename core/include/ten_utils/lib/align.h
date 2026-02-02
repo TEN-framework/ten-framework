@@ -18,6 +18,17 @@
 #include <stddef.h>
 
 // Utility for aligning addresses.
+// On Windows with MSVC, we need to export this function from the DLL for
+// MinGW-compiled Go bindings to link against. MSVC doesn't export inline
+// functions, so we declare it as TEN_UTILS_API and define it in align.c.
+#if defined(_WIN32) && defined(_MSC_VER)
+
+TEN_UTILS_API size_t ten_align_forward(size_t addr, size_t align);
+
+#else
+
 inline size_t ten_align_forward(size_t addr, size_t align) {
   return (addr + (align - 1)) & ~(align - 1);
 }
+
+#endif
