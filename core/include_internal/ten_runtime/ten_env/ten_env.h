@@ -122,6 +122,29 @@ TEN_RUNTIME_PRIVATE_API void ten_env_get_attached_target_loc(ten_env_t *self,
 
 TEN_RUNTIME_PRIVATE_API ten_app_t *ten_env_get_belonging_app(ten_env_t *self);
 
+// On Windows with MSVC, we need to export these functions from the DLL for
+// MinGW-compiled Go bindings to link against. MSVC doesn't export inline
+// functions, so we declare them as TEN_RUNTIME_API and define them in
+// inline_assets.c. On other platforms or with MinGW, we use inline definitions.
+#if defined(_WIN32) && defined(_MSC_VER)
+
+TEN_RUNTIME_API ten_extension_t *ten_env_get_attached_extension(
+    ten_env_t *self);
+
+TEN_RUNTIME_API ten_extension_group_t *ten_env_get_attached_extension_group(
+    ten_env_t *self);
+
+TEN_RUNTIME_API ten_app_t *ten_env_get_attached_app(ten_env_t *self);
+
+TEN_RUNTIME_API ten_addon_host_t *ten_env_get_attached_addon(ten_env_t *self);
+
+TEN_RUNTIME_API ten_engine_t *ten_env_get_attached_engine(ten_env_t *self);
+
+TEN_RUNTIME_API ten_addon_loader_t *ten_env_get_attached_addon_loader(
+    ten_env_t *self);
+
+#else
+
 inline ten_extension_t *ten_env_get_attached_extension(ten_env_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   // TEN_NOLINTNEXTLINE(thread-check)
@@ -197,3 +220,5 @@ inline ten_addon_loader_t *ten_env_get_attached_addon_loader(ten_env_t *self) {
 
   return self->attached_target.addon_loader;
 }
+
+#endif
