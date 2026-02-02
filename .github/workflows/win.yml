@@ -224,8 +224,10 @@ jobs:
             # release channel"
             rustup default nightly-x86_64-pc-windows-gnu
           } else {
-            # msvc
-            rustup default stable
+            # For msvc, we also need to use nightly when ten_enable_go_binding=true
+            # because Go always uses MinGW toolchain on Windows (CGO requires
+            # GCC-compatible compiler).
+            rustup default nightly-x86_64-pc-windows-msvc
           }
           cargo install --force cbindgen
 
@@ -268,7 +270,7 @@ jobs:
             $buildArgs += "is_mingw=false" # msvc
             $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
             $buildArgs += "vs_version=2022"
-            $buildArgs += "ten_enable_go_binding=false"
+            $buildArgs += "ten_enable_go_binding=true"
           }
           $buildArgs += "log_level=1"
           $buildArgs += "enable_serialized_actions=true"
@@ -281,12 +283,14 @@ jobs:
           $argsString = $buildArgs -join " "
           Write-Host "Build arguments: $argsString"
 
+          # Set toolchain or else toolchain may be switched during build
           if ("${{ matrix.compiler }}" -eq "mingw") {
-            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
-            # Or else toolchain may be switched to msvc during build
             $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
-            echo $env:RUSTUP_TOOLCHAIN
           }
+          else {
+            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-msvc"
+          }
+          echo $env:RUSTUP_TOOLCHAIN
 
           tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
