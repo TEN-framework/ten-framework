@@ -43,11 +43,3 @@ declare_args() {
   # enabling Rust first.
   ten_enable_ten_manager = ten_enable_ten_rust
 }
-
-# Toolchain-aware Rust enable flag.
-# Rust library is compiled with MSVC/Clang, not MinGW. When building with MinGW
-# toolchain, we should not link against Rust library to avoid ABI issues.
-# Use this variable instead of ten_enable_ten_rust when adding Rust dependencies.
-_mingw_toolchain = "//.gnfiles/build/toolchain/mingw:mingw"
-ten_enable_ten_rust_in_current_toolchain =
-    ten_enable_ten_rust && current_toolchain != _mingw_toolchain
