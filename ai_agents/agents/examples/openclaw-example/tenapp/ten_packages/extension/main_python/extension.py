@@ -8,7 +8,14 @@ from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
+    CmdResult,
     Data,
+    StatusCode,
+)
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResultLLMResult,
 )
 
 from .agent.agent import Agent
@@ -36,6 +43,7 @@ class MainControlExtension(AsyncExtension):
         self.ten_env: AsyncTenEnv = None
         self.agent: Agent = None
         self.config: MainControlConfig = None
+        self._openclaw_tool_registered: bool = False
 
         self.stopped: bool = False
         self._rtc_user_count: int = 0
@@ -117,6 +125,7 @@ class MainControlExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
+        await self._register_openclaw_tool()
 
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
@@ -124,6 +133,10 @@ class MainControlExtension(AsyncExtension):
         await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
+        if cmd.get_name() == "tool_call":
+            handled = await self._handle_tool_call(cmd)
+            if handled:
+                return
         await self.agent.on_cmd(cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data):
@@ -211,3 +224,69 @@ class MainControlExtension(AsyncExtension):
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+
+    async def _register_openclaw_tool(self):
+        if self._openclaw_tool_registered:
+            return
+        tool = LLMToolMetadata(
+            name="claw_task_delegate",
+            description="Delegate complex tasks to OpenClaw. Provide a short summary of the task.",
+            parameters=[
+                LLMToolMetadataParameter(
+                    name="summary",
+                    type="string",
+                    description="Summary of the complex task to delegate.",
+                    required=True,
+                ),
+            ],
+        )
+        await self.agent.register_llm_tool(tool, self.name)
+        self._openclaw_tool_registered = True
+
+    async def _handle_tool_call(self, cmd: Cmd) -> bool:
+        try:
+            name, err = cmd.get_property_string("name")
+            if err:
+                raise RuntimeError(f"Failed to get tool name: {err}")
+            if name != "claw_task_delegate":
+                return False
+            args_json, err = cmd.get_property_to_json("arguments")
+            if err:
+                raise RuntimeError(f"Failed to get tool arguments: {err}")
+            args = json.loads(args_json)
+            summary = str(args.get("summary", "")).strip()
+            if summary:
+                payload = {
+                    "type": "openclaw_tool",
+                    "data": {
+                        "command": "openclaw.invoke",
+                        "summary": summary,
+                    },
+                }
+                await _send_data(
+                    self.ten_env,
+                    "message",
+                    "message_collector",
+                    {
+                        "data_type": "raw",
+                        "role": "assistant",
+                        "text": json.dumps(payload),
+                        "text_ts": int(time.time() * 1000),
+                        "is_final": True,
+                        "stream_id": 100,
+                    },
+                )
+            result = CmdResult.create(StatusCode.OK, cmd)
+            tool_result = LLMToolResultLLMResult(
+                type="llmresult",
+                content="Sent to OpenClaw",
+            )
+            result.set_property_from_json("tool_result", json.dumps(tool_result))
+            await self.ten_env.return_result(result)
+            return True
+        except Exception as e:
+            self.ten_env.log_error(f"handle_tool_call error: {e}")
+            await self.ten_env.return_result(
+                CmdResult.create(StatusCode.ERROR, cmd)
+            )
+            return True

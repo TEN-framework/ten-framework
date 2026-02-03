@@ -50,7 +50,18 @@ export function MessageItem(props: { data: IChatItem }) {
           </Avatar>
         )
       ) : null}
-      <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
+      <div
+        className={cn("max-w-[80%] rounded-lg p-2 text-secondary-foreground", {
+          "bg-secondary": data.data_type !== EMessageDataType.OPENCLAW,
+          "border border-[#2C5A73] bg-[#0E1F2A] text-[#CDEBFF]":
+            data.data_type === EMessageDataType.OPENCLAW,
+        })}
+      >
+        {data.data_type === EMessageDataType.OPENCLAW ? (
+          <div className="mb-1 text-xs uppercase tracking-wide text-[#8AC6E8]">
+            OpenClaw
+          </div>
+        ) : null}
         {data.data_type === EMessageDataType.IMAGE ? (
           <img src={data.text} alt="chat" className="w-full" />
         ) : (

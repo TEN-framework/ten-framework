@@ -11,6 +11,7 @@ import {
 } from "@/common";
 import { useGraphs } from "@/common/hooks";
 import {
+  addChatItem,
   fetchGraphDetails,
   reset,
   setAgentPhase,
@@ -18,6 +19,7 @@ import {
   setSelectedGraphId,
   setTrulienceSettings,
 } from "@/store/reducers/global";
+import { EMessageDataType, EMessageType } from "@/types";
 import { openclawGateway } from "@/openclaw/gatewayManager";
 
 interface AuthInitializerProps {
@@ -59,11 +61,25 @@ const AuthInitializer = (props: AuthInitializerProps) => {
     const handleAgentPhase = (phase: string) => {
       dispatch(setAgentPhase(phase));
     };
+    const handleOpenclawResponse = (text: string, timestamp: number) => {
+      dispatch(
+        addChatItem({
+          userId: "openclaw",
+          text,
+          type: EMessageType.AGENT,
+          data_type: EMessageDataType.OPENCLAW,
+          isFinal: true,
+          time: timestamp,
+        })
+      );
+    };
 
     openclawGateway.on("agentPhase", handleAgentPhase);
+    openclawGateway.on("openclawResponse", handleOpenclawResponse);
 
     return () => {
       openclawGateway.off("agentPhase", handleAgentPhase);
+      openclawGateway.off("openclawResponse", handleOpenclawResponse);
     };
   }, [dispatch]);
 

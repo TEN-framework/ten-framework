@@ -266,6 +266,20 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               data_type: EMessageDataType.REASON,
               text: data.text,
             };
+          } else if (type === "openclaw_tool") {
+            const summary = data?.summary;
+            if (typeof summary !== "string" || summary.trim().length === 0) {
+              return;
+            }
+            const gateway = window.openclawGateway;
+            if (!gateway || !gateway.isConnected()) {
+              console.warn("[openclaw] gateway not connected, drop summary");
+              return;
+            }
+            gateway.send(summary).catch((err: unknown) => {
+              console.warn("[openclaw] send failed:", err);
+            });
+            return;
           } else if (type === "action") {
             const { action, data: actionData } = data;
             if (action === "browse_website") {
