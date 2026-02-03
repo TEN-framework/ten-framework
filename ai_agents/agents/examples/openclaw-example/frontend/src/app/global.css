@@ -86,6 +86,26 @@
       color-scheme: dark;
     }
   }
+
+  @keyframes neon-sweep {
+    0% {
+      transform: translateX(-120%);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.9;
+    }
+    90% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translateX(120%);
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {

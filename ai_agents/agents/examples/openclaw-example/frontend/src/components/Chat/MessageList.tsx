@@ -1,5 +1,7 @@
-import { Bot, Brain } from "lucide-react";
+import { Bot, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import * as React from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 import { useAppSelector, useAutoScroll } from "@/common";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -29,6 +31,10 @@ export default function MessageList(props: { className?: string }) {
 export function MessageItem(props: { data: IChatItem }) {
   const { data } = props;
 
+  if (data.data_type === EMessageDataType.OPENCLAW) {
+    return <OpenclawMessageCard data={data} />;
+  }
+
   return (
     <div
       className={cn("flex items-start gap-2", {
@@ -50,18 +56,7 @@ export function MessageItem(props: { data: IChatItem }) {
           </Avatar>
         )
       ) : null}
-      <div
-        className={cn("max-w-[80%] rounded-lg p-2 text-secondary-foreground", {
-          "bg-secondary": data.data_type !== EMessageDataType.OPENCLAW,
-          "border border-[#2C5A73] bg-[#0E1F2A] text-[#CDEBFF]":
-            data.data_type === EMessageDataType.OPENCLAW,
-        })}
-      >
-        {data.data_type === EMessageDataType.OPENCLAW ? (
-          <div className="mb-1 text-xs uppercase tracking-wide text-[#8AC6E8]">
-            OpenClaw
-          </div>
-        ) : null}
+      <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
         {data.data_type === EMessageDataType.IMAGE ? (
           <img src={data.text} alt="chat" className="w-full" />
         ) : (
@@ -75,6 +70,46 @@ export function MessageItem(props: { data: IChatItem }) {
             {data.text}
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function OpenclawMessageCard(props: { data: IChatItem }) {
+  const { data } = props;
+  const [expanded, setExpanded] = React.useState(false);
+
+  return (
+    <div className="flex items-start gap-2">
+      <Avatar>
+        <AvatarFallback>
+          <Bot />
+        </AvatarFallback>
+      </Avatar>
+      <div className="w-full max-w-[80%] rounded-lg border border-[#2C5A73] bg-[#0E1F2A] p-2 text-[#CDEBFF]">
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <div className="text-xs uppercase tracking-wide text-[#8AC6E8]">
+            OpenClaw
+          </div>
+          {expanded ? (
+            <ChevronUp className="h-4 w-4 text-[#8AC6E8]" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-[#8AC6E8]" />
+          )}
+        </button>
+        <div
+          className={cn("mt-2 text-sm leading-relaxed", {
+            "line-clamp-6": !expanded,
+          })}
+        >
+          <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+            {data.text}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 // import AudioVisualizer from "../audioVisualizer"
 import type { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
+import { Activity, AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { useEffect } from "react";
 import { useAppSelector, useMultibandTrackVolume } from "@/common";
 import AudioVisualizer from "@/components/Agent/AudioVisualizer";
@@ -47,9 +48,7 @@ export default function AgentView(props: AgentViewProps) {
     >
       <div className="mb-4 text-center">
         <div className="font-semibold text-[#EAECF0] text-lg">Agent</div>
-        {agentPhase ? (
-          <div className="mt-1 text-xs text-muted-foreground">{agentPhase}</div>
-        ) : null}
+        <AgentPhasePill phase={agentPhase} />
       </div>
       <div className="h-20 w-full">
         <AudioVisualizer
@@ -64,4 +63,75 @@ export default function AgentView(props: AgentViewProps) {
       </div>
     </div>
   );
+}
+
+function AgentPhasePill(props: { phase: string }) {
+  const { phase } = props;
+  const normalized = phase.toLowerCase();
+  const label = getPhaseLabel(normalized);
+  const effectivePhase = normalized || "idle";
+  const isError = normalized.includes("error");
+  const isTool = normalized.includes("tool");
+  const isDone = normalized.includes("end") || normalized.includes("done");
+  const isIdle = !normalized;
+
+  const Icon = isError
+    ? AlertTriangle
+    : isTool
+      ? Wrench
+      : isDone
+        ? CheckCircle2
+        : Activity;
+
+  const pillClass = isError
+    ? "border-[#7A1D1D] bg-[#2A0E0E] text-[#F6B5B5]"
+    : isTool
+      ? "border-[#2C5A73] bg-[#0E1F2A] text-[#CDEBFF]"
+      : isDone
+        ? "border-[#1E5A36] bg-[#0E2416] text-[#BCE8C7]"
+        : isIdle
+          ? "border-[#2A2F3A] bg-[#151820] text-[#B3BCCB]"
+          : "border-[#2C5A73] bg-[#0E1F2A] text-[#CDEBFF]";
+
+  return (
+    <div className="mt-2 flex justify-center">
+      <div
+        className={cn(
+          "relative flex items-center gap-2 overflow-hidden rounded-full border px-2.5 py-1 text-xs shadow-sm",
+          "transition-colors duration-200 ring-1 ring-current/20 shadow-[0_0_12px_rgba(64,160,255,0.18)]",
+          pillClass
+        )}
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/35 to-transparent blur-[1px] animate-[neon-sweep_2.4s_linear_infinite]"
+        />
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60 blur-[1px]" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-current shadow-[0_0_6px_rgba(255,255,255,0.35)]" />
+        </span>
+        <Icon className="relative h-3.5 w-3.5 motion-safe:animate-bounce" />
+        <span className="relative max-w-[180px] truncate">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+function getPhaseLabel(phase: string) {
+  if (!phase) {
+    return "Idle";
+  }
+  if (phase.includes("start")) {
+    return "Thinking";
+  }
+  if (phase.includes("tool")) {
+    return "Using tool";
+  }
+  if (phase.includes("end") || phase.includes("done")) {
+    return "Completed";
+  }
+  if (phase.includes("error") || phase.includes("fail")) {
+    return "Error";
+  }
+  return phase;
 }
