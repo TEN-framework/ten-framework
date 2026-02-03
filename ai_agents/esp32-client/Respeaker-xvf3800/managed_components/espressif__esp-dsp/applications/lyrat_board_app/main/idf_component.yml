@@ -1,5 +1,0 @@
-dependencies:
-  espressif/esp32_lyrat: "^1.0.0"
-  espressif/esp-dsp:
-    version: '*'
-    override_path: "../../../../esp-dsp"

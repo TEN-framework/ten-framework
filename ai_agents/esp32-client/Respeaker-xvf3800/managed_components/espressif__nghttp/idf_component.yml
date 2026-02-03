@@ -1,9 +1,0 @@
-dependencies:
-  idf: '>=5.0'
-description: nghttp2 - HTTP/2 C Library
-repository: git://github.com/espressif/idf-extra-components.git
-repository_info:
-  commit_sha: 319e5098f9ac9e8393e9d12eb590bfd078eefae4
-  path: nghttp
-url: https://github.com/espressif/idf-extra-components/tree/master/nghttp
-version: 1.65.0~1

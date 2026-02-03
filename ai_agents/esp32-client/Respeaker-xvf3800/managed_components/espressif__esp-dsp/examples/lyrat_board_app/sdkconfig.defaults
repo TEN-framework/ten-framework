@@ -1,8 +1,0 @@
-# This file was generated using idf.py save-defconfig. It can be edited manually.
-# Espressif IoT Development Framework (ESP-IDF) Project Minimal Configuration
-#
-CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
-CONFIG_PARTITION_TABLE_CUSTOM=y
-CONFIG_SPIRAM=y
-CONFIG_SPIRAM_USE_MEMMAP=y
-CONFIG_SPIFFS_PAGE_SIZE=1024

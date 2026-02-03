@@ -1,6 +1,0 @@
-package nghttp2
-
-const (
-	buildDir  = "@top_builddir@"
-	sourceDir = "@top_srcdir@"
-)

@@ -1,6 +1,0 @@
-.. include:: @top_srcdir@/doc/sources/tutorial-client.rst
-
-libevent-client.c
------------------
-
-.. literalinclude:: @top_srcdir@/examples/libevent-client.c

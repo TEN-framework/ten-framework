@@ -1,8 +1,0 @@
-## IDF Component Manager Manifest File
-description: ESP-DSP azure board application 3d graphics
-dependencies:
-  espressif/esp32_azure_iot_kit: "*"
-  espressif/esp-dsp:
-    version: "*"
-    override_path: "../../../../../../esp-dsp"
-

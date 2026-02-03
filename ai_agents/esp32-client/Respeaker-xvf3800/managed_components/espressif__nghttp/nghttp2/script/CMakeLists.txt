@@ -1,5 +1,0 @@
-# EXTRA_DIST = README.rst
-install(
-  PROGRAMS fetch-ocsp-response
-  DESTINATION "${CMAKE_INSTALL_DATADIR}/${CMAKE_PROJECT_NAME}"
-)
