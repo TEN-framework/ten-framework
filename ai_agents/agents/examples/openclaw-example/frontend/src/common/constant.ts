@@ -145,3 +145,14 @@ export const DEFAULT_TRULIENCE_OPTIONS: ITrulienceSettings = {
   animationURL: "https://trulience.com",
   trulienceSDK: "https://trulience.com/sdk/trulience.sdk.js",
 };
+
+export const OPENCLAW_GATEWAY_URL =
+  process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_URL ?? "ws://127.0.0.1:18789";
+export const OPENCLAW_GATEWAY_TOKEN =
+  process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_TOKEN ?? "";
+export const OPENCLAW_GATEWAY_SCOPES =
+  process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_SCOPES ?? "";
+export const OPENCLAW_GATEWAY_CLIENT_ID =
+  process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_CLIENT_ID ?? "webchat-ui";
+export const OPENCLAW_GATEWAY_CLIENT_MODE =
+  process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_CLIENT_MODE ?? "webchat";
