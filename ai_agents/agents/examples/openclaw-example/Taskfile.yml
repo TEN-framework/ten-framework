@@ -7,7 +7,7 @@ tasks:
   install-frontend:
     desc: install frontend dependencies
     internal: true
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - bun install --verbose
 
@@ -16,7 +16,7 @@ tasks:
     internal: true
     dir: ./tenapp
     cmds:
-      - tman install
+      - tman --verbose install
 
   install-tenapp-python-deps:
     desc: install tenapp python dependencies
@@ -56,7 +56,7 @@ tasks:
 
   run-frontend:
     desc: run frontend
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - bun run dev
 
