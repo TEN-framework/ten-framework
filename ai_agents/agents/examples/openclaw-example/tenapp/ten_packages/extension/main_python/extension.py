@@ -12,6 +12,7 @@ from ten_runtime import (
     Data,
     StatusCode,
 )
+from ten_ai_base.const import CMD_PROPERTY_RESULT
 from ten_ai_base.types import (
     LLMToolMetadata,
     LLMToolMetadataParameter,
@@ -225,6 +226,7 @@ class MainControlExtension(AsyncExtension):
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
+
     async def _register_openclaw_tool(self):
         if self._openclaw_tool_registered:
             return
@@ -245,15 +247,33 @@ class MainControlExtension(AsyncExtension):
 
     async def _handle_tool_call(self, cmd: Cmd) -> bool:
         try:
+            name = ""
+            args: dict = {}
+            used_root_payload = False
             name, err = cmd.get_property_string("name")
             if err:
-                raise RuntimeError(f"Failed to get tool name: {err}")
+                payload_json, payload_err = cmd.get_property_to_json(None)
+                if payload_err:
+                    raise RuntimeError(
+                        f"Failed to get tool call payload: {payload_err}"
+                    )
+                payload = json.loads(payload_json)
+                name = str(payload.get("name", "")).strip()
+                raw_args = payload.get("arguments", {})
+                if isinstance(raw_args, str):
+                    args = json.loads(raw_args)
+                elif isinstance(raw_args, dict):
+                    args = raw_args
+                else:
+                    args = {}
+                used_root_payload = True
             if name != "claw_task_delegate":
                 return False
-            args_json, err = cmd.get_property_to_json("arguments")
-            if err:
-                raise RuntimeError(f"Failed to get tool arguments: {err}")
-            args = json.loads(args_json)
+            if not used_root_payload:
+                args_json, err = cmd.get_property_to_json("arguments")
+                if err:
+                    raise RuntimeError(f"Failed to get tool arguments: {err}")
+                args = json.loads(args_json)
             summary = str(args.get("summary", "")).strip()
             if summary:
                 payload = {
@@ -281,7 +301,9 @@ class MainControlExtension(AsyncExtension):
                 type="llmresult",
                 content="Sent to OpenClaw",
             )
-            result.set_property_from_json("tool_result", json.dumps(tool_result))
+            result.set_property_from_json(
+                CMD_PROPERTY_RESULT, json.dumps(tool_result)
+            )
             await self.ten_env.return_result(result)
             return True
         except Exception as e:

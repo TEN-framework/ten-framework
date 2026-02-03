@@ -122,6 +122,20 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     this.emit("rtmMessage", msg);
   }
 
+  async sendOpenclawReply(text: string) {
+    if (!this._client) {
+      throw new Error("RTM client not initialized");
+    }
+    const msg = {
+      data_type: "openclaw_reply",
+      text,
+      ts: Date.now(),
+    };
+    await this._client.publish(this.channel, JSON.stringify(msg), {
+      customType: "openclaw",
+    });
+  }
+
   async destroy() {
     // remove listener
     this._client?.removeEventListener(

@@ -21,6 +21,7 @@ import {
 } from "@/store/reducers/global";
 import { EMessageDataType, EMessageType } from "@/types";
 import { openclawGateway } from "@/openclaw/gatewayManager";
+import { rtmManager } from "@/manager/rtm";
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -34,6 +35,9 @@ const AuthInitializer = (props: AuthInitializerProps) => {
     (state) => state.global.selectedGraphId
   );
   const graphList = useAppSelector((state) => state.global.graphList);
+  const agentConnected = useAppSelector(
+    (state) => state.global.agentConnected
+  );
   const urlParamApplied = useRef(false);
 
   useEffect(() => {
@@ -72,6 +76,13 @@ const AuthInitializer = (props: AuthInitializerProps) => {
           time: timestamp,
         })
       );
+      if (agentConnected) {
+        rtmManager
+          .sendOpenclawReply(text)
+          .catch((err) =>
+            console.warn("[openclaw] failed to send reply to agent:", err)
+          );
+      }
     };
 
     openclawGateway.on("agentPhase", handleAgentPhase);
@@ -81,7 +92,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       openclawGateway.off("agentPhase", handleAgentPhase);
       openclawGateway.off("openclawResponse", handleOpenclawResponse);
     };
-  }, [dispatch]);
+  }, [dispatch, agentConnected]);
 
   // Check URL params for graph selection on initial load only
   useEffect(() => {

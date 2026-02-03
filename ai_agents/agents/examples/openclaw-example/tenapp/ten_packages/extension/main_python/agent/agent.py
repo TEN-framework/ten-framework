@@ -148,6 +148,15 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
+            elif data.get_name() == "rtm_message_event":
+                msg_json, _ = data.get_property_to_json(None)
+                msg = json.loads(msg_json)
+                message_content = msg.get("message", "")
+                parsed_msg = json.loads(message_content)
+                if parsed_msg.get("data_type") == "openclaw_reply":
+                    text = str(parsed_msg.get("text", "")).strip()
+                    if text:
+                        await self.handle_openclaw_reply(text)
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:
@@ -223,3 +232,9 @@ class Agent:
             self._asr_consumer.cancel()
         if self._llm_consumer:
             self._llm_consumer.cancel()
+
+    async def handle_openclaw_reply(self, reply_text: str):
+        """
+        Process an OpenClaw reply and generate a short narrative response.
+        """
+        await self.llm_exec.send_openclaw_reply(reply_text)

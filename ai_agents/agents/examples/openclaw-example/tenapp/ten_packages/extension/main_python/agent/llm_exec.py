@@ -59,6 +59,8 @@ class LLMExec:
         self.contexts: list[LLMMessage] = []
         self.current_request_id: Optional[str] = None
         self.current_text = None
+        self.request_lock = asyncio.Lock()
+        self._suppress_context = False
 
     async def queue_input(self, item: str) -> None:
         await self.input_queue.put(item)
@@ -151,32 +153,42 @@ class LLMExec:
     async def _send_to_llm(
         self, ten_env: AsyncTenEnv, new_message: LLMMessage
     ) -> None:
-        messages = self.contexts.copy()
-        messages.append(new_message)
-        request_id = str(uuid.uuid4())
-        self.current_request_id = request_id
-        llm_input = LLMRequest(
-            request_id=request_id,
-            messages=messages,
-            streaming=True,
-            parameters={"temperature": 0.7},
-            tools=self.available_tools,
-        )
-        input_json = llm_input.model_dump()
-        response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
+        async with self.request_lock:
+            self._suppress_context = False
+            messages = self.contexts.copy()
+            messages.append(new_message)
+            request_id = str(uuid.uuid4())
+            self.current_request_id = request_id
+            llm_input = LLMRequest(
+                request_id=request_id,
+                messages=messages,
+                streaming=True,
+                parameters={"temperature": 0.7},
+                tools=self.available_tools,
+            )
+            input_json = llm_input.model_dump()
+            response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
 
-        # Queue the new message to the context
-        await self._queue_context(ten_env, new_message)
+            # Queue the new message to the context
+            await self._queue_context(ten_env, new_message)
 
-        async for cmd_result, _ in response:
-            if cmd_result and cmd_result.is_final() is False:
-                if cmd_result.get_status_code() == StatusCode.OK:
-                    response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_info(
-                        f"_send_to_llm: response_json {response_json}"
-                    )
-                    completion = parse_llm_response(response_json)
-                    await self._handle_llm_response(completion)
+            async for cmd_result, _ in response:
+                if cmd_result and cmd_result.is_final() is False:
+                    if cmd_result.get_status_code() == StatusCode.OK:
+                        response_json, _ = cmd_result.get_property_to_json(None)
+                        ten_env.log_info(
+                            f"_send_to_llm: response_json {response_json}"
+                        )
+                        completion = parse_llm_response(response_json)
+                        await self._handle_llm_response(completion)
+
+    async def _send_to_llm_background(self, new_message: LLMMessage) -> None:
+        try:
+            await self._send_to_llm(self.ten_env, new_message)
+        except Exception:
+            self.ten_env.log_error(
+                f"Error sending to LLM: {traceback.format_exc()}"
+            )
 
     async def _handle_llm_response(self, llm_output: LLMResponse | None):
         self.ten_env.log_info(f"_handle_llm_response: {llm_output}")
@@ -189,7 +201,8 @@ class LLMExec:
                 if delta and self.on_response:
                     await self.on_response(self.ten_env, delta, text, False)
                 if text:
-                    await self._write_context(self.ten_env, "assistant", text)
+                    if not self._suppress_context:
+                        await self._write_context(self.ten_env, "assistant", text)
             case LLMResponseMessageDone():
                 text = llm_output.content
                 self.current_text = None
@@ -242,13 +255,14 @@ class LLMExec:
                             await self._queue_context(
                                 self.ten_env, context_function_call
                             )
-                            await self._send_to_llm(
-                                self.ten_env,
-                                LLMMessageFunctionCallOutput(
-                                    output=result_content,
-                                    call_id=llm_output.tool_call_id,
-                                    type="function_call_output",
-                                ),
+                            self.loop.create_task(
+                                self._send_to_llm_background(
+                                    LLMMessageFunctionCallOutput(
+                                        output=result_content,
+                                        call_id=llm_output.tool_call_id,
+                                        type="function_call_output",
+                                    )
+                                )
                             )
                         else:
                             self.ten_env.log_error(
@@ -276,3 +290,48 @@ class LLMExec:
                         # )
                 else:
                     self.ten_env.log_error("Tool call failed")
+
+    async def send_openclaw_reply(self, reply_text: str) -> None:
+        if not reply_text:
+            return
+        system_prompt = (
+            "You are a voice assistant. You will receive a raw tool result that may include "
+            "markdown or long technical text. Summarize into a short spoken reply (1–3 sentences). "
+            "Do not read markdown symbols or code blocks verbatim. Extract key results and speak "
+            "naturally. Start with a brief acknowledgement like \"Here's the result of your "
+            "delegated task...\"."
+        )
+        user_prompt = (
+            "OpenClaw finished a delegated task. Here is the raw reply (may include markdown):\n"
+            "---\n"
+            f"{reply_text}\n"
+            "---"
+        )
+        messages: list[LLMMessage] = [
+            LLMMessageContent(role="system", content=system_prompt),
+            LLMMessageContent(role="user", content=user_prompt),
+        ]
+        async with self.request_lock:
+            self._suppress_context = True
+            try:
+                request_id = str(uuid.uuid4())
+                self.current_request_id = request_id
+                llm_input = LLMRequest(
+                    request_id=request_id,
+                    messages=messages,
+                    streaming=True,
+                    parameters={"temperature": 0.3},
+                    tools=[],
+                )
+                input_json = llm_input.model_dump()
+                response = _send_cmd_ex(
+                    self.ten_env, "chat_completion", "llm", input_json
+                )
+                async for cmd_result, _ in response:
+                    if cmd_result and cmd_result.is_final() is False:
+                        if cmd_result.get_status_code() == StatusCode.OK:
+                            response_json, _ = cmd_result.get_property_to_json(None)
+                            completion = parse_llm_response(response_json)
+                            await self._handle_llm_response(completion)
+            finally:
+                self._suppress_context = False

@@ -22,10 +22,12 @@ import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
+import { rtmManager } from "@/manager/rtm";
 import {
   addChatItem,
   setOptions,
   setRoomConnected,
+  setRtmConnected,
   setVoiceType,
 } from "@/store/reducers/global";
 import { EMessageType, type IChatItem, ITextItem } from "@/types";
@@ -92,6 +94,20 @@ export default function RTCCard(props: { className?: string }) {
         token: rtcManager.token ?? "",
       })
     );
+    if (rtcManager.appId && rtcManager.token) {
+      try {
+        await rtmManager.init({
+          channel,
+          userId,
+          appId: rtcManager.appId,
+          token: rtcManager.token,
+        });
+        dispatch(setRtmConnected(true));
+      } catch (err) {
+        console.warn("[rtm] init failed:", err);
+        dispatch(setRtmConnected(false));
+      }
+    }
     await rtcManager.publish();
     dispatch(setRoomConnected(true));
     hasInit = true;
@@ -102,6 +118,8 @@ export default function RTCCard(props: { className?: string }) {
     rtcManager.off("textChanged", onTextChanged);
     rtcManager.off("localTracksChanged", onLocalTracksChanged);
     rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+    await rtmManager.destroy();
+    dispatch(setRtmConnected(false));
     await rtcManager.destroy();
     dispatch(setRoomConnected(false));
     hasInit = false;
