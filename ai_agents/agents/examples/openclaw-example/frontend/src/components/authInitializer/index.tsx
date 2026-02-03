@@ -13,10 +13,12 @@ import { useGraphs } from "@/common/hooks";
 import {
   fetchGraphDetails,
   reset,
+  setAgentPhase,
   setOptions,
   setSelectedGraphId,
   setTrulienceSettings,
 } from "@/store/reducers/global";
+import { openclawGateway } from "@/openclaw/gatewayManager";
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -52,6 +54,18 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       }
     }
   }, [dispatch, initialize]);
+
+  useEffect(() => {
+    const handleAgentPhase = (phase: string) => {
+      dispatch(setAgentPhase(phase));
+    };
+
+    openclawGateway.on("agentPhase", handleAgentPhase);
+
+    return () => {
+      openclawGateway.off("agentPhase", handleAgentPhase);
+    };
+  }, [dispatch]);
 
   // Check URL params for graph selection on initial load only
   useEffect(() => {

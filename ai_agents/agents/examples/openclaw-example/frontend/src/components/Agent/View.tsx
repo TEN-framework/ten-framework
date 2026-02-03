@@ -3,7 +3,7 @@
 // import AudioVisualizer from "../audioVisualizer"
 import type { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { useEffect } from "react";
-import { useMultibandTrackVolume } from "@/common";
+import { useAppSelector, useMultibandTrackVolume } from "@/common";
 import AudioVisualizer from "@/components/Agent/AudioVisualizer";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ export interface AgentViewProps {
 
 export default function AgentView(props: AgentViewProps) {
   const { audioTrack, videoTrack } = props;
+  const agentPhase = useAppSelector((state) => state.global.agentPhase);
 
   const subscribedVolumes = useMultibandTrackVolume(audioTrack, 12);
 
@@ -44,7 +45,12 @@ export default function AgentView(props: AgentViewProps) {
       )}
       style={{ minHeight: "240px", height: "240px" }}
     >
-      <div className="mb-4 font-semibold text-[#EAECF0] text-lg">Agent</div>
+      <div className="mb-4 text-center">
+        <div className="font-semibold text-[#EAECF0] text-lg">Agent</div>
+        {agentPhase ? (
+          <div className="mt-1 text-xs text-muted-foreground">{agentPhase}</div>
+        ) : null}
+      </div>
       <div className="h-20 w-full">
         <AudioVisualizer
           type="agent"

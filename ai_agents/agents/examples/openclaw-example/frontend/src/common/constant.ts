@@ -156,3 +156,5 @@ export const OPENCLAW_GATEWAY_CLIENT_ID =
   process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_CLIENT_ID ?? "webchat-ui";
 export const OPENCLAW_GATEWAY_CLIENT_MODE =
   process.env.NEXT_PUBLIC_OPENCLAW_GATEWAY_CLIENT_MODE ?? "webchat";
+export const OPENCLAW_CHAT_SESSION_KEY =
+  process.env.NEXT_PUBLIC_OPENCLAW_CHAT_SESSION_KEY ?? "agent:main:main";

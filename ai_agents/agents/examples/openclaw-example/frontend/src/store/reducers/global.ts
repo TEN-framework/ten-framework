@@ -36,6 +36,7 @@ export interface InitialState {
   language: Language;
   voiceType: VoiceType;
   chatItems: IChatItem[];
+  agentPhase: string;
   selectedGraphId: string;
   graphList: Graph[];
   graphMap: Record<string, Graph>;
@@ -54,6 +55,7 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
+    agentPhase: "",
     selectedGraphId: "",
     graphList: [],
     graphMap: {},
@@ -153,6 +155,9 @@ export const globalSlice = createSlice({
     },
     setAgentConnected: (state, action: PayloadAction<boolean>) => {
       state.agentConnected = action.payload;
+    },
+    setAgentPhase: (state, action: PayloadAction<string>) => {
+      state.agentPhase = action.payload;
     },
     setLanguage: (state, action: PayloadAction<Language>) => {
       state.language = action.payload;
@@ -264,6 +269,7 @@ export const {
   setRtmConnected,
   setVoiceType,
   addChatItem,
+  setAgentPhase,
   setThemeColor,
   setLanguage,
   setSelectedGraphId,

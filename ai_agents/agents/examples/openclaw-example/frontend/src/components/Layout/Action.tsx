@@ -7,11 +7,6 @@ import {
   apiStartService,
   apiStopService,
   EMobileActiveTab,
-  OPENCLAW_GATEWAY_CLIENT_ID,
-  OPENCLAW_GATEWAY_CLIENT_MODE,
-  OPENCLAW_GATEWAY_SCOPES,
-  OPENCLAW_GATEWAY_TOKEN,
-  OPENCLAW_GATEWAY_URL,
   isEditModeOn,
   MOBILE_ACTIVE_TAB_MAP,
   useAppDispatch,
@@ -22,7 +17,7 @@ import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
-import { OpenclawGatewayClient } from "@/openclaw/gatewayClient";
+import { openclawGateway } from "@/openclaw/gatewayManager";
 import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
@@ -43,32 +38,6 @@ export default function Action(props: { className?: string }) {
     (state) => state.global.mobileActiveTab
   );
   const [loading, setLoading] = React.useState(false);
-  const gatewayClientRef = React.useRef<OpenclawGatewayClient | null>(null);
-
-  if (!gatewayClientRef.current) {
-    const scopes = OPENCLAW_GATEWAY_SCOPES.split(",")
-      .map((scope) => scope.trim())
-      .filter(Boolean);
-    gatewayClientRef.current = new OpenclawGatewayClient({
-      url: OPENCLAW_GATEWAY_URL,
-      token: OPENCLAW_GATEWAY_TOKEN || undefined,
-      clientId: OPENCLAW_GATEWAY_CLIENT_ID,
-      mode: OPENCLAW_GATEWAY_CLIENT_MODE,
-      scopes: scopes.length > 0 ? scopes : undefined,
-      onConnectError: (err) => {
-        toast.error(`OpenClaw gateway connect failed: ${err.message}`);
-      },
-      onClose: ({ code, reason }) => {
-        console.warn(`[openclaw] gateway closed (${code}): ${reason}`);
-      },
-    });
-  }
-
-  React.useEffect(() => {
-    return () => {
-      gatewayClientRef.current?.stop();
-    };
-  }, []);
 
   const checkAgentConnected = React.useCallback(async () => {
     if (!channel) {
@@ -94,7 +63,7 @@ export default function Action(props: { className?: string }) {
       dispatch(setAgentConnected(false));
       toast.success("Agent disconnected");
       stopPing();
-      gatewayClientRef.current?.stop();
+      openclawGateway.disconnect();
     } else {
       const selectedGraph = graphList.find(
         (graph) => graph.graph_id === selectedGraphId
@@ -127,7 +96,7 @@ export default function Action(props: { className?: string }) {
       dispatch(setAgentConnected(true));
       toast.success("Agent connected");
       startPing();
-      gatewayClientRef.current?.start();
+      openclawGateway.connect();
     }
     setLoading(false);
   };
