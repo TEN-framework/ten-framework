@@ -1007,15 +1007,17 @@ func (ab *AppBuilder) addRuntimeLdflags() {
 
 		// On Windows with MinGW, we use MinGW-compiled shared libraries for
 		// ten_runtime and ten_utils. The import libraries (.dll.a) and DLLs
-		// are in ten_packages/system/ten_runtime_go/lib/.
+		// are in ten_packages/system/ten_runtime/lib/ (for global MinGW build)
+		// or ten_packages/system/ten_runtime_go/lib/ (for MSVC + MinGW Go).
 		//
 		// On Linux/macOS, we link against the shared libraries which are in
 		// ten_packages/system/ten_runtime/lib/.
 		if runtime.GOOS == "windows" {
-			// Windows: Use MinGW-compiled shared libraries from ten_runtime_go/lib/
-			// The MinGW import libraries (.dll.a) are used for linking, and the
-			// DLLs are loaded at runtime.
-			flags = "-Lten_packages/system/ten_runtime_go/lib " +
+			// Windows: Search both ten_runtime/lib/ and ten_runtime_go/lib/
+			// - Global MinGW build: libraries are in ten_runtime/lib/
+			// - MSVC + MinGW Go: libraries are copied to ten_runtime_go/lib/
+			flags = "-Lten_packages/system/ten_runtime/lib " +
+				"-Lten_packages/system/ten_runtime_go/lib " +
 				"-lten_runtime_go " +
 				"-lten_runtime " +
 				"-lten_utils"
