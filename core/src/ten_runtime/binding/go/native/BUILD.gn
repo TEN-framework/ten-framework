@@ -12,10 +12,8 @@ import("//build/ten_runtime/ten.gni")
 # option work on Windows. Also, the architecture makes more sense for go apps,
 # so we change the library from shared to static for other platforms, too.
 
-_mingw_toolchain = "//.gnfiles/build/toolchain/mingw:mingw"
-_is_in_mingw_toolchain = current_toolchain == _mingw_toolchain
-
-if (_is_in_mingw_toolchain) {
+if (current_toolchain == "//.gnfiles/build/toolchain/mingw:mingw" &&
+    current_toolchain != default_toolchain) {
   # Building under MinGW toolchain
   static_library("ten_runtime_go_mingw") {
     output_name = "ten_runtime_go"
@@ -43,7 +41,7 @@ if (_is_in_mingw_toolchain) {
   # MSVC build but force MinGW for Go binding
   # Triggers MinGW toolchain to build "ten_runtime_go_mingw" static library above
   group("ten_runtime_go") {
-    public_deps = [ ":ten_runtime_go_mingw(${_mingw_toolchain})" ]
+    public_deps = [ ":ten_runtime_go_mingw(//.gnfiles/build/toolchain/mingw:mingw)" ]
   }
 } else {
   # Default: use current toolchain
