@@ -10,7 +10,7 @@ class Params(BaseModel):
         default=None, description="OpenAI organization"
     )
     project: str | None = Field(default=None, description="OpenAI project")
-    websocket_base_url: str | None = Field(
+    base_url: str | None = Field(
         default=None, description="OpenAI websocket base url"
     )
     log_level: str = Field(default="INFO", description="OpenAI ASR log level")
@@ -32,7 +32,7 @@ class Params(BaseModel):
                     "api_key",
                     "organization",
                     "project",
-                    "websocket_base_url",
+                    "base_url",
                     "log_level",
                     "sample_rate",
                 },
