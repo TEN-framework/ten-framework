@@ -397,7 +397,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            if prepared_text.strip() != "":
+            # Strip leading/trailing whitespace - Cartesia rejects text starting with newlines
+            prepared_text = prepared_text.strip()
+
+            if prepared_text != "":
                 # Get audio stream from Cartesia TTS
                 self.ten_env.log_debug(
                     f"send_text_to_tts_server:  {prepared_text} of request_id: {t.request_id}",
