@@ -44,8 +44,8 @@
     {
       "type": "extension",
       "name": "agora_rtm",
-      "version": "0.11.3",
-      "hash": "ab9eef21267d23e9709cb1091e0d79540b3316298495e26b234348bf45e5786e",
+      "version": "0.11.1",
+      "hash": "1d10c2557604174976f78ed56b3f92d6b2c2d3b2a7dc738f3e8ea9455a559fd4",
       "dependencies": [
         {
           "type": "system",

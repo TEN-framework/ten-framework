@@ -1,6 +1,6 @@
 "use client";
 
-import AgoraRTM, { type RTMClient } from "agora-rtm";
+import type { RTMClient } from "agora-rtm";
 import { ERTMTextType, type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
@@ -22,6 +22,7 @@ export type TRTMMessageEvent = {
 export class RtmManager extends AGEventEmitter<IRtmEvents> {
   private _joined: boolean;
   _client: RTMClient | null;
+  private _rtmCtor: any;
   channel: string = "";
   userId: number = 0;
   appId: string = "";
@@ -31,6 +32,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     super();
     this._joined = false;
     this._client = null;
+    this._rtmCtor = null;
   }
 
   async init({
@@ -47,11 +49,15 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     if (this._joined) {
       return;
     }
+    if (!this._rtmCtor) {
+      const mod = await import("agora-rtm");
+      this._rtmCtor = mod.default;
+    }
     this.channel = channel;
     this.userId = userId;
     this.appId = appId;
     this.token = token;
-    const rtm = new AgoraRTM.RTM(appId, String(userId), {
+    const rtm = new this._rtmCtor.RTM(appId, String(userId), {
       logLevel: "debug", // TODO: use INFO
       // update config: https://doc.shengwang.cn/api-ref/rtm2/javascript/toc-configuration/configuration#rtmConfig
     });
@@ -90,8 +96,19 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     console.log("[RTM] [TRTMMessageEvent] RAW", JSON.stringify(e));
     const { message, messageType } = e;
     if (messageType === "STRING") {
-      const msg: IRTMTextItem = JSON.parse(message as string);
-      if (msg) {
+      const parsed = JSON.parse(message as string);
+      if (parsed?.data_type === "openclaw_tool") {
+        const summary = String(parsed.summary ?? "").trim();
+        const gateway = window.openclawGateway;
+        if (summary && gateway?.isConnected?.()) {
+          gateway.send(summary).catch((err: unknown) => {
+            console.warn("[openclaw] send failed:", err);
+          });
+        }
+        return;
+      }
+      const msg: IRTMTextItem = parsed;
+      if (msg?.type) {
         console.log("[RTM] Emitting rtmMessage event with msg:", msg);
         this.emit("rtmMessage", msg);
       }
@@ -99,8 +116,21 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     if (messageType === "BINARY") {
       const decoder = new TextDecoder("utf-8");
       const decodedMessage = decoder.decode(message as Uint8Array);
-      const msg: IRTMTextItem = JSON.parse(decodedMessage);
-      this.emit("rtmMessage", msg);
+      const parsed = JSON.parse(decodedMessage);
+      if (parsed?.data_type === "openclaw_tool") {
+        const summary = String(parsed.summary ?? "").trim();
+        const gateway = window.openclawGateway;
+        if (summary && gateway?.isConnected?.()) {
+          gateway.send(summary).catch((err: unknown) => {
+            console.warn("[openclaw] send failed:", err);
+          });
+        }
+        return;
+      }
+      const msg: IRTMTextItem = parsed;
+      if (msg?.type) {
+        this.emit("rtmMessage", msg);
+      }
     }
   }
 

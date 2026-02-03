@@ -78,6 +78,16 @@ export default function ChatCard(props: { className?: string }) {
     }
   };
 
+  React.useEffect(() => {
+    if (!rtmConnected) {
+      return;
+    }
+    rtmManager.on("rtmMessage", _onTextChanged);
+    return () => {
+      rtmManager.off("rtmMessage", _onTextChanged);
+    };
+  }, [rtmConnected]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };

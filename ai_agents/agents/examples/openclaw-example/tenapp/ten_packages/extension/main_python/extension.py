@@ -10,6 +10,7 @@ from ten_runtime import (
     Cmd,
     CmdResult,
     Data,
+    Loc,
     StatusCode,
 )
 from ten_ai_base.const import CMD_PROPERTY_RESULT
@@ -45,6 +46,7 @@ class MainControlExtension(AsyncExtension):
         self.agent: Agent = None
         self.config: MainControlConfig = None
         self._openclaw_tool_registered: bool = False
+        self._tts_request_id: str | None = None
 
         self.stopped: bool = False
         self._rtc_user_count: int = 0
@@ -155,50 +157,34 @@ class MainControlExtension(AsyncExtension):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
         """
-        if data_type == "text":
-            await _send_data(
-                self.ten_env,
-                "message",
-                "message_collector",
-                {
-                    "data_type": "transcribe",
-                    "role": role,
-                    "text": text,
-                    "text_ts": int(time.time() * 1000),
-                    "is_final": final,
-                    "stream_id": stream_id,
-                },
-            )
-        elif data_type == "reasoning":
-            await _send_data(
-                self.ten_env,
-                "message",
-                "message_collector",
-                {
-                    "data_type": "raw",
-                    "role": role,
-                    "text": json.dumps(
-                        {
-                            "type": "reasoning",
-                            "data": {
-                                "text": text,
-                            },
-                        }
-                    ),
-                    "text_ts": int(time.time() * 1000),
-                    "is_final": final,
-                    "stream_id": stream_id,
-                },
-            )
+        if data_type not in ("text", "reasoning"):
+            return
+        payload = {
+            "type": "transcribe",
+            "text": text,
+            "is_final": final,
+            "ts": int(time.time() * 1000),
+            "stream_id": "0" if role == "assistant" else str(stream_id),
+        }
+        await self._send_rtm_message(payload)
         self.ten_env.log_info(
             f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
         )
+
+    async def _send_rtm_message(self, payload: dict) -> None:
+        message = json.dumps(payload)
+        cmd = Cmd.create("publish")
+        cmd.set_dests([Loc("", "", "agora_rtm")])
+        cmd.set_property_buf("message", message.encode())
+        await self.ten_env.send_cmd(cmd)
 
     async def _send_to_tts(self, text: str, is_final: bool):
         """
         Sends a sentence to the TTS system.
         """
-        request_id = f"tts-request-{self.turn_id}"
+        if self._tts_request_id is None:
+            self._tts_request_id = f"tts-request-{uuid.uuid4()}"
+        request_id = self._tts_request_id
         await _send_data(
             self.ten_env,
             "tts_text_input",
@@ -210,6 +196,8 @@ class MainControlExtension(AsyncExtension):
                 "metadata": self._current_metadata(),
             },
         )
+        if is_final:
+            self._tts_request_id = None
         self.ten_env.log_info(
             f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}"
         )
@@ -219,6 +207,7 @@ class MainControlExtension(AsyncExtension):
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
         self.sentence_fragment = ""
+        self._tts_request_id = None
         await self.agent.flush_llm()
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
@@ -277,25 +266,10 @@ class MainControlExtension(AsyncExtension):
             summary = str(args.get("summary", "")).strip()
             if summary:
                 payload = {
-                    "type": "openclaw_tool",
-                    "data": {
-                        "command": "openclaw.invoke",
-                        "summary": summary,
-                    },
+                    "data_type": "openclaw_tool",
+                    "summary": summary,
                 }
-                await _send_data(
-                    self.ten_env,
-                    "message",
-                    "message_collector",
-                    {
-                        "data_type": "raw",
-                        "role": "assistant",
-                        "text": json.dumps(payload),
-                        "text_ts": int(time.time() * 1000),
-                        "is_final": True,
-                        "stream_id": 100,
-                    },
-                )
+                await self._send_rtm_message(payload)
             result = CmdResult.create(StatusCode.OK, cmd)
             tool_result = LLMToolResultLLMResult(
                 type="llmresult",

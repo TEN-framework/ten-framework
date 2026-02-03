@@ -295,14 +295,15 @@ class LLMExec:
         if not reply_text:
             return
         system_prompt = (
-            "You are a voice assistant. You will receive a raw tool result that may include "
-            "markdown or long technical text. Summarize into a short spoken reply (1–3 sentences). "
-            "Do not read markdown symbols or code blocks verbatim. Extract key results and speak "
-            "naturally. Start with a brief acknowledgement like \"Here's the result of your "
-            "delegated task...\"."
+            "You are a voice assistant. A delegated task has completed and you will receive a raw "
+            "reply that may include markdown, lists, links, or code. Produce a short, friendly "
+            "spoken narrative (3–4 sentences). Always acknowledge completion, but vary the wording "
+            "(do not repeat the same phrase). Do not read markdown symbols, bullet formatting, "
+            "code blocks, or URLs verbatim; paraphrase them. If the reply is long or structured, "
+            "summarize only the top 3 key results."
         )
         user_prompt = (
-            "OpenClaw finished a delegated task. Here is the raw reply (may include markdown):\n"
+            "A delegated task has finished. Here is the raw reply (may include markdown):\n"
             "---\n"
             f"{reply_text}\n"
             "---"
