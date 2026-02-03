@@ -60,16 +60,6 @@ typedef struct ten_string_t {
   size_t first_unused_idx;  // Index of first unused byte.
 } ten_string_t;
 
-// On Windows with MSVC, we need to export these functions from the DLL for
-// MinGW-compiled Go bindings to link against. MSVC doesn't export inline
-// functions, so we declare them as TEN_UTILS_API and define them in string.c.
-// On other platforms (Linux/macOS) or with MinGW, we use inline definitions.
-#if defined(_WIN32) && defined(_MSC_VER)
-
-TEN_UTILS_API bool ten_string_check_integrity(const ten_string_t *self);
-
-#else
-
 inline bool ten_string_check_integrity(const ten_string_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
 
@@ -85,8 +75,6 @@ inline bool ten_string_check_integrity(const ten_string_t *self) {
 
   return true;
 }
-
-#endif
 
 /**
  * @brief Create a string object.
@@ -283,12 +271,6 @@ TEN_UTILS_API void ten_string_to_upper(ten_string_t *self);
  * @param self The string object.
  * @return A pointer to the c string.
  */
-#if defined(_WIN32) && defined(_MSC_VER)
-
-TEN_UTILS_API const char *ten_string_get_raw_str(const ten_string_t *self);
-
-#else
-
 inline const char *ten_string_get_raw_str(const ten_string_t *self) {
   // It's possible that the return value of this function is used by "%s", and
   // pass NULL as the value of "%s" is an undefined behavior, so we ensure that
@@ -298,26 +280,16 @@ inline const char *ten_string_get_raw_str(const ten_string_t *self) {
   return self ? self->buf : NULL;
 }
 
-#endif
-
 /**
  * @brief Get the length of the string object.
  * @param self The string object.
  * @return The length of the string object.
  */
-#if defined(_WIN32) && defined(_MSC_VER)
-
-TEN_UTILS_API size_t ten_string_len(const ten_string_t *self);
-
-#else
-
 inline size_t ten_string_len(const ten_string_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
   return self ? self->first_unused_idx : 0;
 }
-
-#endif
 
 /**
  * @brief Remove @a count characters from the back of the string.
