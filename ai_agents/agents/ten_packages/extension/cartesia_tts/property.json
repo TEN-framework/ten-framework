@@ -17,10 +17,10 @@
         "language": "en"
     },
     "ssml": {
-        "enabled": true,
+        "enabled": false,
         "speed_ratio": 1.0,
         "volume_ratio": 1.0,
-        "emotion": "angry",
+        "emotion": "",
         "pre_break_time": "",
         "post_break_time": "",
         "spell_words": []
