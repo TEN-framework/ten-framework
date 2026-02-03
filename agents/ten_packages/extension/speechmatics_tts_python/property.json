@@ -1,9 +1,0 @@
-{
-  "params": {
-    "api_key": "${env:SPEECHMATICS_API_KEY}",
-    "voice_id": "sarah",
-    "output_format": "wav",
-    "sample_rate": 16000,
-    "base_url": "https://preview.tts.speechmatics.com"
-  }
-}
