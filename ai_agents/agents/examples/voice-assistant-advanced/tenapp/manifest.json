@@ -16,7 +16,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     },
     {
       "path": "../../../ten_packages/extension/streamid_adapter"

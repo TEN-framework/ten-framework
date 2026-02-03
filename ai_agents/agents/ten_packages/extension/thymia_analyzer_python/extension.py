@@ -26,6 +26,21 @@ from ten_runtime.audio_frame import AudioFrame
 from ten_runtime.data import Data
 from .apollo_api import ApolloAPI, ApolloResult
 
+# Sentinel WebSocket API imports
+from .sentinel_client import SentinelClient
+from .sentinel_protocol import (
+    SentinelConfig,
+    PolicyResult,
+    StatusMessage,
+    ErrorMessage,
+    BiomarkerSummary,
+)
+from .result_mapper import (
+    ResultMapper,
+    WellnessMetricsCompat,
+    SafetyClassification,
+)
+
 # Minimum time between any announcements (Hellos or Apollo)
 ANNOUNCEMENT_MIN_SPACING_SECONDS = 15.0
 
@@ -647,6 +662,32 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             "en-GB"  # Use en-GB for better Thymia speech detection
         )
 
+        # ============ SENTINEL MODE STATE ============
+        # API mode: "rest_batch" (default, existing REST APIs) or "sentinel" (WebSocket)
+        self.api_mode: str = "rest_batch"
+
+        # Sentinel configuration
+        self.ws_url: str = "wss://ws.thymia.ai"
+        self.biomarkers: list[str] = ["helios", "apollo"]
+        self.policies: list[str] = ["passthrough", "safety_analysis"]
+        self.forward_transcripts: bool = True
+        self.stream_agent_audio: bool = True
+        self.auto_reconnect: bool = True
+
+        # Sentinel client and state
+        self.sentinel_client: Optional[SentinelClient] = None
+        self.sentinel_latest_result: Optional[PolicyResult] = None
+        self.sentinel_wellness: Optional[WellnessMetricsCompat] = None
+        self.sentinel_apollo: Optional[ApolloResult] = None
+        self.sentinel_safety: Optional[SafetyClassification] = None
+        self.sentinel_results_count: int = 0
+        self.sentinel_results_announced: bool = False
+        # Track previous values to detect changes
+        self.sentinel_prev_wellness: Optional[WellnessMetricsCompat] = None
+        self.sentinel_prev_apollo: Optional[ApolloResult] = None
+        # Deferred announcement queue for Sentinel mode (when someone is speaking)
+        self.sentinel_deferred_result: Optional[PolicyResult] = None
+
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         """Called when extension starts"""
         ten_env.log_info("[THYMIA_START] ThymiaAnalyzerExtension starting...")
@@ -730,6 +771,87 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             except Exception:
                 # Property not set, use default
                 self.analysis_mode = "hellos_only"
+
+            # Load API mode (defaults to rest_batch for backwards compatibility)
+            try:
+                api_mode_result = await ten_env.get_property_string("api_mode")
+                self.api_mode = (
+                    api_mode_result[0]
+                    if isinstance(api_mode_result, tuple)
+                    else api_mode_result
+                )
+            except Exception:
+                self.api_mode = "rest_batch"
+
+            # Load Sentinel-specific configuration if in sentinel mode
+            if self.api_mode == "sentinel":
+                try:
+                    ws_url_result = await ten_env.get_property_string("ws_url")
+                    self.ws_url = (
+                        ws_url_result[0]
+                        if isinstance(ws_url_result, tuple)
+                        else ws_url_result
+                    ) or "wss://ws.thymia.ai"
+                except Exception:
+                    self.ws_url = "wss://ws.thymia.ai"
+
+                try:
+                    biomarkers_result = await ten_env.get_property_string("biomarkers")
+                    biomarkers_str = (
+                        biomarkers_result[0]
+                        if isinstance(biomarkers_result, tuple)
+                        else biomarkers_result
+                    )
+                    self.biomarkers = (
+                        [b.strip() for b in biomarkers_str.split(",")]
+                        if biomarkers_str
+                        else ["helios", "apollo"]
+                    )
+                except Exception:
+                    self.biomarkers = ["helios", "apollo"]
+
+                try:
+                    policies_result = await ten_env.get_property_string("policies")
+                    policies_str = (
+                        policies_result[0]
+                        if isinstance(policies_result, tuple)
+                        else policies_result
+                    )
+                    self.policies = (
+                        [p.strip() for p in policies_str.split(",")]
+                        if policies_str
+                        else ["passthrough", "safety_analysis"]
+                    )
+                except Exception:
+                    self.policies = ["passthrough", "safety_analysis"]
+
+                try:
+                    self.forward_transcripts = await ten_env.get_property_bool(
+                        "forward_transcripts"
+                    )
+                except Exception:
+                    self.forward_transcripts = True
+
+                try:
+                    self.stream_agent_audio = await ten_env.get_property_bool(
+                        "stream_agent_audio"
+                    )
+                except Exception:
+                    self.stream_agent_audio = True
+
+                try:
+                    self.auto_reconnect = await ten_env.get_property_bool(
+                        "auto_reconnect"
+                    )
+                except Exception:
+                    self.auto_reconnect = True
+
+                ten_env.log_info(
+                    f"[THYMIA_SENTINEL_CONFIG] Loaded Sentinel config: "
+                    f"ws_url={self.ws_url}, biomarkers={self.biomarkers}, "
+                    f"policies={self.policies}, forward_transcripts={self.forward_transcripts}, "
+                    f"stream_agent_audio={self.stream_agent_audio}"
+                )
 
             # Load Apollo-specific durations if specified
             try:
@@ -834,27 +956,76 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             await super().on_start(ten_env)
             return
 
-        # Initialize components
-        self.audio_buffer = AudioBuffer(
-            sample_rate=16000,
-            channels=1,
-            silence_threshold=self.silence_threshold,
-        )
-        self.api_client = ThymiaAPIClient(api_key=self.api_key)
+        # Initialize components based on API mode
+        if self.api_mode == "sentinel":
+            # ============ SENTINEL MODE ============
+            # No local audio buffer needed - server handles buffering
+            ten_env.log_info(
+                f"[THYMIA_START] Initializing in SENTINEL mode "
+                f"(WebSocket: {self.ws_url})"
+            )
 
-        # Initialize Apollo client if in demo_dual mode
-        if self.analysis_mode == "demo_dual":
-            self.apollo_client = ApolloAPI(api_key=self.api_key)
-            ten_env.log_info(
-                f"[THYMIA_START] ThymiaAnalyzerExtension started in DEMO_DUAL mode "
-                f"(Hellos + Apollo, mood={self.apollo_mood_duration}s, "
-                f"read={self.apollo_read_duration}s)"
+            # Create log callback for Sentinel client
+            def sentinel_log(level: str, message: str):
+                if level == "info":
+                    ten_env.log_info(f"[SENTINEL] {message}")
+                elif level == "warn":
+                    ten_env.log_warn(f"[SENTINEL] {message}")
+                elif level == "error":
+                    ten_env.log_error(f"[SENTINEL] {message}")
+                else:
+                    ten_env.log_debug(f"[SENTINEL] {message}")
+
+            # Create Sentinel client
+            self.sentinel_client = SentinelClient(
+                api_key=self.api_key,
+                server_url=self.ws_url,
+                on_policy_result=lambda r: asyncio.create_task(
+                    self._on_sentinel_policy_result(ten_env, r)
+                ),
+                on_status=lambda s: self._on_sentinel_status(s),
+                on_error=lambda e: self._on_sentinel_error(ten_env, e),
+                auto_reconnect=self.auto_reconnect,
+                log_callback=sentinel_log,
             )
+
+            ten_env.log_info(
+                f"[THYMIA_START] ThymiaAnalyzerExtension started in SENTINEL mode "
+                f"(biomarkers={self.biomarkers}, policies={self.policies})"
+            )
+
+            # Connect immediately with placeholder values
+            # User info can be updated later when provided
+            import uuid
+            # Don't connect immediately - wait for user info (name, DOB, sex)
+            # Connection will happen in check_phase_progress when user provides info
+            ten_env.log_info(
+                "[SENTINEL_CONNECT] Waiting for user info before connecting to Sentinel. "
+                "Connection will be established when user provides name, sex, and year of birth."
+            )
+
         else:
-            ten_env.log_info(
-                f"[THYMIA_START] ThymiaAnalyzerExtension started in HELLOS_ONLY mode "
-                f"(min_speech={self.min_speech_duration}s)"
+            # ============ REST BATCH MODE (existing behavior) ============
+            self.audio_buffer = AudioBuffer(
+                sample_rate=16000,
+                channels=1,
+                silence_threshold=self.silence_threshold,
             )
+            self.api_client = ThymiaAPIClient(api_key=self.api_key)
+
+            # Initialize Apollo client if in demo_dual mode
+            if self.analysis_mode == "demo_dual":
+                self.apollo_client = ApolloAPI(api_key=self.api_key)
+                ten_env.log_info(
+                    f"[THYMIA_START] ThymiaAnalyzerExtension started in DEMO_DUAL mode "
+                    f"(Hellos + Apollo, mood={self.apollo_mood_duration}s, "
+                    f"read={self.apollo_read_duration}s)"
+                )
+            else:
+                ten_env.log_info(
+                    f"[THYMIA_START] ThymiaAnalyzerExtension started in HELLOS_ONLY mode "
+                    f"(min_speech={self.min_speech_duration}s)"
+                )
 
         # Register as LLM tool (parent class handles this)
         await super().on_start(ten_env)
@@ -866,8 +1037,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             f"[THYMIA_TOOL_REGISTRATION] Registered {len(tools)} tools: {', '.join(tool_names)}"
         )
 
-        # Start unified results poller (handles both APIs and announcement retries)
-        asyncio.create_task(self._unified_results_poller(ten_env))
+        # Start unified results poller (REST mode only - Sentinel uses callbacks)
+        if self.api_mode != "sentinel":
+            asyncio.create_task(self._unified_results_poller(ten_env))
 
         # TEST: Send a test announcement after 5 seconds to verify text_data mechanism
         # asyncio.create_task(self._test_announcement_after_delay(ten_env))  # DISABLED - test passed
@@ -897,6 +1069,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         """Called when extension stops"""
         ten_env.log_info("[THYMIA_STOP] ThymiaAnalyzerExtension stopping...")
 
+        # Close Sentinel client if in sentinel mode
+        if self.sentinel_client:
+            await self.sentinel_client.disconnect()
+
         if self.api_client:
             await self.api_client.close()
 
@@ -904,6 +1080,390 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             await self.apollo_client.close()
 
         await super().on_stop(ten_env)
+
+    # ============ SENTINEL MODE METHODS ============
+
+    async def _connect_sentinel_with_user_info(self, ten_env: AsyncTenEnv) -> bool:
+        """
+        Connect to Sentinel server once user info is available.
+
+        Called when user info is first set via check_phase_progress tool.
+        """
+        if not self.sentinel_client:
+            ten_env.log_error(
+                "[SENTINEL_CONNECT] Sentinel client not initialized"
+            )
+            return False
+
+        if self.sentinel_client.is_connected:
+            ten_env.log_debug(
+                "[SENTINEL_CONNECT] Already connected to Sentinel"
+            )
+            return True
+
+        if not self.user_name or not self.user_dob or not self.user_sex:
+            ten_env.log_warn(
+                "[SENTINEL_CONNECT] Cannot connect - missing user info "
+                f"(name={self.user_name}, dob={self.user_dob}, sex={self.user_sex})"
+            )
+            return False
+
+        ten_env.log_info(
+            f"[SENTINEL_CONNECT] Connecting with user: {self.user_name}, "
+            f"DOB: {self.user_dob}, sex: {self.user_sex}"
+        )
+
+        config = SentinelConfig(
+            api_key=self.api_key,
+            user_label=self.user_name or "anonymous",
+            date_of_birth=self.user_dob or "1990-01-01",
+            birth_sex=self.user_sex or "FEMALE",
+            language=self.user_locale,
+            biomarkers=self.biomarkers,
+            policies=self.policies,
+        )
+
+        success = await self.sentinel_client.connect(config)
+        if success:
+            ten_env.log_info("[SENTINEL_CONNECT] Connected to Sentinel server")
+        else:
+            ten_env.log_error("[SENTINEL_CONNECT] Failed to connect to Sentinel")
+
+        return success
+
+    async def _connect_sentinel_immediately(
+        self, ten_env: AsyncTenEnv, session_id: str
+    ) -> bool:
+        """
+        Connect to Sentinel server immediately with placeholder user info.
+
+        Called on startup to begin streaming audio right away.
+        Real user info can be provided later via check_phase_progress.
+        """
+        if not self.sentinel_client:
+            ten_env.log_error(
+                "[SENTINEL_CONNECT] Sentinel client not initialized"
+            )
+            return False
+
+        if self.sentinel_client.is_connected:
+            ten_env.log_debug(
+                "[SENTINEL_CONNECT] Already connected to Sentinel"
+            )
+            return True
+
+        ten_env.log_info(
+            f"[SENTINEL_CONNECT] Connecting immediately with session: {session_id}"
+        )
+
+        # Use placeholder values - biomarkers work on voice, not demographics
+        config = SentinelConfig(
+            api_key=self.api_key,
+            user_label=session_id,
+            date_of_birth="1980-01-01",  # Placeholder
+            birth_sex="FEMALE",  # Placeholder (API only accepts MALE/FEMALE)
+            language="en-GB",
+            biomarkers=self.biomarkers,
+            policies=self.policies,
+        )
+
+        success = await self.sentinel_client.connect(config)
+        if success:
+            ten_env.log_info(
+                "[SENTINEL_CONNECT] Connected to Sentinel server (streaming audio now)"
+            )
+        else:
+            ten_env.log_error(
+                "[SENTINEL_CONNECT] Failed to connect to Sentinel - will retry"
+            )
+
+        return success
+
+    async def _on_sentinel_policy_result(
+        self, ten_env: AsyncTenEnv, result: PolicyResult
+    ):
+        """
+        Handle PolicyResult from Sentinel server.
+
+        Maps result to backward-compatible formats and triggers LLM announcement.
+        """
+        self.sentinel_latest_result = result
+        self.sentinel_results_count += 1
+
+        ten_env.log_info(
+            f"[SENTINEL_RESULT] Received policy result #{self.sentinel_results_count}: "
+            f"policy={result.policy}, analysis_type={result.analysis_type}"
+        )
+
+        # Map to backward-compatible formats
+        wellness, apollo, safety = ResultMapper.extract_all(
+            result,
+            session_id=f"sentinel-{self.sentinel_results_count}",
+        )
+
+        # Save previous values before updating (for change detection)
+        if wellness:
+            self.sentinel_prev_wellness = self.sentinel_wellness
+        if apollo:
+            self.sentinel_prev_apollo = self.sentinel_apollo
+
+        # Update state
+        if wellness:
+            self.sentinel_wellness = wellness
+            # Also update the existing latest_results for tool compatibility
+            self.latest_results = WellnessMetrics(
+                distress=wellness.distress,
+                stress=wellness.stress,
+                burnout=wellness.burnout,
+                fatigue=wellness.fatigue,
+                low_self_esteem=wellness.low_self_esteem,
+                timestamp=wellness.timestamp,
+                session_id=wellness.session_id,
+            )
+            ten_env.log_info(
+                f"[SENTINEL_RESULT] Wellness metrics: "
+                f"distress={wellness.distress:.2%}, stress={wellness.stress:.2%}, "
+                f"burnout={wellness.burnout:.2%}, fatigue={wellness.fatigue:.2%}, "
+                f"low_self_esteem={wellness.low_self_esteem:.2%}"
+            )
+
+        if apollo:
+            self.sentinel_apollo = apollo
+            # Also update the existing apollo_results for tool compatibility
+            self.apollo_results = apollo
+            ten_env.log_info(
+                f"[SENTINEL_RESULT] Apollo metrics: "
+                f"depression={apollo.depression_probability:.2%} ({apollo.depression_severity}), "
+                f"anxiety={apollo.anxiety_probability:.2%} ({apollo.anxiety_severity})"
+            )
+
+        if safety:
+            self.sentinel_safety = safety
+            ten_env.log_info(
+                f"[SENTINEL_RESULT] Safety classification: "
+                f"level={safety.level}, alert={safety.alert}, "
+                f"urgency={safety.urgency}, concerns={safety.concerns}"
+            )
+
+            # Handle high-risk classifications
+            if safety.is_high_risk():
+                ten_env.log_warn(
+                    f"[SENTINEL_SAFETY_ALERT] High risk detected! "
+                    f"Level={safety.level}, Alert={safety.alert}"
+                )
+                # Send urgent system message to LLM
+                await self._trigger_sentinel_safety_alert(ten_env, safety)
+
+        # Always trigger LLM announcement when new results arrive
+        # The LLM will announce to user and can track if values have changed
+        if wellness or apollo:
+            await self._trigger_sentinel_results_announcement(ten_env, result)
+
+    def _on_sentinel_status(self, status: StatusMessage):
+        """Handle status update from Sentinel server."""
+        # Just store for check_phase_progress tool
+        pass
+
+    def _on_sentinel_error(self, ten_env: AsyncTenEnv, error: ErrorMessage):
+        """Handle error from Sentinel server."""
+        ten_env.log_error(
+            f"[SENTINEL_ERROR] {error.error_code}: {error.message}"
+        )
+        if error.details:
+            ten_env.log_error(f"[SENTINEL_ERROR] Details: {error.details}")
+
+    async def _trigger_sentinel_results_announcement(
+        self, ten_env: AsyncTenEnv, result: PolicyResult
+    ):
+        """Send announcement to LLM when Sentinel results are ready."""
+        try:
+            # Send system message immediately - LLM will have data for next response
+            # No deferral needed: TTS won't interrupt user, and LLM needs data in context
+
+            # Determine if this is initial or update
+            is_initial = result.analysis_type == "initial" or (
+                self.sentinel_prev_wellness is None
+                and self.sentinel_prev_apollo is None
+            )
+
+            # Build list of what's available and what changed
+            wellness_changes = []
+            apollo_changes = []
+
+            if self.sentinel_wellness:
+                w = self.sentinel_wellness
+                if is_initial:
+                    # First result - show key wellness metrics only (stress, burnout, fatigue)
+                    wellness_changes = [
+                        f"stress={round(w.stress * 100)}%",
+                        f"burnout={round(w.burnout * 100)}%",
+                        f"fatigue={round(w.fatigue * 100)}%",
+                    ]
+                elif self.sentinel_prev_wellness:
+                    # Update - show only significant changes (>15% difference)
+                    prev = self.sentinel_prev_wellness
+                    threshold = 0.15
+                    if abs(w.stress - prev.stress) > threshold:
+                        wellness_changes.append(
+                            f"stress: {round(prev.stress * 100)}%→{round(w.stress * 100)}%"
+                        )
+                    if abs(w.burnout - prev.burnout) > threshold:
+                        wellness_changes.append(
+                            f"burnout: {round(prev.burnout * 100)}%→{round(w.burnout * 100)}%"
+                        )
+                    if abs(w.fatigue - prev.fatigue) > threshold:
+                        wellness_changes.append(
+                            f"fatigue: {round(prev.fatigue * 100)}%→{round(w.fatigue * 100)}%"
+                        )
+
+            if self.sentinel_apollo:
+                a = self.sentinel_apollo
+                if is_initial or self.sentinel_prev_apollo is None:
+                    # First result - show all values
+                    apollo_changes = [
+                        f"depression={round(a.depression_probability * 100)}% ({a.depression_severity})",
+                        f"anxiety={round(a.anxiety_probability * 100)}% ({a.anxiety_severity})",
+                    ]
+                else:
+                    # Update - show only significant changes (>15% difference)
+                    prev = self.sentinel_prev_apollo
+                    threshold = 0.15
+                    if abs(a.depression_probability - prev.depression_probability) > threshold:
+                        apollo_changes.append(
+                            f"depression: {round(prev.depression_probability * 100)}%→{round(a.depression_probability * 100)}%"
+                        )
+                    if abs(a.anxiety_probability - prev.anxiety_probability) > threshold:
+                        apollo_changes.append(
+                            f"anxiety: {round(prev.anxiety_probability * 100)}%→{round(a.anxiety_probability * 100)}%"
+                        )
+
+            # Skip if no changes to report (for updates)
+            if not is_initial and not wellness_changes and not apollo_changes:
+                ten_env.log_debug(
+                    "[SENTINEL_ANNOUNCE] No significant changes to announce"
+                )
+                return
+
+            # Build announcement message
+            if is_initial:
+                if wellness_changes and apollo_changes:
+                    hint_text = (
+                        f"[SYSTEM ALERT] INITIAL ANALYSIS READY. "
+                        f"Wellness: {', '.join(wellness_changes)}. "
+                        f"Clinical: {', '.join(apollo_changes)}. "
+                        f"Call get_wellness_metrics and share insights naturally - don't list numbers."
+                    )
+                elif wellness_changes:
+                    hint_text = (
+                        f"[SYSTEM ALERT] INITIAL WELLNESS ANALYSIS READY. "
+                        f"Results: {', '.join(wellness_changes)}. "
+                        f"Call get_wellness_metrics and share insights naturally - don't list numbers."
+                    )
+                elif apollo_changes:
+                    hint_text = (
+                        f"[SYSTEM ALERT] CLINICAL ANALYSIS READY. "
+                        f"Results: {', '.join(apollo_changes)}. "
+                        f"Call get_wellness_metrics and mention depression/anxiety status naturally."
+                    )
+                else:
+                    ten_env.log_debug("[SENTINEL_ANNOUNCE] No results to announce")
+                    return
+            else:
+                # Update announcement - only mention what changed
+                changes = wellness_changes + apollo_changes
+                hint_text = (
+                    f"[SYSTEM ALERT] ANALYSIS UPDATE. "
+                    f"Significant changes: {', '.join(changes)}. "
+                    f"Weave this into the conversation naturally."
+                )
+
+            ten_env.log_info(f"[SENTINEL_ANNOUNCE] Sending: {hint_text}")
+
+            text_data = Data.create("text_data")
+            text_data.set_property_string("text", hint_text)
+            text_data.set_property_bool("end_of_segment", True)
+            text_data.set_property_string("role", "system")
+            await ten_env.send_data(text_data)
+
+            self.sentinel_results_announced = True
+            ten_env.log_info("[SENTINEL_ANNOUNCE] Announcement sent to LLM")
+
+        except Exception as e:
+            ten_env.log_error(f"[SENTINEL_ANNOUNCE] Failed: {e}")
+
+    async def _trigger_sentinel_safety_alert(
+        self, ten_env: AsyncTenEnv, safety: SafetyClassification
+    ):
+        """Send urgent safety alert to LLM."""
+        try:
+            # Build alert message
+            actions_text = ""
+            if safety.recommended_actions and safety.recommended_actions.get("for_agent"):
+                actions_text = f" Recommended action: {safety.recommended_actions['for_agent']}"
+
+            concerns_text = ""
+            if safety.concerns:
+                concerns_text = f" Concerns: {', '.join(safety.concerns)}."
+
+            if safety.requires_immediate_action():
+                alert_text = (
+                    f"[URGENT SAFETY ALERT] Crisis level detected ({safety.alert}). "
+                    f"Urgency: {safety.urgency}.{concerns_text}{actions_text}"
+                )
+            else:
+                alert_text = (
+                    f"[SAFETY ALERT] Elevated risk level ({safety.alert}). "
+                    f"Urgency: {safety.urgency}.{concerns_text}{actions_text}"
+                )
+
+            ten_env.log_warn(f"[SENTINEL_SAFETY] Sending alert: {alert_text}")
+
+            text_data = Data.create("text_data")
+            text_data.set_property_string("text", alert_text)
+            text_data.set_property_bool("end_of_segment", True)
+            text_data.set_property_string("role", "system")
+            await ten_env.send_data(text_data)
+
+        except Exception as e:
+            ten_env.log_error(f"[SENTINEL_SAFETY] Failed to send alert: {e}")
+
+    async def _process_deferred_sentinel_announcement(self, ten_env: AsyncTenEnv):
+        """Process any deferred Sentinel announcement when speaking stops."""
+        if self.api_mode != "sentinel" or self.sentinel_deferred_result is None:
+            return
+
+        # Check if it's now safe to announce
+        if self.user_currently_speaking or self.agent_currently_speaking:
+            ten_env.log_debug(
+                "[SENTINEL_DEFERRED] Still speaking, keeping deferred result"
+            )
+            return
+
+        ten_env.log_info(
+            "[SENTINEL_DEFERRED] Processing deferred announcement now"
+        )
+        result = self.sentinel_deferred_result
+        self.sentinel_deferred_result = None  # Clear before processing
+        await self._trigger_sentinel_results_announcement(ten_env, result)
+
+    async def _delayed_sentinel_check(
+        self, ten_env: AsyncTenEnv, delay_seconds: float
+    ):
+        """Wait for delay then check for deferred Sentinel announcements."""
+        try:
+            await asyncio.sleep(delay_seconds)
+            ten_env.log_debug(
+                f"[SENTINEL_DELAYED_CHECK] Checking for deferred announcements after {delay_seconds:.1f}s delay"
+            )
+            await self._process_deferred_sentinel_announcement(ten_env)
+        except asyncio.CancelledError:
+            pass  # Task cancelled, ignore
+        except Exception as e:
+            ten_env.log_error(
+                f"[SENTINEL_DELAYED_CHECK] Error in delayed check: {e}"
+            )
+
+    # ============ END SENTINEL MODE METHODS ============
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         """Handle incoming data messages (e.g., TTS state events)"""
@@ -976,6 +1536,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     asyncio.create_task(
                         self._delayed_announcement_check(ten_env, delay_seconds)
                     )
+                    # Also check for deferred Sentinel announcements after audio finishes
+                    asyncio.create_task(
+                        self._delayed_sentinel_check(ten_env, delay_seconds)
+                    )
 
                     # Set last speech end time when audio will finish
                     self.last_agent_speech_end_time = time.time() + (
@@ -992,6 +1556,71 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
                     # Check for pending announcements immediately
                     await self._check_and_trigger_ready_announcements(ten_env)
+                    # Also check for deferred Sentinel announcements
+                    await self._process_deferred_sentinel_announcement(ten_env)
+
+            # ============ SENTINEL MODE: Forward transcripts ============
+            # Handle ASR results (from STT extension) for Sentinel mode
+            elif data_name == "asr_result" and self.api_mode == "sentinel":
+                if self.forward_transcripts and self.sentinel_client and self.sentinel_client.is_connected:
+                    try:
+                        # ASR result comes as JSON with text and final fields
+                        asr_json, _ = data.get_property_to_json(None)
+                        asr_data = json.loads(asr_json) if asr_json else {}
+
+                        text = asr_data.get("text", "")
+                        is_final = asr_data.get("final", False)
+
+                        if text and is_final:
+                            ten_env.log_info(
+                                f"[SENTINEL_TRANSCRIPT] Forwarding ASR: '{text[:100]}...'"
+                            )
+                            await self.sentinel_client.send_transcript(
+                                speaker="user",
+                                text=text,
+                                is_final=True,
+                            )
+                    except Exception as e:
+                        ten_env.log_warn(
+                            f"[SENTINEL_TRANSCRIPT] Failed to forward ASR result: {e}"
+                        )
+
+            # Handle text_data (alternative transcript format) for Sentinel mode
+            elif data_name == "text_data" and self.api_mode == "sentinel":
+                if self.forward_transcripts and self.sentinel_client and self.sentinel_client.is_connected:
+                    try:
+                        # Try to extract transcript text
+                        text = data.get_property_string("text") if hasattr(data, "get_property_string") else None
+                        if text and isinstance(text, tuple):
+                            text = text[0]
+
+                        is_final = True
+                        try:
+                            is_final_result = data.get_property_bool("is_final")
+                            if isinstance(is_final_result, tuple):
+                                is_final = is_final_result[0]
+                            else:
+                                is_final = is_final_result
+                        except Exception:
+                            pass
+
+                        # Determine speaker - ASR transcripts are usually from user
+                        # Agent transcripts come through different mechanism
+                        speaker = "user"
+
+                        if text and is_final:
+                            ten_env.log_info(
+                                f"[SENTINEL_TRANSCRIPT] Forwarding text_data: '{text[:100]}...'"
+                            )
+                            await self.sentinel_client.send_transcript(
+                                speaker=speaker,
+                                text=text,
+                                is_final=is_final,
+                            )
+                    except Exception as e:
+                        ten_env.log_debug(
+                            f"[SENTINEL_TRANSCRIPT] Could not forward transcript: {e}"
+                        )
 
         except Exception as e:
             ten_env.log_error(
@@ -1008,6 +1637,42 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         try:
             self._audio_frame_count += 1
 
+            # Get PCM data from audio frame
+            buf = audio_frame.lock_buf()
+            pcm_data = bytes(buf)
+            audio_frame.unlock_buf(buf)
+
+            # ============ SENTINEL MODE: Stream audio immediately ============
+            if self.api_mode == "sentinel":
+                # In Sentinel mode, stream every frame immediately (no local buffering)
+                if self.sentinel_client and self.sentinel_client.is_connected:
+                    # Stream user audio
+                    await self.sentinel_client.send_audio(pcm_data, track="user")
+
+                    # Log periodically
+                    if self._audio_frame_count % 500 == 1:
+                        status = self.sentinel_client.last_status
+                        if status:
+                            ten_env.log_info(
+                                f"[SENTINEL_AUDIO] Streaming: "
+                                f"buffer={status.buffer_duration:.1f}s, "
+                                f"speech={status.speech_duration:.1f}s, "
+                                f"results={self.sentinel_results_count}"
+                            )
+                        else:
+                            ten_env.log_debug(
+                                f"[SENTINEL_AUDIO] Streaming audio frame #{self._audio_frame_count}"
+                            )
+                else:
+                    # Not connected yet - connection is async, should be ready soon
+                    if self._audio_frame_count % 500 == 1:
+                        ten_env.log_debug(
+                            "[SENTINEL_AUDIO] Waiting for Sentinel connection to establish..."
+                        )
+                return  # Don't process with REST logic
+
+            # ============ REST BATCH MODE (existing behavior) ============
+
             if not self.audio_buffer:
                 ten_env.log_warn("[THYMIA_INIT] Audio buffer not initialized")
                 return
@@ -1016,17 +1681,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn("[THYMIA_INIT] API client not initialized")
                 return
 
-            # Get PCM data from audio frame
-            buf = audio_frame.lock_buf()
-            pcm_data = bytes(buf)
-            audio_frame.unlock_buf(buf)
-
             # Add to buffer with VAD
             prev_speech_duration = self.audio_buffer.speech_duration
             speech_duration = self.audio_buffer.add_frame(pcm_data)
             actual_speech_duration = self.audio_buffer.actual_speech_duration
 
             # Track user speech activity (to avoid interrupting user with triggers)
+            was_user_speaking = self.user_currently_speaking
             if speech_duration > prev_speech_duration:
                 # User is actively speaking
                 self.last_user_speech_time = time.time()
@@ -1034,6 +1695,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             elif time.time() - self.last_user_speech_time > 2.0:
                 # No speech detected for 2 seconds - user finished speaking
                 self.user_currently_speaking = False
+                # If user just stopped speaking, check for deferred Sentinel announcements
+                if was_user_speaking and self.api_mode == "sentinel":
+                    asyncio.create_task(
+                        self._process_deferred_sentinel_announcement(ten_env)
+                    )
 
             # === SEPARATE LOGIC FOR EACH MODE ===
 
@@ -1485,7 +2151,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 read_aloud_audio_pcm=read_pcm,
                 user_label=self.user_name or "anonymous",
                 date_of_birth=self.user_dob or "1990-01-01",
-                birth_sex=self.user_sex or "OTHER",
+                birth_sex=self.user_sex or "FEMALE",
                 sample_rate=16000,
                 language="en-GB",
             )
@@ -1710,7 +2376,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         read_aloud_audio_pcm=read_pcm,
                         user_label=self.user_name or "anonymous",
                         date_of_birth=self.user_dob or "1990-01-01",
-                        birth_sex=self.user_sex or "OTHER",
+                        birth_sex=self.user_sex or "FEMALE",
                         sample_rate=16000,
                         language="en-GB",
                     )
@@ -1782,11 +2448,27 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         """Register wellness analysis tools"""
         ten_env.log_info(
-            f"[THYMIA_TOOL_METADATA] get_tool_metadata called - defining wellness analysis tools (mode={self.analysis_mode})"
+            f"[THYMIA_TOOL_METADATA] get_tool_metadata called - defining wellness analysis tools "
+            f"(api_mode={self.api_mode}, analysis_mode={self.analysis_mode})"
         )
 
-        # Different tool description based on analysis mode
-        if self.analysis_mode == "hellos_only":
+        # Different tool description based on API and analysis mode
+        if self.api_mode == "sentinel":
+            # Sentinel mode - real-time streaming, server handles buffering
+            get_wellness_description = (
+                "Get user's voice analysis results. "
+                "Returns 5 KEY METRICS: "
+                "- Wellness (from voice): stress, burnout, fatigue "
+                "- Clinical (if available): depression, anxiety "
+                "IMPORTANT: Call this when you receive a [SYSTEM ALERT]. "
+                "INTERPRET NATURALLY - don't list numbers. Examples: "
+                "- 'Your voice sounds relaxed, no signs of significant stress' "
+                "- 'I'm picking up some fatigue - that matches what you said about sleep' "
+                "- 'No indicators of depression or anxiety in your voice' "
+                "If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions. "
+                "NOTE: Analysis starts after user provides name, sex, and year of birth via start_session."
+            )
+        elif self.analysis_mode == "hellos_only":
             get_wellness_description = (
                 "Get user's mental wellness metrics from voice analysis. "
                 "Returns wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES from 0-100. "
@@ -1847,8 +2529,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ],
             ),
             LLMToolMetadata(
-                name="check_phase_progress",
+                name="check_phase_progress" if self.api_mode != "sentinel" else "start_session",
                 description=(
+                    # Sentinel mode: simple session start
+                    "REQUIRED: Call this once you have the user's name, sex, and year of birth. "
+                    "This starts the voice analysis session with their demographic info. "
+                    "Analysis will not begin until this is called with all three parameters. "
+                    "Returns connection status and streaming progress."
+                ) if self.api_mode == "sentinel" else (
+                    # REST mode: phase tracking
                     "CRITICAL: Call this BEFORE moving to the next phase or declaring you're processing responses. "
                     "Returns current phase status (mood/reading), speech collected so far, and whether phase is complete. "
                     "You MUST check this before: "
@@ -1862,20 +2551,20 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     {
                         "name": "name",
                         "type": "string",
-                        "description": "User's first name (optional, provide when available)",
-                        "required": False,
+                        "description": "User's first name (required for Sentinel, optional for REST)",
+                        "required": self.api_mode == "sentinel",
                     },
                     {
                         "name": "year_of_birth",
                         "type": "string",
-                        "description": "User's year of birth (optional, e.g. '1974', '1990')",
-                        "required": False,
+                        "description": "User's year of birth (e.g. '1974', '1990')",
+                        "required": self.api_mode == "sentinel",
                     },
                     {
                         "name": "sex",
                         "type": "string",
-                        "description": "Biological sex: MALE, FEMALE, or OTHER (optional)",
-                        "required": False,
+                        "description": "MALE, FEMALE, or OTHER",
+                        "required": self.api_mode == "sentinel",
                     },
                     {
                         "name": "locale",
@@ -2471,6 +3160,47 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         try:
             # Handle get_wellness_metrics tool
             if name == "get_wellness_metrics":
+                # ============ SENTINEL MODE ============
+                if self.api_mode == "sentinel":
+                    ten_env.log_info(
+                        f"[SENTINEL_TOOL] get_wellness_metrics - "
+                        f"results_count={self.sentinel_results_count}, "
+                        f"has_wellness={self.sentinel_wellness is not None}, "
+                        f"has_apollo={self.sentinel_apollo is not None}, "
+                        f"has_safety={self.sentinel_safety is not None}"
+                    )
+
+                    # Get status from Sentinel client
+                    status_msg = self.sentinel_client.last_status if self.sentinel_client else None
+                    buffer_duration = status_msg.buffer_duration if status_msg else 0.0
+                    speech_duration = status_msg.speech_duration if status_msg else 0.0
+
+                    # Use ResultMapper to format response
+                    response_data = ResultMapper.format_tool_response(
+                        wellness=self.sentinel_wellness,
+                        apollo=self.sentinel_apollo,
+                        safety=self.sentinel_safety,
+                        analysis_mode="real_time",
+                        buffer_duration=buffer_duration,
+                        speech_duration=speech_duration,
+                        results_count=self.sentinel_results_count,
+                        analysis_type=(
+                            self.sentinel_latest_result.analysis_type
+                            if self.sentinel_latest_result
+                            else None
+                        ),
+                    )
+
+                    ten_env.log_info(
+                        f"[SENTINEL_TOOL_RESPONSE] {json.dumps(response_data)}"
+                    )
+
+                    return LLMToolResultLLMResult(
+                        type="llmresult",
+                        content=json.dumps(response_data),
+                    )
+
+                # ============ REST BATCH MODE (existing behavior) ============
                 ten_env.log_info(
                     f"[THYMIA_TOOL_CALL] get_wellness_metrics - "
                     f"active_analysis={self.active_analysis}, "
@@ -2652,9 +3382,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     ),
                 )
 
-            # Handle check_phase_progress tool
-            if name == "check_phase_progress":
-                ten_env.log_info("[THYMIA_TOOL_CALL] check_phase_progress")
+            # Handle check_phase_progress tool (also accepts "start_session" alias for Sentinel mode)
+            if name in ("check_phase_progress", "start_session"):
+                ten_env.log_info(f"[THYMIA_TOOL_CALL] {name}")
 
                 # Extract and store user info if provided
                 if args.get("name"):
@@ -2685,6 +3415,45 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     ]:
                         self.user_sex = "OTHER"
 
+                    # ============ SENTINEL MODE: Connect when user info is available ============
+                    if self.api_mode == "sentinel" and self.sentinel_client:
+                        if not self.sentinel_client.is_connected:
+                            ten_env.log_info(
+                                "[SENTINEL_CONNECT] User info available, connecting to Sentinel..."
+                            )
+                            asyncio.create_task(
+                                self._connect_sentinel_with_user_info(ten_env)
+                            )
+
+                # ============ SENTINEL MODE: Return streaming status ============
+                if self.api_mode == "sentinel":
+                    status_msg = self.sentinel_client.last_status if self.sentinel_client else None
+                    buffer_duration = status_msg.buffer_duration if status_msg else 0.0
+                    speech_duration = status_msg.speech_duration if status_msg else 0.0
+                    is_connected = self.sentinel_client.is_connected if self.sentinel_client else False
+
+                    response = ResultMapper.format_phase_progress_response(
+                        buffer_duration=buffer_duration,
+                        speech_duration=speech_duration,
+                        results_received=self.sentinel_results_count > 0,
+                        analysis_type=(
+                            self.sentinel_latest_result.analysis_type
+                            if self.sentinel_latest_result
+                            else None
+                        ),
+                        is_connected=is_connected,
+                    )
+
+                    ten_env.log_info(
+                        f"[SENTINEL_PHASE_PROGRESS] {json.dumps(response)}"
+                    )
+
+                    return LLMToolResultLLMResult(
+                        type="llmresult",
+                        content=json.dumps(response),
+                    )
+
+                # ============ REST BATCH MODE (existing behavior) ============
                 # Determine current phase and requirements
                 if self.analysis_mode == "hellos_only":
                     required_duration = self.min_speech_duration

@@ -54,6 +54,27 @@
         },
         "analysis_mode": {
           "type": "string"
+        },
+        "api_mode": {
+          "type": "string"
+        },
+        "ws_url": {
+          "type": "string"
+        },
+        "biomarkers": {
+          "type": "string"
+        },
+        "policies": {
+          "type": "string"
+        },
+        "forward_transcripts": {
+          "type": "bool"
+        },
+        "stream_agent_audio": {
+          "type": "bool"
+        },
+        "auto_reconnect": {
+          "type": "bool"
         }
       }
     },
