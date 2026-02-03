@@ -7,4 +7,6 @@
 #include "ten_utils/lib/align.h"
 
 // Utility for aligning addresses.
-extern inline size_t ten_align_forward(size_t addr, size_t align);
+size_t ten_align_forward(size_t addr, size_t align) {
+  return (addr + (align - 1)) & ~(align - 1);
+}

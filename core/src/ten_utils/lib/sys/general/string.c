@@ -779,8 +779,33 @@ void ten_string_slice(ten_string_t *self, ten_string_t *other, char sep) {
   self->first_unused_idx = (pr - self->buf);
 }
 
-extern inline const char *ten_string_get_raw_str(const ten_string_t *self);
+bool ten_string_check_integrity(const ten_string_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
 
-extern inline size_t ten_string_len(const ten_string_t *self);
+  if (ten_signature_get(&self->signature) != TEN_STRING_SIGNATURE) {
+    return false;
+  }
 
-extern inline bool ten_string_check_integrity(const ten_string_t *self);
+  // A normal `ten_string_t`'s `buf` should be a non-NULL value, either pointing
+  // to `prebuf` or to memory allocated by `malloc`.
+  if (self->buf == NULL) {
+    return false;
+  }
+
+  return true;
+}
+
+const char *ten_string_get_raw_str(const ten_string_t *self) {
+  // It's possible that the return value of this function is used by "%s", and
+  // pass NULL as the value of "%s" is an undefined behavior, so we ensure that
+  // the return value of this function is not NULL.
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
+  return self ? self->buf : NULL;
+}
+
+size_t ten_string_len(const ten_string_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
+  return self ? self->first_unused_idx : 0;
+}
