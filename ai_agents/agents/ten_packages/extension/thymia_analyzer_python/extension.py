@@ -186,7 +186,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Create Sentinel client
         self.sentinel_client = SentinelClient(
-            ws_url=self.ws_url,
+            api_key=self.api_key,
+            server_url=self.ws_url,
             on_policy_result=lambda r: asyncio.create_task(
                 self._on_policy_result(ten_env, r)
             ),
