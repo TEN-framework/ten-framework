@@ -130,33 +130,29 @@ if __name__ == "__main__":
     # path length issues. MSVC has a ~260 character path limit, and setuptools
     # creates deep directory structures that mirror the source file's absolute
     # path, which can easily exceed this limit.
-    temp_build_dir = None
-    temp_source_dir = None
+    #
+    # Strategy: Copy .pyx files to a short temp directory, compile there,
+    # then copy the resulting .pyd files back to the original location.
+    temp_dir = None
     original_pyx_locations = {}  # Map from temp .pyx path to original path
 
     if platform.system() == "Windows" and not args.use_mingw:
-        temp_build_dir = tempfile.mkdtemp(prefix="cyb_")
-        temp_source_dir = tempfile.mkdtemp(prefix="cys_")
-        script_args.append(f"--build-temp={temp_build_dir}")
-        print(f"Using temporary build directory: {temp_build_dir}")
-        print(f"Using temporary source directory: {temp_source_dir}")
+        temp_dir = tempfile.mkdtemp(prefix="cython_")
+        script_args.append(f"--build-temp={temp_dir}")
+        print(f"Using temporary directory: {temp_dir}")
 
-        # Copy .pyx files to temp source directory, preserving relative structure
-        # Must preserve the "dir_name" (="default_extension_python") in the temp
-        # directory structure because Cython derives the module name from the file path.
+        # Copy .pyx files to temp directory, preserving relative structure
+        # Must preserve the "dir_name" in the temp directory structure because
+        # Cython derives the module name from the file path.
         new_extensions = []
         for pyx_file in pyx_files:
             rel_path = os.path.relpath(pyx_file, args.compile_root_dir)
-            # Include the original root directory name in the temp path
-            temp_pyx_path = os.path.join(temp_source_dir, dir_name, rel_path)
-            print(f"[DEBUG] processing pyx file: {rel_path}") # = file name
-            print(f"[DEBUG] temp_pyx_path: {temp_pyx_path}")
+            temp_pyx_path = os.path.join(temp_dir, dir_name, rel_path)
             os.makedirs(os.path.dirname(temp_pyx_path), exist_ok=True)
             shutil.copy2(pyx_file, temp_pyx_path)
             original_pyx_locations[temp_pyx_path] = pyx_file
-
-            extra_compile_args = []
-            new_extensions.append(Extension("*", [temp_pyx_path], extra_compile_args=extra_compile_args))
+            print(f"[DEBUG] {rel_path} -> {temp_pyx_path}")
+            new_extensions.append(Extension("*", [temp_pyx_path]))
 
         extensions = new_extensions
 
@@ -207,8 +203,8 @@ if __name__ == "__main__":
         print("[DEBUG] Successfully patched Mingw32CCompiler.link")
 
     package_dir = {
-        dir_name: (os.path.join(temp_source_dir, dir_name)
-        if temp_source_dir else args.compile_root_dir)
+        dir_name: (os.path.join(temp_dir, dir_name)
+        if temp_dir else args.compile_root_dir)
     }
 
     setup(
@@ -222,36 +218,23 @@ if __name__ == "__main__":
         package_dir=package_dir,
     )
 
-    if temp_source_dir:
+    if temp_dir:
         print("Copying compiled .pyd files back to original locations...")
         for temp_pyx_path, original_pyx_path in original_pyx_locations.items():
-            # Find the .pyd file in the temp source directory
             temp_pyx_dir = os.path.dirname(temp_pyx_path)
             pyx_basename = os.path.splitext(os.path.basename(temp_pyx_path))[0]
 
-            # Look for .pyd files matching the module name
             if os.path.exists(temp_pyx_dir):
-                print(f"[DEBUG] temp_pyx_dir exists, listing files:")
                 all_files = os.listdir(temp_pyx_dir)
-                print(f"[DEBUG] all files in temp_pyx_dir: {all_files}")
+                print(f"[DEBUG] files in {temp_pyx_dir}: {all_files}")
                 for f in all_files:
-                    print(f"[DEBUG] checking file: {f}, startswith({pyx_basename}): {f.startswith(pyx_basename)}, endswith('.pyd'): {f.endswith('.pyd')}")
                     if f.startswith(pyx_basename) and f.endswith('.pyd'):
                         src_pyd = os.path.join(temp_pyx_dir, f)
                         dst_pyd = os.path.join(os.path.dirname(original_pyx_path), f)
-                        print(f"[DEBUG] src_pyd: {src_pyd}")
-                        print(f"[DEBUG] dst_pyd: {dst_pyd}")
                         shutil.copy2(src_pyd, dst_pyd)
                         print(f"  Copied {f} to {os.path.dirname(original_pyx_path)}")
-            else:
-                print(f"[DEBUG] temp_pyx_dir does NOT exist: {temp_pyx_dir}")
 
-    # Clean up temporary build directory
-    if temp_build_dir and os.path.exists(temp_build_dir):
-        shutil.rmtree(temp_build_dir, ignore_errors=True)
-        print(f"Cleaned up temporary build directory: {temp_build_dir}")
-
-    # Clean up temporary source directory
-    if temp_source_dir and os.path.exists(temp_source_dir):
-        shutil.rmtree(temp_source_dir, ignore_errors=True)
-        print(f"Cleaned up temporary source directory: {temp_source_dir}")
+    # Clean up temporary directory
+    if temp_dir and os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        print(f"Cleaned up temporary directory: {temp_dir}")
