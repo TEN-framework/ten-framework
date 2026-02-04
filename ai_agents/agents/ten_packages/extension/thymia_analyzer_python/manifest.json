@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "thymia_analyzer_python",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "dependencies": [
     {
       "type": "system",
@@ -25,35 +25,23 @@
         "api_key": {
           "type": "string"
         },
-        "min_speech_duration": {
-          "type": "float64"
+        "ws_url": {
+          "type": "string"
         },
-        "silence_threshold": {
-          "type": "float64"
+        "biomarkers": {
+          "type": "string"
         },
-        "continuous_analysis": {
+        "policies": {
+          "type": "string"
+        },
+        "forward_transcripts": {
           "type": "bool"
         },
-        "min_interval_seconds": {
-          "type": "int64"
+        "stream_agent_audio": {
+          "type": "bool"
         },
-        "max_analyses_per_session": {
-          "type": "int64"
-        },
-        "poll_timeout": {
-          "type": "int64"
-        },
-        "poll_interval": {
-          "type": "int64"
-        },
-        "apollo_mood_duration": {
-          "type": "float64"
-        },
-        "apollo_read_duration": {
-          "type": "float64"
-        },
-        "analysis_mode": {
-          "type": "string"
+        "auto_reconnect": {
+          "type": "bool"
         }
       }
     },
@@ -119,6 +107,11 @@
             }
           }
         }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data"
       }
     ]
   }

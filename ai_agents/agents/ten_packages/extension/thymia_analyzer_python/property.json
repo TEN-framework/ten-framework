@@ -1,13 +1,9 @@
 {
   "api_key": "${env:THYMIA_API_KEY|}",
-  "min_speech_duration": 30.0,
-  "silence_threshold": 0.02,
-  "continuous_analysis": true,
-  "min_interval_seconds": 60,
-  "max_analyses_per_session": 10,
-  "poll_timeout": 60,
-  "poll_interval": 5,
-  "apollo_mood_duration": 20.0,
-  "apollo_read_duration": 20.0,
-  "analysis_mode": "demo_dual"
+  "ws_url": "wss://ws.thymia.ai",
+  "biomarkers": "helios,apollo",
+  "policies": "passthrough,safety_analysis",
+  "forward_transcripts": true,
+  "stream_agent_audio": true,
+  "auto_reconnect": true
 }

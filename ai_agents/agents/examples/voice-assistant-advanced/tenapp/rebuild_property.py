@@ -505,6 +505,87 @@ thymia_analyzer_hellos = {
     "property": thymia_analyzer_config_hellos,
 }
 
+# ============ SENTINEL MODE CONFIGURATION ============
+# Sentinel prompt - natural conversational flow with real-time analysis
+sentinel_prompt = """You are Bella, a warm wellness therapist having a natural conversation.
+
+WORD LIMITS: MAX 30 WORDS per response. Keep it conversational.
+
+PHASE 1 - GET USER INFO (before analysis can start):
+1. Greet warmly and ask for their first name
+2. Ask for their year of birth (just the year)
+3. Ask if they're male or female (for voice calibration)
+4. Once you have all three, call start_session(name, year_of_birth, sex)
+5. Confirm: "Thanks [name], I'm now listening to your voice. Let's chat!"
+
+PHASE 2 - NATURAL CONVERSATION:
+- Have a genuine conversation about their day, feelings, interests
+- Be curious and empathetic
+- Keep responses short (MAX 30 WORDS)
+- The system analyzes their voice in real-time as they speak
+
+PHASE 3 - WHEN YOU RECEIVE [SYSTEM ALERT]:
+- Call get_wellness_metrics immediately
+- Share insights NATURALLY - don't list numbers
+- Examples:
+  "Your voice sounds pretty relaxed today, though I'm picking up some fatigue"
+  "I notice some stress in your voice - that matches what you said about work"
+- If safety alert, follow recommended_actions
+- Call confirm_announcement after sharing
+
+IMPORTANT:
+- Analysis starts ONLY after start_session is called with user info
+- Never say "I'm analyzing" - it happens automatically in background
+- Be warm, conversational, not clinical"""
+
+sentinel_greeting = "Hi! I'm Bella. I'd love to have a quick chat and share some insights about how you're doing based on your voice. What's your first name?"
+
+# Sentinel LLM config
+gpt51_llm_sentinel = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": sentinel_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": sentinel_greeting,
+        "max_memory_length": 10,
+    },
+}
+
+# Sentinel thymia analyzer config (Sentinel mode only)
+thymia_analyzer_sentinel = {
+    "type": "extension",
+    "name": "thymia_analyzer",
+    "addon": "thymia_analyzer_python",
+    "extension_group": "default",
+    "property": {
+        "api_key": "${env:THYMIA_API_KEY}",
+        "ws_url": "wss://ws.thymia.ai",
+        "biomarkers": "helios,apollo",
+        "policies": "passthrough,safety_analysis",
+        "forward_transcripts": True,
+        "stream_agent_audio": True,
+        "auto_reconnect": True,
+    },
+}
+
+# Sentinel main control
+main_control_sentinel = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": sentinel_greeting},
+}
+
+# ============ END SENTINEL CONFIGURATION ============
+
 # Basic voice assistant connections (no tools)
 basic_connections = [
     {
@@ -963,6 +1044,24 @@ new_graphs.append(
         avatar_config=anam_avatar_apollo,
         thymia_config=thymia_analyzer_hellos,
         main_control_config=main_control_hellos,
+    )
+)
+
+# Group 6: Sentinel real-time analysis graph
+print("Creating Sentinel real-time analysis graph...")
+
+# 5. Sentinel with Anam avatar (real-time WebSocket streaming)
+new_graphs.append(
+    create_apollo_graph(
+        "flux_sentinel_gpt_5_1_cartesia_anam",
+        gpt51_llm_sentinel,
+        flux_stt,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_apollo,
+        thymia_config=thymia_analyzer_sentinel,
+        main_control_config=main_control_sentinel,
     )
 )
 

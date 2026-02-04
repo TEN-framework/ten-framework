@@ -6,6 +6,7 @@
 import asyncio
 from datetime import datetime
 import os
+import re
 import traceback
 from typing import Any
 
@@ -397,7 +398,14 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            if prepared_text.strip() != "":
+            # Strip leading/trailing whitespace - Cartesia rejects text starting with newlines
+            prepared_text = prepared_text.strip()
+
+            # Check if there's actual speakable content (not just SSML tags)
+            # Strip SSML tags to check for real text content
+            text_without_ssml = re.sub(r'<[^>]+/?>', '', prepared_text).strip()
+
+            if prepared_text != "" and text_without_ssml != "":
                 # Get audio stream from Cartesia TTS
                 self.ten_env.log_debug(
                     f"send_text_to_tts_server:  {prepared_text} of request_id: {t.request_id}",
