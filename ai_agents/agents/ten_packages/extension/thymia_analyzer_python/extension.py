@@ -246,28 +246,51 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             ten_env.log_error(f"[THYMIA] Audio frame error: {e}")
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        """Forward transcripts to Sentinel if configured"""
+        """Handle incoming data messages (TTS events, transcripts, etc.)"""
         try:
+            data_name = data.get_name()
+
+            # Handle TTS state events
+            if data_name == "tts_audio_start":
+                ten_env.log_debug("[THYMIA] TTS audio started")
+                return
+
+            elif data_name == "tts_audio_end":
+                ten_env.log_debug("[THYMIA] TTS audio ended")
+                return
+
+            # Forward transcripts to Sentinel if enabled
             if not self.forward_transcripts:
                 return
 
             if not self.sentinel_client or not self.sentinel_client.is_connected:
                 return
 
-            # Get text from data
-            text = data.get_property_string("text")
-            if not text:
+            # Only process data that might have text (asr_result, text_data)
+            if data_name not in ("asr_result", "text_data"):
                 return
 
-            # Determine speaker and finality
-            is_final = data.get_property_bool("is_final")
-            role = data.get_property_string("role") or "user"
-            speaker = "agent" if role == "assistant" else "user"
+            # Try to get text property - use get_property_to_json for safety
+            try:
+                json_str, _ = data.get_property_to_json(None)
+                if not json_str:
+                    return
+                props = json.loads(json_str)
+                text = props.get("text", "")
+                if not text:
+                    return
 
-            await self.sentinel_client.send_transcript(speaker, text, is_final)
+                is_final = props.get("is_final", True)
+                role = props.get("role", "user")
+                speaker = "agent" if role == "assistant" else "user"
+
+                await self.sentinel_client.send_transcript(speaker, text, is_final)
+
+            except Exception as e:
+                ten_env.log_debug(f"[THYMIA] Could not parse transcript: {e}")
 
         except Exception as e:
-            ten_env.log_debug(f"[THYMIA] Transcript forward error: {e}")
+            ten_env.log_debug(f"[THYMIA] on_data error: {e}")
 
     async def _connect(self, ten_env: AsyncTenEnv, session_id: str) -> bool:
         """Connect to Sentinel server"""
