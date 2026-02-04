@@ -65,7 +65,7 @@ class OpenAIAsrClient(WebSocketClient):
         api_key: str | None = None,
         organization: str | None = None,
         project: str | None = None,
-        websocket_base_url: str | None = None,
+        base_url: str | None = None,
         logger: logging.Logger | None = None,
         log_level: str = "INFO",
         log_path: str | None = None,
@@ -88,11 +88,11 @@ class OpenAIAsrClient(WebSocketClient):
             project = os.environ.get("OPENAI_PROJECT_ID")
         self.project = project
 
-        if websocket_base_url is None:
-            websocket_base_url = os.environ.get("OPENAI_WEBSOCKET_BASE_URL")
-        if websocket_base_url is None:
-            websocket_base_url = "wss://api.openai.com/v1/"
-        self.websocket_base_url = websocket_base_url
+        if base_url is None:
+            base_url = os.environ.get("OPENAI_BASE_URL")
+        if base_url is None:
+            base_url = "wss://api.openai.com/v1/"
+        self.base_url = base_url
 
         if logger is None:
             self.logger = get_logger(level=log_level, log_path=log_path)
@@ -109,7 +109,7 @@ class OpenAIAsrClient(WebSocketClient):
         query_params = {
             "intent": "transcription",
         }
-        end_point = urllib.parse.urljoin(websocket_base_url, "realtime")
+        end_point = urllib.parse.urljoin(base_url, "realtime")
 
         end_point += "?" + urllib.parse.urlencode(query_params)
 

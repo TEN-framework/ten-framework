@@ -28,7 +28,7 @@
 
 - `organization`: OpenAI 组织 ID（可选）
 - `project`: OpenAI 项目 ID（可选）
-- `websocket_base_url`: 自定义 WebSocket 基础 URL（可选）
+- `base_url`: 自定义 WebSocket 基础 URL（可选）
 - `dump`: 启用音频转储（默认：false）
 - `dump_path`: 转储音频文件的路径（默认："openai_asr_in.pcm"）
 - `log_level`: 日志级别（默认："INFO"）
@@ -163,4 +163,4 @@ pytest tests/
 
 ## 许可证
 
-此扩展是 TEN Framework 的一部分，根据 Apache License, Version 2.0 授权。 
+此扩展是 TEN Framework 的一部分，根据 Apache License, Version 2.0 授权。
