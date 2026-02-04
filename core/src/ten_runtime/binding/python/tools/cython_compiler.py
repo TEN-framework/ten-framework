@@ -18,6 +18,8 @@ import argparse
 import os
 import glob
 import platform
+import tempfile
+import shutil
 from setuptools import Extension, setup
 
 
@@ -63,16 +65,11 @@ if __name__ == "__main__":
     args = parser.parse_args(namespace=arg_info)
 
     # Detect compiler on Windows
-    is_windows = platform.system() == "Windows"
-    is_mingw = False
-
-    if is_windows:
-        import shutil
+    if platform.system() == "Windows":
         gcc_path = shutil.which("gcc")
 
         if args.use_mingw:
             if gcc_path:
-                is_mingw = True
                 print(f"Using MinGW gcc at: {gcc_path} to compile cython")
                 os.environ["CC"] = "gcc"
                 os.environ["CXX"] = "g++"
@@ -87,7 +84,6 @@ if __name__ == "__main__":
             print("  Will use MSVC by default")
         else:
             print("Using MSVC compiler (default on Windows)")
-
 
     install_rc = install_cython_if_needed()
     if not install_rc:
@@ -104,6 +100,23 @@ if __name__ == "__main__":
     pyx_files = glob.glob(
         os.path.join(args.compile_root_dir, "**", "*.pyx"), recursive=True
     )
+
+    # Filter out __init__.pyx files - they cannot be compiled to .pyd because
+    # Python's package import mechanism expects __init__.py for package
+    # initialization. A compiled __init__.pyd would have PyInit___init__ as its
+    # export function, but Python expects PyInit_<package_name> when importing
+    # a package by directory name.
+    init_pyx_files = [f for f in pyx_files if os.path.basename(f) == "__init__.pyx"]
+    if init_pyx_files:
+        print("WARNING: Skipping __init__.pyx files (cannot be compiled to .pyd):")
+        for f in init_pyx_files:
+            print(f"  - {f}")
+            # Rename __init__.pyx to __init__.py so it can still be used
+            init_py = os.path.join(os.path.dirname(f), "__init__.py")
+            if not os.path.exists(init_py):
+                os.rename(f, init_py)
+                print(f"    Renamed to __init__.py")
+        pyx_files = [f for f in pyx_files if os.path.basename(f) != "__init__.pyx"]
 
     if not pyx_files:
         print("No .pyx files found.")
@@ -134,8 +147,42 @@ if __name__ == "__main__":
     # Prepare script arguments for setup
     script_args = ["build_ext", "--inplace"]
 
+    # On Windows with MSVC, use a short temp directory for build files to avoid
+    # path length issues. MSVC has a ~260 character path limit, and setuptools
+    # creates deep directory structures that mirror the source file's absolute
+    # path, which can easily exceed this limit.
+    #
+    # Strategy: Copy .pyx files to a short temp directory, compile there,
+    # then copy the resulting .pyd files back to the original location.
+    temp_build_dir = None
+    temp_source_dir = None
+    original_pyx_locations = {}  # Map from temp .pyx path to original path
+
+    if platform.system() == "Windows" and !args.use_mingw:
+        temp_build_dir = tempfile.mkdtemp(prefix="cyb_")
+        temp_source_dir = tempfile.mkdtemp(prefix="cys_")
+        script_args.append(f"--build-temp={temp_build_dir}")
+        print(f"Using temporary build directory: {temp_build_dir}")
+        print(f"Using temporary source directory: {temp_source_dir}")
+
+        # Copy .pyx files to temp source directory, preserving relative structure
+        new_extensions = []
+        for pyx_file in pyx_files:
+            rel_path = os.path.relpath(pyx_file, args.compile_root_dir)
+            temp_pyx_path = os.path.join(temp_source_dir, rel_path)
+            os.makedirs(os.path.dirname(temp_pyx_path), exist_ok=True)
+            shutil.copy2(pyx_file, temp_pyx_path)
+            original_pyx_locations[temp_pyx_path] = pyx_file
+
+            extra_compile_args = []
+            new_extensions.append(Extension("*", [temp_pyx_path], extra_compile_args=extra_compile_args))
+
+        extensions = new_extensions
+        # Update dir_name for the temp directory
+        dir_name = os.path.basename(temp_source_dir)
+
     # On Windows with MinGW, explicitly specify the compiler
-    if platform.system() == "Windows" and is_mingw:
+    if is_windows and args.use_mingw:
         script_args.append("--compiler=mingw32")
 
         # Fix for MinGW: .def files are not compatible with MinGW's ld
@@ -186,5 +233,31 @@ if __name__ == "__main__":
         # The package_dir parameter is used to where the packed package will be
         # placed. In this case, the package will be placed in the current
         # directory.
-        package_dir={dir_name: args.compile_root_dir},
+        package_dir={dir_name: temp_source_dir if temp_source_dir else args.compile_root_dir},
     )
+
+    # On Windows with MSVC, copy the compiled .pyd files back to original locations
+    if temp_source_dir:
+        print("Copying compiled .pyd files back to original locations...")
+        for temp_pyx_path, original_pyx_path in original_pyx_locations.items():
+            # Find the .pyd file in the temp source directory
+            temp_pyx_dir = os.path.dirname(temp_pyx_path)
+            pyx_basename = os.path.splitext(os.path.basename(temp_pyx_path))[0]
+
+            # Look for .pyd files matching the module name
+            for f in os.listdir(temp_pyx_dir):
+                if f.startswith(pyx_basename) and f.endswith('.pyd'):
+                    src_pyd = os.path.join(temp_pyx_dir, f)
+                    dst_pyd = os.path.join(os.path.dirname(original_pyx_path), f)
+                    shutil.copy2(src_pyd, dst_pyd)
+                    print(f"  Copied {f} to {os.path.dirname(original_pyx_path)}")
+
+    # Clean up temporary build directory
+    if temp_build_dir and os.path.exists(temp_build_dir):
+        shutil.rmtree(temp_build_dir, ignore_errors=True)
+        print(f"Cleaned up temporary build directory: {temp_build_dir}")
+
+    # Clean up temporary source directory
+    if temp_source_dir and os.path.exists(temp_source_dir):
+        shutil.rmtree(temp_source_dir, ignore_errors=True)
+        print(f"Cleaned up temporary source directory: {temp_source_dir}")
