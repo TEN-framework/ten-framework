@@ -43,11 +43,6 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         if "input" in self.params:
             del self.params["input"]
 
-        # Remove sample_rate from params to avoid parameter error
-        # OpenAI TTS sample rate is fixed at 24000 Hz
-        if "sample_rate" in self.params:
-            del self.params["sample_rate"]
-
         # Use fixed value
         self.params["response_format"] = "pcm"
 
@@ -75,8 +70,12 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate OpenAI-specific configuration."""
-        if "api_key" not in self.params or not self.params["api_key"]:
-            raise ValueError("API key is required for OpenAI TTS")
+        if (
+            "api_key" not in self.params or not self.params["api_key"]
+        ) and self.headers.get("Authorization") is None:
+            raise ValueError(
+                "API key or Authorization header is required for OpenAI TTS"
+            )
         if "model" not in self.params or not self.params["model"]:
             raise ValueError("Model is required for OpenAI TTS")
         if "voice" not in self.params or not self.params["voice"]:
