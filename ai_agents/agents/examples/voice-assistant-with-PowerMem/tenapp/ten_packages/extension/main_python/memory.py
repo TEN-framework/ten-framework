@@ -19,14 +19,10 @@ class MemoryStore(ABC):
     ) -> None: ...
 
     @abstractmethod
-    async def search(
-        self, user_id: str, agent_id: str, query: str
-    ) -> Any: ...
+    async def search(self, user_id: str, agent_id: str, query: str) -> Any: ...
 
     @abstractmethod
-    async def get_user_profile(
-        self, user_id: str, agent_id: str
-    ) -> str: ...
+    async def get_user_profile(self, user_id: str, agent_id: str) -> str: ...
 
 
 class PowerMemSdkMemoryStore(MemoryStore):
@@ -64,14 +60,13 @@ class PowerMemSdkMemoryStore(MemoryStore):
                 f"[PowerMemSdkMemoryStore] Failed to add messages to memory: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkMemoryStore] Memorize traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def search(
-        self, user_id: str, agent_id: str, query: str
-    ) -> Any:
+    async def search(self, user_id: str, agent_id: str, query: str) -> Any:
         self.env.log_info(
             f"[PowerMemSdkMemoryStore] retrieve_related_clustered_categories called with: "
             f"user_id='{user_id}', agent_id='{agent_id}', query='{query}'"
@@ -89,14 +84,13 @@ class PowerMemSdkMemoryStore(MemoryStore):
                 f"[PowerMemSdkMemoryStore] Failed to retrieve related clustered categories: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkMemoryStore] Retrieve related clustered categories traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def get_user_profile(
-        self, user_id: str, agent_id: str
-    ) -> str:
+    async def get_user_profile(self, user_id: str, agent_id: str) -> str:
         self.env.log_info(
             f"[PowerMemSdkMemoryStore] get_user_profile called with: "
             f"user_id='{user_id}', agent_id='{agent_id}'"
@@ -121,8 +115,11 @@ class PowerMemSdkMemoryStore(MemoryStore):
 
             # Format memory text using join for better performance
             if memorise:
-                profile_content = "User Profile:\n" + \
-                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                profile_content = (
+                    "User Profile:\n"
+                    + "\n".join(f"- {memory}" for memory in memorise)
+                    + "\n"
+                )
                 self.env.log_info(
                     f"[PowerMemSdkMemoryStore] get_user_profile formatted {len(memorise)} memories into profile"
                 )
@@ -138,6 +135,7 @@ class PowerMemSdkMemoryStore(MemoryStore):
                 f"[PowerMemSdkMemoryStore] Failed to get user profile: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkMemoryStore] get_user_profile traceback: {traceback.format_exc()}"
             )
@@ -179,14 +177,13 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
                 f"[PowerMemSdkUserMemoryStore] Failed to add messages to memory: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkUserMemoryStore] Memorize traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def search(
-        self, user_id: str, agent_id: str, query: str
-    ) -> Any:
+    async def search(self, user_id: str, agent_id: str, query: str) -> Any:
         self.env.log_info(
             f"[PowerMemSdkUserMemoryStore] retrieve_related_clustered_categories called with: "
             f"user_id='{user_id}', agent_id='{agent_id}', query='{query}'"
@@ -204,6 +201,7 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
                 f"[PowerMemSdkUserMemoryStore] Failed to retrieve related clustered categories: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkUserMemoryStore] Retrieve related clustered categories traceback: {traceback.format_exc()}"
             )
@@ -236,8 +234,11 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
 
             # Format memory text using join for better performance
             if memorise:
-                profile_content = "User Profile:\n" + \
-                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                profile_content = (
+                    "User Profile:\n"
+                    + "\n".join(f"- {memory}" for memory in memorise)
+                    + "\n"
+                )
                 self.env.log_info(
                     f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query formatted {len(memorise)} memories into profile"
                 )
@@ -253,14 +254,13 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
                 f"[PowerMemSdkUserMemoryStore] Failed to get user profile by query: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkUserMemoryStore] get_user_profile_by_query traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def get_user_profile(
-        self, user_id: str, agent_id: str
-    ) -> str:
+    async def get_user_profile(self, user_id: str, agent_id: str) -> str:
         self.env.log_info(
             f"[PowerMemSdkUserMemoryStore] get_user_profile called with: "
             f"user_id='{user_id}', agent_id='{agent_id}'"
@@ -288,7 +288,8 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
                     f"falling back to get_user_profile_by_query"
                 )
                 profile_content = await self.get_user_profile_by_query(
-                    user_id=user_id, agent_id=agent_id,
+                    user_id=user_id,
+                    agent_id=agent_id,
                 )
 
             self.env.log_info(
@@ -301,6 +302,7 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
                 f"[PowerMemSdkUserMemoryStore] Failed to get user profile: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[PowerMemSdkUserMemoryStore] get_user_profile traceback: {traceback.format_exc()}"
             )
