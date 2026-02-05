@@ -20,6 +20,7 @@ def mock_ten_env():
     return env
 
 
+
 @pytest.fixture
 def valid_config():
     """Create a valid configuration for testing"""
