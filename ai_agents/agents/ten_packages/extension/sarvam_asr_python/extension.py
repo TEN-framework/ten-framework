@@ -113,7 +113,7 @@ class SarvamASRExtension(AsyncASRBaseExtension):
     def _build_websocket_url(self) -> str:
         """Build WebSocket URL with parameters."""
         assert self.config is not None
-        streaming_url = self.config.get_streaming_url()
+        ws_url = self.config.get_ws_url()
 
         params = {
             "language-code": self.config.language,
@@ -121,7 +121,7 @@ class SarvamASRExtension(AsyncASRBaseExtension):
             "vad_signals": "false",
         }
 
-        return f"{streaming_url}?{urlencode(params)}"
+        return f"{ws_url}?{urlencode(params)}"
 
     async def _send_initial_config(self) -> None:
         """Send initial configuration message with prompt for saaras models."""
