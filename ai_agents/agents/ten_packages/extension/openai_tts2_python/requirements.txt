@@ -1,2 +1,2 @@
 asyncio
-openai
+httpx

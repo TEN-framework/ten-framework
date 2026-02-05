@@ -182,8 +182,8 @@ async def mock_get_generator(request_id: str, chunks: int = 3):
     yield (None, TTS2HttpResponseEventType.END)
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_sequential_requests_state_machine(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_sequential_requests_state_machine(MockAsyncClient):
     """
     Test that two sequential requests with different IDs are processed correctly.
 
@@ -191,15 +191,34 @@ def test_sequential_requests_state_machine(MockOpenAITTSClient):
     """
     print("\n=== Starting Sequential Requests State Machine Test ===")
 
-    # Create mock client instance
-    mock_instance = MagicMock()
-    MockOpenAITTSClient.return_value = mock_instance
-
     # Track request order
     request_order = []
 
-    async def mock_get(text: str, request_id: str):
-        """Mock get method that tracks request order."""
+    def create_mock_response(request_num):
+        """Create a mock response for each request"""
+        mock_response = AsyncMock()
+        mock_response.status_code = 200
+
+        async def mock_aiter_bytes():
+            for i in range(3):
+                await asyncio.sleep(0.01)
+                yield b"mock_audio_data_" + str(i + 1).encode()
+
+        mock_response.aiter_bytes = mock_aiter_bytes
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+        return mock_response
+
+    stream_call_count = 0
+
+    def mock_stream(*args, **kwargs):
+        nonlocal stream_call_count
+        stream_call_count += 1
+
+        # Check the payload to determine which request this is
+        payload = kwargs.get("json", {})
+        text = payload.get("input", "")
+
         if "First" in text:
             request_order.append("request_1")
             print(f"  → Mock: Starting synthesis for request 1")
@@ -207,12 +226,12 @@ def test_sequential_requests_state_machine(MockOpenAITTSClient):
             request_order.append("request_2")
             print(f"  → Mock: Starting synthesis for request 2")
 
-        async for chunk in mock_get_generator(request_id):
-            yield chunk
+        return create_mock_response(stream_call_count)
 
-    mock_instance.get = mock_get
-    mock_instance.cancel = AsyncMock()
-    mock_instance.clean = AsyncMock()
+    mock_client = AsyncMock()
+    mock_client.stream = MagicMock(side_effect=mock_stream)
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # Create tester
     tester = StateMachineExtensionTester()
@@ -249,8 +268,8 @@ def test_sequential_requests_state_machine(MockOpenAITTSClient):
     print("\n✓ Sequential requests state machine test PASSED!")
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_request_state_transitions(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_request_state_transitions(MockAsyncClient):
     """
     Test detailed state transitions: QUEUED -> PROCESSING -> FINALIZING -> COMPLETED.
 
@@ -258,20 +277,22 @@ def test_request_state_transitions(MockOpenAITTSClient):
     """
     print("\n=== Starting Request State Transitions Test ===")
 
-    # Create mock client
-    mock_instance = MagicMock()
+    # Create mock response
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
 
-    async def mock_get(text: str, request_id: str):
-        """Mock get method for single request."""
+    async def mock_aiter_bytes():
         await asyncio.sleep(0.01)
-        yield (b"audio_chunk", TTS2HttpResponseEventType.RESPONSE)
-        yield (None, TTS2HttpResponseEventType.END)
+        yield b"audio_chunk"
 
-    mock_instance.get = mock_get
-    mock_instance.cancel = AsyncMock()
-    mock_instance.clean = AsyncMock()
+    mock_response.aiter_bytes = mock_aiter_bytes
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
 
-    MockOpenAITTSClient.return_value = mock_instance
+    mock_client = AsyncMock()
+    mock_client.stream = MagicMock(return_value=mock_response)
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # Create simple tester
     class StateTransitionTester(ExtensionTester):

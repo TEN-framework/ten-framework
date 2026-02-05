@@ -4,15 +4,63 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fmt;
+use std::{cell::Cell, fmt};
 
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{logs::SdkLoggerProvider, Resource};
-use tracing::{Event, Subscriber};
-use tracing_subscriber::{field::Visit, layer::Context, registry::LookupSpan, Layer, Registry};
+use tracing::{level_filters::LevelFilter, Event, Subscriber};
+use tracing_subscriber::{
+    field::Visit, filter::Targets, layer::Context, registry::LookupSpan, Layer, Registry,
+};
 
 use super::{OtlpEmitterConfig, OtlpProtocol};
+
+thread_local! {
+    /// Prevent OTLP exporter internal tracing re-entry.
+    ///
+    /// When setting the handler level to DEBUG, libraries like opentelemetry/tonic/hyper
+    /// may generate log events. These events can re-enter this layer, causing
+    /// infinite recursion -> stack overflow.
+    static IN_OTLP_LAYER: Cell<bool> = const { Cell::new(false) };
+}
+
+/// A guard to prevent re-entrant calls into the OTLP layer.
+///
+/// This uses a thread-local flag to detect if the current thread is already
+/// processing an event within the OTLP layer. If so, it prevents further
+/// processing of events originating from the OTLP exporter's internal logging,
+/// avoiding infinite recursion and stack overflows.
+///
+/// It also handles potential `AccessError` during process shutdown by using `try_with`.
+struct OtlpRecursionGuard;
+
+impl OtlpRecursionGuard {
+    /// Attempts to enter the OTLP layer.
+    ///
+    /// Returns `Some(OtlpRecursionGuard)` if successful (i.e., not already in the layer),
+    /// otherwise returns `None` (if already in the layer or if TLS is unavailable).
+    fn try_enter() -> Option<Self> {
+        match IN_OTLP_LAYER.try_with(|flag| {
+            let already_in_layer = flag.get();
+            if !already_in_layer {
+                flag.set(true);
+            }
+            !already_in_layer // Return true if we successfully entered, false if already in
+        }) {
+            Ok(true) => Some(OtlpRecursionGuard),
+            _ => None, // Either already in layer, or TLS access failed
+        }
+    }
+}
+
+impl Drop for OtlpRecursionGuard {
+    fn drop(&mut self) {
+        // Reset the flag when the guard is dropped.
+        // Use try_with to avoid TLS AccessError during process exit.
+        let _ = IN_OTLP_LAYER.try_with(|flag| flag.set(false));
+    }
+}
 
 /// Guard for OTLP telemetry resources
 ///
@@ -174,6 +222,15 @@ where
     fn on_event(&self, event: &Event<'_>, _ctx: Context<'_, S>) {
         use opentelemetry::logs::{LogRecord, Logger, LoggerProvider, Severity};
 
+        // Thread-local re-entrancy protection:
+        // If we detect recursion (logging triggered by the exporter itself), skip this event.
+        // This prevents stack overflow when debug logging is enabled for the exporter's dependencies.
+        let _guard = match OtlpRecursionGuard::try_enter() {
+            Some(g) => g,
+            None => return,
+        };
+
+
         let metadata = event.metadata();
         let logger = self.provider.logger("ten-framework");
 
@@ -316,6 +373,24 @@ pub fn create_otlp_layer(
 
     // Create our custom TEN OpenTelemetry layer
     let layer = TenOtelLayer::new(provider.clone());
+
+    // Prevent infinite recursion by filtering out logs from the OTLP exporter's
+    // underlying libraries. This uses a declarative filter wrapper which is
+    // more efficient and semantically correct than checking targets manually
+    // inside the layer. We default to TRACE specifically for this filter to
+    // allow the parent `DynamicTargetFilterLayer` to control the actual logging
+    // level based on user config.
+    let recursion_filter = Targets::new()
+        .with_target("opentelemetry", LevelFilter::OFF)
+        .with_target("tonic", LevelFilter::OFF)
+        .with_target("h2", LevelFilter::OFF)
+        .with_target("hyper", LevelFilter::OFF)
+        .with_target("tower", LevelFilter::OFF)
+        .with_target("reqwest", LevelFilter::OFF)
+        .with_target("rustls", LevelFilter::OFF)
+        .with_default(LevelFilter::TRACE);
+
+    let layer = layer.with_filter(recursion_filter);
 
     eprintln!("[OTLP] OTLP log layer created and ready");
     eprintln!("[OTLP] User fields will be expanded into individual attributes");

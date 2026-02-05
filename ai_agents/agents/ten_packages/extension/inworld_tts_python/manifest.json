@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "inworld_tts_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string",
+              "description": "Inworld API key (Base64-encoded)"
+            },
+            "model": {
+              "type": "string",
+              "description": "Model ID: inworld-tts-1.5-max or inworld-tts-1.5-mini"
+            },
+            "voice": {
+              "type": "string",
+              "description": "Voice ID (e.g., Ashley, Hades)"
+            },
+            "sample_rate": {
+              "type": "int64",
+              "description": "Audio sample rate in Hz (default: 24000)"
+            },
+            "temperature": {
+              "type": "float64",
+              "description": "Controls randomness (recommended: 0.6-1.1)"
+            },
+            "speaking_rate": {
+              "type": "float64",
+              "description": "Playback speed (0.5 = half, 1.5 = 1.5x faster)"
+            },
+            "text_normalization": {
+              "type": "string",
+              "description": "ON to expand numbers/dates, OFF to read as written"
+            }
+          }
+        }
+      }
+    }
+  }
+}

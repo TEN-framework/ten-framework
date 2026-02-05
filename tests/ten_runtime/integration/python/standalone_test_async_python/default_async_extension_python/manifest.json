@@ -1,19 +1,19 @@
 {
   "type": "extension",
   "name": "default_async_extension_python",
-  "version": "0.11.51",
+  "version": "0.11.53",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.51"
+      "version": "0.11.53"
     }
   ],
   "dev_dependencies": [
     {
       "type": "system",
       "name": "pytest_ten",
-      "version": "0.11.51"
+      "version": "0.11.53"
     }
   ],
   "package": {

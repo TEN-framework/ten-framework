@@ -149,13 +149,16 @@ const useGraphs = () => {
     (state) => state.global.addonModules
   );
 
-  const initialize = async () => {
+  const initialize = useCallback(async () => {
     await dispatch(initializeGraphData());
-  };
+  }, [dispatch]);
 
-  const update = async (graph: Graph, updates: Partial<Graph>) => {
-    await dispatch(updateGraph({ graph, updates })).unwrap();
-  };
+  const update = useCallback(
+    async (graph: Graph, updates: Partial<Graph>) => {
+      await dispatch(updateGraph({ graph, updates })).unwrap();
+    },
+    [dispatch]
+  );
 
   const getGraphNodeAddonByName = useCallback(
     (nodeName: string) => {
