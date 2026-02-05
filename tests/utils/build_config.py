@@ -4,6 +4,55 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import os
+import sys
+
+
+def find_mingw_gcc() -> str:
+    """
+    Search for MinGW gcc in PATH environment variable.
+    Looks for directories containing "mingw" and ending with "bin",
+    then verifies the presence of gcc.exe.
+    Returns the full path to gcc.exe if found, empty string otherwise.
+    """
+    if sys.platform != "win32":
+        return ""
+
+    path_env = os.environ.get("PATH", "")
+    if not path_env:
+        return ""
+
+    for path_dir in path_env.split(os.pathsep):
+        path_dir = path_dir.strip()
+        if not path_dir:
+            continue
+
+        # Check if this is a MinGW bin directory:
+        # 1. Path contains "mingw" (case-insensitive)
+        # 2. Path ends with "bin"
+        path_dir_lower = path_dir.lower()
+        if "mingw" not in path_dir_lower or not path_dir_lower.endswith("bin"):
+            continue
+
+        # Verify it's a real MinGW directory by checking for gcc.exe
+        gcc_path = os.path.join(path_dir, "gcc.exe")
+        if os.path.isfile(gcc_path):
+            return gcc_path
+
+    return ""
+
+
+def find_mingw_gxx() -> str:
+    """
+    Search for MinGW g++ in PATH environment variable.
+    Returns the full path to g++.exe if found, empty string otherwise.
+    """
+    gcc_path = find_mingw_gcc()
+    if gcc_path:
+        return gcc_path.replace("gcc.exe", "g++.exe")
+    return ""
+
+
 class BuildConfig:
     def __init__(
         self,

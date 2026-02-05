@@ -22,7 +22,7 @@ def http_request():
 
 
 # compile pyx files in 'default python extension'.
-def compile_pyx(app_root_path: str):
+def compile_pyx(app_root_path: str, is_mingw: bool = False):
     extension_folder = os.path.join(
         app_root_path, "ten_packages/extension/default_extension_python"
     )
@@ -54,20 +54,16 @@ def compile_pyx(app_root_path: str):
         "cython_compiler.py",
     ]
 
-    # Set short TEMP path to avoid Windows MAX_PATH issues with MSVC compiler
-    cython_env = os.environ.copy()
-    if sys.platform == "win32":
-        temp_dir = "C:\\tmp"
-        os.makedirs(temp_dir, exist_ok=True)
-        cython_env["TEMP"] = temp_dir
-        cython_env["TMP"] = temp_dir
+    # Add --use-mingw flag if building with MinGW on Windows
+    if sys.platform == "win32" and is_mingw:
+        cython_compiler_cmd.append("--use-mingw")
+        print("Using MinGW for Cython compilation (--use-mingw)")
 
     cython_compiler_process = subprocess.Popen(
         cython_compiler_cmd,
         stdout=stdout,
         stderr=subprocess.STDOUT,
         cwd=extension_folder,
-        env=cython_env,
     )
     cython_compiler_process.wait()
 
@@ -164,9 +160,8 @@ def test_go_app_cythonize():
             my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
             print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
 
-
     # Step 3: Setup AddressSanitizer if needed
-    compile_pyx(app_root_path)
+    compile_pyx(app_root_path, build_config_args.is_mingw)
 
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:

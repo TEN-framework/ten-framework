@@ -80,8 +80,8 @@ class ExtensionTesterMetrics(ExtensionTester):
             ten_env.log_info("First audio frame received.")
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_ttfb_metric_is_sent(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_ttfb_metric_is_sent(MockAsyncClient):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
     receiving the first audio chunk from the TTS service.
@@ -89,19 +89,23 @@ def test_ttfb_metric_is_sent(MockOpenAITTSClient):
     print("Starting test_ttfb_metric_is_sent with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenAITTSClient.return_value
-    mock_instance.clean = AsyncMock()
+    # Mock the streaming response with delay
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
 
-    # This async generator simulates the TTS client's get() method with a delay
-    # to produce a measurable TTFB.
-    async def mock_get_audio_with_delay(text: str, request_id: str):
+    async def mock_aiter_bytes():
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
-        # Simulate the end of the stream
-        yield (None, TTS2HttpResponseEventType.END)
+        yield b"\x11\x22\x33"
 
-    mock_instance.get.side_effect = mock_get_audio_with_delay
+    mock_response.aiter_bytes = mock_aiter_bytes
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_client = AsyncMock()
+    mock_client.stream = MagicMock(return_value=mock_response)
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.

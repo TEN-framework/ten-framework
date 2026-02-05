@@ -92,7 +92,6 @@ def test_go_app_log_rotate_python():
             my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
             print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
 
-
     # Step 3: Setup AddressSanitizer if needed
     if sys.platform == "linux":
         if (
@@ -159,13 +158,8 @@ def test_go_app_log_rotate_python():
         os.path.join(app_root_path, "test.log.1"),
     )
 
-    # send sighup to the server (Unix/Linux only)
-    if sys.platform != "win32":
-        os.kill(server.pid, signal.SIGHUP)
-    else:
-        # On Windows, SIGHUP is not available
-        # Skip the signal-based log rotation test
-        print("Skipping SIGHUP signal on Windows (not supported)")
+    # send sighup to the server
+    os.kill(server.pid, signal.SIGHUP)
 
     # sleep 3 seconds
     time.sleep(3)
@@ -176,11 +170,8 @@ def test_go_app_log_rotate_python():
         os.path.join(app_root_path, "test.log.2"),
     )
 
-    # send sighup to the server (Unix/Linux only)
-    if sys.platform != "win32":
-        os.kill(server.pid, signal.SIGHUP)
-    else:
-        print("Skipping SIGHUP signal on Windows (not supported)")
+    # send sighup to the server
+    os.kill(server.pid, signal.SIGHUP)
 
     try:
         resp = http_request()

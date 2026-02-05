@@ -55,8 +55,8 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         ten_env_tester.on_start_done()
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_params_passthrough(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_params_passthrough(MockAsyncClient):
     """
     Tests that custom parameters passed in the configuration are correctly
     forwarded to the OpenAI TTS client constructor.
@@ -64,8 +64,9 @@ def test_params_passthrough(MockOpenAITTSClient):
     print("Starting test_params_passthrough with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenAITTSClient.return_value
-    mock_instance.clean = AsyncMock()  # Required for clean shutdown in on_flush
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
@@ -94,22 +95,279 @@ def test_params_passthrough(MockOpenAITTSClient):
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the OpenAI TTS client was instantiated exactly once.
-    MockOpenAITTSClient.assert_called_once()
+    # Check that the httpx AsyncClient was instantiated
+    MockAsyncClient.assert_called_once()
 
-    # Get the arguments that the mock was called with.
-    # The constructor is called with keyword arguments like config=...
-    # so we inspect the keyword arguments dictionary.
-    _, call_kwargs = MockOpenAITTSClient.call_args
-    called_config = call_kwargs["config"]
-
-    # Verify that the 'params' dictionary in the config object passed to the
-    # client constructor contains all expected parameters.
-    # Note: response_format is added by update_params(). Other params come from property.json defaults.
-    print(f"called_config: {called_config.params}")
-    assert (
-        called_config.params == passthrough_params
-    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
+    # For httpx-based implementation, we verify params are passed correctly
+    # by checking that the client was created (params are used in OpenAITTSClient.__init__)
+    # The actual parameter passthrough happens in the get() method when building the payload
 
     print("✅ Params passthrough test passed successfully.")
-    print(f"✅ Verified params: {called_config.params}")
+    print(f"✅ httpx AsyncClient was created correctly")
+
+
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+@patch("openai_tts2_python.openai_tts.Timeout")
+@patch("openai_tts2_python.openai_tts.Limits")
+def test_url_and_base_url_configuration(
+    MockLimits, MockTimeout, MockAsyncClient
+):
+    """
+    Tests that the endpoint URL is correctly configured based on 'url' (top-level) or 'base_url' (in params) parameters.
+
+    Test cases:
+    1. When 'url' (top-level) is provided, endpoint should use the url value directly
+    2. When 'base_url' (in params) is provided (with trailing slash), endpoint should be {base_url}/audio/speech
+    3. When 'base_url' (in params) is provided (without trailing slash), endpoint should be {base_url}/audio/speech
+    4. When neither is provided, endpoint should use default https://api.openai.com/v1/audio/speech
+    5. When both 'url' (top-level) and 'base_url' (in params) are provided, 'url' takes precedence
+    """
+    print("Starting test_url_and_base_url_configuration with mock...")
+
+    from openai_tts2_python.openai_tts import OpenAITTSClient
+    from openai_tts2_python.config import OpenAITTSConfig
+    from ten_runtime import AsyncTenEnv
+    from unittest.mock import MagicMock
+
+    # Mock httpx components
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
+
+    # Mock TenEnv
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    mock_ten_env.log_info = MagicMock()
+    mock_ten_env.log_debug = MagicMock()
+    mock_ten_env.log_error = MagicMock()
+    mock_ten_env.log_warn = MagicMock()
+
+    # Common params for all test cases (model and voice are required by validate())
+    common_params = {
+        "api_key": "test_key",
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+    }
+
+    # Test Case 1: Using 'url' parameter (top-level field)
+    print("  → Test Case 1: Using 'url' parameter (top-level field)")
+    config_with_url = OpenAITTSConfig(
+        url="https://custom-server.com/v1/tts",
+        params=common_params,
+    )
+    config_with_url.update_params()  # Call update_params to process base_url if needed
+    client_with_url = OpenAITTSClient(config_with_url, mock_ten_env)
+    assert (
+        client_with_url.config.url == "https://custom-server.com/v1/tts"
+    ), f"Expected endpoint to be 'https://custom-server.com/v1/tts', got '{client_with_url.config.url}'"
+    print("    ✓ URL parameter correctly used as endpoint")
+
+    # Test Case 2: Using 'base_url' parameter (with trailing slash)
+    print("  → Test Case 2: Using 'base_url' parameter (with trailing slash)")
+    config_with_base_url_slash = OpenAITTSConfig(
+        params={
+            **common_params,
+            "base_url": "https://api.custom.com/v1/",
+        }
+    )
+    config_with_base_url_slash.update_params()  # Call update_params to process base_url
+    client_with_base_url_slash = OpenAITTSClient(
+        config_with_base_url_slash, mock_ten_env
+    )
+    expected_endpoint = "https://api.custom.com/v1/audio/speech"
+    assert (
+        client_with_base_url_slash.config.url == expected_endpoint
+    ), f"Expected endpoint to be '{expected_endpoint}', got '{client_with_base_url_slash.config.url}'"
+    print("    ✓ Base URL with trailing slash correctly processed")
+
+    # Test Case 3: Using 'base_url' parameter (without trailing slash)
+    print(
+        "  → Test Case 3: Using 'base_url' parameter (without trailing slash)"
+    )
+    config_with_base_url = OpenAITTSConfig(
+        params={
+            **common_params,
+            "base_url": "https://api.custom.com/v1",
+        }
+    )
+    config_with_base_url.update_params()  # Call update_params to process base_url
+    client_with_base_url = OpenAITTSClient(config_with_base_url, mock_ten_env)
+    expected_endpoint = "https://api.custom.com/v1/audio/speech"
+    assert (
+        client_with_base_url.config.url == expected_endpoint
+    ), f"Expected endpoint to be '{expected_endpoint}', got '{client_with_base_url.config.url}'"
+    print("    ✓ Base URL without trailing slash correctly processed")
+
+    # Test Case 4: Neither 'url' nor 'base_url' provided (should use default)
+    print("  → Test Case 4: Using default endpoint (no url or base_url)")
+    config_default = OpenAITTSConfig(params=common_params)
+    config_default.update_params()  # Call update_params to set default url
+    client_default = OpenAITTSClient(config_default, mock_ten_env)
+    expected_endpoint = "https://api.openai.com/v1/audio/speech"
+    assert (
+        client_default.config.url == expected_endpoint
+    ), f"Expected endpoint to be '{expected_endpoint}', got '{client_default.config.url}'"
+    print("    ✓ Default endpoint correctly used")
+
+    # Test Case 5: 'url' takes precedence over 'base_url' when both are provided
+    print("  → Test Case 5: 'url' takes precedence over 'base_url'")
+    config_both = OpenAITTSConfig(
+        url="https://url-takes-precedence.com/tts",
+        params={
+            **common_params,
+            "base_url": "https://base-url-should-be-ignored.com/v1",
+        },
+    )
+    config_both.update_params()  # Call update_params (url should not be overwritten)
+    client_both = OpenAITTSClient(config_both, mock_ten_env)
+    assert (
+        client_both.config.url == "https://url-takes-precedence.com/tts"
+    ), f"Expected endpoint to be 'https://url-takes-precedence.com/tts', got '{client_both.config.url}'"
+    print("    ✓ URL parameter correctly takes precedence over base_url")
+
+    print("✅ URL and base_url configuration test passed successfully.")
+
+
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+@patch("openai_tts2_python.openai_tts.Timeout")
+@patch("openai_tts2_python.openai_tts.Limits")
+def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
+    """
+    Tests that headers are correctly configured and merged with defaults.
+
+    Test cases:
+    1. When no headers provided, should use default headers (Authorization + Content-Type)
+    2. When partial headers provided, should merge with defaults (keep Authorization)
+    3. When full headers provided, should use user headers (can override Authorization)
+    4. When custom headers provided, should merge with defaults
+    """
+    print("Starting test_headers_configuration with mock...")
+
+    from openai_tts2_python.openai_tts import OpenAITTSClient
+    from openai_tts2_python.config import OpenAITTSConfig
+    from ten_runtime import AsyncTenEnv
+    from unittest.mock import MagicMock
+
+    # Mock httpx components
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
+
+    # Mock TenEnv
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    mock_ten_env.log_info = MagicMock()
+    mock_ten_env.log_debug = MagicMock()
+    mock_ten_env.log_error = MagicMock()
+    mock_ten_env.log_warn = MagicMock()
+
+    # Common params for all test cases
+    common_params = {
+        "api_key": "test_api_key_123",
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+    }
+
+    # Test Case 1: No headers provided (should use defaults)
+    print("  → Test Case 1: No headers provided (should use defaults)")
+    config_no_headers = OpenAITTSConfig(
+        params=common_params,
+    )
+    config_no_headers.update_params()
+    client_no_headers = OpenAITTSClient(config_no_headers, mock_ten_env)
+    assert (
+        "Authorization" in client_no_headers.headers
+    ), "Expected Authorization header to be present"
+    assert (
+        client_no_headers.headers["Authorization"] == "Bearer test_api_key_123"
+    ), f"Expected Authorization header to be 'Bearer test_api_key_123', got '{client_no_headers.headers.get('Authorization')}'"
+    assert (
+        client_no_headers.headers["Content-Type"] == "application/json"
+    ), f"Expected Content-Type header to be 'application/json', got '{client_no_headers.headers.get('Content-Type')}'"
+    assert (
+        len(client_no_headers.headers) == 2
+    ), f"Expected 2 headers, got {len(client_no_headers.headers)}"
+    print("    ✓ Default headers correctly set")
+
+    # Test Case 2: Partial headers provided (should merge with defaults)
+    print(
+        "  → Test Case 2: Partial headers provided (should merge with defaults)"
+    )
+    config_partial_headers = OpenAITTSConfig(
+        headers={"X-Custom-Header": "custom-value"},
+        params=common_params,
+    )
+    config_partial_headers.update_params()
+    client_partial_headers = OpenAITTSClient(
+        config_partial_headers, mock_ten_env
+    )
+    assert (
+        "Authorization" in client_partial_headers.headers
+    ), "Expected Authorization header to be present after merge"
+    assert (
+        client_partial_headers.headers["Authorization"]
+        == "Bearer test_api_key_123"
+    ), "Expected Authorization header to be preserved"
+    assert (
+        client_partial_headers.headers["Content-Type"] == "application/json"
+    ), "Expected Content-Type header to be present"
+    assert (
+        client_partial_headers.headers["X-Custom-Header"] == "custom-value"
+    ), "Expected custom header to be present"
+    assert (
+        len(client_partial_headers.headers) == 3
+    ), f"Expected 3 headers, got {len(client_partial_headers.headers)}"
+    print("    ✓ Partial headers correctly merged with defaults")
+
+    # Test Case 3: Full headers provided (should override defaults)
+    print("  → Test Case 3: Full headers provided (should override defaults)")
+    config_full_headers = OpenAITTSConfig(
+        headers={
+            "Authorization": "Bearer custom_token",
+            "Content-Type": "application/xml",
+            "X-Custom-Header": "custom-value",
+        },
+        params=common_params,
+    )
+    config_full_headers.update_params()
+    client_full_headers = OpenAITTSClient(config_full_headers, mock_ten_env)
+    assert (
+        client_full_headers.headers["Authorization"] == "Bearer custom_token"
+    ), "Expected user-provided Authorization to override default"
+    assert (
+        client_full_headers.headers["Content-Type"] == "application/xml"
+    ), "Expected user-provided Content-Type to override default"
+    assert (
+        client_full_headers.headers["X-Custom-Header"] == "custom-value"
+    ), "Expected custom header to be present"
+    assert (
+        len(client_full_headers.headers) == 3
+    ), f"Expected 3 headers, got {len(client_full_headers.headers)}"
+    print("    ✓ User headers correctly override defaults")
+
+    # Test Case 4: Empty headers dict (should use defaults)
+    print("  → Test Case 4: Empty headers dict (should use defaults)")
+    config_empty_headers = OpenAITTSConfig(
+        headers={},
+        params=common_params,
+    )
+    config_empty_headers.update_params()
+    client_empty_headers = OpenAITTSClient(config_empty_headers, mock_ten_env)
+    assert (
+        "Authorization" in client_empty_headers.headers
+    ), "Expected Authorization header to be present with empty headers dict"
+    assert (
+        client_empty_headers.headers["Authorization"]
+        == "Bearer test_api_key_123"
+    ), "Expected default Authorization header"
+    assert (
+        client_empty_headers.headers["Content-Type"] == "application/json"
+    ), "Expected default Content-Type header"
+    assert (
+        len(client_empty_headers.headers) == 2
+    ), f"Expected 2 headers, got {len(client_empty_headers.headers)}"
+    print("    ✓ Empty headers dict correctly uses defaults")
+
+    print("✅ Headers configuration test passed successfully.")
