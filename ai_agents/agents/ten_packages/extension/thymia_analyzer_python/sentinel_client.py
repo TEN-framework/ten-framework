@@ -18,6 +18,8 @@ import json
 import time
 from typing import Optional, Callable, Union, Awaitable
 
+import traceback
+
 try:
     import websockets
     from websockets.exceptions import (
@@ -36,7 +38,6 @@ from .sentinel_protocol import (
     StatusMessage,
     ErrorMessage,
 )
-
 
 # Type aliases for callbacks
 PolicyResultCallback = Union[
@@ -310,7 +311,7 @@ class SentinelClient:
                 timestamp=time.time(),
             )
             await self._websocket.send(json.dumps(transcript.to_dict()))
-            self._log_info(f"TRANSCRIPT [{speaker}]: {text[:100]}...")
+            self._log_debug(f"TRANSCRIPT [{speaker}]: {text[:100]}...")
             return True
 
         except Exception as e:
@@ -335,7 +336,6 @@ class SentinelClient:
 
         except Exception as e:
             self._log_error(f"Error receiving server events: {e}")
-            import traceback
             self._log_error(traceback.format_exc())
 
         finally:
@@ -348,7 +348,7 @@ class SentinelClient:
     async def _handle_server_message(self, message: dict):
         """Handle a message received from the server."""
         event_type = message.get("type")
-        self._log_info(f"Received server message: type={event_type}")
+        self._log_debug(f"Received server message: type={event_type}")
 
         if event_type == "STATUS":
             status = StatusMessage.from_dict(message)
@@ -375,9 +375,7 @@ class SentinelClient:
         elif event_type == "ERROR":
             error = ErrorMessage.from_dict(message)
 
-            self._log_error(
-                f"Server error [{error.error_code}]: {error.message}"
-            )
+            self._log_error(f"Server error [{error.error_code}]: {error.message}")
             if error.details:
                 self._log_error(f"  Details: {error.details}")
 
@@ -400,16 +398,15 @@ class SentinelClient:
                 callback(*args)
         except Exception as e:
             self._log_error(f"Error in callback: {e}")
-            import traceback
             self._log_error(traceback.format_exc())
 
     def _log_policy_result(self, message: dict):
         """Log a policy result in a readable format."""
-        self._log_info("=" * 60)
-        self._log_info(f"POLICY_RESULT [{message.get('policy', 'unknown')}]")
-        self._log_info("=" * 60)
+        self._log_debug("=" * 60)
+        self._log_debug(f"POLICY_RESULT [{message.get('policy', 'unknown')}]")
+        self._log_debug("=" * 60)
 
-        self._log_info(
+        self._log_debug(
             f"  turn: {message.get('triggered_at_turn')} | "
             f"ts: {message.get('timestamp')}"
         )
@@ -419,7 +416,7 @@ class SentinelClient:
 
         if result_type == "safety_analysis":
             classification = result.get("classification", {})
-            self._log_info(
+            self._log_debug(
                 f"  level: {classification.get('level')} | "
                 f"alert: {classification.get('alert')} | "
                 f"confidence: {classification.get('confidence')}"
@@ -427,54 +424,58 @@ class SentinelClient:
 
             concerns = result.get("concerns", [])
             if concerns:
-                self._log_info(f"  concerns: {concerns}")
+                self._log_debug(f"  concerns: {concerns}")
 
             actions = result.get("recommended_actions", {})
             if actions.get("for_agent"):
-                self._log_info(f"  for_agent: {actions['for_agent']}")
+                self._log_debug(f"  for_agent: {actions['for_agent']}")
 
             # Log biomarkers if present
             biomarkers = result.get("biomarker_summary", {})
             if biomarkers:
-                self._log_info("  biomarkers:")
-                for key in ["distress", "stress", "burnout", "fatigue", "low_self_esteem"]:
+                self._log_debug("  biomarkers:")
+                for key in [
+                    "distress",
+                    "stress",
+                    "burnout",
+                    "fatigue",
+                    "low_self_esteem",
+                ]:
                     value = biomarkers.get(key)
                     if value is not None:
-                        self._log_info(f"    {key}: {value:.2%}")
+                        self._log_debug(f"    {key}: {value:.2%}")
                 for key in ["depression_probability", "anxiety_probability"]:
                     value = biomarkers.get(key)
                     if value is not None:
-                        self._log_info(f"    {key}: {value:.2%}")
+                        self._log_debug(f"    {key}: {value:.2%}")
 
         elif result_type == "biomarker_passthrough":
             # Passthrough policy - just biomarkers
             biomarkers = result.get("biomarkers", {})
             if biomarkers:
-                self._log_info("  biomarkers:")
+                self._log_debug("  biomarkers:")
                 for key, value in biomarkers.items():
                     if value is not None:
                         if isinstance(value, float):
-                            self._log_info(f"    {key}: {value:.2%}")
+                            self._log_debug(f"    {key}: {value:.2%}")
                         else:
-                            self._log_info(f"    {key}: {value}")
+                            self._log_debug(f"    {key}: {value}")
 
         else:
             # Generic result
-            self._log_info(f"  result_type: {result_type}")
+            self._log_debug(f"  result_type: {result_type}")
             for key, value in result.items():
                 if key != "type":
-                    self._log_info(f"    {key}: {value}")
+                    self._log_debug(f"    {key}: {value}")
 
-        self._log_info("=" * 60)
+        self._log_debug("=" * 60)
 
     async def _reconnect(self):
         """Attempt to reconnect to the server."""
         if not self._should_reconnect or not self._config:
             return
 
-        self._log_info(
-            f"Attempting reconnect in {self._reconnect_delay:.1f}s..."
-        )
+        self._log_info(f"Attempting reconnect in {self._reconnect_delay:.1f}s...")
         await asyncio.sleep(self._reconnect_delay)
 
         # Increase delay for next attempt (exponential backoff)

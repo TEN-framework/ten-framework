@@ -19,7 +19,6 @@ from .sentinel_protocol import (
     RecommendedActions,
 )
 
-
 # Import existing types if available
 try:
     from .apollo_api import ApolloResult
@@ -33,6 +32,7 @@ class WellnessMetricsCompat:
 
     Matches the existing WellnessMetrics dataclass structure.
     """
+
     def __init__(
         self,
         distress: float = 0.0,
@@ -58,6 +58,7 @@ class SafetyClassification:
 
     This is a new type not available in the REST API.
     """
+
     def __init__(
         self,
         level: int = 0,
@@ -109,13 +110,16 @@ class ResultMapper:
         bio = result.biomarker_summary
 
         # Check if we have any Helios metrics
-        if all(v is None for v in [
-            bio.distress,
-            bio.stress,
-            bio.burnout,
-            bio.fatigue,
-            bio.low_self_esteem,
-        ]):
+        if all(
+            v is None
+            for v in [
+                bio.distress,
+                bio.stress,
+                bio.burnout,
+                bio.fatigue,
+                bio.low_self_esteem,
+            ]
+        ):
             return None
 
         return WellnessMetricsCompat(

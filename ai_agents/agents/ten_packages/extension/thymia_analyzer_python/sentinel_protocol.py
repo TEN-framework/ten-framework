@@ -13,7 +13,6 @@ from dataclasses import dataclass, field
 from typing import Optional, Literal, TypedDict
 from enum import Enum
 
-
 # ============================================================================
 # Configuration Messages (Client → Server)
 # ============================================================================
@@ -26,6 +25,7 @@ class SentinelConfig:
 
     This is the first message sent after WebSocket connection is established.
     """
+
     api_key: str
     user_label: str
     date_of_birth: str  # YYYY-MM-DD format
@@ -33,7 +33,9 @@ class SentinelConfig:
     language: str = "en-GB"
     buffer_strategy: str = "simple_reset"
     biomarkers: list[str] = field(default_factory=lambda: ["helios", "apollo"])
-    policies: list[str] = field(default_factory=lambda: ["passthrough", "safety_analysis"])
+    policies: list[str] = field(
+        default_factory=lambda: ["passthrough", "safety_analysis"]
+    )
     sample_rate: int = 16000
     format: str = "pcm16"
     channels: int = 1
@@ -63,6 +65,7 @@ class AudioHeader:
 
     The server expects AUDIO_HEADER followed by raw audio bytes.
     """
+
     track: str  # "user" or "agent"
     format: str = "pcm16"
     sample_rate: int = 16000
@@ -88,6 +91,7 @@ class TranscriptMessage:
 
     Enables concordance analysis between spoken content and biomarkers.
     """
+
     speaker: str  # "user" or "agent"
     text: str
     is_final: bool = True
@@ -116,6 +120,7 @@ class TranscriptMessage:
 
 class AlertLevel(str, Enum):
     """Safety alert levels from Sentinel analysis."""
+
     NONE = "none"
     MONITOR = "monitor"
     PROFESSIONAL_REFERRAL = "professional_referral"
@@ -124,6 +129,7 @@ class AlertLevel(str, Enum):
 
 class Urgency(str, Enum):
     """Urgency levels for recommended actions."""
+
     ROUTINE = "routine"
     WITHIN_WEEK = "within_week"
     WITHIN_48HRS = "within_48hrs"
@@ -133,6 +139,7 @@ class Urgency(str, Enum):
 
 class AnalysisType(str, Enum):
     """Types of analysis results."""
+
     INITIAL = "initial"
     UPDATE = "update"
     HOLISTIC = "holistic"
@@ -140,6 +147,7 @@ class AnalysisType(str, Enum):
 
 class Classification(TypedDict, total=False):
     """Safety classification from Sentinel analysis."""
+
     level: int  # Risk level 0-3
     alert: str  # "none", "monitor", "professional_referral", "crisis"
     confidence: str  # "low", "medium", "high"
@@ -147,13 +155,17 @@ class Classification(TypedDict, total=False):
 
 class RecommendedActions(TypedDict, total=False):
     """Recommended actions from Sentinel analysis."""
+
     for_agent: str  # What the AI agent should do/say next
     for_human_reviewer: Optional[str]  # Notes for human reviewer
-    urgency: str  # "routine", "within_week", "within_48hrs", "within_24hrs", "immediate"
+    urgency: (
+        str  # "routine", "within_week", "within_48hrs", "within_24hrs", "immediate"
+    )
 
 
 class ConversationContext(TypedDict, total=False):
     """Context about the conversation analyzed."""
+
     mood_discussed: bool
     topics: list[str]
     user_insight: str  # "good", "fair", "poor", "unknown"
@@ -161,6 +173,7 @@ class ConversationContext(TypedDict, total=False):
 
 class ConcordanceAnalysis(TypedDict, total=False):
     """Analysis of text-biomarker concordance."""
+
     scenario: str  # "mood_not_discussed", "mood_discussed", "concordance", "minimization", "amplification"
     agreement_level: str  # "high", "moderate", "low", "n/a"
     mismatch_type: Optional[str]
@@ -169,6 +182,7 @@ class ConcordanceAnalysis(TypedDict, total=False):
 
 class SafetyFlags(TypedDict, total=False):
     """Safety flags from analysis."""
+
     suicidal_content: bool
     severe_mismatch: bool
     mood_not_yet_discussed: bool
@@ -183,6 +197,7 @@ class BiomarkerSummary:
     Combines Helios wellness scores with Apollo disorder probabilities
     and individual symptom severities.
     """
+
     # Helios wellness scores (0.0 - 1.0)
     distress: Optional[float] = None
     stress: Optional[float] = None
@@ -278,6 +293,7 @@ class PolicyResult:
     This is the main result type received from the server, containing
     biomarkers, safety classification, concerns, and recommended actions.
     """
+
     policy: str  # Policy name (e.g., "passthrough", "safety_analysis")
     triggered_at_turn: int  # User turn that triggered this policy
     timestamp: float  # Unix timestamp
@@ -314,7 +330,9 @@ class PolicyResult:
             if isinstance(raw_biomarkers, dict):
                 biomarker_summary = BiomarkerSummary.from_dict(raw_biomarkers)
             elif hasattr(raw_biomarkers, "model_dump"):
-                biomarker_summary = BiomarkerSummary.from_dict(raw_biomarkers.model_dump())
+                biomarker_summary = BiomarkerSummary.from_dict(
+                    raw_biomarkers.model_dump()
+                )
 
         return cls(
             policy=data.get("policy", "unknown"),
@@ -340,6 +358,7 @@ class StatusMessage:
 
     Received periodically to track audio buffering progress.
     """
+
     buffer_duration: float  # Total buffered duration in seconds
     speech_duration: float  # Detected speech duration in seconds
 
@@ -357,6 +376,7 @@ class ErrorMessage:
     """
     Error message from Sentinel server.
     """
+
     error_code: str
     message: str
     details: Optional[str] = None

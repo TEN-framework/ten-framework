@@ -15,6 +15,7 @@ Key features:
 - Apollo biomarkers: depression, anxiety (probability + severity)
 - Safety classification with alerts
 """
+
 import asyncio
 import json
 import time
@@ -49,6 +50,7 @@ from .result_mapper import (
 @dataclass
 class WellnessMetrics:
     """Thymia API wellness analysis results"""
+
     distress: float
     stress: float
     burnout: float
@@ -169,9 +171,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 self.stream_agent_audio = True
 
             try:
-                self.auto_reconnect = await ten_env.get_property_bool(
-                    "auto_reconnect"
-                )
+                self.auto_reconnect = await ten_env.get_property_bool("auto_reconnect")
             except Exception:
                 self.auto_reconnect = True
 
@@ -238,9 +238,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             else:
                 # Not connected - waiting for start_session
                 if self._audio_frame_count % 1000 == 1:
-                    ten_env.log_debug(
-                        "[THYMIA] Waiting for Sentinel connection..."
-                    )
+                    ten_env.log_debug("[THYMIA] Waiting for Sentinel connection...")
 
         except Exception as e:
             ten_env.log_error(f"[THYMIA] Audio frame error: {e}")
@@ -426,7 +424,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     ) -> None:
         """Send safety alert to LLM"""
         try:
-            actions = ", ".join(safety.recommended_actions) if safety.recommended_actions else "none"
+            actions = (
+                ", ".join(safety.recommended_actions)
+                if safety.recommended_actions
+                else "none"
+            )
             hint = (
                 f"[SAFETY ALERT] Risk level: {safety.level}. "
                 f"Concerns: {safety.concerns}. "
@@ -472,7 +474,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     {
                         "name": "phase",
                         "type": "string",
-                        "description": "Which results announced: 'hellos' or 'apollo'",
+                        "description": "Which results announced: 'helios' or 'apollo'",
                         "required": True,
                     },
                 ],
@@ -528,10 +530,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_info(f"[THYMIA] Announcement confirmed: {phase}")
                 return LLMToolResultLLMResult(
                     type="llmresult",
-                    content=json.dumps({
-                        "status": "confirmed",
-                        "phase": phase,
-                    }),
+                    content=json.dumps(
+                        {
+                            "status": "confirmed",
+                            "phase": phase,
+                        }
+                    ),
                 )
 
             elif name == "start_session":
@@ -550,9 +554,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 content=json.dumps({"error": str(e)}),
             )
 
-    async def _handle_get_wellness_metrics(
-        self, ten_env: AsyncTenEnv
-    ) -> LLMToolResult:
+    async def _handle_get_wellness_metrics(self, ten_env: AsyncTenEnv) -> LLMToolResult:
         """Handle get_wellness_metrics tool"""
         ten_env.log_info(
             f"[THYMIA] get_wellness_metrics: results={self.sentinel_results_count}, "
@@ -581,7 +583,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             ),
         )
 
-        ten_env.log_info(f"[THYMIA] Response: {json.dumps(response_data)}")
+        ten_env.log_debug(f"[THYMIA] Response: {json.dumps(response_data)}")
 
         return LLMToolResultLLMResult(
             type="llmresult",
@@ -602,10 +604,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         if not name or not year_of_birth or not sex:
             return LLMToolResultLLMResult(
                 type="llmresult",
-                content=json.dumps({
-                    "status": "error",
-                    "message": "Missing required fields: name, year_of_birth, sex",
-                }),
+                content=json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Missing required fields: name, year_of_birth, sex",
+                    }
+                ),
             )
 
         # Normalize sex
@@ -636,17 +640,21 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         if success:
             return LLMToolResultLLMResult(
                 type="llmresult",
-                content=json.dumps({
-                    "status": "connected",
-                    "message": f"Session started for {name}. Voice analysis is now active.",
-                    "session_id": session_id,
-                }),
+                content=json.dumps(
+                    {
+                        "status": "connected",
+                        "message": f"Session started for {name}. Voice analysis is now active.",
+                        "session_id": session_id,
+                    }
+                ),
             )
         else:
             return LLMToolResultLLMResult(
                 type="llmresult",
-                content=json.dumps({
-                    "status": "error",
-                    "message": "Failed to connect to analysis server. Will retry.",
-                }),
+                content=json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Failed to connect to analysis server. Will retry.",
+                    }
+                ),
             )
