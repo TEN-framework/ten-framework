@@ -226,7 +226,7 @@ jobs:
           } else {
             # For msvc, we also need to use nightly when ten_enable_go_binding=true
             # because Go always uses MinGW toolchain on Windows (CGO requires
-            # GCC-compatible compiler).
+            # GCC-compatible compiler) and the above issues will also happen.
             rustup default nightly-x86_64-pc-windows-msvc
           }
           cargo install --force cbindgen
