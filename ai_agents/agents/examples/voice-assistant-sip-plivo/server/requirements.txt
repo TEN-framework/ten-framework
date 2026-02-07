@@ -1,0 +1,14 @@
+# Voice Assistant SIP Plivo Server Dependencies
+
+# FastAPI and web server
+fastapi
+uvicorn[standard]
+
+# Plivo integration
+plivo
+
+# Data validation and settings
+pydantic
+
+# Note: WebSocket functionality is handled by the main_python extension
+# Note: Audio processing (audioop) is part of Python standard library

@@ -1,0 +1,3 @@
+websockets>=11.0.0
+aiohttp>=3.8.0
+plivo>=4.47.0
