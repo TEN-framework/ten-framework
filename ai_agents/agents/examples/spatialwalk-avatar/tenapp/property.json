@@ -99,6 +99,25 @@
               "name": "streamid_adapter",
               "addon": "streamid_adapter",
               "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "spatialreal_avatar_python",
+              "property": {
+                "sample_rate": 24000,
+                "agora_appid": "${env:AGORA_APP_ID|}",
+                "agora_app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "agora_avatar_uid": "2000",
+                "spatialreal_console_endpoint_url": "https://console-test.spatialwalk.top/v1/console",
+                "channel": "ten_agent_test",
+                "session_expire_minutes": 30,
+                "dump": false,
+                "spatialreal_ingress_endpoint_url": "wss://api-test.spatialwalk.top/v2/driveningress",
+                "spatialreal_api_key": "${env:SPATIALREAL_API_KEY}",
+                "spatialreal_app_id": "${env:SPATIALREAL_APP_ID}",
+                "spatialreal_avatar_id": "799236a4-0263-4aee-b144-ab571c72d90c"
+              }
             }
           ],
           "connections": [
@@ -154,6 +173,9 @@
                   "source": [
                     {
                       "extension": "tts"
+                    },
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }

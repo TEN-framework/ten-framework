@@ -748,6 +748,19 @@
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
     },
     {
+      "type": "extension",
+      "name": "spatialreal_avatar_python",
+      "version": "0.1.0",
+      "hash": "96d017b7d0e566a5762894865cad8d7071608eafc10938a75fcc0c815572067a",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/spatialreal_avatar_python"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
       "version": "0.11.53",

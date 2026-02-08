@@ -143,6 +143,9 @@
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/spatialreal_avatar_python"
     }
   ],
   "scripts": {
