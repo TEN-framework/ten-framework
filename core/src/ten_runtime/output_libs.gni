@@ -58,5 +58,19 @@ if (is_linux) {
 # Note: ten_runtime_go_output_libs is no longer used since it's
 # a static library now.
 
-ten_runtime_nodejs_output_libs =
-    [ "${root_out_dir}/libten_runtime_nodejs.node" ]
+if (is_win) {
+  if (is_mingw) {
+    # MinGW: .node extension with lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/libten_runtime_nodejs.node",
+    ]
+  } else {
+    # MSVC: .node extension without lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/ten_runtime_nodejs.node",
+    ]
+  }
+} else {
+  ten_runtime_nodejs_output_libs =
+      [ "${root_out_dir}/libten_runtime_nodejs.node" ]
+}
