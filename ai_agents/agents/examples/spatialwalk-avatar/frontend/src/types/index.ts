@@ -12,6 +12,7 @@ export interface IOptions {
   userId: number;
   appId: string;
   token: string;
+  spatialwalkToken: string;
 }
 
 export interface IAgentSettings {

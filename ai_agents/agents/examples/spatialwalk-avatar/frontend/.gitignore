@@ -133,3 +133,5 @@ dist
 
 # Claude Code
 .claude
+
+*.wasm

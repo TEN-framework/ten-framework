@@ -38,6 +38,20 @@ export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
   return resp;
 };
 
+export const apiGenSpatialwalkToken = async (config: GenAgoraDataConfig) => {
+  // Reuse the same token endpoint; Spatialwalk flow uses uid=0.
+  const url = `/api/token/generate`;
+  const { channel } = config;
+  const data = {
+    request_id: genUUID(),
+    uid: 0,
+    channel_name: channel,
+  };
+  let resp: any = await axios.post(url, data);
+  resp = resp.data || {};
+  return resp;
+};
+
 export const apiStartService = async (
   config: StartRequestConfig
 ): Promise<any> => {

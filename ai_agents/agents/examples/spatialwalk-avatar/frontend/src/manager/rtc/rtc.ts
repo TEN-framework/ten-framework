@@ -6,7 +6,7 @@ import AgoraRTC, {
   type IRemoteAudioTrack,
   type UID,
 } from "agora-rtc-sdk-ng";
-import { apiGenAgoraData, VideoSourceType } from "@/common";
+import { apiGenAgoraData, apiGenSpatialwalkToken, VideoSourceType } from "@/common";
 import {
   EMessageDataType,
   EMessageType,
@@ -31,6 +31,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   localTracks: IUserTracks;
   appId: string | null = null;
   token: string | null = null;
+  spatialwalkToken: string | null = null;
   userId: number | null = null;
 
   constructor() {
@@ -41,10 +42,53 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this._listenRtcEvents();
   }
 
-  async join({ channel, userId }: { channel: string; userId: number }) {
+  async join({
+    channel,
+    userId,
+    enableSpatialwalk,
+  }: {
+    channel: string;
+    userId: number;
+    enableSpatialwalk: boolean;
+  }) {
     if (!this._joined) {
-      const res = await apiGenAgoraData({ channel, userId });
-      const { code, data } = res;
+      let rtcRes: any;
+
+      if (enableSpatialwalk) {
+        const [rtcTokenResult, spatialwalkTokenResult] = await Promise.allSettled([
+          apiGenAgoraData({ channel, userId }),
+          apiGenSpatialwalkToken({ channel, userId }),
+        ]);
+
+        if (rtcTokenResult.status === "rejected") {
+          throw rtcTokenResult.reason;
+        }
+        rtcRes = rtcTokenResult.value;
+
+        if (spatialwalkTokenResult.status === "fulfilled") {
+          const { code, data } = spatialwalkTokenResult.value || {};
+          if (code == 0) {
+            this.spatialwalkToken = data?.token ?? "";
+          } else {
+            console.warn(
+              "[rtc] failed to get spatialwalk token, continue without avatar token",
+              spatialwalkTokenResult.value
+            );
+            this.spatialwalkToken = "";
+          }
+        } else {
+          console.warn(
+            "[rtc] spatialwalk token request failed, continue without avatar token",
+            spatialwalkTokenResult.reason
+          );
+          this.spatialwalkToken = "";
+        }
+      } else {
+        rtcRes = await apiGenAgoraData({ channel, userId });
+        this.spatialwalkToken = "";
+      }
+
+      const { code, data } = rtcRes;
       if (code != 0) {
         throw new Error("Failed to get Agora token");
       }
@@ -316,6 +360,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   private _resetData() {
     this.localTracks = {};
+    this.spatialwalkToken = null;
     this._joined = false;
   }
 }

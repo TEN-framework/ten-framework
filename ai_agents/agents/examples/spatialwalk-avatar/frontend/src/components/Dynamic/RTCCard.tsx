@@ -72,12 +72,14 @@ export default function RTCCard(props: { className?: string }) {
     await rtcManager.join({
       channel,
       userId,
+      enableSpatialwalk: spatialwalkSettings.enabled,
     });
     dispatch(
       setOptions({
         ...options,
         appId: rtcManager.appId ?? "",
         token: rtcManager.token ?? "",
+        spatialwalkToken: rtcManager.spatialwalkToken ?? "",
       })
     );
     await rtcManager.publish();

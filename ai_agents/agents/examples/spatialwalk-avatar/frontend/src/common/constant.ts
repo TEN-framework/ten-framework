@@ -14,6 +14,7 @@ export const DEFAULT_OPTIONS: IOptions = {
   userId: 0,
   appId: "",
   token: "",
+  spatialwalkToken: "",
 };
 export const DESCRIPTION =
   "TEN Agent is an open-source multimodal AI agent that can speak, see, and access a knowledge base(RAG).";

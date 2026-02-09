@@ -54,10 +54,10 @@ export default function AvatarSpatialwalk() {
     return {
       appId: options.appId,
       channel: options.channel,
-      token: options.token || undefined,
+      token: options.spatialwalkToken || undefined,
       uid: 0,
     };
-  }, [options.appId, options.channel, options.token]);
+  }, [options.appId, options.channel, options.spatialwalkToken]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
