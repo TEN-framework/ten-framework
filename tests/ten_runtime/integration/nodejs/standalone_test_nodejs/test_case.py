@@ -127,12 +127,18 @@ def test_standalone_test_nodejs():
     # Step 4:
     #
     # Run the test.
-    test_cmd = [
-        "tests/bin/start",
-    ]
+    if sys.platform == "win32":
+        test_cmd = [
+            sys.executable,
+            "tests/bin/start.py",
+        ]
+    else:
+        test_cmd = [
+            "tests/bin/start",
+        ]
 
-    if sys.platform == "linux" and build_config_args.enable_sanitizer:
-        test_cmd.append("-asan")
+        if build_config_args.enable_sanitizer:
+            test_cmd.append("-asan")
 
     tester_process = subprocess.Popen(
         test_cmd,

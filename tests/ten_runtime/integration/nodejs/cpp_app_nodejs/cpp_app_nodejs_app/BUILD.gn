@@ -16,5 +16,9 @@ ten_package("cpp_app_nodejs_app") {
     "property.json",
   ]
 
+  if (is_win) {
+    resources += [ "bin/start.py" ]
+  }
+
   sources = [ "src/main.cc" ]
 }

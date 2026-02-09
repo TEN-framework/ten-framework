@@ -58,18 +58,31 @@ def test_start_graph_and_communicate_nodejs():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(
-        base_path,
-        "start_graph_and_communicate_nodejs_app/bin/start",
-    )
-
-    client_cmd = os.path.join(
-        base_path, "start_graph_and_communicate_nodejs_app_client"
-    )
-
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+    if sys.platform == "win32":
+        server_cmd = [
+            sys.executable,
+            os.path.join(
+                base_path,
+                "start_graph_and_communicate_nodejs_app/bin/start.py",
+            ),
+        ]
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_communicate_nodejs_app_client.exe"
+        )
+        if not os.path.isfile(server_cmd[1]):
+            print(f"Server command '{server_cmd[1]}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(
+            base_path,
+            "start_graph_and_communicate_nodejs_app/bin/start",
+        )
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_communicate_nodejs_app_client"
+        )
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,
