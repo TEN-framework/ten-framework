@@ -1,0 +1,186 @@
+"use client";
+
+import {
+  AvatarManager,
+  AvatarSDK,
+  AvatarView,
+  DrivingServiceMode,
+  Environment,
+} from "@spatialwalk/avatarkit";
+import { AgoraProvider, AvatarPlayer } from "@spatialwalk/avatarkit-rtc";
+import { Maximize, Minimize } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useAppSelector } from "@/common";
+import { cn } from "@/lib/utils";
+
+let initKey: string | null = null;
+let initPromise: Promise<void> | null = null;
+
+const ensureSdkInitialized = async (appId: string, environment: "cn" | "intl") => {
+  const nextKey = `${appId}:${environment}`;
+  if (initPromise && initKey === nextKey) {
+    return initPromise;
+  }
+  if (initKey && initKey !== nextKey) {
+    AvatarSDK.cleanup();
+    initPromise = null;
+  }
+  initKey = nextKey;
+  initPromise = AvatarSDK.initialize(appId, {
+    environment: environment === "cn" ? Environment.cn : Environment.intl,
+    drivingServiceMode: DrivingServiceMode.host,
+  });
+  return initPromise;
+};
+
+export default function AvatarSpatialwalk() {
+  const options = useAppSelector((state) => state.global.options);
+  const spatialwalkSettings = useAppSelector(
+    (state) => state.global.spatialwalkSettings
+  );
+  const [avatarId, setAvatarId] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const avatarViewRef = useRef<AvatarView | null>(null);
+  const playerRef = useRef<AvatarPlayer | null>(null);
+
+  const connectConfig = useMemo(() => {
+    if (!options.channel || !options.appId) {
+      return null;
+    }
+    return {
+      appId: options.appId,
+      channel: options.channel,
+      token: options.token || undefined,
+      uid: 0,
+    };
+  }, [options.appId, options.channel, options.token]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    setAvatarId(urlParams.get("avatarId") || "");
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const setup = async () => {
+      if (!spatialwalkSettings.enabled) {
+        return;
+      }
+      const resolvedAvatarId = avatarId || spatialwalkSettings.avatarId;
+      if (!resolvedAvatarId || !spatialwalkSettings.appId) {
+        setErrorMessage("Missing Avatar ID or App ID.");
+        return;
+      }
+      if (!containerRef.current) {
+        return;
+      }
+      setLoading(true);
+      setErrorMessage("");
+
+      try {
+        await ensureSdkInitialized(
+          spatialwalkSettings.appId,
+          spatialwalkSettings.environment
+        );
+        if (cancelled) return;
+
+        const avatar = await AvatarManager.shared.load(resolvedAvatarId);
+        if (cancelled) return;
+
+        const avatarView = new AvatarView(avatar, containerRef.current);
+        avatarViewRef.current = avatarView;
+
+        const provider = new AgoraProvider();
+        // Package typings currently miss BaseProvider event methods; runtime is compatible.
+        const player = new AvatarPlayer(provider as any, avatarView, {
+          logLevel: "warning",
+        });
+        playerRef.current = player;
+
+        if (connectConfig) {
+          await player.connect(connectConfig);
+        }
+      } catch (error: any) {
+        const message =
+          error?.message || "Failed to initialize Spatialwalk Avatar.";
+        setErrorMessage(message);
+        console.error("[spatialwalk] init error:", error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const cleanup = async () => {
+      const player = playerRef.current;
+      playerRef.current = null;
+      if (player) {
+        try {
+          await player.disconnect();
+        } catch (err) {
+          console.warn("[spatialwalk] disconnect failed", err);
+        }
+      }
+      if (avatarViewRef.current) {
+        avatarViewRef.current.dispose();
+        avatarViewRef.current = null;
+      }
+    };
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      void cleanup();
+    };
+  }, [
+    spatialwalkSettings.enabled,
+    spatialwalkSettings.avatarId,
+    spatialwalkSettings.appId,
+    spatialwalkSettings.environment,
+    avatarId,
+    connectConfig,
+  ]);
+
+  return (
+    <div
+      className={cn("relative h-full w-full overflow-hidden rounded-lg", {
+        ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
+      })}
+    >
+      <button
+        className="absolute top-2 right-2 z-10 rounded-lg bg-black/50 p-2 transition hover:bg-black/70"
+        onClick={() => setFullscreen((prevValue) => !prevValue)}
+      >
+        {fullscreen ? (
+          <Minimize className="text-white" size={24} />
+        ) : (
+          <Maximize className="text-white" size={24} />
+        )}
+      </button>
+
+      <div ref={containerRef} className="h-full w-full" />
+
+      {loading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 text-white">
+          Loading avatar...
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-500/80 text-white">
+          <div>{errorMessage}</div>
+        </div>
+      )}
+    </div>
+  );
+}

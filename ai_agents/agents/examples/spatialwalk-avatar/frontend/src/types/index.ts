@@ -19,13 +19,12 @@ export interface IAgentSettings {
   greeting: string;
 }
 
-export interface ITrulienceSettings {
+export interface ISpatialwalkSettings {
   enabled: boolean;
-  avatarToken: string;
   avatarId: string;
+  appId: string;
+  environment: "cn" | "intl";
   avatarDesktopLargeWindow: boolean;
-  animationURL: string;
-  trulienceSDK: string;
 }
 
 export enum EMessageType {

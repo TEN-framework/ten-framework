@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderCircleIcon, UsersIcon } from "lucide-react";
 import * as React from "react";
-import { set, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useAppDispatch, useAppSelector } from "@/common/hooks";
@@ -14,6 +14,13 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -21,16 +28,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { setTrulienceSettings } from "@/store/reducers/global";
+import { setSpatialwalkSettings } from "@/store/reducers/global";
 import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
 
-export function TrulienceCfgSheet() {
+export function SpatialwalkCfgSheet() {
   const dispatch = useAppDispatch();
-  const trulienceSettings = useAppSelector(
-    (state) => state.global.trulienceSettings
+  const spatialwalkSettings = useAppSelector(
+    (state) => state.global.spatialwalkSettings
   );
+
   return (
     <Sheet>
       <SheetTrigger
@@ -43,46 +51,49 @@ export function TrulienceCfgSheet() {
       </SheetTrigger>
       <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Trulience Avatar</SheetTitle>
+          <SheetTitle>Spatialwalk Avatar</SheetTitle>
           <SheetDescription>
-            You can configure the Trulience Avatar settings here. This will give
-            you a nice avatar for your chat.
+            Configure the Spatialwalk Avatar settings for your chat experience.
           </SheetDescription>
         </SheetHeader>
 
         <div className="my-4">
-          <TrulienceCfgForm
+          <SpatialwalkCfgForm
             initialData={{
-              enable_trulience_avatar: trulienceSettings.enabled,
-              trulience_avatar_id: trulienceSettings.avatarId,
-              trulience_avatar_token: trulienceSettings.avatarToken,
-              trulience_large_window:
-                trulienceSettings.avatarDesktopLargeWindow,
-              trulience_sdk_url: trulienceSettings.trulienceSDK,
-              trulience_animation_url: trulienceSettings.animationURL,
+              enable_spatialwalk_avatar: spatialwalkSettings.enabled,
+              spatialwalk_avatar_id: spatialwalkSettings.avatarId,
+              spatialwalk_app_id: spatialwalkSettings.appId,
+              spatialwalk_env: spatialwalkSettings.environment,
+              spatialwalk_large_window:
+                spatialwalkSettings.avatarDesktopLargeWindow,
             }}
             onUpdate={async (data) => {
-              if (data.enable_trulience_avatar === true) {
-                if (!data.trulience_avatar_id) {
-                  toast.error("Trulience Settings", {
-                    description: `Please provide Trulience Avatar ID`,
+              if (data.enable_spatialwalk_avatar === true) {
+                if (!data.spatialwalk_avatar_id) {
+                  toast.error("Spatialwalk Settings", {
+                    description: "Please provide an Avatar ID",
+                  });
+                  return;
+                }
+                if (!data.spatialwalk_app_id) {
+                  toast.error("Spatialwalk Settings", {
+                    description: "Please provide an App ID",
                   });
                   return;
                 }
               }
               dispatch(
-                setTrulienceSettings({
-                  enabled: data.enable_trulience_avatar as boolean,
-                  avatarId: data.trulience_avatar_id as string,
-                  avatarToken: data.trulience_avatar_token as string,
+                setSpatialwalkSettings({
+                  enabled: data.enable_spatialwalk_avatar as boolean,
+                  avatarId: data.spatialwalk_avatar_id as string,
+                  appId: data.spatialwalk_app_id as string,
+                  environment: (data.spatialwalk_env as "cn" | "intl") || "cn",
                   avatarDesktopLargeWindow:
-                    data.trulience_large_window as boolean,
-                  trulienceSDK: data.trulience_sdk_url as string,
-                  animationURL: data.trulience_animation_url as string,
+                    data.spatialwalk_large_window as boolean,
                 })
               );
-              toast.success("Trulience Settings", {
-                description: `Settings updated successfully`,
+              toast.success("Spatialwalk Settings", {
+                description: "Settings updated successfully",
               });
             }}
           />
@@ -92,7 +103,7 @@ export function TrulienceCfgSheet() {
   );
 }
 
-const TrulienceCfgForm = ({
+const SpatialwalkCfgForm = ({
   initialData,
   onUpdate,
 }: {
@@ -108,22 +119,22 @@ const TrulienceCfgForm = ({
     defaultValues: initialData,
   });
   const { watch } = form;
-  // Watch for changes in "enable_trulience_avatar" field
-  const enableTrulienceAvatar = watch("enable_trulience_avatar");
+  const enableSpatialwalkAvatar = watch("enable_spatialwalk_avatar");
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     onUpdate(data);
   };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
-          key={"enable_trulience_avatar"}
+          key={"enable_spatialwalk_avatar"}
           control={form.control}
-          name={"enable_trulience_avatar"}
+          name={"enable_spatialwalk_avatar"}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Enable Trulience Avatar</FormLabel>
+              <FormLabel>Enable Spatialwalk Avatar</FormLabel>
               <div className="flex items-center justify-between">
                 <FormControl>
                   <div className="flex items-center space-x-2">
@@ -137,15 +148,15 @@ const TrulienceCfgForm = ({
             </FormItem>
           )}
         />
-        {enableTrulienceAvatar && (
+        {enableSpatialwalkAvatar && (
           <>
             <FormField
-              key={"trulience_avatar_id"}
+              key={"spatialwalk_avatar_id"}
               control={form.control}
-              name={"trulience_avatar_id"}
+              name={"spatialwalk_avatar_id"}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Trulience Avatar ID</FormLabel>
+                  <FormLabel>Avatar ID</FormLabel>
                   <div className="flex items-center justify-between">
                     <FormControl>
                       <Input
@@ -163,12 +174,12 @@ const TrulienceCfgForm = ({
               )}
             />
             <FormField
-              key={"trulience_avatar_token"}
+              key={"spatialwalk_app_id"}
               control={form.control}
-              name={"trulience_avatar_token"}
+              name={"spatialwalk_app_id"}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Trulience Avatar Token</FormLabel>
+                  <FormLabel>AvatarKit App ID</FormLabel>
                   <div className="flex items-center justify-between">
                     <FormControl>
                       <Input
@@ -186,12 +197,40 @@ const TrulienceCfgForm = ({
               )}
             />
             <FormField
-              key={"trulience_large_window"}
+              key={"spatialwalk_env"}
               control={form.control}
-              name={"trulience_large_window"}
+              name={"spatialwalk_env"}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Trulience Large Window</FormLabel>
+                  <FormLabel>Environment</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={
+                        field.value === null || field.value === undefined
+                          ? "cn"
+                          : field.value.toString()
+                      }
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select environment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cn">CN</SelectItem>
+                        <SelectItem value="intl">Intl</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              key={"spatialwalk_large_window"}
+              control={form.control}
+              name={"spatialwalk_large_window"}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Large Window</FormLabel>
                   <div className="flex items-center justify-between">
                     <FormControl>
                       <div className="flex items-center space-x-2">
@@ -200,52 +239,6 @@ const TrulienceCfgForm = ({
                           onCheckedChange={field.onChange}
                         />
                       </div>
-                    </FormControl>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              key={"trulience_sdk_url"}
-              control={form.control}
-              name={"trulience_sdk_url"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Trulience SDK URL</FormLabel>
-                  <div className="flex items-center justify-between">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={
-                          field.value === null || field.value === undefined
-                            ? ""
-                            : field.value.toString()
-                        }
-                        type={"text"}
-                      />
-                    </FormControl>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              key={"trulience_animation_url"}
-              control={form.control}
-              name={"trulience_animation_url"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Trulience Animation URL</FormLabel>
-                  <div className="flex items-center justify-between">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={
-                          field.value === null || field.value === undefined
-                            ? ""
-                            : field.value.toString()
-                        }
-                        type={"text"}
-                      />
                     </FormControl>
                   </div>
                 </FormItem>

@@ -2,7 +2,7 @@ import type {
   ColorItem,
   GraphOptionItem,
   IOptions,
-  ITrulienceSettings,
+  ISpatialwalkSettings,
   LanguageOptionItem,
   VoiceOptionItem,
 } from "@/types";
@@ -136,12 +136,11 @@ export const isLLM = (extensionName: string) => {
 
 export const isEditModeOn = process.env.NEXT_PUBLIC_EDIT_GRAPH_MODE === "true";
 
-export const TRULIENCE_SETTINGS_KEY = "__trulience__";
-export const DEFAULT_TRULIENCE_OPTIONS: ITrulienceSettings = {
+export const SPATIALWALK_SETTINGS_KEY = "__spatialwalk__";
+export const DEFAULT_SPATIALWALK_OPTIONS: ISpatialwalkSettings = {
   enabled: false,
   avatarId: "",
-  avatarToken: "",
+  appId: "",
+  environment: "cn",
   avatarDesktopLargeWindow: false,
-  animationURL: "https://trulience.com",
-  trulienceSDK: "https://trulience.com/sdk/trulience.sdk.js",
 };

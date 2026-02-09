@@ -6,7 +6,7 @@ import {
 import {
   COLOR_LIST,
   DEFAULT_OPTIONS,
-  DEFAULT_TRULIENCE_OPTIONS,
+  DEFAULT_SPATIALWALK_OPTIONS,
   EMobileActiveTab,
   isEditModeOn,
 } from "@/common/constant";
@@ -23,12 +23,12 @@ import {
 } from "@/common/request";
 import {
   setOptionsToLocal,
-  setTrulienceSettingsToLocal,
+  setSpatialwalkSettingsToLocal,
 } from "@/common/storage";
 import type {
   IChatItem,
   IOptions,
-  ITrulienceSettings,
+  ISpatialwalkSettings,
   Language,
   VoiceType,
 } from "@/types";
@@ -47,7 +47,7 @@ export interface InitialState {
   graphMap: Record<string, Graph>;
   addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
-  trulienceSettings: ITrulienceSettings;
+  spatialwalkSettings: ISpatialwalkSettings;
 }
 
 const getInitialState = (): InitialState => {
@@ -65,7 +65,7 @@ const getInitialState = (): InitialState => {
     graphMap: {},
     addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
-    trulienceSettings: DEFAULT_TRULIENCE_OPTIONS,
+    spatialwalkSettings: DEFAULT_SPATIALWALK_OPTIONS,
   };
 };
 
@@ -77,15 +77,15 @@ export const globalSlice = createSlice({
       state.options = { ...state.options, ...action.payload };
       setOptionsToLocal(state.options);
     },
-    setTrulienceSettings: (
+    setSpatialwalkSettings: (
       state,
-      action: PayloadAction<ITrulienceSettings>
+      action: PayloadAction<ISpatialwalkSettings>
     ) => {
-      state.trulienceSettings = {
-        ...state.trulienceSettings,
+      state.spatialwalkSettings = {
+        ...state.spatialwalkSettings,
         ...action.payload,
       };
-      setTrulienceSettingsToLocal(state.trulienceSettings);
+      setSpatialwalkSettingsToLocal(state.spatialwalkSettings);
     },
     setThemeColor: (state, action: PayloadAction<string>) => {
       state.themeColor = action.payload;
@@ -277,7 +277,7 @@ export const {
   setMobileActiveTab,
   setGraph,
   setAddonModules,
-  setTrulienceSettings,
+  setSpatialwalkSettings,
 } = globalSlice.actions;
 
 export { initializeGraphData, fetchGraphDetails };

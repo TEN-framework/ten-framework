@@ -5,7 +5,7 @@ import {
   getOptionsFromLocal,
   getRandomChannel,
   getRandomUserId,
-  getTrulienceSettingsFromLocal,
+  getSpatialwalkSettingsFromLocal,
   useAppDispatch,
   useAppSelector,
 } from "@/common";
@@ -15,7 +15,7 @@ import {
   reset,
   setOptions,
   setSelectedGraphId,
-  setTrulienceSettings,
+  setSpatialwalkSettings,
 } from "@/store/reducers/global";
 
 interface AuthInitializerProps {
@@ -35,12 +35,12 @@ const AuthInitializer = (props: AuthInitializerProps) => {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal();
-      const trulienceSettings = getTrulienceSettingsFromLocal();
+      const spatialwalkSettings = getSpatialwalkSettingsFromLocal();
       initialize();
       if (options && options.channel) {
         dispatch(reset());
         dispatch(setOptions(options));
-        dispatch(setTrulienceSettings(trulienceSettings));
+        dispatch(setSpatialwalkSettings(spatialwalkSettings));
       } else {
         dispatch(reset());
         dispatch(

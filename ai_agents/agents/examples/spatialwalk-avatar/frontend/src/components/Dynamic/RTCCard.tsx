@@ -5,30 +5,22 @@ import type {
   ILocalVideoTrack,
   IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
-import dynamic from "next/dynamic";
 import * as React from "react";
 import {
   useAppDispatch,
   useAppSelector,
   useIsCompactLayout,
   VideoSourceType,
-  VOICE_OPTIONS,
 } from "@/common";
-import Avatar from "@/components/Agent/AvatarTrulience";
+import Avatar from "@/components/Agent/AvatarSpatialwalk";
 import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import AgentView from "@/components/Agent/View";
-import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
-import {
-  addChatItem,
-  setOptions,
-  setRoomConnected,
-  setVoiceType,
-} from "@/store/reducers/global";
-import { EMessageType, type IChatItem, ITextItem } from "@/types";
+import { addChatItem, setOptions, setRoomConnected } from "@/store/reducers/global";
+import { type IChatItem } from "@/types";
 
 let hasInit: boolean = false;
 
@@ -37,8 +29,8 @@ export default function RTCCard(props: { className?: string }) {
 
   const dispatch = useAppDispatch();
   const options = useAppSelector((state) => state.global.options);
-  const trulienceSettings = useAppSelector(
-    (state) => state.global.trulienceSettings
+  const spatialwalkSettings = useAppSelector(
+    (state) => state.global.spatialwalkSettings
   );
   const { userId, channel } = options;
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>();
@@ -48,14 +40,10 @@ export default function RTCCard(props: { className?: string }) {
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(
     VideoSourceType.CAMERA
   );
-  const useTrulienceAvatar = trulienceSettings.enabled;
-  const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
+  const useSpatialwalkAvatar = spatialwalkSettings.enabled;
+  const avatarInLargeWindow = spatialwalkSettings.avatarDesktopLargeWindow;
 
   const isCompactLayout = useIsCompactLayout();
-
-  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
-    ssr: false,
-  });
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -109,8 +97,8 @@ export default function RTCCard(props: { className?: string }) {
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user);
-    if (useTrulienceAvatar) {
-      // trulience SDK will play audio in synch with mouth
+    if (useSpatialwalkAvatar) {
+      // Spatialwalk SDK will play audio in sync with animation
       user.audioTrack?.stop();
     }
     if (user.audioTrack || user.videoTrack) {
@@ -135,10 +123,6 @@ export default function RTCCard(props: { className?: string }) {
     dispatch(addChatItem(text));
   };
 
-  const onVoiceChange = (value: any) => {
-    dispatch(setVoiceType(value));
-  };
-
   const onVideoSourceTypeChange = async (value: VideoSourceType) => {
     await rtcManager.switchVideoSource(value);
     setVideoSourceType(value);
@@ -148,13 +132,10 @@ export default function RTCCard(props: { className?: string }) {
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Top region (Avatar or ChatCard) */}
       <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: '240px' }}>
-        {useTrulienceAvatar ? (
+        {useSpatialwalkAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
-              <Avatar
-                localAudioTrack={audioTrack}
-                audioTrack={remoteuser?.audioTrack}
-              />
+              <Avatar />
             </div>
           ) : (
             !isCompactLayout && (

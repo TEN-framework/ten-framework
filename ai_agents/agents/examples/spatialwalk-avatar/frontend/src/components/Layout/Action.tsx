@@ -17,7 +17,7 @@ import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
-import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
+import { SpatialwalkCfgSheet } from "../Chat/ChatCfgSpatialwalkSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
 
@@ -155,7 +155,7 @@ export default function Action(props: { className?: string }) {
             <RemoteGraphSelect />
             {isEditModeOn && (
               <>
-                <TrulienceCfgSheet />
+                <SpatialwalkCfgSheet />
                 {/* <RemoteModuleCfgSheet /> */}
                 {/* <RemotePropertyCfgSheet /> */}
               </>

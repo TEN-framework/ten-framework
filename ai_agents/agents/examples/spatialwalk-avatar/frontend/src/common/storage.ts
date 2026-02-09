@@ -1,9 +1,9 @@
-import type { IOptions, ITrulienceSettings } from "@/types";
+import type { IOptions, ISpatialwalkSettings } from "@/types";
 import {
   DEFAULT_OPTIONS,
-  DEFAULT_TRULIENCE_OPTIONS,
   OPTIONS_KEY,
-  TRULIENCE_SETTINGS_KEY,
+  DEFAULT_SPATIALWALK_OPTIONS,
+  SPATIALWALK_SETTINGS_KEY,
 } from "./constant";
 
 export const getOptionsFromLocal = () => {
@@ -22,18 +22,20 @@ export const setOptionsToLocal = (options: IOptions) => {
   }
 };
 
-export const getTrulienceSettingsFromLocal = () => {
+export const getSpatialwalkSettingsFromLocal = () => {
   if (typeof window !== "undefined") {
-    const data = localStorage.getItem(TRULIENCE_SETTINGS_KEY);
+    const data = localStorage.getItem(SPATIALWALK_SETTINGS_KEY);
     if (data) {
       return JSON.parse(data);
     }
   }
-  return DEFAULT_TRULIENCE_OPTIONS;
+  return DEFAULT_SPATIALWALK_OPTIONS;
 };
 
-export const setTrulienceSettingsToLocal = (settings: ITrulienceSettings) => {
+export const setSpatialwalkSettingsToLocal = (
+  settings: ISpatialwalkSettings
+) => {
   if (typeof window !== "undefined") {
-    localStorage.setItem(TRULIENCE_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(SPATIALWALK_SETTINGS_KEY, JSON.stringify(settings));
   }
 };
