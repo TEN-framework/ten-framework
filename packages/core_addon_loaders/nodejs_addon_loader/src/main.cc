@@ -4,11 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+
+// On Windows, prevent min/max macros from Windows SDK conflicting with
+// std::min/max and std::numeric_limits<>::min()/max()
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
+
 #include <uv.h>
 
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include "node.h"

@@ -66,9 +66,17 @@ def test_mix_python_ext_nodejs():
     if rc != 0:
         assert False, "Failed to build TypeScript extensions."
 
-    bootstrap_cmd = os.path.join(
-        base_path, "mix_python_ext_nodejs_app/bin/bootstrap"
-    )
+    if sys.platform == "win32":
+        bootstrap_cmd = [
+            sys.executable,
+            os.path.join(
+                base_path, "mix_python_ext_nodejs_app/bin/bootstrap.py"
+            ),
+        ]
+    else:
+        bootstrap_cmd = os.path.join(
+            base_path, "mix_python_ext_nodejs_app/bin/bootstrap"
+        )
 
     bootstrap_process = subprocess.Popen(
         bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
@@ -89,11 +97,21 @@ def test_mix_python_ext_nodejs():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(base_path, "mix_python_ext_nodejs_app/bin/start")
-
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+    if sys.platform == "win32":
+        server_cmd = [
+            sys.executable,
+            os.path.join(base_path, "mix_python_ext_nodejs_app/bin/start.py"),
+        ]
+        if not os.path.isfile(server_cmd[1]):
+            print(f"Server command '{server_cmd[1]}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(
+            base_path, "mix_python_ext_nodejs_app/bin/start"
+        )
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,
