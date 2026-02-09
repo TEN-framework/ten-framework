@@ -53,6 +53,12 @@ ten_package("ten_nodejs_binding_system_package") {
     resources += [ "${lib}=>lib/${libname}" ]
   }
 
+  # On Windows, include libnode.dll in the package since ten_runtime_nodejs.node
+  # depends on it.
+  if (is_win) {
+    resources += [ "//third_party/node/lib/win/x64/libnode.dll=>lib/libnode.dll" ]
+  }
+
   deps = [
     ":ten_runtime_nodejs_js",
     "native:ten_runtime_nodejs",

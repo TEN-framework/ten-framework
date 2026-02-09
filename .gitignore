@@ -19,6 +19,9 @@ __pycache__/
 *.a
 *.o
 
+# Do not ignore prebuilt node libraries for Windows
+!third_party/node/lib/win/x64/*.dll
+
 # Log
 *.log
 

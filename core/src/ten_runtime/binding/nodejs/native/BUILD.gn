@@ -34,6 +34,9 @@ ten_shared_library("ten_runtime_nodejs") {
   } else if (is_linux || is_mingw) {
     # MinGW uses GNU ld and supports rpath
     ldflags = [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  } else if (is_win && !is_mingw) {
+    # MSVC: link against node import library
+    ldflags = []
   }
 
   sources = [ "init.c" ]
@@ -48,5 +51,6 @@ ten_shared_library("ten_runtime_nodejs") {
     "ten_env",
     "test",
     "//core/src/ten_runtime:ten_runtime_library",
+    "//third_party/node",
   ]
 }
