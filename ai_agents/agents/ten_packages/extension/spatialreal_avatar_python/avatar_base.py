@@ -81,6 +81,7 @@ You don't need to override on_init/on_start/on_stop!
 import asyncio
 import json
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any
 import os
 
@@ -106,6 +107,13 @@ from ten_ai_base.message import ErrorMessage, ModuleType
 MODULE_TYPE_AVATAR = "avatar"
 
 
+@dataclass
+class AudioQueueItem:
+    kind: str  # "audio" | "eof"
+    audio_data: bytes | None = None
+    request_id: str = ""
+
+
 class AsyncAvatarBaseExtension(AsyncExtension, ABC):
     """
     Base class for Avatar Extensions.
@@ -124,7 +132,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         # Internal state (managed by base class)
         self._audio_processing_enabled = False
         self._config_valid = False
-        self._in_audio_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._in_audio_queue: asyncio.Queue[AudioQueueItem] = asyncio.Queue()
         self._audio_task: asyncio.Task | None = None
         self._sample_rate_error_sent = False
 
@@ -380,9 +388,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 # reason=1 means TTS generation complete
                 if reason == 1:
                     ten_env.log_info(
-                        f"{self.LOG_PREFIX} TTS complete (request_id={request_id}), sending EOF"
+                        f"{self.LOG_PREFIX} TTS complete (request_id={request_id}), queueing EOF marker"
                     )
-                    await self._on_tts_audio_end(ten_env)
+                    await self._on_tts_audio_end(ten_env, request_id)
 
     # ========================================================================
     # AUDIO HANDLING - Managed by base class
@@ -427,7 +435,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         try:
             self._dump_audio(audio_data, "in")
             queue_size = self._in_audio_queue.qsize()
-            self._in_audio_queue.put_nowait(audio_data)
+            self._in_audio_queue.put_nowait(
+                AudioQueueItem(kind="audio", audio_data=bytes(audio_data))
+            )
             ten_env.log_info(
                 f"{self.LOG_PREFIX} Queued audio: {len(audio_data)} bytes, queue_size={queue_size + 1}"
             )
@@ -439,12 +449,29 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop started")
         while self._audio_processing_enabled:
             try:
-                audio_data = await self._in_audio_queue.get()
-                ten_env.log_info(
-                    f"{self.LOG_PREFIX} Processing audio from queue: {len(audio_data)} bytes, calling send_audio_to_avatar"
-                )
-                await self.send_audio_to_avatar(audio_data)
-                ten_env.log_info(f"{self.LOG_PREFIX} send_audio_to_avatar completed")
+                queue_item = await self._in_audio_queue.get()
+
+                if queue_item.kind == "audio":
+                    audio_data = queue_item.audio_data or b""
+                    ten_env.log_info(
+                        f"{self.LOG_PREFIX} Processing audio from queue: {len(audio_data)} bytes, calling send_audio_to_avatar"
+                    )
+                    await self.send_audio_to_avatar(audio_data)
+                    ten_env.log_info(
+                        f"{self.LOG_PREFIX} send_audio_to_avatar completed"
+                    )
+                elif queue_item.kind == "eof":
+                    ten_env.log_info(
+                        f"{self.LOG_PREFIX} Processing EOF marker from queue (request_id={queue_item.request_id})"
+                    )
+                    await self.send_eof_to_avatar()
+                    ten_env.log_info(
+                        f"{self.LOG_PREFIX} EOF sent successfully (request_id={queue_item.request_id})"
+                    )
+                else:
+                    ten_env.log_warn(
+                        f"{self.LOG_PREFIX} Unknown queue item kind: {queue_item.kind}"
+                    )
             except asyncio.CancelledError:
                 ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop cancelled")
                 break
@@ -471,18 +498,27 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Error interrupting: {e}")
 
-    async def _on_tts_audio_end(self, ten_env: AsyncTenEnv) -> None:
+    async def _on_tts_audio_end(
+        self, ten_env: AsyncTenEnv, request_id: str = "unknown"
+    ) -> None:
         """Handle tts_audio_end event."""
         if not self._audio_processing_enabled:
             ten_env.log_info(f"{self.LOG_PREFIX} Audio processing disabled, skipping EOF")
             return
 
-        ten_env.log_info(f"{self.LOG_PREFIX} Calling send_eof_to_avatar...")
+        ten_env.log_info(
+            f"{self.LOG_PREFIX} Queueing EOF marker for request_id={request_id}"
+        )
         try:
-            await self.send_eof_to_avatar()
-            ten_env.log_info(f"{self.LOG_PREFIX} EOF sent successfully")
+            queue_size = self._in_audio_queue.qsize()
+            self._in_audio_queue.put_nowait(
+                AudioQueueItem(kind="eof", request_id=request_id)
+            )
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} EOF marker queued (request_id={request_id}), queue_size={queue_size + 1}"
+            )
         except Exception as e:
-            ten_env.log_error(f"{self.LOG_PREFIX} Error sending EOF: {e}")
+            ten_env.log_error(f"{self.LOG_PREFIX} Error queueing EOF marker: {e}")
 
 
     async def _clear_audio_queue(self) -> None:
@@ -496,7 +532,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 break
 
         if self.ten_env:
-            self.ten_env.log_info(f"{self.LOG_PREFIX} Cleared {cleared} audio frames from queue")
+            self.ten_env.log_info(
+                f"{self.LOG_PREFIX} Cleared {cleared} queued items (audio/eof) from queue"
+            )
 
     async def _send_error(
         self, ten_env: AsyncTenEnv, message: str, code: int = 0

@@ -191,6 +191,16 @@
                     }
                   ]
                 }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
               ]
             },
             {
