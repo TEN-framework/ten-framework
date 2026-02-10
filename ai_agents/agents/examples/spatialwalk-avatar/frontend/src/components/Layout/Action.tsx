@@ -7,7 +7,6 @@ import {
   apiStartService,
   apiStopService,
   EMobileActiveTab,
-  isEditModeOn,
   MOBILE_ACTIVE_TAB_MAP,
   useAppDispatch,
   useAppSelector,
@@ -153,13 +152,7 @@ export default function Action(props: { className?: string }) {
           {/* -- Graph Select Part */}
           <div className="mt-2 flex w-full items-center justify-between gap-2 md:mt-0 md:w-auto md:flex-wrap">
             <RemoteGraphSelect />
-            {isEditModeOn && (
-              <>
-                <SpatialwalkCfgSheet />
-                {/* <RemoteModuleCfgSheet /> */}
-                {/* <RemotePropertyCfgSheet /> */}
-              </>
-            )}
+            <SpatialwalkCfgSheet />
 
             {/* -- Action Button */}
             <div className="flex items-center gap-2 md:ml-auto">
