@@ -102,6 +102,25 @@ config("nodejs_addon_loader_config") {
   if (is_win && !is_mingw) {
     # MSVC or clang-cl on Windows uses /std:c++17
     cflags_cc = [ "/std:c++17" ]
+
+    # Use dynamic RELEASE CRT (/MD) to match the prebuilt libnode.dll.
+    # libnode.dll imports VCRUNTIME140.dll / MSVCP140.dll (release, no "D"),
+    # so we must use /MD even in debug builds. Using /MDd would link against
+    # VCRUNTIME140D.dll (debug), causing STL layout mismatches when passing
+    # std::vector<std::string> across the DLL boundary to
+    # node::InitializeOncePerProcess().
+    #
+    # This overrides the global /MTd set by common_cflags and msvc:debug
+    # configs. When both /MT and /MD appear, clang-cl uses the last one.
+    cflags = [ "/MD" ]
+
+    # Disable MSVC debug iterator checks to match libnode.dll's release STL
+    # layout. Without this, _DEBUG causes std::vector/std::string to have
+    # extra debug fields that don't exist in the release-built libnode.dll.
+    defines += [
+      "_ITERATOR_DEBUG_LEVEL=0",
+      "_HAS_ITERATOR_DEBUGGING=0",
+    ]
   } else {
     # GCC, Clang, MinGW use -std=c++17
     cflags_cc = [ "-std=c++17" ]
@@ -122,6 +141,27 @@ ten_package("nodejs_addon_loader") {
     "manifest.json",
     "property.json",
   ]
+
+  # On Windows (non-MinGW), force linking against the RELEASE dynamic CRT
+  # to match the prebuilt libnode.dll (which uses VCRUNTIME140.dll, not
+  # VCRUNTIME140D.dll). The msvc:debug config adds debug CRT import libs
+  # (msvcrtd.lib, ucrtd.lib, vcruntimed.lib), so we must exclude them
+  # and substitute the release versions.
+  if (is_win && !is_mingw && is_debug) {
+    ldflags = [
+      "/NODEFAULTLIB:msvcrtd.lib",
+      "/NODEFAULTLIB:ucrtd.lib",
+      "/NODEFAULTLIB:vcruntimed.lib",
+      "/NODEFAULTLIB:libcmtd.lib",
+      "/NODEFAULTLIB:libucrtd.lib",
+      "/NODEFAULTLIB:libvcruntimed.lib",
+    ]
+    libs = [
+      "msvcrt.lib",
+      "ucrt.lib",
+      "vcruntime.lib",
+    ]
+  }
 
   docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                            [

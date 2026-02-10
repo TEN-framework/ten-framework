@@ -412,9 +412,10 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
           "  console.log('wait 3 seconds to mock import slowly...');"
           "  await new Promise(resolve => setTimeout(resolve, 3000));"
 #endif
-          "  const module = await "
-          "import(process.cwd() + "
-          "'/ten_packages/system/ten_runtime_nodejs/build/index.js');"
+          "  const { pathToFileURL } = require('node:url');"
+          "  const modulePath = process.cwd() + "
+          "'/ten_packages/system/ten_runtime_nodejs/build/index.js';"
+          "  const module = await import(pathToFileURL(modulePath).href);"
           "  global.ten_runtime_nodejs = module;"
           "  console.log('ten_runtime_nodejs module loaded successfully');"
           "  global.__ten_runtime_nodejs_module_imported();"
