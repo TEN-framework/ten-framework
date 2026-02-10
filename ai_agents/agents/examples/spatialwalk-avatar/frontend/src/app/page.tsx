@@ -25,7 +25,6 @@ export default function Home() {
   );
 
   const isCompactLayout = useIsCompactLayout();
-  const useSpatialwalkAvatar = spatialwalkSettings.enabled;
   const avatarInLargeWindow = spatialwalkSettings.avatarDesktopLargeWindow;
   return (
     <AuthInitializer>
@@ -49,9 +48,7 @@ export default function Home() {
             )}
           />
 
-          {(!useSpatialwalkAvatar ||
-            isCompactLayout ||
-            !avatarInLargeWindow) && (
+          {(isCompactLayout || !avatarInLargeWindow) && (
             <DynamicChatCard
               className={cn(
                 "m-0 w-full flex-auto rounded-b-lg bg-[#181a1d] md:rounded-lg",
@@ -63,7 +60,7 @@ export default function Home() {
             />
           )}
 
-          {useSpatialwalkAvatar && avatarInLargeWindow && (
+          {avatarInLargeWindow && (
             <div
               className={cn("w-full", {
                 ["h-60 flex-auto bg-[#181a1d] p-1"]: isCompactLayout,

@@ -1,13 +1,16 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import {
+  getSpatialwalkUrlConfig,
   getOptionsFromLocal,
   getRandomChannel,
   getRandomUserId,
   getSpatialwalkSettingsFromLocal,
   useAppDispatch,
   useAppSelector,
+  validateSpatialwalkRequiredConfig,
 } from "@/common";
 import { useGraphs } from "@/common/hooks";
 import {
@@ -31,11 +34,15 @@ const AuthInitializer = (props: AuthInitializerProps) => {
   );
   const graphList = useAppSelector((state) => state.global.graphList);
   const urlParamApplied = useRef(false);
+  const spatialwalkWarningShown = useRef(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const options = getOptionsFromLocal();
       const spatialwalkSettings = getSpatialwalkSettingsFromLocal();
+      const validation = validateSpatialwalkRequiredConfig(
+        getSpatialwalkUrlConfig()
+      );
       initialize();
       if (options && options.channel) {
         dispatch(reset());
@@ -49,6 +56,13 @@ const AuthInitializer = (props: AuthInitializerProps) => {
             userId: getRandomUserId(),
           })
         );
+        dispatch(setSpatialwalkSettings(spatialwalkSettings));
+      }
+      if (!spatialwalkWarningShown.current && !validation.isValid) {
+        spatialwalkWarningShown.current = true;
+        toast.error("Spatialwalk Settings", {
+          description: validation.message,
+        });
       }
     }
   }, [dispatch]);

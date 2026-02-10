@@ -11,6 +11,10 @@ import { AgoraProvider, AvatarPlayer } from "@spatialwalk/avatarkit-rtc";
 import { Maximize, Minimize } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/common";
+import {
+  getSpatialwalkUrlConfig,
+  validateSpatialwalkRequiredConfig,
+} from "@/common/spatialwalk";
 import { cn } from "@/lib/utils";
 
 let initKey: string | null = null;
@@ -38,7 +42,6 @@ export default function AvatarSpatialwalk() {
   const spatialwalkSettings = useAppSelector(
     (state) => state.global.spatialwalkSettings
   );
-  const [avatarId, setAvatarId] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -46,6 +49,9 @@ export default function AvatarSpatialwalk() {
   const containerRef = useRef<HTMLDivElement>(null);
   const avatarViewRef = useRef<AvatarView | null>(null);
   const playerRef = useRef<AvatarPlayer | null>(null);
+  const [spatialwalkUrlConfig, setSpatialwalkUrlConfig] = useState(
+    getSpatialwalkUrlConfig()
+  );
 
   const connectConfig = useMemo(() => {
     if (!options.channel || !options.appId) {
@@ -60,39 +66,34 @@ export default function AvatarSpatialwalk() {
   }, [options.appId, options.channel, options.spatialwalkToken]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const urlParams = new URLSearchParams(window.location.search);
-    setAvatarId(urlParams.get("avatarId") || "");
+    setSpatialwalkUrlConfig(getSpatialwalkUrlConfig());
   }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const setup = async () => {
-      if (!spatialwalkSettings.enabled) {
-        return;
-      }
-      const resolvedAvatarId = avatarId || spatialwalkSettings.avatarId;
-      if (!resolvedAvatarId || !spatialwalkSettings.appId) {
-        setErrorMessage("Missing Avatar ID or App ID.");
+      setErrorMessage("");
+      const validation = validateSpatialwalkRequiredConfig(spatialwalkUrlConfig);
+      if (!validation.isValid) {
+        setErrorMessage(validation.message);
         return;
       }
       if (!containerRef.current) {
         return;
       }
       setLoading(true);
-      setErrorMessage("");
 
       try {
         await ensureSdkInitialized(
-          spatialwalkSettings.appId,
+          spatialwalkUrlConfig.appId,
           spatialwalkSettings.environment
         );
         if (cancelled) return;
 
-        const avatar = await AvatarManager.shared.load(resolvedAvatarId);
+        const avatar = await AvatarManager.shared.load(
+          spatialwalkUrlConfig.avatarId
+        );
         if (cancelled) return;
 
         const avatarView = new AvatarView(avatar, containerRef.current);
@@ -143,11 +144,9 @@ export default function AvatarSpatialwalk() {
       void cleanup();
     };
   }, [
-    spatialwalkSettings.enabled,
-    spatialwalkSettings.avatarId,
-    spatialwalkSettings.appId,
+    spatialwalkUrlConfig.appId,
+    spatialwalkUrlConfig.avatarId,
     spatialwalkSettings.environment,
-    avatarId,
     connectConfig,
   ]);
 

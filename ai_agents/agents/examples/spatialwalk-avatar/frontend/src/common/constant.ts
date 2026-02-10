@@ -139,7 +139,7 @@ export const isEditModeOn = process.env.NEXT_PUBLIC_EDIT_GRAPH_MODE === "true";
 
 export const SPATIALWALK_SETTINGS_KEY = "__spatialwalk__";
 export const DEFAULT_SPATIALWALK_OPTIONS: ISpatialwalkSettings = {
-  enabled: false,
+  enabled: true,
   avatarId: "",
   appId: "",
   environment: "intl",

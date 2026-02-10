@@ -7,9 +7,11 @@ import {
   apiStartService,
   apiStopService,
   EMobileActiveTab,
+  getSpatialwalkUrlConfig,
   MOBILE_ACTIVE_TAB_MAP,
   useAppDispatch,
   useAppSelector,
+  validateSpatialwalkRequiredConfig,
 } from "@/common";
 import { LoadingButton } from "@/components/Button/LoadingButton";
 import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
@@ -69,6 +71,15 @@ export default function Action(props: { className?: string }) {
         setLoading(false);
         return;
       }
+      const spatialwalkUrlConfig = getSpatialwalkUrlConfig();
+      const validation = validateSpatialwalkRequiredConfig(spatialwalkUrlConfig);
+      if (!validation.isValid) {
+        toast.error("Spatialwalk Settings", {
+          description: validation.message,
+        });
+        setLoading(false);
+        return;
+      }
 
       const res = await apiStartService({
         channel,
@@ -76,6 +87,11 @@ export default function Action(props: { className?: string }) {
         graphName: selectedGraph.name,
         language,
         voiceType,
+        properties: {
+          avatar: {
+            spatialreal_avatar_id: spatialwalkUrlConfig.avatarId,
+          },
+        },
       });
       const { code, msg } = res || {};
       if (code != 0) {

@@ -26,7 +26,11 @@ export const getSpatialwalkSettingsFromLocal = () => {
   if (typeof window !== "undefined") {
     const data = localStorage.getItem(SPATIALWALK_SETTINGS_KEY);
     if (data) {
-      return JSON.parse(data);
+      const parsed = JSON.parse(data) as Partial<ISpatialwalkSettings>;
+      return {
+        ...DEFAULT_SPATIALWALK_OPTIONS,
+        ...parsed,
+      };
     }
   }
   return DEFAULT_SPATIALWALK_OPTIONS;

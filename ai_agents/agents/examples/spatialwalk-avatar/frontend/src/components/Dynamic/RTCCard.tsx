@@ -15,7 +15,6 @@ import {
 import Avatar from "@/components/Agent/AvatarSpatialwalk";
 import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
-import AgentView from "@/components/Agent/View";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
@@ -36,11 +35,9 @@ export default function RTCCard(props: { className?: string }) {
   const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>();
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>();
   const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>();
-  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>();
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(
     VideoSourceType.CAMERA
   );
-  const useSpatialwalkAvatar = spatialwalkSettings.enabled;
   const avatarInLargeWindow = spatialwalkSettings.avatarDesktopLargeWindow;
 
   const isCompactLayout = useIsCompactLayout();
@@ -72,7 +69,7 @@ export default function RTCCard(props: { className?: string }) {
     await rtcManager.join({
       channel,
       userId,
-      enableSpatialwalk: spatialwalkSettings.enabled,
+      enableSpatialwalk: true,
     });
     dispatch(
       setOptions({
@@ -99,15 +96,8 @@ export default function RTCCard(props: { className?: string }) {
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user);
-    if (useSpatialwalkAvatar) {
-      // Spatialwalk SDK will play audio in sync with animation
-      user.audioTrack?.stop();
-    }
-    if (user.audioTrack || user.videoTrack) {
-      setRemoteUser(user);
-    } else {
-      setRemoteUser(undefined);
-    }
+    // Spatialwalk SDK will play audio in sync with animation
+    user.audioTrack?.stop();
   };
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
@@ -134,18 +124,14 @@ export default function RTCCard(props: { className?: string }) {
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Top region (Avatar or ChatCard) */}
       <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: '240px' }}>
-        {useSpatialwalkAvatar ? (
-          !avatarInLargeWindow ? (
-            <div className="h-60 w-full p-1">
-              <Avatar />
-            </div>
-          ) : (
-            !isCompactLayout && (
-              <ChatCard className="m-0 h-full w-full rounded-b-lg bg-[#181a1d] md:rounded-lg" />
-            )
-          )
+        {!avatarInLargeWindow ? (
+          <div className="h-60 w-full p-1">
+            <Avatar />
+          </div>
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
+          !isCompactLayout && (
+            <ChatCard className="m-0 h-full w-full rounded-b-lg bg-[#181a1d] md:rounded-lg" />
+          )
         )}
       </div>
 

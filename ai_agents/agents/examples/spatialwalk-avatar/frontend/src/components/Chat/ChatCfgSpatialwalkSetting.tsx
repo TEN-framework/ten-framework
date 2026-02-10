@@ -31,7 +31,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { setSpatialwalkSettings } from "@/store/reducers/global";
-import { Input } from "../ui/input";
+import type { ISpatialwalkSettings } from "@/types";
 
 export function SpatialwalkCfgSheet() {
   const dispatch = useAppDispatch();
@@ -53,45 +53,28 @@ export function SpatialwalkCfgSheet() {
         <SheetHeader>
           <SheetTitle>Spatialwalk Avatar</SheetTitle>
           <SheetDescription>
-            Configure the Spatialwalk Avatar settings for your chat experience.
+            `appId` and `avatarId` come from URL query params. Configure only
+            environment and layout here.
           </SheetDescription>
         </SheetHeader>
 
         <div className="my-4">
           <SpatialwalkCfgForm
             initialData={{
-              enable_spatialwalk_avatar: spatialwalkSettings.enabled,
-              spatialwalk_avatar_id: spatialwalkSettings.avatarId,
-              spatialwalk_app_id: spatialwalkSettings.appId,
               spatialwalk_env: spatialwalkSettings.environment,
               spatialwalk_large_window:
                 spatialwalkSettings.avatarDesktopLargeWindow,
             }}
             onUpdate={async (data) => {
-              if (data.enable_spatialwalk_avatar === true) {
-                if (!data.spatialwalk_avatar_id) {
-                  toast.error("Spatialwalk Settings", {
-                    description: "Please provide an Avatar ID",
-                  });
-                  return;
-                }
-                if (!data.spatialwalk_app_id) {
-                  toast.error("Spatialwalk Settings", {
-                    description: "Please provide an App ID",
-                  });
-                  return;
-                }
-              }
-              dispatch(
-                setSpatialwalkSettings({
-                  enabled: data.enable_spatialwalk_avatar as boolean,
-                  avatarId: data.spatialwalk_avatar_id as string,
-                  appId: data.spatialwalk_app_id as string,
-                  environment: (data.spatialwalk_env as "cn" | "intl") || "intl",
-                  avatarDesktopLargeWindow:
-                    data.spatialwalk_large_window as boolean,
-                })
-              );
+              const nextSettings: ISpatialwalkSettings = {
+                enabled: true,
+                avatarId: spatialwalkSettings.avatarId,
+                appId: spatialwalkSettings.appId,
+                environment: (data.spatialwalk_env as "cn" | "intl") || "intl",
+                avatarDesktopLargeWindow:
+                  data.spatialwalk_large_window as boolean,
+              };
+              dispatch(setSpatialwalkSettings(nextSettings));
               toast.success("Spatialwalk Settings", {
                 description: "Settings updated successfully",
               });
@@ -118,8 +101,6 @@ const SpatialwalkCfgForm = ({
     resolver: zodResolver(formSchema),
     defaultValues: initialData,
   });
-  const { watch } = form;
-  const enableSpatialwalkAvatar = watch("enable_spatialwalk_avatar");
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     onUpdate(data);
@@ -129,12 +110,40 @@ const SpatialwalkCfgForm = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
-          key={"enable_spatialwalk_avatar"}
+          key={"spatialwalk_env"}
           control={form.control}
-          name={"enable_spatialwalk_avatar"}
+          name={"spatialwalk_env"}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Enable Spatialwalk Avatar</FormLabel>
+              <FormLabel>Environment</FormLabel>
+              <FormControl>
+                <Select
+                  value={
+                    field.value === null || field.value === undefined
+                      ? "cn"
+                      : field.value.toString()
+                  }
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select environment" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cn">CN</SelectItem>
+                    <SelectItem value="intl">Intl</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          key={"spatialwalk_large_window"}
+          control={form.control}
+          name={"spatialwalk_large_window"}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Large Window</FormLabel>
               <div className="flex items-center justify-between">
                 <FormControl>
                   <div className="flex items-center space-x-2">
@@ -148,104 +157,6 @@ const SpatialwalkCfgForm = ({
             </FormItem>
           )}
         />
-        {enableSpatialwalkAvatar && (
-          <>
-            <FormField
-              key={"spatialwalk_avatar_id"}
-              control={form.control}
-              name={"spatialwalk_avatar_id"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Avatar ID</FormLabel>
-                  <div className="flex items-center justify-between">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={
-                          field.value === null || field.value === undefined
-                            ? ""
-                            : field.value.toString()
-                        }
-                        type={"text"}
-                      />
-                    </FormControl>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              key={"spatialwalk_app_id"}
-              control={form.control}
-              name={"spatialwalk_app_id"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>AvatarKit App ID</FormLabel>
-                  <div className="flex items-center justify-between">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={
-                          field.value === null || field.value === undefined
-                            ? ""
-                            : field.value.toString()
-                        }
-                        type={"text"}
-                      />
-                    </FormControl>
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              key={"spatialwalk_env"}
-              control={form.control}
-              name={"spatialwalk_env"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Environment</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={
-                        field.value === null || field.value === undefined
-                          ? "cn"
-                          : field.value.toString()
-                      }
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select environment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cn">CN</SelectItem>
-                        <SelectItem value="intl">Intl</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              key={"spatialwalk_large_window"}
-              control={form.control}
-              name={"spatialwalk_large_window"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Large Window</FormLabel>
-                  <div className="flex items-center justify-between">
-                    <FormControl>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={field.value === true}
-                          onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    </FormControl>
-                  </div>
-                </FormItem>
-              )}
-            />
-          </>
-        )}
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
             <>

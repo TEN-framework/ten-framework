@@ -55,6 +55,14 @@ ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
 WEATHERAPI_API_KEY=your_weather_api_key_here
 ```
 
+For the `spatialwalk-avatar` frontend, pass required Spatialwalk IDs in URL query params:
+
+```text
+http://localhost:3000/?appId=<SPATIALWALK_APP_ID>&avatarId=<SPATIALWALK_AVATAR_ID>
+```
+
+`appId` and `avatarId` are required. The settings sheet only controls environment and layout options.
+
 ### 2. Install Dependencies
 
 ```bash

@@ -21,7 +21,6 @@
         "@reduxjs/toolkit": "^2.9.2",
         "@spatialwalk/avatarkit": "^1.0.0-beta.80",
         "@spatialwalk/avatarkit-rtc": "^1.0.0-beta.3",
-        "@trulience/react-sdk": "^1.0.98",
         "agora-rtc-sdk-ng": "^4.23.0",
         "agora-rtm": "^2.2.3",
         "axios": "^1.13.1",
@@ -580,8 +579,6 @@
     "@tailwindcss/oxide-win32-x64-msvc": ["@tailwindcss/oxide-win32-x64-msvc@4.1.16", "", { "os": "win32", "cpu": "x64" }, "sha512-m5dDFJUEejbFqP+UXVstd4W/wnxA4F61q8SoL+mqTypId2T2ZpuxosNSgowiCnLp2+Z+rivdU0AqpfgiD7yCBg=="],
 
     "@tailwindcss/postcss": ["@tailwindcss/postcss@4.1.16", "", { "dependencies": { "@alloc/quick-lru": "^5.2.0", "@tailwindcss/node": "4.1.16", "@tailwindcss/oxide": "4.1.16", "postcss": "^8.4.41", "tailwindcss": "4.1.16" } }, "sha512-Qn3SFGPXYQMKR/UtqS+dqvPrzEeBZHrFA92maT4zijCVggdsXnDBMsPFJo1eArX3J+O+Gi+8pV4PkqjLCNBk3A=="],
-
-    "@trulience/react-sdk": ["@trulience/react-sdk@1.0.98", "", { "peerDependencies": { "react": ">=16.11.0", "react-dom": ">=16.11.0" } }, "sha512-8ZNdYyATwXl5idwzyfpF7CWWPY1AmhweZzDy1XDdLsHKjyFmStZpDBhYyTvr/h/rDHahT+rBCkYJhgt42MkT+w=="],
 
     "@trysound/sax": ["@trysound/sax@0.2.0", "", {}, "sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA=="],
 
