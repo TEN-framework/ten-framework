@@ -87,7 +87,7 @@ export function SpatialwalkCfgSheet() {
                   enabled: data.enable_spatialwalk_avatar as boolean,
                   avatarId: data.spatialwalk_avatar_id as string,
                   appId: data.spatialwalk_app_id as string,
-                  environment: (data.spatialwalk_env as "cn" | "intl") || "cn",
+                  environment: (data.spatialwalk_env as "cn" | "intl") || "intl",
                   avatarDesktopLargeWindow:
                     data.spatialwalk_large_window as boolean,
                 })

@@ -142,6 +142,6 @@ export const DEFAULT_SPATIALWALK_OPTIONS: ISpatialwalkSettings = {
   enabled: false,
   avatarId: "",
   appId: "",
-  environment: "cn",
+  environment: "intl",
   avatarDesktopLargeWindow: false,
 };
