@@ -18,65 +18,107 @@ config("ten_runtime_nodejs_config") {
   }
 }
 
-ten_shared_library("ten_runtime_nodejs") {
-  configs = [ ":ten_runtime_nodejs_config" ]
+# When under the msvc_force toolchain, build with a different target name.
+# All deps are pinned back to the default clang toolchain so that only
+# this target's own sources (init.c, win_delay_load_hook.cc) are compiled
+# with cl.exe. The .obj files from clang-cl and cl.exe are ABI-compatible
+# (both use MSVC ABI) so mixed linking is safe.
+if (current_toolchain == "//.gnfiles/build/toolchain/msvc_force:msvc_force" &&
+    current_toolchain != default_toolchain) {
+  _default_tc = "//.gnfiles/build/platform/win:clang"
 
-  output_extension = "node"
+  shared_library("ten_runtime_nodejs_msvc") {
+    output_name = "ten_runtime_nodejs"
+    output_extension = "node"
 
-  if (is_mac || is_linux) {
-    add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
-    remove_configs = [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
-  }
+    configs += [ ":ten_runtime_nodejs_config(${_default_tc})" ]
 
-  # Add rpath to find ten_runtime library.
-  if (is_mac) {
-    ldflags = [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
-  } else if (is_linux || is_mingw) {
-    # MinGW uses GNU ld and supports rpath
-    ldflags = [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
-  } else if (is_win && !is_mingw) {
-    # MSVC/clang-cl: Use /DELAYLOAD to avoid loading libnode.dll at startup.
-    # N-API symbols are provided by the host node.exe at runtime, so we don't
-    # actually need libnode.dll. But MSVC requires linking to resolve symbols.
-    # With delay load, the DLL won't be loaded unless we call functions from it,
-    # and since node.exe provides these symbols, libnode.dll is never loaded.
-    #
-    # The win_delay_load_hook.cc file implements a delay-load hook that:
-    # 1. For pure Node.js apps: returns handle to node.exe (which exports N-API)
-    # 2. For embedded scenarios: returns handle to libnode.dll if loaded
+    include_dirs = ten_runtime_common_includes
+
+    defines = ten_runtime_common_defines
+
+    cflags = common_cflags
+    cflags_c = common_cflags_c
+    cflags_cc = common_cflags_cc
+
     ldflags = [
       "/DELAYLOAD:libnode.dll",
-
-      # Suppress linker warning LNK4199: /DELAYLOAD:libnode.dll ignored;
-      # no imports found from libnode.dll. This warning occurs because the
-      # delay-load hook redirects all imports before they reach libnode.dll.
       "/ignore:4199",
     ]
+    ldflags += common_ldflags
 
-    # The delay import library provided by Microsoft. Required for delay-load
-    # support.
     libs = [ "delayimp.lib" ]
+    libs += common_libs
+
+    lib_dirs = common_lib_dirs
+
+    sources = [
+      "init.c",
+      "win_delay_load_hook.cc",
+    ]
+
+    deps = [
+      "addon(${_default_tc})",
+      "app(${_default_tc})",
+      "common(${_default_tc})",
+      "error(${_default_tc})",
+      "extension(${_default_tc})",
+      "msg(${_default_tc})",
+      "ten_env(${_default_tc})",
+      "test(${_default_tc})",
+      "//core/src/ten_runtime:ten_runtime_library(${_default_tc})",
+      "//third_party/node(${_default_tc})",
+    ]
   }
-
-  sources = [ "init.c" ]
-
-  if (is_win && !is_mingw) {
-    # Include the delay-load hook for Windows MSVC/clang-cl builds.
-    # This hook intercepts the delay-load of libnode.dll and redirects it
-    # to either the already-loaded libnode.dll or the host node.exe.
-    sources += [ "win_delay_load_hook.cc" ]
+} else if (is_win && !is_mingw && is_clang) {
+  # Default (clang) toolchain on Windows: delegate to msvc_force toolchain.
+  group("ten_runtime_nodejs") {
+    _msvc_toolchain = "//.gnfiles/build/toolchain/msvc_force:msvc_force"
+    public_deps = [ ":ten_runtime_nodejs_msvc(${_msvc_toolchain})" ]
   }
+} else {
+  # Non-Windows or non-clang: build normally.
+  ten_shared_library("ten_runtime_nodejs") {
+    configs = [ ":ten_runtime_nodejs_config" ]
 
-  deps = [
-    "addon",
-    "app",
-    "common",
-    "error",
-    "extension",
-    "msg",
-    "ten_env",
-    "test",
-    "//core/src/ten_runtime:ten_runtime_library",
-    "//third_party/node",
-  ]
+    output_extension = "node"
+
+    if (is_mac || is_linux) {
+      add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
+      remove_configs =
+          [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
+    }
+
+    # Add rpath to find ten_runtime library.
+    if (is_mac) {
+      ldflags = [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
+    } else if (is_linux || is_mingw) {
+      ldflags = [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+    } else if (is_win && !is_mingw) {
+      ldflags = [
+        "/DELAYLOAD:libnode.dll",
+        "/ignore:4199",
+      ]
+      libs = [ "delayimp.lib" ]
+    }
+
+    sources = [ "init.c" ]
+
+    if (is_win && !is_mingw) {
+      sources += [ "win_delay_load_hook.cc" ]
+    }
+
+    deps = [
+      "addon",
+      "app",
+      "common",
+      "error",
+      "extension",
+      "msg",
+      "ten_env",
+      "test",
+      "//core/src/ten_runtime:ten_runtime_library",
+      "//third_party/node",
+    ]
+  }
 }
