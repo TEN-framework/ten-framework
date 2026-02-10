@@ -35,11 +35,37 @@ ten_shared_library("ten_runtime_nodejs") {
     # MinGW uses GNU ld and supports rpath
     ldflags = [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
   } else if (is_win && !is_mingw) {
-    # MSVC: link against node import library
-    ldflags = []
+    # MSVC/clang-cl: Use /DELAYLOAD to avoid loading libnode.dll at startup.
+    # N-API symbols are provided by the host node.exe at runtime, so we don't
+    # actually need libnode.dll. But MSVC requires linking to resolve symbols.
+    # With delay load, the DLL won't be loaded unless we call functions from it,
+    # and since node.exe provides these symbols, libnode.dll is never loaded.
+    #
+    # The win_delay_load_hook.cc file implements a delay-load hook that:
+    # 1. For pure Node.js apps: returns handle to node.exe (which exports N-API)
+    # 2. For embedded scenarios: returns handle to libnode.dll if loaded
+    ldflags = [
+      "/DELAYLOAD:libnode.dll",
+
+      # Suppress linker warning LNK4199: /DELAYLOAD:libnode.dll ignored;
+      # no imports found from libnode.dll. This warning occurs because the
+      # delay-load hook redirects all imports before they reach libnode.dll.
+      "/ignore:4199",
+    ]
+
+    # The delay import library provided by Microsoft. Required for delay-load
+    # support.
+    libs = [ "delayimp.lib" ]
   }
 
   sources = [ "init.c" ]
+
+  if (is_win && !is_mingw) {
+    # Include the delay-load hook for Windows MSVC/clang-cl builds.
+    # This hook intercepts the delay-load of libnode.dll and redirects it
+    # to either the already-loaded libnode.dll or the host node.exe.
+    sources += [ "win_delay_load_hook.cc" ]
+  }
 
   deps = [
     "addon",
