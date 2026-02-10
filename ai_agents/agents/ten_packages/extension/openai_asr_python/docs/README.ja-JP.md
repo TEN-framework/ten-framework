@@ -28,7 +28,7 @@ OpenAI の自動音声認識 (ASR) サービスのための Python 拡張で、O
 
 - `organization`: OpenAI 組織 ID（オプション）
 - `project`: OpenAI プロジェクト ID（オプション）
-- `websocket_base_url`: カスタム WebSocket ベース URL（オプション）
+- `base_url`: カスタム WebSocket ベース URL（オプション）
 - `dump`: 音声ダンプを有効化（デフォルト：false）
 - `dump_path`: ダンプ音声ファイルのパス（デフォルト："openai_asr_in.pcm"）
 - `log_level`: ログレベル（デフォルト："INFO"）
@@ -163,4 +163,4 @@ pytest tests/
 
 ## ライセンス
 
-この拡張は TEN Framework の一部で、Apache License, Version 2.0 の下でライセンスされています。 
+この拡張は TEN Framework の一部で、Apache License, Version 2.0 の下でライセンスされています。

@@ -60,21 +60,7 @@ typedef struct ten_string_t {
   size_t first_unused_idx;  // Index of first unused byte.
 } ten_string_t;
 
-inline bool ten_string_check_integrity(const ten_string_t *self) {
-  TEN_ASSERT(self, "Invalid argument.");
-
-  if (ten_signature_get(&self->signature) != TEN_STRING_SIGNATURE) {
-    return false;
-  }
-
-  // A normal `ten_string_t`'s `buf` should be a non-NULL value, either pointing
-  // to `prebuf` or to memory allocated by `malloc`.
-  if (self->buf == NULL) {
-    return false;
-  }
-
-  return true;
-}
+TEN_UTILS_API bool ten_string_check_integrity(const ten_string_t *self);
 
 /**
  * @brief Create a string object.
@@ -271,25 +257,14 @@ TEN_UTILS_API void ten_string_to_upper(ten_string_t *self);
  * @param self The string object.
  * @return A pointer to the c string.
  */
-inline const char *ten_string_get_raw_str(const ten_string_t *self) {
-  // It's possible that the return value of this function is used by "%s", and
-  // pass NULL as the value of "%s" is an undefined behavior, so we ensure that
-  // the return value of this function is not NULL.
-  TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
-  return self ? self->buf : NULL;
-}
+TEN_UTILS_API const char *ten_string_get_raw_str(const ten_string_t *self);
 
 /**
  * @brief Get the length of the string object.
  * @param self The string object.
  * @return The length of the string object.
  */
-inline size_t ten_string_len(const ten_string_t *self) {
-  TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
-  return self ? self->first_unused_idx : 0;
-}
+TEN_UTILS_API size_t ten_string_len(const ten_string_t *self);
 
 /**
  * @brief Remove @a count characters from the back of the string.

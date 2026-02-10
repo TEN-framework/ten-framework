@@ -101,7 +101,18 @@ def test_standalone_test_event_bus_go():
     else:
         test_cmd.append("-race")
 
-    if build_config_args.is_clang:
+    if sys.platform == "win32":
+        # On Windows, Go always uses MinGW toolchain (CGO requires GCC).
+        # We need to find and use MinGW gcc/g++ explicitly.
+        mingw_gcc = build_config.find_mingw_gcc()
+        mingw_gxx = build_config.find_mingw_gxx()
+        if mingw_gcc and mingw_gxx:
+            my_env["CC"] = mingw_gcc
+            my_env["CXX"] = mingw_gxx
+        else:
+            my_env["CC"] = "gcc"
+            my_env["CXX"] = "g++"
+    elif build_config_args.is_clang:
         my_env["CC"] = "clang"
         my_env["CXX"] = "clang++"
     else:

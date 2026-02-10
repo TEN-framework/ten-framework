@@ -109,7 +109,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
                 api_key=self.config.params.api_key,
                 organization=self.config.params.organization,
                 project=self.config.params.project,
-                websocket_base_url=self.config.params.websocket_base_url,
+                base_url=self.config.params.base_url,
                 listener=self,
                 log_level=self.config.params.log_level,
                 log_path=log_path,

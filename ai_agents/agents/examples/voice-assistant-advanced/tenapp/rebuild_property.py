@@ -734,7 +734,10 @@ def create_apollo_graph(
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}, {"extension": "avatar"}],
+                    "dest": [
+                        {"extension": "thymia_analyzer"},
+                        {"extension": "avatar"},
+                    ],
                 },
             ],
             "audio_frame": [

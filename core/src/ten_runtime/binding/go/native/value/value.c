@@ -24,6 +24,7 @@
 #include "ten_utils/value/value.h"
 #include "ten_utils/value/value_get.h"
 #include "ten_utils/value/value_is.h"
+#include "ten_utils/lib/string.h"
 
 // The definition of tenUnpinGoPointer is in GO world, and tenUnpinGoPointer is
 // exported to C. So we need to declare it, then it can be called from C to GO.

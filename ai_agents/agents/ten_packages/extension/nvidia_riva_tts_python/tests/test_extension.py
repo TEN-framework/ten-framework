@@ -11,7 +11,7 @@ from nvidia_riva_tts_python.riva_tts import NvidiaRivaTTSClient
 
 @pytest.fixture
 def mock_ten_env():
-    """Create a mock TenEnv for testing"""
+    """Create a mock TenEnv for extension testing"""
     env = Mock()
     env.log_info = Mock()
     env.log_debug = Mock()

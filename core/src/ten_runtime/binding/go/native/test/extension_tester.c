@@ -21,6 +21,7 @@
 #include "ten_runtime/test/env_tester_proxy.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/lib/string.h"
 
 extern void tenGoExtensionTesterOnStart(ten_go_handle_t go_extension_tester,
                                         ten_go_handle_t go_ten_env_tester);

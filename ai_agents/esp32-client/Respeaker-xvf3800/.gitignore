@@ -1,0 +1,15 @@
+# Build artifacts
+build/
+sdkconfig
+sdkconfig.old
+
+# Dependencies managed by ESP-IDF Component Manager
+managed_components/
+dependencies.lock
+
+# IDE files
+.vscode/
+.idea/
+
+# macOS
+.DS_Store

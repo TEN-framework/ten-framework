@@ -28,7 +28,7 @@ The extension requires the following configuration parameters:
 
 - `organization`: OpenAI organization ID (optional)
 - `project`: OpenAI project ID (optional)
-- `websocket_base_url`: Custom WebSocket base URL (optional)
+- `base_url`: Custom WebSocket base URL (optional)
 - `dump`: Enable audio dumping (default: false)
 - `dump_path`: Path for dumped audio files (default: "openai_asr_in.pcm")
 - `log_level`: Logging level (default: "INFO")

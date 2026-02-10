@@ -21,6 +21,7 @@
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/lib/string.h"
 
 bool ten_go_ten_env_check_integrity(ten_go_ten_env_t *self) {
   TEN_ASSERT(self, "Should not happen.");

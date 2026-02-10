@@ -6,7 +6,7 @@ import logging
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 from typing import Literal
@@ -86,14 +86,20 @@ class MainControlExtension(AsyncExtension):
         self.ten_env.log_info(f"[MainControlExtension] config={self.config}")
 
         # Initialize memory store
-        if self.config and self.config.enable_memorization and self.config.powermem_config:
+        if (
+            self.config
+            and self.config.enable_memorization
+            and self.config.powermem_config
+        ):
             try:
                 if not self.config.enable_user_memory:
                     self.memory_store = PowerMemSdkMemoryStore(
-                        config=self.config.powermem_config, env=ten_env)
+                        config=self.config.powermem_config, env=ten_env
+                    )
                 else:
                     self.memory_store = PowerMemSdkUserMemoryStore(
-                        config=self.config.powermem_config, env=ten_env)
+                        config=self.config.powermem_config, env=ten_env
+                    )
                 ten_env.log_info(
                     "[MainControlExtension] PowerMem memory store initialized successfully"
                 )
@@ -103,6 +109,7 @@ class MainControlExtension(AsyncExtension):
                     "The extension will continue without memory functionality."
                 )
                 import traceback
+
                 ten_env.log_error(
                     f"[MainControlExtension] PowerMem initialization traceback: {traceback.format_exc()}"
                 )
@@ -224,7 +231,8 @@ class MainControlExtension(AsyncExtension):
 
             # Memorize every N rounds if memorization is enabled
             if (
-                self.turn_id - self.last_memory_update_turn_id >= self.config.memory_save_interval_turns
+                self.turn_id - self.last_memory_update_turn_id
+                >= self.config.memory_save_interval_turns
                 and self.config.enable_memorization
             ):
                 # Update counter immediately to prevent race condition from concurrent saves
@@ -351,7 +359,10 @@ class MainControlExtension(AsyncExtension):
 
     def _cancel_memory_idle_timer(self):
         """Cancel the memory idle timer if it exists"""
-        if self._memory_idle_timer_task and not self._memory_idle_timer_task.done():
+        if (
+            self._memory_idle_timer_task
+            and not self._memory_idle_timer_task.done()
+        ):
             self._memory_idle_timer_task.cancel()
             self._memory_idle_timer_task = None
             self.ten_env.log_info(
@@ -400,7 +411,8 @@ class MainControlExtension(AsyncExtension):
 
         # Start new timer task
         self._memory_idle_timer_task = asyncio.create_task(
-            _memory_idle_timeout())
+            _memory_idle_timeout()
+        )
         self.ten_env.log_info(
             f"[MainControlExtension] Started {self.config.memory_idle_timeout_seconds}-second memory idle timer"
         )
@@ -438,7 +450,9 @@ class MainControlExtension(AsyncExtension):
 
             # Wait for the greeting response (with timeout)
             try:
-                greeting = await asyncio.wait_for(self._greeting_future, timeout=10.0)
+                greeting = await asyncio.wait_for(
+                    self._greeting_future, timeout=10.0
+                )
                 self.ten_env.log_info(
                     f"[MainControlExtension] Generated personalized greeting: {greeting}"
                 )
@@ -495,8 +509,11 @@ class MainControlExtension(AsyncExtension):
 
             # Format memory text using join for better performance
             if memorise:
-                memory_text = "Memorise:\n" + \
-                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                memory_text = (
+                    "Memorise:\n"
+                    + "\n".join(f"- {memory}" for memory in memorise)
+                    + "\n"
+                )
             else:
                 memory_text = ""
 

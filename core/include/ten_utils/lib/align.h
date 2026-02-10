@@ -18,6 +18,4 @@
 #include <stddef.h>
 
 // Utility for aligning addresses.
-inline size_t ten_align_forward(size_t addr, size_t align) {
-  return (addr + (align - 1)) & ~(align - 1);
-}
+TEN_UTILS_API size_t ten_align_forward(size_t addr, size_t align);

@@ -18,6 +18,7 @@
 #include "ten_utils/lib/error.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/memory.h"
+#include "ten_utils/lib/string.h"
 
 typedef struct ten_env_notify_log_ctx_t {
   int32_t level;

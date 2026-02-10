@@ -18,6 +18,8 @@ import argparse
 import os
 import glob
 import platform
+import tempfile
+import shutil
 from setuptools import Extension, setup
 
 
@@ -63,16 +65,11 @@ if __name__ == "__main__":
     args = parser.parse_args(namespace=arg_info)
 
     # Detect compiler on Windows
-    is_windows = platform.system() == "Windows"
-    is_mingw = False
-
-    if is_windows:
-        import shutil
+    if platform.system() == "Windows":
         gcc_path = shutil.which("gcc")
 
         if args.use_mingw:
             if gcc_path:
-                is_mingw = True
                 print(f"Using MinGW gcc at: {gcc_path} to compile cython")
                 os.environ["CC"] = "gcc"
                 os.environ["CXX"] = "g++"
@@ -87,7 +84,6 @@ if __name__ == "__main__":
             print("  Will use MSVC by default")
         else:
             print("Using MSVC compiler (default on Windows)")
-
 
     install_rc = install_cython_if_needed()
     if not install_rc:
@@ -104,10 +100,6 @@ if __name__ == "__main__":
     pyx_files = glob.glob(
         os.path.join(args.compile_root_dir, "**", "*.pyx"), recursive=True
     )
-
-    if not pyx_files:
-        print("No .pyx files found.")
-        exit(0)
 
     extensions = []
     for pyx_file in pyx_files:
@@ -134,8 +126,38 @@ if __name__ == "__main__":
     # Prepare script arguments for setup
     script_args = ["build_ext", "--inplace"]
 
+    # On Windows with MSVC, use a short temp directory for build files to avoid
+    # path length issues. MSVC has a ~260 character path limit, and setuptools
+    # creates deep directory structures that mirror the source file's absolute
+    # path, which can easily exceed this limit.
+    #
+    # Strategy: Copy .pyx files to a short temp directory, compile there,
+    # then copy the resulting .pyd files back to the original location.
+    temp_dir = None
+    original_pyx_locations = {}  # Map from temp .pyx path to original path
+
+    if platform.system() == "Windows" and not args.use_mingw:
+        temp_dir = tempfile.mkdtemp(prefix="cython_")
+        script_args.append(f"--build-temp={temp_dir}")
+        print(f"Using temporary directory: {temp_dir}")
+
+        # Copy .pyx files to temp directory, preserving relative structure
+        # Must preserve the "dir_name" in the temp directory structure because
+        # Cython derives the module name from the file path.
+        new_extensions = []
+        for pyx_file in pyx_files:
+            rel_path = os.path.relpath(pyx_file, args.compile_root_dir)
+            temp_pyx_path = os.path.join(temp_dir, dir_name, rel_path)
+            os.makedirs(os.path.dirname(temp_pyx_path), exist_ok=True)
+            shutil.copy2(pyx_file, temp_pyx_path)
+            original_pyx_locations[temp_pyx_path] = pyx_file
+            print(f"[DEBUG] {rel_path} -> {temp_pyx_path}")
+            new_extensions.append(Extension("*", [temp_pyx_path]))
+
+        extensions = new_extensions
+
     # On Windows with MinGW, explicitly specify the compiler
-    if platform.system() == "Windows" and is_mingw:
+    if platform.system() == "Windows" and args.use_mingw:
         script_args.append("--compiler=mingw32")
 
         # Fix for MinGW: .def files are not compatible with MinGW's ld
@@ -180,11 +202,39 @@ if __name__ == "__main__":
         cygwinccompiler.Mingw32CCompiler.link = _patched_link
         print("[DEBUG] Successfully patched Mingw32CCompiler.link")
 
+    package_dir = {
+        dir_name: (os.path.join(temp_dir, dir_name)
+        if temp_dir else args.compile_root_dir)
+    }
+
     setup(
         ext_modules=cythonize(extensions),
         script_args=script_args,
         # The package_dir parameter is used to where the packed package will be
         # placed. In this case, the package will be placed in the current
         # directory.
-        package_dir={dir_name: args.compile_root_dir},
+        # On Windows with MSVC, the compiled .pyd files will be manually copy
+        # back to original locations
+        package_dir=package_dir,
     )
+
+    if temp_dir:
+        print("Copying compiled .pyd files back to original locations...")
+        for temp_pyx_path, original_pyx_path in original_pyx_locations.items():
+            temp_pyx_dir = os.path.dirname(temp_pyx_path)
+            pyx_basename = os.path.splitext(os.path.basename(temp_pyx_path))[0]
+
+            if os.path.exists(temp_pyx_dir):
+                all_files = os.listdir(temp_pyx_dir)
+                print(f"[DEBUG] files in {temp_pyx_dir}: {all_files}")
+                for f in all_files:
+                    if f.startswith(pyx_basename) and f.endswith('.pyd'):
+                        src_pyd = os.path.join(temp_pyx_dir, f)
+                        dst_pyd = os.path.join(os.path.dirname(original_pyx_path), f)
+                        shutil.copy2(src_pyd, dst_pyd)
+                        print(f"  Copied {f} to {os.path.dirname(original_pyx_path)}")
+
+    # Clean up temporary directory
+    if temp_dir and os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        print(f"Cleaned up temporary directory: {temp_dir}")

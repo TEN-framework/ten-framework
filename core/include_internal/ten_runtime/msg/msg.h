@@ -326,16 +326,12 @@ TEN_RUNTIME_PRIVATE_API bool ten_msg_set_name_with_len(ten_shared_ptr_t *self,
                                                        size_t msg_name_len,
                                                        ten_error_t *err);
 
+TEN_RUNTIME_API ten_msg_t *ten_msg_get_raw_msg(ten_shared_ptr_t *self);
+
 inline TEN_MSG_TYPE ten_raw_msg_get_type(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
   return self->type;
-}
-
-inline ten_msg_t *ten_msg_get_raw_msg(ten_shared_ptr_t *self) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
-  return (ten_msg_t *)ten_shared_ptr_get_data(self);
 }
 
 inline bool ten_msg_is_cmd_and_result(ten_shared_ptr_t *self) {

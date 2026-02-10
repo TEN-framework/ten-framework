@@ -43,22 +43,23 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         if "input" in self.params:
             del self.params["input"]
 
-        # Remove sample_rate from params to avoid parameter error
-        # OpenAI TTS sample rate is fixed at 24000 Hz
-        if "sample_rate" in self.params:
-            del self.params["sample_rate"]
-
         # Use fixed value
         self.params["response_format"] = "pcm"
 
         # Set endpoint URL from base_url if url is not provided
         if not self.url:
-            base_url = self.params.get("base_url", "https://api.openai.com/v1")
-            # Remove trailing slash from base_url
-            base_url = base_url.rstrip("/")
-            self.url = f"{base_url}/audio/speech"
-            # Remove base_url from params since it's been used to set url
-            self.params.pop("base_url", None)
+            if "url" in self.params:
+                self.url = self.params["url"]
+                self.params.pop("url", None)  # pylint: disable=no-member
+            else:
+                base_url = self.params.get(  # pylint: disable=no-member
+                    "base_url", "https://api.openai.com/v1"
+                )
+                # Remove trailing slash from base_url
+                base_url = base_url.rstrip("/")
+                self.url = f"{base_url}/audio/speech"
+                # Remove base_url from params since it's been used to set url
+                self.params.pop("base_url", None)  # pylint: disable=no-member
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
@@ -75,8 +76,16 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate OpenAI-specific configuration."""
-        if "api_key" not in self.params or not self.params["api_key"]:
-            raise ValueError("API key is required for OpenAI TTS")
+        # Check if API key is provided in params or Authorization header
+        has_api_key_in_params = (
+            "api_key" in self.params and self.params["api_key"]
+        )
+        # pylint: disable=no-member
+        has_authorization_header = self.headers.get("Authorization") is not None
+        if not has_api_key_in_params and not has_authorization_header:
+            raise ValueError(
+                "API key or Authorization header is required for OpenAI TTS"
+            )
         if "model" not in self.params or not self.params["model"]:
             raise ValueError("Model is required for OpenAI TTS")
         if "voice" not in self.params or not self.params["voice"]:

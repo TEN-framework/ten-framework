@@ -103,10 +103,7 @@ class MainControlExtension(AsyncExtension):
         if event.is_final and event.type == "message":
             tts_text = self._select_tts_text(event.text)
             self.sentence_fragment = ""
-            if (
-                tts_text
-                and self._tts_sent_turn_id != self.turn_id
-            ):
+            if tts_text and self._tts_sent_turn_id != self.turn_id:
                 self._tts_sent_turn_id = self.turn_id
                 await self._send_to_tts(tts_text, True)
 
