@@ -9,7 +9,7 @@ import {
 } from "@spatialwalk/avatarkit";
 import { AgoraProvider, AvatarPlayer } from "@spatialwalk/avatarkit-rtc";
 import { Maximize, Minimize } from "lucide-react";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/common";
 import {
   getSpatialwalkUrlConfig,
@@ -49,25 +49,9 @@ export default function AvatarSpatialwalk() {
   const containerRef = useRef<HTMLDivElement>(null);
   const avatarViewRef = useRef<AvatarView | null>(null);
   const playerRef = useRef<AvatarPlayer | null>(null);
-  const [spatialwalkUrlConfig, setSpatialwalkUrlConfig] = useState(
-    getSpatialwalkUrlConfig()
-  );
-
-  const connectConfig = useMemo(() => {
-    if (!options.channel || !options.appId) {
-      return null;
-    }
-    return {
-      appId: options.appId,
-      channel: options.channel,
-      token: options.spatialwalkToken || undefined,
-      uid: 0,
-    };
-  }, [options.appId, options.channel, options.spatialwalkToken]);
-
-  useEffect(() => {
-    setSpatialwalkUrlConfig(getSpatialwalkUrlConfig());
-  }, []);
+  const playerConnectedRef = useRef(false);
+  const lastConnectKeyRef = useRef<string | null>(null);
+  const [spatialwalkUrlConfig] = useState(getSpatialwalkUrlConfig());
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +69,24 @@ export default function AvatarSpatialwalk() {
       setLoading(true);
 
       try {
+        const connectKey = [
+          spatialwalkUrlConfig.appId,
+          spatialwalkUrlConfig.avatarId,
+          spatialwalkSettings.environment,
+          options.appId || "",
+          options.channel || "",
+          options.spatialwalkToken || "",
+          "0",
+        ].join("|");
+        if (lastConnectKeyRef.current === connectKey && playerRef.current) {
+          return;
+        }
+        // Keep a single live player instance. Avoid disconnect/recreate churn
+        // on rerenders because SDK disconnect can race with internal render loop.
+        if (playerRef.current) {
+          return;
+        }
+
         await ensureSdkInitialized(
           spatialwalkUrlConfig.appId,
           spatialwalkSettings.environment
@@ -105,9 +107,18 @@ export default function AvatarSpatialwalk() {
           logLevel: "warning",
         });
         playerRef.current = player;
+        playerConnectedRef.current = false;
 
-        if (connectConfig) {
+        if (options.channel && options.appId) {
+          const connectConfig = {
+            appId: options.appId,
+            channel: options.channel,
+            token: options.spatialwalkToken || undefined,
+            uid: 0,
+          };
           await player.connect(connectConfig);
+          playerConnectedRef.current = true;
+          lastConnectKeyRef.current = connectKey;
         }
       } catch (error: any) {
         const message =
@@ -121,33 +132,20 @@ export default function AvatarSpatialwalk() {
       }
     };
 
-    const cleanup = async () => {
-      const player = playerRef.current;
-      playerRef.current = null;
-      if (player) {
-        try {
-          await player.disconnect();
-        } catch (err) {
-          console.warn("[spatialwalk] disconnect failed", err);
-        }
-      }
-      if (avatarViewRef.current) {
-        avatarViewRef.current.dispose();
-        avatarViewRef.current = null;
-      }
-    };
-
     setup();
 
     return () => {
       cancelled = true;
-      void cleanup();
+      // Intentionally avoid disconnect in React cleanup to prevent SDK
+      // race ("AvatarView not initialized") during passive unmount.
     };
   }, [
+    options.appId,
+    options.channel,
+    options.spatialwalkToken,
     spatialwalkUrlConfig.appId,
     spatialwalkUrlConfig.avatarId,
     spatialwalkSettings.environment,
-    connectConfig,
   ]);
 
   return (
