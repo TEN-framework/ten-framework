@@ -312,20 +312,21 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.get_audio_duration_before_time(start_ms)
             + self.sent_user_audio_duration_ms_before_last_reset
         )
-        language = self.config.primary_language()
-        if len(self.config.language_list) > 1:
-            try:
-                result_json = json.loads(evt.result.json)
-                language_in_result: str = result_json["PrimaryLanguage"][
-                    "Language"
-                ]
-                if language_in_result != "":
-                    language = language_in_result
-            except Exception as e:
-                self.ten_env.log_error(
-                    f"get language from result json failed: {e}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+        language: str | None = None
+        try:
+            result_json = json.loads(evt.result.json)
+            language_in_result: str = result_json["PrimaryLanguage"][
+                "Language"
+            ]
+            if language_in_result:
+                language = language_in_result
+        except Exception as e:
+            self.ten_env.log_error(
+                f"get language from result json failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+        if not language:
+            language = self.config.primary_language()
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
@@ -359,20 +360,21 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.get_audio_duration_before_time(start_ms)
             + self.sent_user_audio_duration_ms_before_last_reset
         )
-        language = self.config.primary_language()
-        if len(self.config.language_list) > 1:
-            try:
-                result_json = json.loads(evt.result.json)
-                language_in_result: str = result_json["PrimaryLanguage"][
-                    "Language"
-                ]
-                if language_in_result != "":
-                    language = language_in_result
-            except Exception as e:
-                self.ten_env.log_error(
-                    f"get language from result json failed: {e}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+        language: str | None = None
+        try:
+            result_json = json.loads(evt.result.json)
+            language_in_result: str = result_json["PrimaryLanguage"][
+                "Language"
+            ]
+            if language_in_result:
+                language = language_in_result
+        except Exception as e:
+            self.ten_env.log_error(
+                f"get language from result json failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+        if not language:
+            language = self.config.primary_language()
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
