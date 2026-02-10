@@ -1,6 +1,6 @@
 FROM ghcr.io/ten-framework/ten_agent_build:0.7.12 AS builder
 
-ARG USE_AGENT=agents/examples/spatial-walk-avatar
+ARG USE_AGENT=agents/examples/spatialwalk-avatar
 
 WORKDIR /app
 
@@ -34,7 +34,7 @@ WORKDIR /app
 
 FROM ubuntu:22.04
 
-ARG USE_AGENT=agents/examples/spatial-walk-avatar
+ARG USE_AGENT=agents/examples/spatialwalk-avatar
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
   libasound2 \
