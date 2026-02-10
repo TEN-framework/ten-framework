@@ -315,9 +315,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         language: str | None = None
         try:
             result_json = json.loads(evt.result.json)
-            language_in_result: str = result_json["PrimaryLanguage"][
-                "Language"
-            ]
+            language_in_result: str = result_json["PrimaryLanguage"]["Language"]
             if language_in_result:
                 language = language_in_result
         except Exception as e:
@@ -363,9 +361,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         language: str | None = None
         try:
             result_json = json.loads(evt.result.json)
-            language_in_result: str = result_json["PrimaryLanguage"][
-                "Language"
-            ]
+            language_in_result: str = result_json["PrimaryLanguage"]["Language"]
             if language_in_result:
                 language = language_in_result
         except Exception as e:
