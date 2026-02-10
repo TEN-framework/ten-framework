@@ -73,7 +73,7 @@ COPY --from=builder /usr/lib/python3 /usr/lib/python3
 COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
 
 # Copy built frontend from builder stage
-COPY --from=builder /app/${USE_AGENT}/frontend/ /app/${USE_AGENT}/frontend/
+COPY --from=builder /app/${USE_AGENT}/frontend/ /app/frontend/
 
 # Copy Docker Taskfile
 COPY --from=builder /app/${USE_AGENT}/Taskfile.docker.yml /app/Taskfile.docker.yml
