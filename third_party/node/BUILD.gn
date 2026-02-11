@@ -16,16 +16,64 @@ config("node_header") {
   ]
 }
 
+ten_prebuilt_library("prebuilt_node_shared") {
+  name = "node_shared"
+
+  # Version can be easily updated here
+  _node_shared_version = "v1.0.16"
+  _base_url = "https://github.com/TEN-framework/node_shared/releases/download/${_node_shared_version}"
+
+  if (is_win) {
+    if (target_cpu == "x64") {
+      url = "${_base_url}/node-shared-win-x64-msvc.zip"
+    } else {
+      assert(false, "Unsupported Windows CPU architecture: ${target_cpu}")
+    }
+  } else if (is_linux) {
+    if (target_cpu == "x64") {
+      if (is_clang) {
+        url = "${_base_url}/node-shared-linux-x64-clang.zip"
+      } else {
+        url = "${_base_url}/node-shared-linux-x64-gcc.zip"
+      }
+    } else if (target_cpu == "arm64") {
+      if (is_clang) {
+        url = "${_base_url}/node-shared-linux-arm64-clang.zip"
+      } else {
+        url = "${_base_url}/node-shared-linux-arm64-gcc.zip"
+      }
+    } else {
+      assert(false, "Unsupported Linux CPU architecture: ${target_cpu}")
+    }
+  } else if (is_mac) {
+    if (target_cpu == "x64") {
+      url = "${_base_url}/node-shared-mac-x64-clang.zip"
+    } else if (target_cpu == "arm64") {
+      url = "${_base_url}/node-shared-mac-arm64-clang.zip"
+    } else {
+      assert(false, "Unsupported Mac CPU architecture: ${target_cpu}")
+    }
+  } else {
+    assert(false, "Unsupported platform")
+  }
+
+  is_shared_library = true
+
+  libs = [ "node" ]
+  if (!is_win) {
+    lib_version = 127
+  }
+}
+
 if (is_win) {
-  # Windows uses local prebuilt libraries
+  # Windows-specific config: link against libnode.lib (import library for
+  # libnode.dll) from the downloaded prebuilt directory.
   config("node_lib_config") {
-    lib_dirs = [ "//third_party/node/lib/win/x64" ]
+    lib_dirs = [ rebase_path("${root_out_dir}/prebuilt/node_shared/lib") ]
 
     if (is_mingw) {
-      # MinGW uses libnode.lib directly (same as MSVC import library)
       libs = [ "libnode" ]
     } else {
-      # MSVC: Link against libnode.lib (import library for libnode.dll)
       libs = [ "libnode.lib" ]
     }
   }
@@ -34,7 +82,7 @@ if (is_win) {
   action("copy_node_dll") {
     script = "//.gnfiles/build/scripts/copy_fs_entry.py"
 
-    _source_dll = "//third_party/node/lib/win/x64/libnode.dll"
+    _source_dll = "${root_out_dir}/prebuilt/node_shared/lib/libnode.dll"
     _dest_dll = "${root_out_dir}/libnode.dll"
 
     args = [
@@ -46,6 +94,8 @@ if (is_win) {
 
     sources = [ _source_dll ]
     outputs = [ _dest_dll ]
+
+    deps = [ ":prebuilt_node_shared" ]
   }
 
   group("node") {
@@ -53,50 +103,12 @@ if (is_win) {
       ":node_header",
       ":node_lib_config",
     ]
-    public_deps = [ ":copy_node_dll" ]
+    public_deps = [
+      ":copy_node_dll",
+      ":prebuilt_node_shared",
+    ]
   }
 } else {
-  ten_prebuilt_library("prebuilt_node_shared") {
-    name = "node_shared"
-
-    # Version can be easily updated here
-    _node_shared_version = "v1.0.15"
-    _base_url = "https://github.com/TEN-framework/node_shared/releases/download/${_node_shared_version}"
-
-    if (is_linux) {
-      if (target_cpu == "x64") {
-        if (is_clang) {
-          url = "${_base_url}/node-shared-linux-x64-clang.zip"
-        } else {
-          url = "${_base_url}/node-shared-linux-x64-gcc.zip"
-        }
-      } else if (target_cpu == "arm64") {
-        if (is_clang) {
-          url = "${_base_url}/node-shared-linux-arm64-clang.zip"
-        } else {
-          url = "${_base_url}/node-shared-linux-arm64-gcc.zip"
-        }
-      } else {
-        assert(false, "Unsupported Linux CPU architecture: ${target_cpu}")
-      }
-    } else if (is_mac) {
-      if (target_cpu == "x64") {
-        url = "${_base_url}/node-shared-mac-x64-clang.zip"
-      } else if (target_cpu == "arm64") {
-        url = "${_base_url}/node-shared-mac-arm64-clang.zip"
-      } else {
-        assert(false, "Unsupported Mac CPU architecture: ${target_cpu}")
-      }
-    } else {
-      assert(false, "Unsupported platform")
-    }
-
-    is_shared_library = true
-
-    libs = [ "node" ]
-    lib_version = 127
-  }
-
   group("node") {
     public_configs = [ ":node_header" ]
     public_deps = [ ":prebuilt_node_shared" ]
