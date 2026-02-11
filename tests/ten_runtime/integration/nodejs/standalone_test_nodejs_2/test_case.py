@@ -68,6 +68,7 @@ def test_standalone_test_nodejs_2():
         stderr=subprocess.STDOUT,
         env=my_env,
         cwd=extension_in_app_folder,
+        shell=sys.platform == "win32",
     )
     standalone_install_process.wait()
 
@@ -86,6 +87,7 @@ def test_standalone_test_nodejs_2():
         stderr=subprocess.STDOUT,
         env=my_env,
         cwd=extension_in_app_folder,
+        shell=sys.platform == "win32",
     )
     build_extension_process.wait()
 
