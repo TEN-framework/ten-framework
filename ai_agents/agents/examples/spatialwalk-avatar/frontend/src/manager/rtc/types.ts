@@ -1,6 +1,4 @@
 import {
-  IAgoraRTCClient,
-  IAgoraRTCRemoteUser,
   type ICameraVideoTrack,
   type ILocalVideoTrack,
   type IMicrophoneAudioTrack,

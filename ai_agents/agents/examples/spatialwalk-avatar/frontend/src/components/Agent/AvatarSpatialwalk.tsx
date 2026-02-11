@@ -7,10 +7,12 @@ import {
   DrivingServiceMode,
   Environment,
 } from "@spatialwalk/avatarkit";
+import type { IAgoraRTCClient } from "agora-rtc-sdk-ng";
 import { AgoraProvider, AvatarPlayer } from "@spatialwalk/avatarkit-rtc";
 import { Maximize, Minimize } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/common";
+import { rtcManager } from "@/manager";
 import {
   getSpatialwalkUrlConfig,
   validateSpatialwalkRequiredConfig,
@@ -75,15 +77,20 @@ export default function AvatarSpatialwalk() {
           spatialwalkSettings.environment,
           options.appId || "",
           options.channel || "",
-          options.spatialwalkToken || "",
-          "0",
+          String(options.userId || ""),
+          options.token || "",
         ].join("|");
-        if (lastConnectKeyRef.current === connectKey && playerRef.current) {
-          return;
-        }
-        // Keep a single live player instance. Avoid disconnect/recreate churn
-        // on rerenders because SDK disconnect can race with internal render loop.
-        if (playerRef.current) {
+        if (
+          lastConnectKeyRef.current === connectKey &&
+          playerRef.current &&
+          playerConnectedRef.current
+        ) {
+          const nativeClient = (playerRef.current as any)?.provider?.getNativeClient?.() as
+            | IAgoraRTCClient
+            | null;
+          if (nativeClient) {
+            rtcManager.attachNativeClient(nativeClient, connectKey);
+          }
           return;
         }
 
@@ -93,32 +100,46 @@ export default function AvatarSpatialwalk() {
         );
         if (cancelled) return;
 
-        const avatar = await AvatarManager.shared.load(
-          spatialwalkUrlConfig.avatarId
-        );
-        if (cancelled) return;
+        let player = playerRef.current;
+        if (!player) {
+          const avatar = await AvatarManager.shared.load(
+            spatialwalkUrlConfig.avatarId
+          );
+          if (cancelled) return;
 
-        const avatarView = new AvatarView(avatar, containerRef.current);
-        avatarViewRef.current = avatarView;
+          const avatarView = new AvatarView(avatar, containerRef.current);
+          avatarViewRef.current = avatarView;
 
-        const provider = new AgoraProvider();
-        // Package typings currently miss BaseProvider event methods; runtime is compatible.
-        const player = new AvatarPlayer(provider as any, avatarView, {
-          logLevel: "warning",
-        });
-        playerRef.current = player;
-        playerConnectedRef.current = false;
+          const provider = new AgoraProvider();
+          // Package typings currently miss BaseProvider event methods; runtime is compatible.
+          player = new AvatarPlayer(provider as any, avatarView, {
+            logLevel: "warning",
+          });
+          playerRef.current = player;
+          playerConnectedRef.current = false;
+        }
 
-        if (options.channel && options.appId) {
+        if (options.channel && options.appId && options.token && options.userId) {
           const connectConfig = {
             appId: options.appId,
             channel: options.channel,
-            token: options.spatialwalkToken || undefined,
-            uid: 0,
+            token: options.token,
+            uid: options.userId,
           };
+          if (playerConnectedRef.current) {
+            await player.disconnect();
+            playerConnectedRef.current = false;
+          }
           await player.connect(connectConfig);
           playerConnectedRef.current = true;
           lastConnectKeyRef.current = connectKey;
+          const nativeClient = (player as any)?.provider?.getNativeClient?.() as
+            | IAgoraRTCClient
+            | null;
+          if (!nativeClient) {
+            throw new Error("Failed to get native Agora client from player provider");
+          }
+          rtcManager.attachNativeClient(nativeClient, connectKey);
         }
       } catch (error: any) {
         const message =
@@ -142,7 +163,8 @@ export default function AvatarSpatialwalk() {
   }, [
     options.appId,
     options.channel,
-    options.spatialwalkToken,
+    options.token,
+    options.userId,
     spatialwalkUrlConfig.appId,
     spatialwalkUrlConfig.avatarId,
     spatialwalkSettings.environment,

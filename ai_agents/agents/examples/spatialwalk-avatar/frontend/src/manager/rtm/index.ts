@@ -1,6 +1,6 @@
 "use client";
 
-import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm";
+import type { RTMClient, RTMStreamChannel } from "agora-rtm";
 import { apiGenAgoraData } from "@/common";
 import { ERTMTextType, type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
@@ -18,6 +18,16 @@ export type TRTMMessageEvent = {
   publisher: string;
   message: string | Uint8Array;
   timestamp: number;
+};
+
+let cachedAgoraRTM: any = null;
+const getAgoraRTM = async () => {
+  if (cachedAgoraRTM) {
+    return cachedAgoraRTM;
+  }
+  const mod = await import("agora-rtm");
+  cachedAgoraRTM = mod.default ?? mod;
+  return cachedAgoraRTM;
 };
 
 export class RtmManager extends AGEventEmitter<IRtmEvents> {
@@ -52,6 +62,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     this.userId = userId;
     this.appId = appId;
     this.token = token;
+    const AgoraRTM = await getAgoraRTM();
     const rtm = new AgoraRTM.RTM(appId, String(userId), {
       logLevel: "debug", // TODO: use INFO
       // update config: https://doc.shengwang.cn/api-ref/rtm2/javascript/toc-configuration/configuration#rtmConfig

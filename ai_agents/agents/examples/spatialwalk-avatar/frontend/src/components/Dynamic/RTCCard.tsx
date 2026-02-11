@@ -60,28 +60,38 @@ export default function RTCCard(props: { className?: string }) {
   }, [options.channel]);
 
   const init = async () => {
-    console.log("[rtc] init");
-    rtcManager.on("localTracksChanged", onLocalTracksChanged);
-    rtcManager.on("textChanged", onTextChanged);
-    rtcManager.on("remoteUserChanged", onRemoteUserChanged);
-    await rtcManager.createCameraTracks();
-    await rtcManager.createMicrophoneAudioTrack();
-    await rtcManager.join({
-      channel,
-      userId,
-      enableSpatialwalk: true,
-    });
-    dispatch(
-      setOptions({
-        ...options,
-        appId: rtcManager.appId ?? "",
-        token: rtcManager.token ?? "",
-        spatialwalkToken: rtcManager.spatialwalkToken ?? "",
-      })
-    );
-    await rtcManager.publish();
-    dispatch(setRoomConnected(true));
-    hasInit = true;
+    try {
+      console.log("[rtc] init");
+      rtcManager.on("localTracksChanged", onLocalTracksChanged);
+      rtcManager.on("textChanged", onTextChanged);
+      rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+      await rtcManager.prepareSession({
+        channel,
+        userId,
+        enableSpatialwalk: true,
+      });
+      dispatch(
+        setOptions({
+          ...options,
+          appId: rtcManager.appId ?? "",
+          token: rtcManager.token ?? "",
+          spatialwalkToken: rtcManager.spatialwalkToken ?? "",
+        })
+      );
+      await rtcManager.waitForNativeClient(10000);
+      await rtcManager.createCameraTracks();
+      await rtcManager.createMicrophoneAudioTrack();
+      await rtcManager.publish();
+      dispatch(setRoomConnected(true));
+      hasInit = true;
+    } catch (error) {
+      console.error("[rtc] init failed", error);
+      dispatch(setRoomConnected(false));
+      rtcManager.off("textChanged", onTextChanged);
+      rtcManager.off("localTracksChanged", onLocalTracksChanged);
+      rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+      hasInit = false;
+    }
   };
 
   const destory = async () => {

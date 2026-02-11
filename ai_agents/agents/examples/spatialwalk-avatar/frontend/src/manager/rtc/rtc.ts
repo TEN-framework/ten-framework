@@ -1,10 +1,11 @@
 "use client";
 
-import AgoraRTC, {
-  type IAgoraRTCClient,
-  type IMicrophoneAudioTrack,
-  type IRemoteAudioTrack,
-  type UID,
+import type {
+  IAgoraRTCClient,
+  IMicrophoneAudioTrack,
+  IRemoteAudioTrack,
+  NetworkQuality,
+  UID,
 } from "agora-rtc-sdk-ng";
 import { apiGenAgoraData, apiGenSpatialwalkToken, VideoSourceType } from "@/common";
 import {
@@ -25,24 +26,44 @@ interface TextDataChunk {
   content: string;
 }
 
+interface NativeClientWaiter {
+  resolve: (client: IAgoraRTCClient) => void;
+  reject: (error: Error) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
+let cachedAgoraRTC: any = null;
+const getAgoraRTC = async () => {
+  if (cachedAgoraRTC) {
+    return cachedAgoraRTC;
+  }
+  const mod = await import("agora-rtc-sdk-ng");
+  cachedAgoraRTC = mod.default ?? mod;
+  return cachedAgoraRTC;
+};
+
 export class RtcManager extends AGEventEmitter<RtcEvents> {
-  private _joined;
-  client: IAgoraRTCClient;
+  client: IAgoraRTCClient | null;
   localTracks: IUserTracks;
   appId: string | null = null;
   token: string | null = null;
   spatialwalkToken: string | null = null;
   userId: number | null = null;
 
+  private _boundClient: IAgoraRTCClient | null;
+  private _attachKey: string | null;
+  private _nativeClientWaiters: NativeClientWaiter[];
+
   constructor() {
     super();
-    this._joined = false;
     this.localTracks = {};
-    this.client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-    this._listenRtcEvents();
+    this.client = null;
+    this._boundClient = null;
+    this._attachKey = null;
+    this._nativeClientWaiters = [];
   }
 
-  async join({
+  async prepareSession({
     channel,
     userId,
     enableSpatialwalk,
@@ -51,58 +72,94 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     userId: number;
     enableSpatialwalk: boolean;
   }) {
-    if (!this._joined) {
-      let rtcRes: any;
+    let rtcRes: any;
 
-      if (enableSpatialwalk) {
-        const [rtcTokenResult, spatialwalkTokenResult] = await Promise.allSettled([
-          apiGenAgoraData({ channel, userId }),
-          apiGenSpatialwalkToken({ channel, userId }),
-        ]);
+    if (enableSpatialwalk) {
+      const [rtcTokenResult, spatialwalkTokenResult] = await Promise.allSettled([
+        apiGenAgoraData({ channel, userId }),
+        apiGenSpatialwalkToken({ channel, userId }),
+      ]);
 
-        if (rtcTokenResult.status === "rejected") {
-          throw rtcTokenResult.reason;
-        }
-        rtcRes = rtcTokenResult.value;
+      if (rtcTokenResult.status === "rejected") {
+        throw rtcTokenResult.reason;
+      }
+      rtcRes = rtcTokenResult.value;
 
-        if (spatialwalkTokenResult.status === "fulfilled") {
-          const { code, data } = spatialwalkTokenResult.value || {};
-          if (code == 0) {
-            this.spatialwalkToken = data?.token ?? "";
-          } else {
-            console.warn(
-              "[rtc] failed to get spatialwalk token, continue without avatar token",
-              spatialwalkTokenResult.value
-            );
-            this.spatialwalkToken = "";
-          }
+      if (spatialwalkTokenResult.status === "fulfilled") {
+        const { code, data } = spatialwalkTokenResult.value || {};
+        if (code == 0) {
+          this.spatialwalkToken = data?.token ?? "";
         } else {
           console.warn(
-            "[rtc] spatialwalk token request failed, continue without avatar token",
-            spatialwalkTokenResult.reason
+            "[rtc] failed to get spatialwalk token, continue without avatar token",
+            spatialwalkTokenResult.value
           );
           this.spatialwalkToken = "";
         }
       } else {
-        rtcRes = await apiGenAgoraData({ channel, userId });
+        console.warn(
+          "[rtc] spatialwalk token request failed, continue without avatar token",
+          spatialwalkTokenResult.reason
+        );
         this.spatialwalkToken = "";
       }
-
-      const { code, data } = rtcRes;
-      if (code != 0) {
-        throw new Error("Failed to get Agora token");
-      }
-      const { appId, token } = data;
-      this.appId = appId;
-      this.token = token;
-      this.userId = userId;
-      await this.client?.join(appId, channel, token, userId);
-      this._joined = true;
+    } else {
+      rtcRes = await apiGenAgoraData({ channel, userId });
+      this.spatialwalkToken = "";
     }
+
+    const { code, data } = rtcRes;
+    if (code != 0) {
+      throw new Error("Failed to get Agora token");
+    }
+
+    this.appId = data?.appId ?? "";
+    this.token = data?.token ?? "";
+    this.userId = userId;
+  }
+
+  attachNativeClient(client: IAgoraRTCClient, attachKey: string) {
+    if (!client) {
+      throw new Error("[rtc] Invalid native client");
+    }
+
+    if (this.client === client && this._attachKey === attachKey) {
+      return;
+    }
+
+    this.client = client;
+    this._attachKey = attachKey;
+    this._listenRtcEvents();
+    this._resolveNativeClientWaiters();
+  }
+
+  async waitForNativeClient(timeoutMs = 10000): Promise<IAgoraRTCClient> {
+    if (this.client) {
+      return this.client;
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this._nativeClientWaiters = this._nativeClientWaiters.filter(
+          (waiter) => waiter.timeoutId !== timeoutId
+        );
+        reject(new Error("[rtc] Timeout waiting for native Agora client"));
+      }, timeoutMs);
+
+      this._nativeClientWaiters.push({ resolve, reject, timeoutId });
+    });
+  }
+
+  detachNativeClient() {
+    this._unlistenRtcEvents();
+    this.client = null;
+    this._attachKey = null;
+    this._rejectNativeClientWaiters(new Error("[rtc] Native client detached"));
   }
 
   async createCameraTracks() {
     try {
+      const AgoraRTC = await getAgoraRTC();
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       this.localTracks.videoTrack = videoTrack;
     } catch (err) {
@@ -113,6 +170,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   async createMicrophoneAudioTrack() {
     try {
+      const AgoraRTC = await getAgoraRTC();
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       this.localTracks.audioTrack = audioTrack;
     } catch (err) {
@@ -123,6 +181,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   async createScreenShareTrack() {
     try {
+      const AgoraRTC = await getAgoraRTC();
       const screenTrack = await AgoraRTC.createScreenVideoTrack(
         {
           encoderConfig: {
@@ -141,28 +200,38 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   }
 
   async switchVideoSource(type: VideoSourceType) {
+    const client = this.client;
+    if (!client) {
+      throw new Error("[rtc] Native client not attached");
+    }
+
     if (type === VideoSourceType.SCREEN) {
       await this.createScreenShareTrack();
       if (this.localTracks.screenTrack) {
-        this.client.unpublish(this.localTracks.videoTrack);
+        await client.unpublish(this.localTracks.videoTrack);
         this.localTracks.videoTrack?.close();
         this.localTracks.videoTrack = undefined;
-        this.client.publish(this.localTracks.screenTrack);
+        await client.publish(this.localTracks.screenTrack);
         this.emit("localTracksChanged", this.localTracks);
       }
     } else if (type === VideoSourceType.CAMERA) {
       await this.createCameraTracks();
       if (this.localTracks.videoTrack) {
-        this.client.unpublish(this.localTracks.screenTrack);
+        await client.unpublish(this.localTracks.screenTrack);
         this.localTracks.screenTrack?.close();
         this.localTracks.screenTrack = undefined;
-        this.client.publish(this.localTracks.videoTrack);
+        await client.publish(this.localTracks.videoTrack);
         this.emit("localTracksChanged", this.localTracks);
       }
     }
   }
 
   async publish() {
+    const client = this.client;
+    if (!client) {
+      throw new Error("[rtc] Native client not attached");
+    }
+
     const tracks = [];
     if (this.localTracks.videoTrack) {
       tracks.push(this.localTracks.videoTrack);
@@ -171,64 +240,104 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       tracks.push(this.localTracks.audioTrack);
     }
     if (tracks.length) {
-      await this.client.publish(tracks);
+      await client.publish(tracks);
     }
   }
 
   async destroy() {
     this.localTracks?.audioTrack?.close();
     this.localTracks?.videoTrack?.close();
-    if (this._joined) {
-      await this.client?.leave();
+    this.localTracks?.screenTrack?.close();
+
+    if (this.client) {
+      try {
+        await this.client.leave();
+      } catch (error) {
+        console.warn("[rtc] leave failed", error);
+      }
     }
+
+    this.detachNativeClient();
     this._resetData();
   }
 
-  // ----------- public methods ------------
+  private _resolveNativeClientWaiters() {
+    if (!this.client) {
+      return;
+    }
 
-  // -------------- private methods --------------
+    for (const waiter of this._nativeClientWaiters) {
+      clearTimeout(waiter.timeoutId);
+      waiter.resolve(this.client);
+    }
+    this._nativeClientWaiters = [];
+  }
+
+  private _rejectNativeClientWaiters(error: Error) {
+    for (const waiter of this._nativeClientWaiters) {
+      clearTimeout(waiter.timeoutId);
+      waiter.reject(error);
+    }
+    this._nativeClientWaiters = [];
+  }
+
+  private _onNetworkQuality = (quality: NetworkQuality) => {
+    this.emit("networkQuality", quality);
+  };
+
+  private _onUserPublished = (user: any) => {
+    this.emit("remoteUserChanged", {
+      userId: user.uid,
+      audioTrack: user.audioTrack,
+      videoTrack: user.videoTrack,
+    });
+  };
+
+  private _onUserUnpublished = (user: any) => {
+    this.emit("remoteUserChanged", {
+      userId: user.uid,
+      audioTrack: user.audioTrack,
+      videoTrack: user.videoTrack,
+    });
+  };
+
+  private _onStreamMessage = (uid: UID, stream: any) => {
+    this._parseData(stream);
+  };
+
   private _listenRtcEvents() {
-    this.client.on("network-quality", (quality) => {
-      this.emit("networkQuality", quality);
-    });
-    this.client.on("user-published", async (user, mediaType) => {
-      await this.client.subscribe(user, mediaType);
-      if (mediaType === "audio") {
-        this._playAudio(user.audioTrack);
-      }
-      this.emit("remoteUserChanged", {
-        userId: user.uid,
-        audioTrack: user.audioTrack,
-        videoTrack: user.videoTrack,
-      });
-    });
-    this.client.on("user-unpublished", async (user, mediaType) => {
-      await this.client.unsubscribe(user, mediaType);
-      this.emit("remoteUserChanged", {
-        userId: user.uid,
-        audioTrack: user.audioTrack,
-        videoTrack: user.videoTrack,
-      });
-    });
-    this.client.on("stream-message", (uid: UID, stream: any) => {
-      this._parseData(stream);
-    });
+    if (!this.client) {
+      return;
+    }
+    if (this._boundClient === this.client) {
+      return;
+    }
+
+    this._unlistenRtcEvents();
+
+    this.client.on("network-quality", this._onNetworkQuality);
+    this.client.on("user-published", this._onUserPublished);
+    this.client.on("user-unpublished", this._onUserUnpublished);
+    this.client.on("stream-message", this._onStreamMessage);
+    this._boundClient = this.client;
+  }
+
+  private _unlistenRtcEvents() {
+    if (!this._boundClient) {
+      return;
+    }
+
+    this._boundClient.off("network-quality", this._onNetworkQuality);
+    this._boundClient.off("user-published", this._onUserPublished);
+    this._boundClient.off("user-unpublished", this._onUserUnpublished);
+    this._boundClient.off("stream-message", this._onStreamMessage);
+    this._boundClient = null;
   }
 
   private _parseData(data: any): ITextItem | void {
     const ascii = String.fromCharCode(...new Uint8Array(data));
 
     console.log("[test] textstream raw data", ascii);
-
-    // const { stream_id, is_final, text, text_ts, data_type, message_id, part_number, total_parts } = textstream;
-
-    // if (total_parts > 0) {
-    //   // If message is split, handle it accordingly
-    //   this._handleSplitMessage(message_id, part_number, total_parts, stream_id, is_final, text, text_ts);
-    // } else {
-    //   // If there is no message_id, treat it as a complete message
-    //   this._handleCompleteMessage(stream_id, is_final, text, text_ts);
-    // }
 
     this.handleChunk(ascii);
   }
@@ -312,11 +421,11 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
             };
           } else if (type === "action") {
             const { action, data: actionData } = data;
-            if (action === "browse_website") {
-              console.log("Opening website", actionData.url);
-              window.open(actionData.url, "_blank");
-              return;
-            }
+            // if (action === "browse_website") {
+            //   console.log("Opening website", actionData.url);
+            //   window.open(actionData.url, "_blank");
+            //   return;
+            // }
           }
         }
 
@@ -342,7 +451,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   }
 
   base64ToUtf8(base64: string): string {
-    const binaryString = atob(base64); // Latin-1 形式的二进制字符串
+    const binaryString = atob(base64); // Latin-1 binary string
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
@@ -361,7 +470,9 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _resetData() {
     this.localTracks = {};
     this.spatialwalkToken = null;
-    this._joined = false;
+    this.appId = null;
+    this.token = null;
+    this.userId = null;
   }
 }
 
