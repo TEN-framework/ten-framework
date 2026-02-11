@@ -137,7 +137,6 @@ if (current_toolchain == "//.gnfiles/build/toolchain/msvc_force:msvc_force" &&
       "ten_env",
       "test",
       "//core/src/ten_runtime:ten_runtime_library",
-      "//third_party/node",
     ]
   }
 }

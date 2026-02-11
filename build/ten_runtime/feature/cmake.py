@@ -359,22 +359,14 @@ cmake.py will consider it as its own command line option."
         #
         # cmd = ' '.join(self.env) + f' cmake --build {self.args.build_path}
         # --target clean'
-        import platform
-        if platform.system() == "Windows":
-            cmd = f'rmdir /s /q "{self.args.build_path}"'
-        else:
-            cmd = f"rm -rf {self.args.build_path}"
+        cmd = f"rm -rf {self.args.build_path}"
         if self.args.log_level > 1:
             print(f"> {cmd}")
         returncode, output_text = cmd_exec.run_cmd_realtime(
             cmd, log_level=self.args.log_level
         )
         if returncode != 0:
-            if output_text:
-                try:
-                    print(output_text)
-                except UnicodeEncodeError:
-                    print(output_text.encode("ascii", errors="replace").decode("ascii"))
+            print(output_text)
             raise RuntimeError("Failed to cmake clean.")
 
     def build(self):

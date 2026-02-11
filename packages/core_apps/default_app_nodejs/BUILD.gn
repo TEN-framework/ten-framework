@@ -5,7 +5,6 @@
 #
 import("//build/feature/ten_package.gni")
 import("//build/ten_runtime/feature/publish.gni")
-import("//build/ten_runtime/options.gni")
 
 ten_package("default_app_nodejs") {
   package_kind = "app"

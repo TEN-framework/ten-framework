@@ -18,7 +18,6 @@
 #include <cstring>
 #include <iostream>
 #include <string>
-#include <string_view>
 #include <thread>
 
 #include "node.h"
