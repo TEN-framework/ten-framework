@@ -21,7 +21,6 @@ try {
   // Try different module names based on platform:
   // - Linux/macOS: libten_runtime_nodejs (with lib prefix)
   // - Windows MSVC: ten_runtime_nodejs (without lib prefix)
-  // - Windows MinGW: libten_runtime_nodejs (with lib prefix)
   try {
     addon = require("libten_runtime_nodejs");
   } catch {
