@@ -19,7 +19,7 @@ if (is_win) {
   action("copy_node_shared_lib") {
     script = "//.gnfiles/build/scripts/copy_fs_entry.py"
 
-    _source_lib = "//third_party/node/lib/win/x64/libnode.dll"
+    _source_lib = "${root_out_dir}/prebuilt/node_shared/lib/libnode.dll"
     _dest_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.dll"
 
     args = [
