@@ -7,7 +7,7 @@ import {
   type NetworkQuality,
   type UID,
 } from "agora-rtc-sdk-ng";
-import { type IChatItem, ITextItem } from "@/types";
+import { type IChatItem } from "@/types";
 
 export interface IRtcUser {
   userId: UID;
@@ -21,10 +21,16 @@ export interface RtcEvents {
   localTracksChanged: (tracks: IUserTracks) => void;
   networkQuality: (quality: NetworkQuality) => void;
   textChanged: (text: IChatItem) => void;
+  uiAction: (payload: IUiActionPayload) => void;
 }
 
 export interface IUserTracks {
   videoTrack?: ICameraVideoTrack;
   screenTrack?: ILocalVideoTrack;
   audioTrack?: IMicrophoneAudioTrack;
+}
+
+export interface IUiActionPayload {
+  action: string;
+  data: Record<string, any>;
 }

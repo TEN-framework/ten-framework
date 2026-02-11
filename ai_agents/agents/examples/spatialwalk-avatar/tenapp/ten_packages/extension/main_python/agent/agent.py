@@ -3,7 +3,8 @@ import json
 from typing import Awaitable, Callable, Optional
 from .llm_exec import LLMExec
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
-from ten_ai_base.types import LLMToolMetadata
+from ten_ai_base.const import CMD_PROPERTY_RESULT
+from ten_ai_base.types import LLMToolMetadata, LLMToolResult
 from .events import *
 
 
@@ -27,6 +28,9 @@ class Agent:
         self._llm_active_task: Optional[asyncio.Task] = (
             None  # currently running handler
         )
+        self._local_tool_handlers: dict[
+            str, Callable[[dict], Awaitable[LLMToolResult | None]]
+        ] = {}
 
         self.llm_exec = LLMExec(ten_env)
         self.llm_exec.on_response = (
@@ -124,6 +128,27 @@ class Agent:
                         tool=tool, source=cmd.get_source().extension_name
                     )
                 )
+            elif name == "tool_call":
+                tool_name, err = cmd.get_property_string("name")
+                if err:
+                    raise RuntimeError(f"Invalid tool_call name: {err}")
+                args_json, err = cmd.get_property_to_json("arguments")
+                if err:
+                    raise RuntimeError(
+                        f"Invalid tool_call arguments for {tool_name}: {err}"
+                    )
+                args = json.loads(args_json) if args_json else {}
+                handler = self._local_tool_handlers.get(tool_name)
+                if not handler:
+                    raise RuntimeError(f"Unhandled local tool_call: {tool_name}")
+                result = await handler(args)
+                cmd_result = CmdResult.create(StatusCode.OK, cmd)
+                if result is not None:
+                    cmd_result.set_property_from_json(
+                        CMD_PROPERTY_RESULT, json.dumps(result)
+                    )
+                await self.ten_env.return_result(cmd_result)
+                return
             else:
                 self.ten_env.log_warn(f"Unhandled cmd: {name}")
 
@@ -179,6 +204,15 @@ class Agent:
         This method sends a command to register the provided tools.
         """
         await self.llm_exec.register_tool(tool, source)
+
+    async def register_local_tool(
+        self,
+        tool: LLMToolMetadata,
+        source: str,
+        handler: Callable[[dict], Awaitable[LLMToolResult | None]],
+    ):
+        self._local_tool_handlers[tool.name] = handler
+        await self.register_llm_tool(tool, source)
 
     async def queue_llm_input(self, text: str):
         """

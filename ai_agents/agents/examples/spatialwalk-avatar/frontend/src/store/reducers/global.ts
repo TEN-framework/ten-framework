@@ -26,7 +26,10 @@ import {
   setSpatialwalkSettingsToLocal,
 } from "@/common/storage";
 import type {
+  FestivalEffectName,
   IChatItem,
+  IFestivalEffect,
+  IFortuneModal,
   IOptions,
   ISpatialwalkSettings,
   Language,
@@ -48,6 +51,8 @@ export interface InitialState {
   addonModules: AddonDef.Module[]; // addon modules
   mobileActiveTab: EMobileActiveTab;
   spatialwalkSettings: ISpatialwalkSettings;
+  festivalEffect: IFestivalEffect | null;
+  fortuneModal: IFortuneModal | null;
 }
 
 const getInitialState = (): InitialState => {
@@ -66,6 +71,8 @@ const getInitialState = (): InitialState => {
     addonModules: [],
     mobileActiveTab: EMobileActiveTab.AGENT,
     spatialwalkSettings: DEFAULT_SPATIALWALK_OPTIONS,
+    festivalEffect: null,
+    fortuneModal: null,
   };
 };
 
@@ -175,6 +182,31 @@ export const globalSlice = createSlice({
     setMobileActiveTab: (state, action: PayloadAction<EMobileActiveTab>) => {
       state.mobileActiveTab = action.payload;
     },
+    triggerFestivalEffect: (
+      state,
+      action: PayloadAction<{ name: FestivalEffectName }>
+    ) => {
+      state.festivalEffect = {
+        name: action.payload.name,
+        active: true,
+        nonce: Date.now(),
+      };
+    },
+    clearFestivalEffect: (state) => {
+      state.festivalEffect = null;
+    },
+    showFortuneModal: (
+      state,
+      action: PayloadAction<{ imageId: string }>
+    ) => {
+      state.fortuneModal = {
+        open: true,
+        imageId: action.payload.imageId,
+      };
+    },
+    hideFortuneModal: (state) => {
+      state.fortuneModal = null;
+    },
     reset: (state) => {
       Object.assign(state, getInitialState());
       document.documentElement.style.setProperty(
@@ -278,6 +310,10 @@ export const {
   setGraph,
   setAddonModules,
   setSpatialwalkSettings,
+  triggerFestivalEffect,
+  clearFestivalEffect,
+  showFortuneModal,
+  hideFortuneModal,
 } = globalSlice.actions;
 
 export { initializeGraphData, fetchGraphDetails };

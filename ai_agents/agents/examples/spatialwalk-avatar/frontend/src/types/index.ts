@@ -28,6 +28,19 @@ export interface ISpatialwalkSettings {
   avatarDesktopLargeWindow: boolean;
 }
 
+export type FestivalEffectName = "gold_rain" | "fireworks";
+
+export interface IFestivalEffect {
+  name: FestivalEffectName;
+  active: boolean;
+  nonce: number;
+}
+
+export interface IFortuneModal {
+  open: boolean;
+  imageId: string;
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",

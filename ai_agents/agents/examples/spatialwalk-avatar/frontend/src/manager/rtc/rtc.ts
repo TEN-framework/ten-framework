@@ -420,12 +420,17 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               text: data.text,
             };
           } else if (type === "action") {
-            const { action, data: actionData } = data;
-            // if (action === "browse_website") {
-            //   console.log("Opening website", actionData.url);
-            //   window.open(actionData.url, "_blank");
-            //   return;
-            // }
+            const action = data?.action;
+            const actionData = data?.data ?? {};
+            if (action && typeof action === "string") {
+              this.emit("uiAction", {
+                action,
+                data: actionData,
+              });
+            }
+            // Clean up the cache for action messages and skip chat rendering.
+            delete this.messageCache[message_id];
+            return;
           }
         }
 

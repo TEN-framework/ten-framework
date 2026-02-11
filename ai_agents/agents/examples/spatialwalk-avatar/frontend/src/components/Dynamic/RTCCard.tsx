@@ -17,8 +17,19 @@ import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
-import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
-import { addChatItem, setOptions, setRoomConnected } from "@/store/reducers/global";
+import {
+  type IRtcUser,
+  type IUiActionPayload,
+  type IUserTracks,
+  rtcManager,
+} from "@/manager";
+import {
+  addChatItem,
+  setOptions,
+  setRoomConnected,
+  showFortuneModal,
+  triggerFestivalEffect,
+} from "@/store/reducers/global";
 import { type IChatItem } from "@/types";
 
 let hasInit: boolean = false;
@@ -65,6 +76,7 @@ export default function RTCCard(props: { className?: string }) {
       rtcManager.on("localTracksChanged", onLocalTracksChanged);
       rtcManager.on("textChanged", onTextChanged);
       rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+      rtcManager.on("uiAction", onUiAction);
       await rtcManager.prepareSession({
         channel,
         userId,
@@ -90,6 +102,7 @@ export default function RTCCard(props: { className?: string }) {
       rtcManager.off("textChanged", onTextChanged);
       rtcManager.off("localTracksChanged", onLocalTracksChanged);
       rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+      rtcManager.off("uiAction", onUiAction);
       hasInit = false;
     }
   };
@@ -99,6 +112,7 @@ export default function RTCCard(props: { className?: string }) {
     rtcManager.off("textChanged", onTextChanged);
     rtcManager.off("localTracksChanged", onLocalTracksChanged);
     rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+    rtcManager.off("uiAction", onUiAction);
     await rtcManager.destroy();
     dispatch(setRoomConnected(false));
     hasInit = false;
@@ -123,6 +137,23 @@ export default function RTCCard(props: { className?: string }) {
   const onTextChanged = (text: IChatItem) => {
     console.log("[rtc] onTextChanged", text);
     dispatch(addChatItem(text));
+  };
+
+  const onUiAction = (payload: IUiActionPayload) => {
+    console.log("[rtc] onUiAction", payload);
+    if (payload.action === "trigger_effect") {
+      const effectName = payload.data?.name;
+      if (effectName === "gold_rain" || effectName === "fireworks") {
+        dispatch(triggerFestivalEffect({ name: effectName }));
+      }
+      return;
+    }
+    if (payload.action === "show_fortune_result") {
+      const imageId = payload.data?.image_id;
+      if (typeof imageId === "string" && imageId.trim().length > 0) {
+        dispatch(showFortuneModal({ imageId }));
+      }
+    }
   };
 
   const onVideoSourceTypeChange = async (value: VideoSourceType) => {

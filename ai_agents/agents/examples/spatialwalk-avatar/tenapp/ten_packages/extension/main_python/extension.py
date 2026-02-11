@@ -21,8 +21,25 @@ from .agent.events import (
 )
 from .helper import _send_cmd, _send_data, parse_sentences
 from .config import MainControlConfig  # assume extracted from your base model
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    LLMToolMetadataParameter,
+    LLMToolResult,
+    LLMToolResultLLMResult,
+)
 
 import uuid
+
+TOOL_TRIGGER_EFFECT = "trigger_effect"
+TOOL_SHOW_FORTUNE_RESULT = "show_fortune_result"
+EFFECT_NAMES = {"gold_rain", "fireworks"}
+FORTUNE_IMAGE_IDS = {
+    "fortune_rich",
+    "fortune_love",
+    "fortune_lazy",
+    "fortune_body",
+    "fortune_career",
+}
 
 
 class MainControlExtension(AsyncExtension):
@@ -61,6 +78,16 @@ class MainControlExtension(AsyncExtension):
             event_type = getattr(fn, "_agent_event_type", None)
             if event_type:
                 self.agent.on(event_type, fn)
+
+        for tool in self._build_local_tool_metadata():
+            if tool.name == TOOL_TRIGGER_EFFECT:
+                await self.agent.register_local_tool(
+                    tool, self.name, self._run_trigger_effect_tool
+                )
+            elif tool.name == TOOL_SHOW_FORTUNE_RESULT:
+                await self.agent.register_local_tool(
+                    tool, self.name, self._run_show_fortune_result_tool
+                )
 
     # === Register handlers with decorators ===
     @agent_event_handler(UserJoinedEvent)
@@ -211,3 +238,101 @@ class MainControlExtension(AsyncExtension):
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+
+    def _build_local_tool_metadata(self) -> list[LLMToolMetadata]:
+        return [
+            LLMToolMetadata(
+                name=TOOL_TRIGGER_EFFECT,
+                description="Trigger a festive screen effect overlay.",
+                parameters=[
+                    LLMToolMetadataParameter(
+                        name="name",
+                        type="string",
+                        description="Effect name: gold_rain or fireworks.",
+                        required=True,
+                    )
+                ],
+            ),
+            LLMToolMetadata(
+                name=TOOL_SHOW_FORTUNE_RESULT,
+                description="Show fortune card modal with image id.",
+                parameters=[
+                    LLMToolMetadataParameter(
+                        name="image_id",
+                        type="string",
+                        description=(
+                            "Fortune card id: fortune_rich, fortune_love, "
+                            "fortune_lazy, fortune_body, fortune_career."
+                        ),
+                        required=True,
+                    )
+                ],
+            ),
+        ]
+
+    async def _emit_ui_action(self, action: str, data: dict) -> None:
+        await _send_data(
+            self.ten_env,
+            "message",
+            "message_collector",
+            {
+                "data_type": "raw",
+                "role": "assistant",
+                "text": json.dumps(
+                    {
+                        "type": "action",
+                        "data": {
+                            "action": action,
+                            "data": data,
+                        },
+                    }
+                ),
+                "text_ts": int(time.time() * 1000),
+                "is_final": True,
+                "stream_id": 100,
+            },
+        )
+
+    async def _run_trigger_effect_tool(self, args: dict) -> LLMToolResult | None:
+        effect_name = str(args.get("name", "")).strip()
+        if effect_name not in EFFECT_NAMES:
+            self.ten_env.log_warn(
+                f"[MainControlExtension] Invalid effect name: {effect_name}"
+            )
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=(
+                    f"Unsupported effect name: {effect_name}. "
+                    "Use gold_rain or fireworks."
+                ),
+            )
+
+        await self._emit_ui_action(TOOL_TRIGGER_EFFECT, {"name": effect_name})
+        return LLMToolResultLLMResult(
+            type="llmresult",
+            content=f"effect {effect_name} triggered",
+        )
+
+    async def _run_show_fortune_result_tool(
+        self, args: dict
+    ) -> LLMToolResult | None:
+        image_id = str(args.get("image_id", "")).strip()
+        if image_id not in FORTUNE_IMAGE_IDS:
+            self.ten_env.log_warn(
+                f"[MainControlExtension] Invalid fortune image_id: {image_id}"
+            )
+            return LLMToolResultLLMResult(
+                type="llmresult",
+                content=(
+                    f"Unsupported fortune image_id: {image_id}. "
+                    "Use a supported fortune card id."
+                ),
+            )
+
+        await self._emit_ui_action(
+            TOOL_SHOW_FORTUNE_RESULT, {"image_id": image_id}
+        )
+        return LLMToolResultLLMResult(
+            type="llmresult",
+            content=f"fortune card {image_id} displayed",
+        )
