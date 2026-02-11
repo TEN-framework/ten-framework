@@ -40,7 +40,7 @@ group("nodejs") {
     deps += [ "go_app_preload_all_addons_nodejs" ]
   }
 
-  if (is_debug) {
+  if (is_debug && !is_win) {
     deps += [ "leak_check_nodejs" ]
   }
 }
