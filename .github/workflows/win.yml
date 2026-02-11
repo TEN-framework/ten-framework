@@ -210,7 +210,7 @@ jobs:
       - name: Install tools and dependencies
         shell: pwsh
         run: |
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest
           go1.24.3 download
           go1.24.3 version
