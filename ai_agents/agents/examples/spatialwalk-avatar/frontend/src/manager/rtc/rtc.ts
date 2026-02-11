@@ -7,7 +7,7 @@ import type {
   NetworkQuality,
   UID,
 } from "agora-rtc-sdk-ng";
-import { apiGenAgoraData, apiGenSpatialwalkToken, VideoSourceType } from "@/common";
+import { apiGenAgoraData, apiGenSpatialwalkToken } from "@/common";
 import {
   EMessageDataType,
   EMessageType,
@@ -157,17 +157,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this._rejectNativeClientWaiters(new Error("[rtc] Native client detached"));
   }
 
-  async createCameraTracks() {
-    try {
-      const AgoraRTC = await getAgoraRTC();
-      const videoTrack = await AgoraRTC.createCameraVideoTrack();
-      this.localTracks.videoTrack = videoTrack;
-    } catch (err) {
-      console.error("Failed to create video track", err);
-    }
-    this.emit("localTracksChanged", this.localTracks);
-  }
-
   async createMicrophoneAudioTrack() {
     try {
       const AgoraRTC = await getAgoraRTC();
@@ -179,53 +168,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this.emit("localTracksChanged", this.localTracks);
   }
 
-  async createScreenShareTrack() {
-    try {
-      const AgoraRTC = await getAgoraRTC();
-      const screenTrack = await AgoraRTC.createScreenVideoTrack(
-        {
-          encoderConfig: {
-            width: 1200,
-            height: 800,
-            frameRate: 5,
-          },
-        },
-        "disable"
-      );
-      this.localTracks.screenTrack = screenTrack;
-    } catch (err) {
-      console.error("Failed to create screen track", err);
-    }
-    this.emit("localTracksChanged", this.localTracks);
-  }
-
-  async switchVideoSource(type: VideoSourceType) {
-    const client = this.client;
-    if (!client) {
-      throw new Error("[rtc] Native client not attached");
-    }
-
-    if (type === VideoSourceType.SCREEN) {
-      await this.createScreenShareTrack();
-      if (this.localTracks.screenTrack) {
-        await client.unpublish(this.localTracks.videoTrack);
-        this.localTracks.videoTrack?.close();
-        this.localTracks.videoTrack = undefined;
-        await client.publish(this.localTracks.screenTrack);
-        this.emit("localTracksChanged", this.localTracks);
-      }
-    } else if (type === VideoSourceType.CAMERA) {
-      await this.createCameraTracks();
-      if (this.localTracks.videoTrack) {
-        await client.unpublish(this.localTracks.screenTrack);
-        this.localTracks.screenTrack?.close();
-        this.localTracks.screenTrack = undefined;
-        await client.publish(this.localTracks.videoTrack);
-        this.emit("localTracksChanged", this.localTracks);
-      }
-    }
-  }
-
   async publish() {
     const client = this.client;
     if (!client) {
@@ -233,9 +175,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     }
 
     const tracks = [];
-    if (this.localTracks.videoTrack) {
-      tracks.push(this.localTracks.videoTrack);
-    }
     if (this.localTracks.audioTrack) {
       tracks.push(this.localTracks.audioTrack);
     }
@@ -246,8 +185,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   async destroy() {
     this.localTracks?.audioTrack?.close();
-    this.localTracks?.videoTrack?.close();
-    this.localTracks?.screenTrack?.close();
 
     if (this.client) {
       try {

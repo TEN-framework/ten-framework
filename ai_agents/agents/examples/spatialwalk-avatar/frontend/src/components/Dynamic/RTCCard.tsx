@@ -1,19 +1,9 @@
 "use client";
 
-import type {
-  ICameraVideoTrack,
-  ILocalVideoTrack,
-  IMicrophoneAudioTrack,
-} from "agora-rtc-sdk-ng";
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 import * as React from "react";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useIsCompactLayout,
-  VideoSourceType,
-} from "@/common";
+import { useAppDispatch, useAppSelector, useIsCompactLayout } from "@/common";
 import Avatar from "@/components/Agent/AvatarSpatialwalk";
-import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
@@ -43,12 +33,7 @@ export default function RTCCard(props: { className?: string }) {
     (state) => state.global.spatialwalkSettings
   );
   const { userId, channel } = options;
-  const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>();
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>();
-  const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>();
-  const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(
-    VideoSourceType.CAMERA
-  );
   const avatarInLargeWindow = spatialwalkSettings.avatarDesktopLargeWindow;
 
   const isCompactLayout = useIsCompactLayout();
@@ -91,7 +76,6 @@ export default function RTCCard(props: { className?: string }) {
         })
       );
       await rtcManager.waitForNativeClient(10000);
-      await rtcManager.createCameraTracks();
       await rtcManager.createMicrophoneAudioTrack();
       await rtcManager.publish();
       dispatch(setRoomConnected(true));
@@ -126,9 +110,7 @@ export default function RTCCard(props: { className?: string }) {
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
     console.log("[rtc] onLocalTracksChanged", tracks);
-    const { videoTrack, audioTrack, screenTrack } = tracks;
-    setVideoTrack(videoTrack);
-    setScreenTrack(screenTrack);
+    const { audioTrack } = tracks;
     if (audioTrack) {
       setAudioTrack(audioTrack);
     }
@@ -156,15 +138,10 @@ export default function RTCCard(props: { className?: string }) {
     }
   };
 
-  const onVideoSourceTypeChange = async (value: VideoSourceType) => {
-    await rtcManager.switchVideoSource(value);
-    setVideoSourceType(value);
-  };
-
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Top region (Avatar or ChatCard) */}
-      <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: '240px' }}>
+      <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: "240px" }}>
         {!avatarInLargeWindow ? (
           <div className="h-60 w-full p-1">
             <Avatar />
@@ -176,15 +153,9 @@ export default function RTCCard(props: { className?: string }) {
         )}
       </div>
 
-      {/* Bottom region for microphone and video blocks - always visible */}
+      {/* Bottom region for microphone block - always visible */}
       <div className="w-full flex-shrink-0 space-y-2 px-2 py-2">
         <MicrophoneBlock audioTrack={audioTrack} />
-        <VideoBlock
-          cameraTrack={videoTrack}
-          screenTrack={screenTrack}
-          videoSourceType={videoSourceType}
-          onVideoSourceChange={onVideoSourceTypeChange}
-        />
       </div>
     </div>
   );

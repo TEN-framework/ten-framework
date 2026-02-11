@@ -1,6 +1,4 @@
 import {
-  type ICameraVideoTrack,
-  type ILocalVideoTrack,
   type IMicrophoneAudioTrack,
   type IRemoteAudioTrack,
   type IRemoteVideoTrack,
@@ -12,7 +10,6 @@ import { type IChatItem } from "@/types";
 export interface IRtcUser {
   userId: UID;
   videoTrack?: IRemoteVideoTrack;
-  screenTrack?: ILocalVideoTrack;
   audioTrack?: IRemoteAudioTrack;
 }
 
@@ -25,8 +22,6 @@ export interface RtcEvents {
 }
 
 export interface IUserTracks {
-  videoTrack?: ICameraVideoTrack;
-  screenTrack?: ILocalVideoTrack;
   audioTrack?: IMicrophoneAudioTrack;
 }
 
