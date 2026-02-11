@@ -9,9 +9,12 @@ import {
 } from "@spatialwalk/avatarkit";
 import type { IAgoraRTCClient } from "agora-rtc-sdk-ng";
 import { AgoraProvider, AvatarPlayer } from "@spatialwalk/avatarkit-rtc";
-import { Maximize, Minimize } from "lucide-react";
+import { MessagesSquare, MessagesSquareIcon } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/common";
+import AvatarConnectButton from "@/components/Agent/AvatarConnectButton";
+import AvatarTranscriptOverlay from "@/components/Agent/AvatarTranscriptOverlay";
+import { Button } from "@/components/ui/button";
 import { rtcManager } from "@/manager";
 import {
   getSpatialwalkUrlConfig,
@@ -46,7 +49,7 @@ export default function AvatarSpatialwalk() {
   );
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(true);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const avatarViewRef = useRef<AvatarView | null>(null);
@@ -172,20 +175,30 @@ export default function AvatarSpatialwalk() {
 
   return (
     <div
-      className={cn("relative h-full w-full overflow-hidden rounded-lg", {
-        ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
-      })}
+      className={cn(
+        "absolute top-0 left-0 h-screen w-screen overflow-hidden rounded-none"
+      )}
     >
-      <button
-        className="absolute top-2 right-2 z-10 rounded-lg bg-black/50 p-2 transition hover:bg-black/70"
-        onClick={() => setFullscreen((prevValue) => !prevValue)}
-      >
-        {fullscreen ? (
-          <Minimize className="text-white" size={24} />
-        ) : (
-          <Maximize className="text-white" size={24} />
-        )}
-      </button>
+      <div className="pointer-events-none absolute top-2 right-2 z-30 flex items-center gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          title={showTranscript ? "Hide transcript" : "Show transcript"}
+          onClick={() => setShowTranscript((prev) => !prev)}
+          className="pointer-events-auto h-10 w-10 rounded-full border border-white/20 bg-black/55 text-white hover:bg-black/70"
+        >
+          {showTranscript ? (
+            <MessagesSquare className="h-5 w-5" />
+          ) : (
+            <MessagesSquareIcon className="h-5 w-5 opacity-60" />
+          )}
+          <span className="sr-only">
+            {showTranscript ? "Hide transcript" : "Show transcript"}
+          </span>
+        </Button>
+        <AvatarConnectButton className="pointer-events-auto" />
+      </div>
+      {showTranscript && <AvatarTranscriptOverlay />}
 
       <div ref={containerRef} className="h-full w-full" />
 

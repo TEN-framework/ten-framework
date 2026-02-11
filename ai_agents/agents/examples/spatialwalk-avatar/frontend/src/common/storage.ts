@@ -27,10 +27,15 @@ export const getSpatialwalkSettingsFromLocal = () => {
     const data = localStorage.getItem(SPATIALWALK_SETTINGS_KEY);
     if (data) {
       const parsed = JSON.parse(data) as Partial<ISpatialwalkSettings>;
-      return {
+      const merged = {
         ...DEFAULT_SPATIALWALK_OPTIONS,
         ...parsed,
       };
+      // Large-window mode is always enabled in this app variant.
+      merged.avatarDesktopLargeWindow = true;
+      localStorage.setItem(SPATIALWALK_SETTINGS_KEY, JSON.stringify(merged));
+
+      return merged;
     }
   }
   return DEFAULT_SPATIALWALK_OPTIONS;

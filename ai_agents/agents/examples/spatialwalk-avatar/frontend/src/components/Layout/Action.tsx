@@ -1,132 +1,22 @@
 "use client";
 
-import * as React from "react";
-import { toast } from "sonner";
 import {
-  apiPing,
-  apiStartService,
-  apiStopService,
   EMobileActiveTab,
-  getSpatialwalkUrlConfig,
   MOBILE_ACTIVE_TAB_MAP,
   useAppDispatch,
   useAppSelector,
-  validateSpatialwalkRequiredConfig,
 } from "@/common";
-import { LoadingButton } from "@/components/Button/LoadingButton";
-import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
+import { setMobileActiveTab } from "@/store/reducers/global";
 import { SpatialwalkCfgSheet } from "../Chat/ChatCfgSpatialwalkSetting";
-
-let intervalId: NodeJS.Timeout | null = null;
 
 export default function Action(props: { className?: string }) {
   const { className } = props;
   const dispatch = useAppDispatch();
-  const agentConnected = useAppSelector((state) => state.global.agentConnected);
-  const channel = useAppSelector((state) => state.global.options.channel);
-  const userId = useAppSelector((state) => state.global.options.userId);
-  const language = useAppSelector((state) => state.global.language);
-  const voiceType = useAppSelector((state) => state.global.voiceType);
-  const selectedGraphId = useAppSelector(
-    (state) => state.global.selectedGraphId
-  );
-  const graphList = useAppSelector((state) => state.global.graphList);
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab
   );
-  const [loading, setLoading] = React.useState(false);
-
-  React.useEffect(() => {
-    if (channel) {
-      checkAgentConnected();
-    }
-  }, [channel]);
-
-  const checkAgentConnected = async () => {
-    const res: any = await apiPing(channel);
-    if (res?.code == 0) {
-      dispatch(setAgentConnected(true));
-    }
-  };
-
-  const onClickConnect = async () => {
-    if (loading) {
-      return;
-    }
-    setLoading(true);
-    if (agentConnected) {
-      await apiStopService(channel);
-      dispatch(setAgentConnected(false));
-      toast.success("Agent disconnected");
-      stopPing();
-    } else {
-      const selectedGraph = graphList.find(
-        (graph) => graph.graph_id === selectedGraphId
-      );
-      if (!selectedGraph) {
-        toast.error("Please select a graph first");
-        setLoading(false);
-        return;
-      }
-      const spatialwalkUrlConfig = getSpatialwalkUrlConfig();
-      const validation = validateSpatialwalkRequiredConfig(spatialwalkUrlConfig);
-      if (!validation.isValid) {
-        toast.error("Spatialwalk Settings", {
-          description: validation.message,
-        });
-        setLoading(false);
-        return;
-      }
-
-      const res = await apiStartService({
-        channel,
-        userId,
-        graphName: selectedGraph.name,
-        language,
-        voiceType,
-        properties: {
-          avatar: {
-            spatialreal_avatar_id: spatialwalkUrlConfig.avatarId,
-          },
-        },
-      });
-      const { code, msg } = res || {};
-      if (code != 0) {
-        if (code == "10001") {
-          toast.error(
-            "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later."
-          );
-        } else {
-          toast.error(`code:${code},msg:${msg}`);
-        }
-        setLoading(false);
-        throw new Error(msg);
-      }
-      dispatch(setAgentConnected(true));
-      toast.success("Agent connected");
-      startPing();
-    }
-    setLoading(false);
-  };
-
-  const startPing = () => {
-    if (intervalId) {
-      stopPing();
-    }
-    intervalId = setInterval(() => {
-      apiPing(channel);
-    }, 3000);
-  };
-
-  const stopPing = () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      intervalId = null;
-    }
-  };
 
   const onChangeMobileActiveTab = (tab: string) => {
     dispatch(setMobileActiveTab(tab as EMobileActiveTab));
@@ -165,29 +55,9 @@ export default function Action(props: { className?: string }) {
             </TabsList>
           </Tabs>
 
-          {/* -- Graph Select Part */}
+          {/* -- Settings */}
           <div className="mt-2 flex w-full items-center justify-between gap-2 md:mt-0 md:w-auto md:flex-wrap">
-            <RemoteGraphSelect />
             <SpatialwalkCfgSheet />
-
-            {/* -- Action Button */}
-            <div className="flex items-center gap-2 md:ml-auto">
-              <LoadingButton
-                onClick={onClickConnect}
-                variant={!agentConnected ? "default" : "destructive"}
-                size="sm"
-                disabled={!selectedGraphId && !agentConnected}
-                className="w-fit min-w-24 shrink-0"
-                loading={loading}
-                svgProps={{ className: "h-4 w-4 text-muted-foreground" }}
-              >
-                {loading
-                  ? "Connecting"
-                  : !agentConnected
-                    ? "Connect"
-                    : "Disconnect"}
-              </LoadingButton>
-            </div>
           </div>
         </div>
       </div>

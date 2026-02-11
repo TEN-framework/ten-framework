@@ -91,6 +91,7 @@ export const globalSlice = createSlice({
       state.spatialwalkSettings = {
         ...state.spatialwalkSettings,
         ...action.payload,
+        avatarDesktopLargeWindow: true,
       };
       setSpatialwalkSettingsToLocal(state.spatialwalkSettings);
     },

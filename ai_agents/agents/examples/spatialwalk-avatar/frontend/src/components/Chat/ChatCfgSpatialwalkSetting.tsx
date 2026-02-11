@@ -28,7 +28,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { setSpatialwalkSettings } from "@/store/reducers/global";
 import type { ISpatialwalkSettings } from "@/types";
@@ -54,7 +53,7 @@ export function SpatialwalkCfgSheet() {
           <SheetTitle>Spatialwalk Avatar</SheetTitle>
           <SheetDescription>
             `appId` and `avatarId` come from URL query params. Configure only
-            environment and layout here.
+            environment here.
           </SheetDescription>
         </SheetHeader>
 
@@ -62,8 +61,6 @@ export function SpatialwalkCfgSheet() {
           <SpatialwalkCfgForm
             initialData={{
               spatialwalk_env: spatialwalkSettings.environment,
-              spatialwalk_large_window:
-                spatialwalkSettings.avatarDesktopLargeWindow,
             }}
             onUpdate={async (data) => {
               const nextSettings: ISpatialwalkSettings = {
@@ -71,8 +68,7 @@ export function SpatialwalkCfgSheet() {
                 avatarId: spatialwalkSettings.avatarId,
                 appId: spatialwalkSettings.appId,
                 environment: (data.spatialwalk_env as "cn" | "intl") || "intl",
-                avatarDesktopLargeWindow:
-                  data.spatialwalk_large_window as boolean,
+                avatarDesktopLargeWindow: true,
               };
               dispatch(setSpatialwalkSettings(nextSettings));
               toast.success("Spatialwalk Settings", {
@@ -134,26 +130,6 @@ const SpatialwalkCfgForm = ({
                   </SelectContent>
                 </Select>
               </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          key={"spatialwalk_large_window"}
-          control={form.control}
-          name={"spatialwalk_large_window"}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Large Window</FormLabel>
-              <div className="flex items-center justify-between">
-                <FormControl>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={field.value === true}
-                      onCheckedChange={field.onChange}
-                    />
-                  </div>
-                </FormControl>
-              </div>
             </FormItem>
           )}
         />

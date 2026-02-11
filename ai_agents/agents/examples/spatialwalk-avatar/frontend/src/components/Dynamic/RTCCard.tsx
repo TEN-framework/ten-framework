@@ -2,10 +2,8 @@
 
 import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 import * as React from "react";
-import { useAppDispatch, useAppSelector, useIsCompactLayout } from "@/common";
-import Avatar from "@/components/Agent/AvatarSpatialwalk";
+import { useAppDispatch, useAppSelector } from "@/common";
 import MicrophoneBlock from "@/components/Agent/Microphone";
-import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import {
   type IRtcUser,
@@ -29,14 +27,8 @@ export default function RTCCard(props: { className?: string }) {
 
   const dispatch = useAppDispatch();
   const options = useAppSelector((state) => state.global.options);
-  const spatialwalkSettings = useAppSelector(
-    (state) => state.global.spatialwalkSettings
-  );
   const { userId, channel } = options;
   const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>();
-  const avatarInLargeWindow = spatialwalkSettings.avatarDesktopLargeWindow;
-
-  const isCompactLayout = useIsCompactLayout();
 
   React.useEffect(() => {
     if (!options.channel) {
@@ -140,19 +132,6 @@ export default function RTCCard(props: { className?: string }) {
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      {/* Top region (Avatar or ChatCard) */}
-      <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: "240px" }}>
-        {!avatarInLargeWindow ? (
-          <div className="h-60 w-full p-1">
-            <Avatar />
-          </div>
-        ) : (
-          !isCompactLayout && (
-            <ChatCard className="m-0 h-full w-full rounded-b-lg bg-[#181a1d] md:rounded-lg" />
-          )
-        )}
-      </div>
-
       {/* Bottom region for microphone block - always visible */}
       <div className="w-full flex-shrink-0 space-y-2 px-2 py-2">
         <MicrophoneBlock audioTrack={audioTrack} />
