@@ -4169,7 +4169,8 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?"
+                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?",
+                "interrupt_on_interim": false
               }
             },
             {
@@ -4526,7 +4527,8 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. Please start by telling me your name?"
+                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. Please start by telling me your name?",
+                "interrupt_on_interim": false
               }
             },
             {

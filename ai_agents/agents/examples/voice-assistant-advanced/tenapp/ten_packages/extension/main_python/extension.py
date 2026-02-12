@@ -97,7 +97,8 @@ class MainControlExtension(AsyncExtension):
             return
 
         # Interrupt on INTERIM results too (when user starts speaking)
-        if not event.final and len(event.text) >= 2:
+        # Can be disabled via config.interrupt_on_interim = False
+        if not event.final and len(event.text) >= 2 and self.config.interrupt_on_interim:
             self.ten_env.log_info(
                 f'[INTERIM_INTERRUPT] User speaking, interrupting avatar: "{event.text[:30]}..."'
             )

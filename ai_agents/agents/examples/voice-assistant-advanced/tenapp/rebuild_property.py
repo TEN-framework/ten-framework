@@ -1708,21 +1708,29 @@ gpt51_llm_sentinel_auto = {
 }
 
 # Sentinel main_control - collect mode
+# interrupt_on_interim=False: Only interrupt when STT sends final result (user finished speaking)
 main_control_sentinel_collect = {
     "type": "extension",
     "name": "main_control",
     "addon": "main_python",
     "extension_group": "control",
-    "property": {"greeting": sentinel_greeting_collect},
+    "property": {
+        "greeting": sentinel_greeting_collect,
+        "interrupt_on_interim": False,
+    },
 }
 
 # Sentinel main_control - auto mode
+# interrupt_on_interim=False: Only interrupt when STT sends final result (user finished speaking)
 main_control_sentinel_auto = {
     "type": "extension",
     "name": "main_control",
     "addon": "main_python",
     "extension_group": "control",
-    "property": {"greeting": sentinel_greeting_auto},
+    "property": {
+        "greeting": sentinel_greeting_auto,
+        "interrupt_on_interim": False,
+    },
 }
 
 # Sentinel thymia config - auto_connect=False (collect demographics first)
