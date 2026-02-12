@@ -169,6 +169,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     self.config.dump_path, DUMP_FILE_NAME
                 )
                 self.audio_dumper = Dumper(dump_file_path)
+                await self.audio_dumper.start()
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = ASRConfig.model_validate_json("{}")
@@ -182,7 +183,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     vendor="ezai",
                     code="init_failed",
                     message=str(e),
-                )
+                ),
             )
 
     @override
@@ -197,9 +198,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
             self.client = CustomWebSocketClient(
                 self.config.url + f"?token={self.config.token}"
             )
-
-            if self.audio_dumper:
-                await self.audio_dumper.start()
 
             # Register event handlers
             await self._register_custom_event_handlers()
@@ -218,7 +216,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                         vendor="ezai",
                         code="connection_failed",
                         message="failed to connect to custom websocket",
-                    )
+                    ),
                 )
                 asyncio.create_task(self._handle_reconnect())
             else:
@@ -236,7 +234,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     vendor="ezai",
                     code="connection_failed",
                     message=str(e),
-                )
+                ),
             )
 
     async def _register_custom_event_handlers(self):
@@ -477,9 +475,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         # Create silence buffer
         frame_buf = bytearray(empty_audio_bytes_len)
 
-        if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(frame_buf))
-
         # Update timeline
         self.audio_timeline.add_silence_audio(mute_duration_ms)
 
@@ -577,31 +572,37 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.client is not None
 
-        buf = frame.lock_buf()
-        if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(buf))
-        self.audio_timeline.add_user_audio(
-            int(len(buf) / (self.config.sample_rate / 1000 * 2))
-        )
+        try:
+            buf = frame.lock_buf()
+            if self.audio_dumper:
+                self.ten_env.log_info(f"Dumping {len(buf)} bytes")
+                await self.audio_dumper.push_bytes(bytes(buf))
+            self.audio_timeline.add_user_audio(
+                int(len(buf) / (self.config.sample_rate / 1000 * 2))
+            )
 
-        # Prepare metadata
-        metadata = {
-            "sampleRate": self.config.sample_rate,
-            "channels": self.config.channels,
-            "sampwidth": self.config.sampwidth,
-            "language": self.config.language,
-        }
-        metadata_json = json.dumps(metadata)
-        metadata_length = len(metadata_json)
+            # Prepare metadata
+            metadata = {
+                "sampleRate": self.config.sample_rate,
+                "channels": self.config.channels,
+                "sampwidth": self.config.sampwidth,
+                "language": self.config.language,
+            }
+            metadata_json = json.dumps(metadata)
+            metadata_length = len(metadata_json)
 
-        # Pack data: metadata length + metadata + audio data
-        message = (
-            struct.pack("<I", metadata_length)
-            + metadata_json.encode("utf-8")
-            + bytes(buf)
-        )
+            # Pack data: metadata length + metadata + audio data
+            message = (
+                struct.pack("<I", metadata_length)
+                + metadata_json.encode("utf-8")
+                + bytes(buf)
+            )
 
-        await self.client.send(message)
-        frame.unlock_buf(buf)
+            await self.client.send(message)
+            frame.unlock_buf(buf)
 
-        return True
+            return True
+        except Exception as e:
+            self.ten_env.log_error(f"Error sending audio to Deepgram Flux: {e}")
+            frame.unlock_buf(buf)
+            return False
