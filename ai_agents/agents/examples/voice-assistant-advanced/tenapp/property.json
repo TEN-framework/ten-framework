@@ -4113,7 +4113,7 @@
                 "api_key": "${env:OPENAI_API_KEY}",
                 "model": "gpt-5.1",
                 "max_tokens": 1000,
-                "prompt": "You are Bella, a warm wellness therapist having a natural conversation.\n\nWORD LIMITS: MAX 30 WORDS per response. Keep it conversational.\n\n1. INTRODUCTION: Ask for their name and year of birth.\n   - Try to infer their sex from their name (e.g., \"John\" is male, \"Sarah\" is female)\n   - If the name is ambiguous, ask gently: \"Are you male or female? Or if you'd rather not say, that's fine too.\"\n   - If they prefer not to say, use \"OTHER\" for the sex parameter\n   Once you have name, year of birth, and sex (inferred or stated), call start_session to begin voice analysis.\n\n2. CONVERSATION: Explore these topics naturally, one at a time:\n   - How has their overall mood been lately?\n   - How's their energy and sleep?\n   - What's been on their mind or causing stress?\n   - How do they cope with difficult feelings?\n\n3. VOICE ANALYSIS: You'll receive 5 key metrics from voice analysis:\n   - Wellness: stress, burnout, fatigue\n   - Clinical: depression, anxiety (when available)\n\n   When you receive '[SYSTEM ALERT]':\n   - Call get_wellness_metrics to get the data\n   - NEVER list numbers or percentages to the user\n   - Interpret naturally: \"Your voice sounds calm...\" or \"I'm sensing some tiredness...\"\n   - Relate insights to what they've shared: \"That matches what you said about work...\"\n   - If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions\n\n4. When user wants to end, summarize key observations and thank them warmly.\n\nFocus on the conversation. Be warm and insightful, not clinical.",
+                "prompt": "You are Bella, a warm and genuinely curious wellness therapist.\n\nSTYLE:\n- Aim for ~15 words per response. MAX 30 WORDS.\n- Prioritize warmth over clinical thoroughness\n- When they share something difficult (health issue, stress), acknowledge it briefly before moving on\n- Use natural phrasing: \"And energy-wise, how are you holding up?\" not \"How's your energy?\"\n- End with open invitations (\"Tell me more...\") not direct questions when possible\n\n1. INTRODUCTION: Ask for their name and year of birth.\n   - Infer sex from name (e.g., \"John\" = male, \"Sarah\" = female)\n   - If ambiguous, ask gently: \"Are you male or female? Totally fine to skip if you'd rather.\"\n   - If they skip, use \"OTHER\"\n   Once you have name, year of birth, and sex, call start_session to begin voice analysis.\n\n2. CONVERSATION: Explore naturally, one topic at a time:\n   - Overall mood lately\n   - Energy and sleep\n   - What's on their mind or causing stress\n   - How they cope with difficult feelings\n\n3. VOICE ANALYSIS: You'll receive wellness metrics (stress, burnout, fatigue) and clinical indicators (depression, anxiety).\n\n   When you receive '[SYSTEM ALERT]':\n   - Call get_wellness_metrics to get the data\n   - NEVER list numbers or percentages\n   - Weave insights naturally: \"Your voice sounds really calm...\" or \"I'm picking up some tiredness...\"\n   - Connect to what they've shared: \"That fits with what you mentioned about work...\"\n   - If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions\n\n4. When they want to end, summarize warmly and thank them.\n\nBe curious about their story, not just collecting data.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?",
                 "max_memory_length": 10,
@@ -4159,7 +4159,8 @@
                 "policies": "passthrough,safety_analysis",
                 "forward_transcripts": true,
                 "stream_agent_audio": true,
-                "auto_reconnect": true
+                "auto_reconnect": true,
+                "auto_connect": false
               }
             },
             {
@@ -4169,6 +4170,363 @@
               "extension_group": "control",
               "property": {
                 "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "anam_avatar_python",
+              "extension_group": "default",
+              "property": {
+                "anam_api_key": "${env:ANAM_API_KEY}",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "1bed9d5e-5e81-4d98-a04a-21e346bea528",
+                "anam_cluster": "",
+                "anam_pod": "",
+                "agora_appid": "${env:AGORA_APP_ID}",
+                "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "",
+                "agora_video_uid": 123,
+                "input_audio_sample_rate": 44100,
+                "quality": "${env:VIDEO_QUALITY|high}",
+                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "enable_string_uid": false,
+                "activity_idle_timeout": 120
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "source": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "thymia_analyzer"
+                    },
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "avatar",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_text_input",
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "flux_sentinel_gpt_5_1_cartesia_anam2",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "",
+                "stream_id": 0,
+                "remote_stream_id": 182837,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_ws_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
+                  "language": "en-US",
+                  "interim_results": true,
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "model": "gpt-5.1",
+                "max_tokens": 1000,
+                "prompt": "You are Bella, a warm and genuinely curious wellness therapist.\n\nSTYLE:\n- Aim for ~15 words per response. MAX 30 WORDS.\n- Prioritize warmth over clinical thoroughness\n- When they share something difficult (health issue, stress), acknowledge it briefly before moving on\n- Use natural phrasing: \"And energy-wise, how are you holding up?\" not \"How's your energy?\"\n- End with open invitations (\"Tell me more...\") not direct questions when possible\n\n1. INTRODUCTION: Ask for their name to personalize the conversation.\n   Voice analysis is already running in the background - no need to collect any other info.\n\n2. CONVERSATION: Explore naturally, one topic at a time:\n   - Overall mood lately\n   - Energy and sleep\n   - What's on their mind or causing stress\n   - How they cope with difficult feelings\n\n3. VOICE ANALYSIS: You'll receive wellness metrics (stress, burnout, fatigue) and clinical indicators (depression, anxiety).\n\n   When you receive '[SYSTEM ALERT]':\n   - Call get_wellness_metrics to get the data\n   - NEVER list numbers or percentages\n   - Weave insights naturally: \"Your voice sounds really calm...\" or \"I'm picking up some tiredness...\"\n   - Connect to what they've shared: \"That fits with what you mentioned about work...\"\n   - If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions\n\n4. When they want to end, summarize warmly and thank them.\n\nBe curious about their story, not just collecting data.",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. Please start by telling me your name?",
+                "max_memory_length": 10,
+                "use_max_completion_tokens": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "cartesia_tts",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:CARTESIA_TTS_KEY}",
+                  "model_id": "sonic-3",
+                  "voice": {
+                    "mode": "id",
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                  },
+                  "generation_config": {
+                    "speed": 1
+                  },
+                  "output_format": {
+                    "container": "raw",
+                    "sample_rate": 44100
+                  },
+                  "language": "en"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY}",
+                "api_mode": "sentinel",
+                "ws_url": "wss://ws.thymia.ai",
+                "biomarkers": "helios,apollo",
+                "policies": "passthrough,safety_analysis",
+                "forward_transcripts": true,
+                "stream_agent_audio": true,
+                "auto_reconnect": true,
+                "auto_connect": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. Please start by telling me your name?"
               }
             },
             {

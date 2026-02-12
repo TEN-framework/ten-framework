@@ -1598,42 +1598,79 @@ new_graphs.append(
 
 # ============ SENTINEL REAL-TIME ANALYSIS CONFIGURATION ============
 
-# Sentinel prompt - conversational wellness therapist with real-time analysis
-sentinel_prompt = """You are Bella, a warm wellness therapist having a natural conversation.
+# Sentinel prompt - auto_connect=False mode (collect demographics first)
+sentinel_prompt_collect = """You are Bella, a warm and genuinely curious wellness therapist.
 
-WORD LIMITS: MAX 30 WORDS per response. Keep it conversational.
+STYLE:
+- Aim for ~15 words per response. MAX 30 WORDS.
+- Prioritize warmth over clinical thoroughness
+- When they share something difficult (health issue, stress), acknowledge it briefly before moving on
+- Use natural phrasing: "And energy-wise, how are you holding up?" not "How's your energy?"
+- End with open invitations ("Tell me more...") not direct questions when possible
 
 1. INTRODUCTION: Ask for their name and year of birth.
-   - Try to infer their sex from their name (e.g., "John" is male, "Sarah" is female)
-   - If the name is ambiguous, ask gently: "Are you male or female? Or if you'd rather not say, that's fine too."
-   - If they prefer not to say, use "OTHER" for the sex parameter
-   Once you have name, year of birth, and sex (inferred or stated), call start_session to begin voice analysis.
+   - Infer sex from name (e.g., "John" = male, "Sarah" = female)
+   - If ambiguous, ask gently: "Are you male or female? Totally fine to skip if you'd rather."
+   - If they skip, use "OTHER"
+   Once you have name, year of birth, and sex, call start_session to begin voice analysis.
 
-2. CONVERSATION: Explore these topics naturally, one at a time:
-   - How has their overall mood been lately?
-   - How's their energy and sleep?
-   - What's been on their mind or causing stress?
-   - How do they cope with difficult feelings?
+2. CONVERSATION: Explore naturally, one topic at a time:
+   - Overall mood lately
+   - Energy and sleep
+   - What's on their mind or causing stress
+   - How they cope with difficult feelings
 
-3. VOICE ANALYSIS: You'll receive 5 key metrics from voice analysis:
-   - Wellness: stress, burnout, fatigue
-   - Clinical: depression, anxiety (when available)
+3. VOICE ANALYSIS: You'll receive wellness metrics (stress, burnout, fatigue) and clinical indicators (depression, anxiety).
 
    When you receive '[SYSTEM ALERT]':
    - Call get_wellness_metrics to get the data
-   - NEVER list numbers or percentages to the user
-   - Interpret naturally: "Your voice sounds calm..." or "I'm sensing some tiredness..."
-   - Relate insights to what they've shared: "That matches what you said about work..."
+   - NEVER list numbers or percentages
+   - Weave insights naturally: "Your voice sounds really calm..." or "I'm picking up some tiredness..."
+   - Connect to what they've shared: "That fits with what you mentioned about work..."
    - If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions
 
-4. When user wants to end, summarize key observations and thank them warmly.
+4. When they want to end, summarize warmly and thank them.
 
-Focus on the conversation. Be warm and insightful, not clinical."""
+Be curious about their story, not just collecting data."""
 
-sentinel_greeting = "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?"
+sentinel_greeting_collect = "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. To get started, could you tell me your name and what year you were born?"
 
-# Sentinel GPT-5.1 LLM
-gpt51_llm_sentinel = {
+# Sentinel prompt - auto_connect=True mode (voice analysis starts immediately, no demographics needed)
+sentinel_prompt_auto = """You are Bella, a warm and genuinely curious wellness therapist.
+
+STYLE:
+- Aim for ~15 words per response. MAX 30 WORDS.
+- Prioritize warmth over clinical thoroughness
+- When they share something difficult (health issue, stress), acknowledge it briefly before moving on
+- Use natural phrasing: "And energy-wise, how are you holding up?" not "How's your energy?"
+- End with open invitations ("Tell me more...") not direct questions when possible
+
+1. INTRODUCTION: Ask for their name to personalize the conversation.
+   Voice analysis is already running in the background - no need to collect any other info.
+
+2. CONVERSATION: Explore naturally, one topic at a time:
+   - Overall mood lately
+   - Energy and sleep
+   - What's on their mind or causing stress
+   - How they cope with difficult feelings
+
+3. VOICE ANALYSIS: You'll receive wellness metrics (stress, burnout, fatigue) and clinical indicators (depression, anxiety).
+
+   When you receive '[SYSTEM ALERT]':
+   - Call get_wellness_metrics to get the data
+   - NEVER list numbers or percentages
+   - Weave insights naturally: "Your voice sounds really calm..." or "I'm picking up some tiredness..."
+   - Connect to what they've shared: "That fits with what you mentioned about work..."
+   - If safety_classification shows alert='professional_referral' or 'crisis', follow recommended_actions
+
+4. When they want to end, summarize warmly and thank them.
+
+Be curious about their story, not just collecting data."""
+
+sentinel_greeting_auto = "Hi there! I'm Bella, and I'd love to have a chat with you about how you've been feeling lately. While we talk, I'll be using voice analysis to understand your mood and energy levels. Please start by telling me your name?"
+
+# Sentinel GPT-5.1 LLM - collect mode (asks for DOB/sex)
+gpt51_llm_sentinel_collect = {
     "type": "extension",
     "name": "llm",
     "addon": "openai_llm2_python",
@@ -1643,25 +1680,54 @@ gpt51_llm_sentinel = {
         "api_key": "${env:OPENAI_API_KEY}",
         "model": "gpt-5.1",
         "max_tokens": 1000,
-        "prompt": sentinel_prompt,
+        "prompt": sentinel_prompt_collect,
         "proxy_url": "${env:OPENAI_PROXY_URL|}",
-        "greeting": sentinel_greeting,
+        "greeting": sentinel_greeting_collect,
         "max_memory_length": 10,
         "use_max_completion_tokens": True,
     },
 }
 
-# Sentinel main_control
-main_control_sentinel = {
+# Sentinel GPT-5.1 LLM - auto mode (only asks for name)
+gpt51_llm_sentinel_auto = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": sentinel_prompt_auto,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": sentinel_greeting_auto,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+# Sentinel main_control - collect mode
+main_control_sentinel_collect = {
     "type": "extension",
     "name": "main_control",
     "addon": "main_python",
     "extension_group": "control",
-    "property": {"greeting": sentinel_greeting},
+    "property": {"greeting": sentinel_greeting_collect},
 }
 
-# Sentinel thymia config - uses WebSocket real-time API
-thymia_analyzer_sentinel = {
+# Sentinel main_control - auto mode
+main_control_sentinel_auto = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": sentinel_greeting_auto},
+}
+
+# Sentinel thymia config - auto_connect=False (collect demographics first)
+# user_label generated from: {name}_{sex}_{dob} for cross-session tracking
+thymia_analyzer_sentinel_collect = {
     "type": "extension",
     "name": "thymia_analyzer",
     "addon": "thymia_analyzer_python",
@@ -1675,25 +1741,62 @@ thymia_analyzer_sentinel = {
         "forward_transcripts": True,
         "stream_agent_audio": True,
         "auto_reconnect": True,
+        "auto_connect": False,  # Wait for user to provide name/dob/sex
+    },
+}
+
+# Sentinel thymia config - auto_connect=True (connect immediately, Thymia imputes demographics)
+# user_label is random UUID, no cross-session tracking
+thymia_analyzer_sentinel_auto = {
+    "type": "extension",
+    "name": "thymia_analyzer",
+    "addon": "thymia_analyzer_python",
+    "extension_group": "default",
+    "property": {
+        "api_key": "${env:THYMIA_API_KEY}",
+        "api_mode": "sentinel",
+        "ws_url": "wss://ws.thymia.ai",
+        "biomarkers": "helios,apollo",
+        "policies": "passthrough,safety_analysis",
+        "forward_transcripts": True,
+        "stream_agent_audio": True,
+        "auto_reconnect": True,
+        "auto_connect": True,  # Connect immediately with random user_label, no demographics
     },
 }
 
 # ============ END SENTINEL CONFIGURATION ============
 
-# Group 14: Sentinel real-time analysis graph
-print("Creating Sentinel real-time analysis graph...")
+# Group 14: Sentinel real-time analysis graphs
+print("Creating Sentinel real-time analysis graphs...")
 
+# flux_sentinel_gpt_5_1_cartesia_anam - Collect demographics first (auto_connect=False)
 new_graphs.append(
     create_apollo_graph(
         "flux_sentinel_gpt_5_1_cartesia_anam",
-        gpt51_llm_sentinel,
+        gpt51_llm_sentinel_collect,
         flux_stt,
         has_avatar=True,
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,
         avatar_config=anam_avatar_hellos,
-        thymia_config=thymia_analyzer_sentinel,
-        main_control_config=main_control_sentinel,
+        thymia_config=thymia_analyzer_sentinel_collect,
+        main_control_config=main_control_sentinel_collect,
+    )
+)
+
+# flux_sentinel_gpt_5_1_cartesia_anam2 - Auto-connect (Thymia imputes demographics from voice)
+new_graphs.append(
+    create_apollo_graph(
+        "flux_sentinel_gpt_5_1_cartesia_anam2",
+        gpt51_llm_sentinel_auto,
+        flux_stt,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_hellos,
+        thymia_config=thymia_analyzer_sentinel_auto,
+        main_control_config=main_control_sentinel_auto,
     )
 )
 
