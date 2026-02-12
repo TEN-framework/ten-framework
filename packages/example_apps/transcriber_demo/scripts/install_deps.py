@@ -124,14 +124,22 @@ def find_npm_executable() -> str:
         RuntimeError: If npm is not found
     """
     try:
+        npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+
         result = subprocess.run(
-            ["npm", "--version"], capture_output=True, text=True, check=True
+            [npm_cmd, "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
         )
 
         if sys.platform == "win32":
             full_path = (
                 subprocess.run(
-                    ["where", "npm"], capture_output=True, text=True, check=True
+                    ["where", npm_cmd],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
                 .stdout.strip()
                 .split("\n")[0]

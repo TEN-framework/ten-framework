@@ -160,6 +160,9 @@ def find_npm_executable(npm_cmd: str = "npm") -> str:
         RuntimeError: If npm is not found
     """
     try:
+        if sys.platform == "win32" and not npm_cmd.endswith(".cmd"):
+            npm_cmd = f"{npm_cmd}.cmd"
+
         subprocess.run(
             [npm_cmd, "--version"], capture_output=True, text=True, check=True
         )
