@@ -45,6 +45,9 @@ export interface InitialState {
   language: Language;
   voiceType: VoiceType;
   chatItems: IChatItem[];
+  latestTranscriptItems: IChatItem[];
+  lastFinalIndexByUser: Record<string, number>;
+  lastPartialIndexByUser: Record<string, number>;
   selectedGraphId: string;
   graphList: Graph[];
   graphMap: Record<string, Graph>;
@@ -65,6 +68,9 @@ const getInitialState = (): InitialState => {
     language: "en-US",
     voiceType: "male",
     chatItems: [],
+    latestTranscriptItems: [],
+    lastFinalIndexByUser: {},
+    lastPartialIndexByUser: {},
     selectedGraphId: "",
     graphList: [],
     graphMap: {},
@@ -74,6 +80,36 @@ const getInitialState = (): InitialState => {
     festivalEffect: null,
     fortuneModal: null,
   };
+};
+
+const updateLatestTranscriptItems = (state: InitialState) => {
+  const latest: IChatItem[] = [];
+  for (let i = state.chatItems.length - 1; i >= 0 && latest.length < 2; i--) {
+    const item = state.chatItems[i];
+    if (item.data_type !== "text") {
+      continue;
+    }
+    if (typeof item.text !== "string" || item.text.trim().length === 0) {
+      continue;
+    }
+    latest.push(item);
+  }
+  state.latestTranscriptItems = latest.reverse();
+};
+
+const rebuildUserIndexMaps = (state: InitialState) => {
+  state.lastFinalIndexByUser = {};
+  state.lastPartialIndexByUser = {};
+  for (let i = 0; i < state.chatItems.length; i++) {
+    const item = state.chatItems[i];
+    const key = String(item.userId);
+    if (item.isFinal) {
+      state.lastFinalIndexByUser[key] = i;
+      delete state.lastPartialIndexByUser[key];
+    } else {
+      state.lastPartialIndexByUser[key] = i;
+    }
+  }
 };
 
 export const globalSlice = createSlice({
@@ -109,61 +145,71 @@ export const globalSlice = createSlice({
       state.rtmConnected = action.payload;
     },
     addChatItem: (state, action: PayloadAction<IChatItem>) => {
-      const { userId, text, isFinal, type, time } = action.payload;
-      const LastFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId == userId && el.isFinal;
-      });
-      const LastNonFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId == userId && !el.isFinal;
-      });
+      const { userId, time } = action.payload;
+      const userKey = String(userId);
+      const LastFinalIndex = state.lastFinalIndexByUser[userKey] ?? -1;
+      const LastNonFinalIndex = state.lastPartialIndexByUser[userKey] ?? -1;
       const LastFinalItem = state.chatItems[LastFinalIndex];
       const LastNonFinalItem = state.chatItems[LastNonFinalIndex];
+      let touched = false;
       if (LastFinalItem) {
         // has last final Item
         if (time <= LastFinalItem.time) {
-          // discard
-          console.log(
-            "[test] addChatItem, time < last final item, discard!:",
-            text,
-            isFinal,
-            type
-          );
+          // discard stale update
           return;
         } else {
           if (LastNonFinalItem) {
-            console.log(
-              "[test] addChatItem, update last item(none final):",
-              text,
-              isFinal,
-              type
-            );
             state.chatItems[LastNonFinalIndex] = action.payload;
+            touched = true;
+            if (action.payload.isFinal) {
+              state.lastFinalIndexByUser[userKey] = LastNonFinalIndex;
+              delete state.lastPartialIndexByUser[userKey];
+            } else {
+              state.lastPartialIndexByUser[userKey] = LastNonFinalIndex;
+            }
           } else {
-            console.log(
-              "[test] addChatItem, add new item:",
-              text,
-              isFinal,
-              type
-            );
             state.chatItems.push(action.payload);
+            touched = true;
+            const newIndex = state.chatItems.length - 1;
+            if (action.payload.isFinal) {
+              state.lastFinalIndexByUser[userKey] = newIndex;
+              delete state.lastPartialIndexByUser[userKey];
+            } else {
+              state.lastPartialIndexByUser[userKey] = newIndex;
+            }
           }
         }
       } else {
         // no last final Item
         if (LastNonFinalItem) {
-          console.log(
-            "[test] addChatItem, update last item(none final):",
-            text,
-            isFinal,
-            type
-          );
           state.chatItems[LastNonFinalIndex] = action.payload;
+          touched = true;
+          if (action.payload.isFinal) {
+            state.lastFinalIndexByUser[userKey] = LastNonFinalIndex;
+            delete state.lastPartialIndexByUser[userKey];
+          } else {
+            state.lastPartialIndexByUser[userKey] = LastNonFinalIndex;
+          }
         } else {
-          console.log("[test] addChatItem, add new item:", text, isFinal, type);
           state.chatItems.push(action.payload);
+          touched = true;
+          const newIndex = state.chatItems.length - 1;
+          if (action.payload.isFinal) {
+            state.lastFinalIndexByUser[userKey] = newIndex;
+          } else {
+            state.lastPartialIndexByUser[userKey] = newIndex;
+          }
         }
       }
-      state.chatItems.sort((a, b) => a.time - b.time);
+      if (!touched) {
+        return;
+      }
+      const size = state.chatItems.length;
+      if (size > 1 && state.chatItems[size - 2].time > state.chatItems[size - 1].time) {
+        state.chatItems.sort((a, b) => a.time - b.time);
+        rebuildUserIndexMaps(state);
+      }
+      updateLatestTranscriptItems(state);
     },
     setAgentConnected: (state, action: PayloadAction<boolean>) => {
       state.agentConnected = action.payload;

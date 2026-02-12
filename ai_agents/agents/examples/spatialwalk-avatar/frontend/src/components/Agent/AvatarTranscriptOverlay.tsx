@@ -3,25 +3,14 @@
 import * as React from "react";
 import { useAppSelector } from "@/common";
 import { cn } from "@/lib/utils";
-import { EMessageDataType, EMessageType } from "@/types";
-
-const MAX_ITEMS = 2;
+import { EMessageType } from "@/types";
 
 export default function AvatarTranscriptOverlay(props: { className?: string }) {
   const { className } = props;
-  const chatItems = useAppSelector((state) => state.global.chatItems);
+  const displayItems = useAppSelector(
+    (state) => state.global.latestTranscriptItems
+  );
   const containerRef = React.useRef<HTMLDivElement>(null);
-
-  const displayItems = React.useMemo(() => {
-    return chatItems
-      .filter(
-        (item) =>
-          item.data_type === EMessageDataType.TEXT &&
-          typeof item.text === "string" &&
-          item.text.trim().length > 0
-      )
-      .slice(-MAX_ITEMS);
-  }, [chatItems]);
 
   React.useEffect(() => {
     const node = containerRef.current;

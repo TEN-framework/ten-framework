@@ -11,7 +11,6 @@ import { addChatItem } from "@/store/reducers/global";
 import {
   EMessageDataType,
   EMessageType,
-  ERTMTextType,
   type IRTMTextItem,
 } from "@/types";
 
@@ -50,33 +49,43 @@ export default function ChatCard(props: { className?: string }) {
   useAutoScroll(chatRef);
 
   const onTextChanged = (text: IRTMTextItem) => {
-    console.log("[rtm] onTextChanged", text);
-    if (text.type == ERTMTextType.TRANSCRIBE) {
-      // const isAgent = Number(text.uid) != Number(options.userId)
+    if (text.data_type === "transcribe") {
       dispatch(
         addChatItem({
-          userId: options.userId,
+          userId: text.stream_id,
           text: text.text,
-          type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
+          type: text.role === "assistant" ? EMessageType.AGENT : EMessageType.USER,
           data_type: EMessageDataType.TEXT,
           isFinal: text.is_final,
-          time: text.ts,
+          time: text.text_ts,
         })
       );
+      return;
     }
-    if (text.type == ERTMTextType.INPUT_TEXT) {
+    if (text.data_type === "input_text") {
       dispatch(
         addChatItem({
-          userId: options.userId,
+          userId: text.stream_id,
           text: text.text,
           type: EMessageType.USER,
           data_type: EMessageDataType.TEXT,
           isFinal: true,
-          time: text.ts,
+          time: text.text_ts,
         })
       );
     }
   };
+
+  React.useEffect(() => {
+    if (rtmConnected) {
+      rtmManager.on("rtmMessage", onTextChanged);
+    }
+    return () => {
+      if (rtmConnected) {
+        rtmManager.off("rtmMessage", onTextChanged);
+      }
+    };
+  }, [rtmConnected]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);

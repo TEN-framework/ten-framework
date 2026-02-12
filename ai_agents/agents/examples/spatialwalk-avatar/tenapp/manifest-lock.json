@@ -42,6 +42,28 @@
       ]
     },
     {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "0.11.1",
+      "hash": "1d10c2557604174976f78ed56b3f92d6b2c2d3b2a7dc738f3e8ea9455a559fd4",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "nlohmann_json"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7.35",
@@ -793,6 +815,12 @@
           "arch": "x64"
         }
       ]
+    },
+    {
+      "type": "system",
+      "name": "nlohmann_json",
+      "version": "3.11.2",
+      "hash": "a8e87196f60678f88970cbff7b104a42f7b3a874d6691f38ece3bf5f76d3dbd4"
     },
     {
       "type": "system",

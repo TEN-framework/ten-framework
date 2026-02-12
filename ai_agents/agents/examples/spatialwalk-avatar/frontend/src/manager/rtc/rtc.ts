@@ -255,7 +255,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this.client.on("network-quality", this._onNetworkQuality);
     this.client.on("user-published", this._onUserPublished);
     this.client.on("user-unpublished", this._onUserUnpublished);
-    this.client.on("stream-message", this._onStreamMessage);
+    // RTM is the only active server->client messaging transport.
     this._boundClient = this.client;
   }
 
@@ -267,7 +267,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     this._boundClient.off("network-quality", this._onNetworkQuality);
     this._boundClient.off("user-published", this._onUserPublished);
     this._boundClient.off("user-unpublished", this._onUserUnpublished);
-    this._boundClient.off("stream-message", this._onStreamMessage);
     this._boundClient = null;
   }
 
