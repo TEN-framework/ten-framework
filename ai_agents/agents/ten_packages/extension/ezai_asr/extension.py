@@ -108,9 +108,7 @@ class CustomWebSocketClient:
     async def finalize(self):
         """Finalize connection (optional, depending on your needs)"""
         # Actively trigger the transcript event with final=True
-        if "transcript" in self.event_handlers:
-            message = {"type": "fullSentence", "text": "<END>", "final": True}
-            await self.event_handlers["transcript"](self, message)
+        pass
 
     async def finish(self):
         """Close connection"""
@@ -400,7 +398,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
             f"vendor_cmd: finalize start at {self.last_finalize_timestamp}",
             category=LOG_CATEGORY_VENDOR,
         )
-        await self._handle_finalize_api()
+        await self._handle_finalize_mute_pkg()
 
     async def _handle_asr_result(
         self,
@@ -426,18 +424,54 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         )
         await self.send_asr_result(asr_result)
 
-    async def _handle_finalize_api(self):
-        """Handle finalize with api mode."""
+    async def _handle_finalize_mute_pkg(self):
+        """Send mute audio package to trigger finalize."""
         assert self.config is not None
 
-        if self.client is None:
-            _ = self.ten_env.log_debug("finalize api: client is not connected")
+        if not self.is_connected():
+            self.ten_env.log_debug("finalize mute pkg: client is not connected")
             return
 
-        await self.client.finalize()
-        self.ten_env.log_info(
-            "vendor_cmd: finalize api completed",
-            category=LOG_CATEGORY_VENDOR,
+        # Send 0.7s silence
+        mute_duration_ms = 700
+
+        # 2 bytes per sample (16-bit)
+        bytes_per_sample = 2
+        empty_audio_bytes_len = int(
+            mute_duration_ms * self.config.sample_rate / 1000 * bytes_per_sample
+        )
+
+        # Create silence buffer
+        frame_buf = bytearray(empty_audio_bytes_len)
+
+        if self.audio_dumper:
+            await self.audio_dumper.push_bytes(bytes(frame_buf))
+
+        # Update timeline
+        self.audio_timeline.add_silence_audio(mute_duration_ms)
+
+        # Prepare metadata for EZAI protocol
+        metadata = {
+            "sampleRate": self.config.sample_rate,
+            "channels": self.config.channels,
+            "sampwidth": self.config.sampwidth,
+            "language": self.config.language,
+        }
+        metadata_json = json.dumps(metadata)
+        metadata_length = len(metadata_json)
+
+        # Pack data: metadata length + metadata + audio data
+        message = (
+            struct.pack("<I", metadata_length)
+            + metadata_json.encode("utf-8")
+            + bytes(frame_buf)
+        )
+
+        if self.client:
+            await self.client.send(message)
+
+        self.ten_env.log_debug(
+            f"finalize mute pkg completed ({mute_duration_ms}ms)"
         )
 
     async def _handle_reconnect(self):
