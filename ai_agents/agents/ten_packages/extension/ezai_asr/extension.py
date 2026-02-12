@@ -106,11 +106,6 @@ class CustomWebSocketClient:
         if self.websocket and self.connected:
             await self.websocket.send(data)
 
-    async def finalize(self):
-        """Finalize connection (optional, depending on your needs)"""
-        # Actively trigger the transcript event with final=True
-        pass
-
     async def finish(self):
         """Close connection"""
         if self.listen_task:
