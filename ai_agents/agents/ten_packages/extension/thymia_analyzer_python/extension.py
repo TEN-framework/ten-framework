@@ -673,6 +673,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.forward_transcripts: bool = True
         self.stream_agent_audio: bool = True
         self.auto_reconnect: bool = True
+        self.auto_connect: bool = False  # If True, connect immediately with random user_label and no demographics
 
         # Sentinel client and state
         self.sentinel_client: Optional[SentinelClient] = None
@@ -846,11 +847,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 except Exception:
                     self.auto_reconnect = True
 
+                try:
+                    self.auto_connect = await ten_env.get_property_bool(
+                        "auto_connect"
+                    )
+                except Exception:
+                    self.auto_connect = False
+
                 ten_env.log_info(
                     f"[THYMIA_SENTINEL_CONFIG] Loaded Sentinel config: "
                     f"ws_url={self.ws_url}, biomarkers={self.biomarkers}, "
                     f"policies={self.policies}, forward_transcripts={self.forward_transcripts}, "
-                    f"stream_agent_audio={self.stream_agent_audio}"
+                    f"stream_agent_audio={self.stream_agent_audio}, auto_connect={self.auto_connect}"
                 )
 
             # Load Apollo-specific durations if specified
@@ -991,18 +999,29 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             ten_env.log_info(
                 f"[THYMIA_START] ThymiaAnalyzerExtension started in SENTINEL mode "
-                f"(biomarkers={self.biomarkers}, policies={self.policies})"
+                f"(biomarkers={self.biomarkers}, policies={self.policies}, auto_connect={self.auto_connect})"
             )
 
-            # Connect immediately with placeholder values
-            # User info can be updated later when provided
-            import uuid
-            # Don't connect immediately - wait for user info (name, DOB, sex)
-            # Connection will happen in check_phase_progress when user provides info
-            ten_env.log_info(
-                "[SENTINEL_CONNECT] Waiting for user info before connecting to Sentinel. "
-                "Connection will be established when user provides name, sex, and year of birth."
-            )
+            # Connection strategy based on auto_connect setting
+            if self.auto_connect:
+                # auto_connect=True: Connect immediately with random user_label, no demographics
+                # Thymia will impute age/sex from voice
+                import uuid
+                random_user_label = str(uuid.uuid4())
+                ten_env.log_info(
+                    f"[SENTINEL_CONNECT] auto_connect=True, connecting immediately with "
+                    f"user_label={random_user_label} (no demographics - Thymia will impute)"
+                )
+                asyncio.create_task(
+                    self._connect_sentinel_auto(ten_env, random_user_label)
+                )
+            else:
+                # auto_connect=False: Wait for user info (name, DOB, sex) before connecting
+                # Connection will happen in check_phase_progress when user provides info
+                ten_env.log_info(
+                    "[SENTINEL_CONNECT] auto_connect=False, waiting for user info before connecting. "
+                    "Connection will be established when user provides name, sex, and year of birth."
+                )
 
         else:
             # ============ REST BATCH MODE (existing behavior) ============
@@ -1085,9 +1104,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
     async def _connect_sentinel_with_user_info(self, ten_env: AsyncTenEnv) -> bool:
         """
-        Connect to Sentinel server once user info is available.
+        Connect to Sentinel server once user info is available (auto_connect=False mode).
 
         Called when user info is first set via check_phase_progress tool.
+        Generates stable user_label from: {name}_{sex}_{dob} (spaces removed).
         """
         if not self.sentinel_client:
             ten_env.log_error(
@@ -1108,16 +1128,21 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
             return False
 
+        # Generate stable user_label from collected info: {name}_{sex}_{dob}
+        # Remove spaces from name, DOB should already be in yyyy-mm-dd format
+        name_clean = self.user_name.replace(" ", "")
+        user_label = f"{name_clean}_{self.user_sex}_{self.user_dob}"
+
         ten_env.log_info(
-            f"[SENTINEL_CONNECT] Connecting with user: {self.user_name}, "
+            f"[SENTINEL_CONNECT] Connecting with user_label={user_label}, "
             f"DOB: {self.user_dob}, sex: {self.user_sex}"
         )
 
         config = SentinelConfig(
             api_key=self.api_key,
-            user_label=self.user_name or "anonymous",
-            date_of_birth=self.user_dob or "1990-01-01",
-            birth_sex=self.user_sex or "FEMALE",
+            user_label=user_label,
+            date_of_birth=self.user_dob,
+            birth_sex=self.user_sex,
             language=self.user_locale,
             biomarkers=self.biomarkers,
             policies=self.policies,
@@ -1131,14 +1156,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         return success
 
-    async def _connect_sentinel_immediately(
-        self, ten_env: AsyncTenEnv, session_id: str
+    async def _connect_sentinel_auto(
+        self, ten_env: AsyncTenEnv, user_label: str
     ) -> bool:
         """
-        Connect to Sentinel server immediately with placeholder user info.
+        Connect to Sentinel server immediately with random user_label (auto_connect=True mode).
 
-        Called on startup to begin streaming audio right away.
-        Real user info can be provided later via check_phase_progress.
+        Called on startup when auto_connect=True.
+        Does NOT send date_of_birth or birth_sex - Thymia will impute from voice.
         """
         if not self.sentinel_client:
             ten_env.log_error(
@@ -1153,15 +1178,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             return True
 
         ten_env.log_info(
-            f"[SENTINEL_CONNECT] Connecting immediately with session: {session_id}"
+            f"[SENTINEL_CONNECT] auto_connect mode - connecting with user_label={user_label} "
+            "(no demographics, Thymia will impute from voice)"
         )
 
-        # Use placeholder values - biomarkers work on voice, not demographics
+        # No demographics - Thymia will impute from voice
         config = SentinelConfig(
             api_key=self.api_key,
-            user_label=session_id,
-            date_of_birth="1980-01-01",  # Placeholder
-            birth_sex="FEMALE",  # Placeholder (API only accepts MALE/FEMALE)
+            user_label=user_label,
+            # date_of_birth and birth_sex omitted - Thymia imputes from voice
             language="en-GB",
             biomarkers=self.biomarkers,
             policies=self.policies,
@@ -1170,7 +1195,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         success = await self.sentinel_client.connect(config)
         if success:
             ten_env.log_info(
-                "[SENTINEL_CONNECT] Connected to Sentinel server (streaming audio now)"
+                "[SENTINEL_CONNECT] Connected to Sentinel server (auto_connect mode, streaming audio now)"
             )
         else:
             ten_env.log_error(
@@ -1254,10 +1279,24 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # Send urgent system message to LLM
                 await self._trigger_sentinel_safety_alert(ten_env, safety)
 
-        # Always trigger LLM announcement when new results arrive
-        # The LLM will announce to user and can track if values have changed
+        # Trigger LLM announcement when new results arrive
+        # But defer if agent or user is currently speaking to avoid interruption
         if wellness or apollo:
-            await self._trigger_sentinel_results_announcement(ten_env, result)
+            is_someone_speaking = (
+                self.agent_currently_speaking or self.user_currently_speaking
+            )
+
+            if is_someone_speaking:
+                # Defer announcement until speaking stops
+                ten_env.log_info(
+                    f"[SENTINEL_RESULT] Someone speaking "
+                    f"(agent={self.agent_currently_speaking}, user={self.user_currently_speaking}), "
+                    f"deferring announcement"
+                )
+                self.sentinel_deferred_result = result
+            else:
+                # No one speaking, announce immediately
+                await self._trigger_sentinel_results_announcement(ten_env, result)
 
     def _on_sentinel_status(self, status: StatusMessage):
         """Handle status update from Sentinel server."""

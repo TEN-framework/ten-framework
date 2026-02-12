@@ -75,6 +75,9 @@
         },
         "auto_reconnect": {
           "type": "bool"
+        },
+        "auto_connect": {
+          "type": "bool"
         }
       }
     },

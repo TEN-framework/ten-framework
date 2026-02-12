@@ -25,11 +25,14 @@ class SentinelConfig:
     Configuration message sent when connecting to Sentinel WebSocket.
 
     This is the first message sent after WebSocket connection is established.
+
+    Note: date_of_birth and birth_sex are optional - if omitted, Thymia will
+    impute demographics from voice characteristics.
     """
     api_key: str
     user_label: str
-    date_of_birth: str  # YYYY-MM-DD format
-    birth_sex: str  # "MALE", "FEMALE", or "OTHER"
+    date_of_birth: Optional[str] = None  # YYYY-MM-DD format, optional
+    birth_sex: Optional[str] = None  # "MALE", "FEMALE", or "OTHER", optional
     language: str = "en-GB"
     buffer_strategy: str = "simple_reset"
     biomarkers: list[str] = field(default_factory=lambda: ["helios", "apollo"])
@@ -40,12 +43,10 @@ class SentinelConfig:
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result = {
             "type": "CONFIG",
             "api_key": self.api_key,
             "user_label": self.user_label,
-            "date_of_birth": self.date_of_birth,
-            "birth_sex": self.birth_sex,
             "language": self.language,
             "buffer_strategy": self.buffer_strategy,
             "biomarkers": self.biomarkers,
@@ -54,6 +55,12 @@ class SentinelConfig:
             "format": self.format,
             "channels": self.channels,
         }
+        # Only include demographics if provided (Thymia imputes if omitted)
+        if self.date_of_birth:
+            result["date_of_birth"] = self.date_of_birth
+        if self.birth_sex:
+            result["birth_sex"] = self.birth_sex
+        return result
 
 
 @dataclass
