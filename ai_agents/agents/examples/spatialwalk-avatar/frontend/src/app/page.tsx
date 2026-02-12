@@ -14,7 +14,11 @@ const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
 export default function Home() {
   return (
     <AuthInitializer>
-      <div className="relative h-screen w-screen overflow-hidden bg-[#181a1d]">
+      <div
+        className="relative h-screen w-screen overflow-hidden bg-[#181a1d] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/festival/ui/caishen-bg.jpg')" }}
+      >
+        <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
         <EffectOverlay />
         <FortuneModal />
         {/* Keep RTC session lifecycle running, but hide its panel UI. */}
