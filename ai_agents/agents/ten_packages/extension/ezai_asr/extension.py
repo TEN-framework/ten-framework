@@ -20,6 +20,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
+    ModuleErrorVendorInfo,
 )
 from ten_runtime import (
     AsyncTenEnv,
@@ -177,6 +178,11 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message=str(e),
                 ),
+                ModuleErrorVendorInfo(
+                    vendor="ezai",
+                    code="init_failed",
+                    message=str(e),
+                )
             )
 
     @override
@@ -207,6 +213,11 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                         module=MODULE_NAME_ASR,
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message="failed to connect to custom websocket",
+                    ),
+                    ModuleErrorVendorInfo(
+                        vendor="ezai",
+                        code="connection_failed",
+                        message="failed to connect to custom websocket",
                     )
                 )
                 asyncio.create_task(self._handle_reconnect())
@@ -221,6 +232,11 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message=str(e),
                 ),
+                ModuleErrorVendorInfo(
+                    vendor="ezai",
+                    code="connection_failed",
+                    message=str(e),
+                )
             )
 
     async def _register_custom_event_handlers(self):
@@ -291,13 +307,30 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
             f"vendor_error: {error}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        # Extract error details if available
+        error_msg = str(error)
+        error_code = "error"
+        if isinstance(error, dict):
+            error_msg = error.get("message", str(error))
+            error_code = str(error.get("status", "error"))
+
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=str(error),
-            )
+                message=error_msg,
+            ),
+            ModuleErrorVendorInfo(
+                vendor="ezai",
+                code=error_code,
+                message=error_msg,
+            ),
         )
+
+        # Trigger reconnection on error
+        self.ten_env.log_warn("Triggering reconnection due to verify error")
+        asyncio.create_task(self._handle_reconnect())
 
     async def _handle_message(self, message: dict) -> None:
         """Handle message from WebSocket server"""
@@ -484,18 +517,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         """
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
-            return
-
-        # Check if we can still retry
-        if not self.reconnect_manager.can_retry():
-            self.ten_env.log_warn("No more reconnection attempts allowed")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="No more reconnection attempts allowed",
-                )
-            )
             return
 
         # Attempt a single reconnection
