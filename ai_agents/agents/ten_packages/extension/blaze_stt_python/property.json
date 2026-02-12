@@ -1,0 +1,11 @@
+{
+    "params": {
+        "api_url": "${env:BLAZE_STT_API_URL}",
+        "api_key": "${env:BLAZE_STT_API_KEY}",
+        "language": "vi",
+        "enable_segments": false,
+        "enable_refinement": false,
+        "timeout": 3600
+    }
+}
+
