@@ -177,3 +177,26 @@
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted)) transparent;
 }
+
+@keyframes fortune-modal-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+    filter: saturate(0.8);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+    filter: saturate(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: saturate(1);
+  }
+}
+
+.fortune-modal-enter {
+  animation: fortune-modal-enter 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform, opacity, filter;
+}

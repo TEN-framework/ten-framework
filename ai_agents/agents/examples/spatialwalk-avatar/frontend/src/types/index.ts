@@ -82,10 +82,11 @@ export enum ERTMTextType {
 
 export interface IRTMTextItem {
   is_final: boolean;
-  type: ERTMTextType;
-  ts: number;
+  data_type: string;
+  role?: "user" | "assistant";
+  text_ts: number;
   text: string;
-  stream_id: string;
+  stream_id: number;
 }
 
 export interface GraphOptionItem {

@@ -12,11 +12,27 @@ const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
 });
 
 export default function Home() {
+  React.useEffect(() => {
+    const warmupImages = [
+      "/festival/ui/caishen-bg.webp",
+      "/festival/cards/fortune_rich.webp",
+      "/festival/cards/fortune_love.webp",
+      "/festival/cards/fortune_lazy.webp",
+      "/festival/cards/fortune_body.webp",
+    ];
+    for (const src of warmupImages) {
+      const img = new Image();
+      img.src = src;
+      img.decoding = "async";
+      void img.decode().catch(() => {});
+    }
+  }, []);
+
   return (
     <AuthInitializer>
       <div
         className="relative h-screen w-screen overflow-hidden bg-[#181a1d] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/festival/ui/caishen-bg.jpg')" }}
+        style={{ backgroundImage: "url('/festival/ui/caishen-bg.webp')" }}
       >
         <div className="pointer-events-none absolute inset-0 z-0 bg-black/35" />
         <EffectOverlay />
