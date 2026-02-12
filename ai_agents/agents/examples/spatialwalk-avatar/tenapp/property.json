@@ -56,24 +56,20 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "azure_tts_python",
+              "addon": "minimax_tts_websocket_python",
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "propertys": [
-                    [
-                      "Speech_LogFilename",
-                      "azure_tts_log.txt"
-                    ],
-                    [
-                      "SpeechServiceConnection_SynthVoice",
-                      "en-US-AndrewMultilingualNeural"
-                    ]
-                  ],
-                  "speech_recognition_language": "en-US",
-                  "region": "${env:AZURE_TTS_REGION}",
-                  "output_format": "Raw16Khz16BitMonoPcm",
-                  "subscription": "${env:AZURE_TTS_API_KEY}"
+                  "url": "wss://api.minimax.io/ws/v1/t2a_v2",
+                  "voice_setting": {
+                    "voice_id": "Chinese (Mandarin)_Humorous_Elder"
+                  },
+                  "audio_setting": {
+                    "sample_rate": 16000
+                  },
+                  "model": "speech-02-turbo",
+                  "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
+                  "key": "${env:MINIMAX_TTS_API_KEY|}"
                 }
               }
             },
