@@ -57,6 +57,13 @@ ten_package("ten_nodejs_binding_system_package") {
     ":ten_runtime_nodejs_js",
     "native:ten_runtime_nodejs",
   ]
+
+  # When forcing MSVC for nodejs binding, add explicit dependency on the
+  # msvc_force toolchain target and use its output path.
+  if (is_win && !is_mingw && is_clang) {
+    _msvc_toolchain = "//.gnfiles/build/toolchain/msvc_force:msvc_force"
+    deps += [ "native:ten_runtime_nodejs_msvc(${_msvc_toolchain})" ]
+  }
 }
 
 if (ten_enable_ten_manager) {
