@@ -11,30 +11,65 @@ import("//build/ten_runtime/ten.gni")
 # on Windows, because the MinGW linker cannot make --allow-shlib-undefined
 # option work on Windows. Also, the architecture makes more sense for go apps,
 # so we change the library from shared to static for other platforms, too.
-ten_static_library("ten_runtime_go") {
-  include_dirs = ten_runtime_common_includes
-  include_dirs += [
-    "//src",
-    "${root_out_dir}/obj",
-    "${root_gen_dir}/cmake/yyjson/include",
-  ]
 
-  # Use complete_static_lib to ensure all object files from source_set dependencies
-  # are included in the static library, even if they are not directly referenced.
-  complete_static_lib = true
+if (current_toolchain == "//.gnfiles/build/toolchain/mingw:mingw" &&
+    current_toolchain != default_toolchain) {
+  # Building under MinGW toolchain
+  static_library("ten_runtime_go_mingw") {
+    output_name = "ten_runtime_go"
 
-  # If ten_runtime_library is a shared library, we link its import library.
-  # If ten_runtime_library is a static library, we link it directly. (But for now
-  # ten_runtime_library is always shared)
-  deps = [
-    "addon",
-    "app",
-    "extension",
-    "internal",
-    "msg",
-    "ten_env",
-    "test",
-    "value",
-    "//core/src/ten_runtime:ten_runtime_library",
-  ]
+    include_dirs = [
+      "//core",
+      "//core/src",
+      "//core/include",
+    ]
+
+    complete_static_lib = true
+
+    deps = [
+      "addon",
+      "app",
+      "extension",
+      "internal",
+      "msg",
+      "ten_env",
+      "test",
+      "value",
+    ]
+  }
+} else if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
+  # MSVC build but force MinGW for Go binding
+  # Triggers MinGW toolchain to build "ten_runtime_go_mingw" static library above
+  group("ten_runtime_go") {
+    public_deps = [ ":ten_runtime_go_mingw(//.gnfiles/build/toolchain/mingw:mingw)" ]
+  }
+} else {
+  # Default: use current toolchain
+  ten_static_library("ten_runtime_go") {
+    include_dirs = ten_runtime_common_includes
+    include_dirs += [
+      "//src",
+      "${root_out_dir}/obj",
+      "${root_gen_dir}/cmake/yyjson/include",
+    ]
+
+    # Use complete_static_lib to ensure all object files from source_set dependencies
+    # are included in the static library, even if they are not directly referenced.
+    complete_static_lib = true
+
+    # If ten_runtime_library is a shared library, we link its import library.
+    # If ten_runtime_library is a static library, we link it directly. (But for now
+    # ten_runtime_library is always shared)
+    deps = [
+      "addon",
+      "app",
+      "extension",
+      "internal",
+      "msg",
+      "ten_env",
+      "test",
+      "value",
+      "//core/src/ten_runtime:ten_runtime_library",
+    ]
+  }
 }
