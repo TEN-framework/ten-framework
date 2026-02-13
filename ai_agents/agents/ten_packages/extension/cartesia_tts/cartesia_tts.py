@@ -4,8 +4,13 @@ from datetime import datetime
 from typing import AsyncGenerator, AsyncIterator
 import uuid
 
-from cartesia import AsyncCartesia, WebSocketTtsOutput
-from cartesia.tts._async_websocket import AsyncTtsWebsocket
+from cartesia import (  # pylint: disable=no-name-in-module
+    AsyncCartesia,
+    WebSocketTtsOutput,
+)
+from cartesia.tts._async_websocket import (  # pylint: disable=import-error,no-name-in-module
+    AsyncTtsWebsocket,
+)
 
 from .config import CartesiaTTSConfig
 from ten_runtime import AsyncTenEnv
@@ -47,7 +52,6 @@ class CartesiaTTSClient:
             )
         else:
             self.client = AsyncCartesia(api_key=self.config.api_key)
-        self.client = AsyncCartesia(api_key=self.config.api_key)
         self.ws: AsyncTtsWebsocket | None = None
         self.send_fatal_tts_error = send_fatal_tts_error
         self.send_non_fatal_tts_error = send_non_fatal_tts_error
