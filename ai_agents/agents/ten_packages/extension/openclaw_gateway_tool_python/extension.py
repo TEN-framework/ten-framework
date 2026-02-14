@@ -190,7 +190,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            self.ten_env.log_warn(f"OpenClaw receive loop ended with error: {exc}")
+            self.ten_env.log_warn(
+                f"OpenClaw receive loop ended with error: {exc}"
+            )
         finally:
             self._hello_event.clear()
             if self.ws is not None and not self.ws.closed:
@@ -292,9 +294,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         if isinstance(hello, dict) and hello.get("type") == "hello-ok":
             self._hello_event.set()
 
-    async def _request(
-        self, method: str, params: Any, timeout_ms: int
-    ) -> Any:
+    async def _request(self, method: str, params: Any, timeout_ms: int) -> Any:
         if self.ws is None or self.ws.closed:
             raise RuntimeError("gateway not connected")
 
@@ -410,7 +410,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             for item in content:
                 if not isinstance(item, dict):
                     continue
-                if item.get("type") == "text" and isinstance(item.get("text"), str):
+                if item.get("type") == "text" and isinstance(
+                    item.get("text"), str
+                ):
                     texts.append(item["text"])
             if texts:
                 return "\n".join(texts).strip()
@@ -432,7 +434,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         if isinstance(ts, str):
             try:
                 normalized = ts.replace("Z", "+00:00")
-                return int(datetime.fromisoformat(normalized).timestamp() * 1000)
+                return int(
+                    datetime.fromisoformat(normalized).timestamp() * 1000
+                )
             except Exception:
                 return None
         return None

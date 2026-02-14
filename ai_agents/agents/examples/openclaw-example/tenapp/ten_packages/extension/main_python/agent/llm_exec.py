@@ -167,7 +167,9 @@ class LLMExec:
                 tools=self.available_tools,
             )
             input_json = llm_input.model_dump()
-            response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
+            response = _send_cmd_ex(
+                ten_env, "chat_completion", "llm", input_json
+            )
 
             # Queue the new message to the context
             await self._queue_context(ten_env, new_message)
@@ -202,7 +204,9 @@ class LLMExec:
                     await self.on_response(self.ten_env, delta, text, False)
                 if text:
                     if not self._suppress_context:
-                        await self._write_context(self.ten_env, "assistant", text)
+                        await self._write_context(
+                            self.ten_env, "assistant", text
+                        )
             case LLMResponseMessageDone():
                 text = llm_output.content
                 self.current_text = None
@@ -331,7 +335,9 @@ class LLMExec:
                 async for cmd_result, _ in response:
                     if cmd_result and cmd_result.is_final() is False:
                         if cmd_result.get_status_code() == StatusCode.OK:
-                            response_json, _ = cmd_result.get_property_to_json(None)
+                            response_json, _ = cmd_result.get_property_to_json(
+                                None
+                            )
                             completion = parse_llm_response(response_json)
                             await self._handle_llm_response(completion)
             finally:
