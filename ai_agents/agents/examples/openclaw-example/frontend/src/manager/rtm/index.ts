@@ -4,8 +4,24 @@ import type { RTMClient } from "agora-rtm";
 import { ERTMTextType, type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
+export interface IOpenclawResultMessage {
+  data_type: "openclaw_result";
+  text?: string;
+  ts?: number;
+}
+
+export interface IOpenclawPhaseMessage {
+  data_type: "openclaw_phase";
+  phase?: string;
+}
+
+export type TRtmMessage =
+  | IRTMTextItem
+  | IOpenclawResultMessage
+  | IOpenclawPhaseMessage;
+
 export interface IRtmEvents {
-  rtmMessage: (text: any) => void; // TODO: update type
+  rtmMessage: (text: TRtmMessage) => void;
 }
 
 export type TRTMMessageEvent = {
@@ -27,12 +43,16 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   userId: number = 0;
   appId: string = "";
   token: string = "";
+  private readonly _onMessageBound: (e: TRTMMessageEvent) => Promise<void>;
+  private readonly _onPresenceBound: (e: unknown) => Promise<void>;
 
   constructor() {
     super();
     this._joined = false;
     this._client = null;
     this._rtmCtor = null;
+    this._onMessageBound = this.handleRtmMessage.bind(this);
+    this._onPresenceBound = this.handleRtmPresence.bind(this);
   }
 
   async init({
@@ -83,12 +103,9 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   private _listenRtmEvents() {
-    this._client?.addEventListener("message", this.handleRtmMessage.bind(this));
+    this._client?.addEventListener("message", this._onMessageBound);
     // tmp add presence
-    this._client?.addEventListener(
-      "presence",
-      this.handleRtmPresence.bind(this)
-    );
+    this._client?.addEventListener("presence", this._onPresenceBound);
     console.log("[RTM] Listen RTM events success!");
   }
 
@@ -101,7 +118,10 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
         parsed?.data_type === "openclaw_result" ||
         parsed?.data_type === "openclaw_phase"
       ) {
-        this.emit("rtmMessage", parsed);
+        this.emit(
+          "rtmMessage",
+          parsed as IOpenclawResultMessage | IOpenclawPhaseMessage
+        );
         return;
       }
       const msg: IRTMTextItem = parsed;
@@ -118,7 +138,10 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
         parsed?.data_type === "openclaw_result" ||
         parsed?.data_type === "openclaw_phase"
       ) {
-        this.emit("rtmMessage", parsed);
+        this.emit(
+          "rtmMessage",
+          parsed as IOpenclawResultMessage | IOpenclawPhaseMessage
+        );
         return;
       }
       const msg: IRTMTextItem = parsed;
@@ -128,7 +151,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     }
   }
 
-  async handleRtmPresence(e: any) {
+  async handleRtmPresence(e: unknown) {
     console.log("[RTM] [TRTMPresenceEvent] RAW", JSON.stringify(e));
   }
 
@@ -150,11 +173,11 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     // remove listener
     this._client?.removeEventListener(
       "message",
-      this.handleRtmMessage.bind(this)
+      this._onMessageBound
     );
     this._client?.removeEventListener(
       "presence",
-      this.handleRtmPresence.bind(this)
+      this._onPresenceBound
     );
     // unsubscribe
     await this._client?.unsubscribe(this.channel);
