@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 from .llm_exec import LLMExec
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata
@@ -232,8 +232,40 @@ class Agent:
         if self._llm_consumer:
             self._llm_consumer.cancel()
 
-    async def handle_openclaw_reply(self, reply_text: str):
+    def _normalize_openclaw_text(self, value: str) -> str:
+        return " ".join(value.split()).strip()
+
+    def _build_openclaw_followup_input(
+        self, task_result: dict[str, Any]
+    ) -> str:
+        task_id = self._normalize_openclaw_text(
+            str(task_result.get("task_id", ""))
+        )
+        summary = self._normalize_openclaw_text(
+            str(task_result.get("summary", ""))
+        )
+        reply_text = self._normalize_openclaw_text(
+            str(task_result.get("reply_text", ""))
+        )
+        error = self._normalize_openclaw_text(str(task_result.get("error", "")))
+        ts = int(task_result.get("reply_ts", 0) or 0)
+        status = "failed" if error and not reply_text else "completed"
+        result_source = reply_text or error or "no textual result"
+        result_brief = result_source[:500]
+
+        return (
+            "Delegated task completed. "
+            f"status={status}; "
+            f"task_id={task_id or 'unknown'}; "
+            f"summary={summary or 'n/a'}; "
+            f"result={result_brief}; "
+            f"ts={ts or 'n/a'}. "
+            "Use this as final task result context and reply to the user with a concise completion update."
+        )
+
+    async def handle_openclaw_reply(self, task_result: dict[str, Any]):
         """
-        Process an OpenClaw reply and generate a short narrative response.
+        Feed delegated task result back into the primary LLM flow.
         """
-        await self.llm_exec.send_openclaw_reply(reply_text)
+        followup_input = self._build_openclaw_followup_input(task_result)
+        await self.queue_llm_input(followup_input)

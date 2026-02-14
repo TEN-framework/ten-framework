@@ -6,13 +6,12 @@ import { useAppDispatch, useAppSelector, useAutoScroll } from "@/common";
 import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { rtmManager } from "@/manager/rtm";
+import { rtmManager, type TRtmMessage } from "@/manager/rtm";
 import { addChatItem, setAgentPhase } from "@/store/reducers/global";
 import {
   EMessageDataType,
   EMessageType,
   ERTMTextType,
-  type IRTMTextItem,
 } from "@/types";
 
 export default function ChatCard(props: { className?: string }) {
@@ -49,9 +48,9 @@ export default function ChatCard(props: { className?: string }) {
 
   useAutoScroll(chatRef);
 
-  const _onTextChanged = (text: IRTMTextItem | any) => {
+  const _onTextChanged = (text: TRtmMessage) => {
     console.log("[rtm] onTextChanged", text);
-    if (text?.data_type === "openclaw_result") {
+    if ("data_type" in text && text.data_type === "openclaw_result") {
       dispatch(
         addChatItem({
           userId: "openclaw",
@@ -64,7 +63,7 @@ export default function ChatCard(props: { className?: string }) {
       );
       return;
     }
-    if (text?.data_type === "openclaw_phase") {
+    if ("data_type" in text && text.data_type === "openclaw_phase") {
       dispatch(setAgentPhase(String(text.phase ?? "")));
       return;
     }

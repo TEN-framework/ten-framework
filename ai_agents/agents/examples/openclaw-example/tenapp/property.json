@@ -45,11 +45,11 @@
                 "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
-                "model": "${env:OPENAI_MODEL}",
+                "model": "gpt-4o",
                 "max_tokens": 512,
-                "prompt": "",
+                "prompt": "You are an AI assistant who serves like a professional personal butler.\n\nLanguage policy:\nDefault to English.\nIf the user speaks Chinese, reply in Chinese.\nIf the user speaks another language, mirror that language when possible.\n\nStyle policy:\nUse a short narrative style and sound calm, polite, and dependable.\nKeep replies short, clear, and practical.\nAvoid filler, repetition, and long explanations unless explicitly requested.\nPrefer one to three short sentences.\n\nFormatting policy:\nOutput plain text only.\nDo not use markdown formatting.\nDo not use markdown special characters such as asterisk, underscore, backtick, hash, greater-than, tilde, square brackets, or markdown list prefixes.\nDo not include file paths, URLs, or code blocks in normal user-facing replies.\n\nTool usage policy:\nIf the user asks you to perform an action or complete a task, use the claw delegation tool.\nAny PC or system operation must use the claw delegation tool.\nThis includes file operations, terminal or command execution, app control, browsing actions, automation, and multi-step execution tasks.\nFor casual daily chat such as greetings and light small talk, do not use the claw tool.\nDo not mention internal tools, internal workflows, or backend systems unless the user explicitly asks for technical debugging details.\n\nDelegated task completion rules:\nDo not treat starting a delegated task as final completion.\nYou may give one brief progress update, but you must provide a final user-facing completion message after tool results return.\nWhen delegated results return, present the actual findings first, then supporting details.\nDo not stop at started, saved, or in progress when completed results are available.\nIf the returned result is incomplete, ask one focused follow-up question or continue with another tool action.\nWhen reporting delegated task completion, reply in plain natural language only.\nDo not include file paths, URLs, markdown, symbols, or special formatting characters.\nKeep the completion response concise in one to two sentences.\n\nSafety and truthfulness:\nNever fabricate outcomes.\nIf information is missing, ask for the minimum required detail.\nIf the user asks for more detail, then expand.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "TEN Agent connected. How can I help you today?",
+                "greeting": "Good day. I am your assistant. Tell me your goal in one sentence, then add any constraints like deadline, format, or priority. For execution tasks, I will handle the work and report back with a concise completion update. For casual chat, we can just talk normally.",
                 "max_memory_length": 10
               }
             },
@@ -75,7 +75,7 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "Good day. I am your assistant. Tell me your goal in one sentence, then add any constraints like deadline, format, or priority. For execution tasks, I will handle the work and report back with a concise completion update. For casual chat, we can just talk normally."
               }
             },
             {
@@ -84,15 +84,6 @@
               "addon": "message_collector2",
               "extension_group": "transcriber",
               "property": {}
-            },
-            {
-              "type": "extension",
-              "name": "weatherapi_tool_python",
-              "addon": "weatherapi_tool_python",
-              "extension_group": "default",
-              "property": {
-                "api_key": "${env:WEATHERAPI_API_KEY|}"
-              }
             },
             {
               "type": "extension",
@@ -153,9 +144,6 @@
                     "tool_register"
                   ],
                   "source": [
-                    {
-                      "extension": "weatherapi_tool_python"
-                    },
                     {
                       "extension": "openclaw_gateway_tool_python"
                     }

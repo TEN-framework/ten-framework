@@ -5,32 +5,26 @@ import type {
   ILocalVideoTrack,
   IMicrophoneAudioTrack,
 } from "agora-rtc-sdk-ng";
-import dynamic from "next/dynamic";
 import * as React from "react";
 import {
   useAppDispatch,
   useAppSelector,
   useIsCompactLayout,
   VideoSourceType,
-  VOICE_OPTIONS,
 } from "@/common";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import AgentView from "@/components/Agent/View";
-import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
 import { rtmManager } from "@/manager/rtm";
 import {
-  addChatItem,
   setOptions,
   setRoomConnected,
   setRtmConnected,
-  setVoiceType,
 } from "@/store/reducers/global";
-import { EMessageType, type IChatItem, ITextItem } from "@/types";
 
 let hasInit: boolean = false;
 
@@ -55,10 +49,6 @@ export default function RTCCard(props: { className?: string }) {
 
   const isCompactLayout = useIsCompactLayout();
 
-  const DynamicChatCard = dynamic(() => import("@/components/Chat/ChatCard"), {
-    ssr: false,
-  });
-
   React.useEffect(() => {
     if (!options.channel) {
       return;
@@ -79,7 +69,6 @@ export default function RTCCard(props: { className?: string }) {
   const init = async () => {
     console.log("[rtc] init");
     rtcManager.on("localTracksChanged", onLocalTracksChanged);
-    rtcManager.on("textChanged", onTextChanged);
     rtcManager.on("remoteUserChanged", onRemoteUserChanged);
     await rtcManager.createCameraTracks();
     await rtcManager.createMicrophoneAudioTrack();
@@ -115,7 +104,6 @@ export default function RTCCard(props: { className?: string }) {
 
   const destory = async () => {
     console.log("[rtc] destory");
-    rtcManager.off("textChanged", onTextChanged);
     rtcManager.off("localTracksChanged", onLocalTracksChanged);
     rtcManager.off("remoteUserChanged", onRemoteUserChanged);
     await rtmManager.destroy();
@@ -146,15 +134,6 @@ export default function RTCCard(props: { className?: string }) {
     if (audioTrack) {
       setAudioTrack(audioTrack);
     }
-  };
-
-  const onTextChanged = (text: IChatItem) => {
-    console.log("[rtc] onTextChanged", text);
-    dispatch(addChatItem(text));
-  };
-
-  const onVoiceChange = (value: any) => {
-    dispatch(setVoiceType(value));
   };
 
   const onVideoSourceTypeChange = async (value: VideoSourceType) => {
