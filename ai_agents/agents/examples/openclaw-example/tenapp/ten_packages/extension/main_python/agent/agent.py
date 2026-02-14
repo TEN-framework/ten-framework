@@ -152,25 +152,10 @@ class Agent:
                 msg_json, _ = data.get_property_to_json(None)
                 msg = json.loads(msg_json)
                 message_content = msg.get("message", "")
-                if isinstance(message_content, dict):
-                    parsed_msg = message_content
-                elif isinstance(message_content, str):
-                    try:
-                        parsed_msg = json.loads(message_content)
-                    except json.JSONDecodeError:
-                        self.ten_env.log_warn(
-                            "rtm_message_event message is not JSON"
-                        )
-                        return
-                else:
+                if not isinstance(message_content, (dict, str)):
                     self.ten_env.log_warn(
                         "rtm_message_event message has unsupported type"
                     )
-                    return
-                if parsed_msg.get("data_type") == "openclaw_reply":
-                    text = str(parsed_msg.get("text", "")).strip()
-                    if text:
-                        await self.handle_openclaw_reply(text)
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:

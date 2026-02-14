@@ -7,7 +7,7 @@ import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { rtmManager } from "@/manager/rtm";
-import { addChatItem } from "@/store/reducers/global";
+import { addChatItem, setAgentPhase } from "@/store/reducers/global";
 import {
   EMessageDataType,
   EMessageType,
@@ -49,8 +49,25 @@ export default function ChatCard(props: { className?: string }) {
 
   useAutoScroll(chatRef);
 
-  const _onTextChanged = (text: IRTMTextItem) => {
+  const _onTextChanged = (text: IRTMTextItem | any) => {
     console.log("[rtm] onTextChanged", text);
+    if (text?.data_type === "openclaw_result") {
+      dispatch(
+        addChatItem({
+          userId: "openclaw",
+          text: String(text.text ?? ""),
+          type: EMessageType.AGENT,
+          data_type: EMessageDataType.OPENCLAW,
+          isFinal: true,
+          time: Number(text.ts ?? Date.now()),
+        })
+      );
+      return;
+    }
+    if (text?.data_type === "openclaw_phase") {
+      dispatch(setAgentPhase(String(text.phase ?? "")));
+      return;
+    }
     if (text.type === ERTMTextType.TRANSCRIBE) {
       // const isAgent = Number(text.uid) != Number(options.userId)
       dispatch(

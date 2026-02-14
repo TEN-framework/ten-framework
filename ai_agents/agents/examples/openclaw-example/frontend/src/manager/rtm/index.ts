@@ -97,14 +97,11 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     const { message, messageType } = e;
     if (messageType === "STRING") {
       const parsed = JSON.parse(message as string);
-      if (parsed?.data_type === "openclaw_tool") {
-        const summary = String(parsed.summary ?? "").trim();
-        const gateway = window.openclawGateway;
-        if (summary && gateway?.isConnected?.()) {
-          gateway.send(summary).catch((err: unknown) => {
-            console.warn("[openclaw] send failed:", err);
-          });
-        }
+      if (
+        parsed?.data_type === "openclaw_result" ||
+        parsed?.data_type === "openclaw_phase"
+      ) {
+        this.emit("rtmMessage", parsed);
         return;
       }
       const msg: IRTMTextItem = parsed;
@@ -117,14 +114,11 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       const decoder = new TextDecoder("utf-8");
       const decodedMessage = decoder.decode(message as Uint8Array);
       const parsed = JSON.parse(decodedMessage);
-      if (parsed?.data_type === "openclaw_tool") {
-        const summary = String(parsed.summary ?? "").trim();
-        const gateway = window.openclawGateway;
-        if (summary && gateway?.isConnected?.()) {
-          gateway.send(summary).catch((err: unknown) => {
-            console.warn("[openclaw] send failed:", err);
-          });
-        }
+      if (
+        parsed?.data_type === "openclaw_result" ||
+        parsed?.data_type === "openclaw_phase"
+      ) {
+        this.emit("rtmMessage", parsed);
         return;
       }
       const msg: IRTMTextItem = parsed;
@@ -150,20 +144,6 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       customType: "PainTxt",
     });
     this.emit("rtmMessage", msg);
-  }
-
-  async sendOpenclawReply(text: string) {
-    if (!this._client) {
-      throw new Error("RTM client not initialized");
-    }
-    const msg = {
-      data_type: "openclaw_reply",
-      text,
-      ts: Date.now(),
-    };
-    await this._client.publish(this.channel, JSON.stringify(msg), {
-      customType: "openclaw",
-    });
   }
 
   async destroy() {

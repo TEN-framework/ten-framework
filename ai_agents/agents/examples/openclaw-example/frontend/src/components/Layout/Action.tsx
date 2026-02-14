@@ -17,7 +17,6 @@ import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
-import { openclawGateway } from "@/openclaw/gatewayManager";
 import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
@@ -63,7 +62,6 @@ export default function Action(props: { className?: string }) {
       dispatch(setAgentConnected(false));
       toast.success("Agent disconnected");
       stopPing();
-      openclawGateway.disconnect();
     } else {
       const selectedGraph = graphList.find(
         (graph) => graph.graph_id === selectedGraphId
@@ -96,7 +94,6 @@ export default function Action(props: { className?: string }) {
       dispatch(setAgentConnected(true));
       toast.success("Agent connected");
       startPing();
-      openclawGateway.connect();
     }
     setLoading(false);
   };

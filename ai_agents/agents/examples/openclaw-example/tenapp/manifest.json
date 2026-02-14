@@ -147,6 +147,9 @@
       "path": "../../../ten_packages/extension/message_collector2"
     },
     {
+      "path": "../../../ten_packages/extension/openclaw_gateway_tool_python"
+    },
+    {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
     }
   ],

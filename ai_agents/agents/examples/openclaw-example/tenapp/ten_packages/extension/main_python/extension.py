@@ -1,24 +1,9 @@
-import asyncio
 import json
 import time
 from typing import Literal
 
 from .agent.decorators import agent_event_handler
-from ten_runtime import (
-    AsyncExtension,
-    AsyncTenEnv,
-    Cmd,
-    CmdResult,
-    Data,
-    Loc,
-    StatusCode,
-)
-from ten_ai_base.const import CMD_PROPERTY_RESULT
-from ten_ai_base.types import (
-    LLMToolMetadata,
-    LLMToolMetadataParameter,
-    LLMToolResultLLMResult,
-)
+from ten_runtime import AsyncExtension, AsyncTenEnv, Cmd, Data, Loc
 
 from .agent.agent import Agent
 from .agent.events import (
@@ -45,7 +30,6 @@ class MainControlExtension(AsyncExtension):
         self.ten_env: AsyncTenEnv = None
         self.agent: Agent = None
         self.config: MainControlConfig = None
-        self._openclaw_tool_registered: bool = False
         self._tts_request_id: str | None = None
 
         self.stopped: bool = False
@@ -128,7 +112,6 @@ class MainControlExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
-        await self._register_openclaw_tool()
 
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
@@ -136,13 +119,12 @@ class MainControlExtension(AsyncExtension):
         await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
-        if cmd.get_name() == "tool_call":
-            handled = await self._handle_tool_call(cmd)
-            if handled:
-                return
         await self.agent.on_cmd(cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+        if data.get_name() == "openclaw_reply_event":
+            await self._handle_openclaw_reply_event(data)
+            return
         await self.agent.on_data(data)
 
     # === helpers ===
@@ -167,7 +149,7 @@ class MainControlExtension(AsyncExtension):
             "stream_id": "0" if role == "assistant" else str(stream_id),
         }
         await self._send_rtm_message(payload)
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
         )
 
@@ -215,74 +197,27 @@ class MainControlExtension(AsyncExtension):
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
-
-    async def _register_openclaw_tool(self):
-        if self._openclaw_tool_registered:
+    async def _handle_openclaw_reply_event(self, data: Data) -> None:
+        payload_json, err = data.get_property_to_json(None)
+        if err:
+            self.ten_env.log_error(
+                f"[MainControlExtension] failed to parse openclaw_reply_event: {err}"
+            )
             return
-        tool = LLMToolMetadata(
-            name="claw_task_delegate",
-            description="Delegate complex tasks to OpenClaw. Provide a short summary of the task.",
-            parameters=[
-                LLMToolMetadataParameter(
-                    name="summary",
-                    type="string",
-                    description="Summary of the complex task to delegate.",
-                    required=True,
-                ),
-            ],
+        payload = json.loads(payload_json)
+        ts = int(payload.get("reply_ts", int(time.time() * 1000)))
+        phase = str(payload.get("agent_phase", "")).strip()
+        if phase:
+            await self._send_rtm_message(
+                {"data_type": "openclaw_phase", "phase": phase, "ts": ts}
+            )
+        error = str(payload.get("error", "")).strip()
+        reply_text = str(payload.get("reply_text", "")).strip()
+        if error and not reply_text:
+            reply_text = f"OpenClaw error: {error}"
+        if not reply_text:
+            return
+        await self._send_rtm_message(
+            {"data_type": "openclaw_result", "text": reply_text, "ts": ts}
         )
-        await self.agent.register_llm_tool(tool, self.name)
-        self._openclaw_tool_registered = True
-
-    async def _handle_tool_call(self, cmd: Cmd) -> bool:
-        try:
-            name = ""
-            args: dict = {}
-            used_root_payload = False
-            name, err = cmd.get_property_string("name")
-            if err:
-                payload_json, payload_err = cmd.get_property_to_json(None)
-                if payload_err:
-                    raise RuntimeError(
-                        f"Failed to get tool call payload: {payload_err}"
-                    )
-                payload = json.loads(payload_json)
-                name = str(payload.get("name", "")).strip()
-                raw_args = payload.get("arguments", {})
-                if isinstance(raw_args, str):
-                    args = json.loads(raw_args)
-                elif isinstance(raw_args, dict):
-                    args = raw_args
-                else:
-                    args = {}
-                used_root_payload = True
-            if name != "claw_task_delegate":
-                return False
-            if not used_root_payload:
-                args_json, err = cmd.get_property_to_json("arguments")
-                if err:
-                    raise RuntimeError(f"Failed to get tool arguments: {err}")
-                args = json.loads(args_json)
-            summary = str(args.get("summary", "")).strip()
-            if summary:
-                payload = {
-                    "data_type": "openclaw_tool",
-                    "summary": summary,
-                }
-                await self._send_rtm_message(payload)
-            result = CmdResult.create(StatusCode.OK, cmd)
-            tool_result = LLMToolResultLLMResult(
-                type="llmresult",
-                content="Sent to OpenClaw",
-            )
-            result.set_property_from_json(
-                CMD_PROPERTY_RESULT, json.dumps(tool_result)
-            )
-            await self.ten_env.return_result(result)
-            return True
-        except Exception as e:
-            self.ten_env.log_error(f"handle_tool_call error: {e}")
-            await self.ten_env.return_result(
-                CmdResult.create(StatusCode.ERROR, cmd)
-            )
-            return True
+        await self.agent.handle_openclaw_reply(reply_text)

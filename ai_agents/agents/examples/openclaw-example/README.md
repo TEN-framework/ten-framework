@@ -1,10 +1,13 @@
-# Voice Assistant
+# OpenClaw Voice Assistant
 
-A comprehensive voice assistant with real-time conversation capabilities using Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
+A real-time voice assistant built on TEN Framework that supports STT → LLM → TTS and delegates complex tasks to an external OpenClaw Gateway.
 
 ## Features
 
-- **Chained Model Real-time Voice Interaction**: Complete voice conversation pipeline with STT → LLM → TTS processing
+- **Chained real-time voice interaction**: Deepgram STT → OpenAI LLM → ElevenLabs TTS
+- **OpenClaw task delegation**: `claw_task_delegate` tool sends tasks to OpenClaw and receives async replies
+- **Raw + narrated results**: OpenClaw result is shown in chat and then narrated by the assistant
+- **Graph-based architecture**: configurable with TEN graph and TMAN Designer
 
 ## Prerequisites
 
@@ -22,56 +25,58 @@ A comprehensive voice assistant with real-time conversation capabilities using A
 4. **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
    - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
 
+5. **OpenClaw Gateway**
+   - `OPENCLAW_GATEWAY_URL` - Gateway WebSocket endpoint (required for delegation)
+   - `OPENCLAW_GATEWAY_TOKEN` - Gateway token (or use password)
+   - `OPENCLAW_GATEWAY_ORIGIN` - Origin header expected by gateway origin checks
+   - `OPENCLAW_GATEWAY_SCOPES` - Gateway scopes; minimum `operator.write`
+
 ### Optional Environment Variables
 
 - `AGORA_APP_CERTIFICATE` - Agora App Certificate (optional)
-- `OPENAI_MODEL` - OpenAI model name (optional, defaults to configured model)
+- `OPENAI_MODEL` - OpenAI model name (optional)
 - `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
 - `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
+- `OPENCLAW_GATEWAY_PASSWORD` - Alternative to token auth (optional)
+- `OPENCLAW_GATEWAY_CLIENT_ID` - Defaults to `webchat-ui`
+- `OPENCLAW_GATEWAY_CLIENT_MODE` - Defaults to `webchat`
+- `OPENCLAW_CHAT_SESSION_KEY` - Defaults to `agent:main:main`
 
 ## Setup
 
 ### 1. Set Environment Variables
 
-Add to your `.env` file:
+This example loads env from:
+
+- root env: `ai_agents/.env`
+- example env: `agents/examples/openclaw-example/tenapp/.env`
+
+Add required variables to your `.env` and OpenClaw-related variables to `tenapp/.env` (or root `.env`).
+
+Example (`tenapp/.env`):
 
 ```bash
-# Agora (required for audio streaming)
-AGORA_APP_ID=your_agora_app_id_here
-AGORA_APP_CERTIFICATE=your_agora_certificate_here
-
-# Deepgram (required for speech-to-text)
-DEEPGRAM_API_KEY=your_deepgram_api_key_here
-
-# OpenAI (required for language model)
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4
-OPENAI_PROXY_URL=your_proxy_url_here
-
-# ElevenLabs (required for text-to-speech)
-ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
-
-# Optional
-WEATHERAPI_API_KEY=your_weather_api_key_here
+OPENCLAW_GATEWAY_URL=ws://host.docker.internal:18789
+OPENCLAW_GATEWAY_TOKEN=your_gateway_token
+OPENCLAW_GATEWAY_ORIGIN=http://host.docker.internal:18789
+OPENCLAW_GATEWAY_SCOPES=operator.write
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/openclaw-example
 task install
 ```
 
-This installs Python dependencies and frontend components.
+This installs tenapp dependencies, Python dependencies, frontend dependencies, and builds the API server.
 
-### 3. Run the Voice Assistant
+### 3. Run the Example
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/openclaw-example
 task run
 ```
-
-The voice assistant starts with all capabilities enabled.
 
 ### 4. Access the Application
 
@@ -81,103 +86,71 @@ The voice assistant starts with all capabilities enabled.
 
 ## Configuration
 
-The voice assistant is configured in `tenapp/property.json`:
+The example graph is configured in `tenapp/property.json`.
 
-```json
-{
-  "ten": {
-    "predefined_graphs": [
-      {
-        "name": "voice_assistant",
-        "auto_start": true,
-        "graph": {
-          "nodes": [
-            {
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
-              "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
-                "subscribe_audio": true,
-                "publish_audio": true,
-                "publish_data": true
-              }
-            },
-            {
-              "name": "stt",
-              "addon": "deepgram_asr_python",
-              "property": {
-                "params": {
-                  "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US"
-                }
-              }
-            },
-            {
-              "name": "llm",
-              "addon": "openai_llm2_python",
-              "property": {
-                "api_key": "${env:OPENAI_API_KEY}",
-                "model": "${env:OPENAI_MODEL}",
-                "max_tokens": 512,
-                "greeting": "TEN Agent connected. How can I help you today?"
-              }
-            },
-            {
-              "name": "tts",
-              "addon": "elevenlabs_tts2_python",
-              "property": {
-                "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
-                }
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
-```
+Key graph nodes include:
+
+- `agora_rtc`
+- `stt` (`deepgram_asr_python`)
+- `llm` (`openai_llm2_python`)
+- `tts` (`elevenlabs_tts2_python`)
+- `main_control` (`main_python`)
+- `openclaw_gateway_tool_python`
+- `agora_rtm`
+
+OpenClaw flow:
+
+1. `openclaw_gateway_tool_python` registers `claw_task_delegate` to LLM
+2. Tool call sends summary to OpenClaw gateway (`chat.send`)
+3. Async gateway reply is emitted as `openclaw_reply_event`
+4. `main_control` publishes raw OpenClaw result + generates assistant narration
 
 ### Configuration Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `AGORA_APP_ID` | string | - | Your Agora App ID (required) |
-| `AGORA_APP_CERTIFICATE` | string | - | Your Agora App Certificate (optional) |
-| `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
-| `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
-| `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
-| `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
-| `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |
-| `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
+| `AGORA_APP_ID` | string | - | Agora App ID (required) |
+| `AGORA_APP_CERTIFICATE` | string | - | Agora App Certificate (optional) |
+| `DEEPGRAM_API_KEY` | string | - | Deepgram key (required) |
+| `OPENAI_API_KEY` | string | - | OpenAI key (required) |
+| `OPENAI_MODEL` | string | - | OpenAI model (optional) |
+| `OPENAI_PROXY_URL` | string | - | OpenAI proxy URL (optional) |
+| `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs key (required) |
+| `WEATHERAPI_API_KEY` | string | - | Weather tool key (optional) |
+| `OPENCLAW_GATEWAY_URL` | string | `ws://127.0.0.1:18789` | OpenClaw gateway websocket URL |
+| `OPENCLAW_GATEWAY_TOKEN` | string | - | OpenClaw gateway token |
+| `OPENCLAW_GATEWAY_PASSWORD` | string | - | OpenClaw gateway password (optional alternative) |
+| `OPENCLAW_GATEWAY_ORIGIN` | string | - | Origin header for gateway origin checks |
+| `OPENCLAW_GATEWAY_SCOPES` | string | - | Comma-separated scopes; minimum `operator.write` |
+| `OPENCLAW_GATEWAY_CLIENT_ID` | string | `webchat-ui` | Gateway client id |
+| `OPENCLAW_GATEWAY_CLIENT_MODE` | string | `webchat` | Gateway client mode |
+| `OPENCLAW_CHAT_SESSION_KEY` | string | `agent:main:main` | OpenClaw chat session key |
 
 ## Customization
 
-The voice assistant uses a modular design that allows you to easily replace STT, LLM, or TTS modules with other providers using TMAN Designer.
+You can customize this graph in TMAN Designer (http://localhost:49483):
 
-Access the visual designer at http://localhost:49483 to customize your voice agent. For detailed usage instructions, see the [TMAN Designer documentation](https://theten.ai/docs/ten_agent/customize_agent/tman-designer).
+- Swap STT/LLM/TTS vendors
+- Update prompts and tool settings
+- Tune OpenClaw gateway properties
+
+For TMAN Designer usage, see the [TMAN Designer documentation](https://theten.ai/docs/ten_agent/customize_agent/tman-designer).
 
 ## Release as Docker image
 
-**Note**: The following commands need to be executed outside of any Docker container.
+**Note**: Run these commands outside of Docker containers.
 
 ### Build image
 
 ```bash
 cd ai_agents
-docker build -f agents/examples/voice-assistant/Dockerfile -t voice-assistant-app .
+docker build -f agents/examples/openclaw-example/Dockerfile -t openclaw-example-app .
 ```
 
 ### Run
 
 ```bash
-docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-app
+docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 openclaw-example-app
 ```
 
 ### Access
@@ -187,8 +160,7 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-ap
 
 ## Learn More
 
-- [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
-- [Deepgram API Documentation](https://developers.deepgram.com/)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-- [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
 - [TEN Framework Documentation](https://doc.theten.ai)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Deepgram API Documentation](https://developers.deepgram.com/)
+- [ElevenLabs API Documentation](https://docs.elevenlabs.io/)

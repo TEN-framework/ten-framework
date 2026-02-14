@@ -11,17 +11,12 @@ import {
 } from "@/common";
 import { useGraphs } from "@/common/hooks";
 import {
-  addChatItem,
   fetchGraphDetails,
   reset,
-  setAgentPhase,
   setOptions,
   setSelectedGraphId,
   setTrulienceSettings,
 } from "@/store/reducers/global";
-import { EMessageDataType, EMessageType } from "@/types";
-import { openclawGateway } from "@/openclaw/gatewayManager";
-import { rtmManager } from "@/manager/rtm";
 
 interface AuthInitializerProps {
   children: ReactNode;
@@ -35,9 +30,6 @@ const AuthInitializer = (props: AuthInitializerProps) => {
     (state) => state.global.selectedGraphId
   );
   const graphList = useAppSelector((state) => state.global.graphList);
-  const agentConnected = useAppSelector(
-    (state) => state.global.agentConnected
-  );
   const urlParamApplied = useRef(false);
 
   useEffect(() => {
@@ -60,39 +52,6 @@ const AuthInitializer = (props: AuthInitializerProps) => {
       }
     }
   }, [dispatch, initialize]);
-
-  useEffect(() => {
-    const handleAgentPhase = (phase: string) => {
-      dispatch(setAgentPhase(phase));
-    };
-    const handleOpenclawResponse = (text: string, timestamp: number) => {
-      dispatch(
-        addChatItem({
-          userId: "openclaw",
-          text,
-          type: EMessageType.AGENT,
-          data_type: EMessageDataType.OPENCLAW,
-          isFinal: true,
-          time: timestamp,
-        })
-      );
-      if (agentConnected) {
-        rtmManager
-          .sendOpenclawReply(text)
-          .catch((err) =>
-            console.warn("[openclaw] failed to send reply to agent:", err)
-          );
-      }
-    };
-
-    openclawGateway.on("agentPhase", handleAgentPhase);
-    openclawGateway.on("openclawResponse", handleOpenclawResponse);
-
-    return () => {
-      openclawGateway.off("agentPhase", handleAgentPhase);
-      openclawGateway.off("openclawResponse", handleOpenclawResponse);
-    };
-  }, [dispatch, agentConnected]);
 
   // Check URL params for graph selection on initial load only
   useEffect(() => {

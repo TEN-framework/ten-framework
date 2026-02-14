@@ -465,8 +465,8 @@
     {
       "type": "extension",
       "name": "cartesia_tts",
-      "version": "0.6.2",
-      "hash": "17d121b4cec20fe6333ea337a59536bbf5a577fe32275345a5f50ed2ff7c8f92",
+      "version": "0.6.3",
+      "hash": "f8c8a1dd7225976b728a323f54b2b8d3246ee9fe964d3ddf206d630e316ffc78",
       "dependencies": [
         {
           "type": "system",
@@ -627,8 +627,8 @@
     {
       "type": "extension",
       "name": "openai_tts2_python",
-      "version": "0.6.0",
-      "hash": "62e552ae155c42f707a92309be5e4ed5eb0434536c566d1700a4c563b794d508",
+      "version": "0.6.1",
+      "hash": "7c51a7d8562285cf6b3a62c6edb7ec06caf64d9ccadf483eb57a4e675e079f81",
       "dependencies": [
         {
           "type": "system",
@@ -678,8 +678,8 @@
     {
       "type": "extension",
       "name": "rime_tts",
-      "version": "0.4.1",
-      "hash": "e4506ae14920fdddd72962f2d525bd37bbd02feb73a6d462902fbf32ca6d5a38",
+      "version": "0.4.2",
+      "hash": "7cae56839812cbe7701c9809b8c55e1645d0c393df91ef4d2e43fe07b51b0564",
       "dependencies": [
         {
           "type": "system",
@@ -755,6 +755,23 @@
         }
       ],
       "path": "../../../ten_packages/extension/message_collector2"
+    },
+    {
+      "type": "extension",
+      "name": "openclaw_gateway_tool_python",
+      "version": "0.1.0",
+      "hash": "9cb0085da1e094c0edcbf556ecc0e85dc07d2efef1f2e67cad0dd3ebfabcb05a",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/openclaw_gateway_tool_python"
     },
     {
       "type": "extension",
