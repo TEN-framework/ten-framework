@@ -239,8 +239,8 @@
     {
       "type": "extension",
       "name": "openai_asr_python",
-      "version": "0.2.2",
-      "hash": "dc0d2ecf5c104c396b0539e7f915041453d007aedebd121740c5bb965fd513dc",
+      "version": "0.3.0",
+      "hash": "56374e250f4ab3d43a9a52ad22bc21317b1183c54467e4625653753ac8615b79",
       "dependencies": [
         {
           "type": "system",
