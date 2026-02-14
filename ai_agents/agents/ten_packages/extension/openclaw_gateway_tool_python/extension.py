@@ -69,7 +69,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         self.session = aiohttp.ClientSession()
         await super().on_start(ten_env)
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+    async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
         self._stopped = True
         if self.recv_task:
             self.recv_task.cancel()
@@ -187,8 +187,6 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 if msg.type != aiohttp.WSMsgType.TEXT:
                     continue
                 await self._handle_message(str(msg.data))
-        except asyncio.CancelledError:
-            raise
         except Exception as exc:
             self.ten_env.log_warn(
                 f"OpenClaw receive loop ended with error: {exc}"
