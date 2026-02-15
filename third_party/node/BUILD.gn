@@ -103,7 +103,13 @@ if (is_win) {
       ":node_header",
       ":node_lib_config",
     ]
-    public_deps = [
+
+    # Use deps (not public_deps) for prebuilt_node_shared to prevent its
+    # public config from propagating libs = ["node"] to dependents. On
+    # Windows, MSVC link.exe interprets bare "node" as "node.obj" instead
+    # of "node.lib", causing LNK1181. The node_lib_config above already
+    # provides the correct libs = ["libnode.lib"].
+    deps = [
       ":copy_node_dll",
       ":prebuilt_node_shared",
     ]
