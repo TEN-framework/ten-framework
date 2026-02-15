@@ -20,7 +20,7 @@ ten_prebuilt_library("prebuilt_node_shared") {
   name = "node_shared"
 
   # Version can be easily updated here
-  _node_shared_version = "v1.0.18"
+  _node_shared_version = "v1.0.19"
   _base_url = "https://github.com/TEN-framework/node_shared/releases/download/${_node_shared_version}"
 
   if (is_win) {
