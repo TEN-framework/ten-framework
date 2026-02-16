@@ -37,8 +37,14 @@ class ThinkParser:
             if self.state == "NORMAL":
                 open_pos = data.find(self.OPEN_TAG, idx)
                 if open_pos < 0:
-                    partial = self._partial_suffix_len(data[idx:], self.OPEN_TAG)
-                    visible = data[idx : len(data) - partial] if partial else data[idx:]
+                    partial = self._partial_suffix_len(
+                        data[idx:], self.OPEN_TAG
+                    )
+                    visible = (
+                        data[idx : len(data) - partial]
+                        if partial
+                        else data[idx:]
+                    )
                     if visible:
                         events.append(("message_delta", visible))
                     if partial:
@@ -81,7 +87,9 @@ class ThinkParser:
 
         return events
 
-    def process_reasoning_content(self, reasoning_content: str) -> List[Tuple[str, str]]:
+    def process_reasoning_content(
+        self, reasoning_content: str
+    ) -> List[Tuple[str, str]]:
         events: List[Tuple[str, str]] = []
         if reasoning_content:
             if self.state == "NORMAL":

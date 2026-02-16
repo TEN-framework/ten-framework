@@ -276,8 +276,11 @@ class OpenAIChatGPT:
 
                 if reasoning_mode == ReasoningMode.ModeV1:
                     if reasoning_content:
-                        for event_type, event_value in (
-                            parser.process_reasoning_content(reasoning_content)
+                        for (
+                            event_type,
+                            event_value,
+                        ) in parser.process_reasoning_content(
+                            reasoning_content
                         ):
                             if event_type == "reasoning_delta":
                                 yield LLMResponseReasoningDelta(
@@ -288,9 +291,10 @@ class OpenAIChatGPT:
                                     created=chat_completion.created,
                                 )
                     elif parser.state == "THINK":
-                        for event_type, event_value in (
-                            parser.process_reasoning_content("")
-                        ):
+                        for (
+                            event_type,
+                            event_value,
+                        ) in parser.process_reasoning_content(""):
                             if event_type == "reasoning_done":
                                 yield LLMResponseReasoningDone(
                                     response_id=chat_completion.id,
@@ -309,7 +313,9 @@ class OpenAIChatGPT:
                             created=chat_completion.created,
                         )
                 elif content:
-                    for event_type, event_value in parser.process_content(content):
+                    for event_type, event_value in parser.process_content(
+                        content
+                    ):
                         if event_type == "message_delta":
                             full_content += event_value
                             yield LLMResponseMessageDelta(
@@ -347,7 +353,9 @@ class OpenAIChatGPT:
                                 }
 
                             if tool_call.id:
-                                tool_calls_dict[tool_call.index]["id"] = tool_call.id
+                                tool_calls_dict[tool_call.index][
+                                    "id"
+                                ] = tool_call.id
 
                             # If the function name is not None, set it
                             if tool_call.function.name:
