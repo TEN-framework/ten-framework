@@ -1,0 +1,141 @@
+{
+  "type": "extension",
+  "name": "openclaw_gateway_tool_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "gateway_url": {
+          "type": "string"
+        },
+        "gateway_token": {
+          "type": "string"
+        },
+        "gateway_password": {
+          "type": "string"
+        },
+        "gateway_scopes": {
+          "type": "string"
+        },
+        "gateway_client_id": {
+          "type": "string"
+        },
+        "gateway_client_mode": {
+          "type": "string"
+        },
+        "gateway_origin": {
+          "type": "string"
+        },
+        "chat_session_key": {
+          "type": "string"
+        },
+        "request_timeout_ms": {
+          "type": "int32"
+        },
+        "connect_timeout_ms": {
+          "type": "int32"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "tool_call",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "tool_register",
+        "property": {
+          "properties": {
+            "tool": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {}
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "description",
+                "parameters"
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "openclaw_reply_event",
+        "property": {
+          "properties": {
+            "task_id": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "string"
+            },
+            "reply_text": {
+              "type": "string"
+            },
+            "reply_ts": {
+              "type": "int64"
+            },
+            "agent_phase": {
+              "type": "string"
+            },
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
