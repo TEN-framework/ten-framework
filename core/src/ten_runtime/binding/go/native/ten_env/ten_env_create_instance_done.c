@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/addon/addon_host.h"
 #include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/binding/go/extension/extension.h"
 #include "include_internal/ten_runtime/binding/go/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/binding/go/ten_env/ten_env_internal.h"

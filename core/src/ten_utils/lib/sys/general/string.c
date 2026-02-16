@@ -779,42 +779,33 @@ void ten_string_slice(ten_string_t *self, ten_string_t *other, char sep) {
   self->first_unused_idx = (pr - self->buf);
 }
 
-/*
-Cross-DLL usage: These inline functions are used in ten_runtime
-(ten_runtime.dll -> ten_utils.dll)
+bool ten_string_check_integrity(const ten_string_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
 
-TEN_UTILS_API is used for DLL export on Windows(MinGW). Without it,
-error "undefined reference" will be raised.
+  if (ten_signature_get(&self->signature) != TEN_STRING_SIGNATURE) {
+    return false;
+  }
 
-According to GNU11 standard for inline functions, the "extern" keyword
-should be used in .c file instead of .h file to prevent multiple definition.
-So TEN_UTILS_API, which contains "extern" keyword, should be used here in .c
-file.
+  // A normal `ten_string_t`'s `buf` should be a non-NULL value, either pointing
+  // to `prebuf` or to memory allocated by `malloc`.
+  if (self->buf == NULL) {
+    return false;
+  }
 
-Why only Windows(MinGW) needs this (not Linux/macOS/MSVC):
-1. Linux/macOS: Global symbols declared with "extern" keyword are exported by
-default.
-2. Windows(MSVC): Each DLL generates and uses its own COMDAT copy of inline
-functions, eliminating the need for cross-DLL imports.
+  return true;
+}
 
-Another solution:
-MinGW uses GNU11 standard in this project, but we can use
-__attribute__((gnu_inline)) in both .c and .h file to force the "inline"
-keyword to work in GNU89 standard, which is exactly the opposite way.
-("extern" keyword is used in .h file to prevent multiple definition)
-And then TEN_UTILS_API can be used in .h file like the other functions.
-*/
-#if defined(__MINGW32__) || defined(__MINGW64__)
-TEN_UTILS_API inline const char *ten_string_get_raw_str(
-    const ten_string_t *self);
+const char *ten_string_get_raw_str(const ten_string_t *self) {
+  // It's possible that the return value of this function is used by "%s", and
+  // pass NULL as the value of "%s" is an undefined behavior, so we ensure that
+  // the return value of this function is not NULL.
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
+  return self ? self->buf : NULL;
+}
 
-TEN_UTILS_API inline size_t ten_string_len(const ten_string_t *self);
-
-TEN_UTILS_API inline bool ten_string_check_integrity(const ten_string_t *self);
-#else
-extern inline const char *ten_string_get_raw_str(const ten_string_t *self);
-
-extern inline size_t ten_string_len(const ten_string_t *self);
-
-extern inline bool ten_string_check_integrity(const ten_string_t *self);
-#endif
+size_t ten_string_len(const ten_string_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_string_check_integrity(self), "Invalid argument.");
+  return self ? self->first_unused_idx : 0;
+}

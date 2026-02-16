@@ -1,0 +1,250 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "voice_assistant",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US",
+                  "model": "nova-3"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "gpt-4o",
+                "max_tokens": 512,
+                "prompt": "You are an AI assistant who serves like a professional personal butler.\n\nLanguage policy:\nDefault to English.\nIf the user speaks Chinese, reply in Chinese.\nIf the user speaks another language, mirror that language when possible.\n\nStyle policy:\nUse a short narrative style and sound calm, polite, and dependable.\nKeep replies short, clear, and practical.\nAvoid filler, repetition, and long explanations unless explicitly requested.\nPrefer one to three short sentences.\n\nFormatting policy:\nOutput plain text only.\nDo not use markdown formatting.\nDo not use markdown special characters such as asterisk, underscore, backtick, hash, greater-than, tilde, square brackets, or markdown list prefixes.\nDo not include file paths, URLs, or code blocks in normal user-facing replies.\n\nTool usage policy:\nIf the user asks you to perform an action or complete a task, use the claw delegation tool.\nAny PC or system operation must use the claw delegation tool.\nThis includes file operations, terminal or command execution, app control, browsing actions, automation, and multi-step execution tasks.\nFor casual daily chat such as greetings and light small talk, do not use the claw tool.\nDo not mention internal tools, internal workflows, or backend systems unless the user explicitly asks for technical debugging details.\n\nDelegated task completion rules:\nDo not treat starting a delegated task as final completion.\nYou may give one brief progress update, but you must provide a final user-facing completion message after tool results return.\nWhen delegated results return, present the actual findings first, then supporting details.\nDo not stop at started, saved, or in progress when completed results are available.\nIf the returned result is incomplete, ask one focused follow-up question or continue with another tool action.\nWhen reporting delegated task completion, reply in plain natural language only.\nDo not include file paths, URLs, markdown, symbols, or special formatting characters.\nKeep the completion response concise in one to two sentences.\n\nSafety and truthfulness:\nNever fabricate outcomes.\nIf information is missing, ask for the minimum required detail.\nIf the user asks for more detail, then expand.",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Good day. I am your assistant. Tell me your goal in one sentence, then add any constraints like deadline, format, or priority. For execution tasks, I will handle the work and report back with a concise completion update. For casual chat, we can just talk normally.",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Good day. I am your assistant. Tell me your goal in one sentence, then add any constraints like deadline, format, or priority. For execution tasks, I will handle the work and report back with a concise completion update. For casual chat, we can just talk normally."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "openclaw_gateway_tool_python",
+              "addon": "openclaw_gateway_tool_python",
+              "extension_group": "default",
+              "property": {
+                "gateway_url": "${env:OPENCLAW_GATEWAY_URL|ws://127.0.0.1:18789}",
+                "gateway_token": "${env:OPENCLAW_GATEWAY_TOKEN|}",
+                "gateway_password": "${env:OPENCLAW_GATEWAY_PASSWORD|}",
+                "gateway_scopes": "${env:OPENCLAW_GATEWAY_SCOPES|}",
+                "gateway_client_id": "${env:OPENCLAW_GATEWAY_CLIENT_ID|webchat-ui}",
+                "gateway_client_mode": "${env:OPENCLAW_GATEWAY_CLIENT_MODE|webchat}",
+                "gateway_origin": "${env:OPENCLAW_GATEWAY_ORIGIN|}",
+                "chat_session_key": "${env:OPENCLAW_CHAT_SESSION_KEY|agent:main:main}",
+                "request_timeout_ms": 180000,
+                "connect_timeout_ms": 10000
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "extension_group": "rtm",
+              "addon": "agora_rtm",
+              "name": "agora_rtm",
+              "property": {
+                "channel_type": "message",
+                "channel": "ten_agent_test",
+                "app_id": "${env:AGORA_APP_ID}",
+                "token": "<rtm_token_to_be_overriden_when_starting>",
+                "user_id": "1234",
+                "rtm_enabled": true
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "openclaw_gateway_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtm",
+              "data": [
+                {
+                  "name": "rtm_message_event",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "openclaw_gateway_tool_python",
+              "data": [
+                {
+                  "name": "openclaw_reply_event",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

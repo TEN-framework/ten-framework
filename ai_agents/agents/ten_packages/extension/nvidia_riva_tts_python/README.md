@@ -4,6 +4,7 @@ This extension provides text-to-speech functionality using NVIDIA Riva Speech Sk
 
 ## Features
 
+
 - High-quality speech synthesis using NVIDIA Riva
 - Support for multiple languages and voices
 - Streaming and batch synthesis modes
