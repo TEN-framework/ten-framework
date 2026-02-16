@@ -19,7 +19,7 @@ processors:
     attributes:
       - key: service.name
         value: ten-framework
-        action: upsert
+        action: insert  # Only set if missing, preserve upstream service.name
       - key: deployment.mode
         value: hybrid
         action: upsert

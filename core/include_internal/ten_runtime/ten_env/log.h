@@ -51,13 +51,13 @@ TEN_RUNTIME_API void ten_env_log_with_size_formatted_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *category, size_t category_len,
-    ten_value_t *fields, const char *fmt, ...);
+    const uint8_t *fields_buf, size_t fields_buf_size, const char *fmt, ...);
 
 TEN_RUNTIME_API void ten_env_log_with_size_formatted(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
     size_t func_name_len, const char *file_name, size_t file_name_len,
     size_t line_no, const char *category, size_t category_len,
-    ten_value_t *fields, const char *fmt, ...);
+    const uint8_t *fields_buf, size_t fields_buf_size, const char *fmt, ...);
 
 TEN_RUNTIME_PRIVATE_API void ten_env_log_formatted(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
@@ -67,4 +67,4 @@ TEN_RUNTIME_PRIVATE_API void ten_env_log_formatted(
 TEN_RUNTIME_API void ten_env_log_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
     const char *file_name, size_t line_no, const char *msg,
-    const char *category, ten_value_t *fields);
+    const char *category, const uint8_t *fields_buf, size_t fields_buf_size);

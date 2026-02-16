@@ -11,11 +11,12 @@ import type { VideoFrame } from "./msg/video_frame.js";
 import type { AudioFrame } from "./msg/audio_frame.js";
 import ten_addon from "./ten_addon.js";
 import { LogLevel } from "./log_level.js";
-import type { TenError } from "./error.js";
-import type { Value } from "./value.js";
+import { TenError, TenErrorCode } from "./error.js";
+import { Value } from "./value.js";
 import type { LogOption } from "./log_option.js";
 import { DefaultLogOption } from "./log_option.js";
 import type { SendOptions } from "./send_options.js";
+import { serializeToBuffer } from "./value_buffer.js";
 
 export class TenEnvTester {
   async sendCmd(
@@ -176,7 +177,7 @@ export class TenEnvTester {
   logDebug(
     message: string,
     category: string | undefined = undefined,
-    fields: Value | undefined = undefined,
+    fields: Value | Record<string, any> | undefined = undefined,
     option: LogOption = DefaultLogOption,
   ): TenError | undefined {
     return this.log_internal(LogLevel.DEBUG, message, category, fields, option);
@@ -185,7 +186,7 @@ export class TenEnvTester {
   logInfo(
     message: string,
     category: string | undefined = undefined,
-    fields: Value | undefined = undefined,
+    fields: Value | Record<string, any> | undefined = undefined,
     option: LogOption = DefaultLogOption,
   ): TenError | undefined {
     return this.log_internal(LogLevel.INFO, message, category, fields, option);
@@ -194,7 +195,7 @@ export class TenEnvTester {
   logWarn(
     message: string,
     category: string | undefined = undefined,
-    fields: Value | undefined = undefined,
+    fields: Value | Record<string, any> | undefined = undefined,
     option: LogOption = DefaultLogOption,
   ): TenError | undefined {
     return this.log_internal(LogLevel.WARN, message, category, fields, option);
@@ -203,7 +204,7 @@ export class TenEnvTester {
   logError(
     message: string,
     category: string | undefined = undefined,
-    fields: Value | undefined = undefined,
+    fields: Value | Record<string, any> | undefined = undefined,
     option: LogOption = DefaultLogOption,
   ): TenError | undefined {
     return this.log_internal(LogLevel.ERROR, message, category, fields, option);
@@ -213,7 +214,7 @@ export class TenEnvTester {
     level: LogLevel,
     message: string,
     category: string | undefined = undefined,
-    fields: Value | undefined = undefined,
+    fields: Value | Record<string, any> | undefined = undefined,
     option: LogOption = DefaultLogOption,
   ): TenError | undefined {
     return this.log_internal(level, message, category, fields, option);
@@ -223,9 +224,41 @@ export class TenEnvTester {
     level: number,
     message: string,
     category: string | undefined,
-    fields: Value | undefined,
+    fields: Value | Record<string, any> | undefined,
     option: LogOption,
   ): TenError | undefined {
+    // Convert fields to Value if it's a plain object
+    let fieldsValue: Value | undefined = undefined;
+    if (fields !== undefined) {
+      try {
+        if (fields instanceof Value) {
+          // fields is already a Value object
+          fieldsValue = fields;
+        } else {
+          // fields is a plain object, convert it to Value
+          fieldsValue = Value.fromNative(fields);
+        }
+      } catch (e) {
+        return new TenError(
+          TenErrorCode.ErrorCodeGeneric,
+          `failed to convert fields: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
+    // Serialize fields Value to buffer if provided
+    let fieldsBuf: Buffer | undefined = undefined;
+    if (fieldsValue !== undefined) {
+      try {
+        fieldsBuf = serializeToBuffer(fieldsValue);
+      } catch (e) {
+        return new TenError(
+          TenErrorCode.ErrorCodeGeneric,
+          `failed to serialize fields: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    }
+
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
     const stack_ = new Error().stack as unknown as NodeJS.CallSite[];
@@ -249,6 +282,7 @@ export class TenEnvTester {
       callerLine,
       category,
       message,
+      fieldsBuf,
     );
   }
 }

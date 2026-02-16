@@ -22,7 +22,7 @@ def http_request():
 
 
 # compile pyx files in 'default python extension'.
-def compile_pyx(app_root_path: str):
+def compile_pyx(app_root_path: str, is_mingw: bool = False):
     extension_folder = os.path.join(
         app_root_path, "ten_packages/extension/default_extension_python"
     )
@@ -60,6 +60,11 @@ def compile_pyx(app_root_path: str):
         sys.executable,
         "cython_compiler.py",
     ]
+
+    # Add --use-mingw flag if building with MinGW on Windows
+    if sys.platform == "win32" and is_mingw:
+        cython_compiler_cmd.append("--use-mingw")
+        print("Using MinGW for Cython compilation (--use-mingw)")
 
     cython_compiler_process = subprocess.Popen(
         cython_compiler_cmd,
@@ -149,8 +154,17 @@ def test_go_app_partially_cythonize():
         my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
         print(f"Activated virtual environment at {venv_path}")
 
+    # Step 2.5: Add ten_runtime lib to PATH for Windows
+    if sys.platform == "win32":
+        ten_runtime_lib = os.path.join(
+            app_root_path, "ten_packages/system/ten_runtime/lib"
+        )
+        if os.path.exists(ten_runtime_lib):
+            my_env["PATH"] = ten_runtime_lib + os.pathsep + my_env["PATH"]
+            print(f"Added {ten_runtime_lib} to PATH for runtime DLLs")
+
     # Step 3: Setup AddressSanitizer if needed
-    compile_pyx(app_root_path)
+    compile_pyx(app_root_path, build_config_args.is_mingw)
 
     if sys.platform == "linux":
         if (

@@ -189,7 +189,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     message=str(e),
                 ),
                 ModuleErrorVendorInfo(
-                    vendor="bytedance_llm_based_asr",
+                    vendor=self.vendor(),
                     code="CONFIG_ERROR",
                     message=f"Configuration validation failed: {str(e)}",
                 ),
@@ -237,20 +237,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 await self.log_id_dumper_manager.create_dumper()
 
             await self.client.connect()
-            self.connected = True
-            self.sent_user_audio_duration_ms_before_last_reset += (
-                self.audio_timeline.get_total_user_audio_duration()
-            )
-            self.audio_timeline.reset()
-            self.ten_env.log_info(
-                f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
-            )
-
-            self.attempts = 0  # Reset retry attempts on successful connection
-
-            self.ten_env.log_info(
-                "Successfully connected to Volcengine ASR service"
-            )
+            # Do NOT set self.connected = True here (callback-driven pattern)
+            # Connection state will be set in _on_connected() callback when server confirms
+            # This matches azure_asr_python pattern where state is set in event handler
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
@@ -391,6 +380,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 )
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
+            await self._handle_error(e)
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
@@ -415,22 +405,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         """Handle ASR errors."""
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
 
-        # Check if error is reconnectable
+        # Always send error regardless of whether it's reconnectable
+        await self.send_asr_error(
+            ModuleError(
+                module=ModuleType.ASR,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                message=str(error),
+            ),
+            ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(error_code),
+                message=str(error),
+            ),
+        )
+
+        # If error is reconnectable and not stopped, attempt reconnection
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
-        else:
-            await self.send_asr_error(
-                ModuleError(
-                    module=ModuleType.ASR,
-                    code=error_code,
-                    message=str(error),
-                ),
-                ModuleErrorVendorInfo(
-                    vendor="bytedance_llm_based_asr",
-                    code=str(error_code),
-                    message=str(error),
-                ),
-            )
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic with exponential backoff (min delay: 0.5s, max delay: max_retry_delay).
@@ -475,28 +466,66 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
+    def _build_metadata_with_asr_info(
+        self,
+        base_metadata: dict[str, Any] | None = None,
+        additional_fields: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build metadata according to protocol: session_id at root, others in asr_info.
+
+        Args:
+            base_metadata: Base metadata dict (defaults to self.metadata if None)
+            additional_fields: Additional fields to add to asr_info
+
+        Returns:
+            Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
+        """
+        # Start with a copy of base metadata if available
+        if base_metadata is None:
+            base_metadata = (
+                copy.deepcopy(self.metadata)
+                if self.metadata is not None
+                else {}
+            )
+
+        # Extract session_id from base metadata if present
+        session_id = base_metadata.pop("session_id", None)
+
+        # Collect all other fields into asr_info
+        asr_info = copy.deepcopy(base_metadata)
+
+        # Add vendor field to asr_info
+        asr_info["vendor"] = self.vendor()
+
+        # Add additional fields to asr_info if provided
+        if additional_fields:
+            asr_info.update(additional_fields)
+
+        # Build final metadata structure
+        metadata: dict[str, Any] = {}
+        if session_id is not None:
+            metadata["session_id"] = session_id
+        metadata["asr_info"] = asr_info
+
+        return metadata
+
     def _extract_final_result_metadata(
         self, utterance: Utterance
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions.
 
-        First copies base class metadata, then adds/extends with subclass fields.
+        According to asr-interface.json protocol:
+        - session_id should be at metadata root level
+        - All other fields should be in metadata.asr_info
         """
-        # Start with a copy of base class metadata if available
-        metadata = (
-            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        # Get utterance additions as additional fields
+        additional_fields = None
+        if utterance.additions and isinstance(utterance.additions, dict):
+            additional_fields = utterance.additions
+
+        return self._build_metadata_with_asr_info(
+            additional_fields=additional_fields
         )
-
-        if not utterance.additions:
-            return metadata
-
-        additions = utterance.additions
-        if not isinstance(additions, dict):
-            return metadata
-
-        # Update metadata with additions (subclass fields override base class fields)
-        metadata.update(additions)
-        return metadata
 
     def _extract_non_final_result_metadata(
         self, utterance: Utterance
@@ -506,20 +535,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         For non-final results (stream results), only extract invoke_type and source
         to distinguish between soft_vad, hard_vad, and stream.
 
-        First copies base class metadata, then adds/extends with subclass fields.
+        According to asr-interface.json protocol:
+        - session_id should be at metadata root level
+        - All other fields should be in metadata.asr_info
         """
-        # Start with a copy of base class metadata if available
-        metadata = (
-            copy.deepcopy(self.metadata) if self.metadata is not None else {}
-        )
-
+        # Extract only invoke_type and source from utterance additions
+        additional_fields = None
         if utterance.additions and isinstance(utterance.additions, dict):
             additions = utterance.additions
+            additional_fields = {}
             if "invoke_type" in additions:
-                metadata["invoke_type"] = additions["invoke_type"]
+                additional_fields["invoke_type"] = additions["invoke_type"]
             if "source" in additions:
-                metadata["source"] = additions["source"]
-        return metadata
+                additional_fields["source"] = additions["source"]
+
+        return self._build_metadata_with_asr_info(
+            additional_fields=additional_fields
+        )
 
     def _calculate_utterance_start_ms(
         self, utterance_start_time_ms: int
@@ -670,7 +702,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         message=error_message,
                     ),
                     ModuleErrorVendorInfo(
-                        vendor="bytedance_llm_based_asr",
+                        vendor=self.vendor(),
                         code=str(result.code),
                         message=error_message,
                     ),
@@ -695,12 +727,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 actual_start_ms = self._calculate_utterance_start_ms(
                     result.start_ms
                 )
-                # Start with a copy of base class metadata if available
-                metadata = (
-                    copy.deepcopy(self.metadata)
-                    if self.metadata is not None
-                    else {}
-                )
+                # Build metadata according to protocol: session_id at root, others in asr_info
+                metadata = self._build_metadata_with_asr_info()
                 await self._send_asr_result_from_text(
                     text=result.text,
                     is_final=False,
@@ -846,24 +874,22 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
 
-        # Check if error is reconnectable
+        # Always send error regardless of whether it's reconnectable
+        module_error = ModuleError(
+            module=ModuleType.ASR,
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=error_message,
+        )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(error_code),
+            message=error_message,
+        )
+        await self.send_asr_error(module_error, vendor_info)
+
+        # If error is reconnectable and not stopped, attempt reconnection
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
-        else:
-            # Create ModuleError object
-            module_error = ModuleError(
-                module=ModuleType.ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=error_message,
-            )
-            # Create ModuleErrorVendorInfo object
-            vendor_info = ModuleErrorVendorInfo(
-                vendor="bytedance_llm_based_asr",
-                code=str(error_code),
-                message=error_message,
-            )
-            # Call send_asr_error
-            await self.send_asr_error(module_error, vendor_info)
 
     def _on_connection_error(self, exception: Exception) -> None:
         """Handle connection-level errors (HTTP stage)."""
@@ -931,12 +957,46 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         error_message = str(exception)
         asyncio.create_task(self._on_asr_error(error_code, error_message))
 
+    def _initialize_connection_state(self) -> None:
+        """Initialize connection state after server confirmation.
+
+        This method performs initialization that was previously in start_connection():
+        - Updates sent_user_audio_duration_ms_before_last_reset
+        - Resets audio timeline
+        - Resets retry attempts counter
+        - Logs connection success
+        """
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
+        self.ten_env.log_info(
+            f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
+        )
+
+        self.attempts = 0  # Reset retry attempts on successful connection
+
+        self.ten_env.log_info(
+            "Successfully connected to Volcengine ASR service"
+        )
+
     def _on_connected(self) -> None:
-        """Handle connection established."""
+        """Handle connection established (callback-driven state change).
+
+        Called by client when server sends MESSAGE_TYPE_SERVER_FULL_RESPONSE with code=0.
+        This matches azure_asr_python pattern where _azure_event_handler_on_session_started()
+        sets connected=True.
+        """
         self.ten_env.log_info(
             f"vendor_status_changed: session_id: {self.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        # Set connected=True here (callback-driven pattern)
+        self.connected = True
+
+        # Perform initialization that was previously in start_connection()
+        self._initialize_connection_state()
 
     def _on_disconnected(self) -> None:
         """Handle connection lost."""

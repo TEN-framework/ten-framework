@@ -1,7 +1,6 @@
 "use client";
 
-import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm";
-import { apiGenAgoraData } from "@/common";
+import AgoraRTM, { type RTMClient } from "agora-rtm";
 import { ERTMTextType, type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
@@ -61,10 +60,6 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       // subscribe message channel(will be created automatically)
       const subscribeResult = await rtm.subscribe(channel, {
         withMessage: true,
-        withPresence: true,
-        beQuiet: false,
-        withMetadata: true,
-        withLock: true,
       });
       console.log(
         "[RTM] Subscribe Message Channel success!: ",
@@ -82,9 +77,9 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   private _listenRtmEvents() {
-    this._client!.addEventListener("message", this.handleRtmMessage.bind(this));
+    this._client?.addEventListener("message", this.handleRtmMessage.bind(this));
     // tmp add presence
-    this._client!.addEventListener(
+    this._client?.addEventListener(
       "presence",
       this.handleRtmPresence.bind(this)
     );

@@ -13,3 +13,4 @@ mod path;
 mod pkg_info;
 mod schema;
 mod telemetry;
+mod value_buffer_test;

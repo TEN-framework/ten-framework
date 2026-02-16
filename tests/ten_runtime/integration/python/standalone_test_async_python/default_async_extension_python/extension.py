@@ -29,6 +29,12 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init", "key_point")
+        # Test log with fields - simple dict
+        ten_env.log_info(
+            "Extension initialized",
+            "lifecycle",
+            fields={"extension_name": self.name, "phase": "init"},
+        )
         self.send_goodbye_cmd, err = await ten_env.get_property_bool(
             "send_goodbye_cmd"
         )
@@ -36,6 +42,7 @@ class DefaultAsyncExtension(AsyncExtension):
             ten_env.log(
                 LogLevel.ERROR,
                 "Could not read 'send_goodbye_cmd' from properties." + str(err),
+                fields={"property_name": "send_goodbye_cmd", "error": str(err)},
             )
             self.send_goodbye_cmd = False
 
@@ -65,6 +72,19 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start", "key_point")
+        # Test log with fields - nested dict
+        ten_env.log_info(
+            "Extension started",
+            "lifecycle",
+            fields={
+                "extension_name": self.name,
+                "phase": "start",
+                "config": {
+                    "send_goodbye_cmd": self.send_goodbye_cmd,
+                    "sleep_ms_before_goodbye": self.sleep_ms_before_goodbye,
+                },
+            },
+        )
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit", "key_point")
@@ -72,6 +92,15 @@ class DefaultAsyncExtension(AsyncExtension):
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
         ten_env.log_debug("on_cmd name {}".format(cmd_name), "key_point")
+        # Test log with fields - mixed types
+        ten_env.log_info(
+            "Command received",
+            "command",
+            fields={
+                "cmd_name": cmd_name,
+                "timestamp": time.time(),
+            },
+        )
 
         if cmd_name == "query_weather":
             # Send a command to query weather.
@@ -82,6 +111,16 @@ class DefaultAsyncExtension(AsyncExtension):
 
             # Get the weather detail.
             weather, _ = cmd_result.get_property_string("detail")
+
+            # Test log with fields - nested structure
+            ten_env.log_info(
+                "Weather query completed",
+                "command",
+                fields={
+                    "cmd_name": cmd_name,
+                    "result": {"status": "success", "detail": weather},
+                },
+            )
 
             # Return the weather detail.
             cmd_result = CmdResult.create(StatusCode.OK, cmd)
@@ -132,9 +171,20 @@ class DefaultAsyncExtension(AsyncExtension):
                 assert result.get_status_code() == StatusCode.OK
 
             cost_time = time.time() - current_time
+            # Test log with fields - complex nested structure
             ten_env.log_info(
                 "goodbye cost time {} ms".format(cost_time * 1000),
                 "key_point",
+                fields={
+                    "operation": "goodbye",
+                    "cost_time_ms": cost_time * 1000,
+                    "success": self.assert_goodbye_result_success,
+                    "timing": {
+                        "start_time": current_time,
+                        "end_time": time.time(),
+                        "duration_ms": cost_time * 1000,
+                    },
+                },
             )
 
             # To rule out that the result reply was triggered by path_timeout,

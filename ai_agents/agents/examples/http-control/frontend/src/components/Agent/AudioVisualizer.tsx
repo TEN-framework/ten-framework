@@ -34,10 +34,9 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
     >
       {summedFrequencies.map((frequency, index) => {
         const style = {
-          height:
-            minBarHeight + frequency * (maxBarHeight - minBarHeight) + "px",
-          borderRadius: borderRadius + "px",
-          width: barWidth + "px",
+          height: `${minBarHeight + frequency * (maxBarHeight - minBarHeight)}px`,
+          borderRadius: `${borderRadius}px`,
+          width: `${barWidth}px`,
           transition:
             "background-color 0.35s ease-out, transform 0.25s ease-out",
           // transform: transform,

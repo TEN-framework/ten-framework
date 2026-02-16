@@ -97,6 +97,19 @@ TEN은 음성 대화형 AI 에이전트를 위한 오픈소스 프레임워크�
 
 <br>
 
+![Image][doodler-image]
+
+<strong>Doodler</strong> — 음성 또는 텍스트 프롬프트를 손그림 스케치로 바꾸는 낙서 보드로, 크레용 팔레트와 실시간 드로잉을 제공합니다.
+
+[예시 코드][doodler-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 ![Image][lip-sync-image]
 
 <strong>립싱크 아바타</strong> — 다양한 아바타 공급업체를 지원합니다. 데모에서는 Live2D 립싱크를 갖춘 애니메이션 캐릭터 Kei를 소개하며, 곧 Trulience, HeyGen, Tavus의 실사 아바타도 지원할 예정입니다.
@@ -580,11 +593,13 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
-[speechmatics-diarization-example]: ../ai_agents/agents/examples/speechmatics-diarization
+[speechmatics-diarization-example]: ../ai_agents/agents/examples/speaker-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ../ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ../ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ../ai_agents/esp32-client
 

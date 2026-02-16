@@ -59,9 +59,7 @@
       }
     }
   },
-  "tags": [
-    "nodejs"
-  ],
+  "tags": ["nodejs"],
   "dependencies": [
     {
       "type": "system",
@@ -70,11 +68,7 @@
     }
   ],
   "package": {
-    "include": [
-      "**",
-      ".vscode/**",
-      "docs/**"
-    ]
+    "include": ["**", ".vscode/**", "docs/**"]
   },
   "api": {},
   "scripts": {

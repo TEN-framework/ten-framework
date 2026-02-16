@@ -1,6 +1,17 @@
 {
     "params": {
-        "api_key": "${env:DEEPGRAM_API_KEY}",
-        "language": "zh-CN"
+        "key": "${env:DEEPGRAM_API_KEY}",
+        "url": "wss://api.deepgram.com/v1/listen",
+        "model": "nova-2",
+        "language": "zh-CN",
+        "sample_rate": 16000,
+        "encoding": "linear16",
+        "interim_results": true,
+        "punctuate": true,
+        "keywords": "人们",
+        "hotwords": [
+            "bbbb|5",
+            "aaaa|5"
+        ]
     }
 }

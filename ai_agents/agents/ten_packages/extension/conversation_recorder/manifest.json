@@ -1,0 +1,91 @@
+{
+    "type": "extension",
+    "name": "conversation_recorder",
+    "version": "0.1.0",
+    "display_name": {
+        "locales": {
+            "en-US": {
+                "content": "Conversation Recorder"
+            }
+        }
+    },
+    "description": {
+        "locales": {
+            "en-US": {
+                "content": "Records conversation audio to a file."
+            }
+        }
+    },
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        }
+    ],
+    "api": {
+        "property": {
+            "properties": {
+                "storage_type": {
+                    "type": "string"
+                },
+                "file_path": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "start_trigger": {
+                    "type": "string"
+                },
+                "sample_rate": {
+                    "type": "int32"
+                },
+                "gcp_bucket_name": {
+                    "type": "string"
+                },
+                "gcp_project_id": {
+                    "type": "string"
+                },
+                "gcp_credentials_path": {
+                    "type": "string"
+                },
+                "gcp_upload_prefix": {
+                    "type": "string"
+                },
+                "s3_bucket_name": {
+                    "type": "string"
+                },
+                "s3_access_key_id": {
+                    "type": "string"
+                },
+                "s3_secret_access_key": {
+                    "type": "string"
+                },
+                "s3_endpoint_url": {
+                    "type": "string"
+                },
+                "s3_region": {
+                    "type": "string"
+                },
+                "s3_upload_prefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "data_in": [
+            {
+                "name": "pcm_frame"
+            }
+        ]
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.tent",
+            "**.py",
+            "requirements.txt"
+        ]
+    }
+}

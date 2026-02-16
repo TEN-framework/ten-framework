@@ -140,6 +140,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Trace message",
         );
         ten_log(
@@ -154,6 +155,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Debug message",
         );
         ten_log(
@@ -168,6 +170,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Info message",
         );
         ten_log(
@@ -182,6 +185,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Warn message",
         );
         ten_log(
@@ -196,6 +200,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Error message",
         );
 
@@ -248,6 +253,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Error message in red",
         );
 
@@ -263,6 +269,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Warning message in yellow",
         );
 
@@ -278,6 +285,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Info message in default color",
         );
 
@@ -293,6 +301,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Debug message in blue",
         );
     }
@@ -329,6 +338,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Plain no color message",
         );
     }
@@ -364,6 +374,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "JSON formatted message",
         );
     }
@@ -399,6 +410,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "JSON colored message",
         );
 
@@ -414,6 +426,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "JSON colored message",
         );
     }
@@ -449,6 +462,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Message to stdout",
         );
     }
@@ -484,6 +498,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Warning message to stderr",
         );
     }
@@ -522,6 +537,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Plain message to file",
         );
         ten_log(
@@ -536,6 +552,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Warning message to file",
         );
 
@@ -584,6 +601,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "JSON message to file",
         );
 
@@ -647,6 +665,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "before-1",
         );
         ten_log(
@@ -661,6 +680,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "before-2",
         );
 
@@ -687,6 +707,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "after-1",
         );
         ten_log(
@@ -701,6 +722,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "after-2",
         );
 
@@ -777,6 +799,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             msg,
         );
         ten_log(
@@ -791,6 +814,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "My card number is 1234567890",
         );
         ten_log(
@@ -805,6 +829,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "My phone number is 9876543210",
         );
 
@@ -865,10 +890,10 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should be logged (matching configured rules)
-        info!(category = "auth", "Auth service started"); // Matches auth + info
-        debug!(category = "auth", "Auth service debug message"); // Won't match any configured rules
-        debug!(category = "database", "DB connection pool initialized"); // Matches database + debug
-        info!(category = "unknown", "unknown target message"); // Won't match any configured rules
+        info!(ten_category = "auth", "Auth service started"); // Matches auth + info
+        debug!(ten_category = "auth", "Auth service debug message"); // Won't match any configured rules
+        debug!(ten_category = "database", "DB connection pool initialized"); // Matches database + debug
+        info!(ten_category = "unknown", "unknown target message"); // Won't match any configured rules
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -922,12 +947,12 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Messages that should not be logged (level mismatch)
-        debug!(category = "auth", "Auth debug message"); // Won't match: auth only allows info
-        trace!(category = "database", "DB trace message"); // Won't match: database only allows debug
+        debug!(ten_category = "auth", "Auth debug message"); // Won't match: auth only allows info
+        trace!(ten_category = "database", "DB trace message"); // Won't match: database only allows debug
 
         // Messages that should not be logged (category not configured)
-        info!(category = "network", "Network info message");
-        debug!(category = "network", "Network debug message");
+        info!(ten_category = "network", "Network info message");
+        debug!(ten_category = "network", "Network debug message");
 
         // Messages that should not be logged (default category)
         info!("Default category info message");
@@ -990,18 +1015,18 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // Auth logs at different levels
-        info!(category = "auth", "User login successful"); // Should appear in auth_file
-        warn!(category = "auth", "Failed login attempt"); // Should appear in auth_file
-        debug!(category = "auth", "Auth token details"); // Should NOT appear in auth_file
+        info!(ten_category = "auth", "User login successful"); // Should appear in auth_file
+        warn!(ten_category = "auth", "Failed login attempt"); // Should appear in auth_file
+        debug!(ten_category = "auth", "Auth token details"); // Should NOT appear in auth_file
 
         // Database logs at different levels
-        info!(category = "database", "Connection established"); // Should appear in db_file
-        debug!(category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
-        debug!(category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
+        info!(ten_category = "database", "Connection established"); // Should appear in db_file
+        debug!(ten_category = "database", "Query executed: SELECT * FROM users"); // Should appear in db_file
+        debug!(ten_category = "database", "Connection pool stats: 5 active"); // Should appear in db_file
 
         // Other category logs (should not appear in either file)
-        info!(category = "network", "Server started");
-        debug!(category = "network", "Socket initialized");
+        info!(ten_category = "network", "Server started");
+        debug!(ten_category = "network", "Socket initialized");
 
         // Force flush logs
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1067,6 +1092,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Default config info",
         );
     }
@@ -1125,6 +1151,7 @@ mod tests {
                     "",
                     "",
                     "",
+                    None,
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1216,6 +1243,7 @@ mod tests {
                     "",
                     "",
                     "",
+                    None,
                     &format!("log message {counter}"),
                 );
                 counter += 1;
@@ -1299,6 +1327,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Application started",
         );
         ten_log(
@@ -1313,6 +1342,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "User login successful",
         );
         ten_log(
@@ -1327,6 +1357,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Database connection pool almost full",
         );
         ten_log(
@@ -1341,6 +1372,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Network connection timeout",
         );
 
@@ -1356,6 +1388,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "Parse JSON: {\"key\": \"value\"}",
         );
     }
@@ -1400,6 +1433,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "global-off-info",
         );
         ten_log(
@@ -1414,6 +1448,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "global-off-warn",
         );
         ten_log(
@@ -1428,6 +1463,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "global-off-error",
         );
 
@@ -1467,10 +1503,7 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "", "", "", "aaa");
-        ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "", "", "", "bbb");
-        ten_log(&config, "database", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", "ccc");
-        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", "ddd");
+        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "", "", "", None, "ddd");
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1517,11 +1550,11 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be dropped due to auth=off
-        debug!(category = "auth", "auth-debug-should-not-appear");
-        info!(category = "auth", "auth-info-should-not-appear");
+        debug!(ten_category = "auth", "auth-debug-should-not-appear");
+        info!(ten_category = "auth", "auth-info-should-not-appear");
         // This should pass due to default debug for other categories
-        debug!(category = "database", "db-debug-should-appear");
-        info!(category = "database", "db-info-should-appear");
+        debug!(ten_category = "database", "db-debug-should-appear");
+        info!(ten_category = "database", "db-info-should-appear");
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1585,6 +1618,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "off-then-debug-debug",
         );
         ten_log(
@@ -1599,6 +1633,7 @@ mod tests {
             "",
             "",
             "",
+            None,
             "off-then-debug-info",
         );
 

@@ -32,6 +32,7 @@ struct FieldVisitor {
     line_no: Option<u32>,
     message: String,
     category: Option<String>,
+    user_fields: Option<String>,
 }
 
 impl Visit for FieldVisitor {
@@ -67,6 +68,9 @@ impl Visit for FieldVisitor {
                 }
                 self.message.push_str(format!("{value:?}").trim_matches('"'));
             }
+            "ten_user_fields" => {
+                self.user_fields = Some(format!("{value:?}"));
+            }
             _ => {
                 // This might be the actual log message
                 if field.name() == "message" || self.message.is_empty() {
@@ -95,6 +99,9 @@ impl Visit for FieldVisitor {
                     self.message.push(' ');
                 }
                 self.message.push_str(value);
+            }
+            "ten_user_fields" => {
+                self.user_fields = Some(value.to_string());
             }
             _ => {
                 // This might be the actual log message
@@ -274,6 +281,23 @@ where
             ctx.field_format().format_fields(writer.by_ref(), event)?;
             if self.ansi {
                 write!(writer, "{}", self.reset_color())?;
+            }
+        }
+
+        // Append user_fields as key-value pairs (e.g., a=111 b="ccc")
+        if let Some(user_fields_str) = visitor.user_fields.as_deref() {
+            if !user_fields_str.is_empty() {
+                // Try to parse as JSON object and expand
+                if let Ok(serde_json::Value::Object(obj)) =
+                    serde_json::from_str::<serde_json::Value>(user_fields_str)
+                {
+                    for (k, v) in obj.iter() {
+                        write!(writer, " {}={}", k, v)?;
+                    }
+                } else {
+                    // Fallback: print as raw JSON
+                    write!(writer, " {}", user_fields_str)?;
+                }
             }
         }
 

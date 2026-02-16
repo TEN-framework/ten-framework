@@ -241,6 +241,7 @@ class _TenEnv:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _App:
@@ -296,12 +297,14 @@ class _TenEnvTester:
         category: str | None,
         msg: str,
         sync: bool,
+        fields_buf: bytes | None = None,
     ) -> TenError | None: ...
 
 class _ExtensionTester:
     def set_test_mode_single_internal(
         self, addon_name: str, property_json_str: str | None
     ) -> None: ...
+    def set_test_mode_graph_internal(self, graph_json: str) -> None: ...
     def set_timeout(self, timeout_us: int) -> None: ...
     def run_internal(self) -> TenError | None: ...
 

@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from enum import IntEnum
-from typing import TypeVar, cast, TypeAlias
+from typing import Any, TypeVar, cast, TypeAlias
 
 from .error import TenError, TenErrorCode
 
@@ -75,6 +75,32 @@ class Value:
     @classmethod
     def from_json_string(cls: type[T], value: str) -> T:
         return cls(ValueType.JSON_STRING, value)
+
+    @classmethod
+    def from_python(cls: type[T], value: Any) -> T:
+        """Convert Python native types to Value object"""
+        if isinstance(value, Value):
+            # If it's already a Value object, create a new instance to maintain type consistency
+            return cls(value._type, value._data)  # type: ignore[return-value]
+        elif isinstance(value, bool):
+            return cls.from_bool(value)
+        elif isinstance(value, int):
+            return cls.from_int(value)
+        elif isinstance(value, float):
+            return cls.from_float(value)
+        elif isinstance(value, str):
+            return cls.from_string(value)
+        elif isinstance(value, bytes):
+            return cls.from_buf(value)
+        elif isinstance(value, list):
+            return cls.from_array([Value.from_python(item) for item in value])
+        elif isinstance(value, dict):
+            return cls.from_object(
+                {str(k): Value.from_python(v) for k, v in value.items()}
+            )
+        else:
+            # For other types, try to convert to string
+            return cls.from_string(str(value))
 
     def get_type(self) -> ValueType:
         return self._type

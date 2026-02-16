@@ -1,10 +1,9 @@
 {
     "params": {
-        "app_key": "${env:BYTEDANCE_ASR_APP_KEY}",
-        "access_key": "${env:BYTEDANCE_ASR_ACCESS_KEY}",
-        "api_key": "${env:BYTEDANCE_ASR_API_KEY}",
+        "app_key": "${env:BYTEDANCE_ASR_LLM_APP_KEY}",
+        "access_key": "${env:BYTEDANCE_ASR_LLM_ACCESS_KEY}",
         "auth_method": "token",
-        "resource_id": "${env:BYTEDANCE_ASR_RESOURCE_ID}",
+        "resource_id": "${env:BYTEDANCE_ASR_LLM_RESOURCE_ID}",
         "language": "zh-CN",
         "model_version": "400",
         "audio": {

@@ -21,9 +21,14 @@ If pyproject.toml does not exist, a new complete file will be created.
 """
 
 import sys
+import io
 import argparse
 from pathlib import Path
 from typing import cast
+
+# To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW environment
+# \u2713: ✓ (check sign)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 try:
     import tomlkit

@@ -465,6 +465,10 @@ class AsyncExtensionTester(_ExtensionTester):
         )
 
     @final
+    def set_test_mode_graph(self, graph_json: str) -> None:
+        return _ExtensionTester.set_test_mode_graph_internal(self, graph_json)
+
+    @final
     def run(self) -> TenError | None:
         # This is a blocking operation.
         err = _ExtensionTester.run_internal(self)

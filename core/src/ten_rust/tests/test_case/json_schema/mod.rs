@@ -3855,6 +3855,685 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_asr_interface() {
+        let interface = r#"
+{
+    "property": {
+        "properties": {
+            "url": {
+                "type": "string"
+            },
+            "headers": {
+                "type": "object",
+                "properties": {}
+            },
+            "params": {
+                "type": "object",
+                "properties": {}
+            },
+            "dump": {
+                "type": "bool"
+            },
+            "dump_path": {
+                "type": "string"
+            }
+        }
+    },
+    "audio_frame_in": [
+        {
+            "name": "pcm_frame",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_in": [
+        {
+            "name": "asr_finalize",
+            "property": {
+                "properties": {
+                    "finalize_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_out": [
+        {
+            "name": "asr_result",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "final": {
+                        "type": "bool"
+                    },
+                    "start_ms": {
+                        "type": "int64"
+                    },
+                    "duration_ms": {
+                        "type": "int64"
+                    },
+                    "language": {
+                        "type": "string"
+                    },
+                    "words": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "word": {
+                                    "type": "string"
+                                },
+                                "start_ms": {
+                                    "type": "int64"
+                                },
+                                "duration_ms": {
+                                    "type": "int64"
+                                },
+                                "stable": {
+                                    "type": "bool"
+                                }
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "asr_info": {
+                                "type": "object",
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "text",
+                "final",
+                "start_ms",
+                "duration_ms",
+                "language"
+            ]
+        },
+        {
+            "name": "asr_finalize_end",
+            "property": {
+                "properties": {
+                    "finalize_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "error",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "int64"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "vendor_info": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "code",
+                "message"
+            ]
+        },
+        {
+            "name": "metrics",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "vendor",
+                "metrics"
+            ]
+        },
+        {
+            "name": "connected",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "disconnected",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "cmd_in": [
+        {
+            "name": "update_configs",
+            "property": {
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    },
+                    "headers": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "params": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "dump": {
+                        "type": "bool"
+                    }
+                }
+            },
+            "result": {
+                "property": {
+                    "properties": {
+                        "code": {
+                            "type": "int64"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+"#;
+
+        let result = ten_validate_interface_json_string(interface);
+        println!("result: {:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_tts_interface() {
+        let interface = r#"
+{
+    "property": {
+        "properties": {
+            "url": {
+                "type": "string"
+            },
+            "headers": {
+                "type": "object",
+                "properties": {}
+            },
+            "params": {
+                "type": "object",
+                "properties": {}
+            },
+            "dump": {
+                "type": "bool"
+            },
+            "dump_path": {
+                "type": "string"
+            },
+            "enable_words": {
+                "type": "bool"
+            }
+        }
+    },
+    "audio_frame_out": [
+        {
+            "name": "pcm_frame",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_in": [
+        {
+            "name": "tts_text_input",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "text_input_end": {
+                        "type": "bool"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "request_id",
+                "text"
+            ]
+        },
+        {
+            "name": "tts_flush",
+            "property": {
+                "properties": {
+                    "flush_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_out": [
+        {
+            "name": "tts_text_result",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "start_ms": {
+                        "type": "int64"
+                    },
+                    "duration_ms": {
+                        "type": "int64"
+                    },
+                    "words": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "word": {
+                                    "type": "string"
+                                },
+                                "start_ms": {
+                                    "type": "int64"
+                                },
+                                "duration_ms": {
+                                    "type": "int64"
+                                }
+                            },
+                            "required": [
+                                "word",
+                                "start_ms",
+                                "duration_ms"
+                            ]
+                        }
+                    },
+                    "text_result_end": {
+                        "type": "bool"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "request_id",
+                "text",
+                "start_ms",
+                "duration_ms",
+                "words"
+            ]
+        },
+        {
+            "name": "tts_flush_end",
+            "property": {
+                "properties": {
+                    "flush_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "tts_audio_start",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "tts_audio_end",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "request_event_interval_ms": {
+                        "type": "int64"
+                    },
+                    "request_total_audio_duration_ms": {
+                        "type": "int64"
+                    },
+                    "reason": {
+                        "type": "int64"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "error",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "int64"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "vendor_info": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "code",
+                "message"
+            ]
+        },
+        {
+            "name": "metrics",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "vendor",
+                "metrics"
+            ]
+        }
+    ],
+    "cmd_in": [
+        {
+            "name": "update_configs",
+            "property": {
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    },
+                    "headers": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "params": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "dump": {
+                        "type": "bool"
+                    },
+                    "enable_words": {
+                        "type": "bool"
+                    }
+                }
+            },
+            "result": {
+                "property": {
+                    "properties": {
+                        "code": {
+                            "type": "int64"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
+"#;
+        let result = ten_validate_interface_json_string(interface);
+        println!("result: {:?}", result);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_validate_manifest_top_level_description_must_be_localized() {
         // Test that top-level description does NOT support simple string (must be
         // localizedText)

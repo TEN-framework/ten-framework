@@ -138,6 +138,16 @@ ten_package("ten_runtime_system_package") {
     resources += [ "${lib}=>lib/${libname}" ]
   }
 
+  # When using MSVC with Go binding enabled, MinGW's ld.exe needs libraries
+  # with "lib" prefix. Copy DLLs with "lib" prefix for MinGW compatibility.
+  if (ten_enable_go_binding && ten_force_mingw_for_go_binding
+      && is_win && !is_mingw) {
+    resources += [
+      "${root_out_dir}/ten_runtime.dll=>lib/libten_runtime.dll",
+      "${root_out_dir}/ten_utils.dll=>lib/libten_utils.dll",
+    ]
+  }
+
   deps = [
     ":ten_runtime_library",
     "//core/src/ten_utils",

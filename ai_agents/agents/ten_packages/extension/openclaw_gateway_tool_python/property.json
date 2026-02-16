@@ -1,0 +1,12 @@
+{
+  "gateway_url": "${env:OPENCLAW_GATEWAY_URL|ws://127.0.0.1:18789}",
+  "gateway_token": "${env:OPENCLAW_GATEWAY_TOKEN|}",
+  "gateway_password": "${env:OPENCLAW_GATEWAY_PASSWORD|}",
+  "gateway_scopes": "${env:OPENCLAW_GATEWAY_SCOPES|}",
+  "gateway_client_id": "${env:OPENCLAW_GATEWAY_CLIENT_ID|webchat-ui}",
+  "gateway_client_mode": "${env:OPENCLAW_GATEWAY_CLIENT_MODE|webchat}",
+  "gateway_origin": "${env:OPENCLAW_GATEWAY_ORIGIN|}",
+  "chat_session_key": "${env:OPENCLAW_CHAT_SESSION_KEY|agent:main:main}",
+  "request_timeout_ms": 180000,
+  "connect_timeout_ms": 10000
+}

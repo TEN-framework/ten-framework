@@ -11,17 +11,21 @@ config("ten_runtime_python_config") {
 
   python_version = "3"  # "3" by default
 
+  python_cflags_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "cflags",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    python_cflags_args += [ "--is-mingw" ]
+  }
   python_cflags = exec_script("//build/ten_common/python/python_config.py",
-                              [
-                                "--python-version",
-                                python_version,
-                                "--target-os",
-                                target_os,
-                                "--config-type",
-                                "cflags",
-                                "--log-level",
-                                "0",
-                              ],
+                              python_cflags_args,
                               "list lines")
 
   cflags = []
@@ -31,8 +35,19 @@ config("ten_runtime_python_config") {
   #      https://stackoverflow.com/questions/4787069/autoconf-set-fpic-only-when-necessary
   if (!is_win) {
     cflags = python_cflags + [ "-fPIC" ]
+  } else if (is_mingw) {
+    # For MinGW (GCC on Windows), python_config.py already generates GCC-style flags
+    cflags = python_cflags
+
+    # Undefine Py_DEBUG to use release Python library even in debug builds
+    # Standard Python installations on Windows only provide release libraries
+    # Also undefine _DEBUG which Python headers use to determine debug mode
+    cflags += [
+      "-UPy_DEBUG",
+      "-U_DEBUG",
+    ]
   } else {
-    # For clang-cl on Windows, convert /I"path" to /imsvcpath (without space or quotes)
+    # For clang-cl(MSVC) on Windows, convert /I"path" to /imsvcpath (without space or quotes)
     # /imsvc treats the path as a system include directory, which helps clang-cl find Python headers
     foreach(flag, python_cflags) {
       processed_flag = string_replace(flag, "/I\"", "/imsvc")
@@ -53,17 +68,21 @@ config("ten_runtime_python_config") {
   # for building extension modules (not embedding Python interpreter).
   # This ensures we don't link against libpython, making the extension
   # compatible with different Python 3.8+ versions.
+  ldflags_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "ldflags",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    ldflags_args += [ "--is-mingw" ]
+  }
   ldflags = exec_script("//build/ten_common/python/python_config.py",
-                        [
-                          "--python-version",
-                          python_version,
-                          "--target-os",
-                          target_os,
-                          "--config-type",
-                          "ldflags",
-                          "--log-level",
-                          "0",
-                        ],
+                        ldflags_args,
                         "list lines")
 
   if (is_mac) {
@@ -101,17 +120,21 @@ config("ten_runtime_python_config") {
 
   # Note: python_config.py now uses python-config without --embed flag,
   # so libs won't include libpython for extension modules.
+  libs_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "libs",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    libs_args += [ "--is-mingw" ]
+  }
   libs = exec_script("//build/ten_common/python/python_config.py",
-                     [
-                       "--python-version",
-                       python_version,
-                       "--target-os",
-                       target_os,
-                       "--config-type",
-                       "libs",
-                       "--log-level",
-                       "0",
-                     ],
+                     libs_args,
                      "list lines")
 }
 
@@ -143,8 +166,25 @@ ten_shared_library("ten_runtime_python") {
     output_extension = "so"
   } else if (is_win) {
     # On Windows, Python C extensions must be .pyd files.
-    # We also prepend "lib" to match the module name "libten_runtime_python".
-    output_name = "libten_runtime_python"
+    # Python requires the module name: "from libten_runtime_python import ..."
+    # For MinGW: Use output_name="ten_runtime_python" to generate:
+    #   - ten_runtime_python.pyd (will be renamed to libten_runtime_python.pyd)
+    #   - libten_runtime_python.pyd.a (import library with auto "lib" prefix)
+    # For MSVC: Use output_name="libten_runtime_python" directly.
+    if (is_mingw) {
+      output_name = "ten_runtime_python"
+    } else {
+      output_name = "libten_runtime_python"
+    }
     output_extension = "pyd"
+  }
+}
+
+# For MinGW, rename the .pyd file to include "lib" prefix for Python import
+if (is_win && is_mingw) {
+  copy("ten_runtime_python_rename") {
+    sources = [ "${root_out_dir}/ten_runtime_python.pyd" ]
+    outputs = [ "${root_out_dir}/libten_runtime_python.pyd" ]
+    deps = [ ":ten_runtime_python" ]
   }
 }

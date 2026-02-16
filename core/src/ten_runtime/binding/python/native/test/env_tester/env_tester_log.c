@@ -22,11 +22,14 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   ten_string_t msg;
   ten_string_t category;
   ten_event_t *completed;
+  uint8_t *fields_buf;
+  size_t fields_buf_size;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     int32_t level, const char *func_name, const char *file_name, size_t line_no,
-    const char *msg, const char *category, bool sync) {
+    const char *msg, const char *category, bool sync, const uint8_t *fields_buf,
+    size_t fields_buf_size) {
   ten_env_tester_notify_log_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_env_tester_notify_log_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
@@ -68,6 +71,17 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     TEN_STRING_INIT(ctx->category);
   }
 
+  // Copy fields buffer if provided
+  if (fields_buf != NULL && fields_buf_size > 0) {
+    ctx->fields_buf = TEN_MALLOC(fields_buf_size);
+    TEN_ASSERT(ctx->fields_buf, "Failed to allocate memory for fields buffer.");
+    memcpy(ctx->fields_buf, fields_buf, fields_buf_size);
+    ctx->fields_buf_size = fields_buf_size;
+  } else {
+    ctx->fields_buf = NULL;
+    ctx->fields_buf_size = 0;
+  }
+
   return ctx;
 }
 
@@ -79,6 +93,10 @@ static void ten_env_tester_notify_log_ctx_destroy(
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->msg);
   ten_string_deinit(&ctx->category);
+
+  if (ctx->fields_buf != NULL) {
+    TEN_FREE(ctx->fields_buf);
+  }
 
   if (ctx->completed) {
     ten_event_destroy(ctx->completed);
@@ -93,11 +111,11 @@ static void ten_py_ten_env_tester_log_proxy_notify(
   ten_env_tester_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_tester_log(ten_env_tester, ctx->level,
-                     ten_string_get_raw_str(&ctx->func_name),
-                     ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-                     ten_string_get_raw_str(&ctx->msg),
-                     ten_string_get_raw_str(&ctx->category), NULL, NULL);
+  ten_env_tester_log(
+      ten_env_tester, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+      ten_string_get_raw_str(&ctx->msg), ten_string_get_raw_str(&ctx->category),
+      ctx->fields_buf, ctx->fields_buf_size, NULL);
 
   if (ctx->completed) {
     ten_event_set(ctx->completed);
@@ -112,9 +130,9 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
                  ten_py_ten_env_tester_check_integrity(py_ten_env_tester),
              "Invalid argument.");
 
-  if (PyTuple_GET_SIZE(args) != 7) {
+  if (PyTuple_GET_SIZE(args) != 8) {
     return ten_py_raise_py_value_error_exception(
-        "Invalid argument count when ten_env.log.");
+        "Invalid argument count when ten_env_tester.log.");
   }
 
   TEN_LOG_LEVEL level = TEN_LOG_LEVEL_INVALID;
@@ -124,11 +142,12 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
   const char *category = NULL;
   const char *msg = NULL;
   bool sync = false;
+  PyObject *fields_buf_obj = NULL;
 
-  if (!PyArg_ParseTuple(args, "izzizsb", &level, &func_name, &file_name,
-                        &line_no, &category, &msg, &sync)) {
+  if (!PyArg_ParseTuple(args, "izzizsbO", &level, &func_name, &file_name,
+                        &line_no, &category, &msg, &sync, &fields_buf_obj)) {
     return ten_py_raise_py_value_error_exception(
-        "Failed to parse argument when ten_env.log.");
+        "Failed to parse argument when ten_env_tester.log.");
   }
 
   ten_error_t err;
@@ -142,8 +161,21 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
     return result;
   }
 
+  // Handle fields buffer
+  const uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+  if (fields_buf_obj != NULL && fields_buf_obj != Py_None) {
+    if (!PyBytes_Check(fields_buf_obj)) {
+      return ten_py_raise_py_value_error_exception(
+          "fields_buf must be bytes or None.");
+    }
+    fields_buf = (const uint8_t *)PyBytes_AS_STRING(fields_buf_obj);
+    fields_buf_size = PyBytes_GET_SIZE(fields_buf_obj);
+  }
+
   ten_env_tester_notify_log_ctx_t *ctx = ten_env_tester_notify_log_ctx_create(
-      level, func_name, file_name, line_no, msg, category, sync);
+      level, func_name, file_name, line_no, msg, category, sync, fields_buf,
+      fields_buf_size);
 
   if (!ten_env_tester_proxy_notify(py_ten_env_tester->c_ten_env_tester_proxy,
                                    ten_py_ten_env_tester_log_proxy_notify, ctx,

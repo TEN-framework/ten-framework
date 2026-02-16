@@ -88,6 +88,7 @@ tasks:
     dotenv: [".env"]
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
+      - cd {{.EXTENSION}} && rm -rf .ten
 
   test-extension-no-install:
     desc: run standalone testing of one single extension

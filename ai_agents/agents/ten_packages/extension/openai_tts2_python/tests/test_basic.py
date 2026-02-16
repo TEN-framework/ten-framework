@@ -98,8 +98,8 @@ class ExtensionTesterDump(ExtensionTester):
         return None
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_dump_functionality(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_dump_functionality(MockAsyncClient):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
     print("Starting test_dump_functionality with mock...")
 
@@ -113,22 +113,29 @@ def test_dump_functionality(MockOpenAITTSClient):
     os.makedirs(DUMP_PATH)
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenAITTSClient.return_value
-    mock_instance.clean = AsyncMock()
-
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
-    # This async generator simulates the TTS client's get() method
-    async def mock_get_audio_stream(text: str, request_id: str):
-        yield (fake_audio_chunk_1, TTS2HttpResponseEventType.RESPONSE)
-        await asyncio.sleep(0.01)
-        yield (fake_audio_chunk_2, TTS2HttpResponseEventType.RESPONSE)
-        await asyncio.sleep(0.01)
-        yield (None, TTS2HttpResponseEventType.END)
+    # Mock the streaming response
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
 
-    mock_instance.get.side_effect = mock_get_audio_stream
+    async def mock_aiter_bytes():
+        yield fake_audio_chunk_1
+        await asyncio.sleep(0.01)
+        yield fake_audio_chunk_2
+        await asyncio.sleep(0.01)
+
+    mock_response.aiter_bytes = mock_aiter_bytes
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    # Mock the client
+    mock_client_instance = AsyncMock()
+    mock_client_instance.stream = MagicMock(return_value=mock_response)
+    mock_client_instance.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client_instance
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
@@ -278,35 +285,48 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch("openai_tts2_python.extension.OpenAITTSClient")
-def test_flush_logic(MockOpenAITTSClient):
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+def test_flush_logic(MockAsyncClient):
     """
     Tests that sending a flush command during TTS streaming correctly stops
     the audio and sends the appropriate events.
     """
     print("Starting test_flush_logic with mock...")
 
-    mock_instance = MockOpenAITTSClient.return_value
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
+    # Track cancel state
+    cancel_called = False
 
-    async def mock_get_long_audio_stream(text: str, request_id: str):
-        for _ in range(20):
-            # In a real scenario, the cancel() call would set a flag.
-            # We simulate this by checking the mock's 'called' status.
-            if mock_instance.cancel.called:
-                print(
-                    "Mock detected cancel call, sending TTS2HttpResponseEventType.FLUSH."
-                )
-                yield (None, TTS2HttpResponseEventType.FLUSH)
-                return  # Stop the generator immediately after flush
-            yield (b"\x11\x22\x33" * 100, TTS2HttpResponseEventType.RESPONSE)
+    async def mock_aiter_bytes():
+        nonlocal cancel_called
+        for i in range(20):
+            # Check if cancel was called
+            if cancel_called:
+                print("Mock detected cancel, stopping iteration")
+                break
+            yield b"\x11\x22\x33" * 100
             await asyncio.sleep(0.1)
 
-        # This part is only reached if not cancelled - normal completion
-        yield (None, TTS2HttpResponseEventType.END)
+    # Mock the streaming response
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
+    mock_response.aiter_bytes = mock_aiter_bytes
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
 
-    mock_instance.get.side_effect = mock_get_long_audio_stream
+    # Mock the client
+    mock_client_instance = AsyncMock()
+    mock_client_instance.stream = MagicMock(return_value=mock_response)
+    mock_client_instance.aclose = AsyncMock()
+
+    # Hook into cancel to set flag
+    original_cancel = mock_client_instance.aclose
+
+    async def mock_cancel_hook():
+        nonlocal cancel_called
+        cancel_called = True
+        await original_cancel()
+
+    MockAsyncClient.return_value = mock_client_instance
 
     config = {
         "api_key": "test_api_key",

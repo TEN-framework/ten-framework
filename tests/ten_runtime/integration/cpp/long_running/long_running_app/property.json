@@ -36,7 +36,7 @@
         {
           "matchers": [
             {
-              "level": "info"
+              "level": "debug"
             }
           ],
           "formatter": {

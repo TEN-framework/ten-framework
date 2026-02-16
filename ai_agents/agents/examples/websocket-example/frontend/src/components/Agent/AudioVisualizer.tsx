@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface AudioVisualizerProps {
   stream: MediaStream | null;
@@ -23,7 +23,7 @@ export function AudioVisualizer({
   className,
 }: AudioVisualizerProps) {
   const [frequencyData, setFrequencyData] = useState<Uint8Array>(
-    new Uint8Array(barCount),
+    new Uint8Array(barCount)
   );
   // Prevent hydration mismatches by avoiding time-based inline styles
   // on the server-rendered HTML. We render static bars until mounted.
@@ -76,14 +76,18 @@ export function AudioVisualizer({
         // Use logarithmic scaling to better represent higher frequencies
         // Map bar index to frequency bin using logarithmic scale
         const normalizedIndex = i / (barCount - 1);
-        const logIndex = Math.pow(normalizedIndex, 0.5); // Square root for better distribution
+        const logIndex = normalizedIndex ** 0.5; // Square root for better distribution
         const binIndex = Math.floor(logIndex * dataLength);
         const clampedIndex = Math.min(binIndex, dataLength - 1);
 
         // Take the max of nearby bins for smoother visualization
         const windowSize = Math.max(1, Math.floor(dataLength / barCount / 4));
         let maxValue = 0;
-        for (let j = Math.max(0, clampedIndex - windowSize); j < Math.min(dataLength, clampedIndex + windowSize); j++) {
+        for (
+          let j = Math.max(0, clampedIndex - windowSize);
+          j < Math.min(dataLength, clampedIndex + windowSize);
+          j++
+        ) {
           maxValue = Math.max(maxValue, dataArray[j]);
         }
 
@@ -112,8 +116,8 @@ export function AudioVisualizer({
     <div
       suppressHydrationWarning
       className={cn(
-        "absolute inset-0 flex w-full h-full items-end justify-center gap-0.5",
-        className,
+        "absolute inset-0 flex h-full w-full items-end justify-center gap-0.5",
+        className
       )}
       style={{
         height: `${height}px`,
@@ -125,16 +129,24 @@ export function AudioVisualizer({
         const normalizedIndex = index / (barCount - 1);
         // Left side gets lower sensitivity, right side gets higher sensitivity
         // Use a curve: left side (0) = 0.8x, right side (1) = 2.5x
-        const sensitivityMultiplier = 0.8 + (normalizedIndex * normalizedIndex * 1.7); // Quadratic curve for smoother transition
-        const amplifiedValue = Math.pow(value / 255, 0.5) * 255; // Stronger amplification (0.5 = even more amplification)
+        const sensitivityMultiplier =
+          0.8 + normalizedIndex * normalizedIndex * 1.7; // Quadratic curve for smoother transition
+        const amplifiedValue = (value / 255) ** 0.5 * 255; // Stronger amplification (0.5 = even more amplification)
         const barHeight = isActive
-          ? Math.min(maxBarHeight, Math.max(base, (amplifiedValue / 255) * maxBarHeight * sensitivityMultiplier))
+          ? Math.min(
+              maxBarHeight,
+              Math.max(
+                base,
+                (amplifiedValue / 255) * maxBarHeight * sensitivityMultiplier
+              )
+            )
           : mounted
             ? base + Math.sin(index * 0.5 + Date.now() / 1000) * 4
             : base; // static height pre-hydration
 
         // Create gradient effect from center
-        const distanceFromCenter = Math.abs(index - barCount / 2) / (barCount / 2);
+        const distanceFromCenter =
+          Math.abs(index - barCount / 2) / (barCount / 2);
         const opacity = 1 - distanceFromCenter * 0.3;
 
         return (
@@ -142,7 +154,7 @@ export function AudioVisualizer({
             key={index}
             className={cn(
               "rounded-full transition-all duration-150 ease-out",
-              isActive ? "shadow-sm" : undefined,
+              isActive ? "shadow-sm" : undefined
             )}
             style={{
               backgroundColor: isActive

@@ -97,6 +97,19 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
+![Image][doodler-image]
+
+<strong>Doodler</strong> —— 将语音或文本提示转换为手绘风格涂鸦的画板，配有蜡笔调色板并支持实时绘制。
+
+[示例代码][doodler-example]
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 ![Image][lip-sync-image]
 
 <strong>唇形同步头像</strong> —— 适配多个头像供应商，演示中包含 Live2D 唇形同步的动漫角色 Kei，并即将支持 Trulience、HeyGen、Tavus 等写实头像。
@@ -614,11 +627,13 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
-[speechmatics-diarization-example]: ../ai_agents/agents/examples/speechmatics-diarization
+[speechmatics-diarization-example]: ../ai_agents/agents/examples/speaker-diarization
 [sip-call-image]: https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38
 [voice-assistant-sip-example]: ../ai_agents/agents/examples/voice-assistant-sip-twilio
 [transcription-image]: https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d
 [transcription-example]: ../ai_agents/agents/examples/transcription
+[doodler-image]: https://github.com/user-attachments/assets/80c4eabd-de96-4971-8956-6b365d4fbd64
+[doodler-example]: ../ai_agents/agents/examples/doodler
 [esp32-image]: https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c
 [esp32-guide]: ../ai_agents/esp32-client
 
