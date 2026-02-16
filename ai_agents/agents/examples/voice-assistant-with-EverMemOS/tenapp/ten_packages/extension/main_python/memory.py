@@ -20,14 +20,10 @@ class MemoryStore(ABC):
     ) -> None: ...
 
     @abstractmethod
-    async def search(
-        self, user_id: str, agent_id: str, query: str
-    ) -> Any: ...
+    async def search(self, user_id: str, agent_id: str, query: str) -> Any: ...
 
     @abstractmethod
-    async def get_user_profile(
-        self, user_id: str, agent_id: str
-    ) -> str: ...
+    async def get_user_profile(self, user_id: str, agent_id: str) -> str: ...
 
 
 class EverMemosMemoryStore(MemoryStore):
@@ -64,24 +60,34 @@ class EverMemosMemoryStore(MemoryStore):
             f"║ 💬 Conversation Length: {len(conversation)} 条消息                           ║\n"
             f"╚══════════════════════════════════════════════════════════════════╝"
         )
-        
+
         if not conversation:
-            self.env.log_warn("[EverMemosMemoryStore] Empty conversation, skipping")
+            self.env.log_warn(
+                "[EverMemosMemoryStore] Empty conversation, skipping"
+            )
             return
 
         try:
             group_id = f"{user_id}_{agent_id}"
             base_ts = int(time.time() * 1000)
 
-            self.env.log_info(f"[EverMemOS] 📝 准备保存 {len(conversation)} 条消息:")
-            
+            self.env.log_info(
+                f"[EverMemOS] 📝 准备保存 {len(conversation)} 条消息:"
+            )
+
             for i, msg in enumerate(conversation):
                 try:
                     payload = {
                         "message_id": f"msg_{base_ts}_{i:03d}",
-                        "create_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                        "sender": user_id if msg["role"] == "user" else agent_id,
-                        "sender_name": "User" if msg["role"] == "user" else "Assistant",
+                        "create_time": time.strftime(
+                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                        ),
+                        "sender": (
+                            user_id if msg["role"] == "user" else agent_id
+                        ),
+                        "sender_name": (
+                            "User" if msg["role"] == "user" else "Assistant"
+                        ),
                         "group_id": group_id,
                         "content": msg["content"],
                     }
@@ -111,14 +117,13 @@ class EverMemosMemoryStore(MemoryStore):
                 f"[EverMemosMemoryStore] Failed to add conversation: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[EverMemosMemoryStore] Traceback: {traceback.format_exc()}"
             )
             raise
 
-    async def search(
-        self, user_id: str, agent_id: str, query: str
-    ) -> Any:
+    async def search(self, user_id: str, agent_id: str, query: str) -> Any:
         """Search memories using EverMemOS SDK."""
         self.env.log_info(
             f"╔══════════════════════════════════════════════════════════════════╗\n"
@@ -129,19 +134,21 @@ class EverMemosMemoryStore(MemoryStore):
             f"║ 🔍 Search Query: '{query}'                                       ║\n"
             f"╚══════════════════════════════════════════════════════════════════╝"
         )
-        
+
         try:
             search_params = {
                 "query": query,
                 "user_id": user_id,
                 "retrieve_method": "hybrid",  # 使用混合搜索
                 "memory_types": ["episodic_memory"],
-                "top_k": 10
+                "top_k": 10,
             }
 
-            self.env.log_info(f"[EverMemOS] 🔎 正在搜索用户 '{user_id}' 的记忆...")
+            self.env.log_info(
+                f"[EverMemOS] 🔎 正在搜索用户 '{user_id}' 的记忆..."
+            )
             response = self.memory.search(extra_query=search_params)
-            
+
             if response.status != "ok":
                 self.env.log_warn(
                     f"[EverMemOS] ⚠️ 搜索失败: status={response.status}, message={response.message}"
@@ -151,38 +158,44 @@ class EverMemosMemoryStore(MemoryStore):
             # 转换为统一格式
             result = {"results": []}
             memories_found = 0
-            
+
             self.env.log_info(f"[EverMemOS] 📊 搜索结果详情:")
-            
+
             if response.result and response.result.memories:
                 memories = response.result.memories
-                
-                self.env.log_info(f"    ┌──────────────────────────────────────────────────────────────────┐")
-                self.env.log_info(f"    │ 返回记忆对象类型: {type(memories[0]) if memories else 'N/A'}      │")
-                
+
+                self.env.log_info(
+                    f"    ┌──────────────────────────────────────────────────────────────────┐"
+                )
+                self.env.log_info(
+                    f"    │ 返回记忆对象类型: {type(memories[0]) if memories else 'N/A'}      │"
+                )
+
                 # 处理 ResultMemoryEpisodicMemoryModel 对象列表（新版 SDK）
                 for i, mem in enumerate(memories):
                     # 使用 getattr 获取对象属性
-                    summary = getattr(mem, 'summary', '')
-                    episode = getattr(mem, 'episode', '')
-                    subject = getattr(mem, 'subject', '')
-                    score = getattr(mem, 'score', 0)
-                    timestamp = getattr(mem, 'timestamp', '')
-                    memory_id = getattr(mem, 'id', '')
-                    
+                    summary = getattr(mem, "summary", "")
+                    episode = getattr(mem, "episode", "")
+                    subject = getattr(mem, "subject", "")
+                    score = getattr(mem, "score", 0)
+                    timestamp = getattr(mem, "timestamp", "")
+                    memory_id = getattr(mem, "id", "")
+
                     # 优先使用 episode (详细内容)，如果没有则使用 summary
                     memory_text = episode if episode else summary
-                    
+
                     if memory_text:
                         memories_found += 1
-                        result["results"].append({
-                            "memory": memory_text,
-                            "score": score,
-                            "timestamp": str(timestamp),
-                            "subject": subject,
-                            "id": memory_id
-                        })
-                        
+                        result["results"].append(
+                            {
+                                "memory": memory_text,
+                                "score": score,
+                                "timestamp": str(timestamp),
+                                "subject": subject,
+                                "id": memory_id,
+                            }
+                        )
+
                         # 打印前5条记忆的详细信息
                         if memories_found <= 5:
                             self.env.log_info(
@@ -192,10 +205,12 @@ class EverMemosMemoryStore(MemoryStore):
                                 f"    │     主题: {subject[:50]}...                       │"
                             )
                             self.env.log_info(
-                                f"    │     内容: \"{memory_text[:50]}...\"                       │"
+                                f'    │     内容: "{memory_text[:50]}..."                       │'
                             )
-                
-                self.env.log_info(f"    └──────────────────────────────────────────────────────────────────┘")
+
+                self.env.log_info(
+                    f"    └──────────────────────────────────────────────────────────────────┘"
+                )
 
             if memories_found > 0:
                 self.env.log_info(
@@ -206,20 +221,19 @@ class EverMemosMemoryStore(MemoryStore):
                     f"[EverMemOS] ℹ️ 搜索完成! 用户 '{user_id}' 没有找到相关记忆"
                 )
             return result
-            
+
         except Exception as e:
             self.env.log_error(
                 f"[EverMemosMemoryStore] Failed to search memories: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[EverMemosMemoryStore] Traceback: {traceback.format_exc()}"
             )
             return {"results": []}
 
-    async def get_user_profile(
-        self, user_id: str, agent_id: str
-    ) -> str:
+    async def get_user_profile(self, user_id: str, agent_id: str) -> str:
         """Get user profile from EverMemOS."""
         self.env.log_info(
             f"╔══════════════════════════════════════════════════════════════════╗\n"
@@ -229,7 +243,7 @@ class EverMemosMemoryStore(MemoryStore):
             f"║ 🤖 Agent ID:    '{agent_id}'                                      ║\n"
             f"╚══════════════════════════════════════════════════════════════════╝"
         )
-        
+
         try:
             # Search for user profile
             user_profile = await self.search(
@@ -243,7 +257,7 @@ class EverMemosMemoryStore(MemoryStore):
             self.env.log_info(
                 f"[EverMemOS] 📋 找到 {len(results)} 条用户资料记忆"
             )
-            
+
             memorise = [
                 result["memory"]
                 for result in results
@@ -252,8 +266,11 @@ class EverMemosMemoryStore(MemoryStore):
 
             # Format memory text
             if memorise:
-                profile_content = "User Profile:\n" + \
-                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+                profile_content = (
+                    "User Profile:\n"
+                    + "\n".join(f"- {memory}" for memory in memorise)
+                    + "\n"
+                )
                 self.env.log_info(
                     f"[EverMemOS] ✅ 成功格式化 {len(memorise)} 条用户资料"
                 )
@@ -264,12 +281,13 @@ class EverMemosMemoryStore(MemoryStore):
                 )
 
             return profile_content
-            
+
         except Exception as e:
             self.env.log_error(
                 f"[EverMemosMemoryStore] Failed to get user profile: {e}"
             )
             import traceback
+
             self.env.log_error(
                 f"[EverMemosMemoryStore] Traceback: {traceback.format_exc()}"
             )
