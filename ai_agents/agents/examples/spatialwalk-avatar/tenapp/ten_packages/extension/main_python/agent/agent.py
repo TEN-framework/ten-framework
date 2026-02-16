@@ -140,7 +140,9 @@ class Agent:
                 args = json.loads(args_json) if args_json else {}
                 handler = self._local_tool_handlers.get(tool_name)
                 if not handler:
-                    raise RuntimeError(f"Unhandled local tool_call: {tool_name}")
+                    raise RuntimeError(
+                        f"Unhandled local tool_call: {tool_name}"
+                    )
                 result = await handler(args)
                 cmd_result = CmdResult.create(StatusCode.OK, cmd)
                 if result is not None:

@@ -12,17 +12,25 @@ from ten_ai_base.config import BaseConfig
 from avatarkit import new_avatar_session, AgoraEgressConfig
 
 from .avatar_base import AsyncAvatarBaseExtension
-from .agora_token_builder.RtcTokenBuilder2 import Role_Publisher, RtcTokenBuilder
+from .agora_token_builder.RtcTokenBuilder2 import (
+    Role_Publisher,
+    RtcTokenBuilder,
+)
 
 
 @dataclass
 class SpatialRealConfig(BaseConfig):
     """Configuration for SpatialReal Avatar Extension."""
+
     spatialreal_api_key: str = ""
     spatialreal_app_id: str = ""
     spatialreal_avatar_id: str = ""
-    spatialreal_console_endpoint_url: str = "https://console.us-west.spatialwalk.cloud/v1/console"
-    spatialreal_ingress_endpoint_url: str = "https://api.us-west.spatialwalk.cloud/v2/driveningress"
+    spatialreal_console_endpoint_url: str = (
+        "https://console.us-west.spatialwalk.cloud/v1/console"
+    )
+    spatialreal_ingress_endpoint_url: str = (
+        "https://api.us-west.spatialwalk.cloud/v2/driveningress"
+    )
     agora_avatar_uid: str = ""
     agora_token: str = ""
     agora_appid: str = ""
@@ -129,7 +137,7 @@ class SpatialRealAvatarExtension(AsyncAvatarBaseExtension):
             self.config.agora_avatar_uid,
             Role_Publisher,
             600,
-            600
+            600,
         )
 
         ten_env.log_info(
@@ -163,7 +171,9 @@ class SpatialRealAvatarExtension(AsyncAvatarBaseExtension):
 
         # Establish WebSocket connection
         connection_id = await self.session.start()
-        ten_env.log_info(f"[SpatialReal] Connected successfully (connection_id={connection_id})")
+        ten_env.log_info(
+            f"[SpatialReal] Connected successfully (connection_id={connection_id})"
+        )
 
     async def disconnect_from_avatar(self, ten_env: AsyncTenEnv) -> None:
         """Disconnect from SpatialReal avatar service."""
@@ -181,7 +191,9 @@ class SpatialRealAvatarExtension(AsyncAvatarBaseExtension):
         """Send audio to SpatialReal"""
         if self.session:
             if self.ten_env:
-                self.ten_env.log_debug(f"[SpatialReal] Sending audio: {len(audio_data)} bytes")
+                self.ten_env.log_debug(
+                    f"[SpatialReal] Sending audio: {len(audio_data)} bytes"
+                )
             await self.session.send_audio(bytes(audio_data), end=False)
 
     async def send_eof_to_avatar(self) -> None:
@@ -200,7 +212,9 @@ class SpatialRealAvatarExtension(AsyncAvatarBaseExtension):
                 await self.session.interrupt()
             except Exception as e:
                 if self.ten_env:
-                    self.ten_env.log_warn(f"[SpatialReal] Interrupt failed: {e}")
+                    self.ten_env.log_warn(
+                        f"[SpatialReal] Interrupt failed: {e}"
+                    )
 
     # ========================================================================
     # OPTIONAL METHODS

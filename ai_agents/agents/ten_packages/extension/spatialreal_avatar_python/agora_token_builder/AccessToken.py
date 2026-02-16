@@ -18,19 +18,19 @@ APP_ID_LENGTH = 32
 
 
 def getVersion():
-    return '006'
+    return "006"
 
 
 def packUint16(x):
-    return struct.pack('<H', int(x))
+    return struct.pack("<H", int(x))
 
 
 def packUint32(x):
-    return struct.pack('<I', int(x))
+    return struct.pack("<I", int(x))
 
 
 def packInt32(x):
-    return struct.pack('<i', int(x))
+    return struct.pack("<i", int(x))
 
 
 def packString(string):
@@ -58,23 +58,23 @@ class ReadByteBuffer:
         self.position = 0
 
     def unPackUint16(self):
-        len = struct.calcsize('H')
-        buff = self.buffer[self.position: self.position + len]
-        ret = struct.unpack('<H', buff)[0]
+        len = struct.calcsize("H")
+        buff = self.buffer[self.position : self.position + len]
+        ret = struct.unpack("<H", buff)[0]
         self.position += len
         return ret
 
     def unPackUint32(self):
-        len = struct.calcsize('I')
-        buff = self.buffer[self.position: self.position + len]
-        ret = struct.unpack('<I', buff)[0]
+        len = struct.calcsize("I")
+        buff = self.buffer[self.position : self.position + len]
+        ret = struct.unpack("<I", buff)[0]
         self.position += len
         return ret
 
     def unPackString(self):
         strlen = self.unPackUint16()
-        buff = self.buffer[self.position: self.position + strlen]
-        ret = struct.unpack('<' + str(strlen) + 's', buff)[0]
+        buff = self.buffer[self.position : self.position + strlen]
+        ret = struct.unpack("<" + str(strlen) + "s", buff)[0]
         self.position += strlen
         return ret
 
@@ -110,14 +110,14 @@ def unPackMessages(buff):
 
 class AccessToken:
 
-    def __init__(self, appID='', appCertificate='', channelName='', uid=''):
+    def __init__(self, appID="", appCertificate="", channelName="", uid=""):
         self.appID = appID
         self.appCertificate = appCertificate
         self.channelName = channelName
         self.ts = int(time.time()) + 24 * 3600
         self.salt = secrets.SystemRandom().randint(1, 99999999)
         self.messages = {}
-        if (uid == 0):
+        if uid == 0:
             self.uidStr = ""
         else:
             self.uidStr = str(uid)
@@ -129,14 +129,18 @@ class AccessToken:
         try:
             dk6version = getVersion()
             originVersion = originToken[:VERSION_LENGTH]
-            if (originVersion != dk6version):
+            if originVersion != dk6version:
                 return False
 
-            originAppID = originToken[VERSION_LENGTH:(VERSION_LENGTH + APP_ID_LENGTH)]
-            originContent = originToken[(VERSION_LENGTH + APP_ID_LENGTH):]
+            originAppID = originToken[
+                VERSION_LENGTH : (VERSION_LENGTH + APP_ID_LENGTH)
+            ]
+            originContent = originToken[(VERSION_LENGTH + APP_ID_LENGTH) :]
             originContentDecoded = base64.b64decode(originContent)
 
-            signature, crc_channel_name, crc_uid, m = unPackContent(originContentDecoded)
+            signature, crc_channel_name, crc_uid, m = unPackContent(
+                originContentDecoded
+            )
             self.salt, self.ts, self.messages = unPackMessages(m)
 
         except Exception as e:
@@ -147,22 +151,36 @@ class AccessToken:
 
     def build(self):
 
-        self.messages = OrderedDict(sorted(iter(self.messages.items()), key=lambda x: int(x[0])))
+        self.messages = OrderedDict(
+            sorted(iter(self.messages.items()), key=lambda x: int(x[0]))
+        )
 
-        m = packUint32(self.salt) + packUint32(self.ts) \
+        m = (
+            packUint32(self.salt)
+            + packUint32(self.ts)
             + packMapUint32(self.messages)
+        )
 
-        val = self.appID.encode('utf-8') + self.channelName.encode('utf-8') + self.uidStr.encode('utf-8') + m
+        val = (
+            self.appID.encode("utf-8")
+            + self.channelName.encode("utf-8")
+            + self.uidStr.encode("utf-8")
+            + m
+        )
 
-        signature = hmac.new(self.appCertificate.encode('utf-8'), val, sha256).digest()
-        crc_channel_name = crc32(self.channelName.encode('utf-8')) & 0xffffffff
-        crc_uid = crc32(self.uidStr.encode('utf-8')) & 0xffffffff
+        signature = hmac.new(
+            self.appCertificate.encode("utf-8"), val, sha256
+        ).digest()
+        crc_channel_name = crc32(self.channelName.encode("utf-8")) & 0xFFFFFFFF
+        crc_uid = crc32(self.uidStr.encode("utf-8")) & 0xFFFFFFFF
 
-        content = packString(signature) \
-                  + packUint32(crc_channel_name) \
-                  + packUint32(crc_uid) \
-                  + packString(m)
+        content = (
+            packString(signature)
+            + packUint32(crc_channel_name)
+            + packUint32(crc_uid)
+            + packString(m)
+        )
 
         version = getVersion()
-        ret = version + self.appID + base64.b64encode(content).decode('utf-8')
+        ret = version + self.appID + base64.b64encode(content).decode("utf-8")
         return ret

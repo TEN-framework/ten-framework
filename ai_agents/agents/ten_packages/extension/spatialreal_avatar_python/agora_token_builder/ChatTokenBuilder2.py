@@ -4,6 +4,7 @@ __copyright__ = "Copyright (c) 2014-2017 Agora.io, Inc."
 
 from .AccessToken2 import *
 
+
 class ChatTokenBuilder:
     @staticmethod
     def build_user_token(app_id, app_certificate, user_id, expire):

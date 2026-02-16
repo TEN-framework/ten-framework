@@ -7,7 +7,9 @@ from .utils import *
 
 class EducationTokenBuilder:
     @staticmethod
-    def build_room_user_token(app_id, app_certificate, room_uuid, user_uuid, role, expire):
+    def build_room_user_token(
+        app_id, app_certificate, room_uuid, user_uuid, role, expire
+    ):
         """
         Build user room token
         :param app_id: The App ID issued to you by Agora. Apply for a new App ID from Agora Dashboard if it is missing

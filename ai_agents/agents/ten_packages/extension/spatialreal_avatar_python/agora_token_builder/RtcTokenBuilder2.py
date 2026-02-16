@@ -19,7 +19,15 @@ Role_Subscriber = 2
 
 class RtcTokenBuilder:
     @staticmethod
-    def build_token_with_uid(app_id, app_certificate, channel_name, uid, role, token_expire, privilege_expire=0):
+    def build_token_with_uid(
+        app_id,
+        app_certificate,
+        channel_name,
+        uid,
+        role,
+        token_expire,
+        privilege_expire=0,
+    ):
         """
         Build the RTC token with uid.
         :param app_id: The App ID issued to you by Agora. Apply for a new App ID from Agora Dashboard if it is missing
@@ -38,10 +46,26 @@ class RtcTokenBuilder:
             you want to enable your privilege for 10 minutes, set privilege_expire as 600(seconds).
         :return: The RTC token.
         """
-        return RtcTokenBuilder.build_token_with_user_account(app_id, app_certificate, channel_name, uid, role, token_expire, privilege_expire)
+        return RtcTokenBuilder.build_token_with_user_account(
+            app_id,
+            app_certificate,
+            channel_name,
+            uid,
+            role,
+            token_expire,
+            privilege_expire,
+        )
 
     @staticmethod
-    def build_token_with_user_account(app_id, app_certificate, channel_name, account, role, token_expire, privilege_expire=0):
+    def build_token_with_user_account(
+        app_id,
+        app_certificate,
+        channel_name,
+        account,
+        role,
+        token_expire,
+        privilege_expire=0,
+    ):
         """
         Build the RTC token with account.
         :param app_id: The App ID issued to you by Agora. Apply for a new App ID from Agora Dashboard if it is missing
@@ -62,18 +86,35 @@ class RtcTokenBuilder:
         token = AccessToken(app_id, app_certificate, expire=token_expire)
 
         service_rtc = ServiceRtc(channel_name, account)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, privilege_expire)
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegeJoinChannel, privilege_expire
+        )
         if role == Role_Publisher:
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, privilege_expire)
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, privilege_expire)
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishDataStream, privilege_expire)
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishAudioStream, privilege_expire
+            )
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishVideoStream, privilege_expire
+            )
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishDataStream, privilege_expire
+            )
         token.add_service(service_rtc)
 
         return token.build()
 
     @staticmethod
-    def build_token_with_uid_and_privilege(app_id, app_certificate, channel_name, uid, token_expire, join_channel_privilege_expire,
-                                           pub_audio_privilege_expire, pub_video_privilege_expire, pub_data_stream_privilege_expire):
+    def build_token_with_uid_and_privilege(
+        app_id,
+        app_certificate,
+        channel_name,
+        uid,
+        token_expire,
+        join_channel_privilege_expire,
+        pub_audio_privilege_expire,
+        pub_video_privilege_expire,
+        pub_data_stream_privilege_expire,
+    ):
         """
         Generates an RTC token with the specified privilege.
                 This method supports generating a token with the following privileges:
@@ -117,12 +158,30 @@ class RtcTokenBuilder:
             If, for example, you want to enable publish data stream privilege for 10 minutes, set pub_data_stream_privilege_expire as 600(seconds).
         :return: The RTC Token
         """
-        return RtcTokenBuilder.build_token_with_user_account_and_privilege(app_id, app_certificate, channel_name, uid, token_expire, join_channel_privilege_expire,
-                                                                           pub_audio_privilege_expire, pub_video_privilege_expire, pub_data_stream_privilege_expire)
+        return RtcTokenBuilder.build_token_with_user_account_and_privilege(
+            app_id,
+            app_certificate,
+            channel_name,
+            uid,
+            token_expire,
+            join_channel_privilege_expire,
+            pub_audio_privilege_expire,
+            pub_video_privilege_expire,
+            pub_data_stream_privilege_expire,
+        )
 
     @staticmethod
-    def build_token_with_user_account_and_privilege(app_id, app_certificate, channel_name, account, token_expire, join_channel_privilege_expire,
-                                                    pub_audio_privilege_expire, pub_video_privilege_expire, pub_data_stream_privilege_expire):
+    def build_token_with_user_account_and_privilege(
+        app_id,
+        app_certificate,
+        channel_name,
+        account,
+        token_expire,
+        join_channel_privilege_expire,
+        pub_audio_privilege_expire,
+        pub_video_privilege_expire,
+        pub_data_stream_privilege_expire,
+    ):
         """
         Generates an RTC token with the specified privilege.
 
@@ -172,16 +231,33 @@ class RtcTokenBuilder:
         token = AccessToken(app_id, app_certificate, expire=token_expire)
 
         service_rtc = ServiceRtc(channel_name, account)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, join_channel_privilege_expire)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, pub_audio_privilege_expire)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, pub_video_privilege_expire)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegePublishDataStream, pub_data_stream_privilege_expire)
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegeJoinChannel, join_channel_privilege_expire
+        )
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegePublishAudioStream, pub_audio_privilege_expire
+        )
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegePublishVideoStream, pub_video_privilege_expire
+        )
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegePublishDataStream,
+            pub_data_stream_privilege_expire,
+        )
         token.add_service(service_rtc)
 
         return token.build()
 
     @staticmethod
-    def build_token_with_rtm(app_id, app_certificate, channel_name, account, role, token_expire, privilege_expire=0):
+    def build_token_with_rtm(
+        app_id,
+        app_certificate,
+        channel_name,
+        account,
+        role,
+        token_expire,
+        privilege_expire=0,
+    ):
         """
         Build the RTC and RTM token with account.
         :param app_id: The App ID issued to you by Agora. Apply for a new App ID from Agora Dashboard if it is missing
@@ -202,11 +278,19 @@ class RtcTokenBuilder:
         token = AccessToken(app_id, app_certificate, expire=token_expire)
 
         service_rtc = ServiceRtc(channel_name, account)
-        service_rtc.add_privilege(ServiceRtc.kPrivilegeJoinChannel, privilege_expire)
+        service_rtc.add_privilege(
+            ServiceRtc.kPrivilegeJoinChannel, privilege_expire
+        )
         if role == Role_Publisher:
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, privilege_expire)
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, privilege_expire)
-            service_rtc.add_privilege(ServiceRtc.kPrivilegePublishDataStream, privilege_expire)
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishAudioStream, privilege_expire
+            )
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishVideoStream, privilege_expire
+            )
+            service_rtc.add_privilege(
+                ServiceRtc.kPrivilegePublishDataStream, privilege_expire
+            )
         token.add_service(service_rtc)
 
         rtm_service = ServiceRtm(account)
@@ -217,9 +301,20 @@ class RtcTokenBuilder:
         return token.build()
 
     @staticmethod
-    def build_token_with_rtm2(app_id, app_certificate, channel_name, rtc_account, rtc_role, rtc_token_expire,
-            join_channel_privilege_expire, pub_audio_privilege_expire, pub_video_privilege_expire, pub_data_stream_privilege_expire,
-            rtm_user_id, rtm_token_expire):
+    def build_token_with_rtm2(
+        app_id,
+        app_certificate,
+        channel_name,
+        rtc_account,
+        rtc_role,
+        rtc_token_expire,
+        join_channel_privilege_expire,
+        pub_audio_privilege_expire,
+        pub_video_privilege_expire,
+        pub_data_stream_privilege_expire,
+        rtm_user_id,
+        rtm_token_expire,
+    ):
         """
         Build the RTC and RTM token with account.
         :param app_id: The App ID issued to you by Agora. Apply for a new App ID from Agora Dashboard if it is missing
@@ -248,11 +343,22 @@ class RtcTokenBuilder:
         token = AccessToken(app_id, app_certificate, expire=rtc_token_expire)
         rtc_service = ServiceRtc(channel_name, rtc_account)
 
-        rtc_service.add_privilege(ServiceRtc.kPrivilegeJoinChannel, join_channel_privilege_expire)
+        rtc_service.add_privilege(
+            ServiceRtc.kPrivilegeJoinChannel, join_channel_privilege_expire
+        )
         if rtc_role == Role_Publisher:
-            rtc_service.add_privilege(ServiceRtc.kPrivilegePublishAudioStream, pub_audio_privilege_expire)
-            rtc_service.add_privilege(ServiceRtc.kPrivilegePublishVideoStream, pub_video_privilege_expire)
-            rtc_service.add_privilege(ServiceRtc.kPrivilegePublishDataStream, pub_data_stream_privilege_expire)
+            rtc_service.add_privilege(
+                ServiceRtc.kPrivilegePublishAudioStream,
+                pub_audio_privilege_expire,
+            )
+            rtc_service.add_privilege(
+                ServiceRtc.kPrivilegePublishVideoStream,
+                pub_video_privilege_expire,
+            )
+            rtc_service.add_privilege(
+                ServiceRtc.kPrivilegePublishDataStream,
+                pub_data_stream_privilege_expire,
+            )
         token.add_service(rtc_service)
 
         rtm_service = ServiceRtm(rtm_user_id)

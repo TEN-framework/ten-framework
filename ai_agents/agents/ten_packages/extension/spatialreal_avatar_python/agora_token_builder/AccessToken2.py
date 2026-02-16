@@ -16,7 +16,7 @@ VERSION_LENGTH = 3
 
 
 def get_version():
-    return '007'
+    return "007"
 
 
 class Service:
@@ -29,7 +29,8 @@ class Service:
 
     def __pack_privileges(self):
         privileges = OrderedDict(
-            sorted(iter(self.__privileges.items()), key=lambda x: int(x[0])))
+            sorted(iter(self.__privileges.items()), key=lambda x: int(x[0]))
+        )
         return pack_map_uint32(privileges)
 
     def add_privilege(self, privilege, expire):
@@ -54,13 +55,17 @@ class ServiceRtc(Service):
     kPrivilegePublishVideoStream = 3
     kPrivilegePublishDataStream = 4
 
-    def __init__(self, channel_name='', uid=0):
+    def __init__(self, channel_name="", uid=0):
         super(ServiceRtc, self).__init__(ServiceRtc.kServiceType)
-        self.__channel_name = channel_name.encode('utf-8')
-        self.__uid = b'' if uid == 0 else str(uid).encode('utf-8')
+        self.__channel_name = channel_name.encode("utf-8")
+        self.__uid = b"" if uid == 0 else str(uid).encode("utf-8")
 
     def pack(self):
-        return super(ServiceRtc, self).pack() + pack_string(self.__channel_name) + pack_string(self.__uid)
+        return (
+            super(ServiceRtc, self).pack()
+            + pack_string(self.__channel_name)
+            + pack_string(self.__uid)
+        )
 
     def unpack(self, buffer):
         buffer = super(ServiceRtc, self).unpack(buffer)
@@ -74,9 +79,9 @@ class ServiceRtm(Service):
 
     kPrivilegeLogin = 1
 
-    def __init__(self, user_id=''):
+    def __init__(self, user_id=""):
         super(ServiceRtm, self).__init__(ServiceRtm.kServiceType)
-        self.__user_id = user_id.encode('utf-8')
+        self.__user_id = user_id.encode("utf-8")
 
     def pack(self):
         return super(ServiceRtm, self).pack() + pack_string(self.__user_id)
@@ -109,9 +114,9 @@ class ServiceChat(Service):
     kPrivilegeUser = 1
     kPrivilegeApp = 2
 
-    def __init__(self, user_id=''):
+    def __init__(self, user_id=""):
         super(ServiceChat, self).__init__(ServiceChat.kServiceType)
-        self.__user_id = user_id.encode('utf-8')
+        self.__user_id = user_id.encode("utf-8")
 
     def pack(self):
         return super(ServiceChat, self).pack() + pack_string(self.__user_id)
@@ -129,15 +134,19 @@ class ServiceApaas(Service):
     kPrivilegeUser = 2
     kPrivilegeApp = 3
 
-    def __init__(self, room_uuid='', user_uuid='', role=-1):
+    def __init__(self, room_uuid="", user_uuid="", role=-1):
         super(ServiceApaas, self).__init__(ServiceApaas.kServiceType)
-        self.__room_uuid = room_uuid.encode('utf-8')
-        self.__user_uuid = user_uuid.encode('utf-8')
+        self.__room_uuid = room_uuid.encode("utf-8")
+        self.__user_uuid = user_uuid.encode("utf-8")
         self.__role = role
 
     def pack(self):
-        return super(ServiceApaas, self).pack() + pack_string(self.__room_uuid) + pack_string(
-            self.__user_uuid) + pack_int16(self.__role)
+        return (
+            super(ServiceApaas, self).pack()
+            + pack_string(self.__room_uuid)
+            + pack_string(self.__user_uuid)
+            + pack_int16(self.__role)
+        )
 
     def unpack(self, buffer):
         buffer = super(ServiceApaas, self).unpack(buffer)
@@ -156,7 +165,7 @@ class AccessToken:
         ServiceApaas.kServiceType: ServiceApaas,
     }
 
-    def __init__(self, app_id='', app_certificate='', issue_ts=0, expire=900):
+    def __init__(self, app_id="", app_certificate="", issue_ts=0, expire=900):
         self.__app_id = app_id
         self.__app_cert = app_certificate
 
@@ -167,8 +176,9 @@ class AccessToken:
         self.__service = {}
 
     def __signing(self):
-        signing = hmac.new(pack_uint32(self.__issue_ts),
-                           self.__app_cert, sha256).digest()
+        signing = hmac.new(
+            pack_uint32(self.__issue_ts), self.__app_cert, sha256
+        ).digest()
         signing = hmac.new(pack_uint32(self.__salt), signing, sha256).digest()
         return signing
 
@@ -193,20 +203,27 @@ class AccessToken:
 
     def build(self):
         if not self.__build_check():
-            return ''
+            return ""
 
-        self.__app_id = self.__app_id.encode('utf-8')
-        self.__app_cert = self.__app_cert.encode('utf-8')
+        self.__app_id = self.__app_id.encode("utf-8")
+        self.__app_cert = self.__app_cert.encode("utf-8")
         signing = self.__signing()
-        signing_info = pack_string(self.__app_id) + pack_uint32(self.__issue_ts) + pack_uint32(self.__expire) + \
-            pack_uint32(self.__salt) + pack_uint16(len(self.__service))
+        signing_info = (
+            pack_string(self.__app_id)
+            + pack_uint32(self.__issue_ts)
+            + pack_uint32(self.__expire)
+            + pack_uint32(self.__salt)
+            + pack_uint16(len(self.__service))
+        )
 
         for service_type in sorted(self.__service.keys()):
             signing_info += self.__service[service_type].pack()
 
         signature = hmac.new(signing, signing_info, sha256).digest()
 
-        return get_version() + base64.b64encode(zlib.compress(pack_string(signature) + signing_info)).decode('utf-8')
+        return get_version() + base64.b64encode(
+            zlib.compress(pack_string(signature) + signing_info)
+        ).decode("utf-8")
 
     def from_string(self, origin_token):
         try:
@@ -215,7 +232,8 @@ class AccessToken:
                 return False
 
             buffer = zlib.decompress(
-                base64.b64decode(origin_token[VERSION_LENGTH:]))
+                base64.b64decode(origin_token[VERSION_LENGTH:])
+            )
             signature, buffer = unpack_string(buffer)
             self.__app_id, buffer = unpack_string(buffer)
             self.__issue_ts, buffer = unpack_uint32(buffer)
@@ -229,6 +247,6 @@ class AccessToken:
                 buffer = service.unpack(buffer)
                 self.__service[service_type] = service
         except Exception as e:
-            print('Error: {}'.format(repr(e)))
-            raise ValueError('Error: parse origin token failed')
+            print("Error: {}".format(repr(e)))
+            raise ValueError("Error: parse origin token failed")
         return True

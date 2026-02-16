@@ -366,7 +366,9 @@ class MainControlExtension(AsyncExtension):
             }
         )
 
-    async def _run_trigger_effect_tool(self, args: dict) -> LLMToolResult | None:
+    async def _run_trigger_effect_tool(
+        self, args: dict
+    ) -> LLMToolResult | None:
         effect_name = str(args.get("name", "")).strip()
         if effect_name not in EFFECT_NAMES:
             self.ten_env.log_warn(

@@ -298,9 +298,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self._config_valid = config_valid
 
         if not config_valid:
-            ten_env.log_error(f"{self.LOG_PREFIX} Configuration validation failed")
+            ten_env.log_error(
+                f"{self.LOG_PREFIX} Configuration validation failed"
+            )
         else:
-            ten_env.log_info(f"{self.LOG_PREFIX} Configuration validated successfully")
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} Configuration validated successfully"
+            )
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         """Start extension, connect to avatar, and start audio processing."""
@@ -308,7 +312,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         await super().on_start(ten_env)
 
         if not self._config_valid:
-            ten_env.log_warn(f"{self.LOG_PREFIX} Skipping connection due to invalid configuration")
+            ten_env.log_warn(
+                f"{self.LOG_PREFIX} Skipping connection due to invalid configuration"
+            )
             return
 
         # Connect to avatar service
@@ -321,7 +327,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
 
         # Start audio processing loop
         ten_env.log_info(f"{self.LOG_PREFIX} Starting audio processing loop...")
-        self._audio_task = asyncio.create_task(self._process_audio_loop(ten_env))
+        self._audio_task = asyncio.create_task(
+            self._process_audio_loop(ten_env)
+        )
         ten_env.log_info(f"{self.LOG_PREFIX} Started successfully")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -331,16 +339,22 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
 
         # Cancel audio processing task
         if self._audio_task and not self._audio_task.done():
-            ten_env.log_info(f"{self.LOG_PREFIX} Cancelling audio processing task...")
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} Cancelling audio processing task..."
+            )
             self._audio_task.cancel()
             try:
                 await self._audio_task
             except asyncio.CancelledError:
                 pass
-            ten_env.log_info(f"{self.LOG_PREFIX} Audio processing task cancelled")
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} Audio processing task cancelled"
+            )
 
         # Disconnect from avatar service
-        ten_env.log_info(f"{self.LOG_PREFIX} Disconnecting from avatar service...")
+        ten_env.log_info(
+            f"{self.LOG_PREFIX} Disconnecting from avatar service..."
+        )
         try:
             await self.disconnect_from_avatar(ten_env)
         except Exception as e:
@@ -383,7 +397,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 payload = json.loads(json_str)
                 reason = payload.get("reason")
                 request_id = payload.get("request_id", "unknown")
-                ten_env.log_info(f"{self.LOG_PREFIX} tts_audio_end: reason={reason}, request_id={request_id}")
+                ten_env.log_info(
+                    f"{self.LOG_PREFIX} tts_audio_end: reason={reason}, request_id={request_id}"
+                )
 
                 # reason=1 means TTS generation complete
                 if reason == 1:
@@ -401,7 +417,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
     ) -> None:
         """Handle incoming audio frames."""
         if not self._audio_processing_enabled:
-            ten_env.log_info(f"{self.LOG_PREFIX} on_audio_frame: Audio processing disabled, skipping frame")
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} on_audio_frame: Audio processing disabled, skipping frame"
+            )
             return
 
         # Get audio info
@@ -473,10 +491,14 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                         f"{self.LOG_PREFIX} Unknown queue item kind: {queue_item.kind}"
                     )
             except asyncio.CancelledError:
-                ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop cancelled")
+                ten_env.log_info(
+                    f"{self.LOG_PREFIX} Audio processing loop cancelled"
+                )
                 break
             except Exception as e:
-                ten_env.log_error(f"{self.LOG_PREFIX} Error in audio processing: {e}")
+                ten_env.log_error(
+                    f"{self.LOG_PREFIX} Error in audio processing: {e}"
+                )
         ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop ended")
 
     # ========================================================================
@@ -485,7 +507,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
 
     async def _handle_flush(self, ten_env: AsyncTenEnv) -> None:
         """Handle flush command."""
-        ten_env.log_info(f"{self.LOG_PREFIX} Handling flush - clearing queue and interrupting")
+        ten_env.log_info(
+            f"{self.LOG_PREFIX} Handling flush - clearing queue and interrupting"
+        )
 
         # Clear audio queue
         await self._clear_audio_queue()
@@ -503,7 +527,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
     ) -> None:
         """Handle tts_audio_end event."""
         if not self._audio_processing_enabled:
-            ten_env.log_info(f"{self.LOG_PREFIX} Audio processing disabled, skipping EOF")
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} Audio processing disabled, skipping EOF"
+            )
             return
 
         ten_env.log_info(
@@ -518,8 +544,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 f"{self.LOG_PREFIX} EOF marker queued (request_id={request_id}), queue_size={queue_size + 1}"
             )
         except Exception as e:
-            ten_env.log_error(f"{self.LOG_PREFIX} Error queueing EOF marker: {e}")
-
+            ten_env.log_error(
+                f"{self.LOG_PREFIX} Error queueing EOF marker: {e}"
+            )
 
     async def _clear_audio_queue(self) -> None:
         """Clear all audio frames from queue."""
@@ -540,7 +567,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self, ten_env: AsyncTenEnv, message: str, code: int = 0
     ) -> None:
         """Send error message."""
-        ten_env.log_error(f"{self.LOG_PREFIX} Sending error: code={code}, message={message}")
+        ten_env.log_error(
+            f"{self.LOG_PREFIX} Sending error: code={code}, message={message}"
+        )
 
         data = Data.create("message")
         data.set_property_from_json(

@@ -4,10 +4,10 @@ from collections import OrderedDict
 
 from .AccessToken import *
 
-Role_Attendee = 0 # depreated, same as publisher
-Role_Publisher = 1 # for live broadcaster
-Role_Subscriber = 2 # default, for live audience
-Role_Admin = 101 # deprecated, same as publisher
+Role_Attendee = 0  # depreated, same as publisher
+Role_Publisher = 1  # for live broadcaster
+Role_Subscriber = 2  # default, for live audience
+Role_Admin = 101  # deprecated, same as publisher
 
 
 class RtcTokenBuilder:
@@ -26,8 +26,12 @@ class RtcTokenBuilder:
     #                    generated, set expireTimestamp as the current
     #                    timestamp + 600 (seconds)./
     @staticmethod
-    def buildTokenWithUid(appId, appCertificate, channelName, uid, role, privilegeExpiredTs):
-        return RtcTokenBuilder.buildTokenWithAccount(appId, appCertificate, channelName, uid, role, privilegeExpiredTs)
+    def buildTokenWithUid(
+        appId, appCertificate, channelName, uid, role, privilegeExpiredTs
+    ):
+        return RtcTokenBuilder.buildTokenWithAccount(
+            appId, appCertificate, channelName, uid, role, privilegeExpiredTs
+        )
 
     # appID: The App ID issued to you by Agora. Apply for a new App ID from
     #        Agora Dashboard if it is missing from your kit. See Get an App ID.
@@ -42,10 +46,16 @@ class RtcTokenBuilder:
     #                    Agora Service within 10 minutes after the token is
     #                    generated, set expireTimestamp as the current
     @staticmethod
-    def buildTokenWithAccount(appId, appCertificate, channelName, account, role, privilegeExpiredTs):
+    def buildTokenWithAccount(
+        appId, appCertificate, channelName, account, role, privilegeExpiredTs
+    ):
         token = AccessToken(appId, appCertificate, channelName, account)
         token.addPrivilege(kJoinChannel, privilegeExpiredTs)
-        if (role == Role_Attendee) | (role == Role_Admin) | (role == Role_Publisher):
+        if (
+            (role == Role_Attendee)
+            | (role == Role_Admin)
+            | (role == Role_Publisher)
+        ):
             token.addPrivilege(kPublishVideoStream, privilegeExpiredTs)
             token.addPrivilege(kPublishAudioStream, privilegeExpiredTs)
             token.addPrivilege(kPublishDataStream, privilegeExpiredTs)
