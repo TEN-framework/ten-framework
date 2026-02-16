@@ -220,4 +220,13 @@ class MainControlExtension(AsyncExtension):
         await self._send_rtm_message(
             {"data_type": "openclaw_result", "text": reply_text, "ts": ts}
         )
-        await self.agent.handle_openclaw_reply(reply_text)
+        await self.agent.handle_openclaw_reply(
+            {
+                "task_id": str(payload.get("task_id", "")).strip(),
+                "summary": str(payload.get("summary", "")).strip(),
+                "reply_text": reply_text,
+                "reply_ts": ts,
+                "error": error,
+                "agent_phase": phase,
+            }
+        )
