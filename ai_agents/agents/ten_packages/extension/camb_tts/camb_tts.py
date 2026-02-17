@@ -44,12 +44,10 @@ class CambTTSClient(AsyncTTS2HttpClient):
         self.api_key = config.params.get("api_key", "")
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
-        self._session: aiohttp.ClientSession | None = None
-
-    def _ensure_session(self) -> aiohttp.ClientSession:
-        if not self._session:
+        try:
             self._session = aiohttp.ClientSession()
-        return self._session
+        except Exception:
+            self._session = None
 
     async def cancel(self):
         self.ten_env.log_debug("CambTTS: cancel() called.")
@@ -80,11 +78,13 @@ class CambTTSClient(AsyncTTS2HttpClient):
             return
 
         if text_len > 3000:
-            self.ten_env.log_warn(
-                f"CambTTS: text too long ({text_len} chars, max 3000), truncating for request_id: {request_id}.",
+            error_message = f"CambTTS: text too long ({text_len} chars, max 3000) for request_id: {request_id}."
+            self.ten_env.log_error(
+                error_message,
                 category=LOG_CATEGORY_VENDOR,
             )
-            text = text[:3000]
+            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+            return
 
         try:
             speech_model = self.config.params.get("speech_model", DEFAULT_MODEL)
@@ -116,13 +116,13 @@ class CambTTSClient(AsyncTTS2HttpClient):
                 f"CambTTS: requesting voice_id={voice_id}, model={speech_model}, format={output_format} for request_id: {request_id}."
             )
 
-            async with self._ensure_session().post(
+            async with self._session.post(
                 f"{API_BASE_URL}/tts-stream",
                 headers=headers,
                 json=payload,
                 timeout=aiohttp.ClientTimeout(total=60),
             ) as resp:
-                if resp.status == 401:
+                if resp.status in (401, 403):
                     error_message = "Invalid Camb.ai API key."
                     self.ten_env.log_error(
                         f"CambTTS: {error_message} for request_id: {request_id}.",
@@ -140,7 +140,9 @@ class CambTTSClient(AsyncTTS2HttpClient):
                         f"CambTTS: {error_message} for request_id: {request_id}.",
                         category=LOG_CATEGORY_VENDOR,
                     )
-                    yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                    yield error_message.encode(
+                        "utf-8"
+                    ), TTS2HttpResponseEventType.ERROR
                     return
 
                 # Stream audio chunks (same as livekit: resp.content.iter_chunks())
@@ -182,7 +184,9 @@ class CambTTSClient(AsyncTTS2HttpClient):
         """Return extra metadata for TTFB metrics."""
         return {
             "voice_id": self.config.params.get("voice_id", DEFAULT_VOICE_ID),
-            "speech_model": self.config.params.get("speech_model", DEFAULT_MODEL),
+            "speech_model": self.config.params.get(
+                "speech_model", DEFAULT_MODEL
+            ),
         }
 
     def get_sample_rate(self) -> int:
