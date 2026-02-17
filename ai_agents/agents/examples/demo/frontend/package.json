@@ -30,7 +30,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
-    "next": "^15.5.7",
+    "next": "16.0.7",
     "next-themes": "^0.3.0",
     "protobufjs": "^7.2.5",
     "react": "^18",
