@@ -12,5 +12,6 @@
     "video_encoding": "${env:VIDEO_ENCODING|H264}",
     "enable_string_uid": false,
     "activity_idle_timeout": 120,
-    "input_audio_sample_rate": 48000
+    "input_audio_sample_rate": 48000,
+    "anam_vercel_bypass_token": ""
 }
