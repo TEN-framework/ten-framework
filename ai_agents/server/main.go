@@ -28,10 +28,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Load .env
-	err := godotenv.Load()
+	// Load .env, using Overload to ensure file values take precedence
+	err := godotenv.Overload()
 	if err != nil {
-		slog.Warn("load .env file failed", "err", err)
+		if err2 := godotenv.Overload("../.env"); err2 != nil {
+			slog.Warn("load .env file failed", "err", err)
+		}
 	}
 
 	// Check if the directory exists

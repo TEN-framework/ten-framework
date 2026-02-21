@@ -17,6 +17,11 @@ tasks:
     dir: ./tenapp
     cmds:
       - tman install
+      - mkdir -p ../../../ten_packages/system
+      - |
+        for pkg in ten_packages/system/*/; do
+          [ -d "$pkg" ] && ln -snf "$(pwd)/$pkg" "../../../ten_packages/system/$(basename $pkg)"
+        done
 
   install-tenapp-python-deps:
     desc: install tenapp python dependencies

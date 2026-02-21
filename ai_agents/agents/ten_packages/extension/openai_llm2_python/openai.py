@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import random
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Optional
 from pydantic import BaseModel
 import requests
 from openai import AsyncOpenAI, AsyncStream
@@ -42,10 +42,10 @@ class OpenAILLM2Config(BaseModel):
         "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
     )
     proxy_url: str = ""
-    temperature: float = 0.7
-    top_p: float = 1.0
-    presence_penalty: float = 0.0
-    frequency_penalty: float = 0.0
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    presence_penalty: Optional[float] = None
+    frequency_penalty: Optional[float] = None
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
@@ -253,10 +253,14 @@ class OpenAIChatGPT:
             req["max_completion_tokens"] = self.config.max_tokens
         else:
             req["max_tokens"] = self.config.max_tokens
-            req["temperature"] = self.config.temperature
-            req["top_p"] = self.config.top_p
-            req["presence_penalty"] = self.config.presence_penalty
-            req["frequency_penalty"] = self.config.frequency_penalty
+            if self.config.temperature is not None:
+                req["temperature"] = self.config.temperature
+            if self.config.top_p is not None:
+                req["top_p"] = self.config.top_p
+            if self.config.presence_penalty is not None:
+                req["presence_penalty"] = self.config.presence_penalty
+            if self.config.frequency_penalty is not None:
+                req["frequency_penalty"] = self.config.frequency_penalty
             req["seed"] = self.config.seed
 
         # Add additional parameters if they are not in the black list
@@ -265,6 +269,12 @@ class OpenAIChatGPT:
             if not self.config.is_black_list_params(key):
                 self.ten_env.log_debug(f"set openai param: {key} = {value}")
                 req[key] = value
+
+        # Strip sampling params unsupported by reasoning models (gpt-5.x, o1, o3, etc.)
+        model_lower = (self.config.model or "").lower()
+        if is_reasoning_model or "o1" in model_lower or "o3" in model_lower:
+            for unsupported in ["temperature", "top_p", "presence_penalty", "frequency_penalty", "seed"]:
+                req.pop(unsupported, None)
 
         self.ten_env.log_info(f"Requesting chat completions with: {req}")
 
