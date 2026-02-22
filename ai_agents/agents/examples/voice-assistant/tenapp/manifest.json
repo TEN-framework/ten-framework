@@ -73,6 +73,9 @@
       "path": "../../../ten_packages/extension/xfyun_asr_python"
     },
     {
+      "path": "../../../ten_packages/extension/oracle_asr_python"
+    },
+    {
       "path": "../../../ten_packages/extension/coze_llm2_python"
     },
     {

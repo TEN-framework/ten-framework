@@ -1,0 +1,81 @@
+{
+  "type": "extension",
+  "name": "oracle_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "tenancy": {
+              "type": "string"
+            },
+            "user": {
+              "type": "string"
+            },
+            "fingerprint": {
+              "type": "string"
+            },
+            "key_file": {
+              "type": "string"
+            },
+            "compartment_id": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "final_silence_threshold_in_ms": {
+              "type": "int32"
+            },
+            "partial_silence_threshold_in_ms": {
+              "type": "int32"
+            },
+            "stabilize_partial_results": {
+              "type": "string"
+            },
+            "punctuation": {
+              "type": "string"
+            },
+            "model_domain": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  }
+}

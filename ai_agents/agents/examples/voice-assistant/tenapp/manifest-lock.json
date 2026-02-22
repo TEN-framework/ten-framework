@@ -357,6 +357,23 @@
     },
     {
       "type": "extension",
+      "name": "oracle_asr_python",
+      "version": "0.1.0",
+      "hash": "399f986295bf4c7cfceef4c251b589d75efd72d6129c268ed18297871656e071",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/oracle_asr_python"
+    },
+    {
+      "type": "extension",
       "name": "coze_llm2_python",
       "version": "0.2.0",
       "hash": "6056efcc889c5cdb85b104d19d97f01f6cd33dc831634d2249b6729fa4340325",

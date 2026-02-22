@@ -125,6 +125,7 @@ ai_agents/crash_context_v1
 ai_agents/.deps/
 ai_agents/.DS_Store
 ai_agents/.env
+ai_agents/*.pem
 ai_agents/.gn
 ai_agents/.gnfiles
 ai_agents/include/
