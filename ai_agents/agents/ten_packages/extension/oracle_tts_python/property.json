@@ -1,0 +1,15 @@
+{
+  "params": {
+    "tenancy": "${env:OCI_TENANCY}",
+    "user": "${env:OCI_USER}",
+    "fingerprint": "${env:OCI_FINGERPRINT}",
+    "key_file": "${env:OCI_KEY_FILE}",
+    "compartment_id": "${env:OCI_COMPARTMENT_ID}",
+    "region": "${env:OCI_REGION|}",
+    "model_name": "TTS_2_NATURAL",
+    "voice_id": "Annabelle",
+    "language_code": "en-US",
+    "sample_rate": 16000,
+    "output_format": "PCM"
+  }
+}

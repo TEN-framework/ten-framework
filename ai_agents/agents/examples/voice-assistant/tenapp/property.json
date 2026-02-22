@@ -248,16 +248,21 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "oracle_tts_python",
               "extension_group": "tts",
               "property": {
-                "dump": false,
-                "dump_path": "./",
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
+                  "tenancy": "${env:OCI_TENANCY}",
+                  "user": "${env:OCI_USER}",
+                  "fingerprint": "${env:OCI_FINGERPRINT}",
+                  "key_file": "${env:OCI_KEY_FILE}",
+                  "compartment_id": "${env:OCI_COMPARTMENT_ID}",
+                  "region": "${env:OCI_REGION|}",
+                  "model_name": "TTS_2_NATURAL",
+                  "voice_id": "Annabelle",
+                  "language_code": "en-US",
+                  "sample_rate": 16000,
+                  "output_format": "PCM"
                 }
               }
             },

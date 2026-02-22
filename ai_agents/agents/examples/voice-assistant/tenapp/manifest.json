@@ -142,6 +142,9 @@
       "path": "../../../ten_packages/extension/tencent_tts_python"
     },
     {
+      "path": "../../../ten_packages/extension/oracle_tts_python"
+    },
+    {
       "path": "../../../ten_packages/extension/message_collector2"
     },
     {

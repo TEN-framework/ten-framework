@@ -740,6 +740,23 @@
     },
     {
       "type": "extension",
+      "name": "oracle_tts_python",
+      "version": "0.1.0",
+      "hash": "803baaaefbff33f7649fe0ee6f5d73272c87bdead7c42d9495b903f581341d92",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/oracle_tts_python"
+    },
+    {
+      "type": "extension",
       "name": "message_collector2",
       "version": "0.2.0",
       "hash": "b4cdc75c61ed572952e2f14bdb5c440f993d3a5bf2da6fe5f5cbb1b4d772a837",
