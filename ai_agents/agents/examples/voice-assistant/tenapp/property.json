@@ -233,16 +233,18 @@
               "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
-                "base_url": "https://api.openai.com/v1",
-                "api_key": "${env:OPENAI_API_KEY}",
+                "base_url": "${env:ORACLE_LLM_BASE_URL}",
+                "api_key": "${env:ORACLE_LLM_API_KEY}",
+                "model": "${env:ORACLE_LLM_MODEL}",
                 "frequency_penalty": 0.9,
-                "model": "${env:OPENAI_MODEL}",
                 "temperature": 1,
                 "max_tokens": 512,
                 "prompt": "",
-                "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "TEN Agent connected. How can I help you today?",
-                "max_memory_length": 10
+                "max_memory_length": 10,
+                "default_headers": {
+                  "opc-compartment-id": "${env:OCI_COMPARTMENT_ID}"
+                }
               }
             },
             {

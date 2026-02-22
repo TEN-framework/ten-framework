@@ -66,6 +66,10 @@
         },
         "max_memory_length": {
           "type": "int32"
+        },
+        "default_headers": {
+          "type": "object",
+          "properties": {}
         }
       }
     }

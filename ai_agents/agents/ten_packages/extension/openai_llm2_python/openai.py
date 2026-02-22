@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import random
-from typing import AsyncGenerator, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 from pydantic import BaseModel
 import requests
 from openai import AsyncOpenAI, AsyncStream
@@ -49,6 +49,7 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    default_headers: Dict[str, Any] = field(default_factory=dict)
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -113,6 +114,7 @@ class OpenAIChatGPT:
             default_headers={
                 "api-key": config.api_key,
                 "Authorization": f"Bearer {config.api_key}",
+                **config.default_headers,
             },
         )
         self.session = requests.Session()
