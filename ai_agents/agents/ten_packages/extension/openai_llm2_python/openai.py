@@ -108,13 +108,16 @@ class OpenAIChatGPT:
         ten_env.log_info(
             f"OpenAIChatGPT initialized with config: {config.api_key}"
         )
+        safe_default_headers = self._sanitize_default_headers(
+            config.default_headers
+        )
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
             default_headers={
                 "api-key": config.api_key,
                 "Authorization": f"Bearer {config.api_key}",
-                **config.default_headers,
+                **safe_default_headers,
             },
         )
         self.session = requests.Session()
@@ -126,6 +129,36 @@ class OpenAIChatGPT:
             ten_env.log_info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
+
+    def _sanitize_default_headers(
+        self, headers: Dict[str, Any]
+    ) -> Dict[str, str]:
+        blocked_header_names = {
+            "api-key",
+            "authorization",
+            "proxy-authorization",
+        }
+        safe_headers: Dict[str, str] = {}
+        blocked_headers: List[str] = []
+
+        for key, value in headers.items():
+            key_str = str(key).strip()
+            if not key_str:
+                continue
+
+            if key_str.lower() in blocked_header_names:
+                blocked_headers.append(key_str)
+                continue
+
+            safe_headers[key_str] = str(value)
+
+        if blocked_headers:
+            self.ten_env.log_warn(
+                "Ignore protected headers in default_headers: "
+                f"{sorted(set(blocked_headers))}"
+            )
+
+        return safe_headers
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json_dict = {

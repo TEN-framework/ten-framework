@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import json
 from typing import Dict, Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
@@ -25,7 +26,7 @@ class OracleTTSConfig(BaseModel):
                     config_dict["params"][key] = encrypt(
                         config_dict["params"][key]
                     )
-        return str(config_dict)
+        return json.dumps(config_dict)
 
     def validate_params(self) -> None:
         required_keys = [

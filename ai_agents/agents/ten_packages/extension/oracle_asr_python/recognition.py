@@ -196,7 +196,10 @@ class OracleASRRecognition:
 
         try:
             url = self._build_url()
-            self.ten_env.log_info(f"Connecting to Oracle Speech: {url}")
+            self.ten_env.log_info(
+                f"vendor_status: connecting to Oracle Speech: {url}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
             self.websocket = await websockets.connect(
                 url,
@@ -204,7 +207,10 @@ class OracleASRRecognition:
                 ping_interval=None,
             )
 
-            self.ten_env.log_info("WebSocket opened, sending auth credentials")
+            self.ten_env.log_info(
+                "vendor_status: websocket opened, sending auth credentials",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.is_started = True
 
             await self._send_credentials()
@@ -215,12 +221,17 @@ class OracleASRRecognition:
 
         except asyncio.TimeoutError:
             error_msg = f"Connection timeout after {timeout} seconds"
-            self.ten_env.log_error(f"Failed to start recognition: {error_msg}")
+            self.ten_env.log_error(
+                f"Failed to start recognition: {error_msg}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.callback.on_error(error_msg, TIMEOUT_CODE)
 
         except Exception as e:
             error_msg = f"Failed to start recognition: {e}"
-            self.ten_env.log_error(error_msg)
+            self.ten_env.log_error(
+                error_msg, category=LOG_CATEGORY_VENDOR
+            )
             await self.callback.on_error(error_msg)
 
     async def send_audio_frame(self, audio_data: bytes):
@@ -237,14 +248,18 @@ class OracleASRRecognition:
             await self.websocket.send(audio_data)
         except websockets.exceptions.ConnectionClosed:
             self.ten_env.log_info(
-                "WebSocket connection closed while sending audio"
+                "vendor_status: websocket connection closed while sending audio",
+                category=LOG_CATEGORY_VENDOR,
             )
             self.is_started = False
             await self.callback.on_error(
                 "WebSocket connection closed while sending audio"
             )
         except Exception as e:
-            self.ten_env.log_error(f"Failed to send audio frame: {e}")
+            self.ten_env.log_error(
+                f"Failed to send audio frame: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.callback.on_error(f"Failed to send audio frame: {e}")
 
     async def request_final_result(self):
@@ -277,7 +292,10 @@ class OracleASRRecognition:
                 pass
 
         self.is_started = False
-        self.ten_env.log_info("WebSocket connection closed")
+        self.ten_env.log_info(
+            "vendor_status: websocket connection closed",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     def is_connected(self) -> bool:
         if self.websocket is None:

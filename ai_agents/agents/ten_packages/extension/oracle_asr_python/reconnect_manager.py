@@ -15,10 +15,12 @@ class ReconnectManager:
         self,
         base_delay: float = 0.5,
         max_delay: float = 4.0,
+        max_attempts: int = 5,
         logger=None,
     ):
         self.base_delay = base_delay
         self.max_delay = max_delay
+        self.max_attempts = max_attempts
         self.logger = logger
 
         self.attempts = 0
@@ -36,8 +38,11 @@ class ReconnectManager:
     def get_attempts_info(self) -> dict:
         return {
             "current_attempts": self.attempts,
-            "unlimited_retries": True,
+            "max_attempts": self.max_attempts,
         }
+
+    def can_retry(self) -> bool:
+        return self.attempts < self.max_attempts
 
     async def handle_reconnect(
         self,
@@ -46,6 +51,24 @@ class ReconnectManager:
             Callable[[ModuleError], Awaitable[None]]
         ] = None,
     ) -> bool:
+        if not self.can_retry():
+            if self.logger:
+                self.logger.log_error(
+                    "Reconnection attempts exhausted"
+                )
+            if error_handler:
+                await error_handler(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message=(
+                            "Maximum reconnection attempts reached. "
+                            "Please check network connectivity and OCI credentials."
+                        ),
+                    )
+                )
+            return False
+
         self._connection_successful = False
         self.attempts += 1
 
@@ -62,6 +85,13 @@ class ReconnectManager:
         try:
             await asyncio.sleep(delay)
             await connection_func()
+
+            if not self._connection_successful:
+                if self.logger:
+                    self.logger.log_warn(
+                        f"Reconnection attempt #{self.attempts} did not establish a connection"
+                    )
+                return False
 
             if self.logger:
                 self.logger.log_debug(

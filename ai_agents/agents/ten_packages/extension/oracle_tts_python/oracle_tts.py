@@ -43,7 +43,7 @@ class OracleTTS:
             "user": params.get("user", ""),
             "fingerprint": params.get("fingerprint", ""),
             "key_file": params.get("key_file", ""),
-            "region": params.get("region", "us-phoenix-1"),
+            "region": params.get("region") or "us-phoenix-1",
         }
         oci.config.validate_config(oci_config)
         self.client = oci.ai_speech.AIServiceSpeechClient(oci_config)

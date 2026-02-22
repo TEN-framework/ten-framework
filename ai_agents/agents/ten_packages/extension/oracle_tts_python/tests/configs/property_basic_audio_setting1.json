@@ -1,13 +1,13 @@
 {
-  "dump": false,
-  "dump_path": "/tmp",
+  "dump": true,
+  "dump_path": "./tests/keep_dump_output/",
   "params": {
     "tenancy": "${env:OCI_TENANCY}",
     "user": "${env:OCI_USER}",
     "fingerprint": "${env:OCI_FINGERPRINT}",
     "key_file": "${env:OCI_KEY_FILE}",
     "compartment_id": "${env:OCI_COMPARTMENT_ID}",
-    "region": "${env:OCI_REGION|}",
+    "region": "${env:OCI_REGION|us-phoenix-1}",
     "model_name": "TTS_2_NATURAL",
     "voice_id": "Annabelle",
     "language_code": "en-US",

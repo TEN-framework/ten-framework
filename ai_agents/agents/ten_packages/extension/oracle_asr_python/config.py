@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
@@ -23,7 +24,7 @@ class OracleASRConfig(BaseModel):
             for key in sensitive_keys:
                 if key in config_dict["params"] and config_dict["params"][key]:
                     config_dict["params"][key] = encrypt(config_dict["params"][key])
-        return str(config_dict)
+        return json.dumps(config_dict)
 
     @property
     def normalized_language(self) -> str:

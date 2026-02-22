@@ -47,6 +47,7 @@ class OracleASRExtension(
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
         self.reconnect_manager: ReconnectManager = None  # type: ignore
+        self._reconnect_lock = asyncio.Lock()
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -81,7 +82,10 @@ class OracleASRExtension(
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"Invalid Oracle ASR config: {e}")
+            ten_env.log_error(
+                f"Invalid Oracle ASR config: {e}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
             self.config = OracleASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -94,7 +98,10 @@ class OracleASRExtension(
     @override
     async def start_connection(self) -> None:
         assert self.config is not None
-        self.ten_env.log_info("Starting Oracle Speech connection")
+        self.ten_env.log_info(
+            "Starting Oracle Speech connection",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
         try:
             tenancy = self.config.params.get("tenancy", "")
@@ -117,7 +124,9 @@ class OracleASRExtension(
 
             if missing:
                 error_msg = f"Oracle ASR credentials missing: {', '.join(missing)}"
-                self.ten_env.log_error(error_msg)
+                self.ten_env.log_error(
+                    error_msg, category=LOG_CATEGORY_KEY_POINT
+                )
                 await self.send_asr_error(
                     ModuleError(
                         module=MODULE_NAME_ASR,
@@ -136,11 +145,13 @@ class OracleASRExtension(
                 config=self.config.params,
                 callback=self,
             )
-
-            asyncio.create_task(self.recognition.start(timeout=10))
+            await self.recognition.start(timeout=10)
 
         except Exception as e:
-            self.ten_env.log_error(f"Failed to start Oracle Speech connection: {e}")
+            self.ten_env.log_error(
+                f"Failed to start Oracle Speech connection: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -187,23 +198,36 @@ class OracleASRExtension(
 
     async def _handle_reconnect(self):
         if not self.reconnect_manager:
-            self.ten_env.log_error("ReconnectManager not initialized")
+            self.ten_env.log_error(
+                "ReconnectManager not initialized",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
             return
 
-        success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection,
-            error_handler=self.send_asr_error,
-        )
+        if self._reconnect_lock.locked():
+            self.ten_env.log_debug(
+                "Reconnect already in progress, skip duplicate trigger",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return
 
-        if success:
-            self.ten_env.log_debug(
-                "Reconnection attempt initiated successfully"
+        async with self._reconnect_lock:
+            success = await self.reconnect_manager.handle_reconnect(
+                connection_func=self.start_connection,
+                error_handler=self.send_asr_error,
             )
-        else:
-            info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(
-                f"Reconnection attempt failed. Status: {info}"
-            )
+
+            if success:
+                self.ten_env.log_debug(
+                    "Reconnection attempt initiated successfully",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+            else:
+                info = self.reconnect_manager.get_attempts_info()
+                self.ten_env.log_debug(
+                    f"Reconnection attempt failed. Status: {info}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:
@@ -216,14 +240,23 @@ class OracleASRExtension(
             await self.send_asr_finalize_end()
 
     async def stop_connection(self) -> None:
-        self.ten_env.log_info("Stopping Oracle Speech connection")
+        self.ten_env.log_info(
+            "Stopping Oracle Speech connection",
+            category=LOG_CATEGORY_VENDOR,
+        )
         try:
             if self.recognition:
                 await self.recognition.close()
                 self.recognition = None
-            self.ten_env.log_info("Oracle Speech connection stopped")
+            self.ten_env.log_info(
+                "Oracle Speech connection stopped",
+                category=LOG_CATEGORY_VENDOR,
+            )
         except Exception as e:
-            self.ten_env.log_error(f"Error stopping Oracle Speech connection: {e}")
+            self.ten_env.log_error(
+                f"Error stopping Oracle Speech connection: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
     @override
     def is_connected(self) -> bool:
@@ -244,6 +277,7 @@ class OracleASRExtension(
     ) -> bool:
         assert self.recognition is not None
 
+        buf = None
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
@@ -252,14 +286,17 @@ class OracleASRExtension(
                 await self.audio_dumper.push_bytes(audio_data)
 
             await self.recognition.send_audio_frame(audio_data)
-
-            frame.unlock_buf(buf)
             return True
 
         except Exception as e:
-            self.ten_env.log_error(f"Error sending audio to Oracle Speech: {e}")
-            frame.unlock_buf(buf)
+            self.ten_env.log_error(
+                f"Error sending audio to Oracle Speech: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             return False
+        finally:
+            if buf is not None:
+                frame.unlock_buf(buf)
 
     # --- Vendor callback implementations ---
 
@@ -281,7 +318,10 @@ class OracleASRExtension(
         try:
             transcriptions = message_data.get("transcriptions", [])
             if not transcriptions:
-                self.ten_env.log_debug("No transcriptions in Oracle result")
+                self.ten_env.log_debug(
+                    "No transcriptions in Oracle result",
+                    category=LOG_CATEGORY_VENDOR,
+                )
                 return
 
             first = transcriptions[0]
@@ -306,7 +346,10 @@ class OracleASRExtension(
             )
 
         except Exception as e:
-            self.ten_env.log_error(f"Error processing Oracle result: {e}")
+            self.ten_env.log_error(
+                f"Error processing Oracle result: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
     @override
     async def on_error(

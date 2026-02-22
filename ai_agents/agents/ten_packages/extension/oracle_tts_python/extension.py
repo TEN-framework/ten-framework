@@ -92,13 +92,19 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("OracleTTS extension on_stop started")
+        ten_env.log_debug(
+            "OracleTTS extension on_stop started",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
 
         if self.client:
             try:
                 self.client.clean()
             except Exception as e:
-                ten_env.log_error(f"Error cleaning OracleTTS client: {e}")
+                ten_env.log_error(
+                    f"Error cleaning OracleTTS client: {e}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
             finally:
                 self.client = None
 
@@ -108,7 +114,8 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                 await recorder.flush()
             except Exception as e:
                 ten_env.log_error(
-                    f"Error flushing PCMWriter for request_id {request_id}: {e}"
+                    f"Error flushing PCMWriter for request_id {request_id}: {e}",
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
 
         self.recorder_map.clear()
@@ -148,10 +155,14 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                 self.client.cancel()
             else:
                 self.ten_env.log_warn(
-                    "Client is not initialized, skipping cancel"
+                    "Client is not initialized, skipping cancel",
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
         except Exception as e:
-            self.ten_env.log_error(f"Error in cancel_tts: {e}")
+            self.ten_env.log_error(
+                f"Error in cancel_tts: {e}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
             await self.send_tts_error(
                 request_id=self.current_request_id,
                 error=ModuleError(
@@ -169,7 +180,8 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         if self.last_complete_request_id == self.current_request_id:
             self.ten_env.log_debug(
-                f"{self.current_request_id} was completed, skip."
+                f"{self.current_request_id} was completed, skip.",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             return
         self.last_complete_request_id = self.current_request_id
