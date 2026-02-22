@@ -135,8 +135,10 @@ class OpenAIChatGPT:
     ) -> Dict[str, str]:
         blocked_header_names = {
             "api-key",
-            "authorization",
             "proxy-authorization",
+        }
+        warn_header_names = {
+            "authorization",
         }
         safe_headers: Dict[str, str] = {}
         blocked_headers: List[str] = []
@@ -149,6 +151,12 @@ class OpenAIChatGPT:
             if key_str.lower() in blocked_header_names:
                 blocked_headers.append(key_str)
                 continue
+
+            if key_str.lower() in warn_header_names:
+                self.ten_env.log_warn(
+                    f"default_headers overrides '{key_str}'; "
+                    "the built-in Bearer token will be replaced"
+                )
 
             safe_headers[key_str] = str(value)
 

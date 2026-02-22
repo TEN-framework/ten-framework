@@ -6,9 +6,11 @@ from .const import MODULE_NAME_ASR
 
 class ReconnectManager:
     """
-    Manages reconnection attempts with unlimited retries and exponential backoff.
+    Manages reconnection attempts with exponential backoff and a
+    configurable maximum number of retries (default 5).
 
-    Backoff sequence: 0.5s, 1s, 2s, 4s (capped).
+    Backoff sequence: 0.5s, 1s, 2s, 4s (capped at max_delay).
+    After max_attempts consecutive failures a FATAL_ERROR is reported.
     """
 
     def __init__(

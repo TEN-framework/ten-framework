@@ -1,4 +1,6 @@
 {
+  "dump": false,
+  "dump_path": "/tmp",
   "params": {
     "tenancy": "${env:OCI_TENANCY}",
     "user": "${env:OCI_USER}",

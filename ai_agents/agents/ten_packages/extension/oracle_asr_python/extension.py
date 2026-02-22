@@ -204,14 +204,28 @@ class OracleASRExtension(
             )
             return
 
-        if self._reconnect_lock.locked():
+        if not self._reconnect_lock.acquire_nowait():
             self.ten_env.log_debug(
                 "Reconnect already in progress, skip duplicate trigger",
                 category=LOG_CATEGORY_VENDOR,
             )
             return
 
-        async with self._reconnect_lock:
+        try:
+            if not self.reconnect_manager.can_retry():
+                self.ten_env.log_error(
+                    "Max reconnection attempts reached",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+                await self.send_asr_error(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message="Maximum reconnection attempts reached.",
+                    ),
+                )
+                return
+
             success = await self.reconnect_manager.handle_reconnect(
                 connection_func=self.start_connection,
                 error_handler=self.send_asr_error,
@@ -228,6 +242,8 @@ class OracleASRExtension(
                     f"Reconnection attempt failed. Status: {info}",
                     category=LOG_CATEGORY_VENDOR,
                 )
+        finally:
+            self._reconnect_lock.release()
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:

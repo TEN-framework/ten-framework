@@ -3,7 +3,6 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import array
 import asyncio
 import struct
 import time
@@ -143,39 +142,11 @@ class OracleTTS:
             pcm = pcm[:-1]
         return pcm
 
-    @staticmethod
-    def _fade_pcm_edges(
-        pcm: bytes, sample_rate: int, fade_ms: float = 2.0
-    ) -> bytes:
-        """Apply short linear fade-in and fade-out to prevent boundary pops.
-
-        At 16 kHz / 2 ms this affects only 32 samples (~imperceptible) but
-        eliminates any click caused by DC-offset discontinuities or residual
-        trailing bytes between concatenated audio segments.
-        """
-        n_bytes = len(pcm)
-        if n_bytes < 128:
-            return pcm
-
-        fade_samples = max(1, int(sample_rate * fade_ms / 1000))
-        samples = array.array("h")
-        samples.frombytes(pcm)
-        n = len(samples)
-        fade_samples = min(fade_samples, n // 4)
-
-        for i in range(fade_samples):
-            factor = i / fade_samples
-            samples[i] = int(samples[i] * factor)
-            samples[n - 1 - i] = int(samples[n - 1 - i] * factor)
-
-        return samples.tobytes()
-
     def _get_audio_bytes(self, text: str) -> bytes:
         """Synchronous: call OCI TTS API and return clean raw PCM audio bytes.
 
         1. Call Oracle synthesize_speech API
         2. Strip WAV header (handles both truncation and trailing data)
-        3. Apply edge fading to prevent pops at audio segment boundaries
         """
         params = self.config.params
         compartment_id = params.get("compartment_id", "")
@@ -204,9 +175,7 @@ class OracleTTS:
         else:
             raw = bytes(data)
 
-        pcm = self._strip_wav_header(raw)
-        sample_rate = int(self.config.params.get("sample_rate", 16000))
-        return self._fade_pcm_edges(pcm, sample_rate)
+        return self._strip_wav_header(raw)
 
     async def get(
         self, text: str, request_id: str

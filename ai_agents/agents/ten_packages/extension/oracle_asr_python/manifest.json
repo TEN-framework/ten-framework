@@ -73,7 +73,10 @@
     "include": [
       "manifest.json",
       "property.json",
+      "BUILD.gn",
+      "**.tent",
       "**.py",
+      "README.md",
       "requirements.txt",
       "docs/**"
     ]
