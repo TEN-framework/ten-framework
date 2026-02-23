@@ -1044,7 +1044,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -1386,7 +1386,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -1712,7 +1712,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -1991,7 +1991,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -2282,7 +2282,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -2598,7 +2598,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120,
                 "disable_greeting_wait": true,
@@ -3119,7 +3119,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -3398,7 +3398,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -3667,7 +3667,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -4203,7 +4203,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
@@ -4561,7 +4561,7 @@
                 "agora_video_uid": 123,
                 "input_audio_sample_rate": 44100,
                 "quality": "${env:VIDEO_QUALITY|high}",
-                "video_encoding": "${env:VIDEO_ENCODING|H264}",
+                "video_encoding": "${env:VIDEO_ENCODING|AV1}",
                 "enable_string_uid": false,
                 "activity_idle_timeout": 120
               }
