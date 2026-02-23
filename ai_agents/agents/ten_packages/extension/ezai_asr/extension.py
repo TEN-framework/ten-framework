@@ -570,7 +570,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         try:
             buf = frame.lock_buf()
             if self.audio_dumper:
-                self.ten_env.log_info(f"Dumping {len(buf)} bytes")
                 await self.audio_dumper.push_bytes(bytes(buf))
             self.audio_timeline.add_user_audio(
                 int(len(buf) / (self.config.sample_rate / 1000 * 2))
@@ -598,6 +597,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
 
             return True
         except Exception as e:
-            self.ten_env.log_error(f"Error sending audio to Deepgram Flux: {e}")
+            self.ten_env.log_error(f"Error sending audio to EZAI ASR: {e}")
             frame.unlock_buf(buf)
             return False
