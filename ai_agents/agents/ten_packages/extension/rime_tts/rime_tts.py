@@ -211,9 +211,7 @@ class RimeTTSynthesizer:
                 if tts_text_input is None:  # End signal
                     break
 
-                context_id = (
-                    f"{tts_text_input.request_id}_{int(time.time() * 1000)}"
-                )
+                context_id =tts_text_input.request_id
                 self.latest_context_id = context_id
 
                 # Send text message
@@ -305,11 +303,10 @@ class RimeTTSynthesizer:
             elif message_type == RIME_MESSAGE_TYPE_DONE:
                 context_id = data.get("contextId")
                 self.ten_env.log_debug(
-                    f"RIME TTS done: {data}, latest_context_id: {self.latest_context_id}, context_id: {context_id}"
+                    f"RIME TTS done: {data}, context_id: {context_id}"
                 )
-                if self.response_msgs:
-                    if context_id and context_id == self.latest_context_id:
-                        await self.response_msgs.put((EVENT_TTS_END, b""))
+
+                await self.response_msgs.put((EVENT_TTS_END, b""))
 
             elif message_type == RIME_MESSAGE_TYPE_ERROR:
                 # Handle error
