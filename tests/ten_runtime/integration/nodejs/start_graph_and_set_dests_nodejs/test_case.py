@@ -108,7 +108,17 @@ def test_start_graph_and_set_dests_nodejs():
         assert exit_code == 0
         assert False
 
-    if sys.platform == "darwin":
+    if sys.platform == "win32":
+        # client depends on ten_runtime.dll and ten_utils.dll in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                "start_graph_and_set_dests_nodejs_app/ten_packages/system/ten_runtime/lib",
+            )
+            + os.pathsep
+            + my_env.get("PATH", "")
+        )
+    elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,
