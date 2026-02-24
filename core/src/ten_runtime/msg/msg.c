@@ -1536,3 +1536,9 @@ TEN_MSG_TYPE ten_msg_get_type(ten_shared_ptr_t *self) {
   TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
   return ten_raw_msg_get_type(ten_msg_get_raw_msg(self));
 }
+
+ten_msg_t *ten_msg_get_raw_msg(ten_shared_ptr_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(self), "Should not happen.");
+  return (ten_msg_t *)ten_shared_ptr_get_data(self);
+}

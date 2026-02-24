@@ -67,6 +67,8 @@ class RimeTTSynthesizer:
         self.sent_ts: datetime | None = None
         self.ttfb_sent: bool = False
 
+        self.cur_request_id: str | None = None
+
     def _build_websocket_url(self) -> str:
         """Build RIME TTS WebSocket URL with query parameters"""
         params = self.config.params.copy()
@@ -216,7 +218,10 @@ class RimeTTSynthesizer:
 
                 # Send text message
                 await self._send_text_internal(
-                    ws, tts_text_input.text, context_id
+                    ws,
+                    tts_text_input.text,
+                    context_id,
+                    tts_text_input.request_id,
                 )
         except Exception as e:
             self.ten_env.log_error(f"Exception in RIME TTS send_loop: {e}")
@@ -333,7 +338,11 @@ class RimeTTSynthesizer:
         await self.text_input_queue.put(t)
 
     async def _send_text_internal(
-        self, ws: WebSocketClientProtocol, text: str, context_id: str
+        self,
+        ws: WebSocketClientProtocol,
+        text: str,
+        context_id: str,
+        request_id: str,
     ):
         """Internal text sending implementation for RIME TTS"""
 
@@ -343,7 +352,8 @@ class RimeTTSynthesizer:
         self.ten_env.log_debug(
             f"KEYPOINT Sending text to RIME TTS: {message_json}"
         )
-        if not self.ttfb_sent:
+        if self.cur_request_id is None or self.cur_request_id != request_id:
+            self.cur_request_id = request_id
             self.sent_ts = datetime.now()
 
         await ws.send(message_json)
