@@ -179,10 +179,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -494,10 +494,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
@@ -924,10 +924,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1180,10 +1180,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1437,10 +1437,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1694,10 +1694,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
@@ -1971,10 +1971,10 @@ jobs:
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
-            libc++-21-dev \
-            libc++1-21 \
-            libc++abi-21-dev \
-            libc++abi1-21
+            libc++-dev \
+            libc++1 \
+            libc++abi-dev \
+            libc++abi1
 
           # Clean up apt cache
           sudo apt-get clean
