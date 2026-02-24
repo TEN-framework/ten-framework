@@ -9,4 +9,3 @@ from .blaze_stt import BlazeSTTExtension, BlazeSTTConfig
 
 __all__ = ["BlazeSTTExtension", "BlazeSTTConfig"]
 __version__ = "1.0.0"
-

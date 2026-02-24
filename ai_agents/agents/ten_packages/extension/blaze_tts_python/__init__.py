@@ -9,4 +9,3 @@ from .blaze_tts import BlazeTTSExtension, BlazeTTSConfig
 
 __all__ = ["BlazeTTSExtension", "BlazeTTSConfig"]
 __version__ = "1.0.0"
-

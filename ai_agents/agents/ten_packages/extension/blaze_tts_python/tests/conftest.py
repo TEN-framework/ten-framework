@@ -1,6 +1,7 @@
 """
 Pytest fixtures for Blaze TTS Extension tests
 """
+
 import pytest
 
 
@@ -57,4 +58,3 @@ def mock_api_response_job_info():
         "job_status": "completed",
         "audio_url": "https://example.com/audio/test-tts-job-123.mp3",
     }
-
