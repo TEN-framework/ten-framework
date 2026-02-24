@@ -8,7 +8,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Coroutine
 
 import aiohttp
 from cryptography.hazmat.primitives import serialization
@@ -91,6 +91,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         self._connect_nonce = ""
         self._stopped = False
         self._device_identity: DeviceIdentity | None = None
+        self._background_tasks: set[asyncio.Task] = set()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -105,6 +106,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
 
     async def on_stop(self, _ten_env: AsyncTenEnv) -> None:
         self._stopped = True
+        for task in list(self._background_tasks):
+            task.cancel()
+        self._background_tasks.clear()
         if self.recv_task:
             self.recv_task.cancel()
             try:
@@ -211,13 +215,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 summary="",
             )
             if emitted:
-                asyncio.create_task(
+                self._create_background_task(
                     self._reemit_startup_pairing_notice(
-                        exc=exc,
-                        task_id="",
-                        summary="",
-                        attempts=2,
-                        interval_seconds=1.0,
+                        exc=exc, task_id="", summary="", attempts=2, interval_seconds=1.0
                     )
                 )
             else:
@@ -344,7 +344,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             payload = frame.get("payload")
             if event_name == "connect.challenge":
                 self._connect_nonce = self._extract_connect_nonce(payload)
-                asyncio.create_task(self._send_connect_background())
+                self._create_background_task(self._send_connect_background())
                 return
             if event_name == "agent":
                 phase = self._extract_agent_phase(payload)
@@ -402,6 +402,13 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 task_id="",
                 summary="",
             )
+
+    def _create_background_task(
+        self, coro: Coroutine[Any, Any, Any]
+    ) -> None:
+        task = asyncio.create_task(coro)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     async def _send_connect(self) -> None:
         if self._connect_sent:
@@ -619,6 +626,12 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 format=serialization.PublicFormat.Raw,
             )
             device_id = hashlib.sha256(public_key_raw).hexdigest()
+            stored_device_id = str(payload.get("device_id", "")).strip()
+            if stored_device_id and stored_device_id != device_id:
+                self.ten_env.log_warn(
+                    "[openclaw_gateway_tool_python] device_id mismatch in identity file; "
+                    "using derived id from public key"
+                )
             return DeviceIdentity(
                 device_id=device_id,
                 public_key_raw_b64url=self._base64url_encode(public_key_raw),

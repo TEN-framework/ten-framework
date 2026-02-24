@@ -4,6 +4,11 @@ import { Send } from "lucide-react";
 import * as React from "react";
 import { useAppDispatch, useAppSelector, useAutoScroll } from "@/common";
 import MessageList from "@/components/Chat/MessageList";
+import {
+  extractApproveCommand,
+  extractListCommand,
+  isPairingRequiredMessage,
+} from "@/components/Chat/openclawPairing";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -240,18 +245,4 @@ export default function ChatCard(props: { className?: string }) {
       </Dialog>
     </>
   );
-}
-
-function isPairingRequiredMessage(text: string): boolean {
-  return text.toLowerCase().includes("pairing is required");
-}
-
-function extractApproveCommand(text: string): string {
-  const match = text.match(/^openclaw devices approve.*$/m);
-  return match ? match[0].trim() : "";
-}
-
-function extractListCommand(text: string): string {
-  const match = text.match(/^openclaw devices list.*$/m);
-  return match ? match[0].trim() : "";
 }

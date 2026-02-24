@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { toast } from "sonner";
 import { useAppSelector, useAutoScroll } from "@/common";
+import { extractApproveCommand } from "@/components/Chat/openclawPairing";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -179,11 +180,6 @@ function getOpenclawSummary(text: string): { summary: string; hasMore: boolean }
   const summary = previewLines.join("\n");
   const hasMore = lines.length > 3 || normalized.length > summary.length;
   return { summary, hasMore };
-}
-
-function extractApproveCommand(text: string): string {
-  const match = (text || "").match(/^openclaw devices approve.*$/m);
-  return match ? match[0].trim() : "";
 }
 
 const openclawMarkdownComponents: Components = {
