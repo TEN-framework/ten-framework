@@ -3,9 +3,7 @@ import * as React from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
-import { toast } from "sonner";
 import { useAppSelector, useAutoScroll } from "@/common";
-import { extractApproveCommand } from "@/components/Chat/openclawPairing";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -89,23 +87,6 @@ function OpenclawMessageCard(props: { data: IChatItem }) {
   const { data } = props;
   const [open, setOpen] = React.useState(false);
   const { summary, hasMore } = getOpenclawSummary(data.text);
-  const approveCommand = extractApproveCommand(data.text);
-
-  const onCopyCommand = async (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (!approveCommand) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(approveCommand);
-      toast.success("Pairing command copied");
-    } catch (_error) {
-      toast.error("Failed to copy command");
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -126,17 +107,6 @@ function OpenclawMessageCard(props: { data: IChatItem }) {
           <p className="mt-1 line-clamp-3 overflow-hidden text-ellipsis text-sm leading-relaxed">
             {summary}
           </p>
-          {approveCommand ? (
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={onCopyCommand}
-                className="rounded border border-[#4A8EB4] px-2 py-1 text-xs text-[#CDEBFF] hover:bg-[#143041]"
-              >
-                Copy command
-              </button>
-            </div>
-          ) : null}
           {hasMore ? (
             <p className="mt-1 text-xs text-[#8AC6E8]/90">... 点击查看全文</p>
           ) : null}

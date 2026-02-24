@@ -137,7 +137,7 @@
               "type": "string"
             },
             "pairing_required": {
-              "type": "bool"
+              "type": "boolean"
             },
             "pairing_list_cmd": {
               "type": "string"
@@ -147,9 +147,6 @@
             },
             "pairing_hint": {
               "type": "string"
-            },
-            "exit_after_notify": {
-              "type": "bool"
             }
           }
         }

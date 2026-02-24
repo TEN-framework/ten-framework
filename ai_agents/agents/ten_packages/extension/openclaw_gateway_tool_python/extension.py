@@ -92,6 +92,8 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         self._stopped = False
         self._device_identity: DeviceIdentity | None = None
         self._background_tasks: set[asyncio.Task] = set()
+        self._last_pairing_emit_key = ""
+        self._last_pairing_emit_at = 0.0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -247,9 +249,14 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 "summary": summary,
                 "reply_text": "",
                 "reply_ts": int(time.time() * 1000),
-                "error": str(exc),
+                "error": self._describe_connect_error(exc),
             }
         )
+        if self._is_duplicate_pairing_event(pairing_payload):
+            self.ten_env.log_info(
+                "[openclaw_gateway_tool_python] skip duplicate pairing_required event"
+            )
+            return True
         await self._emit_reply_event(pairing_payload)
         return True
 
@@ -717,10 +724,11 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
     ) -> dict[str, Any] | None:
         message = self._describe_connect_error(exc)
         details: dict[str, Any] = {}
+        code = ""
         if isinstance(exc, GatewayRequestError):
             details = exc.details
+            code = str(exc.code or "").strip().lower()
         message_lower = message.lower()
-        code = str(details.get("code", "")).strip().lower()
         is_pairing_required = (
             "pairing required" in message_lower
             or "missing scope: operator.write" in message_lower
@@ -739,8 +747,29 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             "pairing_list_cmd": "openclaw devices list",
             "pairing_approve_cmd": approve_cmd,
             "pairing_hint": "Run these commands on the gateway host, then restart this agent.",
-            "exit_after_notify": True,
         }
+
+    def _is_duplicate_pairing_event(
+        self, pairing_payload: dict[str, Any]
+    ) -> bool:
+        dedupe_payload = {
+            "pairing_required": pairing_payload.get("pairing_required"),
+            "pairing_list_cmd": pairing_payload.get("pairing_list_cmd"),
+            "pairing_approve_cmd": pairing_payload.get("pairing_approve_cmd"),
+            "pairing_hint": pairing_payload.get("pairing_hint"),
+            "error": pairing_payload.get("error"),
+        }
+        event_key = json.dumps(dedupe_payload, sort_keys=True, ensure_ascii=True)
+        now = time.monotonic()
+        # Suppress bursts from concurrent startup/connect paths.
+        if (
+            event_key == self._last_pairing_emit_key
+            and now - self._last_pairing_emit_at < 5.0
+        ):
+            return True
+        self._last_pairing_emit_key = event_key
+        self._last_pairing_emit_at = now
+        return False
 
     def _describe_connect_error(self, exc: Exception) -> str:
         raw = str(exc).strip()
