@@ -34,6 +34,7 @@ export default function ChatCard(props: { className?: string }) {
   const [pairingApproveCmd, setPairingApproveCmd] = React.useState("");
   const [pairingListCmd, setPairingListCmd] = React.useState("");
   const [pairingCopied, setPairingCopied] = React.useState(false);
+  const [pairingBannerVisible, setPairingBannerVisible] = React.useState(false);
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
@@ -78,6 +79,7 @@ export default function ChatCard(props: { className?: string }) {
           setPairingApproveCmd(approveCmd);
           setPairingListCmd(listCmd);
           setPairingCopied(false);
+          setPairingBannerVisible(true);
           setPairingDialogOpen(true);
         }
         return;
@@ -170,6 +172,34 @@ export default function ChatCard(props: { className?: string }) {
             <MessageList />
           </div>
           {/* Input area */}
+          {pairingBannerVisible ? (
+            <div className="mb-3 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="mb-2">
+                OpenClaw pairing is pending. Approve on gateway host to continue.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPairingDialogOpen(true)}
+                >
+                  Reopen instructions
+                </Button>
+                <Button type="button" size="sm" onClick={copyPairingCommand}>
+                  {pairingCopied ? "Copied" : "Copy command"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPairingBannerVisible(false)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <div
             className={cn("border-t pt-4", {
               hidden: !graphName.includes("rtm"), // TODO: TMP use rtm key word

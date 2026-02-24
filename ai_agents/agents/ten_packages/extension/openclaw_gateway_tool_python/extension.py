@@ -94,6 +94,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         self._background_tasks: set[asyncio.Task] = set()
         self._last_pairing_emit_key = ""
         self._last_pairing_emit_at = 0.0
+        self._pairing_emit_dedupe_window_s = 5.0
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -217,9 +218,14 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 summary="",
             )
             if emitted:
+                retry_interval_s = self._pairing_emit_dedupe_window_s + 1.0
                 self._create_background_task(
                     self._reemit_startup_pairing_notice(
-                        exc=exc, task_id="", summary="", attempts=2, interval_seconds=1.0
+                        exc=exc,
+                        task_id="",
+                        summary="",
+                        attempts=2,
+                        interval_seconds=retry_interval_s,
                     )
                 )
             else:
@@ -764,7 +770,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         # Suppress bursts from concurrent startup/connect paths.
         if (
             event_key == self._last_pairing_emit_key
-            and now - self._last_pairing_emit_at < 5.0
+            and now - self._last_pairing_emit_at < self._pairing_emit_dedupe_window_s
         ):
             return True
         self._last_pairing_emit_key = event_key
