@@ -1303,11 +1303,13 @@ jobs:
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing clang-21
+          # Purge preinstalled clang-13/14/15 and old libc++ BEFORE installing clang-21
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
-            llvm-15-dev llvm-15-runtime llvm-15 || true
+            llvm-15-dev llvm-15-runtime llvm-15 \
+            libc++1-14 libc++abi1-14 libc++-14-dev libc++abi-14-dev \
+            libc++-dev libc++abi-dev || true
           sudo apt-get autopurge -y || true
 
           # Now install LLVM 21
