@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from typing import Literal
@@ -207,10 +208,27 @@ class MainControlExtension(AsyncExtension):
         payload = json.loads(payload_json)
         ts = int(payload.get("reply_ts", int(time.time() * 1000)))
         phase = str(payload.get("agent_phase", "")).strip()
+        pairing_required = bool(payload.get("pairing_required", False))
         if phase:
             await self._send_rtm_message(
                 {"data_type": "openclaw_phase", "phase": phase, "ts": ts}
             )
+        if pairing_required:
+            await self._send_rtm_message(
+                {
+                    "data_type": "openclaw_phase",
+                    "phase": "Pairing required",
+                    "ts": ts,
+                }
+            )
+            await self._send_rtm_message(
+                {
+                    "data_type": "openclaw_result",
+                    "text": self._build_pairing_required_message(payload),
+                    "ts": ts,
+                }
+            )
+            return
         error = str(payload.get("error", "")).strip()
         reply_text = str(payload.get("reply_text", "")).strip()
         if error and not reply_text:
@@ -230,3 +248,20 @@ class MainControlExtension(AsyncExtension):
                 "agent_phase": phase,
             }
         )
+
+    def _build_pairing_required_message(self, payload: dict) -> str:
+        list_cmd = str(payload.get("pairing_list_cmd", "")).strip()
+        approve_cmd = str(payload.get("pairing_approve_cmd", "")).strip()
+        hint = str(payload.get("pairing_hint", "")).strip()
+        lines = [
+            "OpenClaw pairing is required.",
+            "Run these commands on the gateway host:",
+        ]
+        if list_cmd:
+            lines.append(list_cmd)
+        if approve_cmd:
+            lines.append(approve_cmd)
+        if hint:
+            lines.append(hint)
+        lines.append("Approve pairing, then retry your request.")
+        return "\n".join(lines)
