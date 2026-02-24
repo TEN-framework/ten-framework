@@ -1308,18 +1308,25 @@ jobs:
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
-            libc++1-14 libc++abi1-14 libc++-14-dev libc++abi-14-dev \
+            libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 21
+          sudo dpkg -r --force-depends \
+            libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
           # Now install LLVM 21
+          # Try versioned package names first; fall back to unversioned if unavailable
           sudo apt-get install -y \
             llvm-21 \
             clang-21 \
+            libc++-21-dev \
+            libc++abi-21-dev \
+          || sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
             libc++-dev \
-            libc++1 \
-            libc++abi-dev \
-            libc++abi1
+            libc++abi-dev
 
           # Clean up apt cache
           sudo apt-get clean
