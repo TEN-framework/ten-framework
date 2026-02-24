@@ -33,6 +33,8 @@ from ten_ai_base.struct import (
 from ten_ai_base.types import LLMToolMetadata
 from ten_runtime.async_ten_env import AsyncTenEnv
 
+from .think_parser import ThinkParser
+
 
 @dataclass
 class OpenAILLM2Config(BaseModel):
@@ -59,43 +61,6 @@ class OpenAILLM2Config(BaseModel):
 
 class ReasoningMode(str, Enum):
     ModeV1 = "v1"
-
-
-class ThinkParser:
-    def __init__(self):
-        self.state = "NORMAL"  # States: 'NORMAL', 'THINK'
-        self.think_content = ""
-        self.content = ""
-        self.think_delta = ""
-
-    def process(self, new_chars):
-        if new_chars == "<think>":
-            self.state = "THINK"
-            self.think_delta = ""
-            return True
-        elif new_chars == "</think>":
-            self.state = "NORMAL"
-            self.think_delta = ""
-            return True
-        else:
-            if self.state == "THINK":
-                self.think_content += new_chars
-                self.think_delta = new_chars
-        return False
-
-    def process_by_reasoning_content(self, reasoning_content):
-        state_changed = False
-        if reasoning_content:
-            if self.state == "NORMAL":
-                self.state = "THINK"
-                state_changed = True
-            self.think_content += reasoning_content
-            self.think_delta = reasoning_content
-        elif self.state == "THINK":
-            self.state = "NORMAL"
-            self.think_delta = ""
-            state_changed = True
-        return state_changed
 
 
 class OpenAIChatGPT:
@@ -283,9 +248,9 @@ class OpenAIChatGPT:
                 }
             )
 
-            # Example usage
             parser = ThinkParser()
             reasoning_mode = None
+            reasoning_full_content = ""
 
             last_chat_completion: ChatCompletionChunk | None = None
 
@@ -300,62 +265,90 @@ class OpenAIChatGPT:
                 self.ten_env.log_debug(f"Processing choice: {choice}")
 
                 content = delta.content if delta and delta.content else ""
-                reasoning_content = (
+                raw_reasoning_content = (
                     delta.reasoning_content
-                    if delta
-                    and hasattr(delta, "reasoning_content")
-                    and delta.reasoning_content
-                    else ""
+                    if delta and hasattr(delta, "reasoning_content")
+                    else None
                 )
+                reasoning_content = raw_reasoning_content or ""
 
-                if reasoning_mode is None and reasoning_content is not None:
+                if reasoning_mode is None and raw_reasoning_content is not None:
                     reasoning_mode = ReasoningMode.ModeV1
 
-                # Emit content update event (fire-and-forget)
-                if content or reasoning_mode == ReasoningMode.ModeV1:
-                    prev_state = parser.state
+                if reasoning_mode == ReasoningMode.ModeV1:
+                    if reasoning_content:
+                        for (
+                            event_type,
+                            event_value,
+                        ) in parser.process_reasoning_content(
+                            reasoning_content
+                        ):
+                            if event_type == "reasoning_delta":
+                                # Use a local accumulator instead of parser state
+                                # because parser.think_content can be reset when
+                                # reasoning_done is emitted in the same cycle.
+                                reasoning_full_content += event_value
+                                yield LLMResponseReasoningDelta(
+                                    response_id=chat_completion.id,
+                                    role="assistant",
+                                    content=reasoning_full_content,
+                                    delta=event_value,
+                                    created=chat_completion.created,
+                                )
+                    elif parser.state == "THINK":
+                        for (
+                            event_type,
+                            event_value,
+                        ) in parser.process_reasoning_content(""):
+                            if event_type == "reasoning_done":
+                                yield LLMResponseReasoningDone(
+                                    response_id=chat_completion.id,
+                                    role="assistant",
+                                    content=event_value,
+                                    created=chat_completion.created,
+                                )
+                                reasoning_full_content = ""
 
-                    if reasoning_mode == ReasoningMode.ModeV1:
-                        self.ten_env.log_debug("process_by_reasoning_content")
-                        think_state_changed = (
-                            parser.process_by_reasoning_content(
-                                reasoning_content
-                            )
+                    if content:
+                        full_content += content
+                        yield LLMResponseMessageDelta(
+                            response_id=chat_completion.id,
+                            role="assistant",
+                            content=full_content,
+                            delta=content,
+                            created=chat_completion.created,
                         )
-                    else:
-                        think_state_changed = parser.process(content)
-
-                    if not think_state_changed:
-                        self.ten_env.log_debug(
-                            f"state: {parser.state}, content: {content}, think: {parser.think_content}"
-                        )
-                        if parser.state == "THINK":
-                            yield LLMResponseReasoningDelta(
-                                response_id=chat_completion.id,
-                                role="assistant",
-                                content=parser.think_content,
-                                delta=parser.think_delta,
-                                created=chat_completion.created,
-                            )
-                        elif parser.state == "NORMAL":
+                elif content:
+                    for event_type, event_value in parser.process_content(
+                        content
+                    ):
+                        if event_type == "message_delta":
+                            full_content += event_value
                             yield LLMResponseMessageDelta(
                                 response_id=chat_completion.id,
                                 role="assistant",
-                                content=full_content + content,
-                                delta=content,
+                                content=full_content,
+                                delta=event_value,
                                 created=chat_completion.created,
                             )
-
-                    if prev_state == "THINK" and parser.state == "NORMAL":
-                        yield LLMResponseReasoningDone(
-                            response_id=chat_completion.id,
-                            role="assistant",
-                            content=parser.think_content,
-                            created=chat_completion.created,
-                        )
-                        parser.think_content = ""
-
-                full_content += content
+                        elif event_type == "reasoning_delta":
+                            # Keep reasoning delta content cumulative and stable.
+                            reasoning_full_content += event_value
+                            yield LLMResponseReasoningDelta(
+                                response_id=chat_completion.id,
+                                role="assistant",
+                                content=reasoning_full_content,
+                                delta=event_value,
+                                created=chat_completion.created,
+                            )
+                        elif event_type == "reasoning_done":
+                            yield LLMResponseReasoningDone(
+                                response_id=chat_completion.id,
+                                role="assistant",
+                                content=event_value,
+                                created=chat_completion.created,
+                            )
+                            reasoning_full_content = ""
 
                 if delta.tool_calls:
                     try:
@@ -401,6 +394,35 @@ class OpenAIChatGPT:
             if last_chat_completion is None:
                 self.ten_env.log_info("No chat completion choices found.")
                 return
+
+            for event_type, event_value in parser.finalize():
+                if event_type == "message_delta":
+                    full_content += event_value
+                    yield LLMResponseMessageDelta(
+                        response_id=last_chat_completion.id,
+                        role="assistant",
+                        content=full_content,
+                        delta=event_value,
+                        created=last_chat_completion.created,
+                    )
+                elif event_type == "reasoning_delta":
+                    # Keep reasoning delta content cumulative and stable.
+                    reasoning_full_content += event_value
+                    yield LLMResponseReasoningDelta(
+                        response_id=last_chat_completion.id,
+                        role="assistant",
+                        content=reasoning_full_content,
+                        delta=event_value,
+                        created=last_chat_completion.created,
+                    )
+                elif event_type == "reasoning_done":
+                    yield LLMResponseReasoningDone(
+                        response_id=last_chat_completion.id,
+                        role="assistant",
+                        content=event_value,
+                        created=last_chat_completion.created,
+                    )
+                    reasoning_full_content = ""
 
             # Convert the dictionary to a list
             tool_calls_list = list(tool_calls_dict.values())

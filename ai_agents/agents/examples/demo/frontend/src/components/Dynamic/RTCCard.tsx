@@ -22,8 +22,6 @@ import {
 } from "@/store/reducers/global";
 import type { IChatItem } from "@/types";
 
-let hasInit: boolean = false;
-
 export default function RTCCard(props: { className?: string }) {
   const { className } = props;
 
@@ -39,6 +37,8 @@ export default function RTCCard(props: { className?: string }) {
   const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(
     VideoSourceType.CAMERA
   );
+  const hasInitRef = React.useRef(false);
+  const isInitializingRef = React.useRef(false);
 
   const onRemoteUserChanged = (user: IRtcUser) => {
     console.log("[rtc] onRemoteUserChanged", user);
@@ -60,55 +60,64 @@ export default function RTCCard(props: { className?: string }) {
     dispatch(addChatItem(text));
   };
 
-  const init = async () => {
-    console.log("[rtc] init");
-    rtcManager.on("localTracksChanged", onLocalTracksChanged);
-    rtcManager.on("textChanged", onTextChanged);
-    rtcManager.on("remoteUserChanged", onRemoteUserChanged);
-    await rtcManager.createCameraTracks();
-    await rtcManager.createMicrophoneTracks();
-    await rtcManager.join({
-      channel,
-      userId,
-    });
-    dispatch(
-      setOptions({
-        ...options,
-        appId: rtcManager.appId ?? "",
-        token: rtcManager.token ?? "",
-      })
-    );
-    await rtcManager.publish();
-    dispatch(setRoomConnected(true));
-    hasInit = true;
-  };
-
-  const destory = async () => {
+  const destory = React.useCallback(async () => {
     console.log("[rtc] destory");
     rtcManager.off("textChanged", onTextChanged);
     rtcManager.off("localTracksChanged", onLocalTracksChanged);
     rtcManager.off("remoteUserChanged", onRemoteUserChanged);
     await rtcManager.destroy();
     dispatch(setRoomConnected(false));
-    hasInit = false;
-  };
+    hasInitRef.current = false;
+    isInitializingRef.current = false;
+  }, [dispatch]);
+
+  const init = React.useCallback(async () => {
+    if (hasInitRef.current || isInitializingRef.current) {
+      return;
+    }
+
+    console.log("[rtc] init");
+    isInitializingRef.current = true;
+    rtcManager.on("localTracksChanged", onLocalTracksChanged);
+    rtcManager.on("textChanged", onTextChanged);
+    rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+
+    try {
+      await rtcManager.createCameraTracks();
+      await rtcManager.createMicrophoneTracks();
+      await rtcManager.join({
+        channel,
+        userId,
+      });
+      dispatch(
+        setOptions({
+          appId: rtcManager.appId ?? "",
+          token: rtcManager.token ?? "",
+        })
+      );
+      await rtcManager.publish();
+      dispatch(setRoomConnected(true));
+      hasInitRef.current = true;
+    } catch (err) {
+      console.error("[rtc] init failed", err);
+      await destory();
+    } finally {
+      isInitializingRef.current = false;
+    }
+  }, [channel, userId, dispatch, destory]);
 
   React.useEffect(() => {
-    if (!options.channel) {
+    if (!channel) {
       return;
     }
-    if (hasInit) {
-      return;
-    }
-
-    init();
+    void init();
 
     return () => {
-      if (hasInit) {
-        destory();
+      if (hasInitRef.current || isInitializingRef.current) {
+        void destory();
       }
     };
-  }, [options.channel, destory, init]);
+  }, [channel, init, destory]);
 
   const _onVoiceChange = (value: any) => {
     dispatch(setVoiceType(value));

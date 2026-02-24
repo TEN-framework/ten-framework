@@ -1,0 +1,15 @@
+authtoken: ${NGROK_AUTHTOKEN}
+
+tunnels:
+  voice-assistant:
+    addr: 9000
+    proto: http
+    host_header: localhost
+  websocket:
+    addr: 9000
+    proto: http
+    host_header: localhost
+  media-stream:
+    addr: 9000
+    proto: http
+    host_header: localhost
