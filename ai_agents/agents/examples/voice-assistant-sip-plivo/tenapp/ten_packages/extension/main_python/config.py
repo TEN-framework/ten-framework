@@ -5,9 +5,7 @@ class MainControlConfig(BaseModel):
     greeting: str = "Hello, I am your AI assistant."
 
     # Plivo configuration
-    plivo_auth_id: str = Field(
-        default="", description="Plivo Auth ID"
-    )
+    plivo_auth_id: str = Field(default="", description="Plivo Auth ID")
     plivo_auth_token: str = Field(default="", description="Plivo Auth Token")
     plivo_from_number: str = Field(
         default="", description="Plivo phone number to call from"

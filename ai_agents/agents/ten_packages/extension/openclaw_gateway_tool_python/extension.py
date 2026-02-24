@@ -416,9 +416,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
                 summary="",
             )
 
-    def _create_background_task(
-        self, coro: Coroutine[Any, Any, Any]
-    ) -> None:
+    def _create_background_task(self, coro: Coroutine[Any, Any, Any]) -> None:
         task = asyncio.create_task(coro)
         self._background_tasks.add(task)
         task.add_done_callback(self._background_tasks.discard)
@@ -584,10 +582,14 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             format=serialization.PublicFormat.Raw,
         )
         device_id = hashlib.sha256(public_key_raw).hexdigest()
-        public_key_pem = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        ).decode()
+        public_key_pem = (
+            private_key.public_key()
+            .public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+            .decode()
+        )
         private_key_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -765,12 +767,15 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             "pairing_hint": pairing_payload.get("pairing_hint"),
             "error": pairing_payload.get("error"),
         }
-        event_key = json.dumps(dedupe_payload, sort_keys=True, ensure_ascii=True)
+        event_key = json.dumps(
+            dedupe_payload, sort_keys=True, ensure_ascii=True
+        )
         now = time.monotonic()
         # Suppress bursts from concurrent startup/connect paths.
         if (
             event_key == self._last_pairing_emit_key
-            and now - self._last_pairing_emit_at < self._pairing_emit_dedupe_window_s
+            and now - self._last_pairing_emit_at
+            < self._pairing_emit_dedupe_window_s
         ):
             return True
         self._last_pairing_emit_key = event_key

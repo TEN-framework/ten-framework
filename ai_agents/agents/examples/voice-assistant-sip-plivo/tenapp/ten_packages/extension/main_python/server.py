@@ -100,7 +100,7 @@ class PlivoCallServer:
                 else:
                     raise HTTPException(
                         status_code=400,
-                        detail="plivo_public_server_url is required for outbound calls"
+                        detail="plivo_public_server_url is required for outbound calls",
                     )
 
                 self._log_info(f"Using answer URL: {answer_url}")
@@ -245,7 +245,7 @@ class PlivoCallServer:
                         media_ws_url,
                         bidirectional="true",
                         keep_call_alive="true",
-                        content_type="audio/x-mulaw;rate=8000"
+                        content_type="audio/x-mulaw;rate=8000",
                     )
                 )
 
@@ -253,8 +253,7 @@ class PlivoCallServer:
                 self._log_info(f"Plivo XML response: {xml_response}")
 
                 return Response(
-                    content=xml_response,
-                    media_type="application/xml"
+                    content=xml_response, media_type="application/xml"
                 )
 
             except Exception as e:
@@ -518,8 +517,7 @@ async def main():
         plivo_from_number=os.getenv("PLIVO_FROM_NUMBER", ""),
         plivo_server_port=int(os.getenv("PLIVO_SERVER_PORT", "9000")),
         plivo_public_server_url=os.getenv("PLIVO_PUBLIC_SERVER_URL", ""),
-        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "true").lower()
-        == "true",
+        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "true").lower() == "true",
         plivo_use_wss=os.getenv("PLIVO_USE_WSS", "true").lower() == "true",
     )
 

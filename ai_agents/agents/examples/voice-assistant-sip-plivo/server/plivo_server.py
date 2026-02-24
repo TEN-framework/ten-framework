@@ -24,9 +24,7 @@ class PlivoServerConfig(BaseModel):
     """Configuration for Plivo server"""
 
     # Plivo configuration
-    plivo_auth_id: str = Field(
-        default="", description="Plivo Auth ID"
-    )
+    plivo_auth_id: str = Field(default="", description="Plivo Auth ID")
     plivo_auth_token: str = Field(default="", description="Plivo Auth Token")
     plivo_from_number: str = Field(
         default="", description="Plivo phone number to call from"
@@ -301,8 +299,7 @@ async def main():
         plivo_from_number=os.getenv("PLIVO_FROM_NUMBER", ""),
         plivo_server_port=int(os.getenv("PLIVO_HTTP_PORT", "8080")),
         plivo_public_server_url=os.getenv("PLIVO_PUBLIC_SERVER_URL", ""),
-        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "false").lower()
-        == "true",
+        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "false").lower() == "true",
         plivo_use_wss=os.getenv("PLIVO_USE_WSS", "false").lower() == "true",
     )
 
