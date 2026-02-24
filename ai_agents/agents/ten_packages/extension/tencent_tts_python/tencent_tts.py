@@ -51,6 +51,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
                 str | bytes | TencentTTSTaskFailedException | int | None,
             ]
         ],
+        client: "TencentTTSClient",
     ) -> None:
         self.ten_env = ten_env
 
@@ -58,7 +59,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         self._queue = queue
         self.sent_ts: datetime | None = None
         self.ttfb_sent: bool = False
-        self.auth_error: bool = False  # Flag to track authentication errors
+        self.client = client
 
     def set_sent_ts(self):
         if self.sent_ts:
@@ -107,7 +108,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
 
         # Error code 10001 is authentication/key error, no need to reconnect
         if err_code == 10001:
-            self.auth_error = (
+            self.client.auth_error = (
                 True  # Mark authentication error to prevent reconnection
             )
             self.ten_env.log_error(
@@ -165,13 +166,14 @@ class TencentTTSClient:
                 str | bytes | TencentTTSTaskFailedException | int | None,
             ]
         ] = asyncio.Queue()
+        self.auth_error: bool = False  # Flag to track authentication errors
 
     async def start(self) -> None:
         """Start the TTS client and initialize components."""
 
         # Create synthesizer with configuration
         self._callback = AsyncIteratorCallback(
-            self.ten_env, self._receive_queue
+            self.ten_env, self._receive_queue, self
         )
 
         credential_var = credential.Credential(
@@ -256,7 +258,7 @@ class TencentTTSClient:
         await self.conn_ready_event.wait()
 
         # Check for authentication error - do not attempt to reconnect
-        if self._callback and self._callback.auth_error:
+        if self.auth_error:
             self.ten_env.log_error(
                 "Cannot synthesize audio: Authentication error (code 10001) occurred. ",
             )

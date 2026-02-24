@@ -404,7 +404,9 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             f"Session finished for request ID: {self.current_request_id}"
                         )
                         await self._handle_tts_audio_end()
-                        await self.client.stop()
+                        # Skip reconnection if auth error occurred
+                        if not self.client.auth_error:
+                            await self.client.stop()
 
                 except asyncio.CancelledError:
                     self.ten_env.log_info("Audio consumer task was cancelled.")
