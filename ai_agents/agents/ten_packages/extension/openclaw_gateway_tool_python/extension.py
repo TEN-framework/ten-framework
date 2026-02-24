@@ -603,7 +603,9 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
             "private_key_pem": private_key_pem,
             "created_at_ms": int(time.time() * 1000),
         }
-        identity_path.write_text(json.dumps(payload, indent=2) + "\n")
+        identity_path.write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+        )
         try:
             os.chmod(identity_path, 0o600)
         except OSError:
@@ -619,7 +621,7 @@ class OpenclawGatewayToolExtension(AsyncLLMToolBaseExtension):
         self, identity_path: Path
     ) -> DeviceIdentity | None:
         try:
-            payload = json.loads(identity_path.read_text())
+            payload = json.loads(identity_path.read_text(encoding="utf-8"))
             private_key_pem = str(payload.get("private_key_pem", "")).strip()
             public_key_pem = str(payload.get("public_key_pem", "")).strip()
             if not private_key_pem or not public_key_pem:
