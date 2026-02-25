@@ -7,13 +7,13 @@
 import * as fs from "fs";
 import * as path from "path";
 import { dirname } from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 import type { Addon } from "./addon.js";
 import ten_addon from "./ten_addon.js";
 
 type Ctor<T> = {
-  new (): T;
+  new(): T;
   prototype: T;
 };
 
@@ -98,7 +98,7 @@ export class AddonManager {
     const dirs = fs.opendirSync(extension_folder);
     const loadPromises = [];
 
-    for (;;) {
+    for (; ;) {
       const entry = dirs.readSync();
       if (!entry) {
         break;
@@ -113,9 +113,17 @@ export class AddonManager {
       if (fs.existsSync(packageJsonFile)) {
         // Log the extension name.
         console.log(`_load_all_addons Loading extension ${entry.name}`);
-        loadPromises.push(
-          import(`${extension_folder}/${entry.name}/build/index.js`),
+
+        // On Windows, ESM dynamic import() requires file:// URLs, not raw paths.
+        // pathToFileURL() converts a path like "C:\foo\bar" to "file:///C:/foo/bar".
+        // Ref: https://nodejs.org/api/esm.html#urls
+        const modulePath = path.join(
+          extension_folder,
+          entry.name,
+          "build",
+          "index.js",
         );
+        loadPromises.push(import(pathToFileURL(modulePath).href));
       }
     }
 
@@ -148,7 +156,11 @@ export class AddonManager {
     }
 
     try {
-      await import(`${extension_folder}/build/index.js`);
+      // On Windows, ESM dynamic import() requires file:// URLs, not raw paths.
+      // pathToFileURL() converts a path like "C:\foo\bar" to "file:///C:/foo/bar".
+      // Ref: https://nodejs.org/api/esm.html#urls
+      const modulePath = path.join(extension_folder, "build", "index.js");
+      await import(pathToFileURL(modulePath).href);
       console.log(`Addon ${name} loaded`);
       return true;
     } catch (error) {
