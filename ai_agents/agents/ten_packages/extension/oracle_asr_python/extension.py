@@ -204,13 +204,14 @@ class OracleASRExtension(
             )
             return
 
-        if not self._reconnect_lock.acquire_nowait():
+        if self._reconnect_lock.locked():
             self.ten_env.log_debug(
                 "Reconnect already in progress, skip duplicate trigger",
                 category=LOG_CATEGORY_VENDOR,
             )
             return
 
+        await self._reconnect_lock.acquire()
         try:
             if not self.reconnect_manager.can_retry():
                 self.ten_env.log_error(

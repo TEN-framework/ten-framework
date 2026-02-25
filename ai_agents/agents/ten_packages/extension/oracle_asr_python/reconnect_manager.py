@@ -111,7 +111,7 @@ class ReconnectManager:
                 await error_handler(
                     ModuleError(
                         module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
                     )
                 )

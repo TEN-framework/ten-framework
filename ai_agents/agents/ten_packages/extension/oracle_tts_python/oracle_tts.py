@@ -51,6 +51,8 @@ class OracleTTS:
             category=LOG_CATEGORY_VENDOR,
         )
 
+    _KNOWN_MODELS = {"TTS_1_STANDARD", "TTS_2_NATURAL"}
+
     def _build_model_details(
         self,
     ) -> oci.ai_speech.models.TtsOracleModelDetails:
@@ -59,17 +61,23 @@ class OracleTTS:
         voice_id = params.get("voice_id", "Annabelle")
         language_code = params.get("language_code", "en-US")
 
+        if model_name not in self._KNOWN_MODELS:
+            raise ValueError(
+                f"Unknown TTS model: {model_name}. "
+                f"Known models: {sorted(self._KNOWN_MODELS)}"
+            )
+
         if model_name == "TTS_1_STANDARD":
             return oci.ai_speech.models.TtsOracleTts1StandardModelDetails(
                 model_name="TTS_1_STANDARD",
                 voice_id=voice_id,
             )
-        else:
-            return oci.ai_speech.models.TtsOracleTts2NaturalModelDetails(
-                model_name="TTS_2_NATURAL",
-                voice_id=voice_id,
-                language_code=language_code,
-            )
+
+        return oci.ai_speech.models.TtsOracleTts2NaturalModelDetails(
+            model_name="TTS_2_NATURAL",
+            voice_id=voice_id,
+            language_code=language_code,
+        )
 
     def _build_speech_settings(
         self,

@@ -38,9 +38,7 @@ from ten_runtime.async_ten_env import AsyncTenEnv
 class OpenAILLM2Config(BaseModel):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
-    model: str = (
-        "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
-    )
+    model: str = "gpt-4o-mini"
     proxy_url: str = ""
     temperature: Optional[float] = None
     top_p: Optional[float] = None
@@ -315,7 +313,7 @@ class OpenAIChatGPT:
 
         # Strip sampling params unsupported by reasoning models (gpt-5.x, o1, o3, etc.)
         model_lower = (self.config.model or "").lower()
-        if is_reasoning_model or "o1" in model_lower or "o3" in model_lower:
+        if is_reasoning_model or model_lower.startswith("o1") or model_lower.startswith("o3"):
             for unsupported in ["temperature", "top_p", "presence_penalty", "frequency_penalty", "seed"]:
                 req.pop(unsupported, None)
 

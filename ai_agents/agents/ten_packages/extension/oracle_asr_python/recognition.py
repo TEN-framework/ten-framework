@@ -6,6 +6,7 @@ from websockets.protocol import State
 from urllib.parse import urlparse, quote
 from email.utils import formatdate
 
+import requests as http_requests
 from oci.signer import Signer
 
 from ten_ai_base.timeline import AudioTimeline
@@ -80,7 +81,7 @@ class OracleASRRecognition:
 
         params = []
         params.append(f"encoding=audio/raw;rate={self._sample_rate}")
-        params.append(f"languageCode={self._language}")
+        params.append(f"languageCode={quote(self._language)}")
 
         final_silence = self.config.get("final_silence_threshold_in_ms", 2000)
         params.append(f"finalSilenceThresholdInMs={final_silence}")
@@ -119,15 +120,12 @@ class OracleASRRecognition:
             "host": parsed.hostname,
         }
 
-        query = parsed.query or ""
-        sign_path = f"{parsed.path}?{query}" if query else parsed.path
-
-        headers = signer._basic_signer.sign(
-            headers=headers,
-            host=parsed.hostname,
-            path=sign_path,
-            method="GET",
-        )
+        sign_url = url.replace("wss://", "https://", 1)
+        prepared = http_requests.Request(
+            "GET", sign_url, headers=headers
+        ).prepare()
+        signer(prepared)
+        headers = dict(prepared.headers)
         headers["uri"] = url
 
         auth_message = {

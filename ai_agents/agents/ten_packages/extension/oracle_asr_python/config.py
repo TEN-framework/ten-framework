@@ -13,9 +13,11 @@ class OracleASRConfig(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict)
 
     def update(self, params: Dict[str, Any]) -> None:
-        for key, value in params.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        updates = {k: v for k, v in params.items() if hasattr(self, k)}
+        if updates:
+            validated = self.model_validate({**self.model_dump(), **updates})
+            for key in updates:
+                object.__setattr__(self, key, getattr(validated, key))
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         config_dict = self.model_dump()
