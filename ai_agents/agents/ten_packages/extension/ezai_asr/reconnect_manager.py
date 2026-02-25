@@ -1,6 +1,10 @@
 import asyncio
 from typing import Callable, Awaitable, Optional
-from ten_ai_base.message import ModuleError, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
 from .const import MODULE_NAME_ASR
 
 
@@ -56,7 +60,9 @@ class ReconnectManager:
         self,
         connection_func: Callable[[], Awaitable[None]],
         error_handler: Optional[
-            Callable[[ModuleError], Awaitable[None]]
+            Callable[
+                [ModuleError, Optional[ModuleErrorVendorInfo]], Awaitable[None]
+            ]
         ] = None,
     ) -> bool:
         """
@@ -81,7 +87,12 @@ class ReconnectManager:
                         module=MODULE_NAME_ASR,
                         code=ModuleErrorCode.FATAL_ERROR.value,
                         message=f"Failed to reconnect after {self.max_attempts} attempts",
-                    )
+                    ),
+                    ModuleErrorVendorInfo(
+                        vendor="ezai",
+                        code="reconnect_failed",
+                        message=f"Failed to reconnect after {self.max_attempts} attempts",
+                    ),
                 )
             return False
 

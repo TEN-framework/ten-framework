@@ -1,0 +1,13 @@
+version: "2"
+# Global ngrok configuration
+log_level: info
+log_format: logfmt
+log: /tmp/ngrok.log
+tunnels:
+  plivo-server:
+    proto: http
+    addr: 9000
+    # Allow WebSocket connections
+    inspect: false
+    # Custom subdomain (optional, remove if you want random)
+    # subdomain: your-custom-subdomain

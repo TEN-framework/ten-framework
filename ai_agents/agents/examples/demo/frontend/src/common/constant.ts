@@ -79,6 +79,10 @@ export const GROUPED_GRAPH_OPTIONS = {
       label: "OpenAI GPT 5",
       value: "va_openai_azure",
     },
+    {
+      label: "Minimax M2.5 highspeed",
+      value: "minimax",
+    },
     // {
     //   label: "OpenAI Realtime + Custom STT/TTS",
     //   value: "va_openai_v2v_fish",

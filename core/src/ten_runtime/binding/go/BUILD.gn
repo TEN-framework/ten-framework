@@ -62,13 +62,23 @@ if (ten_enable_go_binding) {
     }
 
     # ten_runtime_go is now a static library and is output to target_out_dir
-    ten_runtime_go_target_out_dir = get_label_info("native:ten_runtime_go", "target_out_dir")
-    if (is_win && !is_mingw) {
-      # MSVC static library uses .lib extension without lib prefix
-      ten_runtime_go_lib_path = "${ten_runtime_go_target_out_dir}/ten_runtime_go.lib"
+    if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
+      # MinGW toolchain output
+      _mingw_toolchain = "//.gnfiles/build/toolchain/mingw:mingw"
+      ten_runtime_go_target_out_dir = get_label_info(
+          "native:ten_runtime_go_mingw(${_mingw_toolchain})",
+          "target_out_dir")
+      ten_runtime_go_lib_path =
+          "${ten_runtime_go_target_out_dir}/libten_runtime_go.a"
     } else {
-      # MinGW/Linux/macOS static library uses .a extension with lib prefix
-      ten_runtime_go_lib_path = "${ten_runtime_go_target_out_dir}/libten_runtime_go.a"
+      ten_runtime_go_target_out_dir = get_label_info("native:ten_runtime_go", "target_out_dir")
+      if (is_win && !is_mingw) {
+        # MSVC static library uses .lib extension without lib prefix
+        ten_runtime_go_lib_path = "${ten_runtime_go_target_out_dir}/ten_runtime_go.lib"
+      } else {
+        # MinGW/Linux/macOS static library uses .a extension with lib prefix
+        ten_runtime_go_lib_path = "${ten_runtime_go_target_out_dir}/libten_runtime_go.a"
+      }
     }
 
     # Build ten_runtime_go_output_libs for use in resources
@@ -79,7 +89,27 @@ if (ten_enable_go_binding) {
       resources += [ "${lib}=>lib/${libname}" ]
     }
 
+    # When using MSVC with Go binding, MinGW's ld.exe needs libraries
+    # with "lib" prefix. Copy DLLs with "lib" prefix for MinGW compatibility.
+    if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
+      resources += [
+        "${root_out_dir}/ten_runtime.dll=>lib/libten_runtime.dll",
+        "${root_out_dir}/ten_utils.dll=>lib/libten_utils.dll",
+      ]
+    }
+
     deps = [ "native:ten_runtime_go" ]
+
+    # Add explicit dependency on MinGW target when forcing MinGW
+    if (ten_force_mingw_for_go_binding && is_win && !is_mingw) {
+      deps += [ "native:ten_runtime_go_mingw(${_mingw_toolchain})" ]
+
+      # Add dependencies for the DLLs we're copying
+      deps += [
+        "//core/src/ten_runtime:ten_runtime_library",
+        "//core/src/ten_utils:ten_utils_shared",
+      ]
+    }
 
     if (ten_enable_go_lint) {
       deps += [ ":ten_go_binding_lint" ]
