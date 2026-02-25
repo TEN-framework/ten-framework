@@ -304,8 +304,11 @@ jobs:
           cd out/win/x64/ten_packages
           $ARRAY = @(
             "system/ten_runtime",
+            "system/ten_runtime_go",
             "system/ten_runtime_python",
-            "addon_loader/python_addon_loader"
+            "system/ten_runtime_nodejs",
+            "addon_loader/python_addon_loader",
+            "addon_loader/nodejs_addon_loader"
           )
 
           foreach ($item in $ARRAY) {
@@ -418,7 +421,9 @@ jobs:
             "app/default_app_cpp",
             "app/default_app_python",
             "ten_packages/system/ten_runtime",
+            "ten_packages/system/ten_runtime_go",
             "ten_packages/system/ten_runtime_python",
+            "ten_packages/system/ten_runtime_nodejs",
             "ten_packages/extension/default_extension_cpp",
             "ten_packages/extension/default_extension_python",
             "ten_packages/extension/default_async_extension_python",
@@ -426,7 +431,8 @@ jobs:
             "ten_packages/extension/default_llm_extension_python",
             "ten_packages/extension/default_tts_extension_python",
             "ten_packages/extension/default_mllm_extension_python",
-            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/python_addon_loader",
+            "ten_packages/addon_loader/nodejs_addon_loader"
           )
 
           $SUCCESSFUL_PUBLISHES = 0
@@ -495,7 +501,9 @@ jobs:
             "app/default_app_cpp",
             "app/default_app_python",
             "ten_packages/system/ten_runtime",
+            "ten_packages/system/ten_runtime_go",
             "ten_packages/system/ten_runtime_python",
+            "ten_packages/system/ten_runtime_nodejs",
             "ten_packages/extension/default_extension_cpp",
             "ten_packages/extension/default_extension_python",
             "ten_packages/extension/default_async_extension_python",
@@ -503,7 +511,8 @@ jobs:
             "ten_packages/extension/default_llm_extension_python",
             "ten_packages/extension/default_tts_extension_python",
             "ten_packages/extension/default_mllm_extension_python",
-            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/python_addon_loader",
+            "ten_packages/addon_loader/nodejs_addon_loader"
           )
 
           $SUCCESSFUL_CLEANUPS = 0
