@@ -1,3 +1,8 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 import asyncio
 from typing import Callable, Awaitable, Optional
 from ten_ai_base.message import ModuleError, ModuleErrorCode
@@ -19,11 +24,13 @@ class ReconnectManager:
         max_delay: float = 4.0,
         max_attempts: int = 5,
         logger=None,
+        module_name: str = MODULE_NAME_ASR,
     ):
         self.base_delay = base_delay
         self.max_delay = max_delay
         self.max_attempts = max_attempts
         self.logger = logger
+        self.module_name = module_name
 
         self.attempts = 0
         self._connection_successful = False
@@ -61,7 +68,7 @@ class ReconnectManager:
             if error_handler:
                 await error_handler(
                     ModuleError(
-                        module=MODULE_NAME_ASR,
+                        module=self.module_name,
                         code=ModuleErrorCode.FATAL_ERROR.value,
                         message=(
                             "Maximum reconnection attempts reached. "
@@ -110,7 +117,7 @@ class ReconnectManager:
             if error_handler:
                 await error_handler(
                     ModuleError(
-                        module=MODULE_NAME_ASR,
+                        module=self.module_name,
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
                     )

@@ -25,6 +25,7 @@ from .oracle_tts import (
     EVENT_TTS_ERROR,
     EVENT_TTS_INVALID_KEY_ERROR,
 )
+from typing_extensions import override
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
@@ -124,6 +125,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
 
+    @override
     def vendor(self) -> str:
         return "oracle"
 
@@ -217,7 +219,10 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
         )
 
     async def _handle_error_with_end(
-        self, request_id: str, error_msg: str
+        self,
+        request_id: str,
+        error_msg: str,
+        error_code: ModuleErrorCode = ModuleErrorCode.NON_FATAL_ERROR,
     ) -> None:
         """Send error and, if text_input_end was received, also send audio_end."""
         has_text_input_end = False
@@ -230,7 +235,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             error=ModuleError(
                 message=error_msg,
                 module=ModuleType.TTS,
-                code=ModuleErrorCode.NON_FATAL_ERROR,
+                code=error_code,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             ),
         )
@@ -366,39 +371,11 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             request_id = (
                                 self.current_request_id or t.request_id
                             )
-                            has_text_input_end = False
-                            if (
-                                request_id
-                                and request_id in self.request_states
-                            ):
-                                if (
-                                    self.request_states[request_id]
-                                    == RequestState.FINALIZING
-                                ):
-                                    has_text_input_end = True
-
-                            await self.send_tts_error(
-                                request_id=request_id,
-                                error=ModuleError(
-                                    message=error_msg,
-                                    module=ModuleType.TTS,
-                                    code=ModuleErrorCode.FATAL_ERROR,
-                                    vendor_info=ModuleErrorVendorInfo(
-                                        vendor=self.vendor()
-                                    ),
-                                ),
+                            await self._handle_error_with_end(
+                                request_id,
+                                error_msg,
+                                error_code=ModuleErrorCode.FATAL_ERROR,
                             )
-                            if has_text_input_end:
-                                await self.send_tts_audio_end(
-                                    request_id=request_id,
-                                    request_event_interval_ms=0,
-                                    request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
-                                    reason=TTSAudioEndReason.ERROR,
-                                )
-                                await self.finish_request(
-                                    request_id=request_id,
-                                    reason=TTSAudioEndReason.ERROR,
-                                )
                             return
 
                         elif event == EVENT_TTS_ERROR:

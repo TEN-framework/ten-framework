@@ -1,3 +1,8 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 from datetime import datetime
 import os
 import asyncio
@@ -124,6 +129,20 @@ class OracleASRExtension(
 
             if missing:
                 error_msg = f"Oracle ASR credentials missing: {', '.join(missing)}"
+                self.ten_env.log_error(
+                    error_msg, category=LOG_CATEGORY_KEY_POINT
+                )
+                await self.send_asr_error(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message=error_msg,
+                    ),
+                )
+                return
+
+            if key_file and not os.path.isfile(key_file):
+                error_msg = f"OCI key_file not found: {key_file}"
                 self.ten_env.log_error(
                     error_msg, category=LOG_CATEGORY_KEY_POINT
                 )

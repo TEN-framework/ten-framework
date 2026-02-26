@@ -40,7 +40,7 @@ from .think_parser import ThinkParser
 class OpenAILLM2Config(BaseModel):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-5.1-chat-latest"
     proxy_url: str = ""
     temperature: Optional[float] = None
     top_p: Optional[float] = None
@@ -98,10 +98,9 @@ class OpenAIChatGPT:
     ) -> Dict[str, str]:
         blocked_header_names = {
             "api-key",
-            "proxy-authorization",
-        }
-        warn_header_names = {
+            "x-api-key",
             "authorization",
+            "proxy-authorization",
         }
         safe_headers: Dict[str, str] = {}
         blocked_headers: List[str] = []
@@ -114,12 +113,6 @@ class OpenAIChatGPT:
             if key_str.lower() in blocked_header_names:
                 blocked_headers.append(key_str)
                 continue
-
-            if key_str.lower() in warn_header_names:
-                self.ten_env.log_warn(
-                    f"default_headers overrides '{key_str}'; "
-                    "the built-in Bearer token will be replaced"
-                )
 
             safe_headers[key_str] = str(value)
 
@@ -237,9 +230,11 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
-        # Check if model is a reasoning model (gpt-5.x) that requires different parameters
-        is_reasoning_model = (
-            self.config.model and self.config.model.lower().startswith("gpt-5")
+        # Reasoning models (gpt-5.x, o1, o3) use max_completion_tokens
+        # and don't support sampling parameters
+        is_reasoning_model = bool(
+            self.config.model
+            and self.config.model.lower().startswith(("gpt-5", "o1", "o3"))
         )
 
         # Build request
@@ -276,9 +271,8 @@ class OpenAIChatGPT:
                 self.ten_env.log_debug(f"set openai param: {key} = {value}")
                 req[key] = value
 
-        # Strip sampling params unsupported by reasoning models (gpt-5.x, o1, o3, etc.)
-        model_lower = (self.config.model or "").lower()
-        if is_reasoning_model or model_lower.startswith("o1") or model_lower.startswith("o3"):
+        # Strip sampling params unsupported by reasoning models
+        if is_reasoning_model:
             for unsupported in ["temperature", "top_p", "presence_penalty", "frequency_penalty", "seed"]:
                 req.pop(unsupported, None)
 

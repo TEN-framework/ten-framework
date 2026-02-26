@@ -1,4 +1,9 @@
-from abc import abstractmethod
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+from abc import ABC, abstractmethod
 import asyncio
 import json
 import websockets
@@ -16,7 +21,7 @@ from ten_runtime import AsyncTenEnv
 from .const import TIMEOUT_CODE
 
 
-class OracleASRRecognitionCallback:
+class OracleASRRecognitionCallback(ABC):
     """WebSocket Speech Recognition Callback Interface"""
 
     @abstractmethod
@@ -54,6 +59,7 @@ class OracleASRRecognition:
         self.websocket = None
         self.is_started = False
         self._message_task = None
+        self._closing = False
 
         # OCI credentials
         self._tenancy = self.config.get("tenancy", "")
@@ -61,7 +67,7 @@ class OracleASRRecognition:
         self._fingerprint = self.config.get("fingerprint", "")
         self._key_file = self.config.get("key_file", "")
         self._compartment_id = self.config.get("compartment_id", "")
-        self._region = self.config.get("region", "us-ashburn-1")
+        self._region = self.config.get("region", "us-phoenix-1")
 
         # Audio parameters
         self._sample_rate = int(self.config.get("sample_rate", 16000))
@@ -185,7 +191,8 @@ class OracleASRRecognition:
             await self.callback.on_error(error_msg)
         finally:
             self.is_started = False
-            await self.callback.on_close()
+            if not self._closing:
+                await self.callback.on_close()
 
     async def start(self, timeout=10):
         if self.is_connected():
@@ -275,6 +282,7 @@ class OracleASRRecognition:
             self.ten_env.log_error(f"Failed to request final result: {e}")
 
     async def close(self):
+        self._closing = True
         if self.websocket:
             try:
                 if self.websocket.state == State.OPEN:

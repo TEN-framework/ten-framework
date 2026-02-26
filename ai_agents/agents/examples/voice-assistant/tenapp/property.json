@@ -221,7 +221,7 @@
                   "fingerprint": "${env:OCI_FINGERPRINT}",
                   "key_file": "${env:OCI_KEY_FILE}",
                   "compartment_id": "${env:OCI_COMPARTMENT_ID}",
-                  "region": "${env:OCI_REGION|us-ashburn-1}",
+                  "region": "${env:OCI_REGION|us-phoenix-1}",
                   "language": "en-US",
                   "sample_rate": 16000
                 }
@@ -376,6 +376,47 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "llm",
+              "cmd": [
+                {
+                  "names": [
+                    "chat_completion"
+                  ],
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "tts_text_input",
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "message",
+                  "source": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }

@@ -123,12 +123,13 @@ class OracleTTS:
                 next_pos = data_start + chunk_size
                 if chunk_size % 2 == 1:
                     next_pos += 1
+                _KNOWN_TRAILING_CHUNKS = {
+                    b"LIST", b"fact", b"id3 ", b"INFO",
+                    b"PEAK", b"bext", b"JUNK", b"cue ",
+                }
                 has_trailing_chunk = (
                     next_pos + 8 <= len(audio)
-                    and all(
-                        (65 <= b <= 90) or (97 <= b <= 122) or b == 32
-                        for b in audio[next_pos : next_pos + 4]
-                    )
+                    and audio[next_pos : next_pos + 4] in _KNOWN_TRAILING_CHUNKS
                 )
 
                 if has_trailing_chunk and chunk_size <= remaining:
@@ -304,7 +305,3 @@ class OracleTTS:
     def clean(self) -> None:
         self._is_cancelled = True
         self.client = None
-
-    async def reset(self) -> None:
-        self._is_cancelled = False
-        self._initialize_client()
