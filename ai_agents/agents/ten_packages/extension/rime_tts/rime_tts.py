@@ -6,6 +6,7 @@ from datetime import datetime
 
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
+from websockets.exceptions import ConnectionClosedOK
 
 from ten_ai_base.message import (
     ModuleErrorVendorInfo,
@@ -51,7 +52,6 @@ class RimeTTSynthesizer:
         self._connect_exp_cnt = 0
         self.websocket_task = None
         self.channel_tasks = []
-        self.latest_context_id: str | None = None
 
         # Queue for pending text to be sent
         self.text_input_queue = asyncio.Queue[TTSTextInput]()
@@ -68,6 +68,7 @@ class RimeTTSynthesizer:
         self.ttfb_sent: bool = False
 
         self.cur_request_id: str | None = None
+        self.send_end_text: bool = False
 
     def _build_websocket_url(self) -> str:
         """Build RIME TTS WebSocket URL with query parameters"""
@@ -137,24 +138,18 @@ class RimeTTSynthesizer:
                         self.ten_env.log_warn(
                             "RIME TTS websocket connection closed, will reconnect."
                         )
+                        # Connection closed normally, send end event
+                        self.ten_env.log_debug("RIME TTS connection closed")
+                        if self.response_msgs and self.send_end_text:
+                            self.ten_env.log_debug("Sending end event")
+                            await self.response_msgs.put(
+                                (EVENT_TTS_END, b"")
+                            )
 
                         # Cancel all channel tasks
                         for task in self.channel_tasks:
                             task.cancel()
                         await self._await_channel_tasks()
-
-                        # Signal error if there was an active request
-                        if self.latest_context_id and self.response_msgs:
-                            self.ten_env.log_warn(
-                                f"Active request {self.latest_context_id} lost due to connection close, signaling error"
-                            )
-                            await self.response_msgs.put(
-                                (
-                                    EVENT_TTS_ERROR,
-                                    f"Connection closed: {e}".encode(),
-                                )
-                            )
-                            self.latest_context_id = None
 
                         # Reset event states
                         self._receive_ready_event.clear()
@@ -212,7 +207,6 @@ class RimeTTSynthesizer:
                     break
 
                 context_id =tts_text_input.request_id
-                self.latest_context_id = context_id
 
                 # Send text message
                 await self._send_text_internal(
@@ -220,6 +214,7 @@ class RimeTTSynthesizer:
                     tts_text_input.text,
                     context_id,
                     tts_text_input.request_id,
+                    tts_text_input.text_input_end,
                 )
         except Exception as e:
             self.ten_env.log_error(f"Exception in RIME TTS send_loop: {e}")
@@ -231,7 +226,8 @@ class RimeTTSynthesizer:
             # Mark receive loop as ready
             self._receive_ready_event.set()
 
-            async for message in ws:
+            # Use recv() method like official example to properly catch ConnectionClosedOK
+            while True:
                 if self._session_closing:
                     self.ten_env.log_debug(
                         "Session is closing, break receive loop."
@@ -239,20 +235,30 @@ class RimeTTSynthesizer:
                     break
 
                 try:
-                    await self._handle_server_message(message)
-                except ModuleVendorException as e:
-                    # Vendor errors should be propagated to the extension
-                    self.ten_env.log_error(
-                        f"Vendor error handling RIME TTS server message: {e}"
-                    )
+                    message = await ws.recv()
+                    try:
+                        await self._handle_server_message(message)
+                    except ModuleVendorException as e:
+                        # Vendor errors should be propagated to the extension
+                        self.ten_env.log_error(
+                            f"Vendor error handling RIME TTS server message: {e}"
+                        )
+                        if self.response_msgs:
+                            await self.response_msgs.put(
+                                (EVENT_TTS_ERROR, str(e.error.message).encode())
+                            )
+                    except Exception as e:
+                        self.ten_env.log_error(
+                            f"Error handling RIME TTS server message: {e}"
+                        )
+                except ConnectionClosedOK:
+                    # Connection closed normally, send end event
+                    self.ten_env.log_debug("RIME TTS connection closed")
                     if self.response_msgs:
                         await self.response_msgs.put(
-                            (EVENT_TTS_ERROR, str(e.error.message).encode())
+                            (EVENT_TTS_END, b"")
                         )
-                except Exception as e:
-                    self.ten_env.log_error(
-                        f"Error handling RIME TTS server message: {e}"
-                    )
+                    break
 
         except asyncio.CancelledError:
             self.ten_env.log_debug("RIME TTS receive loop cancelled")
@@ -268,68 +274,24 @@ class RimeTTSynthesizer:
 
     async def _handle_server_message(self, message):
         """Handle RIME TTS server responses"""
-        try:
-            data = json.loads(message)
-            message_type = data.get("type")
-            if message_type == RIME_MESSAGE_TYPE_CHUNK:
-                context_id = data.get("contextId")
-                # Handle audio chunk
-                audio_data = base64.b64decode(data["data"])
+        audio_data = message
+
+        if self.response_msgs:
+            if self.sent_ts and not self.ttfb_sent:
+                ttfb_ms = int(
+                    (datetime.now() - self.sent_ts).total_seconds()
+                    * 1000
+                )
+                await self.response_msgs.put(
+                    (EVENT_TTS_TTFB_METRIC, ttfb_ms)
+                )
+                self.ttfb_sent = True
                 self.ten_env.log_debug(
-                    f"Received audio chunk, context_id: {context_id}, length: {len(audio_data)}"
+                    f"RIME TTS: TTFB metric sent: {ttfb_ms}ms"
                 )
-                if self.response_msgs:
-                    if self.sent_ts and not self.ttfb_sent:
-                        ttfb_ms = int(
-                            (datetime.now() - self.sent_ts).total_seconds()
-                            * 1000
-                        )
-                        await self.response_msgs.put(
-                            (EVENT_TTS_TTFB_METRIC, ttfb_ms)
-                        )
-                        self.ttfb_sent = True
-                        self.ten_env.log_debug(
-                            f"RIME TTS: TTFB metric sent: {ttfb_ms}ms"
-                        )
-                    await self.response_msgs.put(
-                        (EVENT_TTS_RESPONSE, audio_data)
-                    )
-
-            elif message_type == RIME_MESSAGE_TYPE_TIMESTAMPS:
-                # Handle timestamps (optional, for debugging)
-                self.ten_env.log_debug(
-                    f"RIME TTS timestamps: {data.get('word_timestamps', {})}"
-                )
-            elif message_type == RIME_MESSAGE_TYPE_DONE:
-                context_id = data.get("contextId")
-                self.ten_env.log_debug(
-                    f"RIME TTS done: {data}, context_id: {context_id}"
-                )
-
-                await self.response_msgs.put((EVENT_TTS_END, b""))
-
-            elif message_type == RIME_MESSAGE_TYPE_ERROR:
-                # Handle error
-                error_message = data.get("message", "Unknown error")
-                raise ModuleVendorException(
-                    ModuleErrorVendorInfo(
-                        vendor=self.vendor,
-                        code="RIME_TTS_ERROR",
-                        message=error_message,
-                    )
-                )
-            else:
-                self.ten_env.log_warn(
-                    f"Unknown RIME TTS message type: {message_type}"
-                )
-
-        except Exception as e:
-            self.ten_env.log_error(f"Failed to parse RIME TTS message: {e}")
-            raise RuntimeError(f"Failed to parse RIME TTS message: {e}") from e
-
-    async def finish_connection(self):
-        operation = {"operation": "eos"}
-        await self.ws.send(json.dumps(operation))
+            await self.response_msgs.put(
+                (EVENT_TTS_RESPONSE, audio_data)
+            )
 
     async def send_text(self, t: TTSTextInput):
         await self.text_input_queue.put(t)
@@ -340,20 +302,21 @@ class RimeTTSynthesizer:
         text: str,
         context_id: str,
         request_id: str,
+        text_input_end: bool,
     ):
         """Internal text sending implementation for RIME TTS"""
 
         # Create RIME TTS text message
-        message = {"text": text, "contextId": context_id}
-        message_json = json.dumps(message)
         self.ten_env.log_debug(
-            f"KEYPOINT Sending text to RIME TTS: {message_json}"
+            f"KEYPOINT Sending text to RIME TTS: {text}"
         )
         if self.cur_request_id is None or self.cur_request_id != request_id:
             self.cur_request_id = request_id
             self.sent_ts = datetime.now()
 
-        await ws.send(message_json)
+        await ws.send(text)
+        if text_input_end:
+            self.send_end_text = True
 
     def cancel(self) -> None:
         """Cancel current connection, used for flush scenarios"""
@@ -487,10 +450,6 @@ class RimeTTSClient:
     async def send_text(self, t: TTSTextInput):
         """Send text to RIME TTS"""
         await self.synthesizer.send_text(t)
-
-    async def finish_connection(self):
-        """Finish RIME TTS connection"""
-        await self.synthesizer.finish_connection()
 
     def reset_synthesizer(self):
         """Reset synthesizer"""

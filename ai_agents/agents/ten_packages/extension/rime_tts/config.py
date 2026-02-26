@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class RimeTTSConfig(BaseModel):
     # RIME TTS API credentials
-    base_url: str = "wss://users.rime.ai/ws2"
+    base_url: str = "wss://users.rime.ai/ws"
     api_key: str = ""
     # Debug and logging
     dump: bool = False

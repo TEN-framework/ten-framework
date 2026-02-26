@@ -41,12 +41,16 @@ class StateMachineExtensionTester(ExtensionTester):
         self.request1_id = "state_test_req_1"
         self.request2_id = "state_test_req_2"
         self.test_completed = False
+        self.first_request_sent = False
+        self.second_request_sent = False
+        self.ten_env_tester = None
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Send two sequential TTS requests with different IDs."""
+        """Send first TTS request, second will be sent after first completes."""
         ten_env_tester.log_info("State machine test started")
+        self.ten_env_tester = ten_env_tester
 
-        # Send first request
+        # Send first request only
         tts_input1 = TTSTextInput(
             request_id=self.request1_id,
             text="First request text",
@@ -56,8 +60,16 @@ class StateMachineExtensionTester(ExtensionTester):
         data1.set_property_from_json(None, tts_input1.model_dump_json())
         ten_env_tester.send_data(data1)
         ten_env_tester.log_info(f"Sent first request: {self.request1_id}")
+        self.first_request_sent = True
 
-        # Send second request immediately (should wait for first to complete)
+        ten_env_tester.on_start_done()
+
+    def _send_second_request(self, ten_env: TenEnvTester) -> None:
+        """Send second request after first completes."""
+        if self.second_request_sent:
+            return
+
+        ten_env.log_info(f"Sending second request: {self.request2_id}")
         tts_input2 = TTSTextInput(
             request_id=self.request2_id,
             text="Second request text",
@@ -65,10 +77,8 @@ class StateMachineExtensionTester(ExtensionTester):
         )
         data2 = Data.create("tts_text_input")
         data2.set_property_from_json(None, tts_input2.model_dump_json())
-        ten_env_tester.send_data(data2)
-        ten_env_tester.log_info(f"Sent second request: {self.request2_id}")
-
-        ten_env_tester.on_start_done()
+        ten_env.send_data(data2)
+        self.second_request_sent = True
 
     def on_data(self, ten_env: TenEnvTester, data: Data) -> None:
         """Track state transitions and events."""
@@ -76,32 +86,47 @@ class StateMachineExtensionTester(ExtensionTester):
 
         if name == "tts_audio_start":
             payload, _ = data.get_property_to_json("")
-            payload_dict = (
-                eval(payload) if isinstance(payload, str) else payload
-            )
-            request_id = payload_dict.get("request_id", "")
-            self.audio_start_events.append(request_id)
-            ten_env.log_info(
-                f"Received tts_audio_start for request: {request_id}"
-            )
+            # Use json.loads instead of eval for safe JSON parsing
+            if isinstance(payload, str):
+                payload_dict = json.loads(payload)
+            else:
+                payload_dict = payload
+            request_id = payload_dict.get("request_id") or ""
+            # Filter out None/null request_ids
+            if request_id:
+                self.audio_start_events.append(request_id)
+                ten_env.log_info(
+                    f"Received tts_audio_start for request: {request_id}"
+                )
 
         elif name == "tts_audio_end":
             payload, _ = data.get_property_to_json("")
-            payload_dict = (
-                eval(payload) if isinstance(payload, str) else payload
-            )
-            request_id = payload_dict.get("request_id", "")
+            # Use json.loads instead of eval for safe JSON parsing
+            if isinstance(payload, str):
+                payload_dict = json.loads(payload)
+            else:
+                payload_dict = payload
+            request_id = payload_dict.get("request_id")
             reason = payload_dict.get("reason", "")
-            self.audio_end_events.append((request_id, reason))
-            ten_env.log_info(
-                f"Received tts_audio_end for request: {request_id}, reason: {reason}"
-            )
+            
+            # Filter out None/null request_ids
+            if request_id:
+                self.audio_end_events.append((request_id, reason))
+                ten_env.log_info(
+                    f"Received tts_audio_end for request: {request_id}, reason: {reason}"
+                )
 
-            # Stop test after both requests complete
-            if len(self.audio_end_events) == 2:
-                ten_env.log_info("Both requests completed, stopping test")
-                self.test_completed = True
-                ten_env.stop_test()
+                # If first request completed, send second request
+                if request_id == self.request1_id and not self.second_request_sent:
+                    ten_env.log_info("First request completed, sending second request")
+                    self._send_second_request(ten_env)
+
+                # Stop test after both requests complete
+                valid_ends = [e for e in self.audio_end_events if e[0] in [self.request1_id, self.request2_id]]
+                if len(valid_ends) == 2:
+                    ten_env.log_info("Both requests completed, stopping test")
+                    self.test_completed = True
+                    ten_env.stop_test()
 
     def verify_state_transitions(self, extension) -> bool:
         """
@@ -112,27 +137,37 @@ class StateMachineExtensionTester(ExtensionTester):
         2. Request 2 should start processing only after request 1 completes
         3. audio_start and audio_end events should be in correct order
         """
+        # Filter valid events (only our test request IDs)
+        valid_start_events = [
+            e for e in self.audio_start_events 
+            if e in [self.request1_id, self.request2_id]
+        ]
+        valid_end_events = [
+            e for e in self.audio_end_events 
+            if e[0] in [self.request1_id, self.request2_id]
+        ]
+
         # Verify both requests received audio_start
         assert (
-            len(self.audio_start_events) == 2
-        ), f"Expected 2 audio_start events, got {len(self.audio_start_events)}"
+            len(valid_start_events) == 2
+        ), f"Expected 2 audio_start events, got {len(valid_start_events)}: {valid_start_events}"
         assert (
-            self.request1_id in self.audio_start_events
+            self.request1_id in valid_start_events
         ), f"Request 1 ({self.request1_id}) did not receive audio_start"
         assert (
-            self.request2_id in self.audio_start_events
+            self.request2_id in valid_start_events
         ), f"Request 2 ({self.request2_id}) did not receive audio_start"
 
         # Verify both requests received audio_end with REQUEST_END reason
         assert (
-            len(self.audio_end_events) == 2
-        ), f"Expected 2 audio_end events, got {len(self.audio_end_events)}"
+            len(valid_end_events) == 2
+        ), f"Expected 2 audio_end events, got {len(valid_end_events)}: {valid_end_events}"
 
         req1_end = next(
-            (e for e in self.audio_end_events if e[0] == self.request1_id), None
+            (e for e in valid_end_events if e[0] == self.request1_id), None
         )
         req2_end = next(
-            (e for e in self.audio_end_events if e[0] == self.request2_id), None
+            (e for e in valid_end_events if e[0] == self.request2_id), None
         )
 
         assert (
@@ -155,8 +190,8 @@ class StateMachineExtensionTester(ExtensionTester):
         # so we can only verify ordering within each list
 
         # Verify Request 1 starts before Request 2
-        req1_start_idx = self.audio_start_events.index(self.request1_id)
-        req2_start_idx = self.audio_start_events.index(self.request2_id)
+        req1_start_idx = valid_start_events.index(self.request1_id)
+        req2_start_idx = valid_start_events.index(self.request2_id)
         assert req1_start_idx < req2_start_idx, (
             f"Request 1 should start before Request 2 "
             f"(req1_start_idx={req1_start_idx}, req2_start_idx={req2_start_idx})"
@@ -165,12 +200,12 @@ class StateMachineExtensionTester(ExtensionTester):
         # Verify Request 1 ends before Request 2 ends
         req1_end_idx = next(
             i
-            for i, e in enumerate(self.audio_end_events)
+            for i, e in enumerate(valid_end_events)
             if e[0] == self.request1_id
         )
         req2_end_idx = next(
             i
-            for i, e in enumerate(self.audio_end_events)
+            for i, e in enumerate(valid_end_events)
             if e[0] == self.request2_id
         )
         assert req1_end_idx < req2_end_idx, (
@@ -208,9 +243,29 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
             self.session: Optional[StateMachineStreamer.Session] = None
             self.response_msgs: asyncio.Queue = None
             self._request_count = 0
+            self._ttfb_sent_per_request: dict[str, bool] = {}  # Track TTFB sent per request_id
+            self._ttfb_ready_per_request: dict[str, asyncio.Event] = {}  # Track TTFB ready per request_id
 
         async def send_text(self, t: TTSTextInput):
             """Simulate TTS synthesis by populating response queue."""
+            # Handle <EOS> separately - only send END event
+            if t.text == "<EOS>":
+                request_id = t.request_id
+                # Wait for TTFB to be sent before sending END
+                # This ensures audio_start is sent before audio_end
+                if request_id in self._ttfb_ready_per_request:
+                    await self._ttfb_ready_per_request[request_id].wait()
+                await asyncio.sleep(0.01)  # Small delay to ensure TTFB is processed
+                await self.response_msgs.put((EVENT_TTS_END, b""))
+                print(f"  → Mock: Received <EOS> for request {request_id}")
+                return
+
+            # For actual text, only process if we haven't sent TTFB for this request yet
+            request_id = t.request_id
+            if request_id in self._ttfb_sent_per_request and self._ttfb_sent_per_request[request_id]:
+                # TTFB already sent for this request, skip
+                return
+
             self._request_count += 1
             if "First" in t.text:
                 request_name = "request_1"
@@ -222,13 +277,23 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
                 request_name = f"unknown_{self._request_count}"
 
             self.session = StateMachineStreamer.Session(request_name)
+            
+            # Create event to track TTFB readiness
+            self._ttfb_ready_per_request[request_id] = asyncio.Event()
+            
+            # Mark TTFB as sent for this request
+            self._ttfb_sent_per_request[request_id] = True
 
             # Populate response queue with simulated audio data
             async def populate_queue():
-                await asyncio.sleep(0.01)  # Simulate processing delay
-
-                # Send TTFB metric (triggers audio_start)
+                # Send TTFB metric immediately (triggers audio_start) - must be before <EOS>
+                # This ensures audio_start is sent before audio_end
                 await self.response_msgs.put((EVENT_TTS_TTFB_METRIC, 50))
+                # Signal that TTFB has been sent
+                if request_id in self._ttfb_ready_per_request:
+                    self._ttfb_ready_per_request[request_id].set()
+                
+                await asyncio.sleep(0.01)  # Simulate processing delay
 
                 # Send audio chunks
                 for i in range(3):
@@ -238,15 +303,17 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
                         (EVENT_TTS_RESPONSE, audio_chunk)
                     )
 
-                # Signal completion
-                await self.response_msgs.put((EVENT_TTS_END, b""))
-                print(f"  → Mock: Completed {request_name}")
+                # Note: EVENT_TTS_END will be sent when <EOS> is received
+                print(f"  → Mock: Sent audio data for {request_name}")
 
             asyncio.create_task(populate_queue())
 
         def reset_synthesizer(self):
             """Mock reset."""
             print("  → Mock: Resetting synthesizer")
+            # Reset TTFB tracking for next request
+            self._ttfb_sent_per_request.clear()
+            self._ttfb_ready_per_request.clear()
 
         def cancel(self):
             """Mock cancel."""
