@@ -170,6 +170,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 )
 
         if len(self.config.language_list) > 1:
+            speech_config.set_property(
+                speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                "Continuous",
+            )
+            # Continuous mode is used to recognize the language of the audio in real time.
+            # https://learn.microsoft.com/zh-cn/azure/ai-services/speech-service/language-identification?pivots=programming-language-python&tabs=once#recognize-once-or-continuous
             self.client = speechsdk.SpeechRecognizer(
                 speech_config=speech_config,
                 audio_config=audio_config,
