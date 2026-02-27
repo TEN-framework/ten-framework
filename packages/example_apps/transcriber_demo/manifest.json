@@ -64,8 +64,8 @@
     }
   ],
   "scripts": {
-    "start": "bin/start",
-    "start_with_vad": "bin/start_with_vad",
+    "start": "python3 scripts/start.py",
+    "start_with_vad": "python3 scripts/start.py --property property-vad.json",
     "build": "python3 scripts/build.py",
     "install_deps": "python3 scripts/install_deps.py"
   },
@@ -84,8 +84,6 @@
       "recordings/**",
       "scripts/**",
       "docs/**",
-      "bin/start",
-      "bin/start_with_vad",
       ".vscode/**"
     ]
   }
