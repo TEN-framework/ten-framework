@@ -280,14 +280,16 @@ def find_tgn_executable() -> str:
         RuntimeError: If tgn is not found
     """
     try:
+        tgn_cmd = "tgn.bat" if sys.platform == "win32" else "tgn"
+
         subprocess.run(
-            ["tgn", "--version"], capture_output=True, text=True, check=True
+            [tgn_cmd, "--version"], capture_output=True, text=True, check=True
         )
 
         if sys.platform == "win32":
             full_path = (
                 subprocess.run(
-                    ["where", "tgn"],
+                    ["where", tgn_cmd],
                     capture_output=True,
                     text=True,
                     check=True,
@@ -512,6 +514,7 @@ def build_cxx_extensions(
                     "--",
                     "is_clang=false",
                     "enable_sanitizer=false",
+                    "vs_version=2022",
                 ]
             )
 
