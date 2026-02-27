@@ -26,12 +26,18 @@ Usage:
 """
 
 import argparse
+import io
 import platform
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+# To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
+# CJK environment. \u2713: ✓ (check sign)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 
 def detect_os() -> str:
