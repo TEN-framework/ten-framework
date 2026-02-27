@@ -17,6 +17,14 @@ tasks:
     dir: ./tenapp
     cmds:
       - tman install
+      - mkdir -p ../../../ten_packages/system
+      # Symlink system packages to the shared ten_packages dir so extensions
+      # installed by different examples can resolve the same system deps.
+      # ln -snf replaces any existing symlink atomically.
+      - |
+        for pkg in ten_packages/system/*/; do
+          [ -d "$pkg" ] && ln -snf "$(pwd)/$pkg" "../../../ten_packages/system/$(basename $pkg)"
+        done
 
   install-tenapp-python-deps:
     desc: install tenapp python dependencies

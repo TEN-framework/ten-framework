@@ -1,0 +1,19 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "tenancy": "${env:OCI_TENANCY}",
+    "user": "${env:OCI_USER}",
+    "fingerprint": "${env:OCI_FINGERPRINT}",
+    "key_file": "${env:OCI_KEY_FILE}",
+    "compartment_id": "${env:OCI_COMPARTMENT_ID}",
+    "region": "${env:OCI_REGION|us-phoenix-1}",
+    "language": "en-US",
+    "sample_rate": 16000,
+    "final_silence_threshold_in_ms": 2000,
+    "partial_silence_threshold_in_ms": 0,
+    "stabilize_partial_results": "NONE",
+    "punctuation": "NONE",
+    "model_domain": "GENERIC"
+  }
+}

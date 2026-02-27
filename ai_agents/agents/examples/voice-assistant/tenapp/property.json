@@ -46,6 +46,7 @@
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
+                "temperature": 1,
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
@@ -177,6 +178,245 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+      ,
+      {
+        "name": "voice_assistant_oracle",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "oracle_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "tenancy": "${env:OCI_TENANCY}",
+                  "user": "${env:OCI_USER}",
+                  "fingerprint": "${env:OCI_FINGERPRINT}",
+                  "key_file": "${env:OCI_KEY_FILE}",
+                  "compartment_id": "${env:OCI_COMPARTMENT_ID}",
+                  "region": "${env:OCI_REGION|us-phoenix-1}",
+                  "language": "en-US",
+                  "sample_rate": 16000
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "${env:ORACLE_LLM_BASE_URL}",
+                "api_key": "${env:ORACLE_LLM_API_KEY}",
+                "model": "${env:ORACLE_LLM_MODEL}",
+                "frequency_penalty": 0.9,
+                "temperature": 1,
+                "max_tokens": 512,
+                "prompt": "",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10,
+                "default_headers": {
+                  "opc-compartment-id": "${env:OCI_COMPARTMENT_ID}"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "oracle_tts_python",
+              "extension_group": "tts",
+              "property": {
+                "params": {
+                  "tenancy": "${env:OCI_TENANCY}",
+                  "user": "${env:OCI_USER}",
+                  "fingerprint": "${env:OCI_FINGERPRINT}",
+                  "key_file": "${env:OCI_KEY_FILE}",
+                  "compartment_id": "${env:OCI_COMPARTMENT_ID}",
+                  "region": "${env:OCI_REGION|us-phoenix-1}",
+                  "model_name": "TTS_2_NATURAL",
+                  "voice_id": "Annabelle",
+                  "language_code": "en-US",
+                  "sample_rate": 16000,
+                  "output_format": "PCM"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "TEN Agent connected. How can I help you today?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "llm",
+              "cmd": [
+                {
+                  "names": [
+                    "chat_completion"
+                  ],
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "tts_text_input",
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "message",
+                  "source": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }

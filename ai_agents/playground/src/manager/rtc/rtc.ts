@@ -50,9 +50,9 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       }
       const { appId, token } = data;
       this.appId = appId;
-      this.token = token;
+      this.token = token || null;
       this.userId = userId;
-      await this.client?.join(appId, channel, token, userId);
+      await this.client?.join(appId, channel, token || null, userId);
       this._joined = true;
     }
   }
