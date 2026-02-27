@@ -521,9 +521,9 @@ class MainControlExtension(AsyncExtension):
             if call_uuid not in self.server_instance.active_call_sessions:
                 return
 
-            websocket = self.server_instance.active_call_sessions[call_uuid].get(
-                "websocket"
-            )
+            websocket = self.server_instance.active_call_sessions[
+                call_uuid
+            ].get("websocket")
             if not websocket:
                 return
 
@@ -551,7 +551,7 @@ class MainControlExtension(AsyncExtension):
                 "event": "playAudio",
                 "media": {
                     "contentType": "audio/x-mulaw;rate=8000",
-                    "payload": audio_base64
+                    "payload": audio_base64,
                 },
             }
 

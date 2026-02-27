@@ -250,6 +250,7 @@ class OpenAIChatGPT:
 
             parser = ThinkParser()
             reasoning_mode = None
+            reasoning_full_content = ""
 
             last_chat_completion: ChatCompletionChunk | None = None
 
@@ -283,10 +284,14 @@ class OpenAIChatGPT:
                             reasoning_content
                         ):
                             if event_type == "reasoning_delta":
+                                # Use a local accumulator instead of parser state
+                                # because parser.think_content can be reset when
+                                # reasoning_done is emitted in the same cycle.
+                                reasoning_full_content += event_value
                                 yield LLMResponseReasoningDelta(
                                     response_id=chat_completion.id,
                                     role="assistant",
-                                    content=parser.think_content,
+                                    content=reasoning_full_content,
                                     delta=event_value,
                                     created=chat_completion.created,
                                 )
@@ -302,6 +307,7 @@ class OpenAIChatGPT:
                                     content=event_value,
                                     created=chat_completion.created,
                                 )
+                                reasoning_full_content = ""
 
                     if content:
                         full_content += content
@@ -326,10 +332,12 @@ class OpenAIChatGPT:
                                 created=chat_completion.created,
                             )
                         elif event_type == "reasoning_delta":
+                            # Keep reasoning delta content cumulative and stable.
+                            reasoning_full_content += event_value
                             yield LLMResponseReasoningDelta(
                                 response_id=chat_completion.id,
                                 role="assistant",
-                                content=parser.think_content,
+                                content=reasoning_full_content,
                                 delta=event_value,
                                 created=chat_completion.created,
                             )
@@ -340,6 +348,7 @@ class OpenAIChatGPT:
                                 content=event_value,
                                 created=chat_completion.created,
                             )
+                            reasoning_full_content = ""
 
                 if delta.tool_calls:
                     try:
@@ -397,10 +406,12 @@ class OpenAIChatGPT:
                         created=last_chat_completion.created,
                     )
                 elif event_type == "reasoning_delta":
+                    # Keep reasoning delta content cumulative and stable.
+                    reasoning_full_content += event_value
                     yield LLMResponseReasoningDelta(
                         response_id=last_chat_completion.id,
                         role="assistant",
-                        content=parser.think_content,
+                        content=reasoning_full_content,
                         delta=event_value,
                         created=last_chat_completion.created,
                     )
@@ -411,6 +422,7 @@ class OpenAIChatGPT:
                         content=event_value,
                         created=last_chat_completion.created,
                     )
+                    reasoning_full_content = ""
 
             # Convert the dictionary to a list
             tool_calls_list = list(tool_calls_dict.values())

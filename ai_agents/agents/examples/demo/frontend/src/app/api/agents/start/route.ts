@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
       dify_base_url,
       oceanbase_settings,
     } = body;
+    const normalizedGraphName =
+      graph_name === "va_openai_v2v_1_5" ? "va_openai_v2v" : graph_name;
 
     // Build graph overrides (server-side defaults), then merge any client-provided overrides.
     // This enables clients (e.g. the Live2D voice-assistant) to override TTS voice_id,
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
         request_id,
         channel_name,
         user_uid,
-        graph_name,
+        graph_name: normalizedGraphName,
         // Get the graph properties based on the graph name, language, and voice type
         properties,
       })}`
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
       request_id,
       channel_name,
       user_uid,
-      graph_name,
+      graph_name: normalizedGraphName,
       character_id,
       // Get the graph properties based on the graph name, language, and voice type
       properties,
