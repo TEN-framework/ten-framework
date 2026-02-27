@@ -49,6 +49,7 @@ class AgoraAnamRecorder:
         cluster: str,
         pod: str,
         activity_idle_timeout: int,
+        vercel_bypass_token: str = "",
     ):
         # Validate required fields
         self._validate_config(app_id, api_key, avatar_id)
@@ -67,6 +68,7 @@ class AgoraAnamRecorder:
         self.cluster = cluster
         self.pod = pod
         self.activity_idle_timeout = activity_idle_timeout
+        self.vercel_bypass_token = vercel_bypass_token
         self.version = "1.0"  # API version for init command
 
         self.token_server = self._generate_token(self.uid_avatar, 1)
@@ -156,8 +158,10 @@ class AgoraAnamRecorder:
             "accept": "application/json",
             "content-type": "application/json",
             "authorization": f"Bearer {self.api_key}",
-            "x-vercel-protection-bypass": "WvrmD1CsSyCzkAdxjyU6Iz1DuJOgKjMZ",
         }
+
+        if self.vercel_bypass_token:
+            headers["x-vercel-protection-bypass"] = self.vercel_bypass_token
 
         # Build payload according to Anam API spec
         payload = {
@@ -314,8 +318,10 @@ class AgoraAnamRecorder:
             "accept": "application/json",
             "content-type": "application/json",
             "authorization": f"Bearer {self.session_token}",
-            "x-vercel-protection-bypass": "WvrmD1CsSyCzkAdxjyU6Iz1DuJOgKjMZ",
         }
+
+        if self.vercel_bypass_token:
+            headers["x-vercel-protection-bypass"] = self.vercel_bypass_token
 
         # According to Anam API spec, this endpoint takes an empty body
         # All configuration was sent in Step 1 (_create_session_token)
@@ -386,8 +392,10 @@ class AgoraAnamRecorder:
                 "accept": "application/json",
                 "content-type": "application/json",
                 "authorization": f"Bearer {self.api_key}",
-                "x-vercel-protection-bypass": "WvrmD1CsSyCzkAdxjyU6Iz1DuJOgKjMZ",
             }
+
+            if self.vercel_bypass_token:
+                headers["x-vercel-protection-bypass"] = self.vercel_bypass_token
 
             self.ten_env.log_info("_stop_session with details:")
             self.ten_env.log_info(f"URL: {endpoint}")
