@@ -1,5 +1,13 @@
 @echo off
+setlocal enabledelayedexpansion
 cd /d "%~dp0\.."
+
+REM Load .env file if it exists
+if exist ".env" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%a in (".env") do (
+        if not "%%a"=="" set "%%a=%%b"
+    )
+)
 
 REM Add runtime DLLs to PATH so main.exe can find them
 set PATH=%cd%\ten_packages\system\ten_runtime_go\lib;%cd%\ten_packages\system\ten_runtime\lib;%PATH%
