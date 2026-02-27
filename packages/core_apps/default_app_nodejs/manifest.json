@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "default_app_nodejs",
-  "version": "0.11.52",
+  "version": "0.11.55",
   "display_name": {
     "locales": {
       "en-US": {
@@ -67,12 +67,12 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.52"
+      "version": "0.11.55"
     },
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.52"
+      "version": "0.11.55"
     }
   ],
   "scripts": {

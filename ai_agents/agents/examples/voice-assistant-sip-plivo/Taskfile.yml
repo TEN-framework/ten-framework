@@ -1,0 +1,80 @@
+version: "3"
+
+dotenv: ["../../../.env"]
+
+tasks:
+  # install scripts
+  install-frontend:
+    desc: install frontend dependencies
+    internal: true
+    dir: ./frontend
+    cmds:
+      - bun install --verbose
+
+  install-tenapp:
+    desc: install tenapp dependencies
+    internal: true
+    dir: ./tenapp
+    cmds:
+      - tman install
+
+  install-tenapp-python-deps:
+    desc: install tenapp python dependencies
+    deps: [install-tenapp]
+    internal: true
+    dir: ./tenapp
+    cmds:
+      - ./scripts/install_python_deps.sh
+
+  install:
+    desc: install dependencies
+    dir: ./tenapp
+    cmds:
+      - task: install-tenapp
+      - task: install-tenapp-python-deps
+      - task: install-frontend
+
+  # run scripts
+  run-tenapp:
+    desc: run tenapp
+    dir: ./tenapp
+    cmds:
+      - tman run start
+
+  run-gd-server:
+    desc: run tman dev http server for TMAN Designer
+    dir: ./tenapp
+    cmds:
+      - tman designer
+
+  run-frontend:
+    desc: run frontend
+    dir: ./frontend
+    cmds:
+      - bun run dev
+
+  run-api-server:
+    desc: run standalone Plivo HTTP server
+    dir: ./server
+    cmds:
+      - python3 main.py --tenapp-dir ../tenapp
+
+  run-ngrok:
+    desc: run ngrok tunnel for WSS support
+    dir: ./
+    cmds:
+      - ./start-with-ngrok.sh
+
+  run:
+    desc: run everything
+    deps:
+      - task: run-gd-server
+      - task: run-frontend
+      - task: run-api-server
+      - task: run-ngrok
+
+  # release scripts
+  release:
+    desc: release
+    cmds:
+      - ../../scripts/release.sh {{.PWD}}/tenapp

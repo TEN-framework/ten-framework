@@ -20,6 +20,7 @@ from ten_ai_base.asr import (
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
+    ModuleErrorVendorInfo,
 )
 from ten_runtime import (
     AsyncTenEnv,
@@ -105,13 +106,6 @@ class CustomWebSocketClient:
         if self.websocket and self.connected:
             await self.websocket.send(data)
 
-    async def finalize(self):
-        """Finalize connection (optional, depending on your needs)"""
-        # Actively trigger the transcript event with final=True
-        if "transcript" in self.event_handlers:
-            message = {"type": "fullSentence", "text": "<END>", "final": True}
-            await self.event_handlers["transcript"](self, message)
-
     async def finish(self):
         """Close connection"""
         if self.listen_task:
@@ -170,6 +164,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                     self.config.dump_path, DUMP_FILE_NAME
                 )
                 self.audio_dumper = Dumper(dump_file_path)
+                await self.audio_dumper.start()
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = ASRConfig.model_validate_json("{}")
@@ -177,6 +172,11 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                ),
+                ModuleErrorVendorInfo(
+                    vendor="ezai",
+                    code="init_failed",
                     message=str(e),
                 ),
             )
@@ -194,9 +194,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                 self.config.url + f"?token={self.config.token}"
             )
 
-            if self.audio_dumper:
-                await self.audio_dumper.start()
-
             # Register event handlers
             await self._register_custom_event_handlers()
 
@@ -209,7 +206,12 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                         module=MODULE_NAME_ASR,
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message="failed to connect to custom websocket",
-                    )
+                    ),
+                    ModuleErrorVendorInfo(
+                        vendor="ezai",
+                        code="connection_failed",
+                        message="failed to connect to custom websocket",
+                    ),
                 )
                 asyncio.create_task(self._handle_reconnect())
             else:
@@ -221,6 +223,11 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                ),
+                ModuleErrorVendorInfo(
+                    vendor="ezai",
+                    code="connection_failed",
                     message=str(e),
                 ),
             )
@@ -293,13 +300,30 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
             f"vendor_error: {error}",
             category=LOG_CATEGORY_VENDOR,
         )
+
+        # Extract error details if available
+        error_msg = str(error)
+        error_code = "error"
+        if isinstance(error, dict):
+            error_msg = error.get("message", str(error))
+            error_code = str(error.get("status", "error"))
+
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=str(error),
-            )
+                message=error_msg,
+            ),
+            ModuleErrorVendorInfo(
+                vendor="ezai",
+                code=error_code,
+                message=error_msg,
+            ),
         )
+
+        # Trigger reconnection on error
+        self.ten_env.log_warn("Triggering reconnection due to verify error")
+        asyncio.create_task(self._handle_reconnect())
 
     async def _handle_message(self, message: dict) -> None:
         """Handle message from WebSocket server"""
@@ -400,7 +424,7 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
             f"vendor_cmd: finalize start at {self.last_finalize_timestamp}",
             category=LOG_CATEGORY_VENDOR,
         )
-        await self._handle_finalize_api()
+        await self._handle_finalize_mute_pkg()
 
     async def _handle_asr_result(
         self,
@@ -426,18 +450,51 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         )
         await self.send_asr_result(asr_result)
 
-    async def _handle_finalize_api(self):
-        """Handle finalize with api mode."""
+    async def _handle_finalize_mute_pkg(self):
+        """Send mute audio package to trigger finalize."""
         assert self.config is not None
 
-        if self.client is None:
-            _ = self.ten_env.log_debug("finalize api: client is not connected")
+        if not self.is_connected():
+            self.ten_env.log_debug("finalize mute pkg: client is not connected")
             return
 
-        await self.client.finalize()
-        self.ten_env.log_info(
-            "vendor_cmd: finalize api completed",
-            category=LOG_CATEGORY_VENDOR,
+        # Send 0.7s silence
+        mute_duration_ms = 700
+
+        # 2 bytes per sample (16-bit)
+        bytes_per_sample = 2
+        empty_audio_bytes_len = int(
+            mute_duration_ms * self.config.sample_rate / 1000 * bytes_per_sample
+        )
+
+        # Create silence buffer
+        frame_buf = bytearray(empty_audio_bytes_len)
+
+        # Update timeline
+        self.audio_timeline.add_silence_audio(mute_duration_ms)
+
+        # Prepare metadata for EZAI protocol
+        metadata = {
+            "sampleRate": self.config.sample_rate,
+            "channels": self.config.channels,
+            "sampwidth": self.config.sampwidth,
+            "language": self.config.language,
+        }
+        metadata_json = json.dumps(metadata)
+        metadata_length = len(metadata_json)
+
+        # Pack data: metadata length + metadata + audio data
+        message = (
+            struct.pack("<I", metadata_length)
+            + metadata_json.encode("utf-8")
+            + bytes(frame_buf)
+        )
+
+        if self.client:
+            await self.client.send(message)
+
+        self.ten_env.log_debug(
+            f"finalize mute pkg completed ({mute_duration_ms}ms)"
         )
 
     async def _handle_reconnect(self):
@@ -450,18 +507,6 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         """
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
-            return
-
-        # Check if we can still retry
-        if not self.reconnect_manager.can_retry():
-            self.ten_env.log_warn("No more reconnection attempts allowed")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="No more reconnection attempts allowed",
-                )
-            )
             return
 
         # Attempt a single reconnection
@@ -522,31 +567,36 @@ class EzaiAsrExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.client is not None
 
-        buf = frame.lock_buf()
-        if self.audio_dumper:
-            await self.audio_dumper.push_bytes(bytes(buf))
-        self.audio_timeline.add_user_audio(
-            int(len(buf) / (self.config.sample_rate / 1000 * 2))
-        )
+        try:
+            buf = frame.lock_buf()
+            if self.audio_dumper:
+                await self.audio_dumper.push_bytes(bytes(buf))
+            self.audio_timeline.add_user_audio(
+                int(len(buf) / (self.config.sample_rate / 1000 * 2))
+            )
 
-        # Prepare metadata
-        metadata = {
-            "sampleRate": self.config.sample_rate,
-            "channels": self.config.channels,
-            "sampwidth": self.config.sampwidth,
-            "language": self.config.language,
-        }
-        metadata_json = json.dumps(metadata)
-        metadata_length = len(metadata_json)
+            # Prepare metadata
+            metadata = {
+                "sampleRate": self.config.sample_rate,
+                "channels": self.config.channels,
+                "sampwidth": self.config.sampwidth,
+                "language": self.config.language,
+            }
+            metadata_json = json.dumps(metadata)
+            metadata_length = len(metadata_json)
 
-        # Pack data: metadata length + metadata + audio data
-        message = (
-            struct.pack("<I", metadata_length)
-            + metadata_json.encode("utf-8")
-            + bytes(buf)
-        )
+            # Pack data: metadata length + metadata + audio data
+            message = (
+                struct.pack("<I", metadata_length)
+                + metadata_json.encode("utf-8")
+                + bytes(buf)
+            )
 
-        await self.client.send(message)
-        frame.unlock_buf(buf)
+            await self.client.send(message)
+            frame.unlock_buf(buf)
 
-        return True
+            return True
+        except Exception as e:
+            self.ten_env.log_error(f"Error sending audio to EZAI ASR: {e}")
+            frame.unlock_buf(buf)
+            return False

@@ -10,7 +10,7 @@ DUMP_FILE_NAME = "azure_asr_in.pcm"
 STREAM_ID = "stream_id"
 REMOTE_USER_ID = "remote_user_id"
 MODULE_NAME_ASR = "asr"
-
+AZURE_LANGUAGE_ID_MODE_KEY = "SPEECH-LanguageIdMode"
 # AuthenticationFailure and BadRequest are fatal errors that should not be retried
 FATAL_ERROR_CODES = [
     speechsdk.CancellationErrorCode.AuthenticationFailure,

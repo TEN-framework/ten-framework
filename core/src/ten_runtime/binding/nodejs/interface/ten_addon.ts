@@ -17,9 +17,18 @@ try {
   // They can instead be loaded with `module.createRequire()` or
   // `process.dlopen`.
   const require = createRequire(import.meta.url);
-  addon = require("libten_runtime_nodejs");
+
+  // Try different module names based on platform:
+  // - Linux/macOS: libten_runtime_nodejs (with lib prefix)
+  // - Windows MSVC: ten_runtime_nodejs (without lib prefix)
+  try {
+    addon = require("libten_runtime_nodejs");
+  } catch {
+    // Fallback for Windows MSVC builds
+    addon = require("ten_runtime_nodejs");
+  }
 } catch (e) {
-  console.error(`Failed to load libten_runtime_nodejs module: ${e}`);
+  console.error(`Failed to load ten_runtime_nodejs module: ${e}`);
 }
 
 export default addon as unknown as typeof import("libten_runtime_nodejs");

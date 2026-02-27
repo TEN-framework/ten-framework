@@ -371,3 +371,272 @@ def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
     print("    ✓ Empty headers dict correctly uses defaults")
 
     print("✅ Headers configuration test passed successfully.")
+
+
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+@patch("openai_tts2_python.openai_tts.Timeout")
+@patch("openai_tts2_python.openai_tts.Limits")
+def test_url_in_params(MockLimits, MockTimeout, MockAsyncClient):
+    """
+    Tests that 'url' parameter in params is correctly extracted and used.
+
+    Test cases:
+    1. When 'url' is in params (and not in top-level), it should be extracted to config.url
+    2. When 'url' is in params, it should be removed from params after extraction
+    3. When both top-level 'url' and params 'url' exist, top-level takes precedence
+    4. When 'url' is in params but top-level url is None, params url should be used
+    """
+    print("Starting test_url_in_params with mock...")
+
+    from openai_tts2_python.openai_tts import OpenAITTSClient
+    from openai_tts2_python.config import OpenAITTSConfig
+    from ten_runtime import AsyncTenEnv
+    from unittest.mock import MagicMock
+
+    # Mock httpx components
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
+
+    # Mock TenEnv
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    mock_ten_env.log_info = MagicMock()
+    mock_ten_env.log_debug = MagicMock()
+    mock_ten_env.log_error = MagicMock()
+    mock_ten_env.log_warn = MagicMock()
+
+    # Common params for all test cases
+    common_params = {
+        "api_key": "test_key",
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+    }
+
+    # Test Case 1: 'url' in params (should be extracted to config.url)
+    print(
+        "  → Test Case 1: 'url' in params (should be extracted to config.url)"
+    )
+    config_url_in_params = OpenAITTSConfig(
+        params={
+            **common_params,
+            "url": "https://custom-server.com/v1/tts",
+        }
+    )
+    config_url_in_params.update_params()
+    assert (
+        config_url_in_params.url == "https://custom-server.com/v1/tts"
+    ), f"Expected url to be 'https://custom-server.com/v1/tts', got '{config_url_in_params.url}'"
+    assert (
+        "url" not in config_url_in_params.params
+    ), "Expected 'url' to be removed from params after extraction"
+    client_url_in_params = OpenAITTSClient(config_url_in_params, mock_ten_env)
+    assert (
+        client_url_in_params.config.url == "https://custom-server.com/v1/tts"
+    ), "Expected client config url to match extracted url"
+    print("    ✓ URL in params correctly extracted to config.url")
+
+    # Test Case 2: 'url' in params should be removed from params after extraction
+    print(
+        "  → Test Case 2: 'url' in params should be removed from params after extraction"
+    )
+    test_params = {
+        **common_params,
+        "url": "https://another-server.com/tts",
+        "custom_param": "should_stay",
+    }
+    config_url_removal = OpenAITTSConfig(params=test_params)
+    config_url_removal.update_params()
+    assert (
+        "url" not in config_url_removal.params
+    ), "Expected 'url' to be removed from params"
+    assert (
+        "custom_param" in config_url_removal.params
+    ), "Expected other params to remain"
+    assert (
+        config_url_removal.params["custom_param"] == "should_stay"
+    ), "Expected other param values to be preserved"
+    print("    ✓ URL correctly removed from params, other params preserved")
+
+    # Test Case 3: Top-level 'url' takes precedence over params 'url'
+    print("  → Test Case 3: Top-level 'url' takes precedence over params 'url'")
+    config_precedence = OpenAITTSConfig(
+        url="https://top-level-url.com/tts",
+        params={
+            **common_params,
+            "url": "https://params-url.com/tts",
+        },
+    )
+    config_precedence.update_params()
+    assert (
+        config_precedence.url == "https://top-level-url.com/tts"
+    ), "Expected top-level url to take precedence"
+    # When top-level url exists, params url should not be extracted
+    # (it may or may not be removed, but top-level takes precedence)
+    client_precedence = OpenAITTSClient(config_precedence, mock_ten_env)
+    assert (
+        client_precedence.config.url == "https://top-level-url.com/tts"
+    ), "Expected client to use top-level url"
+    print("    ✓ Top-level url correctly takes precedence")
+
+    # Test Case 4: 'url' in params when top-level url is None
+    print("  → Test Case 4: 'url' in params when top-level url is None")
+    config_none_url = OpenAITTSConfig(
+        url=None,
+        params={
+            **common_params,
+            "url": "https://params-url-when-none.com/tts",
+        },
+    )
+    config_none_url.update_params()
+    assert (
+        config_none_url.url == "https://params-url-when-none.com/tts"
+    ), "Expected params url to be used when top-level url is None"
+    print("    ✓ Params url correctly used when top-level url is None")
+
+    print("✅ URL in params test passed successfully.")
+
+
+@patch("openai_tts2_python.openai_tts.AsyncClient")
+@patch("openai_tts2_python.openai_tts.Timeout")
+@patch("openai_tts2_python.openai_tts.Limits")
+def test_validate_with_authorization_header(
+    MockLimits, MockTimeout, MockAsyncClient
+):
+    """
+    Tests that validate() allows API key to be provided via Authorization header.
+
+    Test cases:
+    1. When api_key is in params, validation should pass
+    2. When Authorization header is provided (no api_key in params), validation should pass
+    3. When neither api_key nor Authorization header is provided, validation should fail
+    4. When api_key is empty string but Authorization header exists, validation should pass
+    5. When api_key is None but Authorization header exists, validation should pass
+    """
+    print("Starting test_validate_with_authorization_header with mock...")
+
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    # Common params for test cases (model and voice are required)
+    common_params = {
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+    }
+
+    # Test Case 1: api_key in params (should pass)
+    print("  → Test Case 1: api_key in params (should pass)")
+    config_with_api_key = OpenAITTSConfig(
+        params={
+            **common_params,
+            "api_key": "test_api_key",
+        }
+    )
+    config_with_api_key.update_params()
+    try:
+        config_with_api_key.validate()
+        print("    ✓ Validation passed with api_key in params")
+    except ValueError as e:
+        assert False, f"Validation should pass with api_key in params, got: {e}"
+
+    # Test Case 2: Authorization header provided (no api_key in params, should pass)
+    print(
+        "  → Test Case 2: Authorization header provided (no api_key in params, should pass)"
+    )
+    config_with_header = OpenAITTSConfig(
+        params=common_params,
+        headers={"Authorization": "Bearer test_token"},
+    )
+    config_with_header.update_params()
+    try:
+        config_with_header.validate()
+        print("    ✓ Validation passed with Authorization header")
+    except ValueError as e:
+        assert (
+            False
+        ), f"Validation should pass with Authorization header, got: {e}"
+
+    # Test Case 3: Neither api_key nor Authorization header (should fail)
+    print(
+        "  → Test Case 3: Neither api_key nor Authorization header (should fail)"
+    )
+    config_no_auth = OpenAITTSConfig(params=common_params)
+    config_no_auth.update_params()
+    try:
+        config_no_auth.validate()
+        assert (
+            False
+        ), "Validation should fail when neither api_key nor Authorization header is provided"
+    except ValueError as e:
+        assert "API key or Authorization header is required" in str(
+            e
+        ), f"Expected error message about API key or Authorization header, got: {e}"
+        print("    ✓ Validation correctly failed without auth")
+
+    # Test Case 4: Empty api_key string but Authorization header exists (should pass)
+    print(
+        "  → Test Case 4: Empty api_key string but Authorization header exists (should pass)"
+    )
+    config_empty_key_with_header = OpenAITTSConfig(
+        params={
+            **common_params,
+            "api_key": "",
+        },
+        headers={"Authorization": "Bearer test_token"},
+    )
+    config_empty_key_with_header.update_params()
+    try:
+        config_empty_key_with_header.validate()
+        print(
+            "    ✓ Validation passed with empty api_key but Authorization header"
+        )
+    except ValueError as e:
+        assert (
+            False
+        ), f"Validation should pass with Authorization header even if api_key is empty, got: {e}"
+
+    # Test Case 5: api_key is None but Authorization header exists (should pass)
+    print(
+        "  → Test Case 5: api_key is None but Authorization header exists (should pass)"
+    )
+    config_none_key_with_header = OpenAITTSConfig(
+        params={
+            **common_params,
+            "api_key": None,
+        },
+        headers={"Authorization": "Bearer test_token"},
+    )
+    config_none_key_with_header.update_params()
+    try:
+        config_none_key_with_header.validate()
+        print(
+            "    ✓ Validation passed with None api_key but Authorization header"
+        )
+    except ValueError as e:
+        assert (
+            False
+        ), f"Validation should pass with Authorization header even if api_key is None, got: {e}"
+
+    # Test Case 6: Both api_key and Authorization header (should pass, api_key takes precedence in client)
+    print(
+        "  → Test Case 6: Both api_key and Authorization header (should pass)"
+    )
+    config_both = OpenAITTSConfig(
+        params={
+            **common_params,
+            "api_key": "test_api_key",
+        },
+        headers={"Authorization": "Bearer header_token"},
+    )
+    config_both.update_params()
+    try:
+        config_both.validate()
+        print(
+            "    ✓ Validation passed with both api_key and Authorization header"
+        )
+    except ValueError as e:
+        assert (
+            False
+        ), f"Validation should pass with both api_key and Authorization header, got: {e}"
+
+    print("✅ Validate with Authorization header test passed successfully.")

@@ -15,6 +15,7 @@ from .const import (
     DUMP_FILE_NAME,
     MODULE_NAME_ASR,
     FATAL_ERROR_CODES,
+    AZURE_LANGUAGE_ID_MODE_KEY,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -152,11 +153,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 speechsdk.PropertyId.Speech_LogFilename, azure_log_file_path
             )
 
+        language_id_mode_set_in_advanced = False
         if self.config.advanced_params_json:
             try:
                 params: dict[str, str] = json.loads(
                     self.config.advanced_params_json
                 )
+                if AZURE_LANGUAGE_ID_MODE_KEY in params:
+                    language_id_mode_set_in_advanced = True
                 for key, value in params.items():
                     self.ten_env.log_debug(
                         f"set azure param: {key} = {value}",
@@ -170,6 +174,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 )
 
         if len(self.config.language_list) > 1:
+            if not language_id_mode_set_in_advanced:
+                speech_config.set_property(
+                    speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                    "Continuous",
+                )
+            # Continuous mode is used to recognize the language of the audio in real time.
+            # https://learn.microsoft.com/zh-cn/azure/ai-services/speech-service/language-identification?pivots=programming-language-python&tabs=once#recognize-once-or-continuous
             self.client = speechsdk.SpeechRecognizer(
                 speech_config=speech_config,
                 audio_config=audio_config,
