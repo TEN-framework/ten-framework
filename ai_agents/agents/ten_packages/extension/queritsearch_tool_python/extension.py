@@ -8,13 +8,14 @@
 import json
 import aiohttp
 from typing import Any, List
+from dataclasses import dataclass
 
 from ten_runtime import (
     AsyncTenEnv,
     Cmd,
 )
 
-from pydantic import BaseModel
+from ten_ai_base.config import BaseConfig
 from ten_ai_base.types import (
     LLMToolMetadata,
     LLMToolMetadataParameter,
@@ -30,7 +31,8 @@ PROPERTY_API_KEY = "api_key"  # Required
 DEFAULT_QUERIT_SEARCH_ENDPOINT = "https://api.querit.ai/v1/search"
 
 
-class QueritSearchToolConfig(BaseModel):
+@dataclass
+class QueritSearchToolConfig(BaseConfig):
     api_key: str = ""
 
 
@@ -52,9 +54,11 @@ class QueritSearchToolExtension(AsyncLLMToolBaseExtension):
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_start")
         await super().on_start(ten_env)
+        self.config = await QueritSearchToolConfig.create_async(ten_env=ten_env)
+        ten_env.log_info(f"config: {self.config}")
         if not self.config.api_key:
             ten_env.log_info("API key is missing, exiting on_start")
-        self.config = await QueritSearchToolConfig.create_async(ten_env=ten_env)
+            return
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_stop")
@@ -120,14 +124,18 @@ class QueritSearchToolExtension(AsyncLLMToolBaseExtension):
     async def _querit_search_results(
         self, ten_env: AsyncTenEnv, search_term: str, count: int
     ) -> List[dict]:
-        ten_env.log_debug("_querit_search_results count {}".format(count))
+        ten_env.log_debug(
+            "_querit_search_results search_term {}, count {}".format(
+                search_term, count
+            )
+        )
         await self._initialize_session(ten_env)
         headers = {
             "Accept": "application/json",
             "Authorization": "Bearer " + self.config.api_key,
             "Content-Type": "application/json",
         }
-        payload = {"query": search_term}
+        payload = {"query": search_term, "count": count}
 
         async with self.session.post(
             DEFAULT_QUERIT_SEARCH_ENDPOINT, headers=headers, json=payload
