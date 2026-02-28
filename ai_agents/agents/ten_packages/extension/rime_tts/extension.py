@@ -130,6 +130,14 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sampling_rate
 
+    def synthesize_audio_channels(self) -> int:
+        """Return number of audio channels"""
+        return 1  # Mono
+
+    def synthesize_audio_sample_width(self) -> int:
+        """Return sample width in bytes"""
+        return 2  # 16-bit PCM
+
     async def _loop(self) -> None:
         while True:
             try:
@@ -248,7 +256,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     )
 
             # Calculate audio duration from total bytes (like google_tts)
-            request_total_audio_duration_ms = self._calculate_audio_duration_ms()
+            request_total_audio_duration_ms = (
+                self._calculate_audio_duration_ms()
+            )
 
             # Send TTS audio end event
             await self.send_tts_audio_end(
@@ -320,7 +330,6 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 if t.metadata is not None:
-                    self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_start_ts = datetime.now()
                 self.total_audio_bytes = 0
@@ -357,9 +366,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-            if t.text.strip() != "":
-                self.sent_tts = True
-                await self.client.send_text(t)
+            self.sent_tts = True
+            await self.client.send_text(t)
             if t.text_input_end:
                 self.current_request_finished = True
                 self.ten_env.log_debug(
@@ -376,11 +384,6 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         f"Sent TTS audio end event, text is empty for request ID: {t.request_id}"
                     )
-                else:
-                    self.ten_env.log_debug(f"Sending <EOS> for request ID: {t.request_id}")
-                    copy_t = t.model_copy()
-                    copy_t.text = "<EOS>"
-                    await self.client.send_text(copy_t)
 
                 self.last_completed_request_id = t.request_id
                 self.ten_env.log_info(
@@ -467,8 +470,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         if self.config is None or self.total_audio_bytes == 0:
             return 0
 
-        bytes_per_sample = 2  # 16-bit PCM
-        channels = 1  # Mono
+        bytes_per_sample = self.synthesize_audio_sample_width()
+        channels = self.synthesize_audio_channels()
         duration_sec = self.total_audio_bytes / (
             self.synthesize_audio_sample_rate() * bytes_per_sample * channels
         )

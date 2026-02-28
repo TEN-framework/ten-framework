@@ -108,7 +108,7 @@ class StateMachineExtensionTester(ExtensionTester):
                 payload_dict = payload
             request_id = payload_dict.get("request_id")
             reason = payload_dict.get("reason", "")
-            
+
             # Filter out None/null request_ids
             if request_id:
                 self.audio_end_events.append((request_id, reason))
@@ -117,12 +117,21 @@ class StateMachineExtensionTester(ExtensionTester):
                 )
 
                 # If first request completed, send second request
-                if request_id == self.request1_id and not self.second_request_sent:
-                    ten_env.log_info("First request completed, sending second request")
+                if (
+                    request_id == self.request1_id
+                    and not self.second_request_sent
+                ):
+                    ten_env.log_info(
+                        "First request completed, sending second request"
+                    )
                     self._send_second_request(ten_env)
 
                 # Stop test after both requests complete
-                valid_ends = [e for e in self.audio_end_events if e[0] in [self.request1_id, self.request2_id]]
+                valid_ends = [
+                    e
+                    for e in self.audio_end_events
+                    if e[0] in [self.request1_id, self.request2_id]
+                ]
                 if len(valid_ends) == 2:
                     ten_env.log_info("Both requests completed, stopping test")
                     self.test_completed = True
@@ -139,11 +148,13 @@ class StateMachineExtensionTester(ExtensionTester):
         """
         # Filter valid events (only our test request IDs)
         valid_start_events = [
-            e for e in self.audio_start_events 
+            e
+            for e in self.audio_start_events
             if e in [self.request1_id, self.request2_id]
         ]
         valid_end_events = [
-            e for e in self.audio_end_events 
+            e
+            for e in self.audio_end_events
             if e[0] in [self.request1_id, self.request2_id]
         ]
 
@@ -243,70 +254,90 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
             self.session: Optional[StateMachineStreamer.Session] = None
             self.response_msgs: asyncio.Queue = None
             self._request_count = 0
-            self._ttfb_sent_per_request: dict[str, bool] = {}  # Track TTFB sent per request_id
-            self._ttfb_ready_per_request: dict[str, asyncio.Event] = {}  # Track TTFB ready per request_id
+            self._ttfb_sent_per_request: dict[str, bool] = (
+                {}
+            )  # Track TTFB sent per request_id
+            self._ttfb_ready_per_request: dict[str, asyncio.Event] = (
+                {}
+            )  # Track TTFB ready per request_id
 
         async def send_text(self, t: TTSTextInput):
             """Simulate TTS synthesis by populating response queue."""
-            # Handle <EOS> separately - only send END event
-            if t.text == "<EOS>":
-                request_id = t.request_id
+            request_id = t.request_id
+
+            # Check if we need to process text (send TTFB and audio)
+            # Only process if we haven't sent TTFB for this request yet
+            should_process_text = (
+                t.text
+                and t.text.strip()
+                and not (
+                    request_id in self._ttfb_sent_per_request
+                    and self._ttfb_sent_per_request[request_id]
+                )
+            )
+
+            if should_process_text:
+                self._request_count += 1
+                if "First" in t.text:
+                    request_name = "request_1"
+                    print(f"  → Mock: Starting synthesis for request 1")
+                elif "Second" in t.text:
+                    request_name = "request_2"
+                    print(f"  → Mock: Starting synthesis for request 2")
+                else:
+                    request_name = f"unknown_{self._request_count}"
+
+                self.session = StateMachineStreamer.Session(request_name)
+
+                # Create event to track TTFB readiness
+                self._ttfb_ready_per_request[request_id] = asyncio.Event()
+
+                # Mark TTFB as sent for this request
+                self._ttfb_sent_per_request[request_id] = True
+
+                # Populate response queue with simulated audio data
+                async def populate_queue():
+                    # Send TTFB metric immediately (triggers audio_start) - must be before END
+                    # This ensures audio_start is sent before audio_end
+                    await self.response_msgs.put((EVENT_TTS_TTFB_METRIC, 50))
+                    # Signal that TTFB has been sent
+                    if request_id in self._ttfb_ready_per_request:
+                        self._ttfb_ready_per_request[request_id].set()
+
+                    await asyncio.sleep(0.01)  # Simulate processing delay
+
+                    # Send audio chunks
+                    for i in range(3):
+                        await asyncio.sleep(0.01)
+                        audio_chunk = b"mock_audio_data_" + str(i).encode()
+                        await self.response_msgs.put(
+                            (EVENT_TTS_RESPONSE, audio_chunk)
+                        )
+
+                    print(f"  → Mock: Sent audio data for {request_name}")
+
+                    # If text_input_end is True, send END event after audio is sent
+                    if t.text_input_end:
+                        await asyncio.sleep(0.01)  # Small delay
+                        await self.response_msgs.put((EVENT_TTS_END, b""))
+                        print(
+                            f"  → Mock: Sent END event for request {request_id} (text_input_end=True)"
+                        )
+
+                asyncio.create_task(populate_queue())
+            elif t.text_input_end:
+                # Handle text_input_end=True when text was already processed
                 # Wait for TTFB to be sent before sending END
                 # This ensures audio_start is sent before audio_end
                 if request_id in self._ttfb_ready_per_request:
                     await self._ttfb_ready_per_request[request_id].wait()
-                await asyncio.sleep(0.01)  # Small delay to ensure TTFB is processed
+                await asyncio.sleep(
+                    0.01
+                )  # Small delay to ensure TTFB is processed
                 await self.response_msgs.put((EVENT_TTS_END, b""))
-                print(f"  → Mock: Received <EOS> for request {request_id}")
-                return
-
-            # For actual text, only process if we haven't sent TTFB for this request yet
-            request_id = t.request_id
-            if request_id in self._ttfb_sent_per_request and self._ttfb_sent_per_request[request_id]:
-                # TTFB already sent for this request, skip
-                return
-
-            self._request_count += 1
-            if "First" in t.text:
-                request_name = "request_1"
-                print(f"  → Mock: Starting synthesis for request 1")
-            elif "Second" in t.text:
-                request_name = "request_2"
-                print(f"  → Mock: Starting synthesis for request 2")
-            else:
-                request_name = f"unknown_{self._request_count}"
-
-            self.session = StateMachineStreamer.Session(request_name)
-            
-            # Create event to track TTFB readiness
-            self._ttfb_ready_per_request[request_id] = asyncio.Event()
-            
-            # Mark TTFB as sent for this request
-            self._ttfb_sent_per_request[request_id] = True
-
-            # Populate response queue with simulated audio data
-            async def populate_queue():
-                # Send TTFB metric immediately (triggers audio_start) - must be before <EOS>
-                # This ensures audio_start is sent before audio_end
-                await self.response_msgs.put((EVENT_TTS_TTFB_METRIC, 50))
-                # Signal that TTFB has been sent
-                if request_id in self._ttfb_ready_per_request:
-                    self._ttfb_ready_per_request[request_id].set()
-                
-                await asyncio.sleep(0.01)  # Simulate processing delay
-
-                # Send audio chunks
-                for i in range(3):
-                    await asyncio.sleep(0.01)
-                    audio_chunk = b"mock_audio_data_" + str(i).encode()
-                    await self.response_msgs.put(
-                        (EVENT_TTS_RESPONSE, audio_chunk)
-                    )
-
-                # Note: EVENT_TTS_END will be sent when <EOS> is received
-                print(f"  → Mock: Sent audio data for {request_name}")
-
-            asyncio.create_task(populate_queue())
+                print(
+                    f"  → Mock: Received text_input_end=True for request {request_id}, sending END event"
+                )
 
         def reset_synthesizer(self):
             """Mock reset."""
@@ -384,9 +415,24 @@ def test_request_state_transitions(MockRimeTTSClient):
     class SimpleStreamer:
         def __init__(self):
             self.response_msgs: asyncio.Queue = None
+            self._ttfb_sent = False
 
         async def send_text(self, t: TTSTextInput):
             """Simulate single TTS synthesis."""
+            request_id = t.request_id
+
+            # Handle text_input_end=True - simulate server returning "done" message
+            if t.text_input_end:
+                # Wait a bit to ensure TTFB is processed
+                await asyncio.sleep(0.01)
+                await self.response_msgs.put((EVENT_TTS_END, b""))
+                return
+
+            # Skip if TTFB already sent
+            if self._ttfb_sent:
+                return
+
+            self._ttfb_sent = True
 
             async def populate_queue():
                 await asyncio.sleep(0.01)
@@ -396,8 +442,7 @@ def test_request_state_transitions(MockRimeTTSClient):
                 await self.response_msgs.put(
                     (EVENT_TTS_RESPONSE, b"audio_chunk")
                 )
-                # Signal completion
-                await self.response_msgs.put((EVENT_TTS_END, b""))
+                # Note: EVENT_TTS_END will be sent when text_input_end=True is received
 
             asyncio.create_task(populate_queue())
 
