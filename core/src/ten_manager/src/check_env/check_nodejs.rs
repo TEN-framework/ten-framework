@@ -27,11 +27,25 @@ pub fn check() -> Result<NodeJsCheckResult> {
             let version_num = version_str.strip_prefix('v').unwrap_or(version_str);
 
             // Find node path
-            let which_output = std::process::Command::new("which").arg("node").output().ok();
-            let path = if let Some(output) = which_output {
-                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            let path = if cfg!(windows) {
+                // On Windows, use 'where.exe' instead of 'which'
+                std::process::Command::new("where.exe").arg("node").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             } else {
-                None
+                std::process::Command::new("which").arg("node").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             };
 
             has_nodejs = true;
@@ -95,11 +109,25 @@ pub fn check() -> Result<NodeJsCheckResult> {
             let version_str = version_str.trim();
 
             // Find npm path
-            let which_output = std::process::Command::new("which").arg("npm").output().ok();
-            let path = if let Some(output) = which_output {
-                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            let path = if cfg!(windows) {
+                // On Windows, use 'where.exe' instead of 'which'
+                std::process::Command::new("where.exe").arg("npm").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             } else {
-                None
+                std::process::Command::new("which").arg("npm").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             };
 
             has_npm = true;

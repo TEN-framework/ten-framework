@@ -22,11 +22,24 @@ pub fn check() -> Result<CppCheckResult> {
     let tgn_info = match tgn_check {
         Ok(output) if output.status.success() => {
             // Find tgn path
-            let which_output = std::process::Command::new("which").arg("tgn").output().ok();
-            let path = if let Some(output) = which_output {
-                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            let path = if cfg!(windows) {
+                std::process::Command::new("where.exe").arg("tgn").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             } else {
-                None
+                std::process::Command::new("which").arg("tgn").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             };
 
             tgn_installed = true;
@@ -235,6 +248,50 @@ pub fn check() -> Result<CppCheckResult> {
                 issue: "clang/clang++ not found".to_string(),
                 command: Some("xcode-select --install".to_string()),
                 help_text: Some("To install Xcode Command Line Tools".to_string()),
+            });
+        }
+    } else if os == "windows" {
+        // Check MSVC compiler on Windows
+        let msvc_check = std::process::Command::new("cl.exe").arg("/?").output();
+
+        match msvc_check {
+            Ok(output) if output.status.success() => {
+                let version_str = String::from_utf8_lossy(&output.stdout);
+                // Extract version from MSVC output
+                let version = version_str.lines().next().map(|s| s.to_string());
+
+                let where_output = std::process::Command::new("where.exe").arg("cl.exe").output().ok();
+                let path = if let Some(output) = where_output {
+                    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                } else {
+                    None
+                };
+
+                compilers.push(ToolInfo {
+                    name: "cl.exe (MSVC)".to_string(),
+                    version,
+                    path,
+                    status: CheckStatus::Ok,
+                    notes: vec![],
+                });
+                has_compiler = true;
+            }
+            _ => {
+                compilers.push(ToolInfo {
+                    name: "cl.exe (MSVC)".to_string(),
+                    version: None,
+                    path: None,
+                    status: CheckStatus::Error,
+                    notes: vec!["Not found".to_string()],
+                });
+            }
+        }
+
+        if !has_compiler {
+            suggestions.push(Suggestion {
+                issue: "MSVC compiler not found".to_string(),
+                command: Some("Install Visual Studio with C++ build tools".to_string()),
+                help_text: Some("Please install Visual Studio with C++ development tools".to_string()),
             });
         }
     }

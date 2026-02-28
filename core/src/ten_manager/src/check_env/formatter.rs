@@ -106,8 +106,6 @@ impl CheckResultFormatter for CliFormatter {
         let icon = self.format_status_icon(&result.status);
         let support_text = if result.is_supported {
             "(Supported)"
-        } else if result.os_name == "Windows" {
-            "(Not supported yet, coming soon)"
         } else {
             "(Not supported)"
         };
@@ -122,6 +120,7 @@ impl CheckResultFormatter for CliFormatter {
                 out.normal_line("     - Linux arm64");
                 out.normal_line("     - macOS x64 (Intel)");
                 out.normal_line("     - macOS arm64 (Apple Silicon)");
+                out.normal_line("     - Windows x64");
             }
         }
     }

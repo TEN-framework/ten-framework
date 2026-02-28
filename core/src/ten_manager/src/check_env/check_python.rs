@@ -36,12 +36,24 @@ pub fn check() -> Result<PythonCheckResult> {
                         // Check if version == 3.10
                         if major == 3 && minor == 10 {
                             // Find python3 path
-                            let which_output =
-                                std::process::Command::new("which").arg("python3").output().ok();
-                            let path = if let Some(output) = which_output {
-                                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                            let path = if cfg!(windows) {
+                                std::process::Command::new("where.exe").arg("python3").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             } else {
-                                None
+                                std::process::Command::new("which").arg("python3").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             };
 
                             python_info = Some(ToolInfo {
@@ -73,12 +85,24 @@ pub fn check() -> Result<PythonCheckResult> {
                                 }
                             }
                         } else {
-                            let which_output =
-                                std::process::Command::new("which").arg("python3").output().ok();
-                            let path = if let Some(output) = which_output {
-                                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                            let path = if cfg!(windows) {
+                                std::process::Command::new("where.exe").arg("python3").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             } else {
-                                None
+                                std::process::Command::new("which").arg("python3").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             };
 
                             python_info = Some(ToolInfo {
