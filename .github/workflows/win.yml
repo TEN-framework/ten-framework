@@ -409,6 +409,62 @@ jobs:
         run: |
           Remove-Item -Force "out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip" -ErrorAction SilentlyContinue
 
+      - name: Copy import libraries to system packages before publishing
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          cd out/win/x64
+
+          # Copy .lib files for ten_runtime package
+          $ten_runtime_lib_dir = "ten_packages/system/ten_runtime/lib"
+          if (Test-Path $ten_runtime_lib_dir) {
+            Write-Host "Copying import libraries to ten_runtime package..."
+            if (Test-Path "ten_runtime.dll.lib") {
+              Copy-Item "ten_runtime.dll.lib" "$ten_runtime_lib_dir/" -Force
+              # Verify the file was copied
+              if (Test-Path "$ten_runtime_lib_dir/ten_runtime.dll.lib") {
+                Write-Host "✓ Copied ten_runtime.dll.lib"
+              } else {
+                Write-Host "✗ Failed to copy ten_runtime.dll.lib"
+              }
+            } else {
+              Write-Host "⚠ ten_runtime.dll.lib not found in root_out_dir"
+            }
+            if (Test-Path "ten_utils.dll.lib") {
+              Copy-Item "ten_utils.dll.lib" "$ten_runtime_lib_dir/" -Force
+              # Verify the file was copied
+              if (Test-Path "$ten_runtime_lib_dir/ten_utils.dll.lib") {
+                Write-Host "✓ Copied ten_utils.dll.lib"
+              } else {
+                Write-Host "✗ Failed to copy ten_utils.dll.lib"
+              }
+            } else {
+              Write-Host "⚠ ten_utils.dll.lib not found in root_out_dir"
+            }
+          } else {
+            Write-Host "⚠ ten_runtime lib directory not found: $ten_runtime_lib_dir"
+          }
+
+          # Copy .lib files for ten_runtime_python package
+          $ten_runtime_python_lib_dir = "ten_packages/system/ten_runtime_python/lib"
+          if (Test-Path $ten_runtime_python_lib_dir) {
+            Write-Host "Copying import libraries to ten_runtime_python package..."
+            if (Test-Path "libten_runtime_python.pyd.lib") {
+              Copy-Item "libten_runtime_python.pyd.lib" "$ten_runtime_python_lib_dir/" -Force
+              # Verify the file was copied
+              if (Test-Path "$ten_runtime_python_lib_dir/libten_runtime_python.pyd.lib") {
+                Write-Host "✓ Copied libten_runtime_python.pyd.lib"
+              } else {
+                Write-Host "✗ Failed to copy libten_runtime_python.pyd.lib"
+              }
+            } else {
+              Write-Host "⚠ libten_runtime_python.pyd.lib not found in root_out_dir"
+            }
+          } else {
+            Write-Host "⚠ ten_runtime_python lib directory not found: $ten_runtime_python_lib_dir"
+          }
+
       - name: Publish release to TEN cloud store
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
         continue-on-error: true
