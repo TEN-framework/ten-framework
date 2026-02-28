@@ -1,0 +1,79 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+
+config("ten_runtime_common_libs") {
+  if (is_win) {
+    if (is_mingw) {
+      # MinGW uses .dll.a import library
+      libs = [
+        "ten_runtime",
+        "ten_utils",
+      ]
+    } else {
+      libs = [
+        "ten_runtime.dll.lib",
+        "ten_utils.dll.lib",
+      ]
+    }
+  } else {
+    libs = [
+      "ten_runtime",
+      "ten_utils",
+    ]
+  }
+}
+
+config("ten_runtime_common_config") {
+  configs = [ ":ten_runtime_common_libs" ]
+
+  # These paths only take effect during compilation and will not modify or write
+  # to the shared library search path during runtime.
+  include_dirs = [
+    "//ten_packages/system/ten_runtime/include",
+    "//.ten/app/ten_packages/system/ten_runtime/include",
+  ]
+  lib_dirs = [
+    "//ten_packages/system/ten_runtime/lib",
+    "//.ten/app/ten_packages/system/ten_runtime/lib",
+  ]
+}
+
+config("config_for_app") {
+  configs = [ ":ten_runtime_common_config" ]
+
+  if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../ten_packages/system/ten_runtime/lib" ]
+  } else if (is_mac) {
+    ldflags =
+        [ "-Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime/lib" ]
+  }
+}
+
+config("config_for_ten_packages") {
+  configs = [ ":ten_runtime_common_config" ]
+
+  if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../../../system/ten_runtime/lib" ]
+  } else if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../../../system/ten_runtime/lib" ]
+  }
+}
+
+config("config_for_standalone_ten_packages") {
+  configs = [ ":ten_runtime_common_config" ]
+
+  if (is_linux) {
+    ldflags = [
+      "-Wl,-rpath=\$ORIGIN/../.ten/app/ten_packages/system/ten_runtime/lib",
+    ]
+  } else if (is_mac) {
+    ldflags = [
+      "-Wl,-rpath,@loader_path/../.ten/app/ten_packages/system/ten_runtime/lib",
+    ]
+  }
+}

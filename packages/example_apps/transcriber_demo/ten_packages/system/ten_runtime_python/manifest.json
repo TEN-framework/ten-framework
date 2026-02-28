@@ -1,0 +1,34 @@
+{
+  "type": "system",
+  "name": "ten_runtime_python",
+  "version": "0.11.55",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.11.55"
+    },
+    {
+      "type": "addon_loader",
+      "name": "python_addon_loader",
+      "version": "0.11.55"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "BUILD.gn",
+      "requirements.txt",
+      "pyproject.toml",
+      "interface/**",
+      "tools/**",
+      "lib/**"
+    ]
+  },
+  "supports": [
+    {
+      "os": "win",
+      "arch": "x64"
+    }
+  ]
+}

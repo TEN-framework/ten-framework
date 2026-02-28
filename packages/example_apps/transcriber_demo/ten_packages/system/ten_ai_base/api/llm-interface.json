@@ -1,0 +1,181 @@
+{
+    "property": {},
+    "cmd_in": [
+        {
+            "name": "chat_completion",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    },
+                    "streaming": {
+                        "type": "bool"
+                    },
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "parameters": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {}
+                                    }
+                                }
+                            },
+                            "required": [
+                                "name"
+                            ]
+                        }
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            "result": {
+                "property": {
+                    "properties": {
+                        "response_id": {
+                            "type": "string"
+                        },
+                        "created": {
+                            "type": "int64"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "abort",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        {
+            "name": "retrieve_prompt",
+            "property": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "result": {
+                "property": {
+                    "properties": {
+                        "prompt": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_out": [
+        {
+            "name": "metrics",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "vendor",
+                "metrics"
+            ]
+        },
+        {
+            "name": "error",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "int64"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "vendor_info": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "code",
+                "message"
+            ]
+        }
+    ]
+}

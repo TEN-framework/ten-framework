@@ -1,0 +1,21 @@
+{
+  "type": "system",
+  "name": "ten_ai_base",
+  "version": "0.7.35",
+  "package": {
+    "include": [
+      "manifest.json",
+      "interface/**",
+      "api/**",
+      "requirements.txt"
+    ]
+  },
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "api": {}
+}

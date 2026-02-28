@@ -1,0 +1,282 @@
+{
+    "property": {
+        "properties": {
+            "dump": {
+                "type": "bool"
+            },
+            "dump_path": {
+                "type": "string"
+            }
+        }
+    },
+    "audio_frame_in": [
+        {
+            "name": "pcm_frame",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "audio_frame_out": [
+        {
+            "name": "pcm_frame",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_in": [
+        {
+            "name": "mllm_client_set_message_context",
+            "property": {
+                "properties": {}
+            }
+        },
+        {
+            "name": "mllm_client_request_message_item",
+            "property": {
+                "properties": {}
+            }
+        },
+        {
+            "name": "mllm_client_request_create_response",
+            "property": {
+                "properties": {}
+            }
+        },
+        {
+            "name": "mllm_client_request_register_tool",
+            "property": {
+                "properties": {}
+            }
+        },
+        {
+            "name": "mllm_client_function_call_output",
+            "property": {
+                "properties": {}
+            }
+        }
+    ],
+    "data_out": [
+        {
+            "name": "mllm_server_session_ready",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "mllm_server_interrupted",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "mllm_server_input_transcript",
+            "property": {
+                "properties": {
+                    "delta": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "final": {
+                        "type": "bool"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "delta",
+                "content",
+                "final"
+            ]
+        },
+        {
+            "name": "mllm_server_output_transcript",
+            "property": {
+                "properties": {
+                    "delta": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    },
+                    "final": {
+                        "type": "bool"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "delta",
+                "content",
+                "final"
+            ]
+        },
+        {
+            "name": "mllm_server_function_call",
+            "property": {
+                "properties": {
+                    "call_id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "arguments": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "call_id",
+                "name",
+                "arguments"
+            ]
+        },
+        {
+            "name": "error",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "int64"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "vendor_info": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "code",
+                "message"
+            ]
+        },
+        {
+            "name": "metrics",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "turn_id": {
+                                "type": "int64"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "vendor",
+                "metrics"
+            ]
+        }
+    ]
+}

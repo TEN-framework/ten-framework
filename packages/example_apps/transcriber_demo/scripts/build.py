@@ -36,8 +36,15 @@ from typing import List, Tuple
 
 # To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
 # CJK environment. \u2713: ✓ (check sign)
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+# Strategy: On Windows, keep system default (GBK) to match MSVC output
+# On other platforms, use UTF-8
+if platform.system() != 'Windows':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+    except AttributeError:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
 
 
 def detect_os() -> str:
@@ -97,22 +104,22 @@ def print_header(message: str):
 
 def print_success(message: str):
     """Print a success message"""
-    print(f"{Colors.OKGREEN}✓ {message}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN} {message}{Colors.ENDC}")
 
 
 def print_error(message: str):
     """Print an error message"""
-    print(f"{Colors.FAIL}✗ {message}{Colors.ENDC}")
+    print(f"{Colors.FAIL} {message}{Colors.ENDC}")
 
 
 def print_info(message: str):
     """Print an info message"""
-    print(f"{Colors.OKCYAN}→ {message}{Colors.ENDC}")
+    print(f"{Colors.OKCYAN} {message}{Colors.ENDC}")
 
 
 def print_warning(message: str):
     """Print a warning message"""
-    print(f"{Colors.WARNING}⚠ {message}{Colors.ENDC}")
+    print(f"{Colors.WARNING} {message}{Colors.ENDC}")
 
 
 def find_go_executable() -> str:
@@ -530,16 +537,77 @@ def build_cxx_extensions(
         return False
 
     # Run tgn build
+    import tempfile
+    import os as os_module
+    log_path = None
+
     try:
         print_info(f"Running tgn build {os_type} {cpu_type} {build_type}...")
-        subprocess.run(
-            [tgn_path, "build", os_type, cpu_type, build_type],
-            cwd=str(root_dir),
-            check=True,
-            capture_output=False,
-        )
+
+        # Create a temporary file to capture output
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.log', encoding='gbk', errors='replace') as temp_log:
+            log_path = temp_log.name
+
+        # Redirect output to file to avoid console buffer issues
+        with open(log_path, 'w', encoding='gbk', errors='replace') as log_file:
+            result = subprocess.run(
+                [tgn_path, "build", os_type, cpu_type, build_type],
+                cwd=str(root_dir),
+                check=True,
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+            )
+
+        # Read and display the log file (skip verbose include messages)
+        with open(log_path, 'r', encoding='gbk', errors='replace') as log_file:
+            output = log_file.read()
+            if output.strip():
+                # Filter out verbose "注意: 包含文件:" messages
+                lines = output.split('\n')
+                filtered_lines = []
+
+                for line in lines:
+                    # Skip include file messages
+                    if '注意: 包含文件:' in line or 'Note: including file:' in line:
+                        continue
+                    # Keep everything else
+                    if line.strip():
+                        filtered_lines.append(line)
+
+                filtered_output = '\n'.join(filtered_lines)
+                if filtered_output.strip():
+                    print(filtered_output)
+
         print_success("tgn build completed")
+
+        # Clean up temp file
+        if log_path and os_module.path.exists(log_path):
+            try:
+                os_module.unlink(log_path)
+            except Exception:
+                pass
+
     except subprocess.CalledProcessError as e:
+        # Read the log file to show error details
+        if log_path and os_module.path.exists(log_path):
+            try:
+                with open(log_path, 'r', encoding='gbk', errors='replace') as log_file:
+                    output = log_file.read()
+                    if output.strip():
+                        print("\n=== Build Error Details (Full Output) ===")
+                        # Temporarily show full output to debug
+                        print(output)
+                        print("\n=== End of Full Output ===")
+                    else:
+                        print_warning("Build log file is empty")
+
+                # Clean up temp file
+                os_module.unlink(log_path)
+            except Exception as read_error:
+                print_warning(f"Could not read build log: {read_error}")
+        else:
+            print_warning(f"Build log file not found at: {log_path}")
+
         print_error(f"tgn build failed (exit code: {e.returncode})")
         return False
 

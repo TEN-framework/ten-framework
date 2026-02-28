@@ -1,0 +1,303 @@
+{
+    "property": {
+        "properties": {
+            "url": {
+                "type": "string"
+            },
+            "headers": {
+                "type": "object",
+                "properties": {}
+            },
+            "dump": {
+                "type": "bool"
+            },
+            "dump_path": {
+                "type": "string"
+            }
+        }
+    },
+    "audio_frame_in": [
+        {
+            "name": "pcm_frame",
+            "property": {
+                "properties": {
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_in": [
+        {
+            "name": "asr_finalize",
+            "property": {
+                "properties": {
+                    "finalize_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "data_out": [
+        {
+            "name": "asr_result",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "final": {
+                        "type": "bool"
+                    },
+                    "start_ms": {
+                        "type": "int64"
+                    },
+                    "duration_ms": {
+                        "type": "int64"
+                    },
+                    "language": {
+                        "type": "string"
+                    },
+                    "words": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "word": {
+                                    "type": "string"
+                                },
+                                "start_ms": {
+                                    "type": "int64"
+                                },
+                                "duration_ms": {
+                                    "type": "int64"
+                                },
+                                "stable": {
+                                    "type": "bool"
+                                }
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            },
+                            "asr_info": {
+                                "type": "object",
+                                "properties": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "id",
+                "text",
+                "final",
+                "start_ms",
+                "duration_ms",
+                "language"
+            ]
+        },
+        {
+            "name": "asr_finalize_end",
+            "property": {
+                "properties": {
+                    "finalize_id": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "error",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "int64"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "vendor_info": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {
+                                "type": "string"
+                            },
+                            "code": {
+                                "type": "string"
+                            },
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "code",
+                "message"
+            ]
+        },
+        {
+            "name": "metrics",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metrics": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "required": [
+                "module",
+                "vendor",
+                "metrics"
+            ]
+        },
+        {
+            "name": "connected",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "disconnected",
+            "property": {
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "module": {
+                        "type": "string"
+                    },
+                    "vendor": {
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "session_id": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "cmd_in": [
+        {
+            "name": "update_configs",
+            "property": {
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    },
+                    "headers": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "params": {
+                        "type": "object",
+                        "properties": {}
+                    },
+                    "dump": {
+                        "type": "bool"
+                    }
+                }
+            },
+            "result": {
+                "property": {
+                    "properties": {
+                        "code": {
+                            "type": "int64"
+                        },
+                        "message": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
