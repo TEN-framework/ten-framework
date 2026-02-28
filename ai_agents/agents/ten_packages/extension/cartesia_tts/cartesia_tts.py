@@ -1,16 +1,10 @@
 import asyncio
 from collections.abc import Callable
 from datetime import datetime
-from typing import AsyncGenerator, AsyncIterator
+from typing import AsyncIterator, Any
 import uuid
 
-from cartesia import (  # pylint: disable=no-name-in-module
-    AsyncCartesia,
-    WebSocketTtsOutput,
-)
-from cartesia.tts._async_websocket import (  # pylint: disable=import-error,no-name-in-module
-    AsyncTtsWebsocket,
-)
+from cartesia import AsyncCartesia  # pylint: disable=no-name-in-module
 
 from .config import CartesiaTTSConfig
 from ten_runtime import AsyncTenEnv
@@ -52,7 +46,7 @@ class CartesiaTTSClient:
             )
         else:
             self.client = AsyncCartesia(api_key=self.config.api_key)
-        self.ws: AsyncTtsWebsocket | None = None
+        self.ws: Any = None  # WebSocket connection object
         self.send_fatal_tts_error = send_fatal_tts_error
         self.send_non_fatal_tts_error = send_non_fatal_tts_error
 
@@ -72,7 +66,7 @@ class CartesiaTTSClient:
         try:
             self.ws = await self.client.tts.websocket()
             self.ten_env.log_debug(
-                "vendor_status:  connected to cartesia tts",
+                "vendor_status: connected to cartesia tts",
                 category=LOG_CATEGORY_VENDOR,
             )
 
@@ -87,7 +81,7 @@ class CartesiaTTSClient:
                     ) from e
             else:
                 self.ten_env.log_error(
-                    f"Cartesia TTS preheat failed,unexpected error: {e}"
+                    f"Cartesia TTS preheat failed, unexpected error: {e}"
                 )
                 if self.send_non_fatal_tts_error:
                     await self.send_non_fatal_tts_error(
@@ -155,18 +149,18 @@ class CartesiaTTSClient:
             self.ten_env.log_error("Cartesia websocket not connected")
             return
 
-        self.ten_env.log_debug(f"process_single_tts,text:{text}")
+        self.ten_env.log_debug(f"process_single_tts, text: {text}")
 
         context_id = uuid.uuid4().hex
         if not self.ttfb_sent:
             self.sent_ts = datetime.now()
-        output_generator: AsyncGenerator[WebSocketTtsOutput, None] = (
-            await self.ws.send(
-                transcript=text,
-                context_id=context_id,
-                stream=True,
-                **self.config.params,
-            )
+
+        # In SDK v2.0+, ws.send() returns an async generator directly
+        output_generator = await self.ws.send(
+            transcript=text,
+            context_id=context_id,
+            stream=True,
+            **self.config.params,
         )
 
         try:
@@ -178,13 +172,29 @@ class CartesiaTTSClient:
                     yield None, EVENT_TTS_FLUSH
                     break
 
-                if output.flush_done:
+                # Check for flush_done attribute
+                if hasattr(output, "flush_done") and output.flush_done:
                     self.ten_env.log_debug(
-                        f"context_id:{context_id} Received flush_done message"
+                        f"context_id: {context_id} Received flush_done message"
                     )
                     break
+
+                # Check for type attribute (new SDK format)
+                if hasattr(output, "type") and output.type == "flush_done":
+                    self.ten_env.log_debug(
+                        f"context_id: {context_id} Received flush_done message (type)"
+                    )
+                    break
+
                 # Process audio data
-                if output.audio:
+                audio_data = None
+                if hasattr(output, "audio") and output.audio:
+                    audio_data = output.audio
+                elif hasattr(output, "data") and output.data:
+                    # Some SDK versions use 'data' instead of 'audio'
+                    audio_data = output.data
+
+                if audio_data:
                     # First audio chunk for a session, calculate and send TTFB
                     if self.sent_ts and not self.ttfb_sent:
                         ttfb_ms = int(
@@ -194,14 +204,19 @@ class CartesiaTTSClient:
                         yield ttfb_ms, EVENT_TTS_TTFB_METRIC
                         self.ttfb_sent = True
                     self.ten_env.log_debug(
-                        f"CartesiaTTS: sending EVENT_TTS_RESPONSE, length: {len(output.audio)}"
+                        f"CartesiaTTS: sending EVENT_TTS_RESPONSE, length: {len(audio_data)}"
                     )
-                    yield output.audio, EVENT_TTS_RESPONSE
-
+                    yield audio_data, EVENT_TTS_RESPONSE
                 else:
-                    self.ten_env.log_warn(
-                        f"context_id: {context_id},flush_done is None, audio is None,output:{output.model_dump_json()}"
-                    )
+                    # Log output for debugging
+                    if hasattr(output, "model_dump_json"):
+                        self.ten_env.log_warn(
+                            f"context_id: {context_id}, no audio data, output: {output.model_dump_json()}"
+                        )
+                    else:
+                        self.ten_env.log_warn(
+                            f"context_id: {context_id}, no audio data, output: {output}"
+                        )
 
             if not self._is_cancelled:
                 self.ten_env.log_debug("CartesiaTTS: sending EVENT_TTS_END")

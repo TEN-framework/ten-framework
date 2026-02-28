@@ -343,7 +343,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.total_audio_bytes = 0  # Reset for new request
                 self.sent_ts = None
                 if t.metadata is not None:
-                    self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 # Create new PCMWriter for new request_id and clean up old ones
                 if self.config and self.config.dump:
