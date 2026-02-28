@@ -293,7 +293,7 @@ class msg_t {
       return result;
     }
 
-    ten_json_t c_json = {TEN_JSON_SIGNATURE, NULL, ten_json_create_new_ctx(), true};
+    ten_json_t c_json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
     bool success = ten_value_to_json(value, &c_json);
     if (!success) {
       if (err != nullptr && err->get_c_error() != nullptr) {

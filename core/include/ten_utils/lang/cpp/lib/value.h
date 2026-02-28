@@ -352,7 +352,7 @@ class value_t {
   }
 
   int to_json(std::string &result) const {
-    ten_json_t c_json = {TEN_JSON_SIGNATURE, NULL, ten_json_create_new_ctx(), true};
+    ten_json_t c_json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
     bool success = ten_value_to_json(c_value_, &c_json);
     if (!success) {
       return -1;

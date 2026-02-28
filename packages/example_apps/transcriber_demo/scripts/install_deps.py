@@ -22,16 +22,8 @@ from typing import List, Tuple
 
 # To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
 # CJK environment. \u2713: ✓ (check sign)
-# Strategy: On Windows, keep system default (GBK) to match MSVC output
-# On other platforms, use UTF-8
-import platform
-if platform.system() != 'Windows':
-    try:
-        sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
-        sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
-    except AttributeError:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 
 class Colors:
@@ -56,17 +48,17 @@ def print_header(message: str):
 
 def print_success(message: str):
     """Print a success message"""
-    print(f"{Colors.OKGREEN} {message}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}✓ {message}{Colors.ENDC}")
 
 
 def print_error(message: str):
     """Print an error message"""
-    print(f"{Colors.FAIL} {message}{Colors.ENDC}")
+    print(f"{Colors.FAIL}✗ {message}{Colors.ENDC}")
 
 
 def print_info(message: str):
     """Print an info message"""
-    print(f"{Colors.OKCYAN} {message}{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}→ {message}{Colors.ENDC}")
 
 
 def find_python_executable(version: str | None = None) -> str:

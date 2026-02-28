@@ -60,7 +60,9 @@ class ten_env_tester_t {
       std::unique_ptr<cmd_t> &&cmd,
       ten_env_tester_send_cmd_result_handler_func_t &&result_handler = nullptr,
       error_t *err = nullptr) {
-    ten_env_send_cmd_options_t options{true};
+    ten_env_send_cmd_options_t options{
+        .enable_multiple_results = true,
+    };
     return send_cmd_internal(std::move(cmd), std::move(result_handler),
                              &options, err);
   }

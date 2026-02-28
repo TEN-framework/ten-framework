@@ -1,9 +1,0 @@
-{
-  "_ten": {
-    "type": "extension",
-    "name": "webrtc_vad_cpp",
-    "version": "0.11.30",
-    "dependencies": []
-  },
-  "mode": 2
-}

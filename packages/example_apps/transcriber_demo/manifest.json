@@ -2,6 +2,40 @@
   "type": "app",
   "name": "transcriber_demo",
   "version": "0.11.54",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Demo Transcriber Application"
+      },
+      "zh-CN": {
+        "content": "演示转写应用"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Demo Transcriber application based on TEN Framework"
+      },
+      "zh-CN": {
+        "content": "基于 TEN Framework 的演示转写应用"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "tags": [
+    "transcriber",
+    "demo"
+  ],
   "dependencies": [
     {
       "type": "extension",
@@ -27,17 +61,14 @@
       "type": "addon_loader",
       "name": "nodejs_addon_loader",
       "version": "0.11.54"
-    },
-    {
-      "type": "extension",
-      "name": "webrtc_vad_cpp",
-      "version": "^0.11.55"
     }
   ],
-  "tags": [
-    "transcriber",
-    "demo"
-  ],
+  "scripts": {
+    "start": "python3 scripts/start.py",
+    "start_with_vad": "python3 scripts/start.py --property property-vad.json",
+    "build": "python3 scripts/build.py",
+    "install_deps": "python3 scripts/install_deps.py"
+  },
   "package": {
     "include": [
       "manifest.json",
@@ -55,41 +86,5 @@
       "docs/**",
       ".vscode/**"
     ]
-  },
-  "scripts": {
-    "start": "python3 scripts/start.py",
-    "start_with_vad": "python3 scripts/start.py --property property-vad.json",
-    "build": "python3 scripts/build.py",
-    "install_deps": "python3 scripts/install_deps.py"
-  },
-  "description": {
-    "locales": {
-      "en-US": {
-        "content": "Demo Transcriber application based on TEN Framework"
-      },
-      "zh-CN": {
-        "content": "基于 TEN Framework 的演示转写应用"
-      }
-    }
-  },
-  "display_name": {
-    "locales": {
-      "zh-CN": {
-        "content": "演示转写应用"
-      },
-      "en-US": {
-        "content": "Demo Transcriber Application"
-      }
-    }
-  },
-  "readme": {
-    "locales": {
-      "zh-CN": {
-        "content": "# Transcriber Demo 应用\r\n\r\n## 概述\r\n\r\nTranscriber Demo 是一个基于 TEN Framework 实现的实时/离线语音转写演示应用。该应用支持通过 Web 界面的麦克风进行实时语音输入，或者上传/指定离线音频文件进行转写，并实时显示转写结果。\r\n\r\n## 特性\r\n\r\n- ✅ **实时语音转写**：支持通过麦克风进行实时语音识别\r\n- 📁 **离线文件转写**：支持上传或指定音频文件进行转写\r\n- 🌐 **Web 界面**：提供友好的 Web 控制界面\r\n- 🔄 **实时结果推送**：通过 WebSocket 实时推送转写结果\r\n- 🎵 **多格式支持**：支持 WAV、MP3、FLAC、OGG、M4A 等多种音频格式\r\n- 🔁 **循环播放**：支持音频文件循环播放功能\r\n\r\n## 架构说明\r\n\r\n该应用基于 TEN Framework 的扩展图（Extension Graph）架构，包含以下核心组件：\r\n\r\n### 扩展组件\r\n\r\n1. **web_audio_control_go**：Web 服务器扩展\r\n   - 提供 HTTP 服务和 WebSocket 连接\r\n   - 处理音频控制请求\r\n   - 实时推送转写结果到前端\r\n\r\n2. **audio_file_player_python**：音频播放器扩展\r\n   - 读取音频文件\r\n   - 将音频数据转换为 PCM 帧流\r\n   - 支持循环播放\r\n\r\n3. **azure_asr_python**：Azure 语音识别扩展\r\n   - 接收 PCM 音频帧\r\n   - 调用 Azure Speech Service 进行语音识别\r\n   - 返回识别结果（包括临时结果和最终结果）\r\n\r\n### 数据流\r\n\r\n```text\r\n用户输入（麦克风/文件）\r\n    ↓\r\nweb_audio_control_go / audio_file_player_python\r\n    ↓ (PCM 音频帧)\r\nazure_asr_python\r\n    ↓ (ASR 结果)\r\nweb_audio_control_go\r\n    ↓ (WebSocket)\r\nWeb 前端显示\r\n```\r\n\r\n## 快速开始\r\n\r\n### 前置条件\r\n\r\n1. **运行环境**：\r\n   - Go 1.16+ （用于 Go 扩展）\r\n   - Python 3.10 （用于 Python 扩展）\r\n\r\n2. **Azure Speech Service**：\r\n   - Azure 订阅账号\r\n   - Speech Service 的 API Key 和 Region\r\n\r\n### 配置说明\r\n\r\n创建 `.env` 文件或设置环境变量：\r\n\r\n```bash\r\n# Azure Speech Service 配置\r\nAZURE_STT_KEY=your_azure_speech_api_key\r\nAZURE_STT_REGION=your_azure_region  # 例如：eastus\r\nAZURE_STT_LANGUAGE=en-US            # 语言代码，默认为 en-US\r\n```\r\n\r\n支持的语言代码示例：\r\n\r\n- `en-US`：美式英语\r\n- `zh-CN`：简体中文\r\n- `ja-JP`：日语\r\n- `ko-KR`：韩语\r\n\r\n### 安装依赖\r\n\r\n1. **安装 Python 依赖**：\r\n\r\n```bash\r\n# 在应用根目录下执行\r\npython3 scripts/install_python_deps.py\r\n```\r\n\r\n该脚本会自动：\r\n\r\n- 合并所有 Python 扩展的依赖\r\n- 安装到 Python 3.10 环境\r\n\r\n2. **构建 Go 应用**：\r\n\r\n```bash\r\n# 在应用根目录下执行\r\ngo run ten_packages/system/ten_runtime_go/tools/build/main.go\r\n```\r\n\r\n### 启动应用\r\n\r\n```bash\r\n# 在应用根目录下执行\r\n./bin/start\r\n```\r\n\r\n应用默认监听端口（通常是 8002），启动后可以通过浏览器访问。\r\n\r\n## 使用方法\r\n\r\n### 方式一：实时麦克风转写\r\n\r\n1. 在浏览器中打开 `http://localhost:8002/static/microphone.html`\r\n2. 授权浏览器使用麦克风\r\n3. 点击开始录音按钮\r\n4. 开始说话，转写结果将实时显示在页面上\r\n\r\n### 方式二：离线文件转写\r\n\r\n1. 在浏览器中打开 `http://localhost:8002/static/index.html`\r\n2. 选择方式：\r\n   - **上传文件**：点击\"选择文件\"按钮上传本地音频文件\r\n   - **服务器路径**：直接输入服务器上的音频文件路径\r\n3. （可选）勾选\"Loop Playback\"以循环播放\r\n4. 点击\"Start Transcription\"开始转写\r\n5. 转写结果将实时显示在下方的转写结果区域\r\n\r\n### 转写结果说明\r\n\r\n- **临时结果**（黄色标记）：识别过程中的临时结果，可能会变化\r\n- **最终结果**（绿色标记）：确认的最终识别结果\r\n\r\n## 目录结构\r\n\r\n```text\r\ntranscriber_demo/\r\n├── main.go                          # 应用入口\r\n├── manifest.json                    # 应用清单\r\n├── property.json                    # 应用属性和图配置\r\n├── bin/\r\n│   └── start                        # 启动脚本\r\n├── scripts/\r\n│   └── install_python_deps.py       # Python 依赖安装脚本\r\n├── docs/                            # 文档目录\r\n│   ├── README.zh-CN.md\r\n│   └── README.en-US.md\r\n└── ten_packages/\r\n    └── extension/\r\n        ├── web_audio_control_go/    # Web 控制扩展\r\n        ├── audio_file_player_python/# 音频播放器扩展\r\n        └── azure_asr_python/        # Azure ASR 扩展\r\n```\r\n\r\n## 开发说明\r\n\r\n### 修改配置\r\n\r\n应用的图配置位于 `property.json` 文件中，可以修改：\r\n\r\n- 扩展的连接关系\r\n- 扩展的属性配置\r\n- 日志输出配置\r\n\r\n### 添加新扩展\r\n\r\n1. 在 `property.json` 的 `nodes` 中添加新的扩展节点\r\n2. 在 `connections` 中定义数据流连接\r\n3. 在 `manifest.json` 的 `dependencies` 中添加依赖声明\r\n\r\n### 调试\r\n\r\n应用日志输出到：\r\n\r\n- 控制台：WARNING 级别及以上\r\n- 文件：`logs/debug.log`（DEBUG 级别及以上）\r\n\r\n## 故障排查\r\n\r\n### 常见问题\r\n\r\n1. **转写结果为空或错误**\r\n   - 检查 Azure Speech Service 配置是否正确\r\n   - 确认 API Key 和 Region 是否有效\r\n   - 检查网络连接\r\n\r\n2. **无法上传文件**\r\n   - 检查音频文件格式是否支持\r\n   - 确认文件大小是否超出限制\r\n\r\n3. **WebSocket 连接失败**\r\n   - 检查应用是否正常启动\r\n   - 确认端口没有被占用\r\n   - 检查防火墙设置\r\n\r\n4. **Python 依赖安装失败**\r\n   - 确认 Python 3.10 已正确安装\r\n   - 尝试使用国内镜像：`python3 scripts/install_python_deps.py --index-url https://pypi.tuna.tsinghua.edu.cn/simple`\r\n\r\n## 许可证\r\n\r\n此应用是 TEN Framework 项目的一部分，采用 Apache License 2.0 许可证。\r\n\r\n## 相关链接\r\n\r\n- [TEN Framework 官方文档](https://doc.theten.ai)\r\n- [Azure Speech Service 文档](https://docs.microsoft.com/azure/cognitive-services/speech-service/)\r\n"
-      },
-      "en-US": {
-        "content": "# Transcriber Demo Application\r\n\r\n## Overview\r\n\r\nTranscriber Demo is a real-time/offline speech transcription demonstration application built on the TEN Framework. The application supports real-time voice input through a web interface microphone or uploading/specifying offline audio files for transcription, with real-time display of transcription results.\r\n\r\n## Features\r\n\r\n- ✅ **Real-time Speech Transcription**: Support real-time speech recognition through microphone\r\n- 📁 **Offline File Transcription**: Support uploading or specifying audio files for transcription\r\n- 🌐 **Web Interface**: Provides a user-friendly web control interface\r\n- 🔄 **Real-time Result Push**: Push transcription results in real-time via WebSocket\r\n- 🎵 **Multiple Format Support**: Support various audio formats including WAV, MP3, FLAC, OGG, M4A\r\n- 🔁 **Loop Playback**: Support audio file loop playback functionality\r\n\r\n## Architecture\r\n\r\nThis application is based on the TEN Framework's Extension Graph architecture and includes the following core components:\r\n\r\n### Extension Components\r\n\r\n1. **web_audio_control_go**: Web server extension\r\n   - Provides HTTP service and WebSocket connection\r\n   - Handles audio control requests\r\n   - Pushes transcription results to frontend in real-time\r\n\r\n2. **audio_file_player_python**: Audio player extension\r\n   - Reads audio files\r\n   - Converts audio data to PCM frame stream\r\n   - Supports loop playback\r\n\r\n3. **azure_asr_python**: Azure speech recognition extension\r\n   - Receives PCM audio frames\r\n   - Calls Azure Speech Service for speech recognition\r\n   - Returns recognition results (including interim and final results)\r\n\r\n### Data Flow\r\n\r\n```text\r\nUser Input (Microphone/File)\r\n    ↓\r\nweb_audio_control_go / audio_file_player_python\r\n    ↓ (PCM Audio Frames)\r\nazure_asr_python\r\n    ↓ (ASR Results)\r\nweb_audio_control_go\r\n    ↓ (WebSocket)\r\nWeb Frontend Display\r\n```\r\n\r\n## Getting Started\r\n\r\n### Prerequisites\r\n\r\n1. **Runtime Environment**:\r\n   - Go 1.16+ (for Go extensions)\r\n   - Python 3.10 (for Python extensions)\r\n\r\n2. **Azure Speech Service**:\r\n   - Azure subscription account\r\n   - Speech Service API Key and Region\r\n\r\n### Configuration\r\n\r\nCreate a `.env` file or set environment variables:\r\n\r\n```bash\r\n# Azure Speech Service Configuration\r\nAZURE_STT_KEY=your_azure_speech_api_key\r\nAZURE_STT_REGION=your_azure_region  # e.g., eastus\r\nAZURE_STT_LANGUAGE=en-US            # Language code, defaults to en-US\r\n```\r\n\r\nSupported language code examples:\r\n\r\n- `en-US`: American English\r\n- `zh-CN`: Simplified Chinese\r\n- `ja-JP`: Japanese\r\n- `ko-KR`: Korean\r\n\r\n### Installing Dependencies\r\n\r\n1. **Install Python Dependencies**:\r\n\r\n```bash\r\n# Execute in the application root directory\r\npython3 scripts/install_python_deps.py\r\n```\r\n\r\nThis script will automatically:\r\n\r\n- Merge all Python extension dependencies\r\n- Install to Python 3.10 environment\r\n\r\n2. **Build Go Application**:\r\n\r\n```bash\r\n# Execute in the application root directory\r\ngo run ten_packages/system/ten_runtime_go/tools/build/main.go\r\n```\r\n\r\n### Starting the Application\r\n\r\n```bash\r\n# Execute in the application root directory\r\n./bin/start\r\n```\r\n\r\nThe application listens on the default port (usually 8002) and can be accessed through a browser after startup.\r\n\r\n## Usage\r\n\r\n### Method 1: Real-time Microphone Transcription\r\n\r\n1. Open `http://localhost:8002/static/microphone.html` in your browser\r\n2. Authorize the browser to use the microphone\r\n3. Click the start recording button\r\n4. Start speaking, transcription results will be displayed on the page in real-time\r\n\r\n### Method 2: Offline File Transcription\r\n\r\n1. Open `http://localhost:8002/static/index.html` in your browser\r\n2. Choose a method:\r\n   - **Upload File**: Click the \"Select File\" button to upload a local audio file\r\n   - **Server Path**: Directly input the audio file path on the server\r\n3. (Optional) Check \"Loop Playback\" for looping\r\n4. Click \"Start Transcription\" to begin transcription\r\n5. Transcription results will be displayed in real-time in the transcription results area below\r\n\r\n### Transcription Results\r\n\r\n- **Interim Results** (yellow marker): Temporary results during recognition, subject to change\r\n- **Final Results** (green marker): Confirmed final recognition results\r\n\r\n## Directory Structure\r\n\r\n```text\r\ntranscriber_demo/\r\n├── main.go                          # Application entry\r\n├── manifest.json                    # Application manifest\r\n├── property.json                    # Application properties and graph configuration\r\n├── bin/\r\n│   └── start                        # Startup script\r\n├── scripts/\r\n│   └── install_python_deps.py       # Python dependency installation script\r\n├── docs/                            # Documentation directory\r\n│   ├── README.zh-CN.md\r\n│   └── README.en-US.md\r\n└── ten_packages/\r\n    └── extension/\r\n        ├── web_audio_control_go/    # Web control extension\r\n        ├── audio_file_player_python/# Audio player extension\r\n        └── azure_asr_python/        # Azure ASR extension\r\n```\r\n\r\n## Development\r\n\r\n### Modifying Configuration\r\n\r\nThe application's graph configuration is located in the `property.json` file, where you can modify:\r\n\r\n- Extension connection relationships\r\n- Extension property configurations\r\n- Log output configuration\r\n\r\n### Adding New Extensions\r\n\r\n1. Add a new extension node in the `nodes` section of `property.json`\r\n2. Define data flow connections in `connections`\r\n3. Add dependency declarations in the `dependencies` section of `manifest.json`\r\n\r\n### Debugging\r\n\r\nApplication logs are output to:\r\n\r\n- Console: WARNING level and above\r\n- File: `logs/debug.log` (DEBUG level and above)\r\n\r\n## Troubleshooting\r\n\r\n### Common Issues\r\n\r\n1. **Empty or incorrect transcription results**\r\n   - Check if Azure Speech Service configuration is correct\r\n   - Verify API Key and Region are valid\r\n   - Check network connection\r\n\r\n2. **Unable to upload files**\r\n   - Check if audio file format is supported\r\n   - Verify file size does not exceed limits\r\n\r\n3. **WebSocket connection failure**\r\n   - Check if application started normally\r\n   - Verify port is not occupied\r\n   - Check firewall settings\r\n\r\n4. **Python dependency installation failure**\r\n   - Verify Python 3.10 is properly installed\r\n   - Try using a mirror: `python3 scripts/install_python_deps.py --index-url https://pypi.org/simple`\r\n\r\n## License\r\n\r\nThis application is part of the TEN Framework project and is licensed under Apache License 2.0.\r\n\r\n## Related Links\r\n\r\n- [TEN Framework Official Documentation](https://doc.theten.ai)\r\n- [Azure Speech Service Documentation](https://docs.microsoft.com/azure/cognitive-services/speech-service/)\r\n"
-      }
-    }
   }
 }

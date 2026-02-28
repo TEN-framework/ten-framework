@@ -18,7 +18,10 @@
 #define TEN_JSON_SIGNATURE 0xACA499C637670350U
 
 #define TEN_JSON_INIT_VAL(ctx_, owned_ctx_)                     \
-  (ten_json_t) { TEN_JSON_SIGNATURE, NULL, ctx_, owned_ctx_ }
+  (ten_json_t) {                                                \
+    .signature = TEN_JSON_SIGNATURE, .json = NULL, .ctx = ctx_, \
+    .owned_ctx = owned_ctx_,                                    \
+  }
 
 #define ten_json_object_foreach(object, key, value)                    \
   ten_json_iter_t __iter;                                              \

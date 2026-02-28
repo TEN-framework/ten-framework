@@ -74,7 +74,9 @@ class ten_env_t {
   bool send_cmd_ex(std::unique_ptr<cmd_t> &&cmd,
                    result_handler_func_t &&result_handler = nullptr,
                    error_t *err = nullptr) {
-    ten_env_send_cmd_options_t options{true};
+    ten_env_send_cmd_options_t options{
+        .enable_multiple_results = true,
+    };
     return send_cmd_internal(std::move(cmd), std::move(result_handler),
                              &options, err);
   }
@@ -174,7 +176,7 @@ class ten_env_t {
       return result;
     }
 
-    ten_json_t c_json = {TEN_JSON_SIGNATURE, NULL, ten_json_create_new_ctx(), true};
+    ten_json_t c_json = TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
     bool success = ten_value_to_json(value, &c_json);
     if (!success) {
       return result;
@@ -508,7 +510,8 @@ class ten_env_t {
 
   bool set_property(const char *path, const ten::buf_t &value,
                     error_t *err = nullptr) {
-    ten_buf_t buf = {TEN_BUF_SIGNATURE, value.data(), value.size(), value.size(), true, false};
+    ten_buf_t buf =
+        TEN_BUF_STATIC_INIT_WITH_DATA_OWNED(value.data(), value.size());
     return set_property_impl(path, ten_value_create_buf_with_move(buf), err);
   }
 

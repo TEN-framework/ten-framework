@@ -34,7 +34,7 @@ class msg_t;
 // result in a similar mismatch between creation and release APIs.
 class buf_t {
  public:
-  buf_t() : buf{TEN_BUF_SIGNATURE, NULL, 0, 0, true, false} {}
+  buf_t() : buf{TEN_BUF_STATIC_INIT_OWNED} {}
 
   explicit buf_t(size_t size) { ten_buf_init_with_owned_data(&buf, size); }
 

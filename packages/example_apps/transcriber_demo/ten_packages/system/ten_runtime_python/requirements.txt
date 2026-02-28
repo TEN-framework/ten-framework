@@ -1,2 +1,0 @@
-namedthreads
-uvloop; sys_platform != 'win32'
