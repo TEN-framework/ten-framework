@@ -119,7 +119,6 @@ def test_dump_functionality(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # Create some fake audio data to be streamed
@@ -276,7 +275,6 @@ def test_text_input_end_logic(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to handle the response queue
@@ -438,7 +436,6 @@ def test_flush_logic(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # Create a cancel event to signal the mock audio stream to stop

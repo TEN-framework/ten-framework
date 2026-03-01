@@ -145,7 +145,6 @@ def test_invalid_params_fatal_error(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # Mock send_text to raise an exception
