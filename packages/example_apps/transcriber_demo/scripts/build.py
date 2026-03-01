@@ -26,12 +26,18 @@ Usage:
 """
 
 import argparse
+import io
 import platform
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+# To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
+# CJK environment. \u2713: ✓ (check sign)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 
 def detect_os() -> str:
@@ -160,6 +166,9 @@ def find_npm_executable(npm_cmd: str = "npm") -> str:
         RuntimeError: If npm is not found
     """
     try:
+        if sys.platform == "win32" and not npm_cmd.endswith(".cmd"):
+            npm_cmd = f"{npm_cmd}.cmd"
+
         subprocess.run(
             [npm_cmd, "--version"], capture_output=True, text=True, check=True
         )
@@ -271,14 +280,16 @@ def find_tgn_executable() -> str:
         RuntimeError: If tgn is not found
     """
     try:
+        tgn_cmd = "tgn.bat" if sys.platform == "win32" else "tgn"
+
         subprocess.run(
-            ["tgn", "--version"], capture_output=True, text=True, check=True
+            [tgn_cmd, "--version"], capture_output=True, text=True, check=True
         )
 
         if sys.platform == "win32":
             full_path = (
                 subprocess.run(
-                    ["where", "tgn"],
+                    ["where", tgn_cmd],
                     capture_output=True,
                     text=True,
                     check=True,
@@ -497,12 +508,23 @@ def build_cxx_extensions(
 
         # On macOS, use default clang compiler
         # On other platforms, add custom flags
-        if os_type != "mac":
+        if os_type == "linux":
             tgn_gen_cmd.extend(
                 [
                     "--",
                     "is_clang=false",
                     "enable_sanitizer=false",
+                    "vs_version=2022",
+                ]
+            )
+        elif os_type == "win":
+            tgn_gen_cmd.extend(
+                [
+                    "--",
+                    "is_mingw=false",
+                    "is_clang=true",
+                    "enable_sanitizer=false",
+                    "vs_version=2022",
                 ]
             )
 

@@ -14,10 +14,16 @@ Usage:
 """
 
 import argparse
+import io
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Tuple
+
+# To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
+# CJK environment. \u2713: ✓ (check sign)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 
 class Colors:
@@ -124,14 +130,22 @@ def find_npm_executable() -> str:
         RuntimeError: If npm is not found
     """
     try:
+        npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+
         result = subprocess.run(
-            ["npm", "--version"], capture_output=True, text=True, check=True
+            [npm_cmd, "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
         )
 
         if sys.platform == "win32":
             full_path = (
                 subprocess.run(
-                    ["where", "npm"], capture_output=True, text=True, check=True
+                    ["where", npm_cmd],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
                 .stdout.strip()
                 .split("\n")[0]
