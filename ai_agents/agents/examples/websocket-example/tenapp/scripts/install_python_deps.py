@@ -13,14 +13,25 @@ from pathlib import Path
 
 # To solve Error: 'gbk' codec can't encode character '\u2713' in MinGW/Windows
 # CJK environment. \u2713: ✓ (check sign)
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except AttributeError:
+    # Fallback for environments where reconfigure is not available
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-def run_command(cmd, description):
-    """Run a command and return success status."""
+def run_command(cmd, description, cwd=None):
+    """Run a command and return success status.
+
+    Args:
+        cmd: Command as a list of arguments (shell=False for safety).
+        description: Human-readable description for logging.
+        cwd: Optional working directory.
+    """
     print(f"Installing {description}...")
     try:
-        result = subprocess.run(cmd, shell=True, check=False)
+        result = subprocess.run(cmd, check=False, cwd=cwd)
         if result.returncode == 0:
             print(f"✓ Successfully installed {description}")
             return True
@@ -32,11 +43,11 @@ def run_command(cmd, description):
         return False
 
 
-def install_with_retry(cmd, description, max_retries=3):
+def install_with_retry(cmd, description, max_retries=3, cwd=None):
     """Try to install with retries."""
     for attempt in range(1, max_retries + 1):
         print(f"Attempt {attempt} of {max_retries}...")
-        if run_command(cmd, description):
+        if run_command(cmd, description, cwd=cwd):
             return True
         if attempt < max_retries:
             print(f"Retrying in 2 seconds...")
@@ -56,8 +67,8 @@ def build_go_app(app_dir):
             print(f"✗ Build tool not found: {build_tool}")
             return False
 
-        cmd = f'go run "{build_tool}" --verbose'
-        result = subprocess.run(cmd, shell=True, check=False, cwd=str(app_dir))
+        cmd = ["go", "run", str(build_tool), "--verbose"]
+        result = subprocess.run(cmd, check=False, cwd=str(app_dir))
         if result.returncode == 0:
             print("✓ Successfully built Go application")
             return True
@@ -91,12 +102,12 @@ def main():
     print("Starting Python dependencies installation...")
 
     # Determine pip command
-    pip_cmd = "uv pip install --system"
+    pip_cmd = ["uv", "pip", "install", "--system"]
 
     # Try to install server requirements
     server_req = app_dir.parent / "server" / "requirements.txt"
     if server_req.exists():
-        install_with_retry(f'{pip_cmd} -r "{server_req}"', "server requirements")
+        install_with_retry(pip_cmd + ["-r", str(server_req)], "server requirements")
     else:
         print(f"No requirements.txt found in server directory")
 
@@ -109,7 +120,7 @@ def main():
                 req_file = ext_path / "requirements.txt"
                 if req_file.exists():
                     # Continue on failure instead of stopping
-                    install_with_retry(f'{pip_cmd} -r "{req_file}"', f"extension {ext_path.name}")
+                    install_with_retry(pip_cmd + ["-r", str(req_file)], f"extension {ext_path.name}")
     else:
         print("ten_packages/extension directory not found")
 
@@ -122,7 +133,7 @@ def main():
                 req_file = sys_path / "requirements.txt"
                 if req_file.exists():
                     # Continue on failure instead of stopping
-                    install_with_retry(f'{pip_cmd} -r "{req_file}"', f"system {sys_path.name}")
+                    install_with_retry(pip_cmd + ["-r", str(req_file)], f"system {sys_path.name}")
     else:
         print("ten_packages/system directory not found")
 

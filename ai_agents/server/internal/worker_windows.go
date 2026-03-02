@@ -15,9 +15,8 @@ func (w *Worker) start(req *StartReq) (err error) {
 	// Use separate arguments to avoid shell injection
 	slog.Info("Worker start", "requestId", req.RequestId, "property", w.PropertyJsonFile, "tenappDir", w.TenappDir, logTag)
 
-	// On Windows, directly execute the Python startup script
-	// This bypasses tman's script execution issues on Windows
-	cmd := exec.Command("python", "scripts/start.py", "--property", w.PropertyJsonFile)
+	// Use tman run start to be consistent with Linux and support different tenapp structures
+	cmd := exec.Command("tman", "run", "start", "--", "--property", w.PropertyJsonFile)
 
 	// Windows: Create a new process group using CREATE_NEW_PROCESS_GROUP
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -35,9 +34,10 @@ func (w *Worker) start(req *StartReq) (err error) {
 
 	if !w.Log2Stdout {
 		// Open the log file for writing
-		logFile, err := os.OpenFile(w.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			slog.Error("Failed to open log file", "err", err, "requestId", req.RequestId, logTag)
+		var openErr error
+		logFile, openErr = os.OpenFile(w.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if openErr != nil {
+			slog.Error("Failed to open log file", "err", openErr, "requestId", req.RequestId, logTag)
 		} else {
 			stdoutWriter = logFile
 			stderrWriter = logFile

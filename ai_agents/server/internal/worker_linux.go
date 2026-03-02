@@ -47,9 +47,10 @@ func (w *Worker) start(req *StartReq) (err error) {
 
 	if !w.Log2Stdout {
 		// Open the log file for writing
-		logFile, err := os.OpenFile(w.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			slog.Error("Failed to open log file", "err", err, "requestId", req.RequestId, logTag)
+		var openErr error
+		logFile, openErr = os.OpenFile(w.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if openErr != nil {
+			slog.Error("Failed to open log file", "err", openErr, "requestId", req.RequestId, logTag)
 		} else {
 			stdoutWriter = logFile
 			stderrWriter = logFile

@@ -45,7 +45,6 @@ type WorkerUpdateReqTen struct {
 
 const (
 	workerCleanSleepSeconds = 5
-	workerExec              = "/app/agents/bin/start"
 	workerHttpServerUrl     = "http://127.0.0.1"
 )
 
@@ -70,12 +69,16 @@ func newWorker(channelName string, logFile string, log2Stdout bool, propertyJson
 }
 
 func getHttpServerPort() int32 {
-	if atomic.LoadInt32(&httpServerPort) > httpServerPortMax {
-		atomic.StoreInt32(&httpServerPort, httpServerPortMin)
+	for {
+		old := atomic.LoadInt32(&httpServerPort)
+		new := old + 1
+		if new > httpServerPortMax {
+			new = httpServerPortMin
+		}
+		if atomic.CompareAndSwapInt32(&httpServerPort, old, new) {
+			return new
+		}
 	}
-
-	atomic.AddInt32(&httpServerPort, 1)
-	return httpServerPort
 }
 
 // PrefixWriter is a custom writer that prefixes each line with a PID.
