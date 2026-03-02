@@ -36,9 +36,6 @@ func tenGoCreateTenEnv(cInstance C.uintptr_t) C.uintptr_t {
 //export tenGoDestroyTenEnv
 func tenGoDestroyTenEnv(tenEnvObjID C.uintptr_t) {
 	r, ok := handle(tenEnvObjID).free().(*tenEnv)
-
-	r.attachToType = tenAttachToInvalid
-
 	if !ok {
 		panic(
 			fmt.Sprintf(
@@ -46,9 +43,10 @@ func tenGoDestroyTenEnv(tenEnvObjID C.uintptr_t) {
 				uintptr(tenEnvObjID),
 			),
 		)
-	} else {
-		r.close()
 	}
+
+	r.attachToType = tenAttachToInvalid
+	r.close()
 }
 
 //export tenGoOnCmdResult
