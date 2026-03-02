@@ -61,8 +61,6 @@ def mock_config():
         "api_url": "http://localhost:8000",
         "api_key": "test-api-key",
         "language": "vi",
-        "enable_segments": False,
-        "enable_refinement": False,
         "timeout": 3600,
     }
 

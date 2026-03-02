@@ -69,13 +69,13 @@
               "type": "string"
             },
             "audio_speed": {
-              "type": "number"
+              "type": "float64"
             },
             "audio_quality": {
-              "type": "number"
+              "type": "float64"
             },
             "timeout": {
-              "type": "number"
+              "type": "int32"
             }
           }
         }

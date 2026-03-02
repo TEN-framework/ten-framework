@@ -34,13 +34,6 @@ class BlazeSTTConfig(BaseModel):
         description="API key for authentication (Bearer token)",
     )
     timeout: int = Field(default=3600, description="Request timeout in seconds")
-    enable_segments: bool = Field(
-        default=False, description="Split audio into segments with timestamps"
-    )
-    enable_refinement: bool = Field(
-        default=False,
-        description="Apply post-processing refinement to improve accuracy",
-    )
     default_language: str = Field(
         default="vi",
         description="Default language code (e.g., 'vi' for Vietnamese)",
@@ -76,8 +69,6 @@ class BlazeSTTExtension:
                 api_url=config.get("api_url", "http://localhost:8000"),
                 api_key=config.get("api_key"),
                 default_language=config.get("language", "vi"),
-                enable_segments=config.get("enable_segments", False),
-                enable_refinement=config.get("enable_refinement", False),
                 timeout=config.get("timeout", 3600),
             )
         else:
@@ -96,9 +87,6 @@ class BlazeSTTExtension:
         audio_file: Optional[UploadFile] = None,
         audio_content_type: Optional[str] = None,
         language: Optional[str] = None,
-        enable_segments: Optional[bool] = None,
-        enable_refinement: Optional[bool] = None,
-        lazy_process: bool = False,
     ) -> Dict[str, Any]:
         """
         Transcribe audio data to text
@@ -113,9 +101,6 @@ class BlazeSTTExtension:
                        If provided, audio_data is ignored.
             audio_content_type: MIME type. Auto-detected if not provided.
             language: Language code (e.g., 'vi' for Vietnamese). Defaults to config default.
-            enable_segments: Split audio into segments with timestamps
-            enable_refinement: Apply post-processing refinement
-            lazy_process: If True, process in background (returns job_id). If False, returns result immediately.
 
         Returns:
             Dict containing transcription result or job information
@@ -132,18 +117,8 @@ class BlazeSTTExtension:
                 "Both audio_file and audio_data provided. audio_file will be used."
             )
 
-        # Use provided values or fall back to config defaults
+        # Use provided language or fall back to config default
         language = language or self.config.default_language
-        enable_segments = (
-            enable_segments
-            if enable_segments is not None
-            else self.config.enable_segments
-        )
-        enable_refinement = (
-            enable_refinement
-            if enable_refinement is not None
-            else self.config.enable_refinement
-        )
 
         # Prepare headers
         headers = {}
@@ -153,9 +128,6 @@ class BlazeSTTExtension:
         # Prepare query parameters
         params = {
             "language": language,
-            "enable_segments": str(enable_segments).lower(),
-            "enable_refinement": str(enable_refinement).lower(),
-            "lazy_process": str(lazy_process).lower(),
         }
 
         try:
@@ -222,8 +194,7 @@ class BlazeSTTExtension:
 
                 # Handle response format from service
                 # Response structure:
-                # - lazy_process=False: {"job_status": "completed", "result": {"data": {"transcription": "..."}}}
-                # - lazy_process=True: {"job_id": "...", "job_status": "processing"}
+                # {"job_status": "completed", "result": {"data": {"transcription": "..."}}}
 
                 # Extract transcription from nested result.data structure if available
                 transcription = ""
@@ -257,7 +228,7 @@ class BlazeSTTExtension:
         Get status of a transcription job
 
         Args:
-            job_id: Job ID returned from transcribe with lazy_process=True
+            job_id: Job ID returned from transcribe
 
         Returns:
             Dict containing job status and result if available
@@ -316,14 +287,11 @@ class BlazeSTTExtension:
                 - audio_data (bytes): Required. Audio data to transcribe
                 - audio_content_type (str): Optional. MIME type (default: "audio/wav")
                 - language (str): Optional. Language code (default: from config)
-                - enable_segments (bool): Optional. Enable segments
-                - enable_refinement (bool): Optional. Enable refinement
-                - lazy_process (bool): Optional. Process in background (default: False)
 
         Returns:
             Output dict with:
                 - transcription (str): Transcribed text
-                - job_id (str): Optional. Job ID if lazy_process=True
+                - job_id (str): Optional. Job ID
                 - status (str): Job status
         """
         audio_data = input_data.get("audio_data")
@@ -336,9 +304,6 @@ class BlazeSTTExtension:
                 "audio_content_type", "audio/wav"
             ),
             language=input_data.get("language"),
-            enable_segments=input_data.get("enable_segments"),
-            enable_refinement=input_data.get("enable_refinement"),
-            lazy_process=input_data.get("lazy_process", False),
         )
 
         # Return normalized format (transcribe() already handles response format)
@@ -381,16 +346,6 @@ class BlazeSTTExtension:
                     "type": "string",
                     "required": False,
                     "default": "vi",
-                },
-                "enable_segments": {
-                    "type": "boolean",
-                    "required": False,
-                    "default": False,
-                },
-                "enable_refinement": {
-                    "type": "boolean",
-                    "required": False,
-                    "default": False,
                 },
             },
         }

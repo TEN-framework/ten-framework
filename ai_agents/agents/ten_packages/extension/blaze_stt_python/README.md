@@ -35,8 +35,6 @@ The extension includes a `property.json` file with default configuration that TE
         "api_url": "${env:BLAZE_STT_API_URL}",
         "api_key": "${env:BLAZE_STT_API_KEY}",
         "language": "vi",
-        "enable_segments": false,
-        "enable_refinement": false,
         "timeout": 3600
     }
 }
@@ -105,7 +103,7 @@ print(result["transcription"])
 
 **Direct Methods:**
 
-- `transcribe(audio_data, audio_file, audio_content_type, language, enable_segments, enable_refinement, lazy_process)` - Transcribe audio data (bytes) or file (UploadFile)
+- `transcribe(audio_data, audio_file, audio_content_type, language)` - Transcribe audio data (bytes) or file (UploadFile)
 - `get_job_status(job_id)` - Get transcription job status
 
 ## Supported Formats
@@ -118,4 +116,3 @@ print(result["transcription"])
 ## License
 
 This extension is provided as-is for use with the TEN Framework and Blaze services.
-

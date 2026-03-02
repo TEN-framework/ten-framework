@@ -90,9 +90,6 @@ class TestBlazeSTTExtension:
         # Check params
         params = call_args[1]["params"]
         assert params["language"] == "vi"
-        assert params["enable_segments"] == "false"
-        assert params["enable_refinement"] == "false"
-        assert params["lazy_process"] == "false"
 
         # Verify result
         assert result["transcription"] == "Xin chào, đây là test transcription"
@@ -149,43 +146,6 @@ class TestBlazeSTTExtension:
         # Verify result
         assert result["transcription"] == "Xin chào, đây là test transcription"
         assert result["job_status"] == "completed"
-
-    @patch("httpx.Client")
-    def test_transcribe_lazy_process(
-        self,
-        mock_client_class,
-        sample_audio_bytes,
-        mock_api_response_processing,
-    ):
-        """Test transcribe() with lazy_process=True"""
-        # Setup mock response
-        mock_response = Mock()
-        mock_response.json.return_value = mock_api_response_processing
-        mock_response.raise_for_status = Mock()
-
-        mock_client = Mock()
-        mock_client.__enter__ = Mock(return_value=mock_client)
-        mock_client.__exit__ = Mock(return_value=False)
-        mock_client.post.return_value = mock_response
-        mock_client_class.return_value = mock_client
-
-        # Initialize extension
-        stt = BlazeSTTExtension(config={"api_url": "http://localhost:8000"})
-
-        # Call transcribe with lazy_process=True
-        result = stt.transcribe(
-            audio_data=sample_audio_bytes,
-            lazy_process=True,
-        )
-
-        # Verify lazy_process parameter
-        call_args = mock_client.post.call_args
-        params = call_args[1]["params"]
-        assert params["lazy_process"] == "true"
-
-        # Verify result
-        assert result["job_id"] == "test-job-id-123"
-        assert result["job_status"] == "processing"
 
     def test_transcribe_no_input(self):
         """Test transcribe() with no input raises ValueError"""
@@ -303,58 +263,6 @@ class TestBlazeSTTExtension:
         assert "speech_to_text" in metadata["capabilities"]
         assert "audio/wav" in metadata["supported_formats"]
         assert "vi" in metadata["supported_languages"]
-
-    @patch("httpx.Client")
-    def test_transcribe_with_enable_segments(
-        self, mock_client_class, sample_audio_bytes, mock_api_response_completed
-    ):
-        """Test transcribe() with enable_segments=True"""
-        mock_response = Mock()
-        mock_response.json.return_value = mock_api_response_completed
-        mock_response.raise_for_status = Mock()
-
-        mock_client = Mock()
-        mock_client.__enter__ = Mock(return_value=mock_client)
-        mock_client.__exit__ = Mock(return_value=False)
-        mock_client.post.return_value = mock_response
-        mock_client_class.return_value = mock_client
-
-        stt = BlazeSTTExtension(config={"api_url": "http://localhost:8000"})
-
-        result = stt.transcribe(
-            audio_data=sample_audio_bytes,
-            enable_segments=True,
-        )
-
-        call_args = mock_client.post.call_args
-        params = call_args[1]["params"]
-        assert params["enable_segments"] == "true"
-
-    @patch("httpx.Client")
-    def test_transcribe_with_enable_refinement(
-        self, mock_client_class, sample_audio_bytes, mock_api_response_completed
-    ):
-        """Test transcribe() with enable_refinement=True"""
-        mock_response = Mock()
-        mock_response.json.return_value = mock_api_response_completed
-        mock_response.raise_for_status = Mock()
-
-        mock_client = Mock()
-        mock_client.__enter__ = Mock(return_value=mock_client)
-        mock_client.__exit__ = Mock(return_value=False)
-        mock_client.post.return_value = mock_response
-        mock_client_class.return_value = mock_client
-
-        stt = BlazeSTTExtension(config={"api_url": "http://localhost:8000"})
-
-        result = stt.transcribe(
-            audio_data=sample_audio_bytes,
-            enable_refinement=True,
-        )
-
-        call_args = mock_client.post.call_args
-        params = call_args[1]["params"]
-        assert params["enable_refinement"] == "true"
 
     @patch("httpx.Client")
     def test_transcribe_http_error(self, mock_client_class, sample_audio_bytes):

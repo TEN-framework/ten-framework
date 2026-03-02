@@ -65,14 +65,8 @@
             "language": {
               "type": "string"
             },
-            "enable_segments": {
-              "type": "boolean"
-            },
-            "enable_refinement": {
-              "type": "boolean"
-            },
             "timeout": {
-              "type": "number"
+              "type": "int32"
             }
           }
         }
@@ -80,4 +74,3 @@
     }
   }
 }
-
