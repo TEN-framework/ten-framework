@@ -47,6 +47,28 @@ def install_with_retry(cmd, description, max_retries=3):
     return False
 
 
+def build_go_app(app_dir):
+    """Build the Go application using the TEN runtime build tool."""
+    print("Building Go application...")
+    try:
+        build_tool = app_dir / "ten_packages" / "system" / "ten_runtime_go" / "tools" / "build" / "main.go"
+        if not build_tool.exists():
+            print(f"✗ Build tool not found: {build_tool}")
+            return False
+
+        cmd = f'go run "{build_tool}" --verbose'
+        result = subprocess.run(cmd, shell=True, check=False, cwd=str(app_dir))
+        if result.returncode == 0:
+            print("✓ Successfully built Go application")
+            return True
+        else:
+            print("✗ Failed to build Go application")
+            return False
+    except Exception as e:
+        print(f"✗ Error building Go application: {e}")
+        return False
+
+
 def main():
     # Get the app directory
     script_dir = Path(__file__).parent
@@ -59,6 +81,11 @@ def main():
     # Check if manifest.json exists
     if not (app_dir / "manifest.json").exists():
         print("Error: manifest.json file not found")
+        sys.exit(1)
+
+    # Build Go application first
+    if not build_go_app(app_dir):
+        print("FATAL: failed to build go app, see logs for detail.")
         sys.exit(1)
 
     print("Starting Python dependencies installation...")

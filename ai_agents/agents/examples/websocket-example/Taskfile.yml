@@ -64,9 +64,9 @@ tasks:
     desc: run api server
     dir: ../../../server
     cmds:
-      - cmd: ./bin/api -tenapp_dir={{.PWD}}/../ai_agents/agents/examples/websocket-example/tenapp
+      - cmd: ./bin/api -tenapp_dir={{.PWD}}/tenapp
         platforms: [linux, darwin]
-      - cmd: powershell -Command "& './bin/api.exe' -tenapp_dir (Resolve-Path '..\..\ai_agents\agents\examples\websocket-example\tenapp').Path"
+      - cmd: powershell -Command "./bin/api.exe -tenapp_dir='{{.TASKFILE_DIR}}/tenapp'"
         platforms: [windows]
 
   run:
