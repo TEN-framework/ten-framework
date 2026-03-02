@@ -13,8 +13,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // Function to check if a PID is in the correct process group
