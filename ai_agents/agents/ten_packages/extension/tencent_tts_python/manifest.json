@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_tts_python",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "dependencies": [
     {
       "name": "ten_runtime_python",

@@ -73,7 +73,6 @@ def test_params_passthrough(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to properly handle the response_msgs queue

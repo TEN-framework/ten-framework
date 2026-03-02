@@ -361,12 +361,18 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             f"Received error message from client: {data}"
                         )
                         if isinstance(data, TencentTTSTaskFailedException):
+                            # Error code 10001 is authentication/key error - FATAL_ERROR
+                            error_code = (
+                                ModuleErrorCode.FATAL_ERROR
+                                if data.error_code == 10001
+                                else ModuleErrorCode.NON_FATAL_ERROR
+                            )
                             await self.send_tts_error(
                                 request_id=self.current_request_id,
                                 error=ModuleError(
                                     message=str(data),
                                     module=ModuleType.TTS,
-                                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                                    code=error_code,
                                     vendor_info=ModuleErrorVendorInfo(
                                         vendor=self.vendor(),
                                         code=str(data.error_code),
