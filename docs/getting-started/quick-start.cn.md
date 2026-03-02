@@ -15,6 +15,7 @@ _portal_target: getting-started/quick-start.cn.md
 - Linux (arm64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
+- Windows (x64)
 
 **必需的软件环境**：
 
@@ -22,18 +23,31 @@ _portal_target: getting-started/quick-start.cn.md
 - Go 1.20+
 - Node.js / npm（用于安装和管理 JavaScript 依赖）
 
+> 💡 **Windows 用户注意**：推荐使用 PowerShell 执行本指南中的命令。部分命令在 CMD 中可能不兼容。
+
 ## 第一步：检查环境
 
 在开始之前，请确保你的系统已安装以下软件：
 
 ### Python 3.10
 
+**Linux / macOS：**
+
 ```bash
 python3 --version
 # 应显示: Python 3.10.x
 ```
 
+**Windows：**
+
+```powershell
+python --version
+# 应显示: Python 3.10.x
+```
+
 > 💡 **重要**：TEN Framework 目前仅支持 Python 3.10。推荐使用 `pyenv` 或 `venv` 创建 Python 虚拟环境：
+>
+> **Linux / macOS：**
 >
 > ```bash
 > # 使用 pyenv 安装和管理 Python 3.10（推荐）
@@ -43,6 +57,19 @@ python3 --version
 > # 或使用 venv 创建虚拟环境
 > python3.10 -m venv ~/ten-venv
 > source ~/ten-venv/bin/activate
+> ```
+>
+> **Windows：**
+>
+> 从 https://www.python.org/downloads/release/python-31011/ 底部表格中下载 Windows installer，启动后安装 Python 3.10。
+>
+> 注意，点击Install Now前务必勾选 "Add Python to PATH"
+>
+> ```powershell
+> # 推荐安装后使用 venv 创建虚拟环境，在该环境中工作
+> py -3.10 -m venv $env:USERPROFILE\ten-venv
+> # 每次工作前，激活环境
+> & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
 > ```
 
 ### Go 1.20+
@@ -82,22 +109,48 @@ sudo apt install tman
 brew install TEN-framework/ten-framework/tman
 ```
 
+**Windows:**
+
+```powershell
+# 首先确定winget存在。
+winget --version
+```
+
+若不存在则需要从 https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US安装。
+（系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11）
+
+```powershell
+winget install TEN-framework.tman
+```
+
 方式二：通过安装脚本
+
+**Linux / macOS：**
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
 ```
 
-或者，如果你已经克隆了仓库：
+**Windows：**
+
+```
+irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.ps1 | iex
+```
+
+方式三：如果你已经克隆了仓库，使用仓库内的安装脚本
 
 ```bash
 cd ten-framework
+
+# Linux/MacOS
 bash tools/tman/install_tman.sh
+# Windows
+& "C:\sw\ten-framework\tools\tman\install_tman.ps1"
 ```
 
 > 💡 **提示**：如果系统中已经安装了 tman，安装脚本会询问是否重新安装/升级，输入 `y` 继续安装，输入 `n` 取消。
 >
-> **非交互式安装**（适用于自动化脚本或 CI 环境）：
+> **非交互式安装**（适用于自动化脚本或 CI 环境，Windows不可用）：
 >
 > ```bash
 > # 远程安装
@@ -107,18 +160,41 @@ bash tools/tman/install_tman.sh
 > yes y | bash tools/tman/install_tman.sh
 > ```
 
+**Windows 手动安装：**
+
+1. 访问 [Releases 页面](https://github.com/TEN-framework/ten-framework/releases) 下载 `tman-win-release-x64.zip`
+2. 解压后将 `tman.exe` 所在目录添加到系统 PATH 环境变量中
+
+```powershell
+# 解压到指定目录（示例）
+Expand-Archive -Path tman-win-release-x64.zip -DestinationPath $env:USERPROFILE\tman
+
+# 将 tman 添加到用户 PATH（永久生效）
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\tman\ten_manager\bin", "User")
+```
+
 **验证安装**：
 
 ```bash
 tman --version
 ```
 
-> 💡 **提示**：如果提示 `tman: command not found`，请确保 `/usr/local/bin` 在你的 PATH 中：
+> 💡 **提示**：如果提示 `tman: command not found`（Linux/macOS）或 `tman 不是内部或外部命令`（Windows），请确保 tman 所在目录在你的 PATH 中：
+>
+> **Linux / macOS：**
 >
 > ```bash
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc  # Linux
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.zshrc   # macOS
 > source ~/.bashrc  # 或 source ~/.zshrc
+> ```
+>
+> **Windows：**
+>
+> ```powershell
+> # 检查 PATH 中是否包含 tman
+> $env:Path -split ";"
+> # 如果不包含，请通过 "系统属性 → 环境变量" 手动添加
 > ```
 
 ## 第三步：创建并运行示例应用
@@ -143,6 +219,12 @@ tman run install_deps
 
 > ⏱️ **预计时间**：1-2 分钟
 
+
+若在Windows中文系统遇到 UnicodeEncodeError 错误，请设置环境变量：
+```
+$env:PYTHONIOENCODING = "utf-8"
+```
+
 ### 3. 构建应用
 
 ```bash
@@ -155,6 +237,8 @@ tman run build
 
 在运行应用前，需要配置 ASR（语音识别）服务的密钥。当前示例使用 Azure ASR extension，你需要在 `transcriber_demo/.env` 文件中填写相关配置：
 
+**Linux / macOS：**
+
 ```bash
 # 创建 .env 文件
 cat > .env << EOF
@@ -164,6 +248,20 @@ AZURE_STT_REGION=your_azure_region      # 例如：eastus
 AZURE_STT_LANGUAGE=en-US                # 根据你的音频语种或实时录音语种设置，如：zh-CN, ja-JP, ko-KR 等
 EOF
 ```
+
+**Windows（PowerShell）：**
+
+```powershell
+# 创建 .env 文件
+@"
+# Azure Speech Service 配置
+AZURE_STT_KEY=your_azure_speech_api_key
+AZURE_STT_REGION=your_azure_region
+AZURE_STT_LANGUAGE=en-US
+"@ | Out-File -Encoding utf8 .env
+```
+
+> 💡 **提示**：Windows 用户也可以直接用文本编辑器创建 `.env` 文件并填写上述配置。
 
 > 💡 **提示**：如果你想使用其他 ASR extension（如 OpenAI Whisper、Google Speech 等），可以从云商店下载并替换，同样将相应的 API key 等环境变量配置在 `.env` 文件中。
 
@@ -320,15 +418,37 @@ sudo apt-get install clang
 xcode-select --install
 ```
 
+**Windows:**
+
+```powershell
+# 方式一：安装 Visual Studio Build Tools（推荐）
+# 从 https://visualstudio.microsoft.com/visual-cpp-build-tools/ 下载安装
+# 安装时选择 "使用 C++ 的桌面开发" 工作负载
+
+# 方式二：使用 winget 安装
+winget install Microsoft.VisualStudio.2022.BuildTools
+
+# 方式三：安装 MSYS2 + MinGW-w64
+# 从 https://www.msys2.org/ 下载安装，然后在 MSYS2 终端中执行：
+# pacman -S mingw-w64-x86_64-gcc
+```
+
 验证编译器安装：
 
 ```bash
-# 检查 gcc
+# 检查 gcc（Linux/macOS/MSYS2）
 gcc --version
 g++ --version
 
-# 或检查 clang
+# 或检查 clang（Linux/macOS）
 clang --version
+```
+
+**Windows（使用 MSVC）：**
+
+```powershell
+# 在 "Developer PowerShell for VS" 中执行
+cl
 ```
 
 ### 常见问题（C++ 扩展）
@@ -378,8 +498,12 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 
 **解决方案**：
 
-- 查找占用端口的进程：`lsof -i :8080`（macOS/Linux）
-- 杀掉该进程：`kill -9 <PID>`
+- 查找占用端口的进程：
+  - Linux/macOS：`lsof -i :8080`
+  - Windows：`netstat -ano | findstr :8080`
+- 杀掉该进程：
+  - Linux/macOS：`kill -9 <PID>`
+  - Windows：`taskkill /PID <PID> /F`
 - 或修改应用配置文件（`transcriber_demo/ten_packages/extension/web_audio_control_go/property.json`）中的端口号
 
 ### 4. Go build 失败
@@ -406,6 +530,28 @@ tman run build
 ```bash
 pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
+
+### 6. Windows 上 Python 库加载失败
+
+**问题**：运行应用时提示找不到 `python310.dll` 或 Python 相关动态库
+
+**解决方案**：
+
+```powershell
+# 确认 Python 安装路径在 PATH 中
+python -c "import sys; print(sys.prefix)"
+
+# 将 Python DLL 目录添加到 PATH（示例路径，请根据实际安装位置调整）
+$env:Path += ";C:\Python310;C:\Python310\DLLs"
+```
+
+确保安装 Python 3.10 时勾选了 "Add Python to PATH" 选项。如果未勾选，可以重新运行安装程序并选择 "Modify" 来添加。
+
+### 7. Windows 上 tman 执行报错
+
+**问题**：运行 tman 时提示缺少 MSVC 运行时库
+
+**解决方案**：安装 [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)（最新 x64 版本）。
 
 ## 获取帮助
 
