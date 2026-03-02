@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 
@@ -16,12 +16,29 @@ class AssemblyAIASRConfig(BaseModel):
     sample_rate: int = 16000
     encoding: str = "pcm_s16le"
 
+    # Model selection
+    # u3-rt-pro enables language_detection by default and supports prompt/vad_threshold
+    speech_model: Literal[
+        "universal-streaming-english",
+        "universal-streaming-multilingual",
+        "u3-rt-pro",
+    ] = "u3-rt-pro"
+
     # Real-time transcription settings
-    end_of_turn_confidence_threshold: Optional[float] = 0.4
+    end_of_turn_confidence_threshold: Optional[float] = None
     format_turns: bool = True
     keyterms_prompt: Optional[List[str]] = Field(default_factory=list)
-    min_end_of_turn_silence_when_confident: Optional[int] = 160
-    max_turn_silence: Optional[int] = 400
+    # Deprecated: use min_turn_silence instead
+    min_end_of_turn_silence_when_confident: Optional[int] = None
+    min_turn_silence: Optional[int] = None
+    max_turn_silence: Optional[int] = None
+
+    # u3-rt-pro specific settings
+    language_detection: Optional[bool] = None
+    prompt: Optional[str] = None
+    vad_threshold: Optional[float] = None
+    speaker_labels: Optional[bool] = None
+    max_speakers: Optional[int] = None
 
     # Language settings
     language: str = "en-US"

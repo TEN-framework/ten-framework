@@ -180,9 +180,16 @@ class AssemblyAIWSRecognition:
 
         sample_rate = self.config.get("sample_rate", 16000)
         params.append(f"sample_rate={sample_rate}")
+
         encoding = self.config.get("encoding", "pcm_s16le")
         if encoding:
             params.append(f"encoding={encoding}")
+
+        speech_model = self.config.get("speech_model")
+        if speech_model:
+            params.append(f"speech_model={speech_model}")
+
+        is_u3_rt_pro = speech_model == "u3-rt-pro"
 
         end_of_turn_confidence_threshold = self.config.get(
             "end_of_turn_confidence_threshold"
@@ -198,20 +205,50 @@ class AssemblyAIWSRecognition:
 
         keyterms_prompt = self.config.get("keyterms_prompt", [])
         if keyterms_prompt:
-            keyterms_str = ",".join(keyterms_prompt)
+            keyterms_str = json.dumps(keyterms_prompt)
             params.append(f"keyterms_prompt={keyterms_str}")
 
-        min_end_of_turn_silence_when_confident = self.config.get(
-            "min_end_of_turn_silence_when_confident"
-        )
-        if min_end_of_turn_silence_when_confident is not None:
-            params.append(
-                f"min_end_of_turn_silence_when_confident={min_end_of_turn_silence_when_confident}"
-            )
+        # min_turn_silence replaces the deprecated min_end_of_turn_silence_when_confident.
+        # If neither is set, omit the param and let the API use its default.
+        min_turn_silence = self.config.get("min_turn_silence")
+        if min_turn_silence is None:
+            min_turn_silence = self.config.get("min_end_of_turn_silence_when_confident")
+        if min_turn_silence is not None:
+            params.append(f"min_turn_silence={min_turn_silence}")
 
         max_turn_silence = self.config.get("max_turn_silence")
         if max_turn_silence is not None:
             params.append(f"max_turn_silence={max_turn_silence}")
+
+        # language_detection: defaults True for multilingual or u3-rt-pro
+        language_detection = self.config.get("language_detection")
+        if language_detection is None:
+            if is_u3_rt_pro or (speech_model and "multilingual" in speech_model):
+                language_detection = True
+        if language_detection is not None:
+            params.append(f"language_detection={str(language_detection).lower()}")
+
+        # prompt is only supported with u3-rt-pro
+        prompt = self.config.get("prompt")
+        if prompt is not None:
+            if is_u3_rt_pro:
+                params.append(f"prompt={prompt}")
+            else:
+                self.ten_env.log_warn(
+                    "[AssemblyAI] 'prompt' is only supported with u3-rt-pro; ignoring"
+                )
+
+        vad_threshold = self.config.get("vad_threshold")
+        if vad_threshold is not None:
+            params.append(f"vad_threshold={vad_threshold}")
+
+        speaker_labels = self.config.get("speaker_labels")
+        if speaker_labels is not None:
+            params.append(f"speaker_labels={str(speaker_labels).lower()}")
+
+        max_speakers = self.config.get("max_speakers")
+        if max_speakers is not None:
+            params.append(f"max_speakers={max_speakers}")
 
         self.ten_env.log_info(
             f"[AssemblyAI] Building websocket url with params: {params}"
@@ -234,14 +271,19 @@ class AssemblyAIWSRecognition:
             return True
 
         ws_url = self._build_websocket_url()
-        headers = {"Authorization": self.api_key}
+        headers = {
+            "Authorization": self.api_key,
+            "User-Agent": "AssemblyAI/1.0 (integration=TEN-Framework)",
+        }
 
         self.ten_env.log_info(
             f"[AssemblyAI] Connecting to AssemblyAI: {ws_url}"
         )
 
         self.websocket = await websockets.connect(
-            ws_url, additional_headers=headers, open_timeout=timeout
+            ws_url,
+            additional_headers=headers,
+            open_timeout=timeout,
         )
         self._message_task = asyncio.create_task(self._message_handler())
         self._consumer_task = asyncio.create_task(self._consume_and_send())
@@ -315,7 +357,7 @@ class AssemblyAIWSRecognition:
             return
 
         try:
-            message = {"type": "updateConfiguration", **config_update}
+            message = {"type": "UpdateConfiguration", **config_update}
             await self.websocket.send(json.dumps(message))
             self.ten_env.log_info(
                 f"[AssemblyAI] Sent configuration update: {config_update}"
@@ -340,7 +382,7 @@ class AssemblyAIWSRecognition:
             return
 
         try:
-            message = {"type": "forceEndpoint"}
+            message = {"type": "ForceEndpoint"}
             await self.websocket.send(json.dumps(message))
             self.ten_env.log_info("[AssemblyAI] Sent force endpoint signal")
 
