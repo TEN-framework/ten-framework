@@ -8,7 +8,6 @@
 import json
 import aiohttp
 from typing import Any, List
-from dataclasses import dataclass
 
 from ten_runtime import (
     AsyncTenEnv,
@@ -31,7 +30,6 @@ PROPERTY_API_KEY = "api_key"  # Required
 DEFAULT_QUERIT_SEARCH_ENDPOINT = "https://api.querit.ai/v1/search"
 
 
-@dataclass
 class QueritSearchToolConfig(BaseConfig):
     api_key: str = ""
 
@@ -55,7 +53,7 @@ class QueritSearchToolExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("on_start")
         await super().on_start(ten_env)
         self.config = await QueritSearchToolConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"config: {self.config}")
+        # ten_env.log_info(f"config: {self.config}")
         if not self.config.api_key:
             ten_env.log_info("API key is missing, exiting on_start")
             return
