@@ -274,7 +274,7 @@ tman run start
 如果一切正常，你应该看到类似以下的输出：
 
 ```text
-[web_audio_control_go] Web server started on port 8080
+[web_audio_control_go] Web server started on port 8001
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
@@ -283,7 +283,7 @@ tman run start
 打开浏览器访问：
 
 ```text
-http://localhost:8080
+http://localhost:8001
 ```
 
 你应该能看到 Transcriber Demo 的 Web 界面，可以尝试：
@@ -390,12 +390,12 @@ tman run start_with_vad
 如果一切正常，你应该看到：
 
 ```text
-[web_audio_control_go] Web server started on port 8080
+[web_audio_control_go] Web server started on port 8001
 [vad] WebRTC VAD initialized with mode 2
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
-现在打开浏览器访问 `http://localhost:8080`，进入麦克风实时转写页面，你会看到经过vad后的silence状态变化，当silence状态为true时，表示当前音频中没有语音。
+现在打开浏览器访问 `http://localhost:8001`，进入麦克风实时转写页面，你会看到经过vad后的silence状态变化，当silence状态为true时，表示当前音频中没有语音。
 
 ### C++ 开发环境要求
 
@@ -492,15 +492,15 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 
 - 手动下载：访问 [Releases 页面](https://github.com/TEN-framework/ten-framework/releases) 下载对应平台的 `tman` 二进制文件
 
-### 3. 端口 8080 已被占用
+### 3. 端口 8001 已被占用
 
 **问题**：启动时提示端口冲突
 
 **解决方案**：
 
 - 查找占用端口的进程：
-  - Linux/macOS：`lsof -i :8080`
-  - Windows：`netstat -ano | findstr :8080`
+  - Linux/macOS：`lsof -i :8001`
+  - Windows：`netstat -ano | findstr :8001`
 - 杀掉该进程：
   - Linux/macOS：`kill -9 <PID>`
   - Windows：`taskkill /PID <PID> /F`
