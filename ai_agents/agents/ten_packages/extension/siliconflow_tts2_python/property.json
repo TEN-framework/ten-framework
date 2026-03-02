@@ -1,0 +1,16 @@
+{
+  "dump": false,
+  "dump_path": "./",
+  "params": {
+    "api_key": "${env:SILICONFLOW_API_KEY|}",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "model": "IndexTeam/IndexTTS-2",
+    "voice": "IndexTeam/IndexTTS-2:anna",
+    "sample_rate": 32000,
+    "speed": 1,
+    "gain": 0,
+    "max_tokens": 2048,
+    "response_format": "mp3",
+    "stream": true
+  }
+}
