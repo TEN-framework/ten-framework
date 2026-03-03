@@ -256,9 +256,19 @@ TEN Framework 支持灵活替换 ASR、LLM、TTS 等扩展。
 
 #### 1. 启动监控栈
 
+**Linux / macOS：**
+
 ```bash
 cd tools/grafana-monitoring
-docker-compose -f docker-compose.push.yml up -d
+docker compose -f docker-compose.push.yml up -d
+```
+
+**Windows：**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml up -d
+# 若docker未安装，请通过https://apps.microsoft.com/detail/xp8cbj40xlbwkx 安装，并重启电脑后，启动docker desktop
 ```
 
 启动的服务：
@@ -342,9 +352,18 @@ task run
 
 停止监控服务：
 
+**Linux / macOS：**
+
 ```bash
 cd tools/grafana-monitoring
-docker-compose -f docker-compose.push.yml down
+docker compose -f docker-compose.push.yml down
+```
+
+**Windows：**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml down
 ```
 
 ## 常见问题
