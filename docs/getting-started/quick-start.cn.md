@@ -116,7 +116,7 @@ brew install TEN-framework/ten-framework/tman
 winget --version
 ```
 
-若不存在则需要从 https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US安装。
+若不存在则需要从 https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US 安装。
 （系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11）
 
 ```powershell
@@ -160,26 +160,18 @@ bash tools/tman/install_tman.sh
 > yes y | bash tools/tman/install_tman.sh
 > ```
 
-**Windows 手动安装：**
-
-1. 访问 [Releases 页面](https://github.com/TEN-framework/ten-framework/releases) 下载 `tman-win-release-x64.zip`
-2. 解压后将 `tman.exe` 所在目录添加到系统 PATH 环境变量中
-
-```powershell
-# 解压到指定目录（示例）
-Expand-Archive -Path tman-win-release-x64.zip -DestinationPath $env:USERPROFILE\tman
-
-# 将 tman 添加到用户 PATH（永久生效）
-[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\tman\ten_manager\bin", "User")
-```
-
 **验证安装**：
 
 ```bash
 tman --version
 ```
 
-> 💡 **提示**：如果提示 `tman: command not found`（Linux/macOS）或 `tman 不是内部或外部命令`（Windows），请确保 tman 所在目录在你的 PATH 中：
+>💡 **提示**：如果出现类似
+>- `tman: command not found`（Linux/macOS）
+>- `无法将"tman"项识别为 cmdlet、函数、脚本文件或可运行程序的名称`（Windows）
+>
+>
+>   的提示，请确保 tman 所在目录在你的 PATH 中：
 >
 > **Linux / macOS：**
 >
@@ -193,8 +185,11 @@ tman --version
 >
 > ```powershell
 > # 检查 PATH 中是否包含 tman
-> $env:Path -split ";"
-> # 如果不包含，请通过 "系统属性 → 环境变量" 手动添加
+> $env:Path -split ";" | Select-String "tman"
+> # 如果不包含，请
+> # 1. 通过 "系统属性 → 环境变量" 手动添加，然后重启终端以应用
+> # 2. 运行以下命令来临时添加路径
+> $env:PATH += ";$env:LOCALAPPDATA\tman"
 > ```
 
 ## 第三步：创建并运行示例应用
@@ -218,12 +213,6 @@ tman run install_deps
 ```
 
 > ⏱️ **预计时间**：1-2 分钟
-
-
-若在Windows中文系统遇到 UnicodeEncodeError 错误，请设置环境变量：
-```
-$env:PYTHONIOENCODING = "utf-8"
-```
 
 ### 3. 构建应用
 
@@ -330,11 +319,21 @@ tgn 是 TEN Framework 的 C/C++ 构建系统，基于 Google 的 GN。
 
 方式一：一键安装（推荐）
 
+**Linux / macOS：**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
 ```
 
+**Windows：**
+
+```powershell
+irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.ps1 | iex
+```
+
 方式二：从克隆的仓库安装
+
+**Linux / macOS：**
 
 ```bash
 # 如果你已经克隆了 TEN Framework 仓库
@@ -342,7 +341,16 @@ cd ten-framework
 bash tools/tgn/install_tgn.sh
 ```
 
+**Windows：**
+
+```powershell
+# 如果你已经克隆了 TEN Framework 仓库
+& ".\tools\tgn\install_tgn.ps1"
+```
+
 安装完成后，确认 tgn 已添加到 PATH：
+
+**Linux / macOS：**
 
 ```bash
 # 临时添加到当前会话
@@ -352,6 +360,13 @@ export PATH="/usr/local/ten_gn:$PATH"
 echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.bashrc  # Linux
 echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.zshrc   # macOS
 source ~/.bashrc  # 或 source ~/.zshrc
+```
+
+**Windows：**
+
+```powershell
+# 安装脚本会自动添加到用户 PATH，如需手动添加：
+$env:Path += ";$env:LOCALAPPDATA\ten_gn"
 ```
 
 验证安装：
@@ -426,11 +441,7 @@ xcode-select --install
 # 安装时选择 "使用 C++ 的桌面开发" 工作负载
 
 # 方式二：使用 winget 安装
-winget install Microsoft.VisualStudio.2022.BuildTools
-
-# 方式三：安装 MSYS2 + MinGW-w64
-# 从 https://www.msys2.org/ 下载安装，然后在 MSYS2 终端中执行：
-# pacman -S mingw-w64-x86_64-gcc
+winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive"
 ```
 
 验证编译器安装：
@@ -531,27 +542,11 @@ tman run build
 pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
 
-### 6. Windows 上 Python 库加载失败
+### 6. Azure语音服务报错
 
-**问题**：运行应用时提示找不到 `python310.dll` 或 Python 相关动态库
+**问题**：Azure语音服务相关错误，比如认证失败
 
-**解决方案**：
-
-```powershell
-# 确认 Python 安装路径在 PATH 中
-python -c "import sys; print(sys.prefix)"
-
-# 将 Python DLL 目录添加到 PATH（示例路径，请根据实际安装位置调整）
-$env:Path += ";C:\Python310;C:\Python310\DLLs"
-```
-
-确保安装 Python 3.10 时勾选了 "Add Python to PATH" 选项。如果未勾选，可以重新运行安装程序并选择 "Modify" 来添加。
-
-### 7. Windows 上 tman 执行报错
-
-**问题**：运行 tman 时提示缺少 MSVC 运行时库
-
-**解决方案**：安装 [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)（最新 x64 版本）。
+**解决方案**：检查.env文件中的配置是否正确，确保 AZURE_STT_KEY 和 AZURE_STT_REGION 填写无误
 
 ## 获取帮助
 
