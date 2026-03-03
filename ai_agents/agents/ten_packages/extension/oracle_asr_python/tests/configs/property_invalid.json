@@ -1,0 +1,12 @@
+{
+  "params": {
+    "tenancy": "invalid",
+    "user": "invalid",
+    "fingerprint": "invalid",
+    "key_file": "/tmp/invalid.pem",
+    "compartment_id": "invalid",
+    "region": "us-ashburn-1",
+    "language": "en-US",
+    "sample_rate": 16000
+  }
+}

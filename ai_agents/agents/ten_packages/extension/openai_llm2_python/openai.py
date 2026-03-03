@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import random
-from typing import AsyncGenerator, List
+from typing import Any, AsyncGenerator, Dict, List, Optional
 from pydantic import BaseModel
 import requests
 from openai import AsyncOpenAI, AsyncStream
@@ -40,17 +40,16 @@ from .think_parser import ThinkParser
 class OpenAILLM2Config(BaseModel):
     api_key: str = ""
     base_url: str = "https://api.openai.com/v1"
-    model: str = (
-        "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
-    )
+    model: str = "gpt-5.1-chat-latest"
     proxy_url: str = ""
-    temperature: float = 0.7
-    top_p: float = 1.0
-    presence_penalty: float = 0.0
-    frequency_penalty: float = 0.0
+    temperature: Optional[float] = None
+    top_p: Optional[float] = None
+    presence_penalty: Optional[float] = None
+    frequency_penalty: Optional[float] = None
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    default_headers: Dict[str, Any] = field(default_factory=dict)
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -72,12 +71,16 @@ class OpenAIChatGPT:
         ten_env.log_info(
             f"OpenAIChatGPT initialized with config: {config.api_key}"
         )
+        safe_default_headers = self._sanitize_default_headers(
+            config.default_headers
+        )
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
             default_headers={
                 "api-key": config.api_key,
                 "Authorization": f"Bearer {config.api_key}",
+                **safe_default_headers,
             },
         )
         self.session = requests.Session()
@@ -89,6 +92,37 @@ class OpenAIChatGPT:
             ten_env.log_info(f"Setting proxies: {proxies}")
             self.session.proxies.update(proxies)
         self.client.session = self.session
+
+    def _sanitize_default_headers(
+        self, headers: Dict[str, Any]
+    ) -> Dict[str, str]:
+        blocked_header_names = {
+            "api-key",
+            "x-api-key",
+            "authorization",
+            "proxy-authorization",
+        }
+        safe_headers: Dict[str, str] = {}
+        blocked_headers: List[str] = []
+
+        for key, value in headers.items():
+            key_str = str(key).strip()
+            if not key_str:
+                continue
+
+            if key_str.lower() in blocked_header_names:
+                blocked_headers.append(key_str)
+                continue
+
+            safe_headers[key_str] = str(value)
+
+        if blocked_headers:
+            self.ten_env.log_warn(
+                "Ignore protected headers in default_headers: "
+                f"{sorted(set(blocked_headers))}"
+            )
+
+        return safe_headers
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json_dict = {
@@ -196,9 +230,11 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
-        # Check if model is a reasoning model (gpt-5.x) that requires different parameters
-        is_reasoning_model = (
-            self.config.model and self.config.model.lower().startswith("gpt-5")
+        # Reasoning models (gpt-5.x, o1, o3) use max_completion_tokens
+        # and don't support sampling parameters
+        is_reasoning_model = bool(
+            self.config.model
+            and self.config.model.lower().startswith(("gpt-5", "o1", "o3"))
         )
 
         # Build request
@@ -218,10 +254,14 @@ class OpenAIChatGPT:
             req["max_completion_tokens"] = self.config.max_tokens
         else:
             req["max_tokens"] = self.config.max_tokens
-            req["temperature"] = self.config.temperature
-            req["top_p"] = self.config.top_p
-            req["presence_penalty"] = self.config.presence_penalty
-            req["frequency_penalty"] = self.config.frequency_penalty
+            if self.config.temperature is not None:
+                req["temperature"] = self.config.temperature
+            if self.config.top_p is not None:
+                req["top_p"] = self.config.top_p
+            if self.config.presence_penalty is not None:
+                req["presence_penalty"] = self.config.presence_penalty
+            if self.config.frequency_penalty is not None:
+                req["frequency_penalty"] = self.config.frequency_penalty
             req["seed"] = self.config.seed
 
         # Add additional parameters if they are not in the black list
@@ -230,6 +270,11 @@ class OpenAIChatGPT:
             if not self.config.is_black_list_params(key):
                 self.ten_env.log_debug(f"set openai param: {key} = {value}")
                 req[key] = value
+
+        # Strip sampling params unsupported by reasoning models
+        if is_reasoning_model:
+            for unsupported in ["temperature", "top_p", "presence_penalty", "frequency_penalty", "seed"]:
+                req.pop(unsupported, None)
 
         self.ten_env.log_info(f"Requesting chat completions with: {req}")
 

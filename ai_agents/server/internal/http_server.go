@@ -372,7 +372,7 @@ func (s *HttpServer) handlerGenerateToken(c *gin.Context) {
 	}
 
 	if s.config.AppCertificate == "" {
-		s.output(c, codeSuccess, map[string]any{"appId": s.config.AppId, "token": s.config.AppId, "channel_name": req.ChannelName, "uid": req.Uid})
+		s.output(c, codeSuccess, map[string]any{"appId": s.config.AppId, "token": nil, "channel_name": req.ChannelName, "uid": req.Uid})
 		return
 	}
 
@@ -593,7 +593,7 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 	}
 
 	// Generate token
-	req.Token = s.config.AppId
+	req.Token = ""
 	if s.config.AppCertificate != "" {
 		//req.Token, err = rtctokenbuilder.BuildTokenWithUid(s.config.AppId, s.config.AppCertificate, req.ChannelName, 0, rtctokenbuilder.RoleSubscriber, tokenExpirationInSeconds, tokenExpirationInSeconds)
 		req.Token, err = rtctokenbuilder.BuildTokenWithRtm(s.config.AppId, s.config.AppCertificate, req.ChannelName, fmt.Sprintf("%d", 0), rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, tokenExpirationInSeconds)

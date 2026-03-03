@@ -45,6 +45,31 @@
         },
         "prompt": {
           "type": "string"
+        },
+        "temperature": {
+          "type": "float64"
+        },
+        "top_p": {
+          "type": "float64"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "frequency_penalty": {
+          "type": "float64"
+        },
+        "presence_penalty": {
+          "type": "float64"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "max_memory_length": {
+          "type": "int32"
+        },
+        "default_headers": {
+          "type": "object",
+          "properties": {}
         }
       }
     }
