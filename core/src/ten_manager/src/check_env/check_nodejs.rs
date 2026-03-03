@@ -101,7 +101,18 @@ pub fn check() -> Result<NodeJsCheckResult> {
     };
 
     // Check npm
-    let npm_check = std::process::Command::new("npm").arg("--version").output();
+    // On Windows, npm is typically a .cmd file (not .exe), so we need to
+    // invoke it through cmd.exe. Otherwise Command::new("npm") will fail
+    // to find/execute it.
+    let npm_check = if cfg!(windows) {
+        std::process::Command::new("cmd")
+            .args(["/C", "npm", "--version"])
+            .output()
+    } else {
+        std::process::Command::new("npm")
+            .arg("--version")
+            .output()
+    };
 
     let npm_info = match npm_check {
         Ok(output) if output.status.success() => {

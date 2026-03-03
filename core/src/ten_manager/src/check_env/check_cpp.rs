@@ -8,6 +8,50 @@ use anyhow::Result;
 
 use super::types::{CheckStatus, CppCheckResult, Suggestion, ToolInfo};
 
+/// Use vswhere.exe to locate cl.exe from the latest VS installation.
+/// vswhere.exe ships with every VS 2017+ install and lives at a fixed path,
+/// so this works even when the Developer Command Prompt has not been activated.
+#[cfg(windows)]
+fn find_cl_exe_via_vswhere() -> Option<String> {
+    let vswhere = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
+    if !std::path::Path::new(vswhere).exists() {
+        return None;
+    }
+
+    let vs_path = std::process::Command::new(vswhere)
+        .args([
+            "-latest",
+            "-products",
+            "*",
+            "-requires",
+            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+            "-property",
+            "installationPath",
+        ])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())?;
+
+    // Read the default MSVC toolset version from the version file.
+    let version_file =
+        format!(r"{}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt", vs_path);
+    let msvc_ver = std::fs::read_to_string(&version_file).ok()?;
+    let msvc_ver = msvc_ver.trim();
+
+    let cl = format!(r"{}\VC\Tools\MSVC\{}\bin\Hostx64\x64\cl.exe", vs_path, msvc_ver);
+    if std::path::Path::new(&cl).exists() {
+        Some(cl)
+    } else {
+        None
+    }
+}
+
+#[cfg(not(windows))]
+fn find_cl_exe_via_vswhere() -> Option<String> {
+    None
+}
+
 /// Check C++ development environment (tgn, gcc/g++/clang toolchain).
 /// Returns structured result about C++ tools.
 pub fn check() -> Result<CppCheckResult> {
@@ -17,13 +61,23 @@ pub fn check() -> Result<CppCheckResult> {
     let mut suggestions = Vec::new();
 
     // Check tgn
-    let tgn_check = std::process::Command::new("tgn").arg("--help").output();
+    // On Windows, tgn is typically a .bat file, so invoke through cmd.exe.
+    let tgn_check = if cfg!(windows) {
+        std::process::Command::new("cmd")
+            .args(["/C", "tgn", "--help"])
+            .output()
+    } else {
+        std::process::Command::new("tgn").arg("--help").output()
+    };
 
     let tgn_info = match tgn_check {
         Ok(output) if output.status.success() => {
             // Find tgn path
             let path = if cfg!(windows) {
-                std::process::Command::new("where.exe").arg("tgn").output().ok()
+                std::process::Command::new("cmd")
+                    .args(["/C", "where", "tgn"])
+                    .output()
+                    .ok()
                     .and_then(|output| {
                         if output.status.success() {
                             Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
@@ -52,11 +106,14 @@ pub fn check() -> Result<CppCheckResult> {
             })
         }
         _ => {
+            let tgn_install_cmd = if cfg!(windows) {
+                "irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.ps1 | iex".to_string()
+            } else {
+                "curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash".to_string()
+            };
             suggestions.push(Suggestion {
                 issue: "tgn not installed".to_string(),
-                command: Some(
-                    "curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash".to_string(),
-                ),
+                command: Some(tgn_install_cmd),
                 help_text: Some("To develop C++ extensions, please install tgn".to_string()),
             });
             Some(ToolInfo {
@@ -251,26 +308,42 @@ pub fn check() -> Result<CppCheckResult> {
             });
         }
     } else if os == "windows" {
-        // Check MSVC compiler on Windows
-        let msvc_check = std::process::Command::new("cl.exe").arg("/?").output();
+        // On Windows, cl.exe is not in PATH unless running inside a Developer
+        // Command Prompt / Developer PowerShell. We use vswhere.exe (bundled
+        // with every VS installation) to locate it directly.
+        let cl_path = find_cl_exe_via_vswhere();
+
+        let msvc_check = if let Some(ref path) = cl_path {
+            std::process::Command::new(path).arg("/?").output()
+        } else {
+            // Fallback: maybe the user already has it in PATH.
+            std::process::Command::new("cl.exe").arg("/?").output()
+        };
 
         match msvc_check {
-            Ok(output) if output.status.success() => {
-                let version_str = String::from_utf8_lossy(&output.stdout);
-                // Extract version from MSVC output
-                let version = version_str.lines().next().map(|s| s.to_string());
+            Ok(output) if output.status.success() || !output.stderr.is_empty() => {
+                // cl.exe prints version info to stderr, not stdout.
+                let version_str = String::from_utf8_lossy(&output.stderr);
+                let version = version_str.lines().next().map(|s| s.trim().to_string());
 
-                let where_output = std::process::Command::new("where.exe").arg("cl.exe").output().ok();
-                let path = if let Some(output) = where_output {
-                    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
-                } else {
-                    None
-                };
+                let resolved_path = cl_path.or_else(|| {
+                    std::process::Command::new("where.exe")
+                        .arg("cl.exe")
+                        .output()
+                        .ok()
+                        .and_then(|o| {
+                            if o.status.success() {
+                                Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+                            } else {
+                                None
+                            }
+                        })
+                });
 
                 compilers.push(ToolInfo {
                     name: "cl.exe (MSVC)".to_string(),
                     version,
-                    path,
+                    path: resolved_path,
                     status: CheckStatus::Ok,
                     notes: vec![],
                 });
@@ -291,7 +364,9 @@ pub fn check() -> Result<CppCheckResult> {
             suggestions.push(Suggestion {
                 issue: "MSVC compiler not found".to_string(),
                 command: Some("Install Visual Studio with C++ build tools".to_string()),
-                help_text: Some("Please install Visual Studio with C++ development tools".to_string()),
+                help_text: Some(
+                    "Please install Visual Studio with C++ development tools".to_string(),
+                ),
             });
         }
     }
