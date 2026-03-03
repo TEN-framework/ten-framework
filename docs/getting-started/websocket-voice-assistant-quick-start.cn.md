@@ -42,10 +42,31 @@ tman check env
 
 #### Task（任务运行器）
 
+**Linux / macOS：**
+
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 task --version  # 验证安装
 ```
+
+**Windows：**
+
+```powershell
+# 1. 使用winget安装（推荐）
+# 从以下地址安装winget
+# https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US
+# 系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11
+winget --version # 验证安装
+winget install Task.Task
+task --version  # 验证安装
+
+# 2. 使用scoop安装
+irm get.scoop.sh | iex
+scoop --version # 验证安装
+scoop install task
+task --version # 验证安装
+```
+
 
 #### Bun（JavaScript 包管理器）
 
@@ -75,7 +96,7 @@ uv --version  # 验证安装
 **Windows：**
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 uv --version  # 验证安装
 ```
 
