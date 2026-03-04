@@ -15,6 +15,7 @@ _portal_target: getting-started/quick-start.md
 - Linux (arm64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
+- Windows (x64)
 
 **Required Software**:
 
@@ -22,18 +23,31 @@ _portal_target: getting-started/quick-start.md
 - Go 1.20+
 - Node.js / npm (for managing JavaScript dependencies)
 
+> 💡 **Windows users**: It's recommended to use PowerShell to run the commands in this guide. Some commands may not be compatible with CMD.
+
 ## Step 1: Check Your Environment
 
 Before you begin, make sure the following software is installed on your system:
 
 ### Python 3.10
 
+**Linux / macOS:**
+
 ```bash
 python3 --version
 # Should display: Python 3.10.x
 ```
 
+**Windows:**
+
+```powershell
+python --version
+# Should display: Python 3.10.x
+```
+
 > 💡 **Important**: TEN Framework currently only supports Python 3.10. It's recommended to use `pyenv` or `venv` to manage your Python environment:
+>
+> **Linux / macOS:**
 >
 > ```bash
 > # Install and manage Python 3.10 using pyenv (recommended)
@@ -43,6 +57,19 @@ python3 --version
 > # Or create virtual environment using venv
 > python3.10 -m venv ~/ten-venv
 > source ~/ten-venv/bin/activate
+> ```
+>
+> **Windows:**
+>
+> Download the Windows installer from the bottom table at <https://www.python.org/downloads/release/python-31011/> and run it to install Python 3.10.
+>
+> Make sure to check "Add Python to PATH" before clicking Install Now.
+>
+> ```powershell
+> # It's recommended to create a venv after installation
+> py -3.10 -m venv $env:USERPROFILE\ten-venv
+> # Activate the environment before each session
+> & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
 > ```
 
 ### Go 1.20+
@@ -82,22 +109,48 @@ sudo apt install tman
 brew install TEN-framework/ten-framework/tman
 ```
 
+**Windows:**
+
+```powershell
+# First verify winget is available
+winget --version
+```
+
+If not available, install it from <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US>.
+(Requires Windows 10 version 1709 (Build 16299) or higher, or Windows 11)
+
+```powershell
+winget install TEN-framework.tman
+```
+
 Option 2: Install via Script
+
+**Linux / macOS:**
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
 ```
 
-Or, if you've already cloned the repository:
+**Windows:**
+
+```powershell
+irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.ps1 | iex
+```
+
+Option 3: Install from cloned repository
 
 ```bash
 cd ten-framework
+
+# Linux/macOS
 bash tools/tman/install_tman.sh
+# Windows
+& "C:\sw\ten-framework\tools\tman\install_tman.ps1"
 ```
 
 > 💡 **Note**: If tman is already installed on your system, the installation script will ask whether you want to reinstall/upgrade it. Press `y` to continue or `n` to cancel.
 >
-> **Non-interactive Installation** (for automation scripts or CI environments):
+> **Non-interactive Installation** (for automation scripts or CI environments, not available on Windows):
 >
 > ```bash
 > # Remote installation
@@ -113,12 +166,25 @@ bash tools/tman/install_tman.sh
 tman --version
 ```
 
-> 💡 **Tip**: If you see `tman: command not found`, make sure `/usr/local/bin` is in your PATH:
+> 💡 **Tip**: If you see `tman: command not found` (Linux/macOS) or a similar unrecognized command error (Windows), make sure the tman directory is in your PATH:
+>
+> **Linux / macOS:**
 >
 > ```bash
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc  # Linux
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.zshrc   # macOS
 > source ~/.bashrc  # or source ~/.zshrc
+> ```
+>
+> **Windows:**
+>
+> ```powershell
+> # Check if tman is in PATH
+> $env:Path -split ";" | Select-String "tman"
+> # If not, either:
+> # 1. Add it manually via "System Properties → Environment Variables", then restart your terminal
+> # 2. Or temporarily add the path with:
+> $env:PATH += ";$env:LOCALAPPDATA\tman"
 > ```
 
 ## Step 3: Create and Run the Demo App
@@ -155,6 +221,8 @@ tman run build
 
 Before running the app, you need to configure the ASR (Automatic Speech Recognition) service credentials. The current example uses Azure ASR extension. You need to fill in the configuration in the `transcriber_demo/.env` file:
 
+**Linux / macOS:**
+
 ```bash
 # Create .env file
 cat > .env << EOF
@@ -165,6 +233,20 @@ AZURE_STT_LANGUAGE=en-US                # Set according to your audio language o
 EOF
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+# Create .env file
+@"
+# Azure Speech Service Configuration
+AZURE_STT_KEY=your_azure_speech_api_key
+AZURE_STT_REGION=your_azure_region
+AZURE_STT_LANGUAGE=en-US
+"@ | Out-File -Encoding utf8 .env
+```
+
+> 💡 **Tip**: Windows users can also create the `.env` file directly with a text editor and fill in the configuration above.
+>
 > 💡 **Tip**: If you want to use other ASR extensions (such as OpenAI Whisper, Google Speech, etc.), you can download and replace them from the cloud store. Similarly, configure the corresponding API keys and environment variables in the `.env` file.
 
 ### 5. Run the App
@@ -176,7 +258,7 @@ tman run start
 If everything is working correctly, you should see output similar to:
 
 ```text
-[web_audio_control_go] Web server started on port 8080
+[web_audio_control_go] Web server started on port 8001
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
@@ -185,7 +267,7 @@ If everything is working correctly, you should see output similar to:
 Open your browser and visit:
 
 ```text
-http://localhost:8080
+http://localhost:8001
 ```
 
 You should see the Transcriber Demo web interface. Try:
@@ -232,11 +314,21 @@ tgn is TEN Framework's C/C++ build system, based on Google's GN.
 
 Option 1: One-line Installation (Recommended)
 
+**Linux / macOS:**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
 ```
 
+**Windows:**
+
+```powershell
+irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.ps1 | iex
+```
+
 Option 2: Install from Cloned Repository
+
+**Linux / macOS:**
 
 ```bash
 # If you've already cloned the TEN Framework repository
@@ -244,7 +336,16 @@ cd ten-framework
 bash tools/tgn/install_tgn.sh
 ```
 
+**Windows:**
+
+```powershell
+# If you've already cloned the TEN Framework repository
+& ".\tools\tgn\install_tgn.ps1"
+```
+
 After installation, ensure tgn is added to PATH:
+
+**Linux / macOS:**
 
 ```bash
 # Temporarily add to current session
@@ -254,6 +355,13 @@ export PATH="/usr/local/ten_gn:$PATH"
 echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.bashrc  # Linux
 echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.zshrc   # macOS
 source ~/.bashrc  # or source ~/.zshrc
+```
+
+**Windows:**
+
+```powershell
+# The install script adds to user PATH automatically. To add manually:
+$env:Path += ";$env:LOCALAPPDATA\ten_gn"
 ```
 
 Verify installation:
@@ -292,12 +400,12 @@ tman run start_with_vad
 If everything works correctly, you should see:
 
 ```text
-[web_audio_control_go] Web server started on port 8080
+[web_audio_control_go] Web server started on port 8001
 [vad] WebRTC VAD initialized with mode 2
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
-Now open your browser at `http://localhost:8080` and navigate to the microphone real-time transcription page. You'll see the silence state changes after VAD processing. When the silence state is true, it indicates there is no speech in the current audio.
+Now open your browser at `http://localhost:8001` and navigate to the microphone real-time transcription page. You'll see the silence state changes after VAD processing. When the silence state is true, it indicates there is no speech in the current audio.
 
 ### C++ Development Environment Requirements
 
@@ -320,15 +428,33 @@ sudo apt-get install clang
 xcode-select --install
 ```
 
+**Windows:**
+
+```powershell
+# Option 1: Install Visual Studio Build Tools (recommended)
+# Download from https://visualstudio.microsoft.com/visual-cpp-build-tools/
+# Select the "Desktop development with C++" workload during installation
+
+# Option 2: Install via winget
+winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive"
+```
+
 Verify compiler installation:
 
 ```bash
-# Check gcc
+# Check gcc (Linux/macOS/MSYS2)
 gcc --version
 g++ --version
 
-# Or check clang
+# Or check clang (Linux/macOS)
 clang --version
+```
+
+**Windows (MSVC):**
+
+```powershell
+# Run in "Developer PowerShell for VS"
+cl
 ```
 
 ### Troubleshooting (C++ Extensions)
@@ -372,14 +498,18 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 
 - Manual download: Visit the [Releases page](https://github.com/TEN-framework/ten-framework/releases) to download the `tman` binary for your platform
 
-### 3. Port 8080 Already in Use
+### 3. Port 8001 Already in Use
 
 **Problem**: Port conflict error when starting the app
 
 **Solution**:
 
-- Find the process using the port: `lsof -i :8080` (macOS/Linux)
-- Kill the process: `kill -9 <PID>`
+- Find the process using the port:
+  - Linux/macOS: `lsof -i :8001`
+  - Windows: `netstat -ano | findstr :8001`
+- Kill the process:
+  - Linux/macOS: `kill -9 <PID>`
+  - Windows: `taskkill /PID <PID> /F`
 - Or modify the port number in the app configuration file (`transcriber_demo/ten_packages/extension/web_audio_control_go/property.json`)
 
 ### 4. Go Build Failed
@@ -406,6 +536,12 @@ tman run build
 ```bash
 pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
+
+### 6. Azure Speech Service Error
+
+**Problem**: Azure Speech Service related errors, such as authentication failure
+
+**Solution**: Check that the configuration in your `.env` file is correct, and ensure `AZURE_STT_KEY` and `AZURE_STT_REGION` are filled in accurately
 
 ## Get Help
 

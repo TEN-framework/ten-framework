@@ -42,26 +42,66 @@ Install the following tools for build & run:
 
 #### Task (task runner)
 
+**Linux / macOS:**
+
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 task --version  # verify
 ```
 
+**Windows:**
+
+```powershell
+# Option 1: Install via winget (recommended)
+# Install winget from: https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US
+# Requires Windows 10 version 1709 (Build 16299) or higher, or Windows 11
+winget --version  # verify winget
+winget install Task.Task
+task --version  # verify
+
+# Option 2: Install via scoop
+irm get.scoop.sh | iex
+scoop --version  # verify scoop
+scoop install task
+task --version  # verify
+```
+
 #### Bun (JavaScript package manager)
+
+**Linux / macOS:**
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
 bun --version  # verify
 ```
 
+**Windows:**
+
+```powershell
+powershell -c "irm bun.sh/install.ps1 | iex"
+bun --version  # verify
+```
+
 #### uv (Python package manager)
+
+**Linux / macOS:**
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version  # verify
 ```
 
-> 💡 After installation, reload your shell config: `source ~/.zshrc`
+**Windows:**
+
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv --version  # verify
+```
+
+> 💡 After installation, reload your shell config:
+>
+> - Linux/macOS: `source ~/.zshrc`
+> - Windows: reopen your PowerShell terminal
 
 ## Quickstart
 
@@ -90,9 +130,18 @@ This command will:
 
 Configure vendor keys in `ai_agents/.env`:
 
+**Linux / macOS:**
+
 ```bash
 cd ../../../  # back to ai_agents
 vim .env
+```
+
+**Windows:**
+
+```powershell
+cd ..\..\..   # back to ai_agents
+notepad .env
 ```
 
 Add:
@@ -125,7 +174,7 @@ After startup, the following services are available:
 - **API server**: <http://localhost:8080>
 - **TMAN Designer**: <http://localhost:49483>
 
-### 5) Talk to your assistant
+### 5. Talk to your assistant
 
 Open [http://localhost:3000](http://localhost:3000), click the microphone button, and start speaking.
 
@@ -206,9 +255,19 @@ Use Grafana to observe application metrics and logs.
 
 #### 1. Start monitoring stack
 
+**Linux / macOS:**
+
 ```bash
 cd tools/grafana-monitoring
 docker-compose -f docker-compose.push.yml up -d
+```
+
+**Windows:**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml up -d
+# If Docker is not installed, install it from https://apps.microsoft.com/detail/xp8cbj40xlbwkx, restart your PC, then launch Docker Desktop
 ```
 
 Services:
@@ -292,9 +351,18 @@ Go to `Explore` → select `Loki`, then query:
 
 Stop the monitoring stack:
 
+**Linux / macOS:**
+
 ```bash
 cd tools/grafana-monitoring
 docker-compose -f docker-compose.push.yml down
+```
+
+**Windows:**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml down
 ```
 
 ## Troubleshooting
@@ -326,20 +394,46 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 </details>
 
 <details>
+<summary><strong>Windows Python library loading fails</strong></summary>
+
+Make sure the Python 3.10 installation path is in your system PATH:
+
+```powershell
+# Check Python path
+python -c "import sys; print(sys.prefix)"
+
+# Add Python DLL directory to PATH (adjust to your actual path)
+$env:Path += ";C:\Python310;C:\Python310\DLLs"
+```
+
+If you didn't check "Add Python to PATH" during installation, re-run the installer and choose "Modify" to add it.
+
+</details>
+
+<details>
 <summary><strong>Port already in use</strong></summary>
 
 Find and kill the process:
+
+**Linux / macOS:**
 
 ```bash
 lsof -i :3000  # or :8080
 kill -9 <PID>
 ```
 
+**Windows:**
+
+```powershell
+netstat -ano | findstr :3000   # or :8080
+taskkill /PID <PID> /F
+```
+
 </details>
 
 ## Next steps
 
-- **[Extension development guide](https://theten.ai/cn/docs/ten_framework/development/how_to_develop_with_ext)** - build custom extensions
+- **[Extension development guide](https://theten.ai/docs/ten_framework/development/how_to_develop_with_ext)** - build custom extensions
 - **[More examples](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples)** - explore other agent demos
 - **[GitHub Issues](https://github.com/TEN-framework/ten-framework/issues)** - report bugs or request features
-- **[Documentation hub](https://theten.ai/cn/docs)** - full TEN Framework documentation
+- **[Documentation hub](https://theten.ai/docs)** - full TEN Framework documentation
