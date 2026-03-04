@@ -2,11 +2,6 @@ version: "3"
 
 dotenv: ["../../../.env"]
 
-env:
-  LOG_PATH:
-    sh: |
-      if [ "${OS}" = "Windows_NT" ]; then echo "${TEMP}/astra"; else echo "${LOG_PATH}"; fi
-
 tasks:
   # install scripts
   install-frontend:
