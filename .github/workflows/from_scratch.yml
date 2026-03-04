@@ -298,7 +298,9 @@ jobs:
           # Install TEN package dependencies using tman
           tman install
 
-          tree -I .
+          if [[ "${{ runner.os }}" != "Windows" ]]; then
+            tree -I .
+          fi
 
           if [ $? -eq 0 ]; then
             echo "✓ tman install completed successfully"
