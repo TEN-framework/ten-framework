@@ -102,7 +102,7 @@ def main():
     print("Starting Python dependencies installation...")
 
     # Determine pip command
-    pip_cmd = ["uv", "pip", "install", "--system"]
+    pip_cmd = ["uv", "pip", "install"]
 
     # Try to install server requirements
     server_req = app_dir.parent / "server" / "requirements.txt"
