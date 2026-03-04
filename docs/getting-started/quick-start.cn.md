@@ -61,7 +61,7 @@ python --version
 >
 > **Windows：**
 >
-> 从 https://www.python.org/downloads/release/python-31011/ 底部表格中下载 Windows installer，启动后安装 Python 3.10。
+> 从 <https://www.python.org/downloads/release/python-31011/> 底部表格中下载 Windows installer，启动后安装 Python 3.10。
 >
 > 注意，点击Install Now前务必勾选 "Add Python to PATH"
 >
@@ -116,7 +116,7 @@ brew install TEN-framework/ten-framework/tman
 winget --version
 ```
 
-若不存在则需要从 https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US 安装。
+若不存在则需要从 <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US> 安装。
 （系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11）
 
 ```powershell
@@ -133,7 +133,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/
 
 **Windows：**
 
-```
+```powershell
 irm https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.ps1 | iex
 ```
 
@@ -167,6 +167,7 @@ tman --version
 ```
 
 >💡 **提示**：如果出现类似
+>
 >- `tman: command not found`（Linux/macOS）
 >- `无法将"tman"项识别为 cmdlet、函数、脚本文件或可运行程序的名称`（Windows）
 >
@@ -251,7 +252,7 @@ AZURE_STT_LANGUAGE=en-US
 ```
 
 > 💡 **提示**：Windows 用户也可以直接用文本编辑器创建 `.env` 文件并填写上述配置。
-
+>
 > 💡 **提示**：如果你想使用其他 ASR extension（如 OpenAI Whisper、Google Speech 等），可以从云商店下载并替换，同样将相应的 API key 等环境变量配置在 `.env` 文件中。
 
 ### 5. 运行应用

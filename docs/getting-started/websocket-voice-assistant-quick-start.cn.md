@@ -67,7 +67,6 @@ scoop install task
 task --version # 验证安装
 ```
 
-
 #### Bun（JavaScript 包管理器）
 
 **Linux / macOS：**
@@ -101,6 +100,7 @@ uv --version  # 验证安装
 ```
 
 > 💡 安装后需要重新加载终端配置：
+>
 > - Linux/macOS：`source ~/.zshrc`
 > - Windows：重新打开 PowerShell 终端
 
