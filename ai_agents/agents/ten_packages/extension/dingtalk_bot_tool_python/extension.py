@@ -235,7 +235,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             )
 
             result = self._send_dingtalk_message(
-                self.config.access_token, self.config.secret, content
+                ten_env, self.config.access_token, self.config.secret, content
             )
             ten_env.log_info(
                 f"[DingTalkBotExtension] DingTalk API response: {json.dumps(result, indent=2)}"
@@ -270,26 +270,26 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         return None
 
     def _send_dingtalk_message(
-        self, access_token: str, secret: str, content: str
+        self, ten_env: AsyncTenEnv, access_token: str, secret: str, content: str
     ) -> dict:
         """
         Sends a message to a DingTalk bot.
         """
-        print("[DingTalkBotExtension._send_dingtalk_message] Starting...")
-        print(
+        ten_env.log_info("[DingTalkBotExtension._send_dingtalk_message] Starting...")
+        ten_env.log_info(
             f"[DingTalkBotExtension._send_dingtalk_message] access_token length: {len(access_token)}"
         )
-        print(
+        ten_env.log_info(
             f"[DingTalkBotExtension._send_dingtalk_message] secret length: {len(secret) if secret else 0}"
         )
-        print(
+        ten_env.log_info(
             f"[DingTalkBotExtension._send_dingtalk_message] content: {content}"
         )
 
         webhook_url = (
             f"https://oapi.dingtalk.com/robot/send?access_token={access_token}"
         )
-        print(
+        ten_env.log_info(
             f"[DingTalkBotExtension._send_dingtalk_message] Base webhook_url: {webhook_url[:80]}..."
         )
 
@@ -303,38 +303,38 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             ).digest()
             sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
             webhook_url = f"{webhook_url}&timestamp={timestamp}&sign={sign}"
-            print(
+            ten_env.log_info(
                 f"[DingTalkBotExtension._send_dingtalk_message] Added signature, timestamp: {timestamp}"
             )
 
         headers = {"Content-Type": "application/json;charset=utf-8"}
         data = {"msgtype": "text", "text": {"content": content}}
 
-        print(
+        ten_env.log_info(
             f"[DingTalkBotExtension._send_dingtalk_message] Request data: {json.dumps(data, indent=2)}"
         )
 
         try:
-            print(
+            ten_env.log_info(
                 "[DingTalkBotExtension._send_dingtalk_message] Sending POST request..."
             )
             response = requests.post(
                 webhook_url, headers=headers, data=json.dumps(data), timeout=10
             )
-            print(
+            ten_env.log_info(
                 f"[DingTalkBotExtension._send_dingtalk_message] Response status code: {response.status_code}"
             )
-            print(
+            ten_env.log_info(
                 f"[DingTalkBotExtension._send_dingtalk_message] Response text: {response.text}"
             )
             response.raise_for_status()
             result = response.json()
-            print(
+            ten_env.log_info(
                 f"[DingTalkBotExtension._send_dingtalk_message] Response JSON: {json.dumps(result, indent=2)}"
             )
             return result
         except requests.exceptions.RequestException as e:
-            print(
+            ten_env.log_error(
                 f"[DingTalkBotExtension._send_dingtalk_message] Exception occurred: {type(e).__name__}: {str(e)}"
             )
             return {"errcode": -1, "errmsg": str(e)}
