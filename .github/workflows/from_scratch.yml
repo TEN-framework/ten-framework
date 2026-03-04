@@ -37,6 +37,10 @@ jobs:
             platform_name: "Linux ARM64"
             arch: "arm64"
             python-version: "3.10"
+          - runs-on: windows-2025
+            platform_name: "Windows x64"
+            arch: "x64"
+            python-version: "3.10"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,11 +50,13 @@ jobs:
       # This step is not necessary for the build, but it is useful for debugging.
       - name: Install tools and dependencies (macOS)
         if: runner.os == 'macOS'
+        shell: bash
         run: |
           brew install tree
 
       - name: Install tools and dependencies (Linux)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Linux build dependencies"
@@ -97,7 +103,29 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install tools and dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "================================================"
+          Write-Host "Installing Windows build dependencies"
+          Write-Host "================================================"
+
+          # Install LLVM/Clang for C++ extension builds
+          winget install LLVM.LLVM --disable-interactivity --accept-source-agreements --accept-package-agreements
+
+          # Refresh PATH so clang is available in subsequent steps
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          # Create temp working directory
+          New-Item -ItemType Directory -Force -Path "C:\Temp" | Out-Null
+
+          Write-Host ""
+          Write-Host "✓ Windows build dependencies installed successfully"
+
       - name: Install tman using package manager
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing tman on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
@@ -111,6 +139,9 @@ jobs:
             sudo add-apt-repository -y ppa:ten-framework/ten-framework
             sudo apt update
             sudo apt install -y tman
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "Installing tman via winget..."
+            winget install TEN-framework.tman --disable-interactivity --accept-source-agreements --accept-package-agreements
           else
             echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
             exit 1
@@ -119,6 +150,7 @@ jobs:
           echo "✓ tman installation completed"
 
       - name: Verify tman installation
+        shell: bash
         run: |
           echo "================================================"
           echo "Verifying tman installation"
@@ -147,29 +179,41 @@ jobs:
           tman --help
 
       - name: Setup tgn (TEN build system)
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing tgn build system for C++ extensions"
           echo "================================================"
 
-          # Install tgn using the install script
-          # The script automatically handles CI environment and skips interactive prompts
-          bash tools/tgn/install_tgn.sh
-
-          # Add tgn to PATH for subsequent steps
-          echo "/usr/local/ten_gn" >> $GITHUB_PATH
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # On Windows, use the PowerShell install script
+            powershell -ExecutionPolicy Bypass -File tools/tgn/install_tgn.ps1
+            echo "C:/ten_gn" >> $GITHUB_PATH
+          else
+            # Install tgn using the install script
+            # The script automatically handles CI environment and skips interactive prompts
+            bash tools/tgn/install_tgn.sh
+            echo "/usr/local/ten_gn" >> $GITHUB_PATH
+          fi
 
           echo ""
           echo "✓ tgn setup completed"
 
       - name: Create transcriber_demo app using tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating transcriber_demo app"
           echo "================================================"
 
-          # Create a temporary directory for the app
-          cd /tmp
+          # Set working directory based on OS
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Install the app using tman
           tman install app transcriber_demo
@@ -183,12 +227,19 @@ jobs:
           echo "✓ transcriber_demo app created successfully"
 
       - name: Verify app installation
+        shell: bash
         run: |
           echo "================================================"
           echo "Verifying transcriber_demo app structure"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # List the app structure
           echo "App directory structure:"
@@ -211,12 +262,19 @@ jobs:
           echo "✓ App structure verification completed"
 
       - name: Install app dependencies with tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing transcriber_demo ten packages"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install TEN package dependencies using tman
           tman install
@@ -231,12 +289,19 @@ jobs:
           fi
 
       - name: Install pip and npm dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing pip and npm dependencies"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install Python and npm dependencies using tman
           tman run install_deps
@@ -249,12 +314,21 @@ jobs:
           fi
 
       - name: Build app with tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Building transcriber_demo app"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+            BIN_MAIN="bin/main.exe"
+          else
+            WORK_DIR="/tmp"
+            BIN_MAIN="bin/main"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Build the app using tman (includes go build and tsc compilation)
           tman run build
@@ -265,11 +339,11 @@ jobs:
           fi
 
           # Verify that bin/main was generated
-          if [ -f "bin/main" ]; then
-            echo "✓ bin/main generated successfully"
-            ls -lh bin/main
+          if [ -f "$BIN_MAIN" ]; then
+            echo "✓ $BIN_MAIN generated successfully"
+            ls -lh "$BIN_MAIN"
           else
-            echo "❌ ERROR: bin/main not found"
+            echo "❌ ERROR: $BIN_MAIN not found"
             echo "Contents of bin directory:"
             ls -la bin/ || echo "bin directory does not exist"
             exit 1
@@ -279,12 +353,19 @@ jobs:
           echo "✓ Build verification completed"
 
       - name: Check nodejs_addon_loader manifest
+        shell: bash
         run: |
           echo "================================================"
           echo "Checking nodejs_addon_loader manifest.json"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           if [ -f "ten_packages/addon_loader/nodejs_addon_loader/manifest.json" ]; then
             echo "✓ nodejs_addon_loader manifest.json exists"
@@ -302,12 +383,19 @@ jobs:
           fi
 
       - name: Run app with tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Start the app in the background
           echo "Starting app with 'tman run start'..."
@@ -339,12 +427,14 @@ jobs:
             exit 1
           fi
 
-          # Gracefully stop the app by sending SIGTERM
+          # Gracefully stop the app
           echo ""
-          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
-
-          # Kill the process group to ensure all child processes are terminated
-          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          echo "Stopping app gracefully (PID: $APP_PID)..."
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //PID $APP_PID //T //F 2>/dev/null || true
+          else
+            kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          fi
 
           # Wait for the app to shut down gracefully
           echo "Waiting for app to shut down..."
@@ -352,8 +442,12 @@ jobs:
 
           # Check if the app has stopped
           if ps -p $APP_PID > /dev/null 2>&1; then
-            echo "⚠ App did not stop gracefully, sending SIGKILL..."
-            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            echo "⚠ App did not stop gracefully, forcing kill..."
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              taskkill //PID $APP_PID //F 2>/dev/null || true
+            else
+              kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            fi
             sleep 1
           fi
 
@@ -366,8 +460,12 @@ jobs:
 
           # Extra cleanup: kill any remaining transcriber_demo processes
           echo "Cleaning up any remaining processes..."
-          pkill -f "transcriber_demo" || true
-          pkill -f "bin/main" || true
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //IM "main.exe" //F 2>/dev/null || true
+          else
+            pkill -f "transcriber_demo" || true
+            pkill -f "bin/main" || true
+          fi
 
           echo ""
           echo "================================================"
@@ -375,12 +473,19 @@ jobs:
           echo "================================================"
 
       - name: Install C++ extension webrtc_vad_cpp
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing C++ extension: webrtc_vad_cpp"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install the C++ extension from the cloud store
           tman install extension webrtc_vad_cpp
@@ -393,12 +498,19 @@ jobs:
           fi
 
       - name: Build app with C++ extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Rebuilding app with C++ extension"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Rebuild the app to compile the C++ extension into a dynamic library
           tman run build
@@ -411,12 +523,19 @@ jobs:
           echo "✓ App with C++ extension built successfully"
 
       - name: Run app with VAD functionality
+        shell: bash
         run: |
           echo "================================================"
           echo "Running transcriber_demo app with VAD functionality"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Start the app with VAD support in the background
           echo "Starting app with 'tman run start_with_vad'..."
@@ -448,12 +567,14 @@ jobs:
             exit 1
           fi
 
-          # Gracefully stop the app by sending SIGTERM
+          # Gracefully stop the app
           echo ""
-          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
-
-          # Kill the process group to ensure all child processes are terminated
-          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          echo "Stopping app gracefully (PID: $APP_PID)..."
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //PID $APP_PID //T //F 2>/dev/null || true
+          else
+            kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          fi
 
           # Wait for the app to shut down gracefully
           echo "Waiting for app to shut down..."
@@ -461,8 +582,12 @@ jobs:
 
           # Check if the app has stopped
           if ps -p $APP_PID > /dev/null 2>&1; then
-            echo "⚠ App did not stop gracefully, sending SIGKILL..."
-            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            echo "⚠ App did not stop gracefully, forcing kill..."
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              taskkill //PID $APP_PID //F 2>/dev/null || true
+            else
+              kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            fi
             sleep 1
           fi
 
@@ -473,10 +598,14 @@ jobs:
             echo "✓ App with VAD stopped successfully"
           fi
 
-          # Extra cleanup: kill any remaining transcriber_demo processes
+          # Extra cleanup
           echo "Cleaning up any remaining processes..."
-          pkill -f "transcriber_demo" || true
-          pkill -f "bin/main" || true
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //IM "main.exe" //F 2>/dev/null || true
+          else
+            pkill -f "transcriber_demo" || true
+            pkill -f "bin/main" || true
+          fi
 
           echo ""
           echo "================================================"
@@ -488,12 +617,19 @@ jobs:
       # ========================================
 
       - name: Create C++ extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating C++ extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a C++ extension using the default template
           tman create extension test_ext_cpp --template default_extension_cpp
@@ -506,12 +642,19 @@ jobs:
           echo "✓ C++ extension created successfully"
 
       - name: Install C++ extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing C++ extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -524,27 +667,21 @@ jobs:
           fi
 
       - name: Build C++ extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Building C++ extension"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
-
-          # Determine OS and architecture for build
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              OS_ARCH="mac arm64"
-            else
-              OS_ARCH="mac x64"
-            fi
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+            TEST_BIN="bin/test_ext_cpp_test.exe"
           else
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              OS_ARCH="linux arm64"
-            else
-              OS_ARCH="linux x64"
-            fi
+            WORK_DIR="/tmp"
+            TEST_BIN="bin/test_ext_cpp_test"
           fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Build using tman
           tman run build
@@ -555,9 +692,9 @@ jobs:
           fi
 
           # Verify that test binary was generated
-          if [ -f "bin/test_ext_cpp_test" ]; then
+          if [ -f "$TEST_BIN" ]; then
             echo "✓ C++ extension test binary generated successfully"
-            ls -lh bin/test_ext_cpp_test
+            ls -lh "$TEST_BIN"
           else
             echo "❌ ERROR: C++ extension test binary not found"
             echo "Contents of bin directory:"
@@ -566,12 +703,19 @@ jobs:
           fi
 
       - name: Test C++ extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Testing C++ extension"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Run tests using tman
           tman run test
@@ -584,12 +728,19 @@ jobs:
           fi
 
       - name: Create Go extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Go extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Go extension using the default template
           tman create extension test_ext_go --template default_extension_go --template-data class_name_prefix=Test
@@ -602,12 +753,19 @@ jobs:
           echo "✓ Go extension created successfully"
 
       - name: Install Go extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Go extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_go
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_go"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -620,12 +778,19 @@ jobs:
           fi
 
       - name: Test Go extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Testing Go extension"
           echo "================================================"
 
-          cd /tmp/test_ext_go
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_go"
 
           # Run tests using tman
           tman run test
@@ -638,12 +803,19 @@ jobs:
           fi
 
       - name: Create Python extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Python extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Python extension using the default async template
           tman create extension test_ext_python --template default_async_extension_python --template-data class_name_prefix=Test
@@ -656,12 +828,19 @@ jobs:
           echo "✓ Python extension created successfully"
 
       - name: Install Python extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Python extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_python
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_python"
 
           # Install TEN framework dependencies in standalone mode
           tman install --standalone
@@ -690,12 +869,19 @@ jobs:
           echo "✓ All Python extension dependencies installed successfully"
 
       - name: Test Python extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Testing Python extension"
           echo "================================================"
 
-          cd /tmp/test_ext_python
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_python"
 
           # Run tests using tman
           tman run test
@@ -708,12 +894,19 @@ jobs:
           fi
 
       - name: Create Node.js extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Node.js extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Node.js extension using the default template
           tman create extension test_ext_nodejs --template default_extension_nodejs --template-data class_name_prefix=Test
@@ -726,12 +919,19 @@ jobs:
           echo "✓ Node.js extension created successfully"
 
       - name: Install Node.js extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Node.js extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -744,12 +944,19 @@ jobs:
           fi
 
       - name: Build Node.js extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Building Node.js extension"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Build using tman (compiles TypeScript)
           tman run build
@@ -770,12 +977,19 @@ jobs:
           fi
 
       - name: Test Node.js extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Testing Node.js extension"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Run tests using tman
           tman run test
@@ -789,6 +1003,7 @@ jobs:
 
       - name: Extension Development Summary
         if: always()
+        shell: bash
         run: |
           echo "================================================"
           echo "Extension Development Verification Summary"
