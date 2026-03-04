@@ -62,6 +62,9 @@
         },
         "input_audio_sample_rate": {
           "type": "int64"
+        },
+        "anam_vercel_bypass_token": {
+          "type": "string"
         }
       }
     }
