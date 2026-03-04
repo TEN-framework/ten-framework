@@ -157,6 +157,30 @@ def find_npm_executable() -> str:
 
         return full_path
     except (subprocess.CalledProcessError, FileNotFoundError):
+        # On Windows, try alternative npm commands if npm.cmd fails
+        if sys.platform == "win32":
+            for alt_cmd in ["npm", "npm.exe"]:
+                try:
+                    subprocess.run(
+                        [alt_cmd, "--version"],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    full_path = (
+                        subprocess.run(
+                            ["where", alt_cmd],
+                            capture_output=True,
+                            text=True,
+                            check=True,
+                        )
+                        .stdout.strip()
+                        .split("\n")[0]
+                    )
+                    return full_path
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    continue
+
         raise RuntimeError(
             "npm not found. Please install Node.js and npm and ensure "
             "they are available in your PATH."

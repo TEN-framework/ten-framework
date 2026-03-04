@@ -104,6 +104,43 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Verify Node.js and npm installation
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "Verifying Node.js and npm installation"
+          echo "================================================"
+
+          echo "Node.js version:"
+          node --version
+
+          echo ""
+          echo "npm location and version:"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # On Windows, check for npm, npm.cmd, and npm.exe
+            if command -v npm &> /dev/null; then
+              echo "npm found: $(which npm)"
+              npm --version
+            elif command -v npm.cmd &> /dev/null; then
+              echo "npm.cmd found: $(which npm.cmd)"
+              npm.cmd --version
+            elif command -v npm.exe &> /dev/null; then
+              echo "npm.exe found: $(which npm.exe)"
+              npm.exe --version
+            else
+              echo "❌ ERROR: npm not found in PATH"
+              echo "PATH contents:"
+              echo "$PATH" | tr ':' '\n'
+              exit 1
+            fi
+          else
+            which npm
+            npm --version
+          fi
+
+          echo ""
+          echo "✓ Node.js and npm verified successfully"
+
       - name: Install tools and dependencies (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
