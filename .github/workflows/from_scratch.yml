@@ -112,6 +112,12 @@ jobs:
           Write-Host "Installing Windows build dependencies"
           Write-Host "================================================"
 
+          # Disable Windows Store Python app execution aliases that shadow real Python
+          # These aliases intercept 'python'/'python3' commands and break scripts
+          # that check for Python availability
+          Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue
+          Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue
+
           # Install LLVM/Clang for C++ extension builds
           winget install LLVM.LLVM --disable-interactivity --accept-source-agreements --accept-package-agreements
 
