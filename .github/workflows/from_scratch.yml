@@ -311,6 +311,9 @@ jobs:
 
       - name: Install pip and npm dependencies
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Installing pip and npm dependencies"
@@ -336,6 +339,9 @@ jobs:
 
       - name: Build app with tman
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building transcriber_demo app"
@@ -405,6 +411,9 @@ jobs:
 
       - name: Run app with tman
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
@@ -520,6 +529,9 @@ jobs:
 
       - name: Build app with C++ extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Rebuilding app with C++ extension"
@@ -545,6 +557,9 @@ jobs:
 
       - name: Run app with VAD functionality
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Running transcriber_demo app with VAD functionality"
@@ -689,6 +704,9 @@ jobs:
 
       - name: Build C++ extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building C++ extension"
@@ -725,6 +743,9 @@ jobs:
 
       - name: Test C++ extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing C++ extension"
@@ -800,6 +821,9 @@ jobs:
 
       - name: Test Go extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Go extension"
@@ -891,6 +915,9 @@ jobs:
 
       - name: Test Python extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Python extension"
@@ -972,6 +999,9 @@ jobs:
 
       - name: Build Node.js extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building Node.js extension"
@@ -1005,6 +1035,9 @@ jobs:
 
       - name: Test Node.js extension
         shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Node.js extension"
