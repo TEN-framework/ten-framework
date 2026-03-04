@@ -242,9 +242,16 @@ jobs:
           echo "================================================"
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
-            # On Windows, use the PowerShell install script
-            powershell -ExecutionPolicy Bypass -File tools/tgn/install_tgn.ps1
-            echo "C:/ten_gn" >> $GITHUB_PATH
+            # On Windows, install to a temporary directory
+            # Use RUNNER_TEMP which is guaranteed to exist and be writable
+            TGN_INSTALL_DIR="${RUNNER_TEMP}/ten_gn"
+            echo "Installing tgn to: $TGN_INSTALL_DIR"
+
+            # Use the PowerShell install script with custom install directory
+            powershell -ExecutionPolicy Bypass -Command "\$env:TGN_INSTALL_DIR='$TGN_INSTALL_DIR'; & tools/tgn/install_tgn.ps1"
+
+            # Add tgn to PATH for subsequent steps
+            echo "$TGN_INSTALL_DIR" >> $GITHUB_PATH
           else
             # Install tgn using the install script
             # The script automatically handles CI environment and skips interactive prompts
@@ -254,6 +261,41 @@ jobs:
 
           echo ""
           echo "✓ tgn setup completed"
+
+      - name: Verify tgn installation
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "Verifying tgn installation"
+          echo "================================================"
+
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            TGN_DIR="${RUNNER_TEMP}/ten_gn"
+            TGN_CMD="tgn.bat"
+          else
+            TGN_DIR="/usr/local/ten_gn"
+            TGN_CMD="tgn"
+          fi
+
+          # Check if tgn directory exists
+          if [ ! -d "$TGN_DIR" ]; then
+            echo "❌ ERROR: tgn directory not found at $TGN_DIR"
+            exit 1
+          fi
+
+          echo "✓ tgn directory found at $TGN_DIR"
+          echo "Contents:"
+          ls -la "$TGN_DIR" || echo "Cannot list directory contents"
+
+          # Check if tgn command exists
+          if [ ! -f "$TGN_DIR/$TGN_CMD" ]; then
+            echo "❌ ERROR: $TGN_CMD not found in $TGN_DIR"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ $TGN_CMD found"
+          echo "✓ tgn verification completed"
 
       - name: Create transcriber_demo app using tman
         shell: bash
