@@ -33,7 +33,7 @@ jobs:
             platform_name: "Linux x64"
             arch: "x64"
             python-version: "3.10"
-          - runs-on: ubuntu-22.04-arm
+          - runs-on: ubuntu-24.04-arm
             platform_name: "Linux ARM64"
             arch: "arm64"
             python-version: "3.10"
@@ -142,6 +142,18 @@ jobs:
           elif [[ "${{ runner.os }}" == "Windows" ]]; then
             echo "Installing tman via winget..."
             winget install TEN-framework.tman --disable-interactivity --accept-source-agreements --accept-package-agreements
+
+            # winget modifies the system/user PATH, but GitHub Actions steps
+            # inherit the PATH snapshot from job start. Re-read the current
+            # Machine+User PATH and add any new entries to GITHUB_PATH so
+            # subsequent steps can find tman.
+            NEW_PATH=$(powershell.exe -NoProfile -Command \
+              "[System.Environment]::GetEnvironmentVariable('PATH','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH','User')")
+            echo "$NEW_PATH" | tr ';' '\n' | while IFS= read -r p; do
+              if [ -n "$p" ] && ! echo "$PATH" | tr ':' '\n' | grep -qxF "$p"; then
+                echo "$p" >> $GITHUB_PATH
+              fi
+            done
           else
             echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
             exit 1
@@ -882,6 +894,12 @@ jobs:
           fi
 
           cd "$WORK_DIR/test_ext_python"
+
+          # Workaround: ensure binaries downloaded by tman have execute permission
+          # (macOS runners may lack +x on spawned test binaries)
+          if [[ "${{ runner.os }}" != "Windows" ]]; then
+            find . -type f \( -name "*.sh" -o -path "*/bin/*" -o -path "*/.ten/*" \) -exec chmod +x {} + 2>/dev/null || true
+          fi
 
           # Run tests using tman
           tman run test
