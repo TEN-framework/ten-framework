@@ -1110,6 +1110,12 @@ jobs:
 
           cd "$WORK_DIR/test_ext_python"
 
+          # Locate libpython so the addon loader can dlopen it on all platforms
+          # (GitHub Actions installs Python in non-standard paths that the
+          # hardcoded fallback list in python_addon_loader may not cover).
+          export TEN_PYTHON_LIB_PATH=$(python3 "${{ github.workspace }}/core/src/ten_runtime/binding/python/tools/find_libpython.py")
+          echo "TEN_PYTHON_LIB_PATH=${TEN_PYTHON_LIB_PATH}"
+
           # Workaround: ensure binaries downloaded by tman have execute permission
           # (macOS runners may lack +x on spawned test binaries)
           if [[ "${{ runner.os }}" != "Windows" ]]; then
