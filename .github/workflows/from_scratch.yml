@@ -392,7 +392,7 @@ jobs:
         shell: bash
         run: |
           echo "================================================"
-          echo "Verifying ten_runtime_python package downloaded from cloud"
+          echo "Verifying ten_runtime_python package"
           echo "================================================"
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
@@ -405,93 +405,12 @@ jobs:
 
           cd "$WORK_DIR/transcriber_demo"
 
-          echo "Checking ten_runtime_python package structure after tman install:"
-          echo ""
-
-          if [ -d "ten_packages/system/ten_runtime_python" ]; then
-            echo "✓ ten_runtime_python directory exists"
-            echo ""
-
-            # Check and display version from manifest.json
-            if [ -f "ten_packages/system/ten_runtime_python/manifest.json" ]; then
-              echo "================================================"
-              echo "Package Version Information"
-              echo "================================================"
-
-              # Extract version using grep and sed
-              PACKAGE_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' ten_packages/system/ten_runtime_python/manifest.json | head -1 | sed 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
-
-              if [ -n "$PACKAGE_VERSION" ]; then
-                echo "Downloaded package version: $PACKAGE_VERSION"
-                echo ""
-
-                # Check if version is recent enough (should be >= 0.11.56)
-                if [[ "$PACKAGE_VERSION" == "0.11.56" ]] || [[ "$PACKAGE_VERSION" > "0.11.56" ]]; then
-                  echo "✓ Package version is up-to-date (>= 0.11.56)"
-                else
-                  echo "⚠ WARNING: Package version ($PACKAGE_VERSION) may be outdated"
-                  echo "Expected version: >= 0.11.56"
-                  echo "This older version might not contain the .pyd file"
-                fi
-              else
-                echo "⚠ WARNING: Could not extract version from manifest.json"
-              fi
-              echo ""
-
-              echo "Full manifest.json content:"
-              echo "---"
-              cat ten_packages/system/ten_runtime_python/manifest.json
-              echo "---"
-              echo ""
-            else
-              echo "⚠ WARNING: manifest.json not found"
-              echo ""
-            fi
-
-            echo "================================================"
-            echo "Package Directory Structure"
-            echo "================================================"
-            ls -la ten_packages/system/ten_runtime_python/
-            echo ""
-
-            if [ -d "ten_packages/system/ten_runtime_python/lib" ]; then
-              echo "================================================"
-              echo "Library Files"
-              echo "================================================"
-              ls -la ten_packages/system/ten_runtime_python/lib/
-              echo ""
-
-              if [ -f "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB" ]; then
-                echo "✅ SUCCESS: $PYTHON_LIB found in cloud package"
-                echo ""
-                echo "File details:"
-                ls -lh "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB"
-
-                # Show file size
-                FILE_SIZE=$(stat -c%s "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB" 2>/dev/null || stat -f%z "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB" 2>/dev/null || echo "unknown")
-                if [ "$FILE_SIZE" != "unknown" ]; then
-                  FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE / 1024 / 1024" | bc 2>/dev/null || echo "N/A")
-                  echo "File size: $FILE_SIZE bytes (~${FILE_SIZE_MB} MB)"
-                fi
-              else
-                echo "❌ ERROR: $PYTHON_LIB NOT found in cloud package"
-                echo ""
-                echo "This means either:"
-                echo "1. The downloaded package version is too old (< 0.11.56)"
-                echo "2. The package in the cloud is incomplete"
-                echo "3. There was an error during download"
-                echo ""
-                echo "Available files in lib directory:"
-                find ten_packages/system/ten_runtime_python/lib/ -type f -exec ls -lh {} \; || echo "No files found"
-                echo ""
-                exit 1
-              fi
-            else
-              echo "❌ ERROR: lib directory does not exist in cloud package"
-              exit 1
-            fi
+          # Check if the Python runtime library exists
+          if [ -f "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB" ]; then
+            echo "✓ $PYTHON_LIB found"
           else
-            echo "❌ ERROR: ten_runtime_python package not downloaded"
+            echo "❌ ERROR: $PYTHON_LIB not found"
+            echo "Package may be incomplete or download failed"
             exit 1
           fi
 
@@ -618,24 +537,11 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
 
-            # Set TEN_PYTHON_LIB_PATH to use the correct Python version
-            # GitHub Actions sets pythonLocation to the installed Python path
-            PYTHON_DLL="${pythonLocation}/python${{ matrix.python-version }}0.dll"
-            # Remove dots from version (3.10 -> 310)
-            PYTHON_VERSION_NODOT=$(echo "${{ matrix.python-version }}" | tr -d '.')
-            PYTHON_DLL="${pythonLocation}/python${PYTHON_VERSION_NODOT}.dll"
+            # Fix PATH: Ensure the correct Python version is used by tman
+            # This allows find_libpython.py to detect the correct Python library
+            export PATH="${pythonLocation}:${pythonLocation}/Scripts:$PATH"
 
-            echo "Setting TEN_PYTHON_LIB_PATH to: $PYTHON_DLL"
-            export TEN_PYTHON_LIB_PATH="$PYTHON_DLL"
-
-            # Verify the DLL exists
-            if [ -f "$PYTHON_DLL" ]; then
-              echo "✓ Python DLL found at: $PYTHON_DLL"
-            else
-              echo "⚠ WARNING: Python DLL not found at: $PYTHON_DLL"
-              echo "Searching for Python DLL in pythonLocation..."
-              find "${pythonLocation}" -name "python*.dll" -type f || true
-            fi
+            echo "Using Python: $(python3 --version)"
             echo ""
           else
             WORK_DIR="/tmp"
