@@ -853,6 +853,10 @@ jobs:
 
             # windows-2025 runner has VS 2022, not VS 2019
             # Patch the downloaded run_script.py to pass vs_version=2022 to tgn
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # includes TEN_EXTRA_GN_ARGS support. After that, replace this
+            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2022"
             sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2022/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
             WORK_DIR="/tmp"
@@ -892,6 +896,17 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # Fix run_script.py: use backslash paths for Windows CMD
+            # CMD interprets forward slash as option switch, not path separator
+            #
+            # TODO: Remove these sed workarounds once the cloud template
+            # includes the fixes from this repo's
+            # packages/core_extensions/default_extension_cpp/tools/run_script.py
+            # (os.path.join for paths, TEN_EXTRA_GN_ARGS support).
+            # After that, this entire Windows block can be simplified to just
+            # the PATH fix above.
+            sed -i 's|bin/|bin\\\\|g' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
             WORK_DIR="/tmp"
           fi
@@ -1020,6 +1035,10 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
           else
             WORK_DIR="/tmp"
           fi
