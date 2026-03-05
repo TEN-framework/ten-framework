@@ -1093,6 +1093,10 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
 
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
             # The cloud template manifest defines "test": "tests/bin/start"
             # which is a bash script and cannot run on Windows directly.
             # Patch it to use the Python wrapper instead.
