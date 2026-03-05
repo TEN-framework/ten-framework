@@ -22,6 +22,7 @@ from ten_ai_base.message import (
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
+    Data,
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
@@ -73,6 +74,10 @@ class DeepgramASRExtension(
         try:
             self.config = DeepgramASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
+
+            # Apply default params based on model type (nova or flux)
+            self.config.apply_defaults()
+
             ten_env.log_info(
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -162,14 +167,32 @@ class DeepgramASRExtension(
         self.ten_env.log_debug(
             f"Deepgram finalize start at {self.last_finalize_timestamp}"
         )
-
-        finalize_mode = self.config.finalize_mode
-        if finalize_mode == "disconnect":
-            await self._handle_finalize_disconnect()
-        elif finalize_mode == "mute_pkg":
+        if self.config.is_flux_model:
             await self._handle_finalize_mute_pkg()
         else:
-            raise ValueError(f"invalid finalize mode: {finalize_mode}")
+            finalize_mode = self.config.finalize_mode
+            if finalize_mode == "disconnect":
+                await self._handle_finalize_disconnect()
+            elif finalize_mode == "mute_pkg":
+                await self._handle_finalize_mute_pkg()
+            else:
+                raise ValueError(f"invalid finalize mode: {finalize_mode}")
+
+    async def _handle_event_result(self, event: str) -> None:
+        """Handle ASR event result"""
+        self.ten_env.log_info(
+            f"_handle_event_result: {event}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+        if event == "StartOfTurn":
+            data = Data.create("sos")
+            await self.ten_env.send_data(data)
+        elif event == "EndOfTurn":
+            data = Data.create("eos")
+            await self.ten_env.send_data(data)
+        elif event == "EagerEndOfTurn":
+            data = Data.create("eager_eos")
+            await self.ten_env.send_data(data)
 
     async def _handle_asr_result(
         self,
@@ -324,41 +347,70 @@ class DeepgramASRExtension(
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
         """Handle recognition result callback"""
+        assert self.config is not None
 
         try:
             # Extract basic fields
-            is_final = message_data.get("is_final", False)
+            if self.config.is_flux_model:
+                event = message_data.get("event", {})
+                result_to_send = message_data.get("transcript", "")
 
-            # Extract transcript and words from channel.alternatives[0]
-            channel = message_data.get("channel", {})
-            alternatives = channel.get("alternatives", [])
-            if not alternatives:
-                self.ten_env.log_debug("No alternatives in Deepgram result")
-                return
+                is_final = event == "EndOfTurn"
 
-            first_alt = alternatives[0]
-            result_to_send = first_alt.get("transcript", "")
+                start_ms = int(
+                    message_data.get("audio_window_start", 0) * 1000 or 0
+                )
+                end_ms = int(
+                    message_data.get("audio_window_end", 0) * 1000 or 0
+                )
+                duration_ms = end_ms - start_ms
 
-            # Extract timing information (in seconds, convert to milliseconds)
-            start_seconds = message_data.get("start", 0)
-            duration_seconds = message_data.get("duration", 0)
-            start_ms = int(start_seconds * 1000)
-            duration_ms = int(duration_seconds * 1000)
+                actual_start_ms = int(
+                    self.audio_timeline.get_audio_duration_before_time(start_ms)
+                    + self.sent_user_audio_duration_ms_before_last_reset
+                )
+                await self._handle_event_result(event)
+                # Process ASR result
+                await self._handle_asr_result(
+                    text=result_to_send,
+                    final=is_final,
+                    start_ms=actual_start_ms,
+                    duration_ms=duration_ms,
+                    language=self.config.normalized_language,
+                )
 
-            # Calculate actual start time using audio timeline
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
+            else:
+                is_final = message_data.get("is_final", False)
+                # Extract transcript and words from channel.alternatives[0]
+                channel = message_data.get("channel", {})
+                alternatives = channel.get("alternatives", [])
+                if not alternatives:
+                    self.ten_env.log_debug("No alternatives in Deepgram result")
+                    return
 
-            # Process ASR result
-            await self._handle_asr_result(
-                text=result_to_send,
-                final=is_final,
-                start_ms=actual_start_ms,
-                duration_ms=duration_ms,
-                language=self.config.normalized_language,
-            )
+                first_alt = alternatives[0]
+                result_to_send = first_alt.get("transcript", "")
+
+                # Extract timing information (in seconds, convert to milliseconds)
+                start_seconds = message_data.get("start", 0)
+                duration_seconds = message_data.get("duration", 0)
+                start_ms = int(start_seconds * 1000)
+                duration_ms = int(duration_seconds * 1000)
+
+                # Calculate actual start time using audio timeline
+                actual_start_ms = int(
+                    self.audio_timeline.get_audio_duration_before_time(start_ms)
+                    + self.sent_user_audio_duration_ms_before_last_reset
+                )
+
+                # Process ASR result
+                await self._handle_asr_result(
+                    text=result_to_send,
+                    final=is_final,
+                    start_ms=actual_start_ms,
+                    duration_ms=duration_ms,
+                    language=self.config.normalized_language,
+                )
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Deepgram result: {e}")
