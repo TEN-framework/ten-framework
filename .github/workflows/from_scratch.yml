@@ -426,6 +426,10 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+            
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
           else
             WORK_DIR="/tmp"
           fi
@@ -455,6 +459,10 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
             BIN_MAIN="bin/main.exe"
+            
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
           else
             WORK_DIR="/tmp"
             BIN_MAIN="bin/main"
