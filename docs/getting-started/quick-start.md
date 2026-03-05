@@ -70,6 +70,9 @@ python --version
 > py -3.10 -m venv $env:USERPROFILE\ten-venv
 > # Activate the environment before each session
 > & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
+>
+> # If you encounter a permission error, change the execution policy to allow ps1 scripts
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 > ```
 
 ### Go 1.20+
@@ -77,6 +80,9 @@ python --version
 ```bash
 go version
 # Should display: go version go1.20 or higher
+
+$env:CGO_ENABLED = "1"
+# CGO must be explicitly enabled on Windows
 ```
 
 ### Node.js / npm
@@ -85,6 +91,25 @@ go version
 node --version
 npm --version
 # Ensure node and npm commands are available
+```
+
+### GCC (MinGW)
+💡 Only required on Windows
+```bash
+# First, make sure winget is available.
+winget --version
+
+# If not, install it from <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US>
+# (Requires Windows 10 version 1709 (Build 16299) or later, or Windows 11)
+
+# Install MinGW
+winget install BrechtSanders.WinLibs.POSIX.MSVCRT
+
+# Or search and choose a suitable version to install
+winget search "mingw"
+
+# Verify installation
+gcc --version
 ```
 
 > 💡 **Tip**: If any of the above is missing, please install the required version before continuing.
@@ -110,14 +135,6 @@ brew install TEN-framework/ten-framework/tman
 ```
 
 **Windows:**
-
-```powershell
-# First verify winget is available
-winget --version
-```
-
-If not available, install it from <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US>.
-(Requires Windows 10 version 1709 (Build 16299) or higher, or Windows 11)
 
 ```powershell
 winget install TEN-framework.tman
@@ -518,11 +535,14 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 
 **Solution**:
 
-```bash
+```
+# Set proxy
+$env:GOPROXY = "https://goproxy.cn,direct"
+
 # Clean Go module cache
 go clean -modcache
 
-# Rebuild
+# Reinstall dependencies
 cd transcriber_demo
 tman run build
 ```

@@ -456,6 +456,29 @@ def build_nodejs_project(
         return False
 
 
+def has_cxx_extensions(root_dir: Path) -> bool:
+    """Check if any C++ extensions exist in ten_packages/extension.
+
+    A C++ extension is identified by having a BUILD.gn file in its directory.
+
+    Args:
+        root_dir: Root directory of the project
+
+    Returns:
+        True if at least one C++ extension is found, False otherwise
+    """
+    ext_dir = root_dir / "ten_packages" / "extension"
+    if not ext_dir.exists():
+        return False
+    for pkg_dir in ext_dir.iterdir():
+        if not pkg_dir.is_dir():
+            continue
+        # C++ extensions typically have BUILD.gn in their directory
+        if (pkg_dir / "BUILD.gn").exists():
+            return True
+    return False
+
+
 def build_cxx_extensions(
     root_dir: Path,
     os_type: str = "linux",
@@ -475,6 +498,13 @@ def build_cxx_extensions(
         True if successful, False otherwise
     """
     print_info("Building C++ extensions...")
+
+    # Check if any C++ extensions actually exist before attempting to build.
+    # scripts/BUILD.gn is part of the app template and may exist even when
+    # there are no C++ extensions, so we check ten_packages/extension instead.
+    if not has_cxx_extensions(root_dir):
+        print_info("No C++ extensions found. Skipping C++ build.")
+        return True
 
     # Check if scripts/BUILD.gn exists
     build_gn_src = root_dir / "scripts" / "BUILD.gn"

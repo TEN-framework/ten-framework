@@ -70,6 +70,9 @@ python --version
 > py -3.10 -m venv $env:USERPROFILE\ten-venv
 > # 每次工作前，激活环境
 > & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
+>
+> # 若有权限错误，改变执行策略来允许ps1脚本执行
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 > ```
 
 ### Go 1.20+
@@ -77,6 +80,9 @@ python --version
 ```bash
 go version
 # 应显示: go version go1.20 或更高版本
+
+$env:CGO_ENABLED = "1"
+# Windows下需要显式启用CGO
 ```
 
 ### Node.js / npm
@@ -85,6 +91,25 @@ go version
 node --version
 npm --version
 # 确保 node 和 npm 命令可用
+```
+
+### GCC (MinGW)
+💡仅在windows上需要安装
+``` bash
+# 首先确定winget存在。
+winget --version
+
+# 若不存在则需要从 <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US> 安装。
+#（系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11）
+
+#安装MinGW
+winget install BrechtSanders.WinLibs.POSIX.MSVCRT
+
+# 或查找后自行选择合适版本安装
+winget search "mingw"
+
+#检查安装
+gcc --version
 ```
 
 > 💡 **提示**：如果缺少上述环境，请先安装对应版本后再继续。
@@ -110,14 +135,6 @@ brew install TEN-framework/ten-framework/tman
 ```
 
 **Windows:**
-
-```powershell
-# 首先确定winget存在。
-winget --version
-```
-
-若不存在则需要从 <https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US> 安装。
-（系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11）
 
 ```powershell
 winget install TEN-framework.tman
@@ -525,6 +542,9 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 **解决方案**：
 
 ```bash
+# 设置代理
+$env:GOPROXY = "https://goproxy.cn,direct"
+
 # 清理 Go module 缓存
 go clean -modcache
 
