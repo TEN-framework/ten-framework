@@ -524,24 +524,17 @@ jobs:
           echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
-          # Display Python environment information
-          echo ""
-          echo "Python Environment:"
-          echo "  python --version: $(python --version 2>&1 || echo 'not found')"
-          echo "  python3 --version: $(python3 --version 2>&1 || echo 'not found')"
-          echo "  python location: $(which python 2>/dev/null || echo 'not found')"
-          echo "  python3 location: $(which python3 2>/dev/null || echo 'not found')"
-          echo "  pythonLocation env: ${pythonLocation:-not set}"
-          echo ""
-
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
 
             # Fix PATH: Ensure the correct Python version is used by tman
-            # This allows find_libpython.py to detect the correct Python library
-            export PATH="${pythonLocation}:${pythonLocation}/Scripts:$PATH"
+            # Convert Windows path to Unix path for Git Bash
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
 
-            echo "Using Python: $(python3 --version)"
+            echo "Python environment after PATH fix:"
+            echo "  python3 --version: $(python3 --version 2>&1)"
+            echo "  python3 location: $(which python3 2>/dev/null)"
             echo ""
           else
             WORK_DIR="/tmp"
