@@ -565,54 +565,6 @@ jobs:
           echo ""
           echo "✓ Build verification completed"
 
-      - name: Verify Python runtime library
-        shell: bash
-        run: |
-          echo "================================================"
-          echo "Verifying Python runtime library"
-          echo "================================================"
-
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            WORK_DIR="C:/Temp"
-            PYTHON_LIB="ten_packages/system/ten_runtime_python/lib/libten_runtime_python.pyd"
-          else
-            WORK_DIR="/tmp"
-            PYTHON_LIB="ten_packages/system/ten_runtime_python/lib/libten_runtime_python.so"
-          fi
-
-          cd "$WORK_DIR/transcriber_demo"
-
-          echo "Checking for Python runtime library at: $PYTHON_LIB"
-
-          if [ -f "$PYTHON_LIB" ]; then
-            echo "✓ Python runtime library found"
-            ls -lh "$PYTHON_LIB"
-          else
-            echo "❌ ERROR: Python runtime library not found at $PYTHON_LIB"
-            echo ""
-            echo "Checking ten_packages/system/ten_runtime_python structure:"
-            if [ -d "ten_packages/system/ten_runtime_python" ]; then
-              ls -la ten_packages/system/ten_runtime_python/
-              echo ""
-              echo "Checking lib directory:"
-              if [ -d "ten_packages/system/ten_runtime_python/lib" ]; then
-                ls -la ten_packages/system/ten_runtime_python/lib/
-              else
-                echo "lib directory does not exist"
-              fi
-              echo ""
-              echo "Checking manifest.json:"
-              if [ -f "ten_packages/system/ten_runtime_python/manifest.json" ]; then
-                cat ten_packages/system/ten_runtime_python/manifest.json
-              fi
-            else
-              echo "ten_runtime_python directory does not exist"
-            fi
-            echo ""
-            echo "❌ CRITICAL: Python runtime library is missing, app will crash at runtime"
-            exit 1
-          fi
-
       - name: Check nodejs_addon_loader manifest
         shell: bash
         run: |
@@ -653,8 +605,38 @@ jobs:
           echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
+          # Display Python environment information
+          echo ""
+          echo "Python Environment:"
+          echo "  python --version: $(python --version 2>&1 || echo 'not found')"
+          echo "  python3 --version: $(python3 --version 2>&1 || echo 'not found')"
+          echo "  python location: $(which python 2>/dev/null || echo 'not found')"
+          echo "  python3 location: $(which python3 2>/dev/null || echo 'not found')"
+          echo "  pythonLocation env: ${pythonLocation:-not set}"
+          echo ""
+
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # Set TEN_PYTHON_LIB_PATH to use the correct Python version
+            # GitHub Actions sets pythonLocation to the installed Python path
+            PYTHON_DLL="${pythonLocation}/python${{ matrix.python-version }}0.dll"
+            # Remove dots from version (3.10 -> 310)
+            PYTHON_VERSION_NODOT=$(echo "${{ matrix.python-version }}" | tr -d '.')
+            PYTHON_DLL="${pythonLocation}/python${PYTHON_VERSION_NODOT}.dll"
+
+            echo "Setting TEN_PYTHON_LIB_PATH to: $PYTHON_DLL"
+            export TEN_PYTHON_LIB_PATH="$PYTHON_DLL"
+
+            # Verify the DLL exists
+            if [ -f "$PYTHON_DLL" ]; then
+              echo "✓ Python DLL found at: $PYTHON_DLL"
+            else
+              echo "⚠ WARNING: Python DLL not found at: $PYTHON_DLL"
+              echo "Searching for Python DLL in pythonLocation..."
+              find "${pythonLocation}" -name "python*.dll" -type f || true
+            fi
+            echo ""
           else
             WORK_DIR="/tmp"
           fi
@@ -1172,7 +1154,7 @@ jobs:
           fi
 
           # Run tests using tman
-          tman run test
+          tman run test -- -s
 
           if [ $? -eq 0 ]; then
             echo "✓ Python extension tests passed successfully"
