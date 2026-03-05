@@ -8,7 +8,7 @@ import argparse
 import platform
 import subprocess
 import sys
-import os
+import os as os_module
 
 BUILD_TYPE = "debug"
 
@@ -51,7 +51,7 @@ def detect_arch() -> str:
 def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
     """Run a shell command."""
     if env is None:
-        env = os.environ.copy()
+        env = os_module.environ.copy()
     print(f"Running: {cmd}")
     result = subprocess.run(cmd, shell=True, check=True, env=env)
     return result.returncode
@@ -59,7 +59,7 @@ def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
 
 def run_cmd_test(os_str: str, _arch: str) -> int:
     """Start the application."""
-    env = os.environ.copy()
+    env = os_module.environ.copy()
 
     if os_str == "win":
         env["PATH"] = (
@@ -74,15 +74,18 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
 
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
+    # Allow extra GN args via environment variable (e.g. vs_version=2022)
+    extra_gn_args = os_module.environ.get("TEN_EXTRA_GN_ARGS", "")
+
     if os == "win":
         command = (
             f"tgn.bat gen {os} {arch} {BUILD_TYPE} "
-            "-- ten_enable_standalone_test=true"
+            f"-- ten_enable_standalone_test=true {extra_gn_args}"
         )
     else:
         command = (
             f"tgn gen {os} {arch} {BUILD_TYPE} "
-            "-- ten_enable_standalone_test=true"
+            f"-- ten_enable_standalone_test=true {extra_gn_args}"
         )
 
     rc = run_cmd(command)
