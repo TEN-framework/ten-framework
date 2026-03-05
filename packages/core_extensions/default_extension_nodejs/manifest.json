@@ -77,7 +77,7 @@
     ]
   },
   "scripts": {
-    "test": "tests/bin/start",
+    "test": "python3 tests/bin/start.py",
     "build": "python3 tools/run_script.py build"
   },
   "api": {}

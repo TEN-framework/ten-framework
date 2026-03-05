@@ -426,7 +426,7 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
-            
+
             # Fix PATH to use correct Python version
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
@@ -459,7 +459,7 @@ jobs:
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
             BIN_MAIN="bin/main.exe"
-            
+
             # Fix PATH to use correct Python version
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
@@ -662,7 +662,7 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
-            
+
             # Fix PATH to use correct Python version
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
@@ -694,7 +694,7 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
-            
+
             # Fix PATH to use correct Python version
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
@@ -985,6 +985,15 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses a cross-platform test command.
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_go/manifest.json"
+
           else
             WORK_DIR="/tmp"
           fi
@@ -1083,6 +1092,14 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses "test": "python3 tests/bin/start.py".
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_python/manifest.json"
           else
             WORK_DIR="/tmp"
           fi
@@ -1167,6 +1184,10 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
           else
             WORK_DIR="/tmp"
           fi
@@ -1203,6 +1224,18 @@ jobs:
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses "test": "python3 tests/bin/start.py".
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_nodejs/manifest.json"
           else
             WORK_DIR="/tmp"
           fi

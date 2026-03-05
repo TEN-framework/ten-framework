@@ -87,7 +87,7 @@
     ]
   },
   "scripts": {
-    "test": "tests/bin/start"
+    "test": "python3 tests/bin/start.py"
   },
   "api": {}
 }
