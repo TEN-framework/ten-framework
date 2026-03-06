@@ -8,17 +8,16 @@ use anyhow::Result;
 
 use super::types::{CheckStatus, CppCheckResult, Suggestion, ToolInfo};
 
-/// Use vswhere.exe to locate cl.exe from the latest VS installation.
-/// vswhere.exe ships with every VS 2017+ install and lives at a fixed path,
-/// so this works even when the Developer Command Prompt has not been activated.
+/// Check whether Visual Studio (with any C++ workload) is installed by
+/// querying vswhere.exe.
 #[cfg(windows)]
-fn find_cl_exe_via_vswhere() -> Option<String> {
+fn is_vs_installed() -> bool {
     let vswhere = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
     if !std::path::Path::new(vswhere).exists() {
-        return None;
+        return false;
     }
 
-    let vs_path = std::process::Command::new(vswhere)
+    std::process::Command::new(vswhere)
         .args([
             "-latest",
             "-products",
@@ -31,24 +30,51 @@ fn find_cl_exe_via_vswhere() -> Option<String> {
         .output()
         .ok()
         .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())?;
+        .map(|o| !String::from_utf8_lossy(&o.stdout).trim().is_empty())
+        .unwrap_or(false)
+}
 
-    // Read the default MSVC toolset version from the version file.
-    let version_file =
-        format!(r"{}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt", vs_path);
-    let msvc_ver = std::fs::read_to_string(&version_file).ok()?;
-    let msvc_ver = msvc_ver.trim();
+#[cfg(not(windows))]
+fn is_vs_installed() -> bool {
+    false
+}
 
-    let cl = format!(r"{}\VC\Tools\MSVC\{}\bin\Hostx64\x64\cl.exe", vs_path, msvc_ver);
-    if std::path::Path::new(&cl).exists() {
-        Some(cl)
+/// Use vswhere.exe to locate clang-cl.exe from the latest VS installation.
+/// clang-cl.exe is available when the "C++ Clang tools" component is installed.
+#[cfg(windows)]
+fn find_clang_cl_exe_via_vswhere() -> Option<String> {
+    let vswhere = r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
+    if !std::path::Path::new(vswhere).exists() {
+        return None;
+    }
+
+    let vs_path = std::process::Command::new(vswhere)
+        .args([
+            "-latest",
+            "-products",
+            "*",
+            "-requires",
+            "Microsoft.VisualStudio.Component.VC.Llvm.Clang",
+            "-property",
+            "installationPath",
+        ])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+        .filter(|s| !s.is_empty())?;
+
+    let clang_cl =
+        format!(r"{}\VC\Tools\Llvm\x64\bin\clang-cl.exe", vs_path);
+    if std::path::Path::new(&clang_cl).exists() {
+        Some(clang_cl)
     } else {
         None
     }
 }
 
 #[cfg(not(windows))]
-fn find_cl_exe_via_vswhere() -> Option<String> {
+fn find_clang_cl_exe_via_vswhere() -> Option<String> {
     None
 }
 
@@ -308,32 +334,42 @@ pub fn check() -> Result<CppCheckResult> {
             });
         }
     } else if os == "windows" {
-        // On Windows, cl.exe is not in PATH unless running inside a Developer
-        // Command Prompt / Developer PowerShell. We use vswhere.exe (bundled
-        // with every VS installation) to locate it directly.
-        let cl_path = find_cl_exe_via_vswhere();
+        // Check whether Visual Studio is installed via vswhere.
+        let has_vs = is_vs_installed();
 
-        let msvc_check = if let Some(ref path) = cl_path {
-            std::process::Command::new(path).arg("/?").output()
+        // Check clang-cl.exe (shipped with VS "C++ Clang tools" component).
+        let clang_cl_path = find_clang_cl_exe_via_vswhere();
+
+        let clang_cl_check = if let Some(ref path) = clang_cl_path {
+            std::process::Command::new(path).arg("--version").output()
         } else {
             // Fallback: maybe the user already has it in PATH.
-            std::process::Command::new("cl.exe").arg("/?").output()
+            std::process::Command::new("clang-cl.exe")
+                .arg("--version")
+                .output()
         };
 
-        match msvc_check {
-            Ok(output) if output.status.success() || !output.stderr.is_empty() => {
-                // cl.exe prints version info to stderr, not stdout.
-                let version_str = String::from_utf8_lossy(&output.stderr);
-                let version = version_str.lines().next().map(|s| s.trim().to_string());
+        match clang_cl_check {
+            Ok(output) if output.status.success() => {
+                let version_str =
+                    String::from_utf8_lossy(&output.stdout);
+                let version = version_str
+                    .lines()
+                    .next()
+                    .map(|s| s.trim().to_string());
 
-                let resolved_path = cl_path.or_else(|| {
+                let resolved_path = clang_cl_path.or_else(|| {
                     std::process::Command::new("where.exe")
-                        .arg("cl.exe")
+                        .arg("clang-cl.exe")
                         .output()
                         .ok()
                         .and_then(|o| {
                             if o.status.success() {
-                                Some(String::from_utf8_lossy(&o.stdout).trim().to_string())
+                                Some(
+                                    String::from_utf8_lossy(&o.stdout)
+                                        .trim()
+                                        .to_string(),
+                                )
                             } else {
                                 None
                             }
@@ -341,7 +377,7 @@ pub fn check() -> Result<CppCheckResult> {
                 });
 
                 compilers.push(ToolInfo {
-                    name: "cl.exe (MSVC)".to_string(),
+                    name: "clang-cl.exe".to_string(),
                     version,
                     path: resolved_path,
                     status: CheckStatus::Ok,
@@ -351,7 +387,7 @@ pub fn check() -> Result<CppCheckResult> {
             }
             _ => {
                 compilers.push(ToolInfo {
-                    name: "cl.exe (MSVC)".to_string(),
+                    name: "clang-cl.exe".to_string(),
                     version: None,
                     path: None,
                     status: CheckStatus::Error,
@@ -361,13 +397,37 @@ pub fn check() -> Result<CppCheckResult> {
         }
 
         if !has_compiler {
-            suggestions.push(Suggestion {
-                issue: "MSVC compiler not found".to_string(),
-                command: Some("Install Visual Studio with C++ build tools".to_string()),
-                help_text: Some(
-                    "Please install Visual Studio with C++ development tools".to_string(),
-                ),
-            });
+            if has_vs {
+                // VS is installed but the Clang component is missing.
+                suggestions.push(Suggestion {
+                    issue: "clang-cl.exe not found".to_string(),
+                    command: None,
+                    help_text: Some(
+                        "Visual Studio is installed but the C++ Clang tools \
+                         component is missing. Please open Visual Studio \
+                         Installer, click \"Modify\", and enable the \
+                         \"C++ Clang tools\" component under \
+                         \"Individual components\", then install it."
+                            .to_string(),
+                    ),
+                });
+            } else {
+                // VS is not installed at all.
+                suggestions.push(Suggestion {
+                    issue: "clang-cl.exe not found".to_string(),
+                    command: Some(
+                        "Install Visual Studio with C++ build tools"
+                            .to_string(),
+                    ),
+                    help_text: Some(
+                        "Please install Visual Studio with C++ development \
+                         tools. During installation, make sure to also enable \
+                         the \"C++ Clang tools\" component under \
+                         \"Individual components\"."
+                            .to_string(),
+                    ),
+                });
+            }
         }
     }
 

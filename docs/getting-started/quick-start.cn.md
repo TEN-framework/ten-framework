@@ -450,10 +450,13 @@ xcode-select --install
 ```powershell
 # 方式一：安装 Visual Studio Build Tools（推荐）
 # 从 https://visualstudio.microsoft.com/visual-cpp-build-tools/ 下载安装
-# 安装时选择 "使用 C++ 的桌面开发" 工作负载
 
 # 方式二：使用 winget 安装
 winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive"
+
+# 💡注意：
+#  - 安装时选择 "使用 C++ 的桌面开发" 工作负载
+#  - 且务必勾选“适用于Windows的C++ Clang工具”
 ```
 
 验证编译器安装：
