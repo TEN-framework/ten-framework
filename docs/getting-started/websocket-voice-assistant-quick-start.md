@@ -144,7 +144,7 @@ cd ..\..\..   # back to ai_agents
 notepad .env
 ```
 
-Add:
+Copy all content from .env.example, then fill in:
 
 ```bash
 # Deepgram - ASR
@@ -429,6 +429,25 @@ netstat -ano | findstr :3000   # or :8080
 taskkill /PID <PID> /F
 ```
 
+</details>
+
+<details>
+<summary><strong>Go module related errors</strong></summary>
+
+```bash
+# Set proxy
+# Linux/macOS
+export GOPROXY=https://goproxy.cn,direct
+# Windows PowerShell
+$env:GOPROXY = "https://goproxy.cn,direct"
+
+# Clean Go module cache
+go clean -modcache
+
+# Reinstall dependencies
+cd ai_agents/agents/examples/websocket-example
+task install
+```
 </details>
 
 ## Next steps

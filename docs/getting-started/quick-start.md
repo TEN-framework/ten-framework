@@ -534,6 +534,9 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 
 ```
 # Set proxy
+# Linux/macOS
+export GOPROXY=https://goproxy.cn,direct
+# Windows PowerShell
 $env:GOPROXY = "https://goproxy.cn,direct"
 
 # Clean Go module cache

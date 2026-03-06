@@ -540,6 +540,9 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 
 ```bash
 # 设置代理
+# Linux/macOS
+export GOPROXY=https://goproxy.cn,direct
+# Windows PowerShell
 $env:GOPROXY = "https://goproxy.cn,direct"
 
 # 清理 Go module 缓存
