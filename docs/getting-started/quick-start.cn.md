@@ -31,17 +31,8 @@ _portal_target: getting-started/quick-start.cn.md
 
 ### Python 3.10
 
-**Linux / macOS：**
-
 ```bash
 python3 --version
-# 应显示: Python 3.10.x
-```
-
-**Windows：**
-
-```powershell
-python --version
 # 应显示: Python 3.10.x
 ```
 
@@ -65,13 +56,16 @@ python --version
 >
 > 注意，点击Install Now前务必勾选 "Add Python to PATH"
 >
+> 然后，需要将 Python 安装目录下的 python.exe 复制一份，并重命名为 python3.exe
+>
 > ```powershell
 > # 推荐安装后使用 venv 创建虚拟环境，在该环境中工作
 > py -3.10 -m venv $env:USERPROFILE\ten-venv
 > # 每次工作前，激活环境
 > & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
 >
-> # 若有权限错误，改变执行策略来允许ps1脚本执行
+> # 若有权限错误，关闭终端/IDE，右键选择“以管理员身份运行”重新打开
+> # 或者改变执行策略来允许ps1脚本执行
 > Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 > ```
 
@@ -477,7 +471,7 @@ clang --version
 
 ```powershell
 # 在 "Developer PowerShell for VS" 中执行
-cl
+clang-cl --version
 ```
 
 ### 常见问题（C++ 扩展）
@@ -568,6 +562,12 @@ pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirement
 **问题**：Azure语音服务相关错误，比如认证失败
 
 **解决方案**：检查.env文件中的配置是否正确，确保 AZURE_STT_KEY 和 AZURE_STT_REGION 填写无误
+
+### 7. Windows下权限问题
+
+**问题**：Windows下在访问文件时报PermissionError
+
+**解决方案**：右键点击PowerShell，选择“以管理员身份运行”
 
 ## 获取帮助
 
