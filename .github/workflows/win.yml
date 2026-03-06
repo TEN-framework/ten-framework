@@ -472,7 +472,11 @@ jobs:
           Write-Host "✓ Copied libten_runtime_python.pyd.lib"
 
       - name: Publish release to TEN cloud store
-        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
+        if: |
+          (github.event_name == 'release' ||
+          (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) &&
+          matrix.build_type == 'release' &&
+          matrix.compiler == 'msvc'
         continue-on-error: true
         shell: pwsh
         run: |
@@ -554,7 +558,11 @@ jobs:
           Write-Host "Publication summary: $SUCCESSFUL_PUBLISHES successful, $FAILED_PUBLISHES failed"
 
       - name: Clean up
-        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
+        if: |
+          (github.event_name == 'release' ||
+          (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) &&
+          matrix.build_type == 'release' &&
+          matrix.compiler == 'msvc'
         continue-on-error: true
         shell: pwsh
         run: |
