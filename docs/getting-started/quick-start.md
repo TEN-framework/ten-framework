@@ -61,7 +61,7 @@ python3 --version
 > ```powershell
 > # It's recommended to create a venv after installation
 > py -3.10 -m venv $env:USERPROFILE\ten-venv
-> # Activate the environment before each session
+> # Activate the environment
 > & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
 >
 > # If you encounter a permission error, close the terminal/IDE, right-click and select "Run as Administrator" to reopen

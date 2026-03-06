@@ -61,7 +61,7 @@ python3 --version
 > ```powershell
 > # 推荐安装后使用 venv 创建虚拟环境，在该环境中工作
 > py -3.10 -m venv $env:USERPROFILE\ten-venv
-> # 每次工作前，激活环境
+> # 激活环境
 > & "$env:USERPROFILE\ten-venv\Scripts\Activate.ps1"
 >
 > # 若有权限错误，关闭终端/IDE，右键选择“以管理员身份运行”重新打开
