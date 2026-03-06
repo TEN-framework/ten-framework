@@ -56,7 +56,15 @@ python3 --version
 >
 > Make sure to check "Add Python to PATH" before clicking Install Now.
 >
-> Then, copy the python.exe in the Python installation directory and rename it to python3.exe.
+> ```bash
+> # On Windows, configure a python3 alias:
+>
+> # Open the profile file (if prompted that the file doesn't exist, select "Yes" to create it).
+>  notepad $PROFILE
+> # In the opened Notepad, add the following line:
+> Set-Alias python3 python.exe
+> # Save the file and close Notepad. Then restart PowerShell for the changes to take effect.
+> ```
 >
 > ```powershell
 > # It's recommended to create a venv after installation

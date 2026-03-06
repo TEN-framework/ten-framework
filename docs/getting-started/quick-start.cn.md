@@ -56,7 +56,15 @@ python3 --version
 >
 > 注意，点击Install Now前务必勾选 "Add Python to PATH"
 >
-> 然后，需要将 Python 安装目录下的 python.exe 复制一份，并重命名为 python3.exe
+> ```bash
+> # Windows平台需要配置python3别名：
+>
+> # 打开配置文件（如果提示文件不存在，选择“是”创建它）。
+>  notepad $PROFILE
+> # 在打开的记事本中，添加一行：
+> Set-Alias python3 python.exe
+> # 保存文件，并关闭记事本。然后重启 PowerShell 使配置生效。
+> ```
 >
 > ```powershell
 > # 推荐安装后使用 venv 创建虚拟环境，在该环境中工作
