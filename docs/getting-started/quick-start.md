@@ -57,13 +57,18 @@ python3 --version
 > Make sure to check "Add Python to PATH" before clicking Install Now.
 >
 > ```bash
-> # On Windows, configure a python3 alias:
+> # On Windows, configure the python3 command:
 >
-> # Open the profile file (if prompted that the file doesn't exist, select "Yes" to create it).
->  notepad $PROFILE
-> # In the opened Notepad, add the following line:
-> Set-Alias python3 python.exe
-> # Save the file and close Notepad. Then restart PowerShell for the changes to take effect.
+> # First, find where python is installed:
+> where.exe python
+> # Example output: C:\Users\YourName\AppData\Local\Programs\Python\Python310\python.exe
+>
+> # Then, open PowerShell as Administrator and create a symlink in the same directory:
+> New-Item -ItemType SymbolicLink -Path "C:\Users\YourName\AppData\Local\Programs\Python\Python310\python3.exe" -Target "C:\Users\YourName\AppData\Local\Programs\Python\Python310\python.exe"
+> # Replace the paths above with the actual output from where.exe python
+>
+> # Verify:
+> python3 --version
 > ```
 >
 > ```powershell

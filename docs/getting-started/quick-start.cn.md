@@ -57,13 +57,18 @@ python3 --version
 > 注意，点击Install Now前务必勾选 "Add Python to PATH"
 >
 > ```bash
-> # Windows平台需要配置python3别名：
+> # Windows平台需要配置python3命令：
 >
-> # 打开配置文件（如果提示文件不存在，选择“是”创建它）。
->  notepad $PROFILE
-> # 在打开的记事本中，添加一行：
-> Set-Alias python3 python.exe
-> # 保存文件，并关闭记事本。然后重启 PowerShell 使配置生效。
+> # 首先，确认python的安装路径：
+> where.exe python
+> # 输出示例: C:\Users\YourName\AppData\Local\Programs\Python\Python310\python.exe
+>
+> # 然后，以管理员身份打开 PowerShell，在python.exe同目录下创建symlink：
+> New-Item -ItemType SymbolicLink -Path "C:\Users\YourName\AppData\Local\Programs\Python\Python310\python3.exe" -Target "C:\Users\YourName\AppData\Local\Programs\Python\Python310\python.exe"
+> # 请将上面的路径替换为 where.exe python 的实际输出路径
+>
+> # 验证：
+> python3 --version
 > ```
 >
 > ```powershell
