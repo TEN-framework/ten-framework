@@ -3,6 +3,7 @@
     "key": "${env:DEEPGRAM_API_KEY}",
     "url": "wss://api.deepgram.com/v2/listen",
     "model": "flux-general-en",
+    "finalize_mode": "mute_pkg",
     "sample_rate": 16000,
     "encoding": "linear16",
     "eager_eot_threshold": 0.6,

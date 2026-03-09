@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import asyncio
+import copy
 from typing import Dict, Any
 
 from typing_extensions import override
@@ -167,12 +168,16 @@ class DeepgramASRExtension(
         self.ten_env.log_debug(
             f"Deepgram finalize start at {self.last_finalize_timestamp}"
         )
+
+        finalize_mode = self.config.finalize_mode
         if self.config.is_flux_model:
-            await self._handle_finalize_mute_pkg()
+            if finalize_mode == "ignore":
+                await self._finalize_end()
+            else:
+                await self._handle_finalize_mute_pkg()
         else:
-            finalize_mode = self.config.finalize_mode
-            if finalize_mode == "disconnect":
-                await self._handle_finalize_disconnect()
+            if finalize_mode == "flush_api":
+                await self._handle_finalize_flush_api()
             elif finalize_mode == "mute_pkg":
                 await self._handle_finalize_mute_pkg()
             else:
@@ -194,6 +199,45 @@ class DeepgramASRExtension(
             data = Data.create("eager_eos")
             await self.ten_env.send_data(data)
 
+    def _build_metadata_with_asr_info(
+        self,
+        additional_fields: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Build metadata according to protocol: session_id at root, others in asr_info.
+
+        Args:
+            additional_fields: Additional fields to add to asr_info
+
+        Returns:
+            Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
+        """
+        # Start with a copy of base metadata if available
+        base_metadata = (
+            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        )
+
+        # Extract session_id from base metadata if present
+        session_id = base_metadata.pop("session_id", None)
+
+        # Collect all other fields into asr_info
+        asr_info = copy.deepcopy(base_metadata)
+
+        # Add vendor field to asr_info
+        asr_info["vendor"] = self.vendor()
+        asr_info["model"] = self.config.params.get("model", "unknown")
+
+        # Add additional fields to asr_info if provided
+        if additional_fields:
+            asr_info.update(additional_fields)
+
+        # Build final metadata structure
+        metadata: Dict[str, Any] = {}
+        if session_id is not None:
+            metadata["session_id"] = session_id
+        metadata["asr_info"] = asr_info
+
+        return metadata
+
     async def _handle_asr_result(
         self,
         text: str,
@@ -201,6 +245,7 @@ class DeepgramASRExtension(
         start_ms: int = 0,
         duration_ms: int = 0,
         language: str = "",
+        metadata: Dict[str, Any] | None = None,
     ):
         """Process ASR recognition result"""
         assert self.config is not None
@@ -215,12 +260,22 @@ class DeepgramASRExtension(
             duration_ms=duration_ms,
             language=language,
             words=[],
+            metadata=metadata if metadata is not None else {},
         )
 
         await self.send_asr_result(asr_result)
 
     async def _handle_finalize_disconnect(self):
-        """Handle disconnect mode finalization"""
+        """Handle disconnect mode finalization.
+
+        Deprecated: This method uses flush_api for finalization.
+        """
+        if self.recognition:
+            await self.recognition.stop()
+            self.ten_env.log_debug("Deepgram finalize completed")
+
+    async def _handle_finalize_flush_api(self):
+        """Handle flush API mode finalization"""
         if self.recognition:
             await self.recognition.stop()
             self.ten_env.log_debug("Deepgram finalize completed")
@@ -352,7 +407,7 @@ class DeepgramASRExtension(
         try:
             # Extract basic fields
             if self.config.is_flux_model:
-                event = message_data.get("event", {})
+                event = message_data.get("event", "")
                 result_to_send = message_data.get("transcript", "")
 
                 is_final = event == "EndOfTurn"
@@ -370,6 +425,25 @@ class DeepgramASRExtension(
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
                 await self._handle_event_result(event)
+
+                # Build metadata with asr_info for flux model
+                turn_index = message_data.get("turn_index")
+                end_of_turn_confidence = message_data.get(
+                    "end_of_turn_confidence"
+                )
+
+                asr_info_fields: Dict[str, Any] = {
+                    "turn_event": event,
+                }
+                if turn_index is not None:
+                    asr_info_fields["turn_index"] = turn_index
+                if end_of_turn_confidence is not None:
+                    asr_info_fields["end_of_turn_confidence"] = (
+                        end_of_turn_confidence
+                    )
+
+                metadata = self._build_metadata_with_asr_info(asr_info_fields)
+
                 # Process ASR result
                 await self._handle_asr_result(
                     text=result_to_send,
@@ -377,6 +451,7 @@ class DeepgramASRExtension(
                     start_ms=actual_start_ms,
                     duration_ms=duration_ms,
                     language=self.config.normalized_language,
+                    metadata=metadata,
                 )
 
             else:

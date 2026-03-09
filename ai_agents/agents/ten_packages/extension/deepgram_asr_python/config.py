@@ -34,7 +34,7 @@ class DeepgramASRConfig(BaseModel):
     # Debugging and dumping
     dump: bool = False
     dump_path: str = "/tmp"
-    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
+    finalize_mode: str = "mute_pkg"  # "flush_api" or "mute_pkg" or "ignore"
     mute_pkg_duration_ms: int = 1000
     # Additional parameters
     params: dict[str, Any] = Field(default_factory=dict)
@@ -47,6 +47,14 @@ class DeepgramASRConfig(BaseModel):
         else:
             # Default to nova params (includes nova-3, nova-2, etc.)
             return NOVA_DEFAULT_PARAMS.copy()
+
+    def _get_default_finalize_mode(self, model: str) -> str:
+        """Get default finalize mode based on model type."""
+        model_lower = (model or "").lower()
+        if "flux" in model_lower:
+            return "ignore"
+        else:
+            return "flush_api"
 
     def apply_defaults(self) -> None:
         """Apply default params based on model type."""
@@ -67,6 +75,15 @@ class DeepgramASRConfig(BaseModel):
                 params_dict[key] = value
 
         self.params = params_dict
+
+        # Set finalize_mode from params or use default based on model type
+        if (
+            "finalize_mode" in params_dict
+            and params_dict["finalize_mode"] is not None
+        ):
+            self.finalize_mode = params_dict["finalize_mode"]
+        else:
+            self.finalize_mode = self._get_default_finalize_mode(current_model)
 
     def update(self, params: Dict[str, Any]) -> None:
         """Update configuration with additional parameters."""

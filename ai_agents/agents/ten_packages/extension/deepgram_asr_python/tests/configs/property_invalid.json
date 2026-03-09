@@ -4,6 +4,7 @@
     "url": "wss://invalid/listen",
     "model": "flux-general-en",
     "sample_rate": 16000,
+    "finalize_mode": "mute_pkg",
     "encoding": "linear16",
     "eager_eot_threshold": 0.6,
     "eot_threshold": 0.8,
