@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_async_extension_python",
-  "version": "0.11.55",
+  "version": "0.11.59",
   "display_name": {
     "locales": {
       "en-US": {
@@ -67,7 +67,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.55"
+      "version": "0.11.59"
     }
   ],
   "package": {
@@ -87,7 +87,7 @@
     ]
   },
   "scripts": {
-    "test": "tests/bin/start"
+    "test": "python3 tests/bin/start.py"
   },
   "api": {}
 }

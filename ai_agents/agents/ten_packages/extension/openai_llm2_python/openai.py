@@ -12,7 +12,7 @@ import json
 import random
 from typing import AsyncGenerator, List
 from pydantic import BaseModel
-import requests
+import httpx
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
@@ -72,6 +72,11 @@ class OpenAIChatGPT:
         ten_env.log_info(
             f"OpenAIChatGPT initialized with config: {config.api_key}"
         )
+        self.http_client = None
+        if config.proxy_url:
+            ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
+            self.http_client = httpx.AsyncClient(proxy=config.proxy_url)
+
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
@@ -79,16 +84,8 @@ class OpenAIChatGPT:
                 "api-key": config.api_key,
                 "Authorization": f"Bearer {config.api_key}",
             },
+            http_client=self.http_client,
         )
-        self.session = requests.Session()
-        if config.proxy_url:
-            proxies = {
-                "http": config.proxy_url,
-                "https": config.proxy_url,
-            }
-            ten_env.log_info(f"Setting proxies: {proxies}")
-            self.session.proxies.update(proxies)
-        self.client.session = self.session
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         json_dict = {
