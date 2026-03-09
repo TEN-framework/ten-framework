@@ -117,3 +117,27 @@ ten_go_error_t ten_go_cmd_start_graph_set_long_running_mode(
 
   return cgo_error;
 }
+
+ten_go_error_t ten_go_cmd_start_graph_set_sync_stop_before_deinit(
+    uintptr_t bridge_addr, bool sync_stop_before_deinit) {
+  ten_go_msg_t *msg_bridge = ten_go_msg_reinterpret(bridge_addr);
+  TEN_ASSERT(msg_bridge && ten_go_msg_check_integrity(msg_bridge),
+             "Should not happen.");
+
+  ten_go_error_t cgo_error;
+  TEN_GO_ERROR_INIT(cgo_error);
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool success = ten_cmd_start_graph_set_sync_stop_before_deinit(
+      ten_go_msg_c_msg(msg_bridge), sync_stop_before_deinit, &err);
+
+  if (!success) {
+    ten_go_error_set(&cgo_error, ten_error_code(&err), ten_error_message(&err));
+  }
+
+  ten_error_deinit(&err);
+
+  return cgo_error;
+}

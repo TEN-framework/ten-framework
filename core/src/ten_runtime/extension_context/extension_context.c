@@ -83,6 +83,9 @@ ten_extension_context_t *ten_extension_context_create(ten_engine_t *engine) {
   self->extension_threads_cnt_of_ready = 0;
   self->extension_threads_cnt_of_closed = 0;
 
+  self->extensions_total_cnt = 0;
+  self->extensions_cnt_of_stop_done = 0;
+
   return self;
 }
 
@@ -153,6 +156,20 @@ void ten_extension_context_close(ten_extension_context_t *self) {
 
   self->extension_threads_cnt_of_closed = 0;
   self->extension_threads_total_cnt = ten_list_size(&self->extension_threads);
+
+  // Compute the count of local extensions for sync_stop_before_deinit mode.
+  // Only extensions whose app_uri matches the local app are counted, since
+  // remote extensions reside on other apps and cannot be coordinated here.
+  self->extensions_cnt_of_stop_done = 0;
+  self->extensions_total_cnt = 0;
+  ten_list_foreach (&self->extensions_info_from_graph, iter) {
+    ten_extension_info_t *ext_info =
+        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
+    if (ten_string_is_equal(&ext_info->loc.app_uri,
+                            &self->engine->app->uri)) {
+      self->extensions_total_cnt++;
+    }
+  }
 
   ten_list_foreach (&self->extension_threads, iter) {
     ten_extension_thread_t *extension_thread = ten_ptr_listnode_get(iter.node);
