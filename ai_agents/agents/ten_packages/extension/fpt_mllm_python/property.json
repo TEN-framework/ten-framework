@@ -1,0 +1,17 @@
+{
+  "token_url": "${env:FPT_VOICE_AGENT_TOKEN_URL}",
+  "websocket_url": "${env:FPT_VOICE_AGENT_WEBSOCKET_URL}",
+  "api_key": "${env:FPT_VOICE_AGENT_API_KEY}",
+  "app_id": "${env:FPT_VOICE_AGENT_APP_ID|}",
+  "model": "vi-gpt-realtime",
+  "language": "vi-VN",
+  "prompt": "",
+  "temperature": 0.8,
+  "max_tokens": 1024,
+  "voice": "default",
+  "server_vad": true,
+  "audio_out": true,
+  "input_transcript": true,
+  "sample_rate": 16000,
+  "vendor": "fpt"
+}
