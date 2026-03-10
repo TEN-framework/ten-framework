@@ -108,7 +108,7 @@
         free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
-      written = fprintf(stderr, "%s\n", ____err_msg);                  \
+      written = dprintf(2, "%s\n", ____err_msg);                       \
       if (written < 0) {                                               \
         free(____err_msg);                                             \
         abort();                                                       \
