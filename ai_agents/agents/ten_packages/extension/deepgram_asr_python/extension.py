@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import asyncio
+import copy
 from typing import Dict, Any
 
 from typing_extensions import override
@@ -22,6 +23,7 @@ from ten_ai_base.message import (
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
+    Data,
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
@@ -73,6 +75,10 @@ class DeepgramASRExtension(
         try:
             self.config = DeepgramASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
+
+            # Apply default params based on model type (nova or flux)
+            self.config.apply_defaults()
+
             ten_env.log_info(
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -164,12 +170,73 @@ class DeepgramASRExtension(
         )
 
         finalize_mode = self.config.finalize_mode
-        if finalize_mode == "disconnect":
-            await self._handle_finalize_disconnect()
-        elif finalize_mode == "mute_pkg":
-            await self._handle_finalize_mute_pkg()
+        if self.config.is_flux_model:
+            if finalize_mode == "ignore":
+                await self._finalize_end()
+            else:
+                await self._handle_finalize_mute_pkg()
         else:
-            raise ValueError(f"invalid finalize mode: {finalize_mode}")
+            if finalize_mode == "flush_api":
+                await self._handle_finalize_flush_api()
+            elif finalize_mode == "mute_pkg":
+                await self._handle_finalize_mute_pkg()
+            else:
+                raise ValueError(f"invalid finalize mode: {finalize_mode}")
+
+    async def _handle_event_result(self, event: str) -> None:
+        """Handle ASR event result"""
+        self.ten_env.log_info(
+            f"_handle_event_result: {event}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+        if event == "StartOfTurn":
+            data = Data.create("sos")
+            await self.ten_env.send_data(data)
+        elif event == "EndOfTurn":
+            data = Data.create("eos")
+            await self.ten_env.send_data(data)
+        elif event == "EagerEndOfTurn":
+            data = Data.create("eager_eos")
+            await self.ten_env.send_data(data)
+
+    def _build_metadata_with_asr_info(
+        self,
+        additional_fields: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Build metadata according to protocol: session_id at root, others in asr_info.
+
+        Args:
+            additional_fields: Additional fields to add to asr_info
+
+        Returns:
+            Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
+        """
+        # Start with a copy of base metadata if available
+        base_metadata = (
+            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        )
+
+        # Extract session_id from base metadata if present
+        session_id = base_metadata.pop("session_id", None)
+
+        # Collect all other fields into asr_info
+        asr_info = copy.deepcopy(base_metadata)
+
+        # Add vendor field to asr_info
+        asr_info["vendor"] = self.vendor()
+        asr_info["model"] = self.config.params.get("model", "unknown")
+
+        # Add additional fields to asr_info if provided
+        if additional_fields:
+            asr_info.update(additional_fields)
+
+        # Build final metadata structure
+        metadata: Dict[str, Any] = {}
+        if session_id is not None:
+            metadata["session_id"] = session_id
+        metadata["asr_info"] = asr_info
+
+        return metadata
 
     async def _handle_asr_result(
         self,
@@ -178,6 +245,7 @@ class DeepgramASRExtension(
         start_ms: int = 0,
         duration_ms: int = 0,
         language: str = "",
+        metadata: Dict[str, Any] | None = None,
     ):
         """Process ASR recognition result"""
         assert self.config is not None
@@ -192,12 +260,22 @@ class DeepgramASRExtension(
             duration_ms=duration_ms,
             language=language,
             words=[],
+            metadata=metadata if metadata is not None else {},
         )
 
         await self.send_asr_result(asr_result)
 
     async def _handle_finalize_disconnect(self):
-        """Handle disconnect mode finalization"""
+        """Handle disconnect mode finalization.
+
+        Deprecated: This method uses flush_api for finalization.
+        """
+        if self.recognition:
+            await self.recognition.stop()
+            self.ten_env.log_debug("Deepgram finalize completed")
+
+    async def _handle_finalize_flush_api(self):
+        """Handle flush API mode finalization"""
         if self.recognition:
             await self.recognition.stop()
             self.ten_env.log_debug("Deepgram finalize completed")
@@ -324,41 +402,90 @@ class DeepgramASRExtension(
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
         """Handle recognition result callback"""
+        assert self.config is not None
 
         try:
             # Extract basic fields
-            is_final = message_data.get("is_final", False)
+            if self.config.is_flux_model:
+                event = message_data.get("event", "")
+                result_to_send = message_data.get("transcript", "")
 
-            # Extract transcript and words from channel.alternatives[0]
-            channel = message_data.get("channel", {})
-            alternatives = channel.get("alternatives", [])
-            if not alternatives:
-                self.ten_env.log_debug("No alternatives in Deepgram result")
-                return
+                is_final = event == "EndOfTurn"
 
-            first_alt = alternatives[0]
-            result_to_send = first_alt.get("transcript", "")
+                start_ms = int(
+                    message_data.get("audio_window_start", 0) * 1000 or 0
+                )
+                end_ms = int(
+                    message_data.get("audio_window_end", 0) * 1000 or 0
+                )
+                duration_ms = end_ms - start_ms
 
-            # Extract timing information (in seconds, convert to milliseconds)
-            start_seconds = message_data.get("start", 0)
-            duration_seconds = message_data.get("duration", 0)
-            start_ms = int(start_seconds * 1000)
-            duration_ms = int(duration_seconds * 1000)
+                actual_start_ms = int(
+                    self.audio_timeline.get_audio_duration_before_time(start_ms)
+                    + self.sent_user_audio_duration_ms_before_last_reset
+                )
+                await self._handle_event_result(event)
 
-            # Calculate actual start time using audio timeline
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
+                # Build metadata with asr_info for flux model
+                turn_index = message_data.get("turn_index")
+                end_of_turn_confidence = message_data.get(
+                    "end_of_turn_confidence"
+                )
 
-            # Process ASR result
-            await self._handle_asr_result(
-                text=result_to_send,
-                final=is_final,
-                start_ms=actual_start_ms,
-                duration_ms=duration_ms,
-                language=self.config.normalized_language,
-            )
+                asr_info_fields: Dict[str, Any] = {
+                    "turn_event": event,
+                }
+                if turn_index is not None:
+                    asr_info_fields["turn_index"] = turn_index
+                if end_of_turn_confidence is not None:
+                    asr_info_fields["end_of_turn_confidence"] = (
+                        end_of_turn_confidence
+                    )
+
+                metadata = self._build_metadata_with_asr_info(asr_info_fields)
+
+                # Process ASR result
+                await self._handle_asr_result(
+                    text=result_to_send,
+                    final=is_final,
+                    start_ms=actual_start_ms,
+                    duration_ms=duration_ms,
+                    language=self.config.normalized_language,
+                    metadata=metadata,
+                )
+
+            else:
+                is_final = message_data.get("is_final", False)
+                # Extract transcript and words from channel.alternatives[0]
+                channel = message_data.get("channel", {})
+                alternatives = channel.get("alternatives", [])
+                if not alternatives:
+                    self.ten_env.log_debug("No alternatives in Deepgram result")
+                    return
+
+                first_alt = alternatives[0]
+                result_to_send = first_alt.get("transcript", "")
+
+                # Extract timing information (in seconds, convert to milliseconds)
+                start_seconds = message_data.get("start", 0)
+                duration_seconds = message_data.get("duration", 0)
+                start_ms = int(start_seconds * 1000)
+                duration_ms = int(duration_seconds * 1000)
+
+                # Calculate actual start time using audio timeline
+                actual_start_ms = int(
+                    self.audio_timeline.get_audio_duration_before_time(start_ms)
+                    + self.sent_user_audio_duration_ms_before_last_reset
+                )
+
+                # Process ASR result
+                await self._handle_asr_result(
+                    text=result_to_send,
+                    final=is_final,
+                    start_ms=actual_start_ms,
+                    duration_ms=duration_ms,
+                    language=self.config.normalized_language,
+                )
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Deepgram result: {e}")

@@ -3,8 +3,15 @@ name: From Scratch
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - ".github/workflows/from_scratch.yml"
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
 
 permissions:
   contents: read
@@ -29,13 +36,17 @@ jobs:
             platform_name: "macOS ARM64"
             arch: "arm64"
             python-version: "3.10"
-          - runs-on: ubuntu-22.04
+          - runs-on: ubuntu-24.04
             platform_name: "Linux x64"
             arch: "x64"
             python-version: "3.10"
-          - runs-on: ubuntu-22.04-arm
+          - runs-on: ubuntu-24.04-arm
             platform_name: "Linux ARM64"
             arch: "arm64"
+            python-version: "3.10"
+          - runs-on: windows-2025
+            platform_name: "Windows x64"
+            arch: "x64"
             python-version: "3.10"
     steps:
       - name: Checkout repository
@@ -46,11 +57,13 @@ jobs:
       # This step is not necessary for the build, but it is useful for debugging.
       - name: Install tools and dependencies (macOS)
         if: runner.os == 'macOS'
+        shell: bash
         run: |
           brew install tree
 
       - name: Install tools and dependencies (Linux)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Linux build dependencies"
@@ -60,20 +73,21 @@ jobs:
 
           # Install C++ build essentials and libc++ development packages
           # TEN Framework uses clang and statically links libc++ on Linux
+          # Both Linux runners use Ubuntu 24.04 which ships LLVM 18
           sudo apt-get install -y \
             clang \
-            libc++-14-dev \
-            libc++abi-dev \
+            libc++-18-dev \
+            libc++abi-18-dev \
             tree
 
           # On ARM64, create symlinks for libc++ static libraries
           # (x64 runners already have them in the standard location)
           if [ "${{ matrix.arch }}" == "arm64" ]; then
-            if [ -f "/usr/lib/llvm-14/lib/libc++.a" ]; then
+            if [ -f "/usr/lib/llvm-18/lib/libc++.a" ]; then
               echo ""
               echo "Creating symlinks for libc++ static libraries on ARM64..."
-              sudo ln -sf /usr/lib/llvm-14/lib/libc++.a /usr/lib/aarch64-linux-gnu/libc++.a
-              sudo ln -sf /usr/lib/llvm-14/lib/libc++abi.a /usr/lib/aarch64-linux-gnu/libc++abi.a
+              sudo ln -sf /usr/lib/llvm-18/lib/libc++.a /usr/lib/aarch64-linux-gnu/libc++.a
+              sudo ln -sf /usr/lib/llvm-18/lib/libc++abi.a /usr/lib/aarch64-linux-gnu/libc++abi.a
               echo "✓ Symlinks created successfully"
             fi
           fi
@@ -97,7 +111,72 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Verify Node.js and npm installation
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "Verifying Node.js and npm installation"
+          echo "================================================"
+
+          echo "Node.js version:"
+          node --version
+
+          echo ""
+          echo "npm location and version:"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # On Windows, check for npm, npm.cmd, and npm.exe
+            if command -v npm &> /dev/null; then
+              echo "npm found: $(which npm)"
+              npm --version
+            elif command -v npm.cmd &> /dev/null; then
+              echo "npm.cmd found: $(which npm.cmd)"
+              npm.cmd --version
+            elif command -v npm.exe &> /dev/null; then
+              echo "npm.exe found: $(which npm.exe)"
+              npm.exe --version
+            else
+              echo "❌ ERROR: npm not found in PATH"
+              echo "PATH contents:"
+              echo "$PATH" | tr ':' '\n'
+              exit 1
+            fi
+          else
+            which npm
+            npm --version
+          fi
+
+          echo ""
+          echo "✓ Node.js and npm verified successfully"
+
+      - name: Install tools and dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "================================================"
+          Write-Host "Installing Windows build dependencies"
+          Write-Host "================================================"
+
+          # Disable Windows Store Python app execution aliases that shadow real Python
+          # These aliases intercept 'python'/'python3' commands and break scripts
+          # that check for Python availability
+          Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python.exe" -ErrorAction SilentlyContinue
+          Remove-Item "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.exe" -ErrorAction SilentlyContinue
+
+          # Install LLVM/Clang for C++ extension builds
+          winget install LLVM.LLVM --disable-interactivity --accept-source-agreements --accept-package-agreements
+
+          # Refresh PATH so clang is available in subsequent steps
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          # Create temp working directory
+          New-Item -ItemType Directory -Force -Path "C:\Temp" | Out-Null
+
+          Write-Host ""
+          Write-Host "✓ Windows build dependencies installed successfully"
+
       - name: Install tman using package manager
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing tman on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
@@ -111,6 +190,21 @@ jobs:
             sudo add-apt-repository -y ppa:ten-framework/ten-framework
             sudo apt update
             sudo apt install -y tman
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "Installing tman via winget..."
+            winget install TEN-framework.tman --disable-interactivity --accept-source-agreements --accept-package-agreements
+
+            # winget modifies the system/user PATH, but GitHub Actions steps
+            # inherit the PATH snapshot from job start. Re-read the current
+            # Machine+User PATH and add any new entries to GITHUB_PATH so
+            # subsequent steps can find tman.
+            NEW_PATH=$(powershell.exe -NoProfile -Command \
+              "[System.Environment]::GetEnvironmentVariable('PATH','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH','User')")
+            echo "$NEW_PATH" | tr ';' '\n' | while IFS= read -r p; do
+              if [ -n "$p" ] && ! echo "$PATH" | tr ':' '\n' | grep -qxF "$p"; then
+                echo "$p" >> $GITHUB_PATH
+              fi
+            done
           else
             echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
             exit 1
@@ -119,6 +213,7 @@ jobs:
           echo "✓ tman installation completed"
 
       - name: Verify tman installation
+        shell: bash
         run: |
           echo "================================================"
           echo "Verifying tman installation"
@@ -147,29 +242,83 @@ jobs:
           tman --help
 
       - name: Setup tgn (TEN build system)
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing tgn build system for C++ extensions"
           echo "================================================"
 
-          # Install tgn using the install script
-          # The script automatically handles CI environment and skips interactive prompts
-          bash tools/tgn/install_tgn.sh
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # On Windows, install to a temporary directory
+            # Use RUNNER_TEMP which is guaranteed to exist and be writable
+            TGN_INSTALL_DIR="${RUNNER_TEMP}/ten_gn"
+            echo "Installing tgn to: $TGN_INSTALL_DIR"
 
-          # Add tgn to PATH for subsequent steps
-          echo "/usr/local/ten_gn" >> $GITHUB_PATH
+            # Use the PowerShell install script with custom install directory
+            powershell -ExecutionPolicy Bypass -Command "\$env:TGN_INSTALL_DIR='$TGN_INSTALL_DIR'; & tools/tgn/install_tgn.ps1"
+
+            # Add tgn to PATH for subsequent steps
+            echo "$TGN_INSTALL_DIR" >> $GITHUB_PATH
+          else
+            # Install tgn using the install script
+            # The script automatically handles CI environment and skips interactive prompts
+            bash tools/tgn/install_tgn.sh
+            echo "/usr/local/ten_gn" >> $GITHUB_PATH
+          fi
 
           echo ""
           echo "✓ tgn setup completed"
 
+      - name: Verify tgn installation
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "Verifying tgn installation"
+          echo "================================================"
+
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            TGN_DIR="${RUNNER_TEMP}/ten_gn"
+            TGN_CMD="tgn.bat"
+          else
+            TGN_DIR="/usr/local/ten_gn"
+            TGN_CMD="tgn"
+          fi
+
+          # Check if tgn directory exists
+          if [ ! -d "$TGN_DIR" ]; then
+            echo "❌ ERROR: tgn directory not found at $TGN_DIR"
+            exit 1
+          fi
+
+          echo "✓ tgn directory found at $TGN_DIR"
+          echo "Contents:"
+          ls -la "$TGN_DIR" || echo "Cannot list directory contents"
+
+          # Check if tgn command exists
+          if [ ! -f "$TGN_DIR/$TGN_CMD" ]; then
+            echo "❌ ERROR: $TGN_CMD not found in $TGN_DIR"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ $TGN_CMD found"
+          echo "✓ tgn verification completed"
+
       - name: Create transcriber_demo app using tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating transcriber_demo app"
           echo "================================================"
 
-          # Create a temporary directory for the app
-          cd /tmp
+          # Set working directory based on OS
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Install the app using tman
           tman install app transcriber_demo
@@ -183,12 +332,19 @@ jobs:
           echo "✓ transcriber_demo app created successfully"
 
       - name: Verify app installation
+        shell: bash
         run: |
           echo "================================================"
           echo "Verifying transcriber_demo app structure"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # List the app structure
           echo "App directory structure:"
@@ -211,17 +367,26 @@ jobs:
           echo "✓ App structure verification completed"
 
       - name: Install app dependencies with tman
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing transcriber_demo ten packages"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install TEN package dependencies using tman
           tman install
 
-          tree -I .
+          if [[ "${{ runner.os }}" != "Windows" ]]; then
+            tree -I .
+          fi
 
           if [ $? -eq 0 ]; then
             echo "✓ tman install completed successfully"
@@ -230,13 +395,53 @@ jobs:
             exit 1
           fi
 
+      - name: Verify ten_runtime_python package from cloud
+        shell: bash
+        run: |
+          echo "================================================"
+          echo "Verifying ten_runtime_python package"
+          echo "================================================"
+
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+            PYTHON_LIB="libten_runtime_python.pyd"
+          else
+            WORK_DIR="/tmp"
+            PYTHON_LIB="libten_runtime_python.so"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
+
+          # Check if the Python runtime library exists
+          if [ -f "ten_packages/system/ten_runtime_python/lib/$PYTHON_LIB" ]; then
+            echo "✓ $PYTHON_LIB found"
+          else
+            echo "❌ ERROR: $PYTHON_LIB not found"
+            echo "Package may be incomplete or download failed"
+            exit 1
+          fi
+
       - name: Install pip and npm dependencies
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Installing pip and npm dependencies"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install Python and npm dependencies using tman
           tman run install_deps
@@ -249,12 +454,28 @@ jobs:
           fi
 
       - name: Build app with tman
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building transcriber_demo app"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+            BIN_MAIN="bin/main.exe"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+            BIN_MAIN="bin/main"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Build the app using tman (includes go build and tsc compilation)
           tman run build
@@ -265,11 +486,11 @@ jobs:
           fi
 
           # Verify that bin/main was generated
-          if [ -f "bin/main" ]; then
-            echo "✓ bin/main generated successfully"
-            ls -lh bin/main
+          if [ -f "$BIN_MAIN" ]; then
+            echo "✓ $BIN_MAIN generated successfully"
+            ls -lh "$BIN_MAIN"
           else
-            echo "❌ ERROR: bin/main not found"
+            echo "❌ ERROR: $BIN_MAIN not found"
             echo "Contents of bin directory:"
             ls -la bin/ || echo "bin directory does not exist"
             exit 1
@@ -279,12 +500,19 @@ jobs:
           echo "✓ Build verification completed"
 
       - name: Check nodejs_addon_loader manifest
+        shell: bash
         run: |
           echo "================================================"
           echo "Checking nodejs_addon_loader manifest.json"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           if [ -f "ten_packages/addon_loader/nodejs_addon_loader/manifest.json" ]; then
             echo "✓ nodejs_addon_loader manifest.json exists"
@@ -302,12 +530,32 @@ jobs:
           fi
 
       - name: Run app with tman
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Running transcriber_demo app on ${{ matrix.platform_name }} with Python ${{ matrix.python-version }}"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH: Ensure the correct Python version is used by tman
+            # Convert Windows path to Unix path for Git Bash
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
+            echo "Python environment after PATH fix:"
+            echo "  python3 --version: $(python3 --version 2>&1)"
+            echo "  python3 location: $(which python3 2>/dev/null)"
+            echo ""
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Start the app in the background
           echo "Starting app with 'tman run start'..."
@@ -339,12 +587,14 @@ jobs:
             exit 1
           fi
 
-          # Gracefully stop the app by sending SIGTERM
+          # Gracefully stop the app
           echo ""
-          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
-
-          # Kill the process group to ensure all child processes are terminated
-          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          echo "Stopping app gracefully (PID: $APP_PID)..."
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //PID $APP_PID //T //F 2>/dev/null || true
+          else
+            kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          fi
 
           # Wait for the app to shut down gracefully
           echo "Waiting for app to shut down..."
@@ -352,8 +602,12 @@ jobs:
 
           # Check if the app has stopped
           if ps -p $APP_PID > /dev/null 2>&1; then
-            echo "⚠ App did not stop gracefully, sending SIGKILL..."
-            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            echo "⚠ App did not stop gracefully, forcing kill..."
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              taskkill //PID $APP_PID //F 2>/dev/null || true
+            else
+              kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            fi
             sleep 1
           fi
 
@@ -366,8 +620,12 @@ jobs:
 
           # Extra cleanup: kill any remaining transcriber_demo processes
           echo "Cleaning up any remaining processes..."
-          pkill -f "transcriber_demo" || true
-          pkill -f "bin/main" || true
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //IM "main.exe" //F 2>/dev/null || true
+          else
+            pkill -f "transcriber_demo" || true
+            pkill -f "bin/main" || true
+          fi
 
           echo ""
           echo "================================================"
@@ -375,12 +633,19 @@ jobs:
           echo "================================================"
 
       - name: Install C++ extension webrtc_vad_cpp
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing C++ extension: webrtc_vad_cpp"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Install the C++ extension from the cloud store
           tman install extension webrtc_vad_cpp
@@ -393,12 +658,26 @@ jobs:
           fi
 
       - name: Build app with C++ extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Rebuilding app with C++ extension"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Rebuild the app to compile the C++ extension into a dynamic library
           tman run build
@@ -411,12 +690,26 @@ jobs:
           echo "✓ App with C++ extension built successfully"
 
       - name: Run app with VAD functionality
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Running transcriber_demo app with VAD functionality"
           echo "================================================"
 
-          cd /tmp/transcriber_demo
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/transcriber_demo"
 
           # Start the app with VAD support in the background
           echo "Starting app with 'tman run start_with_vad'..."
@@ -448,12 +741,14 @@ jobs:
             exit 1
           fi
 
-          # Gracefully stop the app by sending SIGTERM
+          # Gracefully stop the app
           echo ""
-          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
-
-          # Kill the process group to ensure all child processes are terminated
-          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          echo "Stopping app gracefully (PID: $APP_PID)..."
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //PID $APP_PID //T //F 2>/dev/null || true
+          else
+            kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+          fi
 
           # Wait for the app to shut down gracefully
           echo "Waiting for app to shut down..."
@@ -461,8 +756,12 @@ jobs:
 
           # Check if the app has stopped
           if ps -p $APP_PID > /dev/null 2>&1; then
-            echo "⚠ App did not stop gracefully, sending SIGKILL..."
-            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            echo "⚠ App did not stop gracefully, forcing kill..."
+            if [[ "${{ runner.os }}" == "Windows" ]]; then
+              taskkill //PID $APP_PID //F 2>/dev/null || true
+            else
+              kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            fi
             sleep 1
           fi
 
@@ -473,10 +772,14 @@ jobs:
             echo "✓ App with VAD stopped successfully"
           fi
 
-          # Extra cleanup: kill any remaining transcriber_demo processes
+          # Extra cleanup
           echo "Cleaning up any remaining processes..."
-          pkill -f "transcriber_demo" || true
-          pkill -f "bin/main" || true
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            taskkill //IM "main.exe" //F 2>/dev/null || true
+          else
+            pkill -f "transcriber_demo" || true
+            pkill -f "bin/main" || true
+          fi
 
           echo ""
           echo "================================================"
@@ -488,12 +791,19 @@ jobs:
       # ========================================
 
       - name: Create C++ extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating C++ extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a C++ extension using the default template
           tman create extension test_ext_cpp --template default_extension_cpp
@@ -506,12 +816,19 @@ jobs:
           echo "✓ C++ extension created successfully"
 
       - name: Install C++ extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing C++ extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -524,27 +841,36 @@ jobs:
           fi
 
       - name: Build C++ extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building C++ extension"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+            TEST_BIN="bin/test_ext_cpp_test.exe"
 
-          # Determine OS and architecture for build
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              OS_ARCH="mac arm64"
-            else
-              OS_ARCH="mac x64"
-            fi
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
+            # windows-2025 runner has VS 2022, not VS 2019
+            # Patch the downloaded run_script.py to pass vs_version=2022 to tgn
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # includes TEN_EXTRA_GN_ARGS support. After that, replace this
+            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2022"
+            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2022/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
-            if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-              OS_ARCH="linux arm64"
-            else
-              OS_ARCH="linux x64"
-            fi
+            WORK_DIR="/tmp"
+            TEST_BIN="bin/test_ext_cpp_test"
           fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Build using tman
           tman run build
@@ -555,9 +881,9 @@ jobs:
           fi
 
           # Verify that test binary was generated
-          if [ -f "bin/test_ext_cpp_test" ]; then
+          if [ -f "$TEST_BIN" ]; then
             echo "✓ C++ extension test binary generated successfully"
-            ls -lh bin/test_ext_cpp_test
+            ls -lh "$TEST_BIN"
           else
             echo "❌ ERROR: C++ extension test binary not found"
             echo "Contents of bin directory:"
@@ -566,12 +892,33 @@ jobs:
           fi
 
       - name: Test C++ extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing C++ extension"
           echo "================================================"
 
-          cd /tmp/test_ext_cpp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix run_script.py: use backslash paths for Windows CMD
+            # CMD interprets forward slash as option switch, not path separator
+            #
+            # TODO: Remove these sed workarounds once the cloud template
+            # includes the fixes from this repo's
+            # packages/core_extensions/default_extension_cpp/tools/run_script.py
+            # (os.path.join for paths, TEN_EXTRA_GN_ARGS support).
+            # After that, this entire Windows block can be simplified to just
+            # the PATH fix above.
+            sed -i 's|bin/|bin\\\\|g' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_cpp"
 
           # Run tests using tman
           tman run test
@@ -584,12 +931,19 @@ jobs:
           fi
 
       - name: Create Go extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Go extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Go extension using the default template
           tman create extension test_ext_go --template default_extension_go --template-data class_name_prefix=Test
@@ -602,12 +956,19 @@ jobs:
           echo "✓ Go extension created successfully"
 
       - name: Install Go extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Go extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_go
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_go"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -620,12 +981,31 @@ jobs:
           fi
 
       - name: Test Go extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Go extension"
           echo "================================================"
 
-          cd /tmp/test_ext_go
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses a cross-platform test command.
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_go/manifest.json"
+
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_go"
 
           # Run tests using tman
           tman run test
@@ -638,12 +1018,19 @@ jobs:
           fi
 
       - name: Create Python extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Python extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Python extension using the default async template
           tman create extension test_ext_python --template default_async_extension_python --template-data class_name_prefix=Test
@@ -656,12 +1043,23 @@ jobs:
           echo "✓ Python extension created successfully"
 
       - name: Install Python extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Python extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_python
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_python"
 
           # Install TEN framework dependencies in standalone mode
           tman install --standalone
@@ -690,15 +1088,49 @@ jobs:
           echo "✓ All Python extension dependencies installed successfully"
 
       - name: Test Python extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Python extension"
           echo "================================================"
 
-          cd /tmp/test_ext_python
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses "test": "python3 tests/bin/start.py".
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_python/manifest.json"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_python"
+
+          # Locate libpython so the addon loader can dlopen it on all platforms
+          # (GitHub Actions installs Python in non-standard paths that the
+          # hardcoded fallback list in python_addon_loader may not cover).
+          export TEN_PYTHON_LIB_PATH=$(python3 "${{ github.workspace }}/core/src/ten_runtime/binding/python/tools/find_libpython.py")
+          echo "TEN_PYTHON_LIB_PATH=${TEN_PYTHON_LIB_PATH}"
+
+          # Workaround: ensure binaries downloaded by tman have execute permission
+          # (macOS runners may lack +x on spawned test binaries)
+          if [[ "${{ runner.os }}" != "Windows" ]]; then
+            find . -type f \( -name "*.sh" -o -path "*/bin/*" -o -path "*/.ten/*" \) -exec chmod +x {} + 2>/dev/null || true
+          fi
 
           # Run tests using tman
-          tman run test
+          tman run test -- -s
 
           if [ $? -eq 0 ]; then
             echo "✓ Python extension tests passed successfully"
@@ -708,12 +1140,19 @@ jobs:
           fi
 
       - name: Create Node.js extension
+        shell: bash
         run: |
           echo "================================================"
           echo "Creating Node.js extension for testing"
           echo "================================================"
 
-          cd /tmp
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR"
 
           # Create a Node.js extension using the default template
           tman create extension test_ext_nodejs --template default_extension_nodejs --template-data class_name_prefix=Test
@@ -726,12 +1165,19 @@ jobs:
           echo "✓ Node.js extension created successfully"
 
       - name: Install Node.js extension dependencies
+        shell: bash
         run: |
           echo "================================================"
           echo "Installing Node.js extension dependencies"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Install dependencies in standalone mode
           tman install --standalone
@@ -744,12 +1190,26 @@ jobs:
           fi
 
       - name: Build Node.js extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Building Node.js extension"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Build using tman (compiles TypeScript)
           tman run build
@@ -770,12 +1230,34 @@ jobs:
           fi
 
       - name: Test Node.js extension
+        shell: bash
+        env:
+          # Force UTF-8 encoding on Windows to handle Unicode characters in Python scripts
+          PYTHONIOENCODING: utf-8
         run: |
           echo "================================================"
           echo "Testing Node.js extension"
           echo "================================================"
 
-          cd /tmp/test_ext_nodejs
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            WORK_DIR="C:/Temp"
+
+            # Fix PATH to use correct Python version
+            PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
+            export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
+
+            # The cloud template manifest defines "test": "tests/bin/start"
+            # which is a bash script and cannot run on Windows directly.
+            # Patch it to use the Python wrapper instead.
+            #
+            # TODO: Remove this sed workaround once the cloud template
+            # manifest uses "test": "python3 tests/bin/start.py".
+            sed -i 's|"test": "tests/bin/start"|"test": "python3 tests/bin/start.py"|' "$WORK_DIR/test_ext_nodejs/manifest.json"
+          else
+            WORK_DIR="/tmp"
+          fi
+
+          cd "$WORK_DIR/test_ext_nodejs"
 
           # Run tests using tman
           tman run test
@@ -789,6 +1271,7 @@ jobs:
 
       - name: Extension Development Summary
         if: always()
+        shell: bash
         run: |
           echo "================================================"
           echo "Extension Development Verification Summary"

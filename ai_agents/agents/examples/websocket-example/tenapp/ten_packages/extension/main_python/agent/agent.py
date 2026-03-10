@@ -138,7 +138,8 @@ class Agent:
 
     async def on_data(self, data: Data):
         try:
-            if data.get_name() == "asr_result":
+            data_name = data.get_name()
+            if data_name == "asr_result":
                 asr_json, _ = data.get_property_to_json(None)
                 asr = json.loads(asr_json)
                 await self._emit_asr(
@@ -148,8 +149,14 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
+            elif data_name == "metrics":
+                # ASR metrics data - acknowledged, no action needed
+                self.ten_env.log_debug(f"Received metrics data, ignored")
+            elif data_name == "tts_flush_end":
+                # TTS flush completion signal - acknowledged, no action needed
+                self.ten_env.log_debug(f"Received tts_flush_end, ignored")
             else:
-                self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
+                self.ten_env.log_warn(f"Unhandled data: {data_name}")
         except Exception as e:
             self.ten_env.log_error(f"on_data error: {e}")
 

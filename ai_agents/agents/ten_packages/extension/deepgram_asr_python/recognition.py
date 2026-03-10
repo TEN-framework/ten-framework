@@ -65,6 +65,10 @@ class DeepgramASRRecognition:
         self.keepalive_enabled = bool(self.config.get("keep_alive"))
         self._keepalive_task = None
 
+        self.is_flux_model = (
+            "flux" in (self.config.get("model", "") or "").lower()
+        )
+
         self.websocket = None
         self.is_started = False
         self._message_task = None
@@ -79,11 +83,14 @@ class DeepgramASRRecognition:
                 if not self.is_connected() or self.websocket is None:
                     break
                 try:
-                    await self.websocket.send(json.dumps({"type": "KeepAlive"}))
-                    self.ten_env.log_debug(
-                        "[KeepAlive] Heartbeat sent",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
+                    if self.is_flux_model == False:
+                        await self.websocket.send(
+                            json.dumps({"type": "KeepAlive"})
+                        )
+                        self.ten_env.log_debug(
+                            "[KeepAlive] Heartbeat sent",
+                            category=LOG_CATEGORY_VENDOR,
+                        )
                 except Exception as e:
                     self.ten_env.log_info(f"KeepAlive send failed: {e}")
                     break
@@ -103,9 +110,12 @@ class DeepgramASRRecognition:
             )
 
             message_type = message_data.get("type")
-            if message_type == "Results":
-                await self.callback.on_result(message_data)
-
+            if self.is_flux_model == False:
+                if message_type == "Results":
+                    await self.callback.on_result(message_data)
+            else:
+                if message_type == "TurnInfo":
+                    await self.callback.on_result(message_data)
         except Exception as e:
             error_msg = f"Error processing message: {e}"
             self.ten_env.log_info(
@@ -263,15 +273,16 @@ class DeepgramASRRecognition:
 
         try:
             # Send end identifier
-            d = {"type": "Finalize"}
-            ws = self.websocket
-            if ws is not None:
-                await ws.send(json.dumps(d))
-            if self.ten_env:
-                self.ten_env.log_info(
-                    f"vendor_cmd: {json.dumps(d)}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+            if self.is_flux_model == False:
+                d = {"type": "Finalize"}
+                ws = self.websocket
+                if ws is not None:
+                    await ws.send(json.dumps(d))
+                if self.ten_env:
+                    self.ten_env.log_info(
+                        f"vendor_cmd: {json.dumps(d)}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
 
         except websockets.exceptions.ConnectionClosed:
             self.ten_env.log_info("WebSocket connection already closed")
