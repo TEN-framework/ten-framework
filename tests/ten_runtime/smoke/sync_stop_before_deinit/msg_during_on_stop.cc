@@ -180,10 +180,9 @@ class test_extension_2 : public ten::extension_t {
     // Call on_stop_done only after the external extension acknowledges the
     // notification — this validates that the reply reaches us during on_stop.
     ten_env.send_cmd(
-        std::move(notify),
-        [](ten::ten_env_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> cmd_result,
-           ten::error_t * /*err*/) {
+        std::move(notify), [](ten::ten_env_t &ten_env,
+                              std::unique_ptr<ten::cmd_result_t> cmd_result,
+                              ten::error_t * /*err*/) {
           ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
           TEN_LOGI("[test_extension_2] on_stop_notify ack received");
           ten_env.on_stop_done();
@@ -210,10 +209,9 @@ class test_extension_3 : public ten::extension_t {
     notify->set_property("sender", "3");
 
     ten_env.send_cmd(
-        std::move(notify),
-        [](ten::ten_env_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> cmd_result,
-           ten::error_t * /*err*/) {
+        std::move(notify), [](ten::ten_env_t &ten_env,
+                              std::unique_ptr<ten::cmd_result_t> cmd_result,
+                              ten::error_t * /*err*/) {
           ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
           TEN_LOGI("[test_extension_3] on_stop_notify ack received");
           ten_env.on_stop_done();
@@ -228,8 +226,7 @@ class test_app : public ten::app_t {
  public:
   void on_configure(ten::ten_env_t &ten_env) override {
     bool rc = ten::ten_env_internal_accessor_t::init_manifest_from_json(
-        ten_env,
-        R"({"type": "app", "name": "test_app", "version": "0.1.0"})");
+        ten_env, R"({"type": "app", "name": "test_app", "version": "0.1.0"})");
     ASSERT_EQ(rc, true);
 
     rc = ten_env.init_property_from_json(

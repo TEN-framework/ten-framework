@@ -37,10 +37,12 @@ namespace {
 // Shared state between extension_a and extension_b.
 // Written by extension_a just before on_stop_done; read by extension_b in
 // on_deinit.
-std::atomic<bool> a_stop_done{false};  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+std::atomic<bool> a_stop_done{
+    false};  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 // Signals the main test thread that the graph has finished shutting down.
-std::atomic<bool> test_completed{false};  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+std::atomic<bool> test_completed{
+    false};  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // extension_a: slow stopper
@@ -49,9 +51,7 @@ class test_extension_a : public ten::extension_t {
  public:
   explicit test_extension_a(const char *name) : ten::extension_t(name) {}
 
-  void on_start(ten::ten_env_t &ten_env) override {
-    ten_env.on_start_done();
-  }
+  void on_start(ten::ten_env_t &ten_env) override { ten_env.on_start_done(); }
 
   void on_stop(ten::ten_env_t &ten_env) override {
     // Sleep for 2 seconds to ensure extension_b's on_stop_done happens first.
@@ -74,6 +74,9 @@ class test_extension_b : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     ten_env.on_start_done();
+
+    // Wait for extension_a to be created and started.
+    ten_sleep_ms(2000);
 
     // Trigger graph shutdown as soon as both extensions are started.
     auto close_app_cmd = ten::close_app_cmd_t::create();
@@ -139,10 +142,10 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    sync_stop_before_deinit__test_extension_a, test_extension_a);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
-    sync_stop_before_deinit__test_extension_b, test_extension_b);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(sync_stop_before_deinit__test_extension_a,
+                                    test_extension_a);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(sync_stop_before_deinit__test_extension_b,
+                                    test_extension_b);
 
 }  // namespace
 
