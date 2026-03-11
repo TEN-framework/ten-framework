@@ -114,7 +114,7 @@
         free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
-      (void)vdprintf(STDERR_FILENO, "%s\n", ____err_msg);              \
+      (void)dprintf(STDERR_FILENO, "%s\n", ____err_msg);              \
       ten_backtrace_dump_global(0);                                    \
       /* Wait for a short period to allow backtrace to be written. */  \
       ten_sleep_ms(200);                                               \
