@@ -145,7 +145,7 @@ cd ..\..\..   # 回到 ai_agents 目录
 notepad .env
 ```
 
-添加以下配置：
+从.env.example复制所有内容后，填写以下配置：
 
 ```bash
 # Deepgram - 语音识别
@@ -430,6 +430,25 @@ netstat -ano | findstr :3000   # 或 :8080
 taskkill /PID <PID> /F
 ```
 
+</details>
+
+<details>
+<summary><strong>Go module相关错误</strong></summary>
+
+```bash
+# 设置代理
+# Linux/macOS
+export GOPROXY=https://goproxy.cn,direct
+# Windows PowerShell
+$env:GOPROXY = "https://goproxy.cn,direct"
+
+# 清理 Go module 缓存
+go clean -modcache
+
+# 重新安装依赖
+cd ai_agents/agents/examples/websocket-example
+task install
+```
 </details>
 
 ## 下一步
