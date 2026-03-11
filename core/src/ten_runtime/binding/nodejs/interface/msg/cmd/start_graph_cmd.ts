@@ -34,6 +34,18 @@ export class StartGraphCmd extends Cmd {
   setGraphFromJSON(jsonStr: string): void {
     ten_addon.ten_nodejs_cmd_start_graph_set_graph_from_json_str(this, jsonStr);
   }
+
+  /**
+   * Enable or disable synchronized stop-before-deinit mode. When enabled,
+   * every extension in the graph must complete on_stop_done before any of them
+   * is allowed to proceed to on_deinit.
+   */
+  setSyncStopBeforeDeinit(syncStopBeforeDeinit: boolean): void {
+    ten_addon.ten_nodejs_cmd_start_graph_set_sync_stop_before_deinit(
+      this,
+      syncStopBeforeDeinit,
+    );
+  }
 }
 
 ten_addon.ten_nodejs_cmd_start_graph_register_class(StartGraphCmd);

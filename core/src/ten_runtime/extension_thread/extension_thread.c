@@ -21,6 +21,7 @@
 #include "include_internal/ten_runtime/engine/on_xxx.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension_context/extension_context.h"
+#include "include_internal/ten_runtime/extension/close.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_group/on_xxx.h"
 #include "include_internal/ten_runtime/extension_store/extension_store.h"
@@ -99,6 +100,7 @@ ten_extension_thread_t *ten_extension_thread_create(void) {
 
   ten_list_init(&self->extensions);
   self->extensions_cnt_of_deleted = 0;
+  self->all_graph_extensions_stop_done = false;
 
   ten_list_init(&self->pending_msgs_received_in_init_stage);
 
@@ -643,5 +645,32 @@ void ten_extension_thread_add_all_created_extensions(
   if (rc) {
     TEN_LOGW("Failed to post task to engine's runloop: %d", rc);
     TEN_ASSERT(0, "Should not happen.");
+  }
+}
+
+// Runs on the extension thread. Called when all local extensions in the graph
+// have completed on_stop_done (sync_stop_before_deinit mode).
+// Sets the thread-local flag and triggers on_deinit for extensions whose
+// path_timers have already been fully closed.
+void ten_extension_thread_on_all_extensions_stop_done_task(void *self_,
+                                                          TEN_UNUSED void *arg) {
+  ten_extension_thread_t *self = self_;
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(self, true),
+             "Invalid argument.");
+
+  self->all_graph_extensions_stop_done = true;
+
+  TEN_LOGD("All graph extensions stop_done: checking extensions ready to deinit");
+
+  ten_list_foreach (&self->extensions, iter) {
+    ten_extension_t *extension = ten_ptr_listnode_get(iter.node);
+    TEN_ASSERT(extension, "Should not happen.");
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
+               "Should not happen.");
+
+    if (extension->state == TEN_EXTENSION_STATE_ON_STOP_DONE) {
+      ten_extension_close_if_ready(extension);
+    }
   }
 }

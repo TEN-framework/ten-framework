@@ -9,12 +9,15 @@
 #include "include_internal/ten_runtime/app/base_dir.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
+#include "include_internal/ten_runtime/engine/engine.h"
+#include "include_internal/ten_runtime/engine/internal/extension_interface.h"
 #include "include_internal/ten_runtime/extension/base_dir.h"
 #include "include_internal/ten_runtime/extension/close.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension/metadata.h"
 #include "include_internal/ten_runtime/extension/msg_handling.h"
 #include "include_internal/ten_runtime/extension/path_timer.h"
+#include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_store/extension_store.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
@@ -26,6 +29,7 @@
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/timer/timer.h"
 #include "ten_runtime/app/app.h"
+#include "ten_utils/io/runloop.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -462,7 +466,34 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
   ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
       extension, TEN_STR_STOP, TEN_STATUS_CODE_OK);
 
+  // Start closing path_timers regardless of mode. In sync_stop_before_deinit
+  // mode, ten_extension_could_be_closed() will additionally gate on the global
+  // "all extensions stopped" flag, so on_deinit won't start until that signal
+  // arrives via ten_engine_on_extension_stop_done_task.
   ten_extension_do_pre_close_action(extension);
+
+  // In sync_stop_before_deinit mode, notify the engine thread that this
+  // extension has completed on_stop_done so it can count towards the global
+  // barrier.
+  ten_extension_thread_t *extension_thread = extension->extension_thread;
+  TEN_ASSERT(extension_thread, "Should not happen.");
+
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: extension_context and engine are read-only after startup.
+  ten_engine_t *engine = extension_thread->extension_context->engine;
+  TEN_ASSERT(engine, "Should not happen.");
+
+  if (engine->sync_stop_before_deinit) {
+    ten_runloop_t *engine_loop = ten_engine_get_attached_runloop(engine);
+    TEN_ASSERT(engine_loop, "Should not happen.");
+
+    int rc = ten_runloop_post_task_tail(
+        engine_loop, ten_engine_on_extension_stop_done_task, engine, NULL);
+    if (rc) {
+      TEN_LOGW("Failed to post stop_done task to engine's runloop: %d", rc);
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  }
 
   return true;
 }
