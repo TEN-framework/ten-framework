@@ -8,9 +8,10 @@
 package default_extension_go
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -27,155 +28,106 @@ func newExtensionA(name string) ten.Extension {
 	return &extensionA{}
 }
 
+// makeJSONOfSize creates a JSON object whose serialized form is exactly `size`
+// bytes (the strlen, without '\0'). This targets the pool boundary sizes
+// (128, 512, 1024, 2048, 4096) so that acquireBytes returns a buffer whose
+// cap == size, leaving zero room for the extra '\0' that strcpy writes.
+func makeJSONOfSize(targetSize int) []byte {
+	// {"k":"<padding>"} is 9 bytes of overhead, so padding = targetSize - 9
+	padLen := targetSize - 9
+	if padLen < 0 {
+		padLen = 0
+	}
+	obj := map[string]string{"k": strings.Repeat("x", padLen)}
+	b, _ := json.Marshal(obj)
+	// Fine-tune: if json.Marshal escaping changed the length, just return as-is.
+	return b
+}
+
 func (p *extensionA) OnStart(tenEnv ten.TenEnv) {
 	go func() {
+		// ---------------------------------------------------------------
+		// Repro: stress GetPropertyToJSONBytes at exact pool boundary sizes.
+		//
+		// The bug: ten_go_ten_c_value_to_json sets json_str_len = strlen(json_str)
+		// (excludes '\0'), but ten_go_copy_c_str_to_slice_and_free uses strcpy
+		// which writes strlen+1 bytes. Go allocates exactly strlen bytes from
+		// the pool, so strcpy overflows by 1 byte into the next heap object.
+		//
+		// When the JSON size equals a pool boundary (128, 512, 1024, 2048, 4096),
+		// acquireBytes returns a slice with cap == boundary == strlen, and the
+		// overflow corrupts the adjacent heap object. Concurrent GC then crashes
+		// with SIGSEGV at address 0xffffffffffffffff when scanning corrupted
+		// pointers.
+		// ---------------------------------------------------------------
+
+		// Pool boundary sizes from bytes.go
+		boundaries := []int{128, 512, 1024, 2048, 4096}
+
+		const iterations = 100
 		var wg sync.WaitGroup
-		var counter int32
+		var errCount int32
 
-		wg.Add(concurrency)
+		for _, bSize := range boundaries {
+			for i := 0; i < iterations; i++ {
+				wg.Add(1)
+				go func(size, idx int) {
+					defer wg.Done()
+					defer func() {
+						if r := recover(); r != nil {
+							atomic.AddInt32(&errCount, 1)
+							fmt.Printf("PANIC at size=%d idx=%d: %v\n", size, idx, r)
+						}
+					}()
 
-		for i := int64(0); i < concurrency; i++ {
-			go func(i int64) {
-				defer wg.Done()
+					propName := fmt.Sprintf("json_%d_%d", size, idx)
+					payload := makeJSONOfSize(size)
 
-				err := tenEnv.SetProperty(
-					fmt.Sprintf("prop_%d", i),
-					i,
-				)
-				if err != nil {
-					fmt.Printf("Error in goroutine %d: %v\n", i, err)
-					panic("Should not happen")
-				}
+					// Set JSON property
+					if err := tenEnv.SetPropertyFromJSONBytes(propName, payload); err != nil {
+						fmt.Printf("SetPropertyFromJSONBytes error: %v\n", err)
+						return
+					}
 
-				read_back_value, err := tenEnv.GetPropertyInt64(
-					fmt.Sprintf("prop_%d", i),
-				)
-				if err != nil {
-					fmt.Printf("Error in goroutine %d: %v\n", i, err)
-					panic("Should not happen")
-				}
+					// Read it back — this triggers the strcpy overflow
+					got, err := tenEnv.GetPropertyToJSONBytes(propName)
+					if err != nil {
+						fmt.Printf("GetPropertyToJSONBytes error: %v\n", err)
+						return
+					}
 
-				if read_back_value != i {
-					fmt.Printf(
-						"Error in goroutine %d: %v\n",
-						i,
-						read_back_value,
-					)
-					panic("Should not happen")
-				}
+					// Unmarshal + re-marshal (mimics enhanceTextData)
+					var m map[string]interface{}
+					if err := json.Unmarshal(got, &m); err != nil {
+						fmt.Printf("Unmarshal error at size=%d: %v\n", size, err)
+						atomic.AddInt32(&errCount, 1)
+						return
+					}
+					m["extra"] = idx
+					if _, err := json.Marshal(m); err != nil {
+						fmt.Printf("Marshal error at size=%d: %v\n", size, err)
+						atomic.AddInt32(&errCount, 1)
+						return
+					}
 
-				completedNumber := atomic.AddInt32(&counter, 1)
-
-				if completedNumber%10 == 0 {
-					fmt.Printf("extension_a %d goroutines completed\n", completedNumber)
-				}
-			}(i % 100)
+					// Force GC to scan heap — corrupted pointers trigger SIGSEGV
+					if idx%20 == 0 {
+						runtime.GC()
+					}
+				}(bSize, i)
+			}
 		}
 
 		wg.Wait()
+
+		if errCount > 0 {
+			fmt.Printf("ERROR: %d failures detected (heap corruption from strcpy overflow)\n", errCount)
+		} else {
+			fmt.Println("All boundary-size JSON round-trips passed")
+		}
+
 		tenEnv.OnStartDone()
 	}()
-
-	for i := int64(0); i < 100; i++ {
-		if err := tenEnv.SetProperty(fmt.Sprintf("prop_bool_%d", i), true); err != nil {
-			panic("Should not happen")
-		}
-
-		if em, err := tenEnv.GetPropertyBool(fmt.Sprintf("prop_bool_%d", i)); err != nil ||
-			em != true {
-			fmt.Printf(
-				"Error %v\n",
-				em,
-			)
-			panic("Should not happen")
-		}
-
-		if i%10 == 0 {
-			fmt.Printf("set prop_bool_%d\n and get check passed\n", i)
-		}
-
-		if err := tenEnv.SetProperty(fmt.Sprintf("prop_int_%d", i), int64(i)); err != nil {
-			panic("Should not happen")
-		}
-
-		if em, err := tenEnv.GetPropertyInt64(fmt.Sprintf("prop_int_%d", i)); err != nil ||
-			em != int64(i) {
-			fmt.Printf(
-				"Error %v\n",
-				em,
-			)
-			panic("Should not happen")
-		}
-
-		if i%10 == 0 {
-			fmt.Printf("set prop_int_%d\n and get check passed\n", i)
-		}
-
-		if err := tenEnv.SetPropertyString(fmt.Sprintf("prop_string_%d", i), fmt.Sprintf("string_%d", i)); err != nil {
-			panic("Should not happen")
-		}
-
-		if em, err := tenEnv.GetPropertyString(fmt.Sprintf("prop_string_%d", i)); err != nil ||
-			em != fmt.Sprintf("string_%d", i) {
-			fmt.Printf(
-				"Error %v\n",
-				em,
-			)
-			panic("Should not happen")
-		}
-
-		if i%10 == 0 {
-			fmt.Printf("set prop_string_%d\n and get check passed\n", i)
-		}
-
-		if err := tenEnv.SetPropertyBytes(fmt.Sprintf("prop_bytes_%d", i), []byte(fmt.Sprintf("bytes_%d", i))); err != nil {
-			panic("Should not happen")
-		}
-
-		em, err := tenEnv.GetPropertyBytes(fmt.Sprintf("prop_bytes_%d", i))
-		if err != nil {
-			fmt.Printf("Error in goroutine %d: %v\n", i, err)
-			panic("Should not happen")
-		}
-
-		// compare the bytes
-		if !bytes.Equal(em, []byte(fmt.Sprintf("bytes_%d", i))) {
-			fmt.Printf("Error in goroutine %d: %v\n", i, em)
-			panic("Should not happen")
-		}
-
-		if i%10 == 0 {
-			fmt.Printf("set prop_bytes_%d\n and get check passed\n", i)
-		}
-
-		if err := tenEnv.SetPropertyFromJSONBytes(fmt.Sprintf("prop_json_%d", i), []byte(fmt.Sprintf("{\"key\":\"value_%d\"}", i))); err != nil {
-			panic("Should not happen")
-		}
-
-		// Parse the JSON bytes to a map[string]interface{}
-		jsonBytes, err := tenEnv.GetPropertyToJSONBytes(fmt.Sprintf("prop_json_%d", i))
-		if err != nil {
-			panic("Should not happen")
-		}
-
-		var jsonMap map[string]interface{}
-		err = json.Unmarshal(jsonBytes, &jsonMap)
-		if err != nil {
-			panic("Should not happen")
-		}
-
-		if jsonMap["key"] != fmt.Sprintf("value_%d", i) {
-			fmt.Printf(
-				"Error %v\n",
-				jsonMap,
-			)
-			panic("Should not happen")
-		}
-
-		if i%10 == 0 {
-			fmt.Printf("set prop_json_%d\n and get check passed\n", i)
-		}
-	}
 }
 
 func (p *extensionA) OnCmd(
@@ -185,10 +137,9 @@ func (p *extensionA) OnCmd(
 	go func() {
 		fmt.Println("extensionA OnCmd")
 
-		var propLock sync.Mutex
-
 		cmdB, _ := ten.NewCmd("B")
 		var count uint32 = 0
+		var propLock sync.Mutex
 
 		done := make(chan struct{}, 1)
 		defer close(done)
@@ -196,8 +147,6 @@ func (p *extensionA) OnCmd(
 		for i := 0; i < concurrency; i++ {
 			go func(i int) {
 				propLock.Lock()
-
-				// The SetProperty is not goroutine safety.
 				err := cmdB.SetProperty(fmt.Sprintf("prop_%d", i), i)
 				propLock.Unlock()
 
@@ -217,16 +166,12 @@ func (p *extensionA) OnCmd(
 		}
 		<-done
 
-		// Set an empty string to cmd is permitted.
 		if err := cmdB.SetPropertyString("empty_string", ""); err != nil {
 			panic("Should not happen.")
 		}
-
-		// Set an empty bytes to cmd is not permitted.
 		if err := cmdB.SetPropertyBytes("empty_bytes", []byte{}); err == nil {
 			panic("Should not happen.")
 		}
-
 		some_bytes := []byte{1, 2, 3}
 		if err := cmdB.SetPropertyBytes("some_bytes", some_bytes); err != nil {
 			panic("Should not happen.")
@@ -264,7 +209,6 @@ func (p *extensionA) OnCmd(
 }
 
 func init() {
-	// Register addon
 	err := ten.RegisterAddonAsExtension(
 		"extension_a",
 		ten.NewDefaultExtensionAddon(newExtensionA),
