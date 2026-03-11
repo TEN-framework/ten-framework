@@ -399,12 +399,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return
         if not self.holding_final_tokens:
             return
+        ttlw_ms = 0
+        wall_ttlw_ms = 0
         if end_time_stream_ms is not None:
             ttlw_ms = end_time_stream_ms - self._last_final_time_ms
-        else:
-            ttlw_ms = int(time.time() * 1000) - self._last_final_wall_ms
+        wall_ttlw_ms = int(time.time() * 1000) - self._last_final_wall_ms
         self.ten_env.log_info(
-            f"holding_mode endpointing_only flush: reason={reason}, ttlw_ms={ttlw_ms}",
+            f"holding_mode endpointing_only flush: reason={reason}, ttlw_ms={ttlw_ms}, wall_ttlw_ms={wall_ttlw_ms}",
             category=LOG_CATEGORY_KEY_POINT,
         )
         await self._send_transcript_and_translation(
