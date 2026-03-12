@@ -105,10 +105,6 @@ type cHandle = C.uintptr_t
 // we delete an item from the map (calling its delete function), the
 // corresponding capacity will be shrink. This will lead to re-expansion when we
 // add a new item. However, the expansion is slow.
-//
-// The newGoHandle will create a new uintptr based on the value of
-// currentGoHandle, the assignment will be slow if there are too many
-// concurrent store operations, so we use a sync.Pool to recycle the uintptr.
 type concurrentMap struct {
 	sync.RWMutex
 	items map[goHandle]any
@@ -170,21 +166,14 @@ var (
 
 	currentGoHandle        atomic.Uintptr
 	currentImmutableHandle atomic.Uintptr
-
-	// The frequency of add and delete operations in 'handles' map is almost the
-	// same, in other words, the items in handles map are often removed out. So
-	// we can recycle the goHandleType (i.e., the keys in 'handles') to reduce
-	// the competitions on 'currentGoHandle'.
-	goHandleCache = sync.Pool{
-		New: func() any {
-			id := currentGoHandle.Add(1)
-			return id
-		},
-	}
 )
 
 func newGoHandle(obj any) goHandle {
-	id := goHandleCache.Get().(goHandle)
+	// Use a monotonically increasing counter to guarantee each handle ID is
+	// globally unique and never reused. This prevents ABA problems where a
+	// recycled ID could be reassigned to a new object while a stale C-side
+	// callback still references the old ID.
+	id := currentGoHandle.Add(1)
 	handles.store(id, obj)
 
 	return id
@@ -202,8 +191,6 @@ func loadGoHandle(handle goHandle) any {
 func loadAndDeleteGoHandle(handle goHandle) any {
 	v, ok := handles.loadAndDelete(handle)
 	if ok {
-		goHandleCache.Put(handle)
-
 		return v
 	}
 

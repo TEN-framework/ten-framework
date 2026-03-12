@@ -94,6 +94,13 @@ group("python") {
         # complexity and memory tracking limitations with embedded Python.
         deps += [ "leak_check_python" ]
       }
+
+      if (!enable_sanitizer) {
+        # RSS-based memory leak detection is incompatible with AddressSanitizer:
+        # ASAN shadow memory and freed-block metadata inflate RSS independently
+        # of real user-space leaks, causing false positives.
+        deps += [ "start_graph_memory_leak_python" ]
+      }
     }
   }
 
