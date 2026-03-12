@@ -96,7 +96,7 @@ class SpeechSynthesizer:
                     response["Message"] = rsp["Response"]["Error"]["Message"]
                     self.listener.on_fail(response)
                     return
-                except:
+                except (json.JSONDecodeError, UnicodeDecodeError):
                     data = chunk
                     response["data"] = data
                     self.listener.on_message(response)
