@@ -1,11 +1,6 @@
 import json
-import uuid
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any
-
-
-def generate_event_id() -> str:
-    return str(uuid.uuid4())
+from typing import Any, Literal
 
 
 @dataclass
@@ -20,100 +15,37 @@ class ErrorMessage:
 
 
 @dataclass
-class SessionCreated:
-    session_id: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class SessionUpdated:
-    session_id: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class InputTranscriptDelta:
-    item_id: str
-    delta: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class InputTranscriptCompleted:
-    item_id: str
-    transcript: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class InputTranscriptFailed:
-    item_id: str
-    error: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseCreated:
-    response_id: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseDone:
-    response_id: str
-    status: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseTextDelta:
-    response_id: str
-    item_id: str
-    delta: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseTextDone:
-    response_id: str
-    item_id: str
-    text: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseAudioDelta:
-    response_id: str
-    item_id: str
-    delta: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class ResponseAudioDone:
-    response_id: str
-    item_id: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class SpeechStarted:
-    response_id: str
-    raw: dict[str, Any]
-
-
-@dataclass
-class SpeechStopped:
-    audio_end_ms: int
-    raw: dict[str, Any]
-
-
-@dataclass
-class FunctionCallArgumentsDone:
+class AuthSuccess:
     call_id: str
-    name: str
-    arguments: str
+    agent_id: str
+    agent_type: str
     raw: dict[str, Any]
+
+
+@dataclass
+class AuthError:
+    message: str
+    raw: dict[str, Any]
+
+
+@dataclass
+class BridgeStatus:
+    state: str
+    call_id: str
+    raw: dict[str, Any]
+
+
+@dataclass
+class TranscriptMessage:
+    text: str
+    final: bool
+    direction: Literal["input", "output"]
+    raw: dict[str, Any]
+
+
+@dataclass
+class BinaryAudioMessage:
+    audio: bytes
 
 
 def _nested_value(data: dict[str, Any], *keys: str) -> Any:
@@ -136,18 +68,6 @@ def _string_value(data: dict[str, Any], *paths: tuple[str, ...]) -> str:
     return ""
 
 
-def _int_value(data: dict[str, Any], *paths: tuple[str, ...]) -> int:
-    for path in paths:
-        value = _nested_value(data, *path)
-        if value is None:
-            continue
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            continue
-    return 0
-
-
 def _type_name(data: dict[str, Any]) -> str:
     type_name = _string_value(
         data,
@@ -156,137 +76,70 @@ def _type_name(data: dict[str, Any]) -> str:
         ("action",),
         ("header", "name"),
     )
-    return type_name.lower().replace("-", ".").replace("_", ".")
+    return type_name.lower().replace("-", "_").replace(".", "_")
+
+
+def _extract_text(data: dict[str, Any]) -> str:
+    for path in (
+        ("text",),
+        ("content",),
+        ("message",),
+        ("transcript",),
+        ("data", "text"),
+        ("data", "content"),
+        ("payload", "text"),
+        ("payload", "content"),
+    ):
+        value = _string_value(data, path)
+        if value:
+            return value
+    return ""
+
+
+def _infer_direction(type_name: str, data: dict[str, Any]) -> str | None:
+    combined = f"{type_name} {_string_value(data, ('role',), ('speaker',), ('source',))}".lower()
+    if any(token in combined for token in ("agent", "assistant", "bot", "output", "response")):
+        return "output"
+    if any(token in combined for token in ("user", "input", "customer")):
+        return "input"
+    return None
+
+
+def _infer_final(type_name: str, data: dict[str, Any]) -> bool:
+    if "final" in data and isinstance(data["final"], bool):
+        return data["final"]
+    if "is_final" in data and isinstance(data["is_final"], bool):
+        return data["is_final"]
+    return any(token in type_name for token in ("final", "done", "completed"))
 
 
 def parse_server_message(message: str) -> Any:
     data = json.loads(message)
     type_name = _type_name(data)
 
-    if type_name in {"session.created", "session.ready"}:
-        return SessionCreated(
-            session_id=_string_value(data, ("session", "id"), ("session_id",)),
+    if type_name == "auth_success":
+        user = _nested_value(data, "user")
+        user = user if isinstance(user, dict) else {}
+        return AuthSuccess(
+            call_id=_string_value(data, ("call_id",), ("user", "call_id")),
+            agent_id=_string_value(user, ("agent_id",)),
+            agent_type=_string_value(user, ("agent_type",)),
             raw=data,
         )
-    if type_name in {"session.updated", "session.started"}:
-        return SessionUpdated(
-            session_id=_string_value(data, ("session", "id"), ("session_id",)),
+
+    if type_name == "auth_error":
+        return AuthError(
+            message=_string_value(data, ("message",), ("error", "message")),
             raw=data,
         )
-    if type_name in {
-        "conversation.item.input.audio.transcription.delta",
-        "input.transcript.delta",
-        "transcript.delta",
-    }:
-        return InputTranscriptDelta(
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            delta=_string_value(data, ("delta",), ("transcript", "delta")),
+
+    if type_name == "bridge_status":
+        return BridgeStatus(
+            state=_string_value(data, ("upstream", "state"), ("state",)),
+            call_id=_string_value(data, ("upstream", "call_id"), ("call_id",)),
             raw=data,
         )
-    if type_name in {
-        "conversation.item.input.audio.transcription.completed",
-        "input.transcript.completed",
-        "transcript.completed",
-    }:
-        return InputTranscriptCompleted(
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            transcript=_string_value(
-                data, ("transcript",), ("text",), ("content",)
-            ),
-            raw=data,
-        )
-    if type_name in {
-        "conversation.item.input.audio.transcription.failed",
-        "input.transcript.failed",
-        "transcript.failed",
-    }:
-        return InputTranscriptFailed(
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            error=_string_value(
-                data, ("error", "message"), ("error",), ("message",)
-            ),
-            raw=data,
-        )
-    if type_name in {"response.created", "response.started"}:
-        return ResponseCreated(
-            response_id=_string_value(
-                data, ("response", "id"), ("response_id",)
-            ),
-            raw=data,
-        )
-    if type_name in {"response.done", "response.completed"}:
-        return ResponseDone(
-            response_id=_string_value(
-                data, ("response", "id"), ("response_id",)
-            ),
-            status=_string_value(
-                data, ("response", "status"), ("status",)
-            ),
-            raw=data,
-        )
-    if type_name in {"response.text.delta", "output.text.delta"}:
-        return ResponseTextDelta(
-            response_id=_string_value(data, ("response_id",)),
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            delta=_string_value(data, ("delta",), ("text",)),
-            raw=data,
-        )
-    if type_name in {"response.text.done", "output.text.done"}:
-        return ResponseTextDone(
-            response_id=_string_value(data, ("response_id",)),
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            text=_string_value(data, ("text",), ("content",)),
-            raw=data,
-        )
-    if type_name in {
-        "response.audio.delta",
-        "output.audio.delta",
-        "audio.delta",
-    }:
-        return ResponseAudioDelta(
-            response_id=_string_value(data, ("response_id",)),
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            delta=_string_value(data, ("delta",), ("audio",)),
-            raw=data,
-        )
-    if type_name in {"response.audio.done", "output.audio.done", "audio.done"}:
-        return ResponseAudioDone(
-            response_id=_string_value(data, ("response_id",)),
-            item_id=_string_value(data, ("item_id",), ("item", "id")),
-            raw=data,
-        )
-    if type_name in {
-        "input.audio.buffer.speech.started",
-        "speech.started",
-        "vad.started",
-    }:
-        return SpeechStarted(
-            response_id=_string_value(data, ("response_id",)),
-            raw=data,
-        )
-    if type_name in {
-        "input.audio.buffer.speech.stopped",
-        "speech.stopped",
-        "vad.stopped",
-    }:
-        return SpeechStopped(
-            audio_end_ms=_int_value(data, ("audio_end_ms",), ("audio_end",)),
-            raw=data,
-        )
-    if type_name in {
-        "response.function.call.arguments.done",
-        "function.call.arguments.done",
-        "tool.call",
-    }:
-        arguments = _nested_value(data, "arguments")
-        if isinstance(arguments, dict):
-            arguments = json.dumps(arguments)
-        return FunctionCallArgumentsDone(
-            call_id=_string_value(data, ("call_id",), ("tool_call_id",)),
-            name=_string_value(data, ("name",), ("tool", "name")),
-            arguments=arguments if isinstance(arguments, str) else "",
-            raw=data,
-        )
+
     if "error" in data:
         error = data["error"]
         if isinstance(error, dict):
@@ -295,6 +148,16 @@ def parse_server_message(message: str) -> Any:
                 raw=data,
             )
         return ErrorMessage(error=str(error), raw=data)
+
+    text = _extract_text(data)
+    direction = _infer_direction(type_name, data)
+    if text and direction is not None:
+        return TranscriptMessage(
+            text=text,
+            final=_infer_final(type_name, data),
+            direction=direction,
+            raw=data,
+        )
 
     return UnknownMessage(raw=data)
 
@@ -305,31 +168,3 @@ def to_json(message: Any) -> str:
     else:
         payload = message
     return json.dumps(payload)
-
-
-@dataclass
-class InputAudioBufferAppend:
-    audio: str
-    type: str = "input_audio_buffer.append"
-    event_id: str = generate_event_id()
-
-
-@dataclass
-class ResponseCreate:
-    type: str = "response.create"
-    event_id: str = generate_event_id()
-
-
-@dataclass
-class SessionUpdate:
-    session: dict[str, Any]
-    type: str = "session.update"
-    event_id: str = generate_event_id()
-
-
-@dataclass
-class ItemCreate:
-    item: dict[str, Any]
-    type: str = "conversation.item.create"
-    event_id: str = generate_event_id()
-

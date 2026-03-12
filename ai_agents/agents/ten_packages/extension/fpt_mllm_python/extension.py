@@ -1,6 +1,4 @@
 import asyncio
-import base64
-import time
 import traceback
 
 from pydantic import BaseModel
@@ -9,9 +7,7 @@ from ten_ai_base.mllm import AsyncMLLMBaseExtension
 from ten_ai_base.struct import (
     MLLMClientFunctionCallOutput,
     MLLMClientMessageItem,
-    MLLMServerFunctionCall,
     MLLMServerInputTranscript,
-    MLLMServerInterrupt,
     MLLMServerOutputTranscript,
     MLLMServerSessionReady,
 )
@@ -20,24 +16,12 @@ from ten_runtime import AsyncTenEnv, AudioFrame, Data
 
 from .realtime.connection import FPTTokenManager, RealtimeApiConnection
 from .realtime.struct import (
+    AuthError,
+    AuthSuccess,
+    BinaryAudioMessage,
+    BridgeStatus,
     ErrorMessage,
-    FunctionCallArgumentsDone,
-    InputTranscriptCompleted,
-    InputTranscriptDelta,
-    InputTranscriptFailed,
-    ItemCreate,
-    ResponseAudioDelta,
-    ResponseAudioDone,
-    ResponseCreate,
-    ResponseCreated,
-    ResponseDone,
-    ResponseTextDelta,
-    ResponseTextDone,
-    SessionCreated,
-    SessionUpdate,
-    SessionUpdated,
-    SpeechStarted,
-    SpeechStopped,
+    TranscriptMessage,
     UnknownMessage,
 )
 
@@ -46,16 +30,10 @@ class FPTRealtimeConfig(BaseModel):
     token_url: str = ""
     websocket_url: str = ""
     api_key: str = ""
-    app_id: str = ""
-    model: str = "vi-gpt-realtime"
-    language: str = "vi-VN"
-    prompt: str = ""
-    temperature: float = 0.8
-    max_tokens: int = 1024
+    agent_id: str = ""
+    agent_type: str = "agent"
     voice: str = "default"
-    server_vad: bool = True
-    audio_out: bool = True
-    input_transcript: bool = True
+    voice_speed: float = 1.0
     sample_rate: int = 16000
     vendor: str = "fpt"
     dump: bool = False
@@ -70,16 +48,16 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
         self.conn: RealtimeApiConnection | None = None
         self.token_manager: FPTTokenManager | None = None
         self.connected = False
+        self.authenticated = False
+        self.call_id = ""
         self.request_transcript = ""
         self.response_transcript = ""
-        self.available_tools: list[LLMToolMetadata] = []
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
         self.ten_env = ten_env
         properties, _ = await ten_env.get_property_to_json(None)
         self.config = FPTRealtimeConfig.model_validate_json(properties)
-        ten_env.log_info(f"config: {self.config}")
 
         if not self.config.token_url:
             raise ValueError("token_url is required")
@@ -87,12 +65,15 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
             raise ValueError("websocket_url is required")
         if not self.config.api_key:
             raise ValueError("api_key is required")
+        if not self.config.agent_id:
+            raise ValueError("agent_id is required")
 
         self.token_manager = FPTTokenManager(
             ten_env=ten_env,
             token_url=self.config.token_url,
             api_key=self.config.api_key,
-            app_id=self.config.app_id,
+            agent_id=self.config.agent_id,
+            agent_type=self.config.agent_type,
         )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -101,12 +82,15 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
             await self.token_manager.close()
 
     def vendor(self) -> str:
+        assert self.config is not None
         return self.config.vendor
 
     def input_audio_sample_rate(self) -> int:
+        assert self.config is not None
         return self.config.sample_rate
 
     def synthesize_audio_sample_rate(self) -> int:
+        assert self.config is not None
         return self.config.sample_rate
 
     def is_connected(self) -> bool:
@@ -115,144 +99,94 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
     async def start_connection(self) -> None:
         try:
             assert self.token_manager is not None
+            assert self.config is not None
+
+            self.call_id = ""
+            self.connected = False
+            self.authenticated = False
+            self.request_transcript = ""
+            self.response_transcript = ""
+
             token = await self.token_manager.get_token()
             self.conn = RealtimeApiConnection(
                 ten_env=self.ten_env,
                 websocket_url=self.config.websocket_url,
-                token=token,
                 verbose=self.config.dump,
             )
             await self.conn.connect()
+            await self.conn.send_auth(
+                token=token,
+                agent_id=self.config.agent_id,
+                agent_type=self.config.agent_type,
+                voice=self.config.voice,
+                voice_speed=self.config.voice_speed,
+            )
 
-            response_id = ""
-            item_id = ""
-            flushed: set[str] = set()
             self.ten_env.log_info("FPT realtime loop started")
             async for message in self.conn.listen():
                 try:
                     match message:
-                        case SessionCreated():
-                            self.connected = True
+                        case AuthSuccess():
+                            self.authenticated = True
+                            self.call_id = message.call_id
                             self.ten_env.log_info(
-                                f"FPT session created: {message.session_id}"
+                                "FPT websocket authenticated: "
+                                f"agent_type={message.agent_type}, "
+                                f"agent_id={message.agent_id}, "
+                                f"call_id={message.call_id}"
                             )
-                            await self._update_session()
-                            await self._resume_context(self.message_context)
-                            await self.send_server_session_ready(
-                                MLLMServerSessionReady()
+                            await self.conn.send_bridge_connect(
+                                message.call_id
                             )
-                        case SessionUpdated():
-                            self.connected = True
-                            await self.send_server_session_ready(
-                                MLLMServerSessionReady()
-                            )
-                        case InputTranscriptDelta():
-                            self.request_transcript += message.delta
-                            await self.send_server_input_transcript(
-                                MLLMServerInputTranscript(
-                                    content=self.request_transcript,
-                                    delta=message.delta,
-                                    final=False,
-                                    metadata={},
+                        case BridgeStatus():
+                            self.call_id = message.call_id or self.call_id
+                            if not self.connected:
+                                self.connected = True
+                                await self.send_server_session_ready(
+                                    MLLMServerSessionReady()
                                 )
+                            self.ten_env.log_info(
+                                "FPT bridge status: "
+                                f"state={message.state}, call_id={self.call_id}"
                             )
-                        case InputTranscriptCompleted():
-                            final_text = (
-                                message.transcript or self.request_transcript
-                            )
-                            await self.send_server_input_transcript(
-                                MLLMServerInputTranscript(
-                                    content=final_text,
-                                    delta="",
-                                    final=True,
-                                    metadata={},
+                        case TranscriptMessage():
+                            if message.direction == "input":
+                                delta = self._next_delta(
+                                    self.request_transcript, message.text
                                 )
-                            )
-                            self.request_transcript = ""
-                        case InputTranscriptFailed():
-                            self.ten_env.log_warn(
-                                f"FPT input transcript failed: {message.error}"
-                            )
-                            self.request_transcript = ""
-                        case ResponseCreated():
-                            response_id = message.response_id
-                        case ResponseDone():
-                            if message.response_id == response_id:
-                                response_id = ""
-                        case ResponseTextDelta():
-                            if message.response_id in flushed:
-                                continue
-                            item_id = message.item_id or item_id
-                            self.response_transcript += message.delta
-                            await self.send_server_output_text(
-                                MLLMServerOutputTranscript(
-                                    content=self.response_transcript,
-                                    delta=message.delta,
-                                    final=False,
-                                    metadata={},
-                                )
-                            )
-                        case ResponseTextDone():
-                            if message.response_id in flushed:
-                                continue
-                            final_text = (
-                                self.response_transcript or message.text
-                            )
-                            await self.send_server_output_text(
-                                MLLMServerOutputTranscript(
-                                    content=final_text,
-                                    delta="",
-                                    final=True,
-                                    metadata={},
-                                )
-                            )
-                            self.response_transcript = ""
-                        case ResponseAudioDelta():
-                            if message.response_id in flushed:
-                                continue
-                            item_id = message.item_id or item_id
-                            await self.send_server_output_audio_data(
-                                base64.b64decode(message.delta)
-                            )
-                        case ResponseAudioDone():
-                            self.ten_env.log_debug(
-                                f"FPT audio done: {message.response_id}"
-                            )
-                        case SpeechStarted():
-                            if self.config.server_vad:
-                                await self.send_server_interrupted(
-                                    MLLMServerInterrupt()
-                                )
-                            if response_id and self.response_transcript:
-                                await self.send_server_output_text(
-                                    MLLMServerOutputTranscript(
-                                        content=(
-                                            self.response_transcript
-                                            + "[interrupted]"
-                                        ),
-                                        delta="",
-                                        final=True,
+                                self.request_transcript = message.text
+                                await self.send_server_input_transcript(
+                                    MLLMServerInputTranscript(
+                                        content=message.text,
+                                        delta=delta,
+                                        final=message.final,
                                         metadata={},
                                     )
                                 )
-                                flushed.add(response_id)
-                                self.response_transcript = ""
-                            item_id = ""
-                        case SpeechStopped():
-                            speech_stopped_at = (
-                                int(time.time() * 1000)
-                                - message.audio_end_ms
-                            )
-                            self.ten_env.log_debug(
-                                f"FPT speech stopped at {speech_stopped_at}"
-                            )
-                        case FunctionCallArgumentsDone():
-                            await self.send_server_function_call(
-                                MLLMServerFunctionCall(
-                                    call_id=message.call_id,
-                                    name=message.name,
-                                    arguments=message.arguments,
+                                if message.final:
+                                    self.request_transcript = ""
+                            else:
+                                delta = self._next_delta(
+                                    self.response_transcript, message.text
                                 )
+                                self.response_transcript = message.text
+                                await self.send_server_output_text(
+                                    MLLMServerOutputTranscript(
+                                        content=message.text,
+                                        delta=delta,
+                                        final=message.final,
+                                        metadata={},
+                                    )
+                                )
+                                if message.final:
+                                    self.response_transcript = ""
+                        case BinaryAudioMessage():
+                            await self.send_server_output_audio_data(
+                                message.audio
+                            )
+                        case AuthError():
+                            raise PermissionError(
+                                f"FPT websocket auth failed: {message.message}"
                             )
                         case ErrorMessage():
                             self.ten_env.log_error(
@@ -283,7 +217,13 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
 
     async def stop_connection(self) -> None:
         self.connected = False
+        self.authenticated = False
+        self.call_id = ""
         if self.conn is not None:
+            try:
+                await self.conn.send_bridge_disconnect()
+            except Exception:
+                pass
             await self.conn.close()
             self.conn = None
 
@@ -305,11 +245,16 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
         message = str(exc).lower()
         return "401" in message or "403" in message or "auth" in message
 
+    def _next_delta(self, current: str, updated: str) -> str:
+        if updated.startswith(current):
+            return updated[len(current) :]
+        return updated
+
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         self.session_id = session_id
-        if self.conn is None:
+        if self.conn is None or not self.connected:
             return False
         await self.conn.send_audio_data(frame.get_buf())
         return True
@@ -320,105 +265,26 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
     async def send_client_message_item(
         self, item: MLLMClientMessageItem, session_id: str | None = None
     ) -> None:
-        if self.conn is None:
-            return
-
-        message_item = {
-            "type": "message",
-            "role": item.role,
-            "content": [
-                {
-                    "type": "input_text" if item.role == "user" else "text",
-                    "text": item.content or "",
-                }
-            ],
-        }
-        await self.conn.send_request(ItemCreate(item=message_item))
+        self.ten_env.log_warn(
+            "FPT websocket text message items are not supported by this "
+            "minimal voice bridge"
+        )
 
     async def send_client_create_response(
         self, session_id: str | None = None
     ) -> None:
-        if self.conn is None:
-            return
-        await self.conn.send_request(ResponseCreate())
+        self.ten_env.log_debug(
+            "Ignoring create_response for FPT minimal voice bridge"
+        )
 
     async def send_client_register_tool(self, tool: LLMToolMetadata) -> None:
-        self.available_tools.append(tool)
-        await self._update_session()
+        self.ten_env.log_warn(
+            "FPT websocket tool registration is not supported"
+        )
 
     async def send_client_function_call_output(
         self, function_call_output: MLLMClientFunctionCallOutput
     ) -> None:
-        if self.conn is None:
-            return
-
-        await self.conn.send_request(
-            ItemCreate(
-                item={
-                    "type": "function_call_output",
-                    "call_id": function_call_output.call_id,
-                    "output": function_call_output.output,
-                }
-            )
+        self.ten_env.log_warn(
+            "FPT websocket function call output is not supported"
         )
-        await self.conn.send_request(ResponseCreate())
-
-    async def _resume_context(
-        self, messages: list[MLLMClientMessageItem]
-    ) -> None:
-        for message in messages:
-            await self.send_client_message_item(message)
-
-    async def _update_session(self) -> None:
-        if not self.connected or self.conn is None:
-            return
-
-        tools: list[dict[str, object]] = []
-        for tool in self.available_tools:
-            properties: dict[str, object] = {}
-            required: list[str] = []
-            for param in tool.parameters:
-                properties[param.name] = {
-                    "type": param.type,
-                    "description": param.description,
-                }
-                if param.required:
-                    required.append(param.name)
-            tools.append(
-                {
-                    "type": "function",
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": properties,
-                        "required": required,
-                        "additionalProperties": False,
-                    },
-                }
-            )
-
-        session: dict[str, object] = {
-            "model": self.config.model,
-            "instructions": self.config.prompt,
-            "temperature": self.config.temperature,
-            "max_response_output_tokens": self.config.max_tokens,
-            "turn_detection": {
-                "type": "server_vad" if self.config.server_vad else "none"
-            },
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
-            "tool_choice": "auto" if tools else "none",
-            "tools": tools,
-        }
-        if self.config.audio_out:
-            session["voice"] = self.config.voice
-            session["modalities"] = ["text", "audio"]
-        else:
-            session["modalities"] = ["text"]
-        if self.config.input_transcript:
-            session["input_audio_transcription"] = {
-                "language": self.config.language
-            }
-
-        await self.conn.send_request(SessionUpdate(session=session))

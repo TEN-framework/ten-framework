@@ -42,35 +42,17 @@
         "api_key": {
           "type": "string"
         },
-        "app_id": {
+        "agent_id": {
           "type": "string"
         },
-        "model": {
+        "agent_type": {
           "type": "string"
-        },
-        "language": {
-          "type": "string"
-        },
-        "prompt": {
-          "type": "string"
-        },
-        "temperature": {
-          "type": "float32"
-        },
-        "max_tokens": {
-          "type": "int32"
         },
         "voice": {
           "type": "string"
         },
-        "server_vad": {
-          "type": "bool"
-        },
-        "audio_out": {
-          "type": "bool"
-        },
-        "input_transcript": {
-          "type": "bool"
+        "voice_speed": {
+          "type": "float64"
         },
         "sample_rate": {
           "type": "int32"
