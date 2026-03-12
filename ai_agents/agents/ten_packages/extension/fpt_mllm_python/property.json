@@ -4,8 +4,9 @@
   "api_key": "${env:FPT_VOICE_AGENT_API_KEY}",
   "agent_id": "${env:FPT_VOICE_AGENT_AGENT_ID}",
   "agent_type": "agent",
-  "voice": "default",
+  "voice": "01KH5SG0JQV0ZA2T96V2HT1NJQ",
   "voice_speed": 1.0,
   "sample_rate": 16000,
-  "vendor": "fpt"
+  "vendor": "fpt",
+  "dump": false
 }

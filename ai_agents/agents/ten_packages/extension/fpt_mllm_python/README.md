@@ -20,6 +20,8 @@ realtime events.
   - wait for `auth_success`
   - send `{"type":"bridge_connect","call_id":"..."}`
 - Audio is sent as binary websocket frames.
+- Set `dump` to `true` to log all JSON websocket traffic and token fetches. Audio
+  frames are intentionally summarized as byte counts instead of printing payloads.
 - The message parsing is intentionally narrow and isolated in `realtime/struct.py`.
 - Unsupported `mllm` features such as tool calling and explicit response creation
   are logged and ignored by this minimal bridge.

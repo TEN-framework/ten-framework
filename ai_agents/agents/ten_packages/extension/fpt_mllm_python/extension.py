@@ -74,6 +74,7 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
             api_key=self.config.api_key,
             agent_id=self.config.agent_id,
             agent_type=self.config.agent_type,
+            verbose=self.config.dump,
         )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:

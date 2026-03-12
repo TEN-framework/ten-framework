@@ -30,12 +30,14 @@ class FPTTokenManager:
         api_key: str,
         agent_id: str,
         agent_type: str,
+        verbose: bool = False,
     ):
         self.ten_env = ten_env
         self.token_url = token_url
         self.api_key = api_key
         self.agent_id = agent_id
         self.agent_type = agent_type
+        self.verbose = verbose
         self.token = ""
         self.expires_at = 0.0
         self.session = aiohttp.ClientSession()
@@ -54,11 +56,25 @@ class FPTTokenManager:
             return self.token
 
         headers = {"x-api-key": self.api_key}
+        request_url = self._token_request_url()
+        if self.verbose:
+            self.ten_env.log_info(f"-> token GET {request_url}")
         async with self.session.get(
-            self._token_request_url(), headers=headers
+            request_url, headers=headers
         ) as response:
             response.raise_for_status()
             data = await response.json()
+        if self.verbose:
+            self.ten_env.log_info(
+                "<- token response "
+                + json.dumps(
+                    {
+                        "status": "ok",
+                        "has_token": bool(data.get("token")),
+                        "keys": sorted(data.keys()),
+                    }
+                )
+            )
 
         token = data.get("token", "")
         if not isinstance(token, str) or not token:
@@ -136,6 +152,10 @@ class RealtimeApiConnection:
 
     async def send_audio_data(self, audio_data: bytes) -> None:
         assert self.websocket is not None
+        if self.verbose:
+            self.ten_env.log_info(
+                f"-> [binary audio omitted] bytes={len(audio_data)}"
+            )
         await self.websocket.send_bytes(audio_data)
 
     async def send_json(self, message: Any) -> None:
@@ -154,6 +174,11 @@ class RealtimeApiConnection:
                         self.ten_env.log_info(f"<- {smart_str(msg.data)}")
                     yield parse_server_message(msg.data)
                 elif msg.type == aiohttp.WSMsgType.BINARY:
+                    if self.verbose:
+                        self.ten_env.log_info(
+                            "<- [binary audio omitted] "
+                            f"bytes={len(msg.data)}"
+                        )
                     yield BinaryAudioMessage(audio=bytes(msg.data))
                 elif msg.type == aiohttp.WSMsgType.ERROR:
                     exc = self.websocket.exception()
