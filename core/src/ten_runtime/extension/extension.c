@@ -116,6 +116,7 @@ ten_extension_t *ten_extension_create(
   self->path_timeout_info.check_interval = TEN_DEFAULT_PATH_CHECK_INTERVAL;
 
   self->state = TEN_EXTENSION_STATE_INIT;
+  self->initted = false;
 
   ten_value_init_object_with_move(&self->manifest, NULL);
   ten_value_init_object_with_move(&self->property, NULL);
@@ -790,6 +791,13 @@ void ten_extension_on_deinit(ten_extension_t *self) {
   // Record the start time of on_deinit
   self->lifecycle_on_deinit_start_time_us = ten_current_time_us();
 
+  if (!self->initted) {
+    TEN_LOGD("[%s] on_deinit() skipped: Extension is not initted",
+             ten_extension_get_name(self, true));
+    ten_extension_on_deinit_done(self->ten_env);
+    return;
+  }
+
   if (self->on_deinit) {
     self->on_deinit(self, self->ten_env);
   } else {
@@ -801,6 +809,16 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
+
+  if (!self->initted) {
+    TEN_LOGD("[%s] on_cmd(%s) skipped: Extension is not initted",
+             ten_extension_get_name(self, true), ten_msg_get_name(msg));
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, msg);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+    return;
+  }
 
   TEN_LOGD("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
@@ -847,6 +865,12 @@ void ten_extension_on_data(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
+  if (!self->initted) {
+    TEN_LOGD("[%s] on_data(%s) skipped: Extension is not initted",
+             ten_extension_get_name(self, true), ten_msg_get_name(msg));
+    return;
+  }
+
   if (self->on_data) {
     int64_t begin = ten_current_time_us();
 
@@ -877,6 +901,12 @@ void ten_extension_on_video_frame(ten_extension_t *self,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
+  if (!self->initted) {
+    TEN_LOGD("[%s] on_video_frame(%s) skipped: Extension is not initted",
+             ten_extension_get_name(self, true), ten_msg_get_name(msg));
+    return;
+  }
+
   if (self->on_video_frame) {
     int64_t begin = ten_current_time_us();
 
@@ -906,6 +936,12 @@ void ten_extension_on_audio_frame(ten_extension_t *self,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
+
+  if (!self->initted) {
+    TEN_LOGD("[%s] on_audio_frame(%s) skipped: Extension is not initted",
+             ten_extension_get_name(self, true), ten_msg_get_name(msg));
+    return;
+  }
 
   if (self->on_audio_frame) {
     int64_t begin = ten_current_time_us();
