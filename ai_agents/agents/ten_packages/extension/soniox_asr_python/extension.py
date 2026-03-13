@@ -60,6 +60,23 @@ class ASRTranslationResult(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class SonioxASRErrorFilter:
+    """Filter to downgrade specific 400 errors to non-fatal for ASR error reporting."""
+
+    """ https://soniox.com/docs/stt/api-reference/websocket-api#error-response"""
+    NON_FATAL_400_PHRASES = ("No audio received", "Audio is too long")
+
+    @classmethod
+    def get_module_error_code(cls, error_code: int, error_message: str) -> int:
+        if error_code == 400 and any(
+            phrase in error_message for phrase in cls.NON_FATAL_400_PHRASES
+        ):
+            return ModuleErrorCode.NON_FATAL_ERROR.value
+        if error_code in (400, 401, 402):
+            return ModuleErrorCode.FATAL_ERROR.value
+        return ModuleErrorCode.NON_FATAL_ERROR.value
+
+
 class SonioxASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -505,13 +522,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         error_msg = f"soniox error {error_code}: {error_message}"
-        module_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
-        if error_code in [  # Unrecoverable errors defined by Soniox
-            400,  # Bad request
-            401,  # Unauthorized
-            402,  # Payment required
-        ]:
-            module_error_code = ModuleErrorCode.FATAL_ERROR.value
+        module_error_code = SonioxASRErrorFilter.get_module_error_code(
+            error_code, error_message
+        )
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
