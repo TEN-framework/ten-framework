@@ -61,9 +61,11 @@ class ASRTranslationResult(BaseModel):
 
 
 class SonioxASRErrorFilter:
-    """Filter to downgrade specific 400 errors to non-fatal for ASR error reporting."""
+    """Filter to downgrade specific 400 errors to non-fatal for ASR error reporting.
 
-    # https://soniox.com/docs/stt/api-reference/websocket-api#error-response
+    See https://soniox.com/docs/stt/api-reference/websocket-api#error-response
+    """
+
     NON_FATAL_400_PHRASES = ("No audio received", "Audio is too long")
 
     @classmethod
