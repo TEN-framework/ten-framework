@@ -24,6 +24,10 @@ Soniox ASR (Automatic Speech Recognition) extension for TEN Framework.
 - `language_hints`: Primary language for recognition (default: ["en"])
 - `sample_rate`: Audio sample rate in Hz (default: 16000)
 - `drain_holding_until_fin`: Whether to hold final tokens until drain (default: true)
+- `holding_mode`: How to hold/buffer recognition segments. One of:
+  - `"false"` (default): Emit results as produced, no holding.
+  - `"finalize"`: Hold until session finalize, then flush (same as legacy `finalize_holding: true`).
+  - `"endpointing_only"`: Hold until endpoint signal or session end; segment boundaries follow endpointing only. Requires `enable_endpoint_detection: true`; otherwise effective mode falls back to `"false"`.
 - `dump`: Enable audio dumping for debugging (default: false)
 - `dump_path`: Path for audio dump files (default: ".")
 
@@ -72,6 +76,10 @@ Run the tests using:
 cd tests
 ./bin/start
 ```
+
+## Migration
+
+- `finalize_holding` has been removed. Use `holding_mode: "finalize"` instead of `finalize_holding: true`. Migration can be done in config/translation layer (e.g. map `finalize_holding: true` → `holding_mode: "finalize"`).
 
 ## Notes
 

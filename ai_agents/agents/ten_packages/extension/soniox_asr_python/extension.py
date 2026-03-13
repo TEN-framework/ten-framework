@@ -27,7 +27,12 @@ from ten_ai_base.message import (
 from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
-from .config import SonioxASRConfig, FinalizeMode, FinalizeReconnectMode
+from .config import (
+    FinalizeMode,
+    FinalizeReconnectMode,
+    HoldingMode,
+    SonioxASRConfig,
+)
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
 from .dumper import Dumper
 from .websocket import (
@@ -55,6 +60,25 @@ class ASRTranslationResult(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class SonioxASRErrorFilter:
+    """Filter to downgrade specific 400 errors to non-fatal for ASR error reporting.
+
+    See https://soniox.com/docs/stt/api-reference/websocket-api#error-response
+    """
+
+    NON_FATAL_400_PHRASES = ("No audio received", "Audio is too long")
+
+    @classmethod
+    def get_module_error_code(cls, error_code: int, error_message: str) -> int:
+        if error_code == 400 and any(
+            phrase in error_message for phrase in cls.NON_FATAL_400_PHRASES
+        ):
+            return ModuleErrorCode.NON_FATAL_ERROR.value
+        if error_code in (400, 401, 402):
+            return ModuleErrorCode.FATAL_ERROR.value
+        return ModuleErrorCode.NON_FATAL_ERROR.value
+
+
 class SonioxASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -78,6 +102,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self._pending_close_finalize = False
         self._needs_reconnect = False
+        self._last_final_time_ms: int = 0
+        self._last_final_wall_ms: int = 0
+
+    def _effective_holding_mode(self) -> HoldingMode:
+        if self.config is None:
+            return HoldingMode.FALSE
+        if self.config.holding_mode == HoldingMode.ENDPOINTING_ONLY and not (
+            self.config.params.get("enable_endpoint_detection", False)
+        ):
+            return HoldingMode.FALSE
+        return self.config.holding_mode
 
     @override
     def vendor(self) -> str:
@@ -108,6 +143,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.audio_dumper = Dumper(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
+            effective = self._effective_holding_mode()
+            ten_env.log_info(
+                f"effective holding_mode: {effective.value}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = SonioxASRConfig.model_validate_json("{}")
@@ -263,7 +303,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             if self.config.finalize_mode == FinalizeMode.CLOSE:
                 await self._real_finalize_by_close()
                 return
-            if self.config.finalize_holding:
+            if self._effective_holding_mode() == HoldingMode.FINALIZE:
                 self.holding = True
             if self.config.finalize_mode == FinalizeMode.IGNORE:
                 return
@@ -369,10 +409,46 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
 
-    async def _finalize_end(self) -> None:
+    async def _flush_endpointing_only_holding(
+        self,
+        reason: str,
+        end_time_stream_ms: int | None = None,
+    ) -> None:
+        if self._effective_holding_mode() != HoldingMode.ENDPOINTING_ONLY:
+            return
+        if not self.holding_final_tokens:
+            return
+        ttlw_ms = 0
+        wall_ttlw_ms = 0
+        if end_time_stream_ms is not None:
+            ttlw_ms = end_time_stream_ms - self._last_final_time_ms
+        wall_ttlw_ms = int(time.time() * 1000) - self._last_final_wall_ms
+        self.ten_env.log_info(
+            f"holding_mode endpointing_only flush: reason={reason}, ttlw_ms={ttlw_ms}, wall_ttlw_ms={wall_ttlw_ms}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+        await self._send_transcript_and_translation(
+            self.holding_final_tokens,
+            self.holding_translation_tokens,
+            True,
+        )
+        self.holding_final_tokens = []
+        self.holding_translation_tokens = []
+
+    async def _finalize_end(
+        self, flush_reason: str = "session finalize"
+    ) -> None:
         self.ten_env.log_info("finalize end")
-        if self.holding and self.config.finalize_holding:
-            # TODO: what if asr_finalize_end is before asr_finalize?
+        if self._effective_holding_mode() == HoldingMode.ENDPOINTING_ONLY:
+            # Only flush on disconnect; <end> is handled in _handle_transcript.
+            # Do not flush on <fin> (session finalize) so segment boundary and TTLW
+            # stay aligned with endpoint time.
+            if flush_reason == "disconnect":
+                await self._flush_endpointing_only_holding(flush_reason, None)
+        if (
+            self.holding
+            and self._effective_holding_mode() == HoldingMode.FINALIZE
+        ):
             self.holding = False
             if self.holding_final_tokens:
                 await self._send_transcript_and_translation(
@@ -424,7 +500,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         if self._pending_close_finalize:
             self._pending_close_finalize = False
-            await self._finalize_end()
+            await self._finalize_end("disconnect")
 
             if (
                 self.config.finalize_reconnect_mode
@@ -448,13 +524,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         error_msg = f"soniox error {error_code}: {error_message}"
-        module_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
-        if error_code in [  # Unrecoverable errors defined by Soniox
-            400,  # Bad request
-            401,  # Unauthorized
-            402,  # Payment required
-        ]:
-            module_error_code = ModuleErrorCode.FATAL_ERROR.value
+        module_error_code = SonioxASRErrorFilter.get_module_error_code(
+            error_code, error_message
+        )
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
@@ -499,6 +571,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             translation_tokens = []
             send_finalize_end = False
             has_only_translations = True
+            had_end_token = False
+            endpoint_time_ms = 0
 
             # First pass: Separate tokens by type
             for token in tokens:
@@ -516,9 +590,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                         translation_tokens.append(token)
                     case SonioxFinToken():
                         send_finalize_end = True
-                    # Sending asr_finalize_end on <end> is harmless, because the receiver knows whether it has sent asr_finalize.
                     case SonioxEndToken():
                         send_finalize_end = True
+                        had_end_token = True
+                        endpoint_time_ms = total_audio_proc_ms
 
             # Handle standalone translations (no transcript tokens in this call)
             if (
@@ -543,6 +618,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
             # Handle finalization
             if send_finalize_end:
+                if had_end_token:
+                    await self._flush_endpointing_only_holding(
+                        "endpoint", endpoint_time_ms
+                    )
                 await self._finalize_end()
 
         except Exception as e:
@@ -561,11 +640,20 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         final_transcripts = [t for t in transcript_tokens if t.is_final]
         non_final_transcripts = [t for t in transcript_tokens if not t.is_final]
 
+        effective = self._effective_holding_mode()
+        use_holding = (effective == HoldingMode.FINALIZE and self.holding) or (
+            effective == HoldingMode.ENDPOINTING_ONLY
+        )
+
         # Process final transcripts first (they come before non-final)
         if final_transcripts:
-            if self.config.finalize_holding:
+            if use_holding:
                 self.holding_final_tokens.extend(final_transcripts)
                 self.holding_translation_tokens.extend(translation_tokens)
+                if effective == HoldingMode.ENDPOINTING_ONLY:
+                    last_end_ms = max(t.end_ms for t in final_transcripts)
+                    self._last_final_time_ms = last_end_ms
+                    self._last_final_wall_ms = int(time.time() * 1000)
             else:
                 await self._send_transcript_and_translation(
                     final_transcripts, translation_tokens, is_final=True
@@ -574,8 +662,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         # Process non-final transcripts
         if non_final_transcripts:
             tokens = non_final_transcripts
-            if self.config.finalize_holding and self.holding_final_tokens:
+            if use_holding and self.holding_final_tokens:
                 tokens = [*self.holding_final_tokens, *non_final_transcripts]
+                # In ENDPOINTING_ONLY we only clear holding on flush (endpoint or
+                # disconnect), not when sending cumulative non-final.
             await self._send_transcript_and_translation(
                 tokens,
                 translation_tokens,
