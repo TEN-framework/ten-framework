@@ -791,13 +791,6 @@ void ten_extension_on_deinit(ten_extension_t *self) {
   // Record the start time of on_deinit
   self->lifecycle_on_deinit_start_time_us = ten_current_time_us();
 
-  if (!self->initted) {
-    TEN_LOGD("[%s] on_deinit() skipped: Extension is not initted",
-             ten_extension_get_name(self, true));
-    ten_extension_on_deinit_done(self->ten_env);
-    return;
-  }
-
   if (self->on_deinit) {
     self->on_deinit(self, self->ten_env);
   } else {
