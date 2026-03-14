@@ -151,6 +151,7 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
                                 f"state={message.state}, call_id={self.call_id}"
                             )
                         case TranscriptMessage():
+                            metadata = self._transcript_metadata(message.raw)
                             if message.direction == "input":
                                 delta = self._next_delta(
                                     self.request_transcript, message.text
@@ -161,7 +162,7 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
                                         content=message.text,
                                         delta=delta,
                                         final=message.final,
-                                        metadata={},
+                                        metadata=metadata,
                                     )
                                 )
                                 if message.final:
@@ -176,7 +177,7 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
                                         content=message.text,
                                         delta=delta,
                                         final=message.final,
-                                        metadata={},
+                                        metadata=metadata,
                                     )
                                 )
                                 if message.final:
@@ -250,6 +251,15 @@ class FPTRealtimeExtension(AsyncMLLMBaseExtension):
         if updated.startswith(current):
             return updated[len(current) :]
         return updated
+
+    def _transcript_metadata(
+        self, raw: dict[str, object]
+    ) -> dict[str, object]:
+        return {
+            key: value
+            for key, value in raw.items()
+            if key not in {"text", "content", "message", "transcript"}
+        }
 
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None

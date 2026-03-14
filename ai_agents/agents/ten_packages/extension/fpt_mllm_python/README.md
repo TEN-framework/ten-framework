@@ -20,6 +20,10 @@ realtime events.
   - wait for `auth_success`
   - send `{"type":"bridge_connect","call_id":"..."}`
 - Audio is sent as binary websocket frames.
+- Transcript events are parsed from websocket JSON messages with `type: "asr"`
+  for user input transcripts and `type: "tts"` for assistant output
+  transcripts. Their non-text timing fields are forwarded in TEN transcript
+  metadata.
 - Set `dump` to `true` to log all JSON websocket traffic and token fetches. Audio
   frames are intentionally summarized as byte counts instead of printing payloads.
 - The message parsing is intentionally narrow and isolated in `realtime/struct.py`.

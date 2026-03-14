@@ -43,6 +43,12 @@ class TranscriptMessage:
     raw: dict[str, Any]
 
 
+EXPLICIT_TRANSCRIPT_DIRECTIONS: dict[str, Literal["input", "output"]] = {
+    "asr": "input",
+    "tts": "output",
+}
+
+
 @dataclass
 class BinaryAudioMessage:
     audio: bytes
@@ -150,6 +156,15 @@ def parse_server_message(message: str) -> Any:
         return ErrorMessage(error=str(error), raw=data)
 
     text = _extract_text(data)
+    explicit_direction = EXPLICIT_TRANSCRIPT_DIRECTIONS.get(type_name)
+    if text and explicit_direction is not None:
+        return TranscriptMessage(
+            text=text,
+            final=_infer_final(type_name, data) or True,
+            direction=explicit_direction,
+            raw=data,
+        )
+
     direction = _infer_direction(type_name, data)
     if text and direction is not None:
         return TranscriptMessage(
