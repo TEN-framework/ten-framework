@@ -141,8 +141,8 @@ get_latest_version() {
         print_info "This may be due to:" >&2
         print_info "  - Network timeout (GitHub API is slow or unreachable)" >&2
         print_info "  - GitHub API rate limit exceeded" >&2
-        print_info "Using default version: 0.11.61" >&2
-        latest_version="0.11.61"
+        print_info "Using default version: 0.11.62" >&2
+        latest_version="0.11.62"
     else
         print_info "✓ Latest version found: $latest_version" >&2
     fi
@@ -297,12 +297,12 @@ Usage: $0 [VERSION]
 Install TEN Framework TMAN tool with automatic OS and architecture detection.
 
 Arguments:
-  VERSION    Optional. Specify a version to install (e.g., 0.11.61)
+  VERSION    Optional. Specify a version to install (e.g., 0.11.62)
              If not provided, the latest version will be downloaded.
 
 Examples:
   $0              # Install latest version
-  $0 0.11.61      # Install specific version
+  $0 0.11.62      # Install specific version
 
 Supported Platforms:
   - Linux x64 (x86_64)
