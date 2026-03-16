@@ -12,7 +12,7 @@ export PYTHONPATH=.:ten_packages/system/ten_runtime_python/lib:ten_packages/syst
 if [[ "${EXTENSION_NAME}" == "humeai_tts_python" || "${EXTENSION_NAME}" == "openai_tts_python" || "${EXTENSION_NAME}" == "openai_tts2_python" ]]; then
     export ENABLE_SAMPLE_RATE="False"
 else
-    exportENABLE_SAMPLE_RATE="True"
+    export ENABLE_SAMPLE_RATE="True"
 fi
 
 pytest tests/ "$@"
