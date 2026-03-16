@@ -73,6 +73,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // Validate and complete (this should load the graph from import_uri).
@@ -122,6 +123,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // This should fail due to mutual exclusion
@@ -172,6 +174,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // This should fail due to mutual exclusion
@@ -211,6 +214,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // This should fail due to mutual exclusion
@@ -248,6 +252,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // This should fail due to mutual exclusion
@@ -301,6 +306,7 @@ mod tests {
             app_base_dir: None,
             belonging_pkg_type: None,
             belonging_pkg_name: None,
+            sync_stop_before_deinit: None,
         };
 
         // This should succeed

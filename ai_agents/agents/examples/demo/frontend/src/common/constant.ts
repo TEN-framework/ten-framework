@@ -116,6 +116,10 @@ export const GROUPED_GRAPH_OPTIONS = {
       value: "va_openai_v2v",
     },
     {
+      label: "OpenAI GPT Realtime 1.5",
+      value: "va_openai_v2v_1_5",
+    },
+    {
       label: "OpenAI GPT Realtime Mini",
       value: "va_openai_v2v_mini",
     },

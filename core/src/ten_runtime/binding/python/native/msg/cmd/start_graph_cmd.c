@@ -70,6 +70,24 @@ static PyObject *ten_py_cmd_start_graph_set_predefined_graph_name(
   return PyBool_FromLong(result);
 }
 
+static PyObject *ten_py_cmd_start_graph_set_sync_stop_before_deinit(
+    PyObject *self, PyObject *args) {
+  ten_py_cmd_start_graph_t *py_cmd = (ten_py_cmd_start_graph_t *)self;
+  TEN_ASSERT(py_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
+             "Invalid argument.");
+
+  int sync_stop_before_deinit = 0;
+  if (!PyArg_ParseTuple(args, "p", &sync_stop_before_deinit)) {
+    return ten_py_raise_py_value_error_exception("Failed to parse arguments.");
+  }
+
+  bool result = ten_cmd_start_graph_set_sync_stop_before_deinit(
+      py_cmd->msg.c_msg, (bool)sync_stop_before_deinit, NULL);
+
+  return PyBool_FromLong(result);
+}
+
 static PyObject *ten_py_cmd_start_graph_set_graph_from_json(PyObject *self,
                                                             PyObject *args) {
   ten_py_cmd_start_graph_t *py_cmd = (ten_py_cmd_start_graph_t *)self;
@@ -94,6 +112,8 @@ PyTypeObject *ten_py_cmd_start_graph_py_type(void) {
        ten_py_cmd_start_graph_set_predefined_graph_name, METH_VARARGS, NULL},
       {"set_graph_from_json", ten_py_cmd_start_graph_set_graph_from_json,
        METH_VARARGS, NULL},
+      {"set_sync_stop_before_deinit",
+       ten_py_cmd_start_graph_set_sync_stop_before_deinit, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
   };
 

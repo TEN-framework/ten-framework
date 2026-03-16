@@ -121,6 +121,8 @@ class SonioxWebsocketClient:
                 # Record timestamp before each connection attempt
                 self._connection_attempt_start_time = int(time.time() * 1000)
                 async with websockets.connect(self.url) as ws:
+                    if self.state == self.State.STOPPING:
+                        break
                     await ws.send(self.start_request)
                     self.state = self.State.CONNECTED
                     await self._call(

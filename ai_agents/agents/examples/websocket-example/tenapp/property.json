@@ -13,7 +13,7 @@
               "extension_group": "default",
               "property": {
                 "port": 8765,
-                "host": "0.0.0.0",
+                "host": "127.0.0.1",
                 "sample_rate": 16000,
                 "channels": 1,
                 "bytes_per_sample": 2
@@ -89,7 +89,9 @@
               "extension": "main_control",
               "cmd": [
                 {
-                  "names": ["tool_register"],
+                  "names": [
+                    "tool_register"
+                  ],
                   "source": [
                     {
                       "extension": "weatherapi_tool_python"
@@ -103,6 +105,22 @@
                   "source": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "metrics",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_flush_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }

@@ -1020,6 +1020,10 @@
                 "type": "boolean",
                 "default": false
               },
+              "sync_stop_before_deinit": {
+                "type": "boolean",
+                "default": false
+              },
               "graph": {
                 "type": "object",
                 "additionalProperties": false,

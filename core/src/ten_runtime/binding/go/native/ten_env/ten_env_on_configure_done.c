@@ -21,7 +21,10 @@ static void ten_env_proxy_notify_on_configure_done(ten_env_t *ten_env,
   TEN_ERROR_INIT(err);
 
   bool rc = ten_env_on_configure_done(ten_env, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+  if (!rc) {
+    TEN_LOGE("TEN/GO failed to on_configure_done, error: %s",
+             ten_error_message(&err));
+  }
 
   ten_error_deinit(&err);
 }
@@ -40,7 +43,10 @@ void ten_go_ten_env_on_configure_done(uintptr_t bridge_addr) {
                                  ten_env_proxy_notify_on_configure_done, NULL,
                                  false, &err);
 
-  TEN_ASSERT(rc, "Should not happen.");
+  if (!rc) {
+    TEN_LOGE("TEN/GO failed to on_configure_done, error: %s",
+             ten_error_message(&err));
+  }
 
   ten_error_deinit(&err);
 

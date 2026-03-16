@@ -27,8 +27,11 @@
 #include "include_internal/ten_runtime/protocol/protocol.h"
 #include "include_internal/ten_rust/ten_rust.h"
 #include "ten_runtime/app/app.h"
+#include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/msg.h"
+#include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
+#include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/memory.h"
@@ -177,6 +180,35 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
 
   // Fill the app uri of the nodes in the start_graph cmd.
   ten_app_fill_start_graph_cmd_node_app_uri(self, cmd);
+
+  // sync_stop_before_deinit relies on an in-engine barrier that only covers
+  // extensions within one app process.  Reject multi-app graphs upfront so
+  // the engine never enters an undefined synchronization state.
+  if (ten_cmd_start_graph_get_sync_stop_before_deinit(cmd)) {
+    ten_list_t *extensions_info = ten_cmd_start_graph_get_extensions_info(cmd);
+    const char *first_app_uri = NULL;
+
+    ten_list_foreach (extensions_info, ext_iter) {
+      ten_extension_info_t *ext_info =
+          ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(ext_iter.node));
+      TEN_ASSERT(ext_info, "Invalid argument.");
+
+      const char *app_uri =
+          ten_string_get_raw_str(&ext_info->loc.app_uri);
+
+      if (first_app_uri == NULL) {
+        first_app_uri = app_uri;
+      } else if (!ten_c_string_is_equal(first_app_uri, app_uri)) {
+        ten_error_set(
+            err, TEN_ERROR_CODE_INVALID_GRAPH,
+            "sync_stop_before_deinit=true requires all nodes in the graph to "
+            "belong to the same app, but found nodes from different apps: "
+            "'%s' and '%s'",
+            first_app_uri, app_uri);
+        return false;
+      }
+    }
+  }
 
   ten_string_t *dest_graph_id = &ten_msg_get_first_dest_loc(cmd)->graph_id;
 

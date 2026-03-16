@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "azure_asr_python",
-  "version": "0.2.4",
+  "version": "0.2.6",
   "dependencies": [
     {
       "type": "system",

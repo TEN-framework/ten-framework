@@ -12,7 +12,7 @@ import json
 import random
 from typing import Any, AsyncGenerator, Dict, List, Optional
 from pydantic import BaseModel
-import requests
+import httpx
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
 
@@ -74,6 +74,11 @@ class OpenAIChatGPT:
         safe_default_headers = self._sanitize_default_headers(
             config.default_headers
         )
+        self.http_client = None
+        if config.proxy_url:
+            ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
+            self.http_client = httpx.AsyncClient(proxy=config.proxy_url)
+
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
@@ -82,16 +87,8 @@ class OpenAIChatGPT:
                 "Authorization": f"Bearer {config.api_key}",
                 **safe_default_headers,
             },
+            http_client=self.http_client,
         )
-        self.session = requests.Session()
-        if config.proxy_url:
-            proxies = {
-                "http": config.proxy_url,
-                "https": config.proxy_url,
-            }
-            ten_env.log_info(f"Setting proxies: {proxies}")
-            self.session.proxies.update(proxies)
-        self.client.session = self.session
 
     def _sanitize_default_headers(
         self, headers: Dict[str, Any]

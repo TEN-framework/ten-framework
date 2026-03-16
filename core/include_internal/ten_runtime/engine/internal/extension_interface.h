@@ -18,3 +18,10 @@ TEN_RUNTIME_PRIVATE_API bool ten_engine_enable_extension_system(
 TEN_RUNTIME_PRIVATE_API void
 ten_engine_find_extension_info_for_all_extensions_of_extension_thread_task(
     void *self_, void *arg);
+
+// Runs on the engine thread. Called (via runloop task) each time one local
+// extension completes on_stop_done in sync_stop_before_deinit mode. When the
+// last extension reports in, notifies all extension threads to proceed to
+// on_deinit.
+TEN_RUNTIME_PRIVATE_API void ten_engine_on_extension_stop_done_task(
+    void *self_, void *arg);

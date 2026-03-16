@@ -20,7 +20,10 @@ static void ten_env_proxy_notify_on_stop_done(ten_env_t *ten_env,
   TEN_ERROR_INIT(err);
 
   bool rc = ten_env_on_stop_done(ten_env, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+  if (!rc) {
+    TEN_LOGE("TEN/GO failed to on_stop_done, error: %s",
+             ten_error_message(&err));
+  }
 
   ten_error_deinit(&err);
 }
@@ -38,7 +41,10 @@ void ten_go_ten_env_on_stop_done(uintptr_t bridge_addr) {
   TEN_UNUSED bool rc = ten_env_proxy_notify(self->c_ten_env_proxy,
                                             ten_env_proxy_notify_on_stop_done,
                                             NULL, false, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+  if (!rc) {
+    TEN_LOGE("TEN/GO failed to on_stop_done, error: %s",
+             ten_error_message(&err));
+  }
 
   ten_error_deinit(&err);
 
