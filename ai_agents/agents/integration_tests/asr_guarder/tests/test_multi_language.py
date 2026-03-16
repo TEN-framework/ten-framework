@@ -28,10 +28,15 @@ FRAME_INTERVAL_MS = 10
 # Constants for test configuration
 MULTI_LANGUAGE_CONFIG_FILE_EN = "property_en.json"
 MULTI_LANGUAGE_CONFIG_FILE_ZH = "property_zh.json"
+MULTI_LANGUAGE_CONFIG_FILE_ES = "property_es.json"
 MULTI_LANGUAGE_EXPECTED_TEXT_EN = "hello world"
 MULTI_LANGUAGE_SESSION_ID = "test_multi_language_session_123"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN = "en-US"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
+MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES = "es-ES"
+
+# Extensions that do not support Chinese and use Spanish as the second language
+_EXTENSIONS_USE_SPANISH = {"oracle_asr_python"}
 
 
 RESULT_WAIT_TIMEOUT_SECS = 30
@@ -310,7 +315,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
 def test_multi_language(extension_name: str, config_dir: str) -> None:
     """Verify multi-language ASR extension functionality."""
 
-    # Test configurations for different languages
+    # Build test configurations based on extension capabilities
     test_configs = [
         {
             "name": "English",
@@ -318,13 +323,28 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
         },
-        {
-            "name": "Chinese",
-            "audio_file": "16k_zh_cn.pcm",
-            "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
-            "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
-        },
     ]
+
+    # Some extensions (e.g. Oracle ASR) do not support Chinese;
+    # use Spanish as the second language instead.
+    if extension_name in _EXTENSIONS_USE_SPANISH:
+        test_configs.append(
+            {
+                "name": "Spanish",
+                "audio_file": "16k_es_es.pcm",
+                "config_file": MULTI_LANGUAGE_CONFIG_FILE_ES,
+                "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES,
+            }
+        )
+    else:
+        test_configs.append(
+            {
+                "name": "Chinese",
+                "audio_file": "16k_zh_cn.pcm",
+                "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
+                "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
+            }
+        )
 
     for test_config in test_configs:
         print(f"\n{'='*60}")
