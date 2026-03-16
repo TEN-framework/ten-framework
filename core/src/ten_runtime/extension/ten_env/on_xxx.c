@@ -304,6 +304,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
 #endif
 
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
+  extension->initted = true;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");
