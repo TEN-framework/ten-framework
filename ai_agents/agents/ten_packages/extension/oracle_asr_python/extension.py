@@ -53,6 +53,7 @@ class OracleASRExtension(
         self.last_finalize_timestamp: int = 0
         self.reconnect_manager: ReconnectManager = None  # type: ignore
         self._reconnect_lock = asyncio.Lock()
+        self._finalize_pending: bool = False  # finalize arrived before connection was ready
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -188,8 +189,14 @@ class OracleASRExtension(
             f"Oracle ASR finalize start at {self.last_finalize_timestamp}"
         )
 
-        if self.recognition:
+        if self.recognition and self.recognition.is_connected():
             await self.recognition.request_final_result()
+        else:
+            self._finalize_pending = True
+            self.ten_env.log_info(
+                "Finalize pending: connection not ready, will send when connected",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
 
     async def _handle_asr_result(
         self,
@@ -349,6 +356,14 @@ class OracleASRExtension(
         )
         self.audio_timeline.reset()
 
+        if self._finalize_pending and self.recognition:
+            self._finalize_pending = False
+            self.ten_env.log_info(
+                "Sending deferred finalize request after connection established",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self.recognition.request_final_result()
+
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
         try:
@@ -366,7 +381,7 @@ class OracleASRExtension(
 
             start_ms = int(first.get("startTimeMs", 0))
             end_ms = int(first.get("endTimeMs", 0))
-            duration_ms = end_ms - start_ms if end_ms > start_ms else 0
+            duration_ms = max(1, end_ms - start_ms)
 
             actual_start_ms = int(
                 self.audio_timeline.get_audio_duration_before_time(start_ms)

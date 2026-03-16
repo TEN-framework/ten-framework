@@ -34,6 +34,9 @@ MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN = "en-US"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
 
 
+RESULT_WAIT_TIMEOUT_SECS = 30
+
+
 class MultiLanguageAsrTester(AsyncExtensionTester):
     """Test class for multi-language ASR extension integration testing."""
 
@@ -66,6 +69,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         self.expected_text: str = expected_text
         self.session_id: str = session_id
         self.expected_language: str = expected_language
+        self._result_received: asyncio.Event = asyncio.Event()
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data and session ID."""
@@ -149,10 +153,22 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         ten_env.log_info("Starting multi-language ASR integration test")
         await self.audio_sender(ten_env)
 
+        # Wait for a final ASR result; stop with error if none arrives in time.
+        try:
+            await asyncio.wait_for(
+                self._result_received.wait(), timeout=RESULT_WAIT_TIMEOUT_SECS
+            )
+        except asyncio.TimeoutError:
+            self._stop_test_with_error(
+                ten_env,
+                f"Test timeout: no final ASR result received within {RESULT_WAIT_TIMEOUT_SECS}s after finalize",
+            )
+
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
         """Stop test with error message."""
+        self._result_received.set()
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
         )
@@ -283,6 +299,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
                 "✅ Multi-language ASR integration test passed with final result"
             )
             ten_env.stop_test()
+            self._result_received.set()
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
