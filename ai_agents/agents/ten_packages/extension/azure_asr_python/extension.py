@@ -439,6 +439,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
         """Handle the canceled event from Azure ASR."""
 
         cancellation_details = evt.cancellation_details
+
+        if cancellation_details.reason != speechsdk.CancellationReason.Error:
+            self.ten_env.log_info(
+                f"vendor_status_changed: canceled, reason: {cancellation_details.reason}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return
+
         self.ten_env.log_error(
             f"vendor_error: code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}",
             category=LOG_CATEGORY_VENDOR,
@@ -522,7 +530,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 "finalize disconnect: client is not connected"
             )
             return
-        
+
         self.connected = False
 
         # Close the stream first so the SDK pump thread exits cleanly
@@ -624,7 +632,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         assert self.config is not None
-        
+
         if self.stream is None:
             self.ten_env.log_warn("stream is not initialized")
             return False

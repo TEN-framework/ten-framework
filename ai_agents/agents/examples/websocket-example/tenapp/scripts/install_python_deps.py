@@ -21,6 +21,7 @@ except AttributeError:
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
+
 def run_command(cmd, description, cwd=None):
     """Run a command and return success status.
 
@@ -52,6 +53,7 @@ def install_with_retry(cmd, description, max_retries=3, cwd=None):
         if attempt < max_retries:
             print(f"Retrying in 2 seconds...")
             import time
+
             time.sleep(2)
 
     print(f"✗ Failed to install {description} after {max_retries} attempts")
@@ -62,7 +64,15 @@ def build_go_app(app_dir):
     """Build the Go application using the TEN runtime build tool."""
     print("Building Go application...")
     try:
-        build_tool = app_dir / "ten_packages" / "system" / "ten_runtime_go" / "tools" / "build" / "main.go"
+        build_tool = (
+            app_dir
+            / "ten_packages"
+            / "system"
+            / "ten_runtime_go"
+            / "tools"
+            / "build"
+            / "main.go"
+        )
         if not build_tool.exists():
             print(f"✗ Build tool not found: {build_tool}")
             return False
@@ -107,7 +117,9 @@ def main():
     # Try to install server requirements
     server_req = app_dir.parent / "server" / "requirements.txt"
     if server_req.exists():
-        install_with_retry(pip_cmd + ["-r", str(server_req)], "server requirements")
+        install_with_retry(
+            pip_cmd + ["-r", str(server_req)], "server requirements"
+        )
     else:
         print(f"No requirements.txt found in server directory")
 
@@ -120,7 +132,10 @@ def main():
                 req_file = ext_path / "requirements.txt"
                 if req_file.exists():
                     # Continue on failure instead of stopping
-                    install_with_retry(pip_cmd + ["-r", str(req_file)], f"extension {ext_path.name}")
+                    install_with_retry(
+                        pip_cmd + ["-r", str(req_file)],
+                        f"extension {ext_path.name}",
+                    )
     else:
         print("ten_packages/extension directory not found")
 
@@ -133,7 +148,10 @@ def main():
                 req_file = sys_path / "requirements.txt"
                 if req_file.exists():
                     # Continue on failure instead of stopping
-                    install_with_retry(pip_cmd + ["-r", str(req_file)], f"system {sys_path.name}")
+                    install_with_retry(
+                        pip_cmd + ["-r", str(req_file)],
+                        f"system {sys_path.name}",
+                    )
     else:
         print("ten_packages/system directory not found")
 
