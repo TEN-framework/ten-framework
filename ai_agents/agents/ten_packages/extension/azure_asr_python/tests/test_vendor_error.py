@@ -11,6 +11,7 @@ from ten_runtime import (
     TenErrorCode,
 )
 import json
+import azure.cognitiveservices.speech as speechsdk
 
 # We must import it, which means this test fixture will be automatically executed
 from .mock import patch_azure_ws  # noqa: F401
@@ -91,15 +92,20 @@ def test_vendor_error(patch_azure_ws):
             patch_azure_ws.event_handlers["session_started"](event)
             threading.Timer(1.0, triggerCanceled).start()
 
+        def triggerSessionStopped():
+            event = SimpleNamespace(session_id="123")
+            patch_azure_ws.event_handlers["session_stopped"](event)
+
         def triggerCanceled():
             evt = SimpleNamespace(
                 cancellation_details=SimpleNamespace(
                     code=123,
-                    reason=1,
+                    reason=speechsdk.CancellationReason.Error,
                     error_details="mock error details",
                 )
             )
             patch_azure_ws.event_handlers["canceled"](evt)
+            threading.Timer(0.1, triggerSessionStopped).start()
 
         threading.Timer(0.2, triggerSessionStarted).start()
         return None
