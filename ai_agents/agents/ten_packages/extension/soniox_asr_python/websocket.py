@@ -134,7 +134,11 @@ class SonioxWebsocketClient:
                         self._start_keepalive_task(ws)
                     await self._work(ws)
             except Exception as e:
-                await self._call(SonioxWebsocketEvents.EXCEPTION, e)
+                if not (
+                    self.state == self.State.STOPPING
+                    and isinstance(e, websockets.exceptions.ConnectionClosedOK)
+                ):
+                    await self._call(SonioxWebsocketEvents.EXCEPTION, e)
                 await self._call(SonioxWebsocketEvents.CLOSE)
                 await self._exponential_backoff()
             else:
