@@ -1,0 +1,15 @@
+{
+  "params": {
+    "tenancy": "",
+    "user": "",
+    "fingerprint": "",
+    "key_file": "",
+    "compartment_id": "",
+    "region": "us-phoenix-1",
+    "model_name": "TTS_2_NATURAL",
+    "voice_id": "Annabelle",
+    "language_code": "en-US",
+    "sample_rate": 16000,
+    "output_format": "PCM"
+  }
+}
