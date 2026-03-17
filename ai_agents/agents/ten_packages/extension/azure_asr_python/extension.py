@@ -522,6 +522,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 "finalize disconnect: client is not connected"
             )
             return
+        
+        self.connected = False
+
+        # Close the stream first so the SDK pump thread exits cleanly
+        # before calling stop_continuous_recognition.
+        if self.stream is not None:
+            self.stream.close()
+            self.stream = None
 
         self.client.stop_continuous_recognition()
         _ = self.ten_env.log_debug("finalize disconnect completed")
@@ -585,11 +593,17 @@ class AzureASRExtension(AsyncASRBaseExtension):
             await self.send_asr_finalize_end()
 
     async def stop_connection(self) -> None:
+        self.connected = False
+
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+
         if self.client:
             self.client.stop_continuous_recognition()
             self.client = None
-            self.connected = False
-            self.ten_env.log_info("azure connection stopped")
+
+        self.ten_env.log_info("azure connection stopped")
 
     @override
     def is_connected(self) -> bool:
@@ -610,7 +624,10 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         assert self.config is not None
-        assert self.stream is not None
+        
+        if self.stream is None:
+            self.ten_env.log_warn("stream is not initialized")
+            return False
 
         buf = frame.get_buf()
         if self.audio_dumper:
