@@ -193,7 +193,25 @@ class TencentTTSClient:
 
         try:
             synthesizer.start()
-            synthesizer.wait_ready(5000)
+            # wait_ready uses threading.Event.wait() which blocks the current
+            # thread.  Running it on the event-loop thread would freeze the
+            # entire asyncio loop and prevent other extensions from
+            # initialising.  Offload to a worker thread so the loop stays
+            # responsive.
+            ready = await asyncio.get_event_loop().run_in_executor(
+                None, synthesizer.wait_ready, 5000
+            )
+            if not ready:
+                raise TimeoutError(
+                    "Tencent TTS synthesizer wait_ready timed out"
+                )
+            # ready_event is now also set on synthesis failure (e.g. invalid
+            # voice_type), so double-check the actual ready flag.
+            if not synthesizer.ready:
+                raise RuntimeError(
+                    "Tencent TTS synthesizer failed during startup "
+                    "(check voice_type and credentials)"
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error starting TTS: {e}")
             raise e
@@ -205,7 +223,14 @@ class TencentTTSClient:
 
     async def stop(self) -> None:
         """Stop the TTS client and clean up resources."""
+        # Check for fatal conditions before restarting
+        has_auth_error = self._callback and self._callback.auth_error
         self.close()
+        if has_auth_error:
+            self.ten_env.log_warn(
+                "Not restarting TTS client due to authentication error"
+            )
+            return
         # restart the synthesizer
         asyncio.create_task(self.start())
 

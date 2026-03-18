@@ -231,6 +231,11 @@ class FlowingSpeechSynthesizer:
                         )
                     )
                     self.listener.on_synthesis_fail(resp)
+                    # Unblock wait_ready so callers don't have to wait for the
+                    # full timeout when the server already rejected the request
+                    # (e.g. invalid voice_type).
+                    if not self.ready:
+                        self.ready_event.set()
                     return
                 if "final" in resp and resp["final"] == 1:
                     logger.info("recv FINAL frame")
