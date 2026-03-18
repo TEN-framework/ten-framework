@@ -187,7 +187,9 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
   }
 
   if (sync) {
+    PyThreadState *saved_py_thread_state = PyEval_SaveThread();
     ten_event_wait(ctx->completed, -1);
+    PyEval_RestoreThread(saved_py_thread_state);
     ten_env_tester_notify_log_ctx_destroy(ctx);
   }
 

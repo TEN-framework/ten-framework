@@ -49,6 +49,9 @@
         "gateway_origin": {
           "type": "string"
         },
+        "gateway_device_identity_path": {
+          "type": "string"
+        },
         "chat_session_key": {
           "type": "string"
         },
@@ -131,6 +134,18 @@
               "type": "string"
             },
             "error": {
+              "type": "string"
+            },
+            "pairing_required": {
+              "type": "bool"
+            },
+            "pairing_list_cmd": {
+              "type": "string"
+            },
+            "pairing_approve_cmd": {
+              "type": "string"
+            },
+            "pairing_hint": {
               "type": "string"
             }
           }

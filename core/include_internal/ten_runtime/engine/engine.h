@@ -99,6 +99,10 @@ struct ten_engine_t {
 
   bool long_running_mode;
 
+  // When enabled, each extension will not start on_deinit until all extensions
+  // in the graph have completed on_stop_done.
+  bool sync_stop_before_deinit;
+
   // Store the stop_graph command that will shut down this engine temporarily,
   // so that after the engine has completely closed, the cmd_result can be
   // returned based on this.

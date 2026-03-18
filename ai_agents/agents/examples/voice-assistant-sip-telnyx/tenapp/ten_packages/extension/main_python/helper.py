@@ -3,7 +3,9 @@ import time
 from ten_runtime import AsyncTenEnv, Cmd, Data
 
 
-async def _send_cmd(ten_env: AsyncTenEnv, name: str, dest: str, params: dict = None):
+async def _send_cmd(
+    ten_env: AsyncTenEnv, name: str, dest: str, params: dict = None
+):
     """Send a command to an extension"""
     cmd = Cmd.create(name)
     if params:

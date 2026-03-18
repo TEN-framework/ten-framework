@@ -5,9 +5,7 @@ class TelnyxConfig(BaseModel):
     greeting: str = "Hello, I am your AI assistant."
 
     # Telnyx configuration
-    telnyx_api_key: str = Field(
-        default="", description="Telnyx API Key"
-    )
+    telnyx_api_key: str = Field(default="", description="Telnyx API Key")
     telnyx_connection_id: str = Field(
         default="", description="Telnyx Connection ID"
     )

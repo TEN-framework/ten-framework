@@ -81,6 +81,7 @@ class FlowingSpeechSynthesizer:
         self.listener = listener
 
         self.ready = False
+        self.ready_event = threading.Event()
 
         self.voice_type = 0
         self.codec = "pcm"
@@ -196,17 +197,14 @@ class FlowingSpeechSynthesizer:
         self.__do_send(action, "")
 
     def wait_ready(self, timeout_ms):
-        timeout_start = int(time.time() * 1000)
-        while True:
-            if self.ready:
-                return True
-            if int(time.time() * 1000) - timeout_start > timeout_ms:
-                break
-            time.sleep(0.01)
-        return False
+        timeout_sec = timeout_ms / 1000.0
+        return self.ready_event.wait(timeout_sec)
 
     def start(self):
         logger.info("synthesizer start: begin")
+
+        self.ready = False
+        self.ready_event.clear()
 
         def _close_conn(reason):
             ta = time.time()
@@ -243,6 +241,7 @@ class FlowingSpeechSynthesizer:
                 if "ready" in resp and resp["ready"] == 1:
                     logger.info("recv READY frame")
                     self.ready = True
+                    self.ready_event.set()
                     return
                 if "heartbeat" in resp and resp["heartbeat"] == 1:
                     logger.info("recv HEARTBEAT frame")
@@ -334,6 +333,7 @@ class FlowingSpeechSynthesizer:
 
         # Reset ready state immediately
         self.ready = False
+        self.ready_event.clear()
 
         # Note: We don't wait for the WebSocket thread to finish
         # The thread will be cleaned up when the process exits

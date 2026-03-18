@@ -685,6 +685,16 @@ class VolcengineASRClient:
             self.connected = False
             # Reset first response tracking for reconnection
             self._first_response_received = False
+            if self.disconnected_callback:
+                try:
+                    self.disconnected_callback()
+                except Exception as e:
+                    if self.ten_env:
+                        self.ten_env.log_error(
+                            f"Error in disconnected callback: {e}"
+                        )
+                    else:
+                        logging.error(f"Error in disconnected callback: {e}")
 
     async def _handle_response(self, response: ASRResponse) -> None:
         """Handle ASR response."""

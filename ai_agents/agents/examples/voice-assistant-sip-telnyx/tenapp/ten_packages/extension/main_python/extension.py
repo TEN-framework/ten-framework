@@ -266,9 +266,7 @@ class TelnyxControlExtension(AsyncExtension):
             if audio_frame.get_name() == "pcm_frame":
                 audio_data = audio_frame.get_buf()
                 # Send audio to all active Telnyx calls
-                for (
-                    call_id
-                ) in self.server_instance.active_call_sessions.keys():
+                for call_id in self.server_instance.active_call_sessions.keys():
                     await self.send_audio_to_telnyx(audio_data, call_id)
         except Exception as e:
             ten_env.log_error(f"Failed to handle audio frame: {e}")
@@ -539,9 +537,9 @@ class TelnyxControlExtension(AsyncExtension):
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
-            stream_id = self.server_instance.active_call_sessions[
-                call_id
-            ].get("stream_id")
+            stream_id = self.server_instance.active_call_sessions[call_id].get(
+                "stream_id"
+            )
 
             message = {
                 "event": "media",
@@ -555,9 +553,7 @@ class TelnyxControlExtension(AsyncExtension):
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to send audio to Telnyx: {e}")
 
-    async def _cleanup_call_after_delay(
-        self, call_id: str, delay_seconds: int
-    ):
+    async def _cleanup_call_after_delay(self, call_id: str, delay_seconds: int):
         """Clean up call session after a delay"""
         await asyncio.sleep(delay_seconds)
 

@@ -41,7 +41,10 @@ static void ten_env_proxy_notify_on_deinit_done(ten_env_t *ten_env,
   TEN_ASSERT(ten_env_bridge, "Should not happen.");
 
   bool rc = ten_env_on_deinit_done(ten_env, &err);
-  TEN_ASSERT(rc, "Should not happen.");
+  if (!rc) {
+    TEN_LOGE("TEN/GO failed to on_deinit_done, error: %s",
+             ten_error_message(&err));
+  }
 
   ten_error_deinit(&err);
 }
@@ -71,9 +74,10 @@ void ten_go_ten_env_on_deinit_done(uintptr_t bridge_addr) {
     bool rc = ten_env_proxy_notify(self->c_ten_env_proxy,
                                    ten_env_proxy_notify_on_deinit_done, self,
                                    false, &err);
-    TEN_ASSERT(rc,
-               "ten_env_proxy_notify failed, "
-               "ten_env_proxy_notify_on_deinit_done failed");
+    if (!rc) {
+      TEN_LOGE("TEN/GO failed to on_deinit_done, error: %s",
+               ten_error_message(&err));
+    }
   } else {
     TEN_ASSERT(
         0,

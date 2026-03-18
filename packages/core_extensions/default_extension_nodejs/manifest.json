@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_nodejs",
-  "version": "0.11.53",
+  "version": "0.11.62",
   "display_name": {
     "locales": {
       "en-US": {
@@ -66,7 +66,7 @@
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.53"
+      "version": "0.11.62"
     }
   ],
   "package": {
@@ -77,7 +77,7 @@
     ]
   },
   "scripts": {
-    "test": "tests/bin/start",
+    "test": "python3 tests/bin/start.py",
     "build": "python3 tools/run_script.py build"
   },
   "api": {}

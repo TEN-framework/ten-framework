@@ -26,20 +26,19 @@ A real-time voice assistant built on TEN Framework that supports STT → LLM →
    - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
 
 5. **OpenClaw Gateway**
-   - `OPENCLAW_GATEWAY_URL` - Gateway WebSocket endpoint (required for delegation)
-   - `OPENCLAW_GATEWAY_TOKEN` - Gateway token (or use password)
-   - `OPENCLAW_GATEWAY_ORIGIN` - Origin header expected by gateway origin checks
-   - `OPENCLAW_GATEWAY_SCOPES` - Gateway scopes; minimum `operator.write`
+   - `OPENCLAW_GATEWAY_TOKEN` or `OPENCLAW_GATEWAY_PASSWORD` - Provide at least one for gateway auth
 
 ### Optional Environment Variables
 
 - `AGORA_APP_CERTIFICATE` - Agora App Certificate (optional)
 - `OPENAI_MODEL` - OpenAI model name (optional)
 - `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
-- `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
-- `OPENCLAW_GATEWAY_PASSWORD` - Alternative to token auth (optional)
-- `OPENCLAW_GATEWAY_CLIENT_ID` - Defaults to `webchat-ui`
-- `OPENCLAW_GATEWAY_CLIENT_MODE` - Defaults to `webchat`
+- `OPENCLAW_GATEWAY_URL` - Defaults in `.env.example`
+- `OPENCLAW_GATEWAY_ORIGIN` - Defaults in `.env.example`
+- `OPENCLAW_GATEWAY_SCOPES` - Defaults in `.env.example` (`operator.write`)
+- `OPENCLAW_GATEWAY_DEVICE_IDENTITY_PATH` - Defaults in `.env.example`; ensure the path is writable
+- `OPENCLAW_GATEWAY_CLIENT_ID` - Defaults to `openclaw-control-ui`
+- `OPENCLAW_GATEWAY_CLIENT_MODE` - Defaults to `ui`
 - `OPENCLAW_CHAT_SESSION_KEY` - Defaults to `agent:main:main`
 
 ## Setup
@@ -51,7 +50,14 @@ This example loads env from:
 - root env: `ai_agents/.env`
 - example env: `agents/examples/openclaw-example/tenapp/.env`
 
-Add required variables to your `.env` and OpenClaw-related variables to `tenapp/.env` (or root `.env`).
+Recommended: use `tenapp/.env.example` as the template and fill in real values.
+
+```bash
+cd agents/examples/openclaw-example/tenapp
+cp .env.example .env
+```
+
+Then update required keys in `tenapp/.env` (or place them in root `.env` if you prefer a shared env file).
 
 Example (`tenapp/.env`):
 
@@ -60,7 +66,17 @@ OPENCLAW_GATEWAY_URL=ws://host.docker.internal:18789
 OPENCLAW_GATEWAY_TOKEN=your_gateway_token
 OPENCLAW_GATEWAY_ORIGIN=http://host.docker.internal:18789
 OPENCLAW_GATEWAY_SCOPES=operator.write
+OPENCLAW_GATEWAY_DEVICE_IDENTITY_PATH=/data/openclaw/device_identity.json
 ```
+
+Notes:
+- `OPENCLAW_GATEWAY_DEVICE_IDENTITY_PATH` must be writable.
+- Keep either `OPENCLAW_GATEWAY_TOKEN` or `OPENCLAW_GATEWAY_PASSWORD` configured for initial auth/pairing.
+- `OPENCLAW_GATEWAY_ORIGIN` must be a valid HTTP origin (`http(s)://host[:port]`) and must exactly match an entry in gateway `controlUi.allowedOrigins`.
+  - In OpenClaw UI, go to **Settings -> Gateway -> Control UI Allowed Origins** and add the exact value of `OPENCLAW_GATEWAY_ORIGIN`.
+  - Example default in this project: `http://host.docker.internal:18789`.
+  - Use `https://...` (not `wss://...`), and do not include a path.
+  - If `OPENCLAW_GATEWAY_ORIGIN` and `allowedOrigins` do not match exactly, gateway will reject with `origin not allowed`.
 
 ### 2. Install Dependencies
 
@@ -105,6 +121,15 @@ OpenClaw flow:
 3. Async gateway reply is emitted as `openclaw_reply_event`
 4. `main_control` publishes raw OpenClaw result + generates assistant narration
 
+Pairing flow:
+
+1. On startup, the OpenClaw extension performs gateway handshake using signed device identity.
+2. If gateway requires pairing approval, frontend opens a blocking dialog with approve command.
+3. User copies the command and runs it on gateway host:
+   - `openclaw devices list`
+   - `openclaw devices approve <requestId>` (or `openclaw devices approve --latest`)
+4. Retry the request after approval.
+
 ### Configuration Parameters
 
 | Parameter | Type | Default | Description |
@@ -116,15 +141,21 @@ OpenClaw flow:
 | `OPENAI_MODEL` | string | - | OpenAI model (optional) |
 | `OPENAI_PROXY_URL` | string | - | OpenAI proxy URL (optional) |
 | `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs key (required) |
-| `WEATHERAPI_API_KEY` | string | - | Weather tool key (optional) |
 | `OPENCLAW_GATEWAY_URL` | string | `ws://127.0.0.1:18789` | OpenClaw gateway websocket URL |
 | `OPENCLAW_GATEWAY_TOKEN` | string | - | OpenClaw gateway token |
 | `OPENCLAW_GATEWAY_PASSWORD` | string | - | OpenClaw gateway password (optional alternative) |
 | `OPENCLAW_GATEWAY_ORIGIN` | string | - | Origin header for gateway origin checks |
 | `OPENCLAW_GATEWAY_SCOPES` | string | - | Comma-separated scopes; minimum `operator.write` |
-| `OPENCLAW_GATEWAY_CLIENT_ID` | string | `webchat-ui` | Gateway client id |
-| `OPENCLAW_GATEWAY_CLIENT_MODE` | string | `webchat` | Gateway client mode |
+| `OPENCLAW_GATEWAY_CLIENT_ID` | string | `openclaw-control-ui` | Gateway client id |
+| `OPENCLAW_GATEWAY_CLIENT_MODE` | string | `ui` | Gateway client mode |
+| `OPENCLAW_GATEWAY_DEVICE_IDENTITY_PATH` | string | `~/.openclaw/identity/device.json` | Path to persisted device identity file |
 | `OPENCLAW_CHAT_SESSION_KEY` | string | `agent:main:main` | OpenClaw chat session key |
+
+## Pairing Dialog
+
+- When pairing approval is required, frontend opens a dedicated dialog immediately.
+- The dialog shows the exact approval command and includes one-click copy.
+- Run the copied command on the gateway host, then retry the request.
 
 ## Customization
 

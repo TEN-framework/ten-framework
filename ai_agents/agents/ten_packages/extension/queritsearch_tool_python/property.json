@@ -1,0 +1,3 @@
+{
+    "api_key": "${env:QUERIT_API_KEY}"
+}

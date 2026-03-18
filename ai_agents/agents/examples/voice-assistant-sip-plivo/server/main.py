@@ -67,8 +67,7 @@ def load_config(args) -> PlivoServerConfig:
         plivo_from_number=os.getenv("PLIVO_FROM_NUMBER", ""),
         plivo_server_port=args.port,
         plivo_public_server_url=os.getenv("PLIVO_PUBLIC_SERVER_URL", ""),
-        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "false").lower()
-        == "true",
+        plivo_use_https=os.getenv("PLIVO_USE_HTTPS", "false").lower() == "true",
         plivo_use_wss=os.getenv("PLIVO_USE_WSS", "false").lower() == "true",
         tenapp_dir=args.tenapp_dir,
     )

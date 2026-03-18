@@ -4,7 +4,19 @@ import { Send } from "lucide-react";
 import * as React from "react";
 import { useAppDispatch, useAppSelector, useAutoScroll } from "@/common";
 import MessageList from "@/components/Chat/MessageList";
+import {
+  extractApproveCommand,
+  extractListCommand,
+  isPairingRequiredMessage,
+} from "@/components/Chat/openclawPairing";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { rtmManager, type TRtmMessage } from "@/manager/rtm";
 import { addChatItem, setAgentPhase } from "@/store/reducers/global";
@@ -18,6 +30,11 @@ export default function ChatCard(props: { className?: string }) {
   const { className } = props;
   const [_modal2Open, _setModal2Open] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
+  const [pairingDialogOpen, setPairingDialogOpen] = React.useState(false);
+  const [pairingApproveCmd, setPairingApproveCmd] = React.useState("");
+  const [pairingListCmd, setPairingListCmd] = React.useState("");
+  const [pairingCopied, setPairingCopied] = React.useState(false);
+  const [pairingBannerVisible, setPairingBannerVisible] = React.useState(false);
 
   const rtmConnected = useAppSelector((state) => state.global.rtmConnected);
   const dispatch = useAppDispatch();
@@ -45,16 +62,32 @@ export default function ChatCard(props: { className?: string }) {
 
   // const chatItems = genRandomChatList(10)
   const chatRef = React.useRef(null);
+  const lastPairingDialogKeyRef = React.useRef<string>("");
 
   useAutoScroll(chatRef);
 
   const _onTextChanged = (text: TRtmMessage) => {
     console.log("[rtm] onTextChanged", text);
     if ("data_type" in text && text.data_type === "openclaw_result") {
+      const openclawText = String(text.text ?? "");
+      if (isPairingRequiredMessage(openclawText)) {
+        const approveCmd = extractApproveCommand(openclawText);
+        const listCmd = extractListCommand(openclawText);
+        const dialogKey = `${approveCmd}|${Number(text.ts ?? 0)}`;
+        if (lastPairingDialogKeyRef.current !== dialogKey) {
+          lastPairingDialogKeyRef.current = dialogKey;
+          setPairingApproveCmd(approveCmd);
+          setPairingListCmd(listCmd);
+          setPairingCopied(false);
+          setPairingBannerVisible(true);
+          setPairingDialogOpen(true);
+        }
+        return;
+      }
       dispatch(
         addChatItem({
           userId: "openclaw",
-          text: String(text.text ?? ""),
+          text: openclawText,
           type: EMessageType.AGENT,
           data_type: EMessageDataType.OPENCLAW,
           isFinal: true,
@@ -117,6 +150,18 @@ export default function ChatCard(props: { className?: string }) {
     setInputValue("");
   };
 
+  const copyPairingCommand = async () => {
+    if (!pairingApproveCmd) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(pairingApproveCmd);
+      setPairingCopied(true);
+    } catch (_error) {
+      setPairingCopied(false);
+    }
+  };
+
   return (
     <>
       {/* Chat Card */}
@@ -127,6 +172,34 @@ export default function ChatCard(props: { className?: string }) {
             <MessageList />
           </div>
           {/* Input area */}
+          {pairingBannerVisible ? (
+            <div className="mb-3 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="mb-2">
+                OpenClaw pairing is pending. Approve on gateway host to continue.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPairingDialogOpen(true)}
+                >
+                  Reopen instructions
+                </Button>
+                <Button type="button" size="sm" onClick={copyPairingCommand}>
+                  {pairingCopied ? "Copied" : "Copy command"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPairingBannerVisible(false)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <div
             className={cn("border-t pt-4", {
               hidden: !graphName.includes("rtm"), // TODO: TMP use rtm key word
@@ -166,6 +239,40 @@ export default function ChatCard(props: { className?: string }) {
           </div>
         </div>
       </div>
+      <Dialog open={pairingDialogOpen} onOpenChange={setPairingDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Pairing approval required</DialogTitle>
+            <DialogDescription>
+              Copy and run the command on the gateway host to approve this device.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            {pairingListCmd ? (
+              <div>
+                <p className="mb-1 text-muted-foreground">Optional: check pending requests</p>
+                <pre className="rounded bg-muted px-3 py-2 text-xs">{pairingListCmd}</pre>
+              </div>
+            ) : null}
+            <div>
+              <p className="mb-1 text-muted-foreground">Approve pairing</p>
+              <pre className="rounded bg-muted px-3 py-2 text-xs">{pairingApproveCmd || "openclaw devices approve --latest"}</pre>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="button" onClick={copyPairingCommand}>
+                {pairingCopied ? "Copied" : "Copy command"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPairingDialogOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -17,6 +17,12 @@ class FinalizeReconnectMode(str, Enum):
     ON_AUDIO = "on_audio"
 
 
+class HoldingMode(str, Enum):
+    FALSE = "false"
+    FINALIZE = "finalize"
+    ENDPOINTING_ONLY = "endpointing_only"
+
+
 class SonioxASRConfig(BaseModel):
     url: str = "wss://stt-rt.soniox.com/transcribe-websocket"
     sample_rate: int = 16000
@@ -25,7 +31,7 @@ class SonioxASRConfig(BaseModel):
     dump_path: str = "."
     dump_rotate_on_finalize: bool = False
     finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
-    finalize_holding: bool = False
+    holding_mode: HoldingMode = HoldingMode.FALSE
     mute_pkg_duration_ms: int = 800
     default_finalize_send_silence: bool = False
     default_finalize_silence_duration_ms: int = 800
@@ -42,7 +48,7 @@ class SonioxASRConfig(BaseModel):
             "dump_path",
             "dump_rotate_on_finalize",
             "finalize_mode",
-            "finalize_holding",
+            "holding_mode",
             "mute_pkg_duration_ms",
             "default_finalize_send_silence",
             "default_finalize_silence_duration_ms",
@@ -51,7 +57,14 @@ class SonioxASRConfig(BaseModel):
         ]
         for key in special_params:
             if key in params:
-                setattr(self, key, params[key])
+                value = params[key]
+                if key == "holding_mode" and isinstance(value, str):
+                    value = (
+                        HoldingMode(value)
+                        if value in ("false", "finalize", "endpointing_only")
+                        else HoldingMode.FALSE
+                    )
+                setattr(self, key, value)
                 del params[key]
 
         # Set default parameters if not provided

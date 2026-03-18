@@ -107,14 +107,16 @@ class TelnyxCallServer:
                     "to": phone_number,
                     "from_": self.config.telnyx_from_number,
                     "connection_id": self.config.telnyx_connection_id,
-                    "answer_url": f"{media_ws_url}/control" if media_ws_url else None,
+                    "answer_url": (
+                        f"{media_ws_url}/control" if media_ws_url else None
+                    ),
                 }
 
                 # Create the call using Telnyx SDK
                 call = self.telnyx_client.calls.create(**call_params)
 
                 # Store call session
-                call_id = call.id if hasattr(call, 'id') else str(call)
+                call_id = call.id if hasattr(call, "id") else str(call)
                 self.active_call_sessions[call_id] = {
                     "phone_number": phone_number,
                     "message": message,
@@ -151,9 +153,7 @@ class TelnyxCallServer:
                 self._log_info(f"Ending call: {call_id}")
 
                 # End call via Telnyx API
-                self.telnyx_client.calls(call_id).update(
-                    status="completed"
-                )
+                self.telnyx_client.calls(call_id).update(status="completed")
 
                 # Update session status
                 if call_id in self.active_call_sessions:
@@ -224,15 +224,27 @@ class TelnyxCallServer:
                 # Handle both GET and POST requests
                 if request.method == "GET":
                     # For GET requests, get parameters from query string
-                    call_id = request.query_params.get("CallSid") or request.query_params.get("call_id")
-                    call_status = request.query_params.get("CallStatus") or request.query_params.get("status")
-                    call_duration = request.query_params.get("CallDuration") or request.query_params.get("duration")
+                    call_id = request.query_params.get(
+                        "CallSid"
+                    ) or request.query_params.get("call_id")
+                    call_status = request.query_params.get(
+                        "CallStatus"
+                    ) or request.query_params.get("status")
+                    call_duration = request.query_params.get(
+                        "CallDuration"
+                    ) or request.query_params.get("duration")
                 else:
                     # For POST requests, get parameters from form data
                     form_data = await request.form()
-                    call_id = form_data.get("CallSid") or form_data.get("call_id")
-                    call_status = form_data.get("CallStatus") or form_data.get("status")
-                    call_duration = form_data.get("CallDuration") or form_data.get("duration")
+                    call_id = form_data.get("CallSid") or form_data.get(
+                        "call_id"
+                    )
+                    call_status = form_data.get("CallStatus") or form_data.get(
+                        "status"
+                    )
+                    call_duration = form_data.get(
+                        "CallDuration"
+                    ) or form_data.get("duration")
 
                 self._log_info(
                     f"Status webhook received for call {call_id}: {call_status}"
@@ -273,7 +285,9 @@ class TelnyxCallServer:
 
             if self.config.telnyx_public_server_url:
                 ws_protocol = "wss" if self.config.telnyx_use_wss else "ws"
-                http_protocol = "https" if self.config.telnyx_use_https else "http"
+                http_protocol = (
+                    "https" if self.config.telnyx_use_https else "http"
+                )
                 media_ws_url = f"{ws_protocol}://{self.config.telnyx_public_server_url}/media"
                 webhook_url = f"{http_protocol}://{self.config.telnyx_public_server_url}/webhook/status"
 
@@ -360,7 +374,9 @@ class TelnyxCallServer:
                             self._log_info(f"Media stream started: {message}")
                             stream_id = message.get("streamSid", "")
                             start = message.get("start", {})
-                            call_id = start.get("callSid", "") or start.get("call_id", "")
+                            call_id = start.get("callSid", "") or start.get(
+                                "call_id", ""
+                            )
                             self.active_call_sessions[call_id][
                                 "stream_id"
                             ] = stream_id

@@ -10,6 +10,7 @@ from ten_runtime import (
     TenErrorCode,
 )
 import json
+import azure.cognitiveservices.speech as speechsdk
 
 # We must import it, which means this test fixture will be automatically executed
 from .mock import patch_azure_ws  # noqa: F401
@@ -79,7 +80,7 @@ def test_reconnect(patch_azure_ws):
             patch_azure_ws.event_handlers["recognized"](evt)
 
         def triggerConnected():
-            event = SimpleNamespace()
+            event = SimpleNamespace(session_id="123")
             patch_azure_ws.event_handlers["connected"](event)
             threading.Timer(0.2, triggerRecognized).start()
 
@@ -101,7 +102,7 @@ def test_reconnect(patch_azure_ws):
             evt = SimpleNamespace(
                 cancellation_details=SimpleNamespace(
                     code=123,
-                    reason=1,
+                    reason=speechsdk.CancellationReason.Error,
                     error_details="mock error details",
                 )
             )

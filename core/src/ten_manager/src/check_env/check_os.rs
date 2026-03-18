@@ -32,7 +32,7 @@ pub fn check() -> Result<OsCheckResult> {
     // Check if the platform is supported
     let is_supported = matches!(
         (os, arch),
-        ("linux", "x86_64") | ("linux", "aarch64") | ("macos", "x86_64") | ("macos", "aarch64")
+        ("linux", "x86_64") | ("linux", "aarch64") | ("macos", "x86_64") | ("macos", "aarch64") | ("windows", "x86_64")
     );
 
     let (status, suggestions) = if is_supported {
@@ -53,7 +53,7 @@ pub fn check() -> Result<OsCheckResult> {
                 issue: format!("Platform {} {} is not supported", os_name, arch_name),
                 command: None,
                 help_text: Some(
-                    "Supported platforms: Linux x64/arm64, macOS x64/arm64".to_string(),
+                    "Supported platforms: Linux x64/arm64, macOS x64/arm64, Windows x64".to_string(),
                 ),
             }],
         )

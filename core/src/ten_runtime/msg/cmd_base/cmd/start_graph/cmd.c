@@ -51,6 +51,7 @@ static void ten_raw_cmd_start_graph_destroy(ten_cmd_start_graph_t *self) {
   ten_list_clear(&self->extensions_info);
 
   ten_value_deinit(&self->long_running_mode);
+  ten_value_deinit(&self->sync_stop_before_deinit);
   ten_value_deinit(&self->predefined_graph_name);
   ten_value_deinit(&self->graph_json);
 
@@ -74,6 +75,7 @@ ten_cmd_start_graph_t *ten_raw_cmd_start_graph_create(void) {
   ten_list_init(&self->extensions_info);
 
   ten_value_init_bool(&self->long_running_mode, false);
+  ten_value_init_bool(&self->sync_stop_before_deinit, false);
   ten_value_init_string(&self->predefined_graph_name);
   ten_value_init_string(&self->graph_json);
 
@@ -516,6 +518,28 @@ bool ten_cmd_start_graph_get_long_running_mode(ten_shared_ptr_t *self) {
   return ten_raw_cmd_start_graph_get_long_running_mode(get_raw_cmd(self));
 }
 
+bool ten_raw_cmd_start_graph_get_sync_stop_before_deinit(
+    ten_cmd_start_graph_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
+             "Should not happen.");
+  TEN_ASSERT(
+      ten_raw_msg_get_type((ten_msg_t *)self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+      "Should not happen.");
+
+  return ten_value_get_bool(&self->sync_stop_before_deinit, NULL);
+}
+
+bool ten_cmd_start_graph_get_sync_stop_before_deinit(ten_shared_ptr_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
+  return ten_raw_cmd_start_graph_get_sync_stop_before_deinit(
+      get_raw_cmd(self));
+}
+
 bool ten_cmd_start_graph_set_predefined_graph_name(
     ten_shared_ptr_t *self, const char *predefined_graph_name,
     TEN_UNUSED ten_error_t *err) {
@@ -538,6 +562,18 @@ bool ten_cmd_start_graph_set_long_running_mode(ten_shared_ptr_t *self,
 
   return ten_value_set_bool(&get_raw_cmd(self)->long_running_mode,
                             long_running_mode);
+}
+
+bool ten_cmd_start_graph_set_sync_stop_before_deinit(
+    ten_shared_ptr_t *self, bool sync_stop_before_deinit,
+    TEN_UNUSED ten_error_t *err) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
+             "Should not happen.");
+
+  return ten_value_set_bool(&get_raw_cmd(self)->sync_stop_before_deinit,
+                            sync_stop_before_deinit);
 }
 
 ten_string_t *ten_raw_cmd_start_graph_get_predefined_graph_name(
