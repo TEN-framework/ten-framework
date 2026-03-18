@@ -47,22 +47,33 @@ class TestTTSErrorClassification:
     @staticmethod
     def _classify_tts_error(error_msg: str) -> str:
         """Reproduce the error classification from oracle_tts.py get()."""
-        if any(kw in error_msg.lower() for kw in ["401", "403", "auth", "credentials"]):
+        if any(
+            kw in error_msg.lower()
+            for kw in ["401", "403", "auth", "credentials"]
+        ):
             return "INVALID_KEY_ERROR"
 
-        if any(kw in error_msg.lower() for kw in ["timeout", "connection", "socket"]):
+        if any(
+            kw in error_msg.lower()
+            for kw in ["timeout", "connection", "socket"]
+        ):
             return "RETRYABLE"
 
         return "ERROR"
 
     def test_auth_error_401(self) -> None:
-        assert self._classify_tts_error("401 Unauthorized") == "INVALID_KEY_ERROR"
+        assert (
+            self._classify_tts_error("401 Unauthorized") == "INVALID_KEY_ERROR"
+        )
 
     def test_auth_error_403(self) -> None:
         assert self._classify_tts_error("403 Forbidden") == "INVALID_KEY_ERROR"
 
     def test_auth_error_credentials(self) -> None:
-        assert self._classify_tts_error("Invalid credentials") == "INVALID_KEY_ERROR"
+        assert (
+            self._classify_tts_error("Invalid credentials")
+            == "INVALID_KEY_ERROR"
+        )
 
     def test_retryable_timeout(self) -> None:
         assert self._classify_tts_error("Connection timeout") == "RETRYABLE"

@@ -124,8 +124,14 @@ class OracleTTS:
                 if chunk_size % 2 == 1:
                     next_pos += 1
                 _KNOWN_TRAILING_CHUNKS = {
-                    b"LIST", b"fact", b"id3 ", b"INFO",
-                    b"PEAK", b"bext", b"JUNK", b"cue ",
+                    b"LIST",
+                    b"fact",
+                    b"id3 ",
+                    b"INFO",
+                    b"PEAK",
+                    b"bext",
+                    b"JUNK",
+                    b"cue ",
                 }
                 has_trailing_chunk = (
                     next_pos + 8 <= len(audio)
@@ -257,7 +263,10 @@ class OracleTTS:
                     ), EVENT_TTS_INVALID_KEY_ERROR, ttfb_ms
                     return
 
-                if e.status in (429, 500, 502, 503) and attempt < max_retries - 1:
+                if (
+                    e.status in (429, 500, 502, 503)
+                    and attempt < max_retries - 1
+                ):
                     self.ten_env.log_debug(
                         f"Retryable error (attempt {attempt + 1}/{max_retries}): {error_message}"
                     )
@@ -265,9 +274,7 @@ class OracleTTS:
                     retry_delay *= 2
                     continue
 
-                yield error_message.encode(
-                    "utf-8"
-                ), EVENT_TTS_ERROR, ttfb_ms
+                yield error_message.encode("utf-8"), EVENT_TTS_ERROR, ttfb_ms
                 return
 
             except Exception as e:

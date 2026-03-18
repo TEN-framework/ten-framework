@@ -39,9 +39,7 @@ from .recognition import OracleASRRecognition, OracleASRRecognitionCallback
 from .config import OracleASRConfig
 
 
-class OracleASRExtension(
-    AsyncASRBaseExtension, OracleASRRecognitionCallback
-):
+class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
     """Oracle Cloud Infrastructure Speech Realtime ASR Extension"""
 
     def __init__(self, name: str):
@@ -53,7 +51,9 @@ class OracleASRExtension(
         self.last_finalize_timestamp: int = 0
         self.reconnect_manager: ReconnectManager = None  # type: ignore
         self._reconnect_lock = asyncio.Lock()
-        self._finalize_pending: bool = False  # finalize arrived before connection was ready
+        self._finalize_pending: bool = (
+            False  # finalize arrived before connection was ready
+        )
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -129,7 +129,9 @@ class OracleASRExtension(
                 missing.append("compartment_id")
 
             if missing:
-                error_msg = f"Oracle ASR credentials missing: {', '.join(missing)}"
+                error_msg = (
+                    f"Oracle ASR credentials missing: {', '.join(missing)}"
+                )
                 self.ten_env.log_error(
                     error_msg, category=LOG_CATEGORY_KEY_POINT
                 )

@@ -27,10 +27,15 @@ class TestErrorClassification:
         assert _classify_error("Connection reset by peer") == "NON_FATAL_ERROR"
 
     def test_non_fatal_timeout(self) -> None:
-        assert _classify_error("Connection timeout after 10 seconds") == "NON_FATAL_ERROR"
+        assert (
+            _classify_error("Connection timeout after 10 seconds")
+            == "NON_FATAL_ERROR"
+        )
 
     def test_non_fatal_network_error(self) -> None:
-        assert _classify_error("WebSocket connection closed") == "NON_FATAL_ERROR"
+        assert (
+            _classify_error("WebSocket connection closed") == "NON_FATAL_ERROR"
+        )
 
     def test_fatal_auth_in_longer_message(self) -> None:
         msg = "OCI SDK returned status 401 Unauthorized for region us-phoenix-1"

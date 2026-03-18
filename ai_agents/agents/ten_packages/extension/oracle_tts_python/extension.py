@@ -312,11 +312,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             self.total_audio_bytes += len(audio_chunk)
                             duration_ms = (
                                 self.total_audio_bytes
-                                / (
-                                    self.synthesize_audio_sample_rate()
-                                    * 2
-                                    * 1
-                                )
+                                / (self.synthesize_audio_sample_rate() * 2 * 1)
                                 * 1000
                             )
                             self.ten_env.log_debug(
@@ -324,10 +320,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                                 category=LOG_CATEGORY_VENDOR,
                             )
 
-                            if (
-                                self.sent_ts is None
-                                and self.current_request_id
-                            ):
+                            if self.sent_ts is None and self.current_request_id:
                                 self.sent_ts = datetime.now()
                                 await self.send_tts_audio_start(
                                     request_id=self.current_request_id,
@@ -350,8 +343,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             if (
                                 self.config.dump
                                 and self.current_request_id
-                                and self.current_request_id
-                                in self.recorder_map
+                                and self.current_request_id in self.recorder_map
                             ):
                                 await self.recorder_map[
                                     self.current_request_id
@@ -368,9 +360,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                                 if audio_chunk
                                 else "OCI authentication error"
                             )
-                            request_id = (
-                                self.current_request_id or t.request_id
-                            )
+                            request_id = self.current_request_id or t.request_id
                             await self._handle_error_with_end(
                                 request_id,
                                 error_msg,

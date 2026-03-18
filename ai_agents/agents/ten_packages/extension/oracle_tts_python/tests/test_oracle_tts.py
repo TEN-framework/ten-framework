@@ -9,17 +9,19 @@ class TestStripWavHeader:
     """Tests for OracleTTS._strip_wav_header static method."""
 
     @staticmethod
-    def _make_wav(pcm: bytes, *, fmt_extra: bytes = b"", trailing: bytes = b"") -> bytes:
+    def _make_wav(
+        pcm: bytes, *, fmt_extra: bytes = b"", trailing: bytes = b""
+    ) -> bytes:
         """Build a minimal WAV with a standard 16-byte fmt chunk."""
         fmt_chunk = (
             b"fmt "
             + struct.pack("<I", 16)
-            + struct.pack("<H", 1)       # PCM format
-            + struct.pack("<H", 1)       # mono
-            + struct.pack("<I", 16000)   # sample rate
-            + struct.pack("<I", 32000)   # byte rate
-            + struct.pack("<H", 2)       # block align
-            + struct.pack("<H", 16)      # bits per sample
+            + struct.pack("<H", 1)  # PCM format
+            + struct.pack("<H", 1)  # mono
+            + struct.pack("<I", 16000)  # sample rate
+            + struct.pack("<I", 32000)  # byte rate
+            + struct.pack("<H", 2)  # block align
+            + struct.pack("<H", 16)  # bits per sample
             + fmt_extra
         )
         data_chunk = b"data" + struct.pack("<I", len(pcm)) + pcm
@@ -74,7 +76,7 @@ class TestStripWavHeader:
         """When valid trailing WAV chunks exist after the data chunk,
         the declared data chunk_size should be trusted to exclude
         trailing metadata (prevents audio pops)."""
-        pcm = b"\xAA\xBB" * 50  # 100 bytes of PCM
+        pcm = b"\xaa\xbb" * 50  # 100 bytes of PCM
         trailing = b"LIST" + struct.pack("<I", 4) + b"INFO"
         wav = self._make_wav(pcm, trailing=trailing)
         result = OracleTTS._strip_wav_header(wav)

@@ -62,9 +62,7 @@ class ReconnectManager:
     ) -> bool:
         if not self.can_retry():
             if self.logger:
-                self.logger.log_error(
-                    "Reconnection attempts exhausted"
-                )
+                self.logger.log_error("Reconnection attempts exhausted")
             if error_handler:
                 await error_handler(
                     ModuleError(

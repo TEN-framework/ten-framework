@@ -30,7 +30,9 @@ class OracleASRConfig(BaseModel):
             sensitive_keys = ["fingerprint", "key_file", "tenancy", "user"]
             for key in sensitive_keys:
                 if key in config_dict["params"] and config_dict["params"][key]:
-                    config_dict["params"][key] = encrypt(config_dict["params"][key])
+                    config_dict["params"][key] = encrypt(
+                        config_dict["params"][key]
+                    )
         return json.dumps(config_dict)
 
     @property

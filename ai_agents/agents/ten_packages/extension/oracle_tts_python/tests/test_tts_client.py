@@ -35,12 +35,15 @@ def mock_oci():
     mock_client_cls.return_value = mock_client_instance
 
     with (
-        patch.dict(sys.modules, {
-            "oci": MagicMock(),
-            "oci.ai_speech": MagicMock(),
-            "oci.ai_speech.models": MagicMock(),
-            "oci.exceptions": MagicMock(),
-        }),
+        patch.dict(
+            sys.modules,
+            {
+                "oci": MagicMock(),
+                "oci.ai_speech": MagicMock(),
+                "oci.ai_speech.models": MagicMock(),
+                "oci.exceptions": MagicMock(),
+            },
+        ),
         patch("oracle_tts.oci") as oci_mock,
     ):
         oci_mock.ai_speech.AIServiceSpeechClient = mock_client_cls
@@ -130,7 +133,7 @@ class TestOracleTTSGet:
         ten_env = MagicMock()
         tts = OracleTTS(config=config, ten_env=ten_env)
 
-        pcm_data = b"\xAA\xBB" * 2048  # 4096 bytes = 1 chunk
+        pcm_data = b"\xaa\xbb" * 2048  # 4096 bytes = 1 chunk
 
         response_mock = MagicMock()
         response_mock.data.content = pcm_data

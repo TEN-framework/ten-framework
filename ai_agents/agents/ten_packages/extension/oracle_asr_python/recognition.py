@@ -234,9 +234,7 @@ class OracleASRRecognition:
 
         except Exception as e:
             error_msg = f"Failed to start recognition: {e}"
-            self.ten_env.log_error(
-                error_msg, category=LOG_CATEGORY_VENDOR
-            )
+            self.ten_env.log_error(error_msg, category=LOG_CATEGORY_VENDOR)
             await self.callback.on_error(error_msg)
 
     async def send_audio_frame(self, audio_data: bytes):

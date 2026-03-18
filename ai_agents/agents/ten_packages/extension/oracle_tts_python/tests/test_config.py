@@ -12,9 +12,7 @@ class TestOracleTTSConfigValidation:
             cfg.validate_params()
 
     def test_validate_params_reports_specific_missing_fields(self) -> None:
-        cfg = OracleTTSConfig(
-            params={"tenancy": "t", "user": "u"}
-        )
+        cfg = OracleTTSConfig(params={"tenancy": "t", "user": "u"})
         with pytest.raises(ValueError, match="fingerprint"):
             cfg.validate_params()
 
