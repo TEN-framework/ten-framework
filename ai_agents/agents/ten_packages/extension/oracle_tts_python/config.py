@@ -36,7 +36,9 @@ class OracleTTSConfig(BaseModel):
             "key_file",
             "compartment_id",
         ]
-        missing = [k for k in required_keys if not self.params.get(k)]
+        missing = [
+            k for k in required_keys if k not in self.params or not self.params[k]
+        ]
         if missing:
             raise ValueError(
                 f"Missing required OCI parameters: {', '.join(missing)}"
