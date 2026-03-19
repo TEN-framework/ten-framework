@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
 
-from config import OracleTTSConfig
+from oracle_tts_python.config import OracleTTSConfig
 
 
 def _make_config(**overrides) -> OracleTTSConfig:
@@ -44,7 +44,7 @@ def mock_oci():
                 "oci.exceptions": MagicMock(),
             },
         ),
-        patch("oracle_tts.oci") as oci_mock,
+        patch("oracle_tts_python.oracle_tts.oci") as oci_mock,
     ):
         oci_mock.ai_speech.AIServiceSpeechClient = mock_client_cls
         oci_mock.config.validate_config = MagicMock()
@@ -53,7 +53,7 @@ def mock_oci():
 
 class TestOracleTTSCancel:
     def test_cancel_sets_flag(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS
+        from oracle_tts_python.oracle_tts import OracleTTS
 
         config = _make_config()
         ten_env = MagicMock()
@@ -64,7 +64,7 @@ class TestOracleTTSCancel:
         assert tts._is_cancelled is True
 
     def test_clean_sets_flag_and_clears_client(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS
+        from oracle_tts_python.oracle_tts import OracleTTS
 
         config = _make_config()
         ten_env = MagicMock()
@@ -79,7 +79,7 @@ class TestOracleTTSCancel:
 class TestOracleTTSGet:
     @pytest.mark.asyncio
     async def test_get_yields_error_when_client_none(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS, EVENT_TTS_ERROR
+        from oracle_tts_python.oracle_tts import OracleTTS, EVENT_TTS_ERROR
 
         config = _make_config()
         ten_env = MagicMock()
@@ -95,7 +95,7 @@ class TestOracleTTSGet:
 
     @pytest.mark.asyncio
     async def test_get_cancel_stops_iteration(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS, EVENT_TTS_RESPONSE
+        from oracle_tts_python.oracle_tts import OracleTTS, EVENT_TTS_RESPONSE
 
         _, client_instance = mock_oci
         config = _make_config()
@@ -122,7 +122,7 @@ class TestOracleTTSGet:
 
     @pytest.mark.asyncio
     async def test_get_successful_yields_chunks_and_end(self, mock_oci) -> None:
-        from oracle_tts import (
+        from oracle_tts_python.oracle_tts import (
             OracleTTS,
             EVENT_TTS_RESPONSE,
             EVENT_TTS_REQUEST_END,
@@ -150,7 +150,7 @@ class TestOracleTTSGet:
 
     @pytest.mark.asyncio
     async def test_get_first_chunk_has_ttfb(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS, EVENT_TTS_RESPONSE
+        from oracle_tts_python.oracle_tts import OracleTTS, EVENT_TTS_RESPONSE
 
         _, client_instance = mock_oci
         config = _make_config()
@@ -178,7 +178,7 @@ class TestOracleTTSGet:
 
 class TestOracleTTSRegionFallback:
     def test_empty_region_falls_back_to_default(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS
+        from oracle_tts_python.oracle_tts import OracleTTS
 
         config = _make_config(region="")
         ten_env = MagicMock()
@@ -190,7 +190,7 @@ class TestOracleTTSRegionFallback:
         assert call_args["region"] == "us-phoenix-1"
 
     def test_explicit_region_used(self, mock_oci) -> None:
-        from oracle_tts import OracleTTS
+        from oracle_tts_python.oracle_tts import OracleTTS
 
         config = _make_config(region="eu-frankfurt-1")
         ten_env = MagicMock()

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from config import OracleTTSConfig
+from oracle_tts_python.config import OracleTTSConfig
 
 
 class TestOracleTTSConfigValidation:

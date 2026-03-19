@@ -2,7 +2,7 @@ import struct
 
 import pytest
 
-from oracle_tts import OracleTTS
+from oracle_tts_python.oracle_tts import OracleTTS
 
 
 class TestStripWavHeader:

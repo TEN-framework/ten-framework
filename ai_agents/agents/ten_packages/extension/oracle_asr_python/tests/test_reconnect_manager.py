@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from reconnect_manager import ReconnectManager
+from oracle_asr_python.reconnect_manager import ReconnectManager
 
 
 class TestReconnectManagerSuccess:

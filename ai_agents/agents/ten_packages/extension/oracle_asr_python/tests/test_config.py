@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from config import OracleASRConfig
+from oracle_asr_python.config import OracleASRConfig
 
 
 class TestOracleASRConfigSerialization:
