@@ -81,9 +81,9 @@ class TestBlazeTTSExtension:
         # Check endpoint
         assert call_args[0][0] == "http://localhost:8000/v1/tts"
 
-        # Check JSON body
+        # Check JSON body (API uses "query" for input text)
         json_data = call_args[1]["json"]
-        assert json_data["text"] == "Xin chào"
+        assert json_data["query"] == "Xin chào"
         assert json_data["speaker_id"] == "test-speaker-123"
         assert json_data["language"] == "vi"
 
@@ -277,15 +277,21 @@ class TestBlazeTTSExtension:
     def test_process_method(self, mock_api_response_synthesize):
         """Test process() method (TEN framework interface)"""
         with patch("httpx.Client") as mock_client_class:
-            # Setup mock response
-            mock_response = Mock()
-            mock_response.json.return_value = mock_api_response_synthesize
-            mock_response.raise_for_status = Mock()
+            # Setup mock response for synthesize (POST)
+            mock_post_response = Mock()
+            mock_post_response.json.return_value = mock_api_response_synthesize
+            mock_post_response.raise_for_status = Mock()
+
+            # Setup mock response for download_audio (GET)
+            mock_get_response = Mock()
+            mock_get_response.content = b"fake-audio-bytes"
+            mock_get_response.raise_for_status = Mock()
 
             mock_client = Mock()
             mock_client.__enter__ = Mock(return_value=mock_client)
             mock_client.__exit__ = Mock(return_value=False)
-            mock_client.post.return_value = mock_response
+            mock_client.post.return_value = mock_post_response
+            mock_client.get.return_value = mock_get_response
             mock_client_class.return_value = mock_client
 
             # Initialize extension
@@ -305,10 +311,10 @@ class TestBlazeTTSExtension:
                 }
             )
 
-            # Verify result format
+            # Verify result format (process downloads audio by default)
             assert result["job_id"] == "test-tts-job-123"
             assert result["status"] == "completed"
-            assert "audio_url" in result
+            assert result["audio_data"] == b"fake-audio-bytes"
 
     def test_process_method_missing_text(self):
         """Test process() method raises error when text is missing"""

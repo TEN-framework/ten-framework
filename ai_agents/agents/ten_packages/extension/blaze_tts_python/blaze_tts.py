@@ -49,11 +49,13 @@ class BlazeTTSConfig(BaseModel):
     """Configuration for Blaze TTS Extension"""
 
     api_url: str = Field(
-        default=os.getenv("BLAZE_TTS_API_URL", "http://localhost:8000"),
+        default_factory=lambda: os.getenv(
+            "BLAZE_TTS_API_URL", "http://localhost:8000"
+        ),
         description="Blaze TTS API base URL",
     )
     api_key: Optional[str] = Field(
-        default=os.getenv("BLAZE_TTS_API_KEY", None),
+        default_factory=lambda: os.getenv("BLAZE_TTS_API_KEY"),
         description="API key for authentication (Bearer token)",
     )
     timeout: int = Field(default=3600, description="Request timeout in seconds")
@@ -406,7 +408,11 @@ class BlazeTTSExtension:
             "version": "1.0.0",
             "description": "Blaze Text-to-Speech extension for TEN framework",
             "capabilities": ["tts", "synthesis", "text_to_speech"],
-            "supported_formats": ["mp3", "wav", "ogg"],
+            "supported_formats": [
+                "audio/wav",
+                "audio/mpeg",
+                "audio/ogg",
+            ],
             "supported_languages": ["vi", "en"],
             "config_schema": {
                 "api_url": {

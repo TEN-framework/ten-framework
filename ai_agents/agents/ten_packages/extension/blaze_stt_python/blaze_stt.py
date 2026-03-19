@@ -25,11 +25,13 @@ class BlazeSTTConfig(BaseModel):
     """Configuration for Blaze STT Extension"""
 
     api_url: str = Field(
-        default=os.getenv("BLAZE_STT_API_URL", "http://localhost:8000"),
+        default_factory=lambda: os.getenv(
+            "BLAZE_STT_API_URL", "http://localhost:8000"
+        ),
         description="Blaze STT API base URL",
     )
     api_key: Optional[str] = Field(
-        default=os.getenv("BLAZE_STT_API_KEY", None),
+        default_factory=lambda: os.getenv("BLAZE_STT_API_KEY"),
         description="API key for authentication (Bearer token)",
     )
     timeout: int = Field(default=3600, description="Request timeout in seconds")
