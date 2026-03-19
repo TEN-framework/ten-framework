@@ -37,7 +37,9 @@ class OracleTTSConfig(BaseModel):
             "compartment_id",
         ]
         missing = [
-            k for k in required_keys if k not in self.params or not self.params[k]
+            k
+            for k in required_keys
+            if k not in self.params or not self.params[k]
         ]
         if missing:
             raise ValueError(
