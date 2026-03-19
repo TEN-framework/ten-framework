@@ -40,7 +40,7 @@ tasks:
       - ./scripts/install_deps_and_build.sh linux x64
 
   tts-guarder-test:
-    desc: "run tests for tts guarder (EXTENSION: bytedance_tts_duplex | oracle_tts_python)"
+    desc: run tests for tts guarder
     vars:
       EXTENSION: '{{.EXTENSION| default "bytedance_tts_duplex"}}'
       CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
@@ -50,7 +50,7 @@ tasks:
     dotenv: [".env"]
     cmds:
       - cd agents/integration_tests/tts_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
-      - cd agents/integration_tests/tts_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir $(pwd)/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+      - cd agents/integration_tests/tts_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
 
   test:
     desc: run tests
@@ -101,7 +101,7 @@ tasks:
       - cd {{.EXTENSION}} && ./tests/bin/start {{ .CLI_ARGS }}
 
   asr-guarder-test:
-    desc: "run tests for asr guarder (EXTENSION: azure_asr_python | oracle_asr_python)"
+    desc: run tests for asr guarder
     vars:
       EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
       CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
@@ -111,7 +111,7 @@ tasks:
     dotenv: [".env"]
     cmds:
       - cd agents/integration_tests/asr_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
-      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir $(pwd)/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
 
   format:
     desc: format code
