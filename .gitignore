@@ -141,4 +141,5 @@ ai_agents/xdump_config
 ai_agents/.idea
 ai_agents/*.log
 ai_agents/*.pcm
+ai_agents/*.pem
 /.trae
