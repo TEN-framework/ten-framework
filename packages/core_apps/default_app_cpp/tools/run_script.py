@@ -9,6 +9,7 @@ import argparse
 import platform
 import subprocess
 import sys
+import shlex
 
 
 BUILD_TYPE = "debug"
@@ -52,7 +53,7 @@ def detect_arch() -> str:
 def run_cmd(cmd: str) -> int:
     """Run a shell command."""
     print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True)
+    result = subprocess.run(shlex.split(cmd), check=True)
     return result.returncode
 
 

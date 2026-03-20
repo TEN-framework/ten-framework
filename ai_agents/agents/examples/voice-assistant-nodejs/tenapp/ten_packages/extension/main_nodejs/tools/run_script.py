@@ -8,6 +8,7 @@ import argparse
 import subprocess
 import sys
 import os
+import shlex
 
 
 def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
@@ -15,7 +16,7 @@ def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
     if env is None:
         env = os.environ.copy()
     print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True, env=env)
+    result = subprocess.run(shlex.split(cmd), check=True, env=env)
     return result.returncode
 
 
