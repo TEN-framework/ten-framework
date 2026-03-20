@@ -394,10 +394,14 @@ def test_reconnection(extension_name: str, config_dir: str) -> None:
             f"Non-fatal errors should trigger retries, but received {tester.errors_received} errors. "
             f"Expected at least 1 non-fatal error."
         )
-        # Verify all received errors are non-fatal
-        non_fatal_codes = [code for code in tester.error_codes if code != ModuleErrorCode.NON_FATAL_ERROR.value]
-        assert len(non_fatal_codes) == 0, (
-            f"All errors should be non-fatal, but found unexpected codes in sequence: {tester.error_codes}"
+        # Verify all received errors are non-fatal (should retry on connection failure)
+        # Note: ModuleErrorCode is a str Enum, so we need to convert to int for comparison
+        non_fatal_code = int(ModuleErrorCode.NON_FATAL_ERROR.value)
+        assert all(
+            code == non_fatal_code for code in tester.error_codes
+        ), (
+            f"All errors should be non-fatal (code={non_fatal_code}), "
+            f"but found unexpected codes in sequence: {tester.error_codes}"
         )
         print(
             f"✅ Non-fatal error validation passed: received {tester.errors_received} errors "
