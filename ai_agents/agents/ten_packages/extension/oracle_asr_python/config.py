@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import json
-from typing import Dict, Any
+from typing import Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 
@@ -15,9 +15,9 @@ class OracleASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "/tmp"
 
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, Any] = Field(default_factory=dict)
 
-    def update(self, params: Dict[str, Any]) -> None:
+    def update(self, params: dict[str, Any]) -> None:
         updates = {k: v for k, v in params.items() if hasattr(self, k)}
         if updates:
             validated = self.model_validate({**self.model_dump(), **updates})
@@ -31,7 +31,7 @@ class OracleASRConfig(BaseModel):
             for key in sensitive_keys:
                 if key in config_dict["params"] and config_dict["params"][key]:
                     config_dict["params"][key] = encrypt(
-                        config_dict["params"][key]
+                        config_dict["params"][key],
                     )
         return json.dumps(config_dict)
 

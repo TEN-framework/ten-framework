@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-from typing import Callable, Awaitable, Optional
+from collections.abc import Callable, Awaitable
 from ten_ai_base.message import ModuleError, ModuleErrorCode
 from .const import MODULE_NAME_ASR
 
@@ -56,9 +56,7 @@ class ReconnectManager:
     async def handle_reconnect(
         self,
         connection_func: Callable[[], Awaitable[None]],
-        error_handler: Optional[
-            Callable[[ModuleError], Awaitable[None]]
-        ] = None,
+        error_handler: Callable[[ModuleError], Awaitable[None]] | None = None,
     ) -> bool:
         if not self.can_retry():
             if self.logger:
@@ -72,7 +70,7 @@ class ReconnectManager:
                             "Maximum reconnection attempts reached. "
                             "Please check network connectivity and OCI credentials."
                         ),
-                    )
+                    ),
                 )
             return False
 
@@ -80,13 +78,14 @@ class ReconnectManager:
         self.attempts += 1
 
         delay = min(
-            self.base_delay * (2 ** (self.attempts - 1)), self.max_delay
+            self.base_delay * (2 ** (self.attempts - 1)),
+            self.max_delay,
         )
 
         if self.logger:
             self.logger.log_warn(
                 f"Attempting reconnection #{self.attempts} "
-                f"after {delay:.2f} seconds delay..."
+                f"after {delay:.2f} seconds delay...",
             )
 
         try:
@@ -96,20 +95,20 @@ class ReconnectManager:
             if not self._connection_successful:
                 if self.logger:
                     self.logger.log_warn(
-                        f"Reconnection attempt #{self.attempts} did not establish a connection"
+                        f"Reconnection attempt #{self.attempts} did not establish a connection",
                     )
                 return False
 
             if self.logger:
                 self.logger.log_debug(
-                    f"Connection function completed for attempt #{self.attempts}"
+                    f"Connection function completed for attempt #{self.attempts}",
                 )
             return True
 
         except Exception as e:
             if self.logger:
                 self.logger.log_error(
-                    f"Reconnection attempt #{self.attempts} failed: {e}. Will retry..."
+                    f"Reconnection attempt #{self.attempts} failed: {e}. Will retry...",
                 )
 
             if error_handler:
@@ -117,8 +116,8 @@ class ReconnectManager:
                     ModuleError(
                         module=self.module_name,
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
-                    )
+                        message=f"Reconnection attempt #{self.attempts} failed: {e}",
+                    ),
                 )
 
             return False

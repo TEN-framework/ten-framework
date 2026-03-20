@@ -4,7 +4,7 @@
 # See the LICENSE file for more information.
 #
 import json
-from typing import Dict, Any
+from typing import Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 
@@ -15,7 +15,7 @@ class OracleTTSConfig(BaseModel):
     dump: bool = False
     dump_path: str = "/tmp"
 
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, Any] = Field(default_factory=dict)
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         config_dict = self.model_dump()
@@ -24,7 +24,7 @@ class OracleTTSConfig(BaseModel):
             for key in sensitive_keys:
                 if key in config_dict["params"] and config_dict["params"][key]:
                     config_dict["params"][key] = encrypt(
-                        config_dict["params"][key]
+                        config_dict["params"][key],
                     )
         return json.dumps(config_dict)
 
@@ -37,11 +37,9 @@ class OracleTTSConfig(BaseModel):
             "compartment_id",
         ]
         missing = [
-            k
-            for k in required_keys
-            if k not in self.params or not self.params[k]
+            k for k in required_keys if k not in self.params or not self.params[k]
         ]
         if missing:
             raise ValueError(
-                f"Missing required OCI parameters: {', '.join(missing)}"
+                f"Missing required OCI parameters: {', '.join(missing)}",
             )
