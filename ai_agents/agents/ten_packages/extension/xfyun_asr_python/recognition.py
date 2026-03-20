@@ -197,8 +197,9 @@ class XfyunWSRecognition:
 
         except Exception as e:
             error_msg = f"Error processing message: {e}"
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             self.ten_env.log_info(
-                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}"
+                f"[{timestamp}] {error_msg}"
             )
             await self.callback.on_error(error_msg)
 
