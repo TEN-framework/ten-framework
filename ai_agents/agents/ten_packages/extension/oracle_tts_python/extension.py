@@ -50,7 +50,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
 
             if not config_json_str or config_json_str.strip() == "{}":
                 raise ValueError(
-                    "Configuration is empty. Required OCI parameters are missing."
+                    "Configuration is empty. Required OCI parameters are missing.",
                 )
 
             self.config = OracleTTSConfig.model_validate_json(config_json_str)
@@ -178,7 +178,8 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
         await self._handle_completed_request(TTSAudioEndReason.INTERRUPTED)
 
     async def _handle_completed_request(
-        self, reason: TTSAudioEndReason
+        self,
+        reason: TTSAudioEndReason,
     ) -> None:
         if self.last_complete_request_id == self.current_request_id:
             self.ten_env.log_debug(
@@ -198,13 +199,13 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                 await self.recorder_map[self.current_request_id].flush()
             except Exception as e:
                 self.ten_env.log_error(
-                    f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}",
                 )
 
         request_event_interval = 0
         if self.sent_ts is not None:
             request_event_interval = int(
-                (datetime.now() - self.sent_ts).total_seconds() * 1000
+                (datetime.now() - self.sent_ts).total_seconds() * 1000,
             )
         await self.send_tts_audio_end(
             request_id=self.current_request_id or "",
@@ -226,9 +227,12 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         """Send error and, if text_input_end was received, also send audio_end."""
         has_text_input_end = False
-        if request_id and request_id in self.request_states:
-            if self.request_states[request_id] == RequestState.FINALIZING:
-                has_text_input_end = True
+        if (
+            request_id
+            and request_id in self.request_states
+            and self.request_states[request_id] == RequestState.FINALIZING
+        ):
+            has_text_input_end = True
 
         await self.send_tts_error(
             request_id=request_id,
@@ -264,7 +268,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
 
             if self.last_complete_request_id == t.request_id:
                 self.ten_env.log_debug(
-                    f"Request ID {t.request_id} has already been completed, ignoring"
+                    f"Request ID {t.request_id} has already been completed, ignoring",
                 )
                 return
 
@@ -275,9 +279,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
 
                 if self.config.dump:
                     old_request_ids = [
-                        rid
-                        for rid in self.recorder_map.keys()
-                        if rid != t.request_id
+                        rid for rid in self.recorder_map if rid != t.request_id
                     ]
                     for old_rid in old_request_ids:
                         try:
@@ -285,7 +287,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             del self.recorder_map[old_rid]
                         except Exception as e:
                             self.ten_env.log_error(
-                                f"Error cleaning up PCMWriter for request_id {old_rid}: {e}"
+                                f"Error cleaning up PCMWriter for request_id {old_rid}: {e}",
                             )
 
                     if t.request_id not in self.recorder_map:
@@ -294,7 +296,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             f"oracle_tts_dump_{t.request_id}.pcm",
                         )
                         self.recorder_map[t.request_id] = PCMWriter(
-                            dump_file_path
+                            dump_file_path,
                         )
 
             audio_generator = None
@@ -304,7 +306,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                     async for audio_chunk, event, ttfb_ms in audio_generator:
                         if self._flush_requested:
                             self.ten_env.log_debug(
-                                "Flush requested, stopping audio processing"
+                                "Flush requested, stopping audio processing",
                             )
                             break
 
@@ -327,10 +329,12 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                                 )
                                 extra_metadata = {
                                     "voice_id": self.config.params.get(
-                                        "voice_id", ""
+                                        "voice_id",
+                                        "",
                                     ),
                                     "model_name": self.config.params.get(
-                                        "model_name", ""
+                                        "model_name",
+                                        "",
                                     ),
                                 }
                                 if ttfb_ms is not None:
@@ -345,9 +349,9 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                                 and self.current_request_id
                                 and self.current_request_id in self.recorder_map
                             ):
-                                await self.recorder_map[
-                                    self.current_request_id
-                                ].write(audio_chunk)
+                                await self.recorder_map[self.current_request_id].write(
+                                    audio_chunk,
+                                )
 
                             await self.send_tts_audio_data(audio_chunk)
 
@@ -380,10 +384,11 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                     raise
                 except Exception as e:
                     self.ten_env.log_error(
-                        f"Error in audio processing: {traceback.format_exc()}"
+                        f"Error in audio processing: {traceback.format_exc()}",
                     )
                     await self._handle_error_with_end(
-                        self.current_request_id or t.request_id, str(e)
+                        self.current_request_id or t.request_id,
+                        str(e),
                     )
 
                 finally:
@@ -392,7 +397,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
                             await audio_generator.aclose()
                         except Exception as e:
                             self.ten_env.log_error(
-                                f"Error closing audio generator: {e}"
+                                f"Error closing audio generator: {e}",
                             )
             else:
                 self.ten_env.log_debug(
@@ -403,13 +408,14 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             if t.text_input_end:
                 self.current_request_finished = True
                 await self._handle_completed_request(
-                    TTSAudioEndReason.REQUEST_END
+                    TTSAudioEndReason.REQUEST_END,
                 )
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}"
+                f"Error in request_tts: {traceback.format_exc()}",
             )
             await self._handle_error_with_end(
-                self.current_request_id or t.request_id, str(e)
+                self.current_request_id or t.request_id,
+                str(e),
             )

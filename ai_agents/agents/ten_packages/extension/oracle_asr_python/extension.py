@@ -6,7 +6,8 @@
 from datetime import datetime
 import os
 import asyncio
-from typing import Dict, Any
+from pathlib import Path
+from typing import Any
 
 from typing_extensions import override
 from .const import (
@@ -49,7 +50,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-        self.reconnect_manager: ReconnectManager = None  # type: ignore
+        self.reconnect_manager: ReconnectManager = None  # type: ignore[assignment]
         self._reconnect_lock = asyncio.Lock()
         self._finalize_pending: bool = (
             False  # finalize arrived before connection was ready
@@ -83,7 +84,8 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
             )
             if self.config.dump:
                 dump_file_path = os.path.join(
-                    self.config.dump_path, DUMP_FILE_NAME
+                    self.config.dump_path,
+                    DUMP_FILE_NAME,
                 )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
@@ -129,11 +131,10 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
                 missing.append("compartment_id")
 
             if missing:
-                error_msg = (
-                    f"Oracle ASR credentials missing: {', '.join(missing)}"
-                )
+                error_msg = f"Oracle ASR credentials missing: {', '.join(missing)}"
                 self.ten_env.log_error(
-                    error_msg, category=LOG_CATEGORY_KEY_POINT
+                    error_msg,
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
                 await self.send_asr_error(
                     ModuleError(
@@ -144,10 +145,11 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
                 )
                 return
 
-            if key_file and not os.path.isfile(key_file):
+            if key_file and not Path(key_file).is_file():
                 error_msg = f"OCI key_file not found: {key_file}"
                 self.ten_env.log_error(
-                    error_msg, category=LOG_CATEGORY_KEY_POINT
+                    error_msg,
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
                 await self.send_asr_error(
                     ModuleError(
@@ -188,7 +190,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
         self.ten_env.log_debug(
-            f"Oracle ASR finalize start at {self.last_finalize_timestamp}"
+            f"Oracle ASR finalize start at {self.last_finalize_timestamp}",
         )
 
         if self.recognition and self.recognition.is_connected():
@@ -279,7 +281,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
             timestamp = int(datetime.now().timestamp() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_debug(
-                f"Oracle ASR finalize end at {timestamp}, latency: {latency}ms"
+                f"Oracle ASR finalize end at {timestamp}, latency: {latency}ms",
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
@@ -318,7 +320,9 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
     @override
     async def send_audio(
-        self, frame: AudioFrame, _session_id: str | None
+        self,
+        frame: AudioFrame,
+        _session_id: str | None,
     ) -> bool:
         assert self.recognition is not None
 
@@ -367,7 +371,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
             await self.recognition.request_final_result()
 
     @override
-    async def on_result(self, message_data: Dict[str, Any]) -> None:
+    async def on_result(self, message_data: dict[str, Any]) -> None:
         try:
             transcriptions = message_data.get("transcriptions", [])
             if not transcriptions:
@@ -387,7 +391,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
             actual_start_ms = int(
                 self.audio_timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
+                + self.sent_user_audio_duration_ms_before_last_reset,
             )
 
             await self._handle_asr_result(
@@ -406,7 +410,9 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
     @override
     async def on_error(
-        self, error_msg: str, error_code: int | None = None
+        self,
+        error_msg: str,
+        error_code: int | None = None,
     ) -> None:
         self.ten_env.log_error(
             f"vendor_error: code: {error_code}, reason: {error_msg}",
@@ -443,7 +449,7 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
             if not self.stopped and not self.is_connected():
                 self.ten_env.log_warn(
-                    "Oracle Speech connection error. Reconnecting..."
+                    "Oracle Speech connection error. Reconnecting...",
                 )
                 await self._handle_reconnect()
 
@@ -456,6 +462,6 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
         if not self.stopped:
             self.ten_env.log_warn(
-                "Oracle Speech connection closed unexpectedly. Reconnecting..."
+                "Oracle Speech connection closed unexpectedly. Reconnecting...",
             )
             await self._handle_reconnect()

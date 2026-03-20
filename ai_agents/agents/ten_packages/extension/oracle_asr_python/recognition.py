@@ -5,6 +5,7 @@
 #
 from abc import ABC, abstractmethod
 import asyncio
+import contextlib
 import json
 import websockets
 from websockets.protocol import State
@@ -128,7 +129,9 @@ class OracleASRRecognition:
 
         sign_url = url.replace("wss://", "https://", 1)
         prepared = http_requests.Request(
-            "GET", sign_url, headers=headers
+            "GET",
+            sign_url,
+            headers=headers,
         ).prepare()
         signer(prepared)
         headers = dict(prepared.headers)
@@ -241,7 +244,7 @@ class OracleASRRecognition:
         try:
             if self.websocket is None or not self.is_connected():
                 self.ten_env.log_warn(
-                    "WebSocket not connected, cannot send audio"
+                    "WebSocket not connected, cannot send audio",
                 )
                 return
 
@@ -256,7 +259,7 @@ class OracleASRRecognition:
             )
             self.is_started = False
             await self.callback.on_error(
-                "WebSocket connection closed while sending audio"
+                "WebSocket connection closed while sending audio",
             )
         except Exception as e:
             self.ten_env.log_error(
@@ -290,10 +293,8 @@ class OracleASRRecognition:
 
         if self._message_task and not self._message_task.done():
             self._message_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._message_task
-            except asyncio.CancelledError:
-                pass
 
         self.is_started = False
         self.ten_env.log_info(

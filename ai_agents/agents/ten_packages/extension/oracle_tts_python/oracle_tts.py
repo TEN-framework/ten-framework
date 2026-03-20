@@ -6,7 +6,7 @@
 import asyncio
 import struct
 import time
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 import oci
 import oci.ai_speech
@@ -64,7 +64,7 @@ class OracleTTS:
         if model_name not in self._KNOWN_MODELS:
             raise ValueError(
                 f"Unknown TTS model: {model_name}. "
-                f"Known models: {sorted(self._KNOWN_MODELS)}"
+                f"Known models: {sorted(self._KNOWN_MODELS)}",
             )
 
         if model_name == "TTS_1_STANDARD":
@@ -123,7 +123,7 @@ class OracleTTS:
                 next_pos = data_start + chunk_size
                 if chunk_size % 2 == 1:
                     next_pos += 1
-                _KNOWN_TRAILING_CHUNKS = {
+                known_trailing_chunks = {
                     b"LIST",
                     b"fact",
                     b"id3 ",
@@ -135,7 +135,7 @@ class OracleTTS:
                 }
                 has_trailing_chunk = (
                     next_pos + 8 <= len(audio)
-                    and audio[next_pos : next_pos + 4] in _KNOWN_TRAILING_CHUNKS
+                    and audio[next_pos : next_pos + 4] in known_trailing_chunks
                 )
 
                 if has_trailing_chunk and chunk_size <= remaining:
@@ -193,15 +193,15 @@ class OracleTTS:
         return self._strip_wav_header(raw)
 
     async def get(
-        self, text: str, request_id: str
+        self,
+        text: str,
+        request_id: str,
     ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
         """Generate TTS audio for the given text via Oracle OCI Speech API."""
         self._is_cancelled = False
 
         if not self.client:
-            yield "OCI Speech client not initialized".encode(
-                "utf-8"
-            ), EVENT_TTS_ERROR, None
+            yield b"OCI Speech client not initialized", EVENT_TTS_ERROR, None
             return
 
         self.ten_env.log_debug(
@@ -218,7 +218,8 @@ class OracleTTS:
                 start_ts = time.time()
 
                 audio_data = await asyncio.to_thread(
-                    self._get_audio_bytes, text
+                    self._get_audio_bytes,
+                    text,
                 )
                 ttfb_ms = int((time.time() - start_ts) * 1000)
 
@@ -230,9 +231,7 @@ class OracleTTS:
                 )
 
                 if not audio_data:
-                    yield "No audio content received from Oracle TTS".encode(
-                        "utf-8"
-                    ), EVENT_TTS_ERROR, None
+                    yield b"No audio content received from Oracle TTS", EVENT_TTS_ERROR, None
                     return
 
                 chunk_size = 4096
@@ -241,9 +240,7 @@ class OracleTTS:
                     if self._is_cancelled:
                         break
                     chunk = audio_data[i : i + chunk_size]
-                    yield chunk, EVENT_TTS_RESPONSE, (
-                        ttfb_ms if first_chunk else None
-                    )
+                    yield chunk, EVENT_TTS_RESPONSE, (ttfb_ms if first_chunk else None)
                     first_chunk = False
                     await asyncio.sleep(0)
 
@@ -259,16 +256,13 @@ class OracleTTS:
 
                 if e.status in (401, 403):
                     yield error_message.encode(
-                        "utf-8"
+                        "utf-8",
                     ), EVENT_TTS_INVALID_KEY_ERROR, ttfb_ms
                     return
 
-                if (
-                    e.status in (429, 500, 502, 503)
-                    and attempt < max_retries - 1
-                ):
+                if e.status in (429, 500, 502, 503) and attempt < max_retries - 1:
                     self.ten_env.log_debug(
-                        f"Retryable error (attempt {attempt + 1}/{max_retries}): {error_message}"
+                        f"Retryable error (attempt {attempt + 1}/{max_retries}): {error_message}",
                     )
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2
@@ -298,11 +292,11 @@ class OracleTTS:
                     for kw in ("401", "403", "auth", "credentials")
                 ):
                     yield error_message.encode(
-                        "utf-8"
+                        "utf-8",
                     ), EVENT_TTS_INVALID_KEY_ERROR, ttfb_ms
                 else:
                     yield error_message.encode(
-                        "utf-8"
+                        "utf-8",
                     ), EVENT_TTS_ERROR, ttfb_ms
                 return
 

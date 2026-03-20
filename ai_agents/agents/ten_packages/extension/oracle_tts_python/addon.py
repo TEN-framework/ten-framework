@@ -9,12 +9,12 @@ from ten_runtime import (
     TenEnv,
 )
 
+from .extension import OracleTTSExtension
+
 
 @register_addon_as_extension("oracle_tts_python")
 class OracleTTSExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
-        from .extension import OracleTTSExtension
-
         ten_env.log_info("OracleTTSExtensionAddon on_create_instance")
         ten_env.on_create_instance_done(OracleTTSExtension(name), context)
