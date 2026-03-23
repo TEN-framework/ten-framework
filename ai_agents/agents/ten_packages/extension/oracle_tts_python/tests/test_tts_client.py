@@ -14,7 +14,7 @@ def _make_config(**overrides) -> OracleTTSConfig:
         "tenancy": "test-tenancy",
         "user": "test-user",
         "fingerprint": "aa:bb:cc",
-        "key_file": "/tmp/test.pem",
+        "key_file": "dGVzdC1wcml2YXRlLWtleQ==",
         "compartment_id": "test-compartment",
         "region": "us-phoenix-1",
         "model_name": "TTS_2_NATURAL",

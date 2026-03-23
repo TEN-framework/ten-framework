@@ -12,7 +12,7 @@ class TestOracleASRConfigSerialization:
                 "tenancy": "ocid1.tenancy.oc1..secret",
                 "user": "ocid1.user.oc1..secret",
                 "fingerprint": "aa:bb:cc",
-                "key_file": "/tmp/private.pem",
+                "key_file": "dGVzdC1wcml2YXRlLWtleQ==",
                 "language": "en",
             }
         )
@@ -21,7 +21,7 @@ class TestOracleASRConfigSerialization:
 
         assert parsed["params"]["language"] == "en"
         assert parsed["params"]["tenancy"] != "ocid1.tenancy.oc1..secret"
-        assert parsed["params"]["key_file"] != "/tmp/private.pem"
+        assert parsed["params"]["key_file"] != "dGVzdC1wcml2YXRlLWtleQ=="
 
     def test_to_json_without_masking_preserves_values(self) -> None:
         cfg = OracleASRConfig(

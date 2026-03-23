@@ -3,7 +3,7 @@
     "tenancy": "invalid",
     "user": "invalid",
     "fingerprint": "invalid",
-    "key_file": "/tmp/invalid.pem",
+    "key_file": "aW52YWxpZA==",
     "compartment_id": "invalid",
     "region": "us-phoenix-1",
     "model_name": "TTS_2_NATURAL",
