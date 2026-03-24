@@ -30,6 +30,7 @@ import {
 import type { IOceanBaseSettings } from "@/types";
 
 let intervalId: NodeJS.Timeout | null = null;
+const isSuccessCode = (code: unknown) => code === 0 || code === "0";
 
 export default function Action(props: { className?: string }) {
   const { className } = props;
@@ -54,7 +55,7 @@ export default function Action(props: { className?: string }) {
 
   const checkAgentConnected = async () => {
     const res: any = await apiPing(channel);
-    if (res?.code === 0) {
+    if (isSuccessCode(res?.code)) {
       dispatch(setAgentConnected(true));
     }
   };
@@ -73,7 +74,12 @@ export default function Action(props: { className?: string }) {
     try {
       if (agentConnected) {
         // handle disconnect
-        await apiStopService(channel);
+        const res = await apiStopService(channel);
+        const { code, msg } = res || {};
+        if (!isSuccessCode(code)) {
+          toast.error(`code:${code},msg:${msg}`);
+          throw new Error(msg || "Failed to disconnect agent");
+        }
         dispatch(setAgentConnected(false));
         toast.success("Agent disconnected");
         stopPing();
@@ -149,7 +155,7 @@ export default function Action(props: { className?: string }) {
         // common -- start service
         const res = await apiStartService(startServicePayload);
         const { code, msg } = res || {};
-        if (code !== 0) {
+        if (!isSuccessCode(code)) {
           if (code === "10001") {
             toast.error(
               "The number of users experiencing the program simultaneously has exceeded the limit. Please try again later."

@@ -2,7 +2,10 @@ import type { LanguageMap } from "@/common/constant";
 import type { IOceanBaseSettings } from "@/types";
 
 const OPENAI_REALTIME_MODEL = "gpt-realtime";
+const OPENAI_REALTIME_15_MODEL = "gpt-realtime-1.5";
 const OPENAI_REALTIME_MINI_MODEL = "gpt-realtime-mini";
+const MINIMAX_DEFAULT_PROMPT =
+  "Provide short, narrative responses in plain text. Keep answers concise and natural. Do not use emoji, markdown formatting, or special decorative characters.";
 
 export const voiceNameMap: LanguageMap = {
   "zh-CN": {
@@ -264,6 +267,18 @@ export const getGraphProperties = (
         greeting: combined_greeting,
       },
     };
+  } else if (graphName === "va_openai_v2v_1_5") {
+    return {
+      v2v: {
+        model: OPENAI_REALTIME_15_MODEL,
+        voice: voiceNameMap[language].openai[voiceType],
+        language: converteLanguage,
+        prompt: prompt,
+      },
+      main_control: {
+        greeting: combined_greeting,
+      },
+    };
   } else if (graphName === "va_openai_v2v_mini") {
     return {
       v2v: {
@@ -378,6 +393,34 @@ export const getGraphProperties = (
       llm: {
         prompt: prompt,
         model: "qwq-plus",
+      },
+      main_control: {
+        greeting: combined_greeting,
+      },
+      tts: {
+        params: {
+          propertys: [
+            [
+              "SpeechServiceConnection_SynthVoice",
+              voiceNameMap[language].azure[voiceType],
+            ],
+          ],
+        },
+      },
+    };
+  } else if (graphName === "minimax") {
+    const resolvedMinimaxPrompt = prompt?.trim()
+      ? prompt
+      : MINIMAX_DEFAULT_PROMPT;
+    return {
+      stt: {
+        params: {
+          language: language,
+        },
+      },
+      llm: {
+        prompt: resolvedMinimaxPrompt,
+        model: "MiniMax-M2.5-highspeed",
       },
       main_control: {
         greeting: combined_greeting,

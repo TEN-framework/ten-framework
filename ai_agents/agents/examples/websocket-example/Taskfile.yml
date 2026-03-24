@@ -21,13 +21,16 @@ tasks:
     deps: [install-tenapp]
     dir: ./tenapp
     cmds:
-      - ./scripts/install_python_deps.sh
+      - python scripts/install_python_deps.py
 
   build-api-server:
     desc: build api server
     dir: ../../../server
     cmds:
-      - go mod tidy && go mod download && go build -o bin/api main.go
+      - cmd: go mod tidy && go mod download && go build -o bin/api main.go
+        platforms: [linux, darwin]
+      - cmd: go mod tidy && go mod download && go build -o bin/api.exe main.go
+        platforms: [windows]
 
   install:
     desc: install dependencies
@@ -61,7 +64,10 @@ tasks:
     desc: run api server
     dir: ../../../server
     cmds:
-      - ./bin/api -tenapp_dir={{.PWD}}/tenapp
+      - cmd: ./bin/api -tenapp_dir={{.PWD}}/tenapp
+        platforms: [linux, darwin]
+      - cmd: powershell -Command "./bin/api.exe -tenapp_dir='{{.TASKFILE_DIR}}/tenapp'"
+        platforms: [windows]
 
   run:
     desc: run everything
@@ -74,4 +80,7 @@ tasks:
   release:
     desc: release
     cmds:
-      - ../../scripts/release.sh {{.PWD}}/tenapp
+      - cmd: ../../scripts/release.sh {{.PWD}}/tenapp
+        platforms: [linux, darwin]
+      - cmd: powershell -File "../../scripts/release.ps1" -tenappDir {{.PWD}}\tenapp
+        platforms: [windows]

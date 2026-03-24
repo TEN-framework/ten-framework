@@ -24,7 +24,7 @@ group("nodejs") {
     "standalone_test_nodejs_2",
     "standalone_test_nodejs_3",
     "start_graph_and_communicate_nodejs",
-    "start_graph_and_set_dests_from_new_graph_nodejs",
+    "start_graph_and_set_dests_nodejs",
     "trigger_life_cycle_nodejs",
     "websocket_server_nodejs",
   ]
@@ -40,7 +40,7 @@ group("nodejs") {
     deps += [ "go_app_preload_all_addons_nodejs" ]
   }
 
-  if (is_debug) {
+  if (is_debug && !is_win) {
     deps += [ "leak_check_nodejs" ]
   }
 }

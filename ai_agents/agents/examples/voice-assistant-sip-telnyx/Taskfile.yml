@@ -1,0 +1,92 @@
+version: "3"
+
+vars:
+  AGENT_DIR: "{{.ROOT}}/../../.."
+  TENAPP_DIR: "{{.ROOT}}/tenapp"
+  FRONTEND_DIR: "{{.ROOT}}/frontend"
+  SERVER_DIR: "{{.ROOT}}/server"
+
+tasks:
+  install:
+    desc: Install Python and frontend dependencies
+    cmds:
+      - echo "Installing Python dependencies..."
+      - pip install -q -r {{.SERVER_DIR}}/requirements.txt
+      - echo "Installing frontend dependencies..."
+      - |
+        if [ -f "{{.FRONTEND_DIR}}/package.json" ]; then
+          cd {{.FRONTEND_DIR}} && npm install
+        fi
+      - echo "Installation complete."
+
+  format:
+    desc: Format code with Black and ESLint
+    cmds:
+      - echo "Formatting Python code..."
+      - |
+        if command -v black &> /dev/null; then
+          black {{.SERVER_DIR}}/*.py {{.TENAPP_DIR}}/ten_packages/extension/main_python/*.py
+        else
+          pip install -q black && black {{.SERVER_DIR}}/*.py {{.TENAPP_DIR}}/ten_packages/extension/main_python/*.py
+        fi
+      - echo "Code formatted."
+
+  lint:
+    desc: Lint code with Pylint and ESLint
+    cmds:
+      - echo "Linting Python code..."
+      - |
+        if command -v pylint &> /dev/null; then
+          pylint {{.SERVER_DIR}}/*.py {{.TENAPP_DIR}}/ten_packages/extension/main_python/*.py
+        else
+          pip install -q pylint && pylint {{.SERVER_DIR}}/*.py {{.TENAPP_DIR}}/ten_packages/extension/main_python/*.py
+        fi
+      - echo "Linting complete."
+
+  test:
+    desc: Run tests
+    cmds:
+      - echo "Running tests..."
+      - |
+        if command -v pytest &> /dev/null; then
+          pytest {{.SERVER_DIR}}/tests/ {{.TENAPP_DIR}}/ten_packages/extension/main_python/tests/ 2>/dev/null || echo "No tests found or pytest not installed."
+        else
+          echo "pytest not installed. Skipping tests."
+        fi
+      - echo "Tests complete."
+
+  build:
+    desc: Build Go extension
+    cmds:
+      - echo "Building Go extension..."
+      - cd {{.TENAPP_DIR}} && go build -o main .
+      - echo "Build complete."
+
+  run:
+    desc: Run the voice assistant
+    deps: [install]
+    cmds:
+      - |
+        echo "Starting voice assistant..."
+        echo "Make sure your .env file is configured with Telnyx credentials."
+        cd {{.ROOT}} && python {{.SERVER_DIR}}/main.py --tenapp-dir {{.TENAPP_DIR}} --port 9000 &
+        sleep 2
+        echo "Server started on port 9000"
+        echo "Access the application at http://localhost:3000 (frontend) and http://localhost:9000 (API)"
+
+  stop:
+    desc: Stop the voice assistant
+    cmds:
+      - echo "Stopping voice assistant..."
+      - pkill -f "python.*main.py" || true
+      - echo "Voice assistant stopped."
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - echo "Cleaning..."
+      - rm -rf {{.TENAPP_DIR}}/main
+      - rm -rf {{.FRONTEND_DIR}}/.next
+      - rm -rf {{.SERVER_DIR}}/__pycache__
+      - rm -rf {{.TENAPP_DIR}}/ten_packages/extension/main_python/__pycache__
+      - echo "Clean complete."

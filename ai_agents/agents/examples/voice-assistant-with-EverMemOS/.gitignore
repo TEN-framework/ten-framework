@@ -1,0 +1,74 @@
+# Private documentation (not for public repository)
+doc/
+
+# Environment variables (contains sensitive API keys)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdkconfig/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Local configuration files (may contain sensitive data)
+*.local.json
+*.private.json
+*_local.json
+*_private.json
+
+# Node modules (if any)
+node_modules/
+
+# Build artifacts
+*.o
+*.a
+*.dylib
+*.dll
+*.exe
+
+# OS specific
+Thumbs.db
+.DS_Store

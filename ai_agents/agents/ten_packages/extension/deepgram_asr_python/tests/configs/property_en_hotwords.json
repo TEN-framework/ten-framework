@@ -1,13 +1,14 @@
 {
-    "params": {
-        "key": "${env:DEEPGRAM_API_KEY}",
-        "url": "wss://api.deepgram.com/v1/listen",
-        "model": "nova-3",
-        "language": "en-US",
-        "sample_rate": 16000,
-        "encoding": "linear16",
-        "interim_results": true,
-        "punctuate": true,
-        "keyterm": "term1%20term2"
-    }
+  "params": {
+    "key": "${env:DEEPGRAM_API_KEY}",
+    "url": "wss://api.deepgram.com/v2/listen",
+    "model": "flux-general-en",
+    "finalize_mode": "mute_pkg",
+    "sample_rate": 16000,
+    "encoding": "linear16",
+    "eager_eot_threshold": 0.6,
+    "eot_threshold": 0.8,
+    "eot_timeout_ms": 700,
+    "keyterm": "term1%20term2"
+  }
 }

@@ -58,6 +58,13 @@ class start_graph_cmd_t : public cmd_t {
         err != nullptr ? err->get_c_error() : nullptr);
   }
 
+  bool set_sync_stop_before_deinit(bool sync_stop_before_deinit,
+                                   error_t *err = nullptr) {
+    return ten_cmd_start_graph_set_sync_stop_before_deinit(
+        c_msg, sync_stop_before_deinit,
+        err != nullptr ? err->get_c_error() : nullptr);
+  }
+
   // @{
   start_graph_cmd_t(start_graph_cmd_t &other) = delete;
   start_graph_cmd_t(start_graph_cmd_t &&other) = delete;

@@ -1,0 +1,38 @@
+{
+  "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
+  "agent_id": "voice_assistant_agent",
+  "user_id": "user",
+  "enable_memorization": true,
+  "enable_user_memory": true,
+  "memory_save_interval_turns": 5,
+  "memory_idle_timeout_seconds": 30.0,
+  "powermem_config": {
+    "vector_store": {
+      "provider": "oceanbase",
+      "config": {
+        "collection_name": "${env:OCEANBASE_COLLECTION}",
+        "host": "${env:OCEANBASE_HOST}",
+        "port": "${env:OCEANBASE_PORT}",
+        "user": "${env:OCEANBASE_USER}",
+        "password": "${env:OCEANBASE_PASSWORD}",
+        "db_name": "${env:OCEANBASE_DATABASE}",
+        "embedding_model_dims": "${env:EMBEDDING_DIMS}"
+      }
+    },
+    "llm": {
+      "provider": "${env:LLM_PROVIDER}",
+      "config": {
+        "api_key": "${env:LLM_API_KEY}",
+        "model": "${env:LLM_MODEL}"
+      }
+    },
+    "embedder": {
+      "provider": "${env:EMBEDDING_PROVIDER}",
+      "config": {
+        "api_key": "${env:EMBEDDING_API_KEY}",
+        "model": "${env:EMBEDDING_MODEL}",
+        "embedding_dims": "${env:EMBEDDING_DIMS}"
+      }
+    }
+  }
+}

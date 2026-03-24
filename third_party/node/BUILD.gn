@@ -20,10 +20,16 @@ ten_prebuilt_library("prebuilt_node_shared") {
   name = "node_shared"
 
   # Version can be easily updated here
-  _node_shared_version = "v1.0.15"
+  _node_shared_version = "v1.0.19"
   _base_url = "https://github.com/TEN-framework/node_shared/releases/download/${_node_shared_version}"
 
-  if (is_linux) {
+  if (is_win) {
+    if (target_cpu == "x64") {
+      url = "${_base_url}/node-shared-win-x64-msvc.zip"
+    } else {
+      assert(false, "Unsupported Windows CPU architecture: ${target_cpu}")
+    }
+  } else if (is_linux) {
     if (target_cpu == "x64") {
       if (is_clang) {
         url = "${_base_url}/node-shared-linux-x64-clang.zip"
@@ -54,10 +60,64 @@ ten_prebuilt_library("prebuilt_node_shared") {
   is_shared_library = true
 
   libs = [ "node" ]
-  lib_version = 127
+  if (!is_win) {
+    lib_version = 127
+  }
 }
 
-group("node") {
-  public_configs = [ ":node_header" ]
-  public_deps = [ ":prebuilt_node_shared" ]
+if (is_win) {
+  # Windows-specific config: link against libnode.lib (import library for
+  # libnode.dll) from the downloaded prebuilt directory.
+  config("node_lib_config") {
+    lib_dirs = [ rebase_path("${root_out_dir}/prebuilt/node_shared/lib") ]
+
+    if (is_mingw) {
+      libs = [ "libnode" ]
+    } else {
+      libs = [ "libnode.lib" ]
+    }
+  }
+
+  # Copy libnode.dll to output directory
+  action("copy_node_dll") {
+    script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+    _source_dll = "${root_out_dir}/prebuilt/node_shared/lib/libnode.dll"
+    _dest_dll = "${root_out_dir}/libnode.dll"
+
+    args = [
+      "--source",
+      rebase_path(_source_dll),
+      "--destination",
+      rebase_path(_dest_dll),
+    ]
+
+    sources = [ _source_dll ]
+    outputs = [ _dest_dll ]
+
+    deps = [ ":prebuilt_node_shared" ]
+  }
+
+  group("node") {
+    public_configs = [
+      ":node_header",
+      ":node_lib_config",
+    ]
+
+    # Depend on the unzip action directly instead of the prebuilt_node_shared
+    # group. The prebuilt_node_shared group carries a public_config with
+    # libs = ["node"], and because GN groups are transparent, that config
+    # propagates to all dependents. MSVC link.exe interprets bare "node" as
+    # "node.obj", causing LNK1181. By depending on the unzip action directly,
+    # we get the generated files without the problematic config. The correct
+    # link flags are provided by node_lib_config above.
+    public_deps = [ ":prebuilt_node_shared_lib_unzip" ]
+
+    deps = [ ":copy_node_dll" ]
+  }
+} else {
+  group("node") {
+    public_configs = [ ":node_header" ]
+    public_deps = [ ":prebuilt_node_shared" ]
+  }
 }

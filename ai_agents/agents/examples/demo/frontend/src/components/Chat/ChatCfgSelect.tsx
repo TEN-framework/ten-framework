@@ -18,6 +18,7 @@ import {
   OpenAIIcon,
   QwenIcon,
   XAIIcon,
+  MinimaxIcon,
 } from "@/components/Icon";
 import {
   Select,
@@ -40,6 +41,7 @@ const getBrandIcon = (label: string) => {
   if (label.includes("DeepSeek")) return DeepSeekIcon;
   if (label.includes("Grok")) return XAIIcon;
   if (label.includes("Qwen") || label.includes("QwQ")) return QwenIcon;
+  if (label.includes("Minimax")) return MinimaxIcon;
   if (label.includes("Dify")) return DifyIcon;
   if (label.includes("Coze")) return CozeIcon;
   if (label.includes("OceanBase")) return OceanBaseIcon;

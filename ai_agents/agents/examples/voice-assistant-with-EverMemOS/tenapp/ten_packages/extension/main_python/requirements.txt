@@ -1,0 +1,6 @@
+# Memory integration
+powermem>=0.2.0
+aiohttp
+
+# Optional: for better error handling
+pydantic

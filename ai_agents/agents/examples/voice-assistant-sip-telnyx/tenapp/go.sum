@@ -1,0 +1,4 @@
+# go.sum - Dependencies for TEN Framework voice assistant
+
+# This file lists the dependencies for the project.
+# Run `go mod tidy` to update this file after modifying go.mod.

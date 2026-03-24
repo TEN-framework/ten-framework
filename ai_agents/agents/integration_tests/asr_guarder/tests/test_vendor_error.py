@@ -173,10 +173,13 @@ class VendorErrorTester(AsyncExtensionTester):
         ten_env.log_info("✅ Error format validation passed")
         return True, ""
 
+    # Valid error codes: FATAL_ERROR (-1000) or NON_FATAL_ERROR (1000)
+    _VALID_ERROR_CODES = {-1000, 1000}
+
     def _validate_error_code_types(
         self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]
     ) -> bool:
-        """Validate that error code must be exactly 1000."""
+        """Validate that error code is a valid FATAL_ERROR or NON_FATAL_ERROR."""
         error_code: int | None = json_data.get("code")
         if error_code is None:
             ten_env.log_error("Error code is missing")
@@ -189,15 +192,16 @@ class VendorErrorTester(AsyncExtensionTester):
             )
             return False
 
-        # Validate that error code must be exactly NON_FATAL_ERROR
-        if error_code != 1000:
+        # Validate that error code is either FATAL_ERROR (-1000) or NON_FATAL_ERROR (1000)
+        if error_code not in self._VALID_ERROR_CODES:
             ten_env.log_error(
-                f"Error code must be NON_FATAL_ERROR, got: {error_code}"
+                f"Error code must be FATAL_ERROR (-1000) or NON_FATAL_ERROR (1000), got: {error_code}"
             )
             return False
 
+        code_name = "FATAL_ERROR" if error_code == -1000 else "NON_FATAL_ERROR"
         ten_env.log_info(
-            f"✅ Error code {error_code} validated (must be NON_FATAL_ERROR)"
+            f"✅ Error code {error_code} validated ({code_name})"
         )
         return True
 
