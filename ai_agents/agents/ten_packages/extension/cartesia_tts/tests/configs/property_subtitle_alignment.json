@@ -1,8 +1,9 @@
 {
-    "enable_words": false,
+    "dump": false,
+    "dump_path": "./tests/keep_dump_output/",
+    "enable_words": true,
     "params": {
         "api_key": "${env:CARTESIA_API_KEY}",
-        "base_url": "wss://api.cartesia.ai",
         "model_id": "sonic-3",
         "voice": {
             "mode": "id",
@@ -10,21 +11,12 @@
         },
         "output_format": {
             "container": "raw",
-            "sample_rate": 44100
+            "sample_rate": 16000
         },
         "generation_config": {
             "speed": 1.0,
             "volume": 1.0
         },
         "language": "en"
-    },
-    "ssml": {
-        "enabled": true,
-        "speed_ratio": 1.0,
-        "volume_ratio": 1.0,
-        "emotion": "angry",
-        "pre_break_time": "",
-        "post_break_time": "",
-        "spell_words": []
     }
 }
