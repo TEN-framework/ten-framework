@@ -60,7 +60,9 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        if self._temp_key_file_path and os.path.exists(self._temp_key_file_path):
+        if self._temp_key_file_path and os.path.exists(
+            self._temp_key_file_path
+        ):
             os.remove(self._temp_key_file_path)
             self._temp_key_file_path = None
 

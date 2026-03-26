@@ -112,7 +112,9 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             category=LOG_CATEGORY_KEY_POINT,
         )
 
-        if self._temp_key_file_path and os.path.exists(self._temp_key_file_path):
+        if self._temp_key_file_path and os.path.exists(
+            self._temp_key_file_path
+        ):
             os.remove(self._temp_key_file_path)
             self._temp_key_file_path = None
 
