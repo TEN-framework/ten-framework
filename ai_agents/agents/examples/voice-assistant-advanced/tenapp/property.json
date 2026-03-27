@@ -1703,14 +1703,6 @@
                       "extension": "stt"
                     }
                   ]
-                },
-                {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "extension": "avatar"
-                    }
-                  ]
                 }
               ],
               "data": [

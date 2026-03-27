@@ -518,10 +518,6 @@ basic_connections = [
                 "name": "flush",
                 "source": [{"extension": "stt"}],
             },
-            {
-                "name": "flush",
-                "dest": [{"extension": "avatar"}],
-            },
         ],
         "data": [{"name": "asr_result", "source": [{"extension": "stt"}]}],
     },
@@ -600,6 +596,15 @@ def create_basic_voice_assistant(
             nodes.append(copy.deepcopy(heygen_avatar))
         else:  # anam
             nodes.append(copy.deepcopy(anam_avatar))
+
+        # Add flush command to avatar in main_control connections
+        for conn in connections:
+            if conn.get("extension") == "main_control":
+                conn["cmd"].append({
+                    "name": "flush",
+                    "dest": [{"extension": "avatar"}],
+                })
+                break
 
         # Remove TTS audio source from agora_rtc (avatar will handle it)
         for conn in connections:
