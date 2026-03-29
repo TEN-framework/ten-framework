@@ -161,6 +161,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             )
                         # Accumulate audio bytes instead of duration to avoid precision loss
                         self.total_audio_bytes += len(data)
+                        # Track audio metrics
+                        self.metrics_add_recv_audio_chunks(data)
                         await self.send_tts_audio_data(data)
                     else:
                         self.ten_env.log_debug(
@@ -274,6 +276,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 f"reason: {reason}"
             )
 
+            # Send usage metrics
+            await self.send_usage_metrics(self.current_request_id)
+
             # Finish request to complete state transition
             await self.finish_request(
                 request_id=self.current_request_id,
@@ -367,6 +372,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         )
 
             self.sent_tts = True
+            # Track character metrics
+            self.metrics_add_output_characters(len(t.text))
             await self.client.send_text(t)
             if t.text_input_end:
                 self.current_request_finished = True

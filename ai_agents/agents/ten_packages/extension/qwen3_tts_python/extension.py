@@ -174,6 +174,9 @@ class Qwen3TTSExtension(AsyncTTS2BaseExtension):
                     await self._complete_request(TTSAudioEndReason.REQUEST_END)
                 return
 
+            # Track character metrics
+            self.metrics_add_output_characters(len(t.text))
+
             # Record start time for TTFB
             if self.request_start_ts is None:
                 self.request_start_ts = datetime.now()
@@ -218,6 +221,9 @@ class Qwen3TTSExtension(AsyncTTS2BaseExtension):
                     self.synthesize_audio_sample_width(),
                 )
                 self.request_total_audio_duration += cur_duration
+
+                # Track audio metrics
+                self.metrics_add_recv_audio_chunks(audio_chunk)
 
                 self.ten_env.log_debug(
                     f"receive_audio: duration: {cur_duration}ms, "
@@ -287,6 +293,9 @@ class Qwen3TTSExtension(AsyncTTS2BaseExtension):
             f"Sent tts_audio_end with {reason.name} reason "
             f"for request_id: {self.current_request_id}"
         )
+
+        # Send usage metrics
+        await self.send_usage_metrics(self.current_request_id)
 
         # Finish request
         await self.finish_request(

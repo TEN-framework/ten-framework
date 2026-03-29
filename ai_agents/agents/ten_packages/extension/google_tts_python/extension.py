@@ -228,6 +228,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             f"Sent tts_audio_end with {reason.name} reason for request_id: {self.current_request_id}"
         )
 
+        # Send usage metrics
+        await self.send_usage_metrics(self.current_request_id or "")
+
         # Finish request to complete state transition
         await self.finish_request(
             request_id=self.current_request_id or "",
@@ -308,6 +311,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
                 try:
                     if self.client:
+                        # Track character metrics
+                        self.metrics_add_output_characters(len(t.text))
                         audio_generator = self.client.get(t.text, t.request_id)
                     else:
                         return
@@ -321,6 +326,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
                         if event == EVENT_TTS_RESPONSE and audio_chunk:
                             self.total_audio_bytes += len(audio_chunk)
+                            # Track audio metrics
+                            self.metrics_add_recv_audio_chunks(audio_chunk)
                             duration_ms = (
                                 self.total_audio_bytes
                                 / (self.synthesize_audio_sample_rate() * 2 * 1)
