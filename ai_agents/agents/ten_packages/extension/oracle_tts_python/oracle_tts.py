@@ -192,9 +192,7 @@ class OracleTTS:
 
         return self._strip_wav_header(raw)
 
-    async def _get_audio_bytes_cancellable(
-        self, text: str
-    ) -> bytes | None:
+    async def _get_audio_bytes_cancellable(self, text: str) -> bytes | None:
         """Run _get_audio_bytes in a thread, returning None if cancelled.
 
         Polls ``_is_cancelled`` every 100 ms so that the queue processor
