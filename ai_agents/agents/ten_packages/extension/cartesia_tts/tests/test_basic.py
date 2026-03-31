@@ -22,6 +22,7 @@ import asyncio
 import filecmp
 import shutil
 import threading
+import pytest
 
 from ten_runtime import (
     ExtensionTester,
@@ -29,6 +30,8 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
+from cartesia_tts.cartesia_tts import CartesiaTTSClient
+from cartesia_tts.config import CartesiaTTSConfig
 
 
 def _make_mock_client(audio_chunks_by_request=None):
@@ -82,6 +85,88 @@ def _make_mock_client(audio_chunks_by_request=None):
     mock._words_queue = words_queue
 
     return mock
+
+
+async def _handle_timestamps_and_get_words(
+    raw_words: list[str], context_id: str = "ctx-1"
+):
+    ten_env = MagicMock()
+    client = CartesiaTTSClient(
+        config=CartesiaTTSConfig(api_key="test"),
+        ten_env=ten_env,
+    )
+    client._base_start_ms = 1000
+
+    starts = [0.1 + i * 0.1 for i in range(len(raw_words))]
+    ends = [start + 0.1 for start in starts]
+
+    await client._handle_timestamps(
+        {
+            "words": raw_words,
+            "start": starts,
+            "end": ends,
+        },
+        context_id,
+    )
+    return client, await client.get_words()
+
+
+@pytest.mark.parametrize(
+    ("raw_words", "expected_text", "expected_word_tokens"),
+    [
+        (["is", "your"], "is your", ["is", " ", "your"]),
+        ([".", "If"], ". If", [".", " ", "If"]),
+        (["(", "hello"], "(hello", ["(", "hello"]),
+        (["hello", ","], "hello,", ["hello", ","]),
+        (["你", "好"], "你好", ["你", "好"]),
+        (["中", "English"], "中English", ["中", "English"]),
+        (
+            ["Hello", "world", "!"],
+            "Hello world!",
+            ["Hello", " ", "world", "!"],
+        ),
+    ],
+)
+def test_handle_timestamps_spacing_cases(
+    raw_words, expected_text, expected_word_tokens
+):
+    async def _run():
+        _, (words, context_id, text, text_input_end) = (
+            await _handle_timestamps_and_get_words(raw_words)
+        )
+
+        assert context_id == "ctx-1"
+        assert text == expected_text
+        assert text_input_end is False
+        assert [word.word for word in words] == expected_word_tokens
+
+    asyncio.run(_run())
+
+
+def test_handle_timestamps_keeps_group_prefix_space_and_inner_spaces():
+    async def _run():
+        ten_env = MagicMock()
+        client = CartesiaTTSClient(
+            config=CartesiaTTSConfig(api_key="test"),
+            ten_env=ten_env,
+        )
+        client._base_start_ms = 1000
+        client._last_word_end_ms["ctx-2"] = 1234
+
+        await client._handle_timestamps(
+            {
+                "words": ["is", "your"],
+                "start": [0.1, 0.2],
+                "end": [0.2, 0.3],
+            },
+            "ctx-2",
+        )
+        words, _, text, _ = await client.get_words()
+
+        assert text == " is your"
+        assert [word.word for word in words] == [" ", "is", " ", "your"]
+
+    asyncio.run(_run())
 
 
 # ================ test dump file functionality ================

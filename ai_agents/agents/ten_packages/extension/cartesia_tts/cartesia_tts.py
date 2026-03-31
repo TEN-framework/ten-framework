@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 import time
+import unicodedata
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -29,6 +30,9 @@ class CartesiaTTSConnectionException(Exception):
 
 
 class CartesiaTTSClient:
+    _NO_SPACE_BEFORE = set(".,!?;:%)]}，。！？；：、％》」』】")
+    _NO_SPACE_AFTER = set("([{<“‘「『【")
+
     def __init__(
         self,
         config: CartesiaTTSConfig,
@@ -85,6 +89,35 @@ class CartesiaTTSClient:
 
         # Reconnection state
         self._connect_failures: int = 0
+
+    @staticmethod
+    def _is_cjk(char: str) -> bool:
+        """Return True if the character belongs to a common CJK block."""
+        code = ord(char)
+        return (
+            0x3400 <= code <= 0x4DBF
+            or 0x4E00 <= code <= 0x9FFF
+            or 0xF900 <= code <= 0xFAFF
+            or 0x3040 <= code <= 0x30FF
+            or 0xAC00 <= code <= 0xD7AF
+        )
+
+    @classmethod
+    def _should_insert_space(cls, previous: str, current: str) -> bool:
+        """Decide whether two adjacent tokens should be separated by a space."""
+        if not previous or not current:
+            return False
+        if previous[-1].isspace() or current[0].isspace():
+            return False
+        if previous[-1] in cls._NO_SPACE_AFTER:
+            return False
+        if current[0] in cls._NO_SPACE_BEFORE:
+            return False
+        if cls._is_cjk(previous[-1]) or cls._is_cjk(current[0]):
+            return False
+        if unicodedata.category(current[0]).startswith("P"):
+            return False
+        return True
 
     def _get_ws_url(self) -> str:
         """Build the WebSocket URL with query parameters."""
@@ -637,6 +670,13 @@ class CartesiaTTSClient:
                     f"cur_all_samples={self._all_samples:.0f}",
                     category=LOG_CATEGORY_VENDOR,
                 )
+            if text_parts and self._should_insert_space(
+                text_parts[-1], word_text
+            ):
+                words.append(
+                    TTSWord(word=" ", start_ms=start_ms, duration_ms=0)
+                )
+                text_parts.append(" ")
             words.append(
                 TTSWord(
                     word=word_text,
