@@ -387,8 +387,8 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
             text = first.get("transcription", "").strip()
             is_final = first.get("isFinal", False)
 
-            start_ms = int(first.get("startTimeMs", 0))
-            end_ms = int(first.get("endTimeMs", 0))
+            start_ms = int(first.get("startTimeInMs", 0))
+            end_ms = int(first.get("endTimeInMs", 0))
             duration_ms = max(1, end_ms - start_ms)
 
             actual_start_ms = int(
