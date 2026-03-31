@@ -73,6 +73,7 @@ class CartesiaTTSClient:
 
         # Pending inputs for reconnection
         self._pending_inputs: list[TTSTextInput] = []
+        self._pending_input_ids: set[int] = set()
 
         # TTFB tracking: context_id -> request_start_time
         self._request_start_times: dict[str, float] = {}
@@ -265,7 +266,7 @@ class CartesiaTTSClient:
                 # Wait for either task to finish (usually means error/disconnect)
                 done, pending = await asyncio.wait(
                     self._channel_tasks,
-                    return_when=asyncio.FIRST_EXCEPTION,
+                    return_when=asyncio.FIRST_COMPLETED,
                 )
 
                 # Cancel remaining tasks
@@ -363,14 +364,17 @@ class CartesiaTTSClient:
 
     async def _send_text_loop(self) -> None:
         """Read from text_queue and send to WebSocket."""
-        assert self._ws and not self._ws.closed
+        if not self._ws or self._ws.closed:
+            raise RuntimeError("WebSocket is not connected for send loop")
 
         # Re-send any pending inputs from before reconnect
-        for t in self._pending_inputs:
+        pending_inputs = self._pending_inputs
+        self._pending_inputs = []
+        self._pending_input_ids.clear()
+        for t in pending_inputs:
             if self._closing:
                 return
             await self._send_one_text(t)
-        self._pending_inputs.clear()
 
         try:
             while not self._closing:
@@ -392,13 +396,13 @@ class CartesiaTTSClient:
         """Send a single text input to the WebSocket."""
         if not self._ws or self._ws.closed:
             # Buffer for retry after reconnect
-            self._pending_inputs.append(t)
+            self._buffer_pending_input(t)
             return
 
         context_id = t.request_id
 
         # Empty text with text_input_end — close the context.
-        # Cartesia requires a transcript field, so send a single space.
+        # Cartesia requires a transcript field, so send a empty string.
         if not t.text.strip() and t.text_input_end:
             close_payload = self._build_request_payload("", context_id)
             close_payload["continue"] = False
@@ -437,7 +441,7 @@ class CartesiaTTSClient:
             await self._ws.send_json(payload)
         except Exception:
             # Buffer for retry
-            self._pending_inputs.append(t)
+            self._buffer_pending_input(t)
             raise
 
     def _build_request_payload(self, text: str, context_id: str) -> dict:
@@ -478,7 +482,8 @@ class CartesiaTTSClient:
 
     async def _receive_loop(self) -> None:
         """Read messages from WebSocket and dispatch to queues."""
-        assert self._ws and not self._ws.closed
+        if not self._ws or self._ws.closed:
+            raise RuntimeError("WebSocket is not connected for receive loop")
 
         try:
             async for msg in self._ws:
@@ -690,3 +695,11 @@ class CartesiaTTSClient:
         )
         # is_final=False here; the extension will determine finality
         await self.words_queue.put((words, context_id, text, False))
+
+    def _buffer_pending_input(self, t: TTSTextInput) -> None:
+        """Buffer one TTSTextInput once to avoid duplicate replay on reconnect."""
+        input_id = id(t)
+        if input_id in self._pending_input_ids:
+            return
+        self._pending_input_ids.add(input_id)
+        self._pending_inputs.append(t)

@@ -720,7 +720,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             if self.client:
                 self.client.config = new_config
 
-        self.pending_config_update = None
         self.ten_env.log_info(
             f"Config update applied: {new_config.to_str(sensitive_handling=True)}",
             category=LOG_CATEGORY_KEY_POINT,
@@ -736,22 +735,32 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             )
 
             if self.client is None:
-                self.ten_env.log_debug(
-                    "Client not initialized, reconnecting..."
+                self.ten_env.log_warn(
+                    f"Client unavailable while handling request {t.request_id}, waiting for recreation",
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
-                # Will be handled by _run_with_restart; skip this request
-                return
+                if not await self._wait_for_client_available():
+                    self.ten_env.log_warn(
+                        f"Client still unavailable, dropping request {t.request_id}",
+                        category=LOG_CATEGORY_KEY_POINT,
+                    )
+                    return
 
             if t.request_id != self.current_request_id:
                 self.ten_env.log_debug(f"New TTS request: {t.request_id}")
 
                 # Apply buffered config update on new request
-                if self.pending_config_update:
+                async with self.config_update_lock:
+                    pending_config_update = self.pending_config_update
+                if pending_config_update:
                     self.ten_env.log_info(
                         f"Applying buffered config update on new request {t.request_id}",
                         category=LOG_CATEGORY_KEY_POINT,
                     )
-                    await self._apply_config_update(self.pending_config_update)
+                    await self._apply_config_update(pending_config_update)
+                    async with self.config_update_lock:
+                        if self.pending_config_update is pending_config_update:
+                            self.pending_config_update = None
 
                 # If previous request didn't get audio_end, handle it
                 if (
@@ -928,6 +937,14 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             self._cleanup_request_state(self.current_request_id)
 
     # ── Helper methods ─────────────────────────────────────────────
+
+    async def _wait_for_client_available(self) -> bool:
+        """Wait for a recreated client so transient teardown does not drop text."""
+        while not self._is_stopped:
+            if self.client is not None:
+                return True
+            await asyncio.sleep(0.01)
+        return False
 
     async def send_fatal_tts_error(self, error_message: str) -> None:
         await self.send_tts_error(
