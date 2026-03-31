@@ -32,6 +32,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from cartesia_tts.cartesia_tts import CartesiaTTSClient
 from cartesia_tts.config import CartesiaTTSConfig
+from cartesia_tts.extension import CartesiaTTSExtension
 
 
 def _make_mock_client(audio_chunks_by_request=None):
@@ -165,6 +166,69 @@ def test_handle_timestamps_keeps_group_prefix_space_and_inner_spaces():
 
         assert text == " is your"
         assert [word.word for word in words] == [" ", "is", " ", "your"]
+
+    asyncio.run(_run())
+
+
+def test_build_request_payload_does_not_leak_auth_or_base_url():
+    ten_env = MagicMock()
+    config = CartesiaTTSConfig(
+        params={
+            "api_key": "secret",
+            "base_url": "wss://example.invalid",
+            "model_id": "sonic-3",
+            "language": "en",
+        }
+    )
+    config.update_params()
+    client = CartesiaTTSClient(config=config, ten_env=ten_env)
+
+    payload = client._build_request_payload("hello", "ctx-1")
+
+    assert payload["transcript"] == "hello"
+    assert payload["context_id"] == "ctx-1"
+    assert payload["model_id"] == "sonic-3"
+    assert payload["language"] == "en"
+    assert "api_key" not in payload
+    assert "base_url" not in payload
+
+
+def test_cancel_cleans_last_word_end_ms():
+    async def _run():
+        ten_env = MagicMock()
+        client = CartesiaTTSClient(
+            config=CartesiaTTSConfig(api_key="test"),
+            ten_env=ten_env,
+        )
+        client._last_word_end_ms["ctx-1"] = 1234
+
+        await client.cancel("ctx-1")
+
+        assert "ctx-1" not in client._last_word_end_ms
+
+    asyncio.run(_run())
+
+
+def test_process_audio_data_ignores_end_signal_from_old_request():
+    async def _run():
+        extension = CartesiaTTSExtension("cartesia_tts")
+        extension.ten_env = MagicMock()
+        extension.current_request_id = "new-request"
+        extension.pending_audio_end = False
+        extension.client = MagicMock()
+        extension.client.get_audio = AsyncMock(
+            side_effect=[
+                (None, "old-request", 0),
+                (None, "", 0),
+            ]
+        )
+        extension._handle_completed_request = AsyncMock()
+        extension._reset_tts_request_info = AsyncMock()
+
+        await extension._process_audio_data()
+
+        extension._handle_completed_request.assert_not_awaited()
+        extension._reset_tts_request_info.assert_not_awaited()
 
     asyncio.run(_run())
 

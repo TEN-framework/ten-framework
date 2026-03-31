@@ -49,7 +49,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         self.request_total_audio_duration: int = 0
         self.last_audio_end_request_id: str = ""
         self.pending_audio_end: bool = False
-        self.audio_end_sent: bool = False
         self.request_seq_id_map: dict[str, int] = {}
         self.session_id: str = ""
         self.has_valid_text: bool = False
@@ -266,6 +265,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         request_id=request_id,
                         reason=TTSAudioEndReason.ERROR,
                     )
+                    self._cleanup_request_state(request_id)
 
             async def fatal_error_callback(error_message: str):
                 await self.send_tts_error(
@@ -377,9 +377,21 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 await self.client.get_audio()
             )
 
+            if request_id == "":
+                return
+
             # End-of-audio signal
             if audio_data is None:
-                self.ten_env.log_debug("Received audio end signal")
+                if request_id != self.current_request_id:
+                    self.ten_env.log_debug(
+                        f"skip audio end: {request_id} != {self.current_request_id}",
+                        category=LOG_CATEGORY_KEY_POINT,
+                    )
+                    continue
+                self.ten_env.log_debug(
+                    f"Received audio end signal for {request_id}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
                 if not self.pending_audio_end:
                     self.pending_audio_end = True
                     await self._handle_completed_request(
@@ -435,6 +447,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 await self.client.get_words()
             )
 
+            if request_id == "":
+                return
+
             self.ten_env.log_debug(
                 f"transcription: {len(words)} words, request_id={request_id}, "
                 f"text={cur_text[:80]}, end={text_input_end}",
@@ -488,6 +503,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             self.metrics_add_input_characters(len(cur_text))
             await self.send_tts_text_result(transcript_result)
 
+    def _cleanup_request_state(self, request_id: str | None) -> None:
+        """Release per-request bookkeeping once the request is finished."""
+        if not request_id:
+            return
+        self.request_seq_id_map.pop(request_id, None)
+
     # ── Request handling ──────────────────────────────────────────────
 
     async def _handle_completed_request(
@@ -526,6 +547,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             request_id=self.current_request_id or "",
             reason=reason,
         )
+        self._cleanup_request_state(self.current_request_id)
 
     async def _reset_tts_request_info(self) -> None:
         """Reset per-request state."""
@@ -533,7 +555,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         self.speaking_start_ms = -1
         self.request_total_audio_duration = 0
         self.pending_audio_end = False
-        self.audio_end_sent = False
         self.has_valid_text = False
 
     def _create_client(self) -> CartesiaTTSClient:
@@ -585,6 +606,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 request_id=self.current_request_id,
                 reason=TTSAudioEndReason.INTERRUPTED,
             )
+            self._cleanup_request_state(self.current_request_id)
             await self._reset_tts_request_info()
 
             # 3. Create a fresh client and start it
@@ -878,6 +900,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     ),
                 ),
             )
+            self._cleanup_request_state(self.current_request_id)
 
         except Exception as e:
             self.ten_env.log_error(
@@ -902,6 +925,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
+            self._cleanup_request_state(self.current_request_id)
 
     # ── Helper methods ─────────────────────────────────────────────
 

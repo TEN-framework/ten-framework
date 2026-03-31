@@ -16,6 +16,8 @@ from ten_ai_base.struct import TTSTextInput, TTSWord
 CARTESIA_API_VERSION = "2025-04-16"
 CARTESIA_DEFAULT_WS_BASE_URL = "wss://api.cartesia.ai"
 MAX_RETRY_TIMES = 5
+PCM_QUEUE_STOP_SENTINEL = (None, "", 0)
+WORDS_QUEUE_STOP_SENTINEL = ([], "", "", False)
 
 
 class CartesiaTTSConnectionException(Exception):
@@ -132,9 +134,7 @@ class CartesiaTTSClient:
         elif not base.startswith("wss://") and not base.startswith("ws://"):
             base = "wss://" + base
         return (
-            f"{base}/tts/websocket"
-            f"?api_key={self.config.api_key}"
-            f"&cartesia_version={CARTESIA_API_VERSION}"
+            f"{base}/tts/websocket" f"?cartesia_version={CARTESIA_API_VERSION}"
         )
 
     async def start(self) -> None:
@@ -174,10 +174,8 @@ class CartesiaTTSClient:
             self._connection_task = None
 
         # Unblock any consumers waiting on pcm_queue / words_queue.
-        # Put bare None so the tuple-unpack in consumers raises TypeError,
-        # which _run_with_restart catches → loops back → sees client=None → waits.
-        await self.pcm_queue.put(None)
-        await self.words_queue.put(None)
+        await self.pcm_queue.put(PCM_QUEUE_STOP_SENTINEL)
+        await self.words_queue.put(WORDS_QUEUE_STOP_SENTINEL)
 
         # Close WebSocket and session
         if self._ws and not self._ws.closed:
@@ -209,6 +207,7 @@ class CartesiaTTSClient:
         # Clear TTFB tracking for this context
         self._request_start_times.pop(request_id, None)
         self._ttfb_sent.discard(request_id)
+        self._last_word_end_ms.pop(request_id, None)
 
     async def text_to_speech(self, t: TTSTextInput) -> None:
         """Put a text input into the send queue."""
@@ -343,8 +342,9 @@ class CartesiaTTSClient:
         if not self._session or self._session.closed:
             self._session = aiohttp.ClientSession()
         url = self._get_ws_url()
+        headers = {"X-Api-Key": self.config.api_key}
         try:
-            self._ws = await self._session.ws_connect(url)
+            self._ws = await self._session.ws_connect(url, headers=headers)
         except aiohttp.WSServerHandshakeError as e:
             if e.status == 401:
                 raise CartesiaTTSConnectionException(
@@ -443,6 +443,8 @@ class CartesiaTTSClient:
     def _build_request_payload(self, text: str, context_id: str) -> dict:
         """Build the JSON payload for a TTS generation request."""
         params = dict(self.config.params)
+        params.pop("api_key", None)
+        params.pop("base_url", None)
 
         payload: dict[str, Any] = {
             "transcript": text,
@@ -574,16 +576,6 @@ class CartesiaTTSClient:
                 await self.pcm_queue.put(
                     (audio_bytes, context_id, cur_pcm_start_ms)
                 )
-
-            # done flag in chunk means end of this context
-            # if data.get("done", False):
-            #     self.ten_env.log_debug(
-            #         f"context_id:{context_id} done=true in chunk"
-            #     )
-            #     self._base_start_ms = 0.0
-            #     self._all_samples = 0.0
-            #     await self.words_queue.put(([], context_id, "", True))
-            #     await self.pcm_queue.put((None, context_id, 0))
 
         elif resp_type == "done":
             self.ten_env.log_debug(
