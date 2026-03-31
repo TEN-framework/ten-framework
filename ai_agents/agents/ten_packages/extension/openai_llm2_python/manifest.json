@@ -45,6 +45,9 @@
         },
         "prompt": {
           "type": "string"
+        },
+        "custom_headers": {
+          "type": "string"
         }
       }
     }

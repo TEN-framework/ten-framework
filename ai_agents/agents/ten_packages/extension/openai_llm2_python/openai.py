@@ -51,6 +51,7 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    custom_headers: str = ""
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -77,13 +78,23 @@ class OpenAIChatGPT:
             ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
             self.http_client = httpx.AsyncClient(proxy=config.proxy_url)
 
+        default_headers = {
+            "api-key": config.api_key,
+            "Authorization": f"Bearer {config.api_key}",
+        }
+        if config.custom_headers:
+            try:
+                custom = json.loads(config.custom_headers)
+                default_headers.update(custom)
+            except json.JSONDecodeError as e:
+                ten_env.log_warn(
+                    f"Failed to parse custom_headers: {e}"
+                )
+
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
-            default_headers={
-                "api-key": config.api_key,
-                "Authorization": f"Bearer {config.api_key}",
-            },
+            default_headers=default_headers,
             http_client=self.http_client,
         )
 
