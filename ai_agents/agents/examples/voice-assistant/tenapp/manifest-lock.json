@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.52",
-      "hash": "3f1a0d10ab9c5b5b0932ceea9230e3cf4195e6ffa887c256f2ce1da77241ed44",
+      "version": "0.11.62",
+      "hash": "3edc0bf4cd95b531070a82273cea0b17fc482348dc66f51dd63902afcbf57337",
       "dependencies": [
         {
           "type": "system",
@@ -137,8 +137,8 @@
     {
       "type": "extension",
       "name": "azure_asr_python",
-      "version": "0.2.4",
-      "hash": "852cc92bc3e6b5189e737713c0a711f36ba539a52bc306397e6a69deaf3cb585",
+      "version": "0.2.7",
+      "hash": "9220a0de39411ba27f7101773ef82143dbd7168afedca9f3c9ad0ca4a4ef0251",
       "dependencies": [
         {
           "type": "system",
@@ -171,8 +171,8 @@
     {
       "type": "extension",
       "name": "bytedance_llm_based_asr",
-      "version": "0.3.17",
-      "hash": "cd3f704d0f50b8f365c189c10b65cec41e65f409d005d20a0746d2eeabe82b4d",
+      "version": "0.3.18",
+      "hash": "e2e1f938447860d190a5624aaae33f87f76a242fb7d7fa90ec104508fb52741b",
       "dependencies": [
         {
           "type": "system",
@@ -188,8 +188,8 @@
     {
       "type": "extension",
       "name": "deepgram_asr_python",
-      "version": "0.3.2",
-      "hash": "1cdc274d250a58f659a8b8998d49885bb9d356373b576042e46ee701b131135c",
+      "version": "0.4.0",
+      "hash": "a28858c0b41fe3b0453b52a3af34d4199c4260e788a572e43ec91f316fd7a840",
       "dependencies": [
         {
           "type": "system",
@@ -239,8 +239,8 @@
     {
       "type": "extension",
       "name": "openai_asr_python",
-      "version": "0.2.2",
-      "hash": "dc0d2ecf5c104c396b0539e7f915041453d007aedebd121740c5bb965fd513dc",
+      "version": "0.3.0",
+      "hash": "56374e250f4ab3d43a9a52ad22bc21317b1183c54467e4625653753ac8615b79",
       "dependencies": [
         {
           "type": "system",
@@ -255,9 +255,26 @@
     },
     {
       "type": "extension",
+      "name": "sarvam_asr_python",
+      "version": "0.1.2",
+      "hash": "e821256e20456fa01534b140ce3c5176bcdc83abd00c22eef1e5d191bae160d2",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/sarvam_asr_python"
+    },
+    {
+      "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.11",
-      "hash": "a882d0b44f007047feb69e8e82febed6dd9fb4c2b1f035e3d3da9f02a4afb12e",
+      "version": "0.4.4",
+      "hash": "790fd5e8d2e3476f96418509bcf6e6d836b5832cb2ef4182958373c0c8979bb5",
       "dependencies": [
         {
           "type": "system",
@@ -443,8 +460,8 @@
     {
       "type": "extension",
       "name": "cartesia_tts",
-      "version": "0.6.2",
-      "hash": "17d121b4cec20fe6333ea337a59536bbf5a577fe32275345a5f50ed2ff7c8f92",
+      "version": "0.7.0",
+      "hash": "77248dd0dc15f7ecde58ae89948a790af80d6240528e855c54011ab800ba6276",
       "dependencies": [
         {
           "type": "system",
@@ -605,8 +622,8 @@
     {
       "type": "extension",
       "name": "openai_tts2_python",
-      "version": "0.6.0",
-      "hash": "62e552ae155c42f707a92309be5e4ed5eb0434536c566d1700a4c563b794d508",
+      "version": "0.6.1",
+      "hash": "7c51a7d8562285cf6b3a62c6edb7ec06caf64d9ccadf483eb57a4e675e079f81",
       "dependencies": [
         {
           "type": "system",
@@ -656,8 +673,8 @@
     {
       "type": "extension",
       "name": "rime_tts",
-      "version": "0.4.1",
-      "hash": "e4506ae14920fdddd72962f2d525bd37bbd02feb73a6d462902fbf32ca6d5a38",
+      "version": "0.4.3",
+      "hash": "a6660a6aaa18faf4d8f4a3abd32b989addd7c8b7dbae1c89d0597f4de7f722a5",
       "dependencies": [
         {
           "type": "system",
@@ -707,8 +724,8 @@
     {
       "type": "extension",
       "name": "tencent_tts_python",
-      "version": "0.4.2",
-      "hash": "e0d04344ffe1e22919372447ae121ae4413df43f15a657c1b8cb0e76466c4ebc",
+      "version": "0.4.4",
+      "hash": "18ee9ec34728d05ceffd03007cf8bf1399f2911cfbeba2032a2c8936ca45127c",
       "dependencies": [
         {
           "type": "system",
@@ -750,8 +767,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.52",
-      "hash": "016d47c1d33fb7ef9a3dbf4f3fa50e0f3a629bb6e89a5feda48200a09bd903f2",
+      "version": "0.11.62",
+      "hash": "3d67baae8b638167230a557d2fb79c3b4c6d78ea1999a045683d4f76474f8179",
       "dependencies": [
         {
           "type": "system",
@@ -772,8 +789,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.52",
-      "hash": "8a46fecf6bf7ccc718bd6de32a2e95137542325853529c2c4108b1c9ffe69293",
+      "version": "0.11.62",
+      "hash": "5970c9e6fdd8ade6044e10dafa8daaafdc3a77136038c0cdde28f0734abf2884",
       "supports": [
         {
           "os": "linux",
@@ -796,8 +813,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.52",
-      "hash": "57867531ef8c0caa4b1c31772e775896db7e515b31a2cafe03881d8458912f60",
+      "version": "0.11.62",
+      "hash": "378db15568f2f19471c7c8e0d63464a51f6331fce494c473ece72bcaf3be3ed2",
       "dependencies": [
         {
           "type": "system",

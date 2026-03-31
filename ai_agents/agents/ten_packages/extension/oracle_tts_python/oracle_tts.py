@@ -192,6 +192,25 @@ class OracleTTS:
 
         return self._strip_wav_header(raw)
 
+    async def _get_audio_bytes_cancellable(
+        self, text: str
+    ) -> bytes | None:
+        """Run _get_audio_bytes in a thread, returning None if cancelled.
+
+        Polls ``_is_cancelled`` every 100 ms so that the queue processor
+        is not blocked when a flush/cancel arrives while the synchronous
+        OCI API call is still in flight.
+        """
+        fut = asyncio.get_event_loop().run_in_executor(
+            None, self._get_audio_bytes, text
+        )
+        while not fut.done():
+            if self._is_cancelled:
+                fut.cancel()
+                return None
+            await asyncio.sleep(0.1)
+        return fut.result()
+
     async def get(
         self, text: str, request_id: str
     ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
@@ -217,9 +236,10 @@ class OracleTTS:
             try:
                 start_ts = time.time()
 
-                audio_data = await asyncio.to_thread(
-                    self._get_audio_bytes, text
-                )
+                audio_data = await self._get_audio_bytes_cancellable(text)
+
+                if audio_data is None:
+                    return
                 ttfb_ms = int((time.time() - start_ts) * 1000)
 
                 self.ten_env.log_debug(

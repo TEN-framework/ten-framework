@@ -146,6 +146,12 @@
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/oracle_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/oracle_tts_python"
     }
   ],
   "scripts": {
