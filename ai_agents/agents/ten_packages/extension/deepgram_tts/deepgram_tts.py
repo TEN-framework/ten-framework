@@ -201,7 +201,10 @@ class DeepgramTTSClient:
                         self.ws.recv(), timeout=10.0
                     )
                 except asyncio.TimeoutError:
-                    self.ten_env.log_warn("Timeout waiting for Deepgram audio")
+                    self.ten_env.log_error(
+                        "Timeout waiting for Deepgram audio - yielding error"
+                    )
+                    yield b"Timeout waiting for Deepgram audio", EVENT_TTS_ERROR
                     break
 
                 # Binary message = audio data
