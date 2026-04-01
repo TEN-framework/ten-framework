@@ -4,7 +4,9 @@
 # See the LICENSE file for more information.
 #
 from datetime import datetime
+import base64
 import os
+import tempfile
 import traceback
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
@@ -42,6 +44,7 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_complete_request_id: str | None = None
         self._flush_requested = False
+        self._temp_key_file_path: str | None = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -61,6 +64,17 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             )
 
             self.config.validate_params()
+
+            key_base64 = self.config.params.get("key_file", "")
+            if key_base64:
+                key_bytes = base64.b64decode(key_base64)
+                fd, self._temp_key_file_path = tempfile.mkstemp(
+                    suffix=".pem", prefix="oci_key_"
+                )
+                os.write(fd, key_bytes)
+                os.close(fd)
+                os.chmod(self._temp_key_file_path, 0o600)
+                self.config.params["key_file"] = self._temp_key_file_path
 
             self.client = OracleTTS(
                 config=self.config,
@@ -97,6 +111,12 @@ class OracleTTSExtension(AsyncTTS2BaseExtension):
             "OracleTTS extension on_stop started",
             category=LOG_CATEGORY_KEY_POINT,
         )
+
+        if self._temp_key_file_path and os.path.exists(
+            self._temp_key_file_path
+        ):
+            os.remove(self._temp_key_file_path)
+            self._temp_key_file_path = None
 
         if self.client:
             try:

@@ -9,7 +9,7 @@ Oracle Cloud Infrastructure (OCI) Speech TTS extension for the TEN Framework.
 | tenancy | string | Yes | | OCI tenancy OCID |
 | user | string | Yes | | OCI user OCID |
 | fingerprint | string | Yes | | API key fingerprint |
-| key_file | string | Yes | | Path to the PEM private key file |
+| key_file | string | Yes | | Base64-encoded PEM private key string |
 | compartment_id | string | Yes | | OCI compartment OCID |
 | region | string | No | us-phoenix-1 | OCI region identifier |
 | model_name | string | No | TTS_2_NATURAL | TTS model (`TTS_1_STANDARD` or `TTS_2_NATURAL`) |
@@ -25,6 +25,6 @@ Set OCI credentials via environment variables:
 - `OCI_TENANCY`
 - `OCI_USER`
 - `OCI_FINGERPRINT`
-- `OCI_KEY_FILE`
+- `OCI_KEY_FILE_BASE64`
 - `OCI_COMPARTMENT_ID`
 - `OCI_REGION` (optional, defaults to `us-phoenix-1`)

@@ -1,7 +1,27 @@
 {
   "type": "extension",
-  "name": "qwen3_tts_python",
-  "version": "0.1.1",
+  "name": "blaze_tts_python",
+  "version": "1.0.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Blaze TTS Extension"
+      },
+      "vi-VN": {
+        "content": "Blaze TTS Extension"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Blaze Text-to-Speech extension for TEN Framework"
+      },
+      "vi-VN": {
+        "content": "Extension chuyển đổi văn bản thành giọng nói cho TEN Framework"
+      }
+    }
+  },
   "dependencies": [
     {
       "type": "system",
@@ -36,51 +56,31 @@
         "params": {
           "type": "object",
           "properties": {
-            "model": {
+            "api_url": {
+              "type": "string"
+            },
+            "api_key": {
               "type": "string"
             },
             "language": {
               "type": "string"
             },
-            "speaker": {
+            "speaker_id": {
               "type": "string"
             },
-            "instruct": {
-              "type": "string"
+            "audio_speed": {
+              "type": "float64"
             },
-            "mode": {
-              "type": "string"
+            "audio_quality": {
+              "type": "float64"
             },
-            "ref_audio_path": {
-              "type": "string"
-            },
-            "ref_text": {
-              "type": "string"
-            },
-            "voice_description": {
-              "type": "string"
-            },
-            "device": {
-              "type": "string"
-            },
-            "dtype": {
-              "type": "string"
-            },
-            "attn_implementation": {
-              "type": "string"
+            "timeout": {
+              "type": "int32"
             }
           }
-        },
-        "dump": {
-          "type": "bool"
-        },
-        "dump_path": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
         }
       }
     }
   }
 }
+

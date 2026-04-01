@@ -4,8 +4,10 @@
 # See the LICENSE file for more information.
 #
 from datetime import datetime
+import base64
 import os
 import asyncio
+import tempfile
 from typing import Dict, Any
 
 from typing_extensions import override
@@ -54,9 +56,16 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
         self._finalize_pending: bool = (
             False  # finalize arrived before connection was ready
         )
+        self._temp_key_file_path: str | None = None
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        if self._temp_key_file_path and os.path.exists(
+            self._temp_key_file_path
+        ):
+            os.remove(self._temp_key_file_path)
+            self._temp_key_file_path = None
+
         await super().on_deinit(ten_env)
         if self.audio_dumper:
             await self.audio_dumper.stop()
@@ -81,6 +90,17 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
+            key_base64 = self.config.params.get("key_file", "")
+            if key_base64:
+                key_bytes = base64.b64decode(key_base64)
+                fd, self._temp_key_file_path = tempfile.mkstemp(
+                    suffix=".pem", prefix="oci_key_"
+                )
+                os.write(fd, key_bytes)
+                os.close(fd)
+                os.chmod(self._temp_key_file_path, 0o600)
+                self.config.params["key_file"] = self._temp_key_file_path
+
             if self.config.dump:
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
@@ -132,20 +152,6 @@ class OracleASRExtension(AsyncASRBaseExtension, OracleASRRecognitionCallback):
                 error_msg = (
                     f"Oracle ASR credentials missing: {', '.join(missing)}"
                 )
-                self.ten_env.log_error(
-                    error_msg, category=LOG_CATEGORY_KEY_POINT
-                )
-                await self.send_asr_error(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=error_msg,
-                    ),
-                )
-                return
-
-            if key_file and not os.path.isfile(key_file):
-                error_msg = f"OCI key_file not found: {key_file}"
                 self.ten_env.log_error(
                     error_msg, category=LOG_CATEGORY_KEY_POINT
                 )

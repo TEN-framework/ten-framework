@@ -1,0 +1,12 @@
+{
+    "params": {
+        "api_url": "${env:BLAZE_TTS_API_URL}",
+        "api_key": "${env:BLAZE_TTS_API_KEY}",
+        "language": "vi",
+        "speaker_id": null,
+        "audio_speed": 1.0,
+        "audio_quality": 64,
+        "timeout": 3600
+    }
+}
+
