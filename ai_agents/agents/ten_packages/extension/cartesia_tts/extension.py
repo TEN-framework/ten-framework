@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import copy
 from datetime import datetime
 import os
 import traceback
@@ -392,6 +393,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     f"Received audio end signal for {request_id}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
+                # This path can race with request_tts() interrupting the
+                # previous request. request_id filtering keeps stale end
+                # signals from completing the new request, and
+                # last_audio_end_request_id is checked by request_tts() so it
+                # does not emit a second audio_end once completion has already
+                # been observed.
                 if not self.pending_audio_end:
                     self.pending_audio_end = True
                     await self._handle_completed_request(
@@ -665,8 +672,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
     async def update_configs(self, configs: dict) -> None:
         async with self.config_update_lock:
             try:
+                safe_configs = copy.deepcopy(configs)
+                params = safe_configs.get("params")
+                if isinstance(params, dict) and "api_key" in params:
+                    params["api_key"] = "***"
                 self.ten_env.log_info(
-                    f"tts_update_configs: {configs}",
+                    f"tts_update_configs: {safe_configs}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
                 new_config = self.config.merge_updates(configs)
@@ -938,11 +949,14 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
     # ── Helper methods ─────────────────────────────────────────────
 
-    async def _wait_for_client_available(self) -> bool:
-        """Wait for a recreated client so transient teardown does not drop text."""
+    async def _wait_for_client_available(self, timeout_s: float = 5.0) -> bool:
+        """Wait briefly for client recreation so transient teardown does not drop text."""
+        deadline = time.monotonic() + timeout_s
         while not self._is_stopped:
             if self.client is not None:
                 return True
+            if time.monotonic() >= deadline:
+                return False
             await asyncio.sleep(0.01)
         return False
 

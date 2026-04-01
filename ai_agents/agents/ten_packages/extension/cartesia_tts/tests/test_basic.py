@@ -233,6 +233,41 @@ def test_process_audio_data_ignores_end_signal_from_old_request():
     asyncio.run(_run())
 
 
+def test_update_configs_redacts_api_key_in_logs():
+    async def _run():
+        extension = CartesiaTTSExtension("cartesia_tts")
+        extension.ten_env = MagicMock()
+        extension.config = CartesiaTTSConfig(api_key="existing")
+        extension.config.update_params()
+        extension.config_update_lock = asyncio.Lock()
+        extension._apply_config_update = AsyncMock()
+
+        await extension.update_configs(
+            {"params": {"api_key": "super-secret", "model_id": "sonic-3"}}
+        )
+
+        logged_messages = [
+            call.args[0] for call in extension.ten_env.log_info.call_args_list
+        ]
+        assert any("***" in message for message in logged_messages)
+        assert all("super-secret" not in message for message in logged_messages)
+
+    asyncio.run(_run())
+
+
+def test_wait_for_client_available_times_out():
+    async def _run():
+        extension = CartesiaTTSExtension("cartesia_tts")
+        extension.client = None
+        extension._is_stopped = False
+
+        result = await extension._wait_for_client_available(timeout_s=0.02)
+
+        assert result is False
+
+    asyncio.run(_run())
+
+
 # ================ test dump file functionality ================
 class ExtensionTesterDump(ExtensionTester):
     def __init__(self):
