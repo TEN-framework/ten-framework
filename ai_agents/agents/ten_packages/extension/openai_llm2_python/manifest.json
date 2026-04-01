@@ -47,7 +47,8 @@
           "type": "string"
         },
         "custom_headers": {
-          "type": "object"
+          "type": "object",
+          "properties": {}
         }
       }
     }
