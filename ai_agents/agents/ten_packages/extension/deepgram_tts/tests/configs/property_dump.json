@@ -1,0 +1,10 @@
+{
+    "dump": true,
+    "dump_path": "./dump/",
+    "params": {
+        "api_key": "${env:DEEPGRAM_API_KEY}",
+        "model": "aura-2-thalia-en",
+        "encoding": "linear16",
+        "sample_rate": 24000
+    }
+}
