@@ -44,6 +44,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.total_audio_bytes: int = 0
         self._is_stopped: bool = False
         self.recorder_map: dict[str, PCMWriter] = {}
+        self._audio_start_sent: bool = False  # Track if tts_audio_start was sent
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -193,6 +194,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_finished = False
                 self.total_audio_bytes = 0
                 self.sent_ts = None
+                self._audio_start_sent = False  # Reset for new request
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -337,6 +339,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                             await self.send_tts_audio_start(
                                 request_id=self.current_request_id,
                             )
+                            self._audio_start_sent = True
                             extra_metadata = {
                                 "model": self.config.model,
                             }
@@ -392,6 +395,12 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                         )
                         # Send TTS audio end event
                         if t.text_input_end:
+                            # Ensure tts_audio_start is sent before tts_audio_end
+                            if not self._audio_start_sent:
+                                await self.send_tts_audio_start(
+                                    request_id=self.current_request_id,
+                                )
+                                self._audio_start_sent = True
                             request_event_interval = (
                                 self._current_request_interval_ms()
                             )
@@ -429,6 +438,12 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     f"TTS processing completed, total chunks: {chunk_count}"
                 )
             elif t.text_input_end:
+                # Ensure tts_audio_start is sent before tts_audio_end
+                if not self._audio_start_sent:
+                    await self.send_tts_audio_start(
+                        request_id=self.current_request_id,
+                    )
+                    self._audio_start_sent = True
                 duration_ms = self._calculate_audio_duration_ms()
                 request_event_interval = self._current_request_interval_ms()
                 await self.send_tts_audio_end(
