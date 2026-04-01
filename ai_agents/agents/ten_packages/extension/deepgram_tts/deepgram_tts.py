@@ -105,6 +105,9 @@ class DeepgramTTSClient:
                 raise
 
     async def stop(self):
+        # Set cancellation flag first to stop any pending operations
+        self._is_cancelled = True
+
         # Stop the websocket connection if it exists
         if self.ws:
             try:
