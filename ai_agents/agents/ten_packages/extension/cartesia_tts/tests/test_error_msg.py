@@ -141,27 +141,29 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("cartesia_tts.cartesia_tts.AsyncCartesia")
-def test_invalid_api_key_error(MockAsyncCartesia):
+@patch("cartesia_tts.cartesia_tts.aiohttp.ClientSession")
+def test_invalid_api_key_error(MockClientSession):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
 
-    # Mock API key error by raising exception in websocket() method
-    mock_websocket = MagicMock()
-    mock_websocket.send = AsyncMock()
-    mock_websocket.close = AsyncMock()
+    # Mock aiohttp.ClientSession to simulate a 401 WebSocket handshake error.
+    # When CartesiaTTSClient._connect() calls self._session.ws_connect(url),
+    # it should raise an exception containing "401" and "Unauthorized".
+    import aiohttp
 
-    mock_tts = MagicMock()
-    mock_tts.websocket = AsyncMock(
-        side_effect=Exception(
-            "Status: 401. Error message: Unauthorized. Please check your API key."
+    mock_session_instance = MagicMock()
+    mock_session_instance.ws_connect = AsyncMock(
+        side_effect=aiohttp.WSServerHandshakeError(
+            request_info=MagicMock(),
+            history=(),
+            status=401,
+            message="Unauthorized. Please check your API key.",
+            headers=MagicMock(),
         )
     )
-
-    mock_client = MockAsyncCartesia.return_value
-    mock_client.tts = mock_tts
-    mock_client.close = AsyncMock()
-    mock_client.start = AsyncMock()
+    mock_session_instance.closed = False
+    mock_session_instance.close = AsyncMock()
+    MockClientSession.return_value = mock_session_instance
 
     # Config with invalid API key
     invalid_key_config = {

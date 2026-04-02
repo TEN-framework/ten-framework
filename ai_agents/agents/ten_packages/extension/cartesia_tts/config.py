@@ -83,6 +83,7 @@ class CartesiaTTSConfig(BaseModel):
     base_url: str = ""
 
     sample_rate: int = 16000
+    enable_words: bool = False
     dump: bool = False
     dump_path: str = "/tmp"
     params: dict[str, Any] = Field(default_factory=dict)
@@ -93,7 +94,7 @@ class CartesiaTTSConfig(BaseModel):
         self.params = params
 
         # Remove params that are not used
-        for key in ("transcript", "context_id", "stream"):
+        for key in ("transcript", "context_id", "stream", "add_timestamps"):
             if key in params:
                 del params[key]
 
@@ -140,6 +141,28 @@ class CartesiaTTSConfig(BaseModel):
             del params["ssml"]
 
         self.ssml.normalize()
+
+    def merge_updates(self, updates: dict[str, Any]) -> "CartesiaTTSConfig":
+        """Create a new config by deep-merging *updates* into the current one."""
+        current = self.model_dump()
+
+        def _deep_merge(base: dict, patch: dict) -> dict:
+            out = dict(base)
+            for k, v in patch.items():
+                if (
+                    k in out
+                    and isinstance(out[k], dict)
+                    and isinstance(v, dict)
+                ):
+                    out[k] = _deep_merge(out[k], v)
+                else:
+                    out[k] = v
+            return out
+
+        merged = _deep_merge(current, updates)
+        new_config = CartesiaTTSConfig.model_validate(merged)
+        new_config.update_params()
+        return new_config
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """
