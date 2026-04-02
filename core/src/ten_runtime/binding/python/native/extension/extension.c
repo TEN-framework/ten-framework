@@ -50,7 +50,7 @@ static void proxy_on_configure(ten_extension_t *extension, ten_env_t *ten_env) {
   TEN_ASSERT(ten_env, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Invalid argument.");
 
-  const char *ext_name = ten_extension_get_name(extension, true);
+  const char *ext_name = ten_string_get_raw_str(&extension->name);
 
   TEN_LOGI("[%s] proxy_on_configure: before acquiring GIL", ext_name);
 
