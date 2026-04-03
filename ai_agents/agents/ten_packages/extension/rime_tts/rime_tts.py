@@ -11,6 +11,7 @@ from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     ModuleVendorException,
 )
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.struct import TTSTextInput
@@ -85,7 +86,8 @@ class RimeTTSynthesizer:
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
         self.ten_env.log_warn(
-            f"Websocket internal error during connecting: {exp}."
+            f"websocket_connect_error: error={exp}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self._connect_exp_cnt += 1
         if self._connect_exp_cnt > 5:  # MAX_RETRY_TIMES_FOR_TRANSPORT
@@ -101,7 +103,6 @@ class RimeTTSynthesizer:
             )
 
             # Use websockets.connect's automatic reconnection mechanism
-            print(f"KEYPOINT _process_websocket: {self._build_websocket_url()}")
             async for ws in websockets.connect(
                 uri=self._build_websocket_url(),
                 additional_headers=self.get_auth_headers(),
@@ -112,7 +113,8 @@ class RimeTTSynthesizer:
                 self.ws = ws
                 try:
                     self.ten_env.log_debug(
-                        "RIME TTS websocket connected successfully"
+                        "websocket_connected",
+                        category=LOG_CATEGORY_VENDOR,
                     )
                     if self._session_closing:
                         self.ten_env.log_debug("Session is closing, break.")
@@ -132,7 +134,8 @@ class RimeTTSynthesizer:
 
                 except websockets.ConnectionClosed as e:
                     self.ten_env.log_debug(
-                        f"RIME TTS websocket connection closed: {e}."
+                        f"websocket_closed: error={e}",
+                        category=LOG_CATEGORY_VENDOR,
                     )
                     if not self._session_closing:
                         self.ten_env.log_warn(
@@ -283,7 +286,8 @@ class RimeTTSynthesizer:
                 # Handle audio chunk
                 audio_data = base64.b64decode(data["data"])
                 self.ten_env.log_debug(
-                    f"Received audio chunk, context_id: {context_id}, length: {len(audio_data)}"
+                    f"recv_audio_chunk: context_id={context_id}, audio_len={len(audio_data)}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
                 if self.response_msgs:
                     if self.sent_ts and not self.ttfb_sent:
@@ -349,7 +353,8 @@ class RimeTTSynthesizer:
         message = {"text": text, "contextId": context_id}
         message_json = json.dumps(message)
         self.ten_env.log_debug(
-            f"KEYPOINT Sending text to RIME TTS: {message_json}"
+            f"send_text_to_tts_server: {message_json}",
+            category=LOG_CATEGORY_VENDOR,
         )
         if self.cur_request_id is None or self.cur_request_id != request_id:
             self.cur_request_id = request_id
@@ -360,6 +365,10 @@ class RimeTTSynthesizer:
             self.send_end_text = True
             eos_operation = {"operation": "eos"}
             eos_json = json.dumps(eos_operation)
+            self.ten_env.log_debug(
+                f"send_context_end: context_id={context_id}, request_id={request_id}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await ws.send(eos_json)
 
     def cancel(self) -> None:
