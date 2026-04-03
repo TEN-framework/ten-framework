@@ -1,0 +1,11 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "${env:DEEPGRAM_API_KEY}",
+    "base_url": "wss://api.deepgram.com/v1/speak",
+    "model": "aura-2-thalia-en",
+    "encoding": "linear16",
+    "sample_rate": 24000
+  }
+}

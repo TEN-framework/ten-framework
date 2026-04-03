@@ -518,10 +518,6 @@ basic_connections = [
                 "name": "flush",
                 "source": [{"extension": "stt"}],
             },
-            {
-                "name": "flush",
-                "dest": [{"extension": "avatar"}],
-            },
         ],
         "data": [{"name": "asr_result", "source": [{"extension": "stt"}]}],
     },
@@ -564,17 +560,30 @@ basic_connections = [
 
 # Helper function to create basic voice assistant graph (no tools)
 def create_basic_voice_assistant(
-    name, has_avatar=False, avatar_type=None, tts_config=None
+    name,
+    has_avatar=False,
+    avatar_type=None,
+    tts_config=None,
+    stt_config=None,
+    llm_config=None,
+    main_control_config=None,
+    avatar_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
+    if stt_config is None:
+        stt_config = nova3_stt_100ms
+    if llm_config is None:
+        llm_config = llama_llm_no_tools
+    if main_control_config is None:
+        main_control_config = main_control_base
     # Standard architecture with TTS and main_control
     nodes = [
         copy.deepcopy(agora_rtc_base),
-        copy.deepcopy(nova3_stt_100ms),
-        copy.deepcopy(llama_llm_no_tools),
+        copy.deepcopy(stt_config),
+        copy.deepcopy(llm_config),
         copy.deepcopy(tts_config),
-        copy.deepcopy(main_control_base),
+        copy.deepcopy(main_control_config),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
     ]
@@ -587,6 +596,15 @@ def create_basic_voice_assistant(
             nodes.append(copy.deepcopy(heygen_avatar))
         else:  # anam
             nodes.append(copy.deepcopy(anam_avatar))
+
+        # Add flush command to avatar in main_control connections
+        for conn in connections:
+            if conn.get("extension") == "main_control":
+                conn["cmd"].append({
+                    "name": "flush",
+                    "dest": [{"extension": "avatar"}],
+                })
+                break
 
         # Remove TTS audio source from agora_rtc (avatar will handle it)
         for conn in connections:
@@ -966,6 +984,72 @@ new_graphs.append(
         avatar_config=anam_avatar_apollo,
         thymia_config=thymia_analyzer_hellos,
         main_control_config=main_control_hellos,
+    )
+)
+
+# ============ DEEPGRAM TTS CONFIGURATION ============
+
+# Deepgram TTS config
+deepgram_tts = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "deepgram_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:DEEPGRAM_API_KEY}",
+            "model": "aura-2-thalia-en",
+            "encoding": "linear16",
+            "sample_rate": 24000,
+        },
+    },
+}
+
+# Simple GPT-5.4 LLM config (no tools)
+simple_prompt = "You are a helpful voice assistant. Keep responses concise, under 30 words. Be friendly and conversational."
+simple_greeting = "Hello! I'm your voice assistant powered by Deepgram. How can I help you today?"
+
+gpt54_llm_simple = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.4",
+        "max_tokens": 1000,
+        "prompt": simple_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": simple_greeting,
+        "max_memory_length": 10,
+        "use_max_completion_tokens": True,
+    },
+}
+
+main_control_simple = {
+    "type": "extension",
+    "name": "main_control",
+    "addon": "main_python",
+    "extension_group": "control",
+    "property": {"greeting": simple_greeting},
+}
+
+# ============ END DEEPGRAM TTS CONFIGURATION ============
+
+# Group 6: Deepgram TTS test graph (voice only, no avatar, no thymia)
+print("Creating Deepgram TTS graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "flux_gpt_5_4_deepgramtts",
+        has_avatar=False,
+        stt_config=flux_stt,
+        llm_config=gpt54_llm_simple,
+        tts_config=deepgram_tts,
+        main_control_config=main_control_simple,
     )
 )
 
