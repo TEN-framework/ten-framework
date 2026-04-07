@@ -58,11 +58,8 @@ class DeepgramTTSConfig(BaseModel):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields
         if config.api_key:
             config.api_key = utils.encrypt(config.api_key)
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
 
         return f"{config}"
 
@@ -70,6 +67,4 @@ class DeepgramTTSConfig(BaseModel):
     def _ensure_dict(value: Any) -> dict[str, Any]:
         if isinstance(value, dict):
             return value
-        if value is None:
-            return {}
-        return dict(value)
+        return {}

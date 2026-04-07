@@ -298,14 +298,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     await self._write_dump(data_msg)
                     await self.send_tts_audio_data(data_msg)
                 else:
-                    self.ten_env.log_debug(
-                        "Received empty payload for TTS response"
-                    )
-                    if t.text_input_end:
-                        await self._finalize_request(
-                            TTSAudioEndReason.REQUEST_END
-                        )
-                        break
+                    self.ten_env.log_debug("Empty payload, ignoring")
 
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if data_msg is not None and isinstance(data_msg, int):
