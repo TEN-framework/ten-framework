@@ -138,9 +138,7 @@ class DeepgramTTSClient:
             yield None, EVENT_TTS_END
             return
 
-        self._is_cancelled = False
-
-        # Reconnect if needed (new request_id or after error)
+        # Reconnect if needed (after error or cancel)
         if self._needs_reconnect:
             await self._reconnect()
             self._needs_reconnect = False
@@ -149,6 +147,10 @@ class DeepgramTTSClient:
 
         if not self._ttfb_sent:
             self._sent_ts = datetime.now()
+
+        # Clear cancel flag just before sending, not at
+        # method entry — avoids race with concurrent cancel()
+        self._is_cancelled = False
 
         # Send Speak + Flush
         speak_msg = {"type": "Speak", "text": text}
