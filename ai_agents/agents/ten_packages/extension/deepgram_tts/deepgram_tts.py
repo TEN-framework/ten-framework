@@ -5,7 +5,6 @@
 #
 import asyncio
 import json
-from collections.abc import Callable
 from datetime import datetime
 from typing import AsyncIterator
 
@@ -46,13 +45,9 @@ class DeepgramTTSClient:
         self,
         config: DeepgramTTSConfig,
         ten_env: AsyncTenEnv,
-        send_fatal_tts_error: Callable[[str], asyncio.Future] | None = None,
-        send_non_fatal_tts_error: Callable[[str], asyncio.Future] | None = None,
     ):
         self.config = config
         self.ten_env = ten_env
-        self.send_fatal_tts_error = send_fatal_tts_error
-        self.send_non_fatal_tts_error = send_non_fatal_tts_error
 
         self._ws: ClientConnection | None = None
         self._is_cancelled = False
@@ -258,19 +253,11 @@ class DeepgramTTSClient:
         except Exception as e:
             error_message = str(e)
             if "401" in error_message or "Unauthorized" in error_message:
-                if self.send_fatal_tts_error:
-                    await self.send_fatal_tts_error(error_message=error_message)
-                # Always raise so callers don't proceed
-                # with self._ws == None
                 raise DeepgramTTSConnectionException(
                     status_code=401, body=error_message
                 ) from e
             else:
                 self.ten_env.log_error(f"Deepgram TTS connection failed: {e}")
-                if self.send_non_fatal_tts_error:
-                    await self.send_non_fatal_tts_error(
-                        error_message=error_message
-                    )
                 raise
 
     async def _ensure_connection(self) -> None:

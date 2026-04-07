@@ -138,8 +138,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         return DeepgramTTSClient(
             config=self.config,
             ten_env=ten_env,
-            send_fatal_tts_error=self.send_fatal_tts_error,
-            send_non_fatal_tts_error=(self.send_non_fatal_tts_error),
         )
 
     async def _ensure_client(self) -> None:
@@ -271,15 +269,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 code=ModuleErrorCode.NON_FATAL_ERROR,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            await self.send_tts_error(
-                request_id=self.current_request_id,
-                error=error,
-            )
-            await self.finish_request(
-                request_id=self.current_request_id,
-                reason=TTSAudioEndReason.ERROR,
-                error=error,
-            )
+            await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
             if isinstance(e, ConnectionRefusedError):
                 await self._reconnect_client()
 
@@ -388,10 +378,11 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
     async def _handle_connection_error(
         self, e: DeepgramTTSConnectionException
     ) -> None:
-        """Handle Deepgram connection errors."""
-        self.ten_env.log_error(
-            f"DeepgramTTSConnectionException in request_tts: " f"{e.body}"
-        )
+        """Handle Deepgram connection errors.
+
+        Sends exactly one error event via _finalize_request.
+        """
+        self.ten_env.log_error(f"DeepgramTTSConnectionException: {e.body}")
         if e.status_code == 401:
             code = ModuleErrorCode.FATAL_ERROR
         else:
@@ -407,15 +398,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 message=e.body,
             ),
         )
-        await self.send_tts_error(
-            request_id=self.current_request_id,
-            error=error,
-        )
-        await self.finish_request(
-            request_id=self.current_request_id,
-            reason=TTSAudioEndReason.ERROR,
-            error=error,
-        )
+        await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
 
     def _setup_recorder(self, request_id: str) -> None:
         """Set up PCMWriter for a new request."""

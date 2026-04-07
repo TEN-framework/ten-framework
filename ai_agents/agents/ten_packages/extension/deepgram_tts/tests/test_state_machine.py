@@ -287,3 +287,153 @@ def test_client_whitespace_text_yields_end():
         assert events == [EVENT_TTS_END]
 
     asyncio.run(_run())
+
+
+# ================ test 401 emits exactly one error ================
+class AuthErrorTester(ExtensionTester):
+    """Validates that a 401 auth failure emits exactly one
+    error event and one terminal audio_end."""
+
+    def __init__(self):
+        super().__init__()
+        self.error_count = 0
+        self.audio_end_count = 0
+
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
+        tts_input = TTSTextInput(
+            request_id="auth_err_req",
+            text="This should fail with 401.",
+            text_input_end=True,
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(None, tts_input.model_dump_json())
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
+
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        name = data.get_name()
+        if name == "error":
+            self.error_count += 1
+        elif name == "tts_audio_end":
+            self.audio_end_count += 1
+            ten_env.stop_test()
+
+
+@patch("deepgram_tts.extension.DeepgramTTSClient")
+def test_auth_error_single_emission(MockClient):
+    """401 should produce exactly 1 error event, not
+    duplicates."""
+    from deepgram_tts.deepgram_tts import (
+        DeepgramTTSConnectionException,
+    )
+
+    mock = MagicMock()
+    mock.start = AsyncMock()
+    mock.stop = AsyncMock()
+    mock.cancel = AsyncMock()
+    mock.reset_ttfb = lambda: None
+    mock.mark_needs_reconnect = lambda: None
+
+    async def mock_get_auth_fail(text):
+        raise DeepgramTTSConnectionException(
+            status_code=401, body="Unauthorized"
+        )
+        yield  # make it a generator  # pragma: no cover
+
+    mock.get.side_effect = mock_get_auth_fail
+    MockClient.return_value = mock
+
+    tester = AuthErrorTester()
+    tester.set_test_mode_single("deepgram_tts", json.dumps(MOCK_CONFIG))
+    tester.run()
+
+    assert tester.error_count == 1, (
+        f"Expected exactly 1 error event, got " f"{tester.error_count}"
+    )
+
+
+# ================ test non-final error contract ================
+class NonFinalErrorTester(ExtensionTester):
+    """Validates that an error on a non-final chunk does NOT
+    produce a public error event. Partial stream errors are
+    transient — only logged, not surfaced to callers."""
+
+    def __init__(self):
+        super().__init__()
+        self.error_count = 0
+        self.audio_end_received = False
+
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
+        # First chunk: non-final, will error
+        tts_input = TTSTextInput(
+            request_id="nonfinal_req",
+            text="First chunk errors.",
+            text_input_end=False,
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(None, tts_input.model_dump_json())
+        ten_env_tester.send_data(data)
+
+        # Second chunk: final, succeeds
+        tts_input2 = TTSTextInput(
+            request_id="nonfinal_req",
+            text="Second chunk works.",
+            text_input_end=True,
+        )
+        data2 = Data.create("tts_text_input")
+        data2.set_property_from_json(None, tts_input2.model_dump_json())
+        ten_env_tester.send_data(data2)
+        ten_env_tester.on_start_done()
+
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        name = data.get_name()
+        if name == "error":
+            self.error_count += 1
+        elif name == "tts_audio_end":
+            self.audio_end_received = True
+            ten_env.stop_test()
+
+
+@patch("deepgram_tts.extension.DeepgramTTSClient")
+def test_nonfinal_error_not_surfaced(MockClient):
+    """Error on non-final chunk should not emit public
+    error event. This is the intended contract: partial
+    stream errors are transient."""
+    call_count = 0
+
+    def create_mock():
+        mock = MagicMock()
+        mock.start = AsyncMock()
+        mock.stop = AsyncMock()
+        mock.cancel = AsyncMock()
+        mock.reset_ttfb = lambda: None
+        mock.mark_needs_reconnect = lambda: None
+
+        fake_audio = b"\x00\x01" * 200
+
+        async def mock_get(text):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                yield (b"Transient error", EVENT_TTS_ERROR)
+            else:
+                yield (100, EVENT_TTS_TTFB_METRIC)
+                yield (fake_audio, EVENT_TTS_RESPONSE)
+                yield (None, EVENT_TTS_END)
+
+        mock.get.side_effect = mock_get
+        return mock
+
+    MockClient.return_value = create_mock()
+
+    tester = NonFinalErrorTester()
+    tester.set_test_mode_single("deepgram_tts", json.dumps(MOCK_CONFIG))
+    tester.run()
+
+    assert tester.error_count == 0, (
+        f"Non-final error should not produce public error "
+        f"event, got {tester.error_count}"
+    )
+    assert (
+        tester.audio_end_received
+    ), "Request should still complete after non-final error"
