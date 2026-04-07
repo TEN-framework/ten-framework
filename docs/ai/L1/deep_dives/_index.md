@@ -7,3 +7,4 @@
 | [testing.md](testing.md)                                 | All 15 TTS + 10 ASR guarder tests, pass criteria, config files, debugging | Running or debugging tests for an extension |
 | [deployment.md](deployment.md)                           | Docker, Cloudflare, Nginx, Grafana monitoring    | Deploying to production or setting up monitoring |
 | [server_architecture.md](server_architecture.md)         | Go server, property injection, worker lifecycle  | Understanding server internals or debugging      |
+| [operations_restarts.md](operations_restarts.md)         | Full restart procedures, port debugging, recovery| Restarting services, crash recovery, port conflicts|

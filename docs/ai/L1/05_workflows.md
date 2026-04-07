@@ -143,24 +143,8 @@ docker exec ten_agent_dev bash -c \
 
 ## Update Extension Code in Running Container
 
-When iterating on extension code locally:
-
-```bash
-# Copy updated files into the container (use /. to avoid nested dirs)
-sudo docker cp ./agents/ten_packages/extension/my_ext/. \
-  ten_agent_dev:/app/agents/ten_packages/extension/my_ext/
-
-# Verify symlink exists in the example's tenapp
-sudo docker exec ten_agent_dev bash -c \
-  "ls -la /app/agents/examples/<example>/tenapp/ten_packages/extension/my_ext"
-
-# If missing, create it manually
-sudo docker exec ten_agent_dev bash -c \
-  "ln -sf /app/agents/ten_packages/extension/my_ext \
-   /app/agents/examples/<example>/tenapp/ten_packages/extension/my_ext"
-
-# Then nuclear restart
-```
+See [Operations and Restarts](deep_dives/operations_restarts.md) for the full procedure
+including `docker cp` syntax, symlink verification, and restart steps.
 
 ## Pre-Commit Checks
 
@@ -179,3 +163,4 @@ Pre-commit hooks validate: API key patterns, Black formatting, conventional comm
 - [Extension Development](deep_dives/extension_development.md) — Full extension creation with code examples
 - [Graph Configuration](deep_dives/graph_configuration.md) — Connection wiring and routing patterns
 - [Testing](deep_dives/testing.md) — Test infrastructure, guarder tests, debugging
+- [Operations and Restarts](deep_dives/operations_restarts.md) — Full restart procedures, recovery
