@@ -152,6 +152,9 @@
     },
     {
       "path": "../../../ten_packages/extension/oracle_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_tts"
     }
   ],
   "scripts": {
