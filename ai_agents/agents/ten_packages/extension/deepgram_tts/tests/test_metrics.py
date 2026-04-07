@@ -1,11 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-project_root = str(Path(__file__).resolve().parents[6])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.

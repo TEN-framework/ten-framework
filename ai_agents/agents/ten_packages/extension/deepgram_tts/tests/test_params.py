@@ -1,11 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-project_root = str(Path(__file__).resolve().parents[6])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
@@ -13,6 +5,7 @@ if project_root not in sys.path:
 #
 import json
 from unittest.mock import patch, AsyncMock
+
 
 from ten_runtime import (
     ExtensionTester,
@@ -25,6 +18,24 @@ from deepgram_tts.deepgram_tts import (
     EVENT_TTS_END,
     EVENT_TTS_TTFB_METRIC,
 )
+from unittest.mock import MagicMock
+
+
+def create_mock_client():
+    mock = MagicMock()
+    mock.start = AsyncMock()
+    mock.stop = AsyncMock()
+    mock.cancel = AsyncMock()
+    mock.reset_ttfb = lambda: None
+    fake_audio = b"\x00\x01\x02\x03" * 100
+
+    async def mock_get(text):
+        yield (100, EVENT_TTS_TTFB_METRIC)
+        yield (fake_audio, EVENT_TTS_RESPONSE)
+        yield (None, EVENT_TTS_END)
+
+    mock.get.side_effect = mock_get
+    return mock
 
 
 # ================ test different sample rates ================
@@ -58,31 +69,10 @@ class ExtensionTesterSampleRate(ExtensionTester):
         self.audio_chunks_count += 1
 
 
-def _create_mock_client():
-    """Helper to create a mock client for tests."""
-    from unittest.mock import MagicMock
-
-    mock = MagicMock()
-    mock.start = AsyncMock()
-    mock.stop = AsyncMock()
-    mock.cancel = AsyncMock()
-    mock.reset_ttfb = lambda: None
-
-    fake_audio_chunk = b"\x00\x01\x02\x03" * 100
-
-    async def mock_get_audio_stream(text: str):
-        yield (100, EVENT_TTS_TTFB_METRIC)
-        yield (fake_audio_chunk, EVENT_TTS_RESPONSE)
-        yield (None, EVENT_TTS_END)
-
-    mock.get.side_effect = mock_get_audio_stream
-    return mock
-
-
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_sample_rate_16000(MockDeepgramTTSClient):
     """Test with 16000 Hz sample rate."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterSampleRate(16000)
     tester.set_test_mode_single(
@@ -108,7 +98,7 @@ def test_sample_rate_16000(MockDeepgramTTSClient):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_sample_rate_24000(MockDeepgramTTSClient):
     """Test with 24000 Hz sample rate."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterSampleRate(24000)
     tester.set_test_mode_single(
@@ -134,7 +124,7 @@ def test_sample_rate_24000(MockDeepgramTTSClient):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_sample_rate_48000(MockDeepgramTTSClient):
     """Test with 48000 Hz sample rate."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterSampleRate(48000)
     tester.set_test_mode_single(

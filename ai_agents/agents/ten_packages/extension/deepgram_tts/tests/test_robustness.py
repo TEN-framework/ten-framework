@@ -1,11 +1,3 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-project_root = str(Path(__file__).resolve().parents[6])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
@@ -13,6 +5,7 @@ if project_root not in sys.path:
 #
 import json
 from unittest.mock import patch, AsyncMock
+
 
 from ten_runtime import (
     ExtensionTester,
@@ -25,26 +18,23 @@ from deepgram_tts.deepgram_tts import (
     EVENT_TTS_END,
     EVENT_TTS_TTFB_METRIC,
 )
+from unittest.mock import MagicMock
 
 
-def _create_mock_client():
-    """Helper to create a mock client for tests."""
-    from unittest.mock import MagicMock
-
+def create_mock_client():
     mock = MagicMock()
     mock.start = AsyncMock()
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
     mock.reset_ttfb = lambda: None
+    fake_audio = b"\x00\x01\x02\x03" * 100
 
-    fake_audio_chunk = b"\x00\x01\x02\x03" * 100
-
-    async def mock_get_audio_stream(text: str):
+    async def mock_get(text):
         yield (100, EVENT_TTS_TTFB_METRIC)
-        yield (fake_audio_chunk, EVENT_TTS_RESPONSE)
+        yield (fake_audio, EVENT_TTS_RESPONSE)
         yield (None, EVENT_TTS_END)
 
-    mock.get.side_effect = mock_get_audio_stream
+    mock.get.side_effect = mock_get
     return mock
 
 
@@ -78,7 +68,7 @@ class ExtensionTesterEmptyText(ExtensionTester):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_empty_text(MockDeepgramTTSClient):
     """Test that empty text is handled gracefully."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterEmptyText()
     tester.set_test_mode_single(
@@ -132,7 +122,7 @@ class ExtensionTesterWhitespaceText(ExtensionTester):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_whitespace_text(MockDeepgramTTSClient):
     """Test that whitespace-only text is handled gracefully."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterWhitespaceText()
     tester.set_test_mode_single(
@@ -192,7 +182,7 @@ class ExtensionTesterLongText(ExtensionTester):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_long_text(MockDeepgramTTSClient):
     """Test that long text is handled correctly."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterLongText()
     tester.set_test_mode_single(
@@ -252,7 +242,7 @@ class ExtensionTesterSpecialChars(ExtensionTester):
 @patch("deepgram_tts.extension.DeepgramTTSClient")
 def test_special_characters(MockDeepgramTTSClient):
     """Test that special characters are handled correctly."""
-    MockDeepgramTTSClient.return_value = _create_mock_client()
+    MockDeepgramTTSClient.return_value = create_mock_client()
 
     tester = ExtensionTesterSpecialChars()
     tester.set_test_mode_single(

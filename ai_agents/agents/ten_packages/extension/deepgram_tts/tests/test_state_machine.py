@@ -1,20 +1,12 @@
-import sys
-from pathlib import Path
-
-# Add project root to sys.path
-project_root = str(Path(__file__).resolve().parents[6])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
 import asyncio
-import copy
 import json
 from unittest.mock import patch, AsyncMock, MagicMock
+
 
 from ten_runtime import (
     ExtensionTester,
@@ -41,14 +33,13 @@ MOCK_CONFIG = {
 }
 
 
-def _create_mock_client():
+def create_mock_client():
     mock = MagicMock()
     mock.start = AsyncMock()
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
     mock.reset_ttfb = lambda: None
-
-    fake_audio = b"\x00\x01" * 200
+    fake_audio = b"\x00\x01\x02\x03" * 100
 
     async def mock_get(text):
         yield (100, EVENT_TTS_TTFB_METRIC)
@@ -120,7 +111,7 @@ class SequentialRequestsTester(ExtensionTester):
 def test_sequential_requests(MockClient):
     """Each sequential request should complete with its own
     request_id in audio_start and audio_end."""
-    MockClient.return_value = _create_mock_client()
+    MockClient.return_value = create_mock_client()
 
     tester = SequentialRequestsTester()
     tester.set_test_mode_single("deepgram_tts", json.dumps(MOCK_CONFIG))

@@ -106,7 +106,7 @@ class DeepgramTTSClient:
                 await self._ws.send(json.dumps({"type": "Flush"}))
                 # Drain until Flushed to leave connection clean
                 await asyncio.wait_for(self._drain_until_flushed(), timeout=3.0)
-            except (asyncio.TimeoutError, Exception) as e:
+            except Exception as e:
                 self.ten_env.log_warn(
                     f"Cancel drain failed: {e}, "
                     "will reconnect on next request"

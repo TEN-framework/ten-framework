@@ -112,13 +112,11 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished = True
         if self.current_request_id:
             self.ten_env.log_debug(
-                f"Current request {self.current_request_id} "
-                f"is being cancelled. Sending INTERRUPTED."
+                f"Cancelling request {self.current_request_id}"
             )
             if self.client:
                 await self.client.cancel()
-                if self.sent_ts:
-                    await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
+            await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
         else:
             self.ten_env.log_warn("No current request, skipping cancel.")
 
