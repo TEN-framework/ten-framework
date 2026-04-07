@@ -220,6 +220,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 )
                 if self.client:
                     self.client.reset_ttfb()
+                    if self.current_request_id is not None:
+                        # Fresh connection for new request_id
+                        self.client.mark_needs_reconnect()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0

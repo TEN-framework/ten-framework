@@ -29,7 +29,6 @@ from ten_ai_base.struct import TTSTextInput, TTSFlush
 from deepgram_tts.deepgram_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
-    EVENT_TTS_FLUSH,
     EVENT_TTS_TTFB_METRIC,
 )
 

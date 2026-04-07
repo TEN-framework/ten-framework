@@ -16,17 +16,11 @@ from .config import DeepgramTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
-# Event types for the output queue
+# Event types communicated back to the extension
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
-EVENT_TTS_FLUSH = 4
 EVENT_TTS_TTFB_METRIC = 5
-
-MAX_RETRY_TIMES = 5
-
-# Sentinel to signal the send loop to stop
-_SEND_STOP = None
 
 
 class DeepgramTTSConnectionException(Exception):
@@ -41,11 +35,11 @@ class DeepgramTTSConnectionException(Exception):
 
 
 class DeepgramTTSClient:
-    """Duplex WebSocket client for Deepgram TTS.
+    """WebSocket client for Deepgram TTS.
 
-    Uses separate send and receive tasks on a single WebSocket
-    connection. Text goes into _text_queue via send_text(),
-    audio/events come out of _output_queue via get().
+    Each get() call sends Speak+Flush and streams audio
+    until Flushed. Connection is reused across calls but
+    reconnected when needed (cancel, error, new request).
     """
 
     def __init__(
@@ -61,19 +55,8 @@ class DeepgramTTSClient:
         self.send_non_fatal_tts_error = send_non_fatal_tts_error
 
         self._ws: ClientConnection | None = None
-        self._closing = False
         self._is_cancelled = False
-
-        # Duplex queues
-        self._text_queue: asyncio.Queue[str | None] = asyncio.Queue()
-        self._output_queue: asyncio.Queue[tuple[bytes | int | None, int]] = (
-            asyncio.Queue()
-        )
-
-        # Background tasks
-        self._connection_task: asyncio.Task | None = None
-        self._channel_tasks: list[asyncio.Task] = []
-        self._connect_failures = 0
+        self._needs_reconnect = False
 
         # TTFB tracking
         self._sent_ts: datetime | None = None
@@ -90,39 +73,15 @@ class DeepgramTTSClient:
         )
         return f"{base}?{params}"
 
-    # ── Lifecycle ────────────────────────────────────────────────
-
     async def start(self) -> None:
-        """Start client: connect and launch send/receive loops."""
-        self._closing = False
-        self._connection_task = asyncio.create_task(self._connection_loop())
-        # Wait briefly for connection to establish
-        await asyncio.sleep(0.1)
+        """Preheat: establish initial connection."""
+        try:
+            await self._connect()
+        except Exception as e:
+            self.ten_env.log_error(f"Deepgram TTS preheat failed: {e}")
 
     async def stop(self) -> None:
-        """Stop client: close connection and cancel tasks."""
-        self._closing = True
         self._is_cancelled = True
-
-        # Signal send loop to exit
-        await self._text_queue.put(_SEND_STOP)
-
-        # Cancel channel tasks
-        for task in self._channel_tasks:
-            task.cancel()
-        self._channel_tasks.clear()
-
-        if self._connection_task:
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-            self._connection_task = None
-
-        # Signal any consumer waiting on output_queue
-        await self._output_queue.put((None, EVENT_TTS_END))
-
         if self._ws:
             try:
                 await self._ws.send(json.dumps({"type": "Close"}))
@@ -135,36 +94,50 @@ class DeepgramTTSClient:
             self._ws = None
 
     async def cancel(self) -> None:
-        """Cancel current TTS request."""
+        """Cancel current TTS.
+
+        Sends Flush and drains until Flushed so the
+        connection is clean for the next request.
+        """
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
         self.reset_ttfb()
-        # Send Flush to Deepgram to stop audio generation
         if self._ws:
             try:
                 await self._ws.send(json.dumps({"type": "Flush"}))
-            except Exception:
-                pass
+                # Drain until Flushed to leave connection clean
+                await asyncio.wait_for(self._drain_until_flushed(), timeout=3.0)
+            except (asyncio.TimeoutError, Exception) as e:
+                self.ten_env.log_warn(
+                    f"Cancel drain failed: {e}, "
+                    "will reconnect on next request"
+                )
+                self._needs_reconnect = True
+
+    async def _drain_until_flushed(self) -> None:
+        """Read and discard WS messages until Flushed."""
+        while self._ws:
+            msg = await self._ws.recv()
+            if isinstance(msg, str):
+                try:
+                    data = json.loads(msg)
+                    if data.get("type") == "Flushed":
+                        return
+                except json.JSONDecodeError:
+                    pass
 
     def reset_ttfb(self) -> None:
         self._sent_ts = None
         self._ttfb_sent = False
 
-    # ── Public interface for extension ───────────────────────────
-
-    async def send_text(self, text: str) -> None:
-        """Queue text for sending to Deepgram."""
-        await self._text_queue.put(text)
+    def mark_needs_reconnect(self) -> None:
+        """Called by extension when request_id changes."""
+        self._needs_reconnect = True
 
     async def get(
         self, text: str
     ) -> AsyncIterator[tuple[bytes | int | None, int]]:
-        """Send text and yield audio events.
-
-        For empty text, immediately yields EVENT_TTS_END.
-        Otherwise sends text to the send loop and reads
-        events from the output queue until END or ERROR.
-        """
+        """Send text and yield audio events."""
         if len(text.strip()) == 0:
             self.ten_env.log_warn("DeepgramTTS: empty text, returning END")
             yield None, EVENT_TTS_END
@@ -172,117 +145,102 @@ class DeepgramTTSClient:
 
         self._is_cancelled = False
 
-        # Track TTFB from when we send
+        # Reconnect if needed (new request_id or after error)
+        if self._needs_reconnect:
+            await self._reconnect()
+            self._needs_reconnect = False
+
+        await self._ensure_connection()
+
         if not self._ttfb_sent:
             self._sent_ts = datetime.now()
 
-        # Put text into send queue
-        await self._text_queue.put(text)
+        # Send Speak + Flush
+        speak_msg = {"type": "Speak", "text": text}
+        await self._ws.send(json.dumps(speak_msg))
+        await self._ws.send(json.dumps({"type": "Flush"}))
 
-        # Read events from output queue
-        while True:
-            try:
-                data_msg, event = await asyncio.wait_for(
-                    self._output_queue.get(), timeout=5.0
-                )
-            except asyncio.TimeoutError:
-                self.ten_env.log_error("Timeout waiting for Deepgram audio")
-                yield (
-                    b"Timeout waiting for Deepgram audio",
-                    EVENT_TTS_ERROR,
-                )
-                break
+        # Receive audio until Flushed
+        try:
+            while True:
+                if self._is_cancelled:
+                    self.ten_env.log_debug("Cancelled, stopping stream.")
+                    break
 
-            if event == EVENT_TTS_END:
-                yield None, EVENT_TTS_END
-                break
-            elif event == EVENT_TTS_ERROR:
-                yield data_msg, EVENT_TTS_ERROR
-                break
-            else:
-                yield data_msg, event
+                try:
+                    message = await asyncio.wait_for(
+                        self._ws.recv(), timeout=8.0
+                    )
+                except asyncio.TimeoutError:
+                    self.ten_env.log_error("Timeout waiting for Deepgram audio")
+                    self._needs_reconnect = True
+                    yield (
+                        b"Timeout waiting for Deepgram audio",
+                        EVENT_TTS_ERROR,
+                    )
+                    break
 
-    # ── Connection loop with auto-reconnect ─────────────────────
+                if isinstance(message, bytes):
+                    if self._is_cancelled:
+                        self.ten_env.log_debug("Dropping audio (cancelled)")
+                        break
 
-    async def _connection_loop(self) -> None:
-        min_delay = 0.1
-        max_delay = 3.0
-
-        while not self._closing:
-            try:
-                await self._connect()
-                self._connect_failures = 0
-
-                if self._closing:
-                    return
-
-                # Launch duplex tasks
-                self._channel_tasks = [
-                    asyncio.create_task(self._send_loop()),
-                    asyncio.create_task(self._receive_loop()),
-                ]
-
-                # Wait for either to finish
-                done, pending = await asyncio.wait(
-                    self._channel_tasks,
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
-
-                for task in pending:
-                    task.cancel()
-                self._channel_tasks.clear()
-
-                for task in done:
-                    exc = task.exception()
-                    if exc and not isinstance(exc, asyncio.CancelledError):
-                        self.ten_env.log_warn(
-                            f"Channel task exception: {exc}",
-                            category=LOG_CATEGORY_VENDOR,
+                    # TTFB on first audio chunk
+                    if self._sent_ts and not self._ttfb_sent:
+                        ttfb_ms = int(
+                            (datetime.now() - self._sent_ts).total_seconds()
+                            * 1000
                         )
+                        yield ttfb_ms, EVENT_TTS_TTFB_METRIC
+                        self._ttfb_sent = True
 
-            except DeepgramTTSConnectionException:
-                raise
-
-            except asyncio.CancelledError:
-                return
-
-            except Exception as e:
-                self.ten_env.log_warn(
-                    f"vendor_status: connection error: {e}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-
-            finally:
-                if self._ws:
+                    self.ten_env.log_debug(
+                        f"DeepgramTTS: audio chunk, " f"length: {len(message)}"
+                    )
+                    yield message, EVENT_TTS_RESPONSE
+                else:
                     try:
-                        await self._ws.close()
-                    except Exception:
-                        pass
-                    self._ws = None
+                        data = json.loads(message)
+                        msg_type = data.get("type", "")
 
-            if self._closing:
-                return
+                        if msg_type == "Flushed":
+                            self.ten_env.log_debug("DeepgramTTS: Flushed")
+                            yield None, EVENT_TTS_END
+                            break
 
-            self._connect_failures += 1
-            if self._connect_failures > MAX_RETRY_TIMES:
-                self.ten_env.log_error(
-                    f"Max retries ({MAX_RETRY_TIMES}) " f"exceeded",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-                return
+                        elif msg_type == "Warning":
+                            self.ten_env.log_warn(
+                                f"Deepgram warning: "
+                                f"{data.get('warn_msg', '')}"
+                            )
 
-            delay = min(
-                min_delay * (2 ** (self._connect_failures - 1)),
-                max_delay,
-            )
-            self.ten_env.log_debug(
-                f"vendor_status: reconnecting in "
-                f"{delay:.1f}s "
-                f"(attempt {self._connect_failures}"
-                f"/{MAX_RETRY_TIMES})",
+                        elif msg_type == "Error":
+                            error_msg = data.get("err_msg", "Unknown error")
+                            self.ten_env.log_error(
+                                f"Deepgram error: {error_msg}"
+                            )
+                            yield (
+                                error_msg.encode("utf-8"),
+                                EVENT_TTS_ERROR,
+                            )
+                            break
+
+                    except json.JSONDecodeError:
+                        self.ten_env.log_warn(f"Failed to parse: {message}")
+
+            if not self._is_cancelled:
+                self.ten_env.log_debug("DeepgramTTS: complete")
+
+        except Exception as e:
+            self.ten_env.log_error(
+                f"vendor_error: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            await asyncio.sleep(delay)
+            self._needs_reconnect = True
+            yield (
+                str(e).encode("utf-8"),
+                EVENT_TTS_ERROR,
+            )
 
     async def _connect(self) -> None:
         try:
@@ -314,119 +272,16 @@ class DeepgramTTSClient:
                     )
                 raise
 
-    # ── Send loop ───────────────────────────────────────────────
-
-    async def _send_loop(self) -> None:
-        """Read text from queue and send Speak+Flush to WS."""
-        try:
-            while not self._closing:
-                text = await self._text_queue.get()
-                if text is _SEND_STOP:
-                    return
-
-                if not self._ws:
-                    self.ten_env.log_error("WS not connected in send loop")
-                    return
-
-                self.ten_env.log_debug(
-                    f"send_text: {text[:80]}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-
-                speak_msg = {"type": "Speak", "text": text}
-                await self._ws.send(json.dumps(speak_msg))
-                await self._ws.send(json.dumps({"type": "Flush"}))
-
-        except asyncio.CancelledError:
-            return
-        except Exception as e:
-            self.ten_env.log_error(
-                f"vendor_error: send_loop error: {e}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            raise
-
-    # ── Receive loop ────────────────────────────────────────────
-
-    async def _receive_loop(self) -> None:
-        """Read from WS and dispatch to output queue."""
+    async def _ensure_connection(self) -> None:
         if not self._ws:
-            return
+            await self._connect()
 
-        try:
-            async for message in self._ws:
-                if self._closing:
-                    return
-
-                if isinstance(message, bytes):
-                    await self._handle_audio(message)
-                else:
-                    await self._handle_text_message(message)
-
-        except asyncio.CancelledError:
-            return
-        except websockets.exceptions.ConnectionClosed:
-            self.ten_env.log_warn(
-                "vendor_status: WS closed by server",
-                category=LOG_CATEGORY_VENDOR,
-            )
-        except Exception as e:
-            self.ten_env.log_error(
-                f"vendor_error: receive_loop: {e}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            raise
-
-    async def _handle_audio(self, data: bytes) -> None:
-        """Handle binary audio message from WS."""
-        if self._is_cancelled:
-            self.ten_env.log_debug("Dropping audio chunk (cancelled)")
-            return
-
-        # TTFB on first audio chunk
-        if self._sent_ts and not self._ttfb_sent:
-            ttfb_ms = int(
-                (datetime.now() - self._sent_ts).total_seconds() * 1000
-            )
-            await self._output_queue.put((ttfb_ms, EVENT_TTS_TTFB_METRIC))
-            self._ttfb_sent = True
-
-        self.ten_env.log_debug(
-            f"DeepgramTTS: audio chunk, " f"length: {len(data)}"
-        )
-        await self._output_queue.put((data, EVENT_TTS_RESPONSE))
-
-    async def _handle_text_message(self, raw: str) -> None:
-        """Handle JSON text message from WS."""
-        try:
-            data = json.loads(raw)
-        except json.JSONDecodeError:
-            self.ten_env.log_warn(f"Failed to parse message: {raw}")
-            return
-
-        msg_type = data.get("type", "")
-
-        if msg_type == "Flushed":
-            self.ten_env.log_debug("DeepgramTTS: Flushed received")
-            # Always signal END so get() returns promptly
-            # (even after cancel — the extension checks
-            # cancel state separately)
-            await self._output_queue.put((None, EVENT_TTS_END))
-
-        elif msg_type == "Warning":
-            self.ten_env.log_warn(
-                f"Deepgram warning: " f"{data.get('warn_msg', '')}"
-            )
-
-        elif msg_type == "Error":
-            error_msg = data.get("err_msg", "Unknown error")
-            self.ten_env.log_error(f"Deepgram error: {error_msg}")
-            await self._output_queue.put(
-                (
-                    error_msg.encode("utf-8"),
-                    EVENT_TTS_ERROR,
-                )
-            )
-
-        else:
-            self.ten_env.log_debug(f"Unknown message type: {msg_type}")
+    async def _reconnect(self) -> None:
+        """Close and re-establish the connection."""
+        if self._ws:
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
+            self._ws = None
+        await self._connect()
