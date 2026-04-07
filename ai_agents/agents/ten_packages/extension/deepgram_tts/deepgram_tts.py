@@ -260,10 +260,11 @@ class DeepgramTTSClient:
             if "401" in error_message or "Unauthorized" in error_message:
                 if self.send_fatal_tts_error:
                     await self.send_fatal_tts_error(error_message=error_message)
-                else:
-                    raise DeepgramTTSConnectionException(
-                        status_code=401, body=error_message
-                    ) from e
+                # Always raise so callers don't proceed
+                # with self._ws == None
+                raise DeepgramTTSConnectionException(
+                    status_code=401, body=error_message
+                ) from e
             else:
                 self.ten_env.log_error(f"Deepgram TTS connection failed: {e}")
                 if self.send_non_fatal_tts_error:

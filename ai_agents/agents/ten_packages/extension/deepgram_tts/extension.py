@@ -350,25 +350,34 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 break
 
             elif event_status == EVENT_TTS_ERROR:
-                self.ten_env.log_error(
-                    "Received TTS_ERROR event from " "Deepgram TTS"
-                )
                 error_msg = (
                     data_msg.decode("utf-8")
                     if isinstance(data_msg, bytes)
                     else str(data_msg)
                 )
+                self.ten_env.log_error(f"TTS_ERROR from Deepgram: {error_msg}")
+                error = ModuleError(
+                    message=error_msg,
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                )
                 if t.text_input_end:
+                    # Final chunk: surface error and
+                    # finalize the request
                     await self._finalize_request(
                         TTSAudioEndReason.ERROR,
-                        error=ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=(ModuleErrorCode.NON_FATAL_ERROR),
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
-                            ),
-                        ),
+                        error=error,
+                    )
+                else:
+                    # Non-final chunk: log only. The base
+                    # class will send subsequent chunks for
+                    # this request_id; errors on partial
+                    # streaming are transient.
+                    self.ten_env.log_warn(
+                        f"Transient TTS error on non-final "
+                        f"chunk for {t.request_id}: "
+                        f"{error_msg}"
                     )
                 break
 
