@@ -10,6 +10,7 @@ from typing import AsyncIterator
 
 import websockets
 from websockets.asyncio.client import ClientConnection
+from websockets.exceptions import InvalidStatus
 
 from .config import DeepgramTTSConfig
 from ten_runtime import AsyncTenEnv
@@ -250,15 +251,21 @@ class DeepgramTTSClient:
                 "vendor_status: connected to deepgram tts",
                 category=LOG_CATEGORY_VENDOR,
             )
+        except InvalidStatus as e:
+            raise DeepgramTTSConnectionException(
+                status_code=e.response.status_code,
+                body=str(e),
+            ) from e
         except Exception as e:
             error_message = str(e)
+            # Fallback string match for non-websockets
+            # exceptions (e.g., mocked tests)
             if "401" in error_message or "Unauthorized" in error_message:
                 raise DeepgramTTSConnectionException(
                     status_code=401, body=error_message
                 ) from e
-            else:
-                self.ten_env.log_error(f"Deepgram TTS connection failed: {e}")
-                raise
+            self.ten_env.log_error(f"Deepgram TTS connection failed: {e}")
+            raise
 
     async def _ensure_connection(self) -> None:
         if not self._ws:

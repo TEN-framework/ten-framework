@@ -12,7 +12,6 @@ if project_root not in sys.path:
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from pathlib import Path
 import json
 from unittest.mock import patch, AsyncMock
 import os

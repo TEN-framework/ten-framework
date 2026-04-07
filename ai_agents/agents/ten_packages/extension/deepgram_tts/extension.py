@@ -3,7 +3,6 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import asyncio
 from datetime import datetime
 import os
 import traceback
@@ -60,8 +59,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             self.config = DeepgramTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
             ten_env.log_info(
-                f"LOG_CATEGORY_KEY_POINT: "
-                f"{self.config.to_str(sensitive_handling=True)}",
+                self.config.to_str(sensitive_handling=True),
                 category=LOG_CATEGORY_KEY_POINT,
             )
 
@@ -226,7 +224,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
-                self._setup_recorder(t.request_id)
+                await self._setup_recorder(t.request_id)
             elif self.current_request_finished:
                 self.ten_env.log_error(
                     f"Received a message for a finished "
@@ -301,7 +299,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                         f"#{chunk_count}, "
                         f"size: {len(data_msg)} bytes"
                     )
-                    self._write_dump(data_msg)
+                    await self._write_dump(data_msg)
                     await self.send_tts_audio_data(data_msg)
                 else:
                     self.ten_env.log_debug(
@@ -400,7 +398,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         )
         await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
 
-    def _setup_recorder(self, request_id: str) -> None:
+    async def _setup_recorder(self, request_id: str) -> None:
         """Set up PCMWriter for a new request."""
         if not (self.config and self.config.dump):
             return
@@ -409,7 +407,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             rid for rid in self.recorder_map.keys() if rid != request_id
         ]:
             try:
-                asyncio.create_task(self.recorder_map[old_rid].flush())
+                await self.recorder_map[old_rid].flush()
                 del self.recorder_map[old_rid]
                 self.ten_env.log_debug(
                     f"Cleaned up old PCMWriter for " f"request_id: {old_rid}"
@@ -431,7 +429,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 f"{request_id}, file: {dump_file_path}"
             )
 
-    def _write_dump(self, data: bytes) -> None:
+    async def _write_dump(self, data: bytes) -> None:
         """Write audio data to dump file if enabled."""
         if (
             self.config
@@ -439,31 +437,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             and self.current_request_id
             and self.current_request_id in self.recorder_map
         ):
-            asyncio.create_task(
-                self.recorder_map[self.current_request_id].write(data)
-            )
-
-    async def send_fatal_tts_error(self, error_message: str) -> None:
-        await self.send_tts_error(
-            request_id=self.current_request_id or "",
-            error=ModuleError(
-                message=error_message,
-                module=ModuleType.TTS,
-                code=ModuleErrorCode.FATAL_ERROR,
-                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-            ),
-        )
-
-    async def send_non_fatal_tts_error(self, error_message: str) -> None:
-        await self.send_tts_error(
-            request_id=self.current_request_id or "",
-            error=ModuleError(
-                message=error_message,
-                module=ModuleType.TTS,
-                code=ModuleErrorCode.NON_FATAL_ERROR,
-                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-            ),
-        )
+            try:
+                await self.recorder_map[self.current_request_id].write(data)
+            except Exception as e:
+                self.ten_env.log_error(f"Dump write failed: {e}")
 
     def _current_request_interval_ms(self) -> int:
         if not self.sent_ts:
