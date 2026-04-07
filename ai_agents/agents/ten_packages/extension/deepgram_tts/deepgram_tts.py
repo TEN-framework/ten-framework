@@ -22,6 +22,9 @@ EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
 EVENT_TTS_TTFB_METRIC = 5
 
+# Seconds to wait for a WebSocket response before timeout
+WS_RECV_TIMEOUT = 8.0
+
 
 class DeepgramTTSConnectionException(Exception):
     """Exception raised when Deepgram TTS connection fails"""
@@ -126,10 +129,6 @@ class DeepgramTTSClient:
         self._sent_ts = None
         self._ttfb_sent = False
 
-    def mark_needs_reconnect(self) -> None:
-        """Called by extension when request_id changes."""
-        self._needs_reconnect = True
-
     async def get(
         self, text: str
     ) -> AsyncIterator[tuple[bytes | int | None, int]]:
@@ -165,7 +164,7 @@ class DeepgramTTSClient:
 
                 try:
                     message = await asyncio.wait_for(
-                        self._ws.recv(), timeout=8.0
+                        self._ws.recv(), timeout=WS_RECV_TIMEOUT
                     )
                 except asyncio.TimeoutError:
                     self.ten_env.log_error("Timeout waiting for Deepgram audio")
@@ -215,6 +214,7 @@ class DeepgramTTSClient:
                             self.ten_env.log_error(
                                 f"Deepgram error: {error_msg}"
                             )
+                            self._needs_reconnect = True
                             yield (
                                 error_msg.encode("utf-8"),
                                 EVENT_TTS_ERROR,

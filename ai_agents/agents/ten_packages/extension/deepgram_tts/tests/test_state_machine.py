@@ -47,7 +47,6 @@ def _create_mock_client():
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
     mock.reset_ttfb = lambda: None
-    mock.mark_needs_reconnect = lambda: None
 
     fake_audio = b"\x00\x01" * 200
 
@@ -198,7 +197,6 @@ def test_reconnect_after_error(MockClient):
         mock.stop = AsyncMock()
         mock.cancel = AsyncMock()
         mock.reset_ttfb = lambda: None
-        mock.mark_needs_reconnect = lambda: None
 
         fake_audio = b"\x00\x01" * 200
 
@@ -332,7 +330,6 @@ def test_auth_error_single_emission(MockClient):
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
     mock.reset_ttfb = lambda: None
-    mock.mark_needs_reconnect = lambda: None
 
     async def mock_get_auth_fail(text):
         raise DeepgramTTSConnectionException(
@@ -407,7 +404,6 @@ def test_nonfinal_error_not_surfaced(MockClient):
         mock.stop = AsyncMock()
         mock.cancel = AsyncMock()
         mock.reset_ttfb = lambda: None
-        mock.mark_needs_reconnect = lambda: None
 
         fake_audio = b"\x00\x01" * 200
 

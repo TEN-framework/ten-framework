@@ -307,6 +307,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                         await self._finalize_request(
                             TTSAudioEndReason.REQUEST_END
                         )
+                        break
 
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if data_msg is not None and isinstance(data_msg, int):
