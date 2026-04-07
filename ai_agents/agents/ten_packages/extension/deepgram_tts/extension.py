@@ -120,9 +120,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 if self.sent_ts:
                     await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
         else:
-            self.ten_env.log_warn(
-                "No current request found, " "skipping TTS cancellation."
-            )
+            self.ten_env.log_warn("No current request, skipping cancel.")
 
     def vendor(self) -> str:
         return "deepgram"
@@ -303,7 +301,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     await self.send_tts_audio_data(data_msg)
                 else:
                     self.ten_env.log_debug(
-                        "Received empty payload for " "TTS response"
+                        "Received empty payload for TTS response"
                     )
                     if t.text_input_end:
                         await self._finalize_request(
@@ -331,7 +329,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             elif event_status == EVENT_TTS_END:
                 self.ten_env.log_info(
-                    "Received TTS_END event from " "Deepgram TTS"
+                    "Received TTS_END event from Deepgram TTS"
                 )
                 if t.text_input_end:
                     await self._finalize_request(TTSAudioEndReason.REQUEST_END)
