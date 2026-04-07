@@ -138,9 +138,16 @@ sudo docker exec ten_agent_dev bash -c \
 When iterating on extension code locally:
 
 ```bash
-# Copy updated files (use /. to avoid nested dirs)
+# Option 1: docker cp with /. suffix (avoids nested dirs)
 sudo docker cp ./agents/ten_packages/extension/my_ext/. \
   ten_agent_dev:/app/agents/ten_packages/extension/my_ext/
+
+# Option 2: tar with cache exclusion (recommended — avoids
+# __pycache__ and .pytest_cache causing import errors)
+tar --exclude='__pycache__' --exclude='.pytest_cache' \
+  -C ai_agents/agents/ten_packages/extension/my_ext -cf - . | \
+  sudo docker exec -i ten_agent_dev tar \
+  -C /app/agents/ten_packages/extension/my_ext -xf -
 
 # Verify symlink exists in the example's tenapp
 sudo docker exec ten_agent_dev bash -c \
@@ -153,6 +160,19 @@ sudo docker exec ten_agent_dev bash -c \
 ```
 
 Then do a full restart.
+
+**Common pitfall:** If `docker cp` copies `__pycache__` or `.pytest_cache`
+from your local machine into the container, it can cause `ImportError` or
+stale bytecode during test collection. Use the tar method above or clean
+the container directory before copying:
+
+```bash
+sudo docker exec ten_agent_dev bash -c \
+  "find /app/agents/ten_packages/extension/my_ext \
+   -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; \
+   find /app/agents/ten_packages/extension/my_ext \
+   -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null"
+```
 
 ## After Container Restart Checklist
 

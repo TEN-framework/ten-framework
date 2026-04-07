@@ -24,14 +24,24 @@ docker exec ten_agent_dev bash -c \
 docker exec ten_agent_dev bash -c \
   "cd /app && task test-extension-no-install EXTENSION=agents/ten_packages/extension/deepgram_tts"
 
-# TTS guarder (all 15 tests)
+# TTS guarder (16 tests)
 docker exec ten_agent_dev bash -c "cd /app && task tts-guarder-test EXTENSION=deepgram_tts"
 
-# ASR guarder (all 10 tests)
+# ASR guarder (10 tests)
 docker exec ten_agent_dev bash -c "cd /app && task asr-guarder-test EXTENSION=azure_asr_python"
 
-# Specific test only
+# Specific test only (faster iteration on failures)
 docker exec ten_agent_dev bash -c "cd /app && task tts-guarder-test EXTENSION=deepgram_tts -- -k test_flush"
+```
+
+**Before running tests**, sync your local code into the container. Use tar
+to exclude cache artifacts that cause import errors:
+
+```bash
+tar --exclude='__pycache__' --exclude='.pytest_cache' \
+  -C ai_agents/agents/ten_packages/extension/my_ext -cf - . | \
+  sudo docker exec -i ten_agent_dev tar \
+  -C /app/agents/ten_packages/extension/my_ext -xf -
 ```
 
 ## Extension Standalone Tests
