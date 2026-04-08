@@ -25,7 +25,7 @@ The Go server (`server/internal/http_server.go`) exposes:
   "user_uid": 176573,
   "graph_name": "voice_assistant",
   "properties": {
-    "openai_llm2_python": {"model": "gpt-4o-mini"}
+    "llm": {"model": "gpt-4o-mini"}
   },
   "timeout": 60
 }
@@ -42,8 +42,8 @@ Connections in `property.json` define data flow between extensions:
 
 ```json
 {"extension": "main", "cmd": [
-  {"name": "tool_register", "dest": [{"extension": "llm"}]},
-  {"name": "on_user_joined", "source": [{"extension": "agora_rtc"}]}
+  {"names": ["tool_register"], "dest": [{"extension": "llm"}]},
+  {"names": ["on_user_joined"], "source": [{"extension": "agora_rtc"}]}
 ]}
 ```
 
@@ -82,34 +82,44 @@ Common data: `asr_result`, `text_data`, `tts_text_input`, `tts_audio_start`,
 
 ### ASR (`AsyncASRBaseExtension`)
 
-| Method                      | Returns   | Purpose                          |
-| --------------------------- | --------- | -------------------------------- |
-| `vendor()`                  | `str`     | Vendor name (e.g., "deepgram")   |
-| `start_connection()`        | `None`    | Connect to ASR service           |
-| `stop_connection()`         | `None`    | Disconnect                       |
-| `send_audio(frame)`         | `bool`    | Send audio frame to service      |
-| `finalize()`                | `None`    | Drain pending audio              |
-| `is_connected()`            | `bool`    | Connection status check          |
-| `input_audio_sample_rate()` | `int`     | Expected sample rate (e.g., 16000)|
+| Method                              | Returns   | Purpose                          |
+| ----------------------------------- | --------- | -------------------------------- |
+| `vendor()`                          | `str`     | Vendor name (e.g., "deepgram")   |
+| `start_connection()`                | `None`    | Connect to ASR service           |
+| `stop_connection()`                 | `None`    | Disconnect                       |
+| `send_audio(frame, session_id)`     | `bool`    | Send audio frame to service      |
+| `finalize(session_id)`              | `None`    | Drain pending audio              |
+| `is_connected()`                    | `bool`    | Connection status check          |
+| `input_audio_sample_rate()`         | `int`     | Expected sample rate (e.g., 16000)|
+| `buffer_strategy()`                 | `ASRBufferConfig` | Audio buffering behavior |
 
 **Output helpers**: `send_asr_result()`, `send_asr_error()`, `send_asr_finalize_end()`,
 `send_connect_delay_metrics()`, `send_vendor_metrics()`
 
 ### TTS (`AsyncTTS2BaseExtension`)
 
-| Method                          | Returns  | Purpose                              |
-| ------------------------------- | -------- | ------------------------------------ |
-| `vendor()`                      | `str`    | Vendor name (e.g., "elevenlabs")     |
-| `request_tts(tts_text_input)`   | `AsyncIterator` | Generate audio from text       |
-| `cancel_tts()`                  | `None`   | Handle flush/cancellation            |
-| `synthesize_audio_sample_rate()`| `int`    | Output sample rate (e.g., 24000)     |
-| `synthesize_audio_channels()`   | `int`    | Channel count (default: 1)           |
-| `synthesize_audio_sample_width()`| `int`   | Bytes per sample (default: 2)        |
+| Method                           | Returns  | Purpose                              |
+| -------------------------------- | -------- | ------------------------------------ |
+| `vendor()`                       | `str`    | Vendor name (e.g., "elevenlabs")     |
+| `request_tts(tts_text_input)`    | `None`   | Process queued text and emit audio via helpers |
+| `cancel_tts()`                   | `None`   | Handle flush/cancellation when overridden |
+| `synthesize_audio_sample_rate()` | `int`    | Output sample rate (e.g., 24000)     |
+| `synthesize_audio_channels()`    | `int`    | Channel count (default: 1)           |
+| `synthesize_audio_sample_width()`| `int`    | Bytes per sample (default: 2)        |
 
 **Output helpers**: `send_tts_audio_data()`, `send_tts_audio_start()`, `send_tts_audio_end()`,
 `send_tts_error()`, `send_tts_ttfb_metrics()`, `send_tts_text_result()`
 
 **State machine**: QUEUED → PROCESSING → FINALIZING → COMPLETED (per request)
+
+### TTS HTTP (`AsyncTTS2HttpExtension`)
+
+| Method                           | Returns             | Purpose                              |
+| -------------------------------- | ------------------- | ------------------------------------ |
+| `create_config(config_json_str)` | `AsyncTTS2HttpConfig` | Parse vendor config from property JSON |
+| `create_client(config, ten_env)` | `AsyncTTS2HttpClient` | Build the vendor HTTP client        |
+| `vendor()`                       | `str`               | Vendor name                          |
+| `synthesize_audio_sample_rate()` | `int`               | Output sample rate                   |
 
 ### LLM (`AsyncLLMBaseExtension`)
 
@@ -133,9 +143,16 @@ Extensions declare their API interface in `manifest.json`:
       {"import_uri": "../../system/ten_ai_base/api/tts-interface.json"}
     ],
     "property": {
-      "api_key": {"type": "string"},
-      "model": {"type": "string"},
-      "sample_rate": {"type": "int32"}
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "model": {"type": "string"},
+            "sample_rate": {"type": "int32"}
+          }
+        }
+      }
     }
   }
 }

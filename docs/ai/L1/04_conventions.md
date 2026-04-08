@@ -21,19 +21,19 @@ from ten_runtime import Addon, register_addon_as_extension, TenEnv
 
 @register_addon_as_extension("deepgram_asr_python")
 class DeepgramASRExtensionAddon(Addon):
-    def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:
-        ten.on_create_instance_done(DeepgramASRExtension(addon_name), context)
+    def on_create_instance(self, ten: TenEnv, name: str, context) -> None:
+        ten.on_create_instance_done(DeepgramASRExtension(name), context)
 ```
 
 The decorator name **must match** the `addon` field in `property.json` graph nodes.
 
 ## Base Class Selection
 
-| Need                    | Base Class                    | Key Abstract Methods                  |
-| ----------------------- | ----------------------------- | ------------------------------------- |
-| Speech-to-text          | `AsyncASRBaseExtension`       | `vendor()`, `start_connection()`, `send_audio()`, `finalize()` |
-| Text-to-speech (HTTP)   | `AsyncTTS2HttpExtension`      | `vendor()`, `request_tts()`, `synthesize_audio_sample_rate()` |
-| Text-to-speech (WS)     | `AsyncTTS2BaseExtension`      | `vendor()`, `request_tts()`, `cancel_tts()` |
+| Need                    | Base Class                    | Key Methods You Implement Most Often                          |
+| ----------------------- | ----------------------------- | ------------------------------------------------------------- |
+| Speech-to-text          | `AsyncASRBaseExtension`       | `vendor()`, `start_connection()`, `stop_connection()`, `send_audio()`, `finalize()`, `is_connected()`, `input_audio_sample_rate()`, `buffer_strategy()` |
+| Text-to-speech (HTTP)   | `AsyncTTS2HttpExtension`      | `create_config()`, `create_client()`, `vendor()`, `synthesize_audio_sample_rate()` |
+| Text-to-speech (WS)     | `AsyncTTS2BaseExtension`      | `vendor()`, `request_tts()`, `synthesize_audio_sample_rate()` |
 | Chat completion         | `AsyncLLMBaseExtension`       | `on_call_chat_completion()`, `on_data_chat_completion()` |
 | LLM function tool       | `AsyncLLMToolBaseExtension`   | `get_tool_metadata()`, `run_tool()`   |
 | Generic / custom        | `AsyncExtension`              | `on_cmd()`, `on_data()`, etc.         |
@@ -46,9 +46,6 @@ Extensions use Pydantic models for config validation:
 from pydantic import BaseModel, Field
 
 class DeepgramTTSConfig(BaseModel):
-    api_key: str = ""
-    model: str = "aura-2-theia-en"
-    sample_rate: int = 24000
     params: dict[str, Any] = Field(default_factory=dict)
 ```
 
@@ -69,7 +66,7 @@ In `property.json`, reference env vars:
 | `${env:VAR_NAME\|default}` | Optional — uses default if missing |
 
 ```json
-{"api_key": "${env:DEEPGRAM_API_KEY}", "region": "${env:AZURE_REGION|}"}
+{"params": {"api_key": "${env:DEEPGRAM_API_KEY}", "region": "${env:AZURE_REGION|}"}}
 ```
 
 ## Params Dict Pattern
@@ -78,7 +75,8 @@ Extensions using HTTP/WebSocket services store all config in a `params` dictiona
 
 1. **Store** `api_key` inside `params` dict in property.json and config
 2. **Extract** for authentication headers in the client constructor
-3. **Strip** from params **only when creating the HTTP request payload**
+3. **Keep** convenience fields if needed, but preserve vendor params in config
+4. **Strip** secrets only when creating the HTTP payload or WS query
 
 ```python
 # In client constructor — extract for auth
@@ -86,8 +84,8 @@ self.api_key = config.params.get("api_key", "")
 self.headers = {"Authorization": f"Bearer {self.api_key}"}
 
 # In request method — strip before sending
-payload = {**self.config.params}
-payload.pop("api_key", None)
+vendor_params = {**self.config.params}
+vendor_params.pop("api_key", None)
 ```
 
 ## Sensitive Data Logging

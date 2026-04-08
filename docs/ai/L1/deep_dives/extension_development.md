@@ -38,13 +38,14 @@ my_vendor_tts_python/
     ├── bin/
     │   └── start            # Test entry script (sets PYTHONPATH, runs pytest)
     └── configs/
-        ├── property.json                     # Default test config
         ├── property_basic_audio_setting1.json # Sample rate test 1 (e.g. 16000)
         ├── property_basic_audio_setting2.json # Sample rate test 2 (e.g. 24000)
         ├── property_dump.json                # Audio dump test config
         ├── property_miss_required.json       # Missing API key test
         └── property_invalid.json             # Invalid API key test
 ```
+
+Some extensions also include `property.json` as a default valid config.
 
 ## Step 1: addon.py
 
@@ -53,9 +54,9 @@ from ten_runtime import Addon, register_addon_as_extension, TenEnv
 
 @register_addon_as_extension("my_vendor_tts_python")
 class MyVendorTTSAddon(Addon):
-    def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:
+    def on_create_instance(self, ten: TenEnv, name: str, context) -> None:
         from .extension import MyVendorTTSExtension
-        ten.on_create_instance_done(MyVendorTTSExtension(addon_name), context)
+        ten.on_create_instance_done(MyVendorTTSExtension(name), context)
 ```
 
 The decorator name **must exactly match** `manifest.json` `name` field AND the `addon`
@@ -71,11 +72,19 @@ from ten_ai_base import utils
 
 class MyVendorTTSConfig(BaseModel):
     api_key: str = ""
+    base_url: str = "https://api.vendor.com"
     model: str = "default-model"
     sample_rate: int = 24000
     dump: bool = False
     dump_path: str = ""
     params: dict[str, Any] = Field(default_factory=dict)
+
+    def update_params(self) -> None:
+        params = self.params if isinstance(self.params, dict) else {}
+        self.params = params
+        for attr in ("api_key", "base_url", "model", "sample_rate"):
+            if attr in params:
+                setattr(self, attr, params.pop(attr))
 
     def validate(self) -> None:
         key = self.api_key or self.params.get("api_key", "")
@@ -99,19 +108,26 @@ class MyVendorTTSConfig(BaseModel):
   "name": "my_vendor_tts_python",
   "version": "0.1.0",
   "dependencies": [
-    {"type": "system", "name": "ten_runtime_python", "version": "0.8"}
+    {"type": "system", "name": "ten_runtime_python", "version": "0.11"}
   ],
   "api": {
     "interface": [
       {"import_uri": "../../system/ten_ai_base/api/tts-interface.json"}
     ],
     "property": {
-      "api_key": {"type": "string"},
-      "model": {"type": "string"},
-      "sample_rate": {"type": "int32"},
-      "dump": {"type": "bool"},
-      "dump_path": {"type": "string"},
-      "params": {"type": "object"}
+      "properties": {
+        "dump": {"type": "bool"},
+        "dump_path": {"type": "string"},
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "base_url": {"type": "string"},
+            "model": {"type": "string"},
+            "sample_rate": {"type": "int32"}
+          }
+        }
+      }
     }
   }
 }
@@ -123,9 +139,11 @@ Use `tts-interface.json` for TTS, `asr-interface.json` for ASR, `llm-interface.j
 
 ```json
 {
-  "api_key": "${env:MY_VENDOR_API_KEY}",
-  "model": "default-model",
-  "sample_rate": 24000
+  "params": {
+    "api_key": "${env:MY_VENDOR_API_KEY}",
+    "model": "default-model",
+    "sample_rate": 24000
+  }
 }
 ```
 
@@ -144,22 +162,29 @@ class MyVendorTTSExtension(AsyncTTS2BaseExtension):
         await super().on_init(ten_env)
         config_json, _ = await ten_env.get_property_to_json("")
         self.config = MyVendorTTSConfig(**json.loads(config_json))
+        self.config.update_params()
         self.config.validate()
 
     async def on_start(self, ten_env) -> None:
         await super().on_start(ten_env)
         self.client = MyVendorTTSClient(self.config, ten_env)
-        await self.client.connect()
+        await self.client.start()
 
     async def on_stop(self, ten_env) -> None:
         await super().on_stop(ten_env)
-        await self.client.close()
+        await self.client.stop()
 
-    async def request_tts(self, tts_text_input) -> AsyncIterator[tuple[bytes, int | None]]:
-        text = tts_text_input.get_text()
-        request_id = tts_text_input.get_request_id()
-        async for audio_chunk in self.client.synthesize(text, request_id):
-            yield audio_chunk, None  # (bytes, event_status)
+    async def request_tts(self, t: TTSTextInput) -> None:
+        async for data_msg, event_status in self.client.get(t.text):
+            if event_status == EVENT_TTS_RESPONSE and data_msg:
+                await self.send_tts_audio_data(data_msg)
+            elif event_status == EVENT_TTS_END:
+                if t.text_input_end:
+                    await self._finalize_request(TTSAudioEndReason.REQUEST_END)
+                break
+            elif event_status == EVENT_TTS_ERROR:
+                await self._finalize_request(TTSAudioEndReason.ERROR)
+                break
 
     async def cancel_tts(self) -> None:
         await self.client.cancel()
@@ -175,30 +200,44 @@ class MyVendorTTSExtension(AsyncTTS2BaseExtension):
 ```
 
 **TTS2 state machine**: The base class manages request states automatically:
-QUEUED -> PROCESSING -> FINALIZING -> COMPLETED. Your `request_tts()` just yields audio bytes.
+QUEUED -> PROCESSING -> FINALIZING -> COMPLETED. In real WebSocket extensions,
+`request_tts()` usually consumes typed client events such as response/audio,
+TTFB-metric, end, and error, then funnels completion through a single finalize path.
+Avoid raw byte-generator designs that bypass request finalization and `finish_request()`.
 
-**Output events sent automatically** by the base class:
-- `tts_audio_start` — when first audio chunk is ready
-- `pcm_frame` — for each audio chunk
-- `tts_audio_end` — when request completes
-- `tts_error` — on failure
+**Typical output events** in this flow:
+- `tts_audio_start` — emit once when audio begins
+- `pcm_frame` — emit for each audio chunk via `send_tts_audio_data()`
+- `tts_audio_end` — emit when the request completes through your finalize path
+- `tts_error` — emit on failure through the same finalize/error path
 
 ### TTS Extension (HTTP Mode)
 
-Simpler — for non-streaming HTTP APIs:
+Simpler — for non-streaming HTTP APIs. In practice, subclasses usually implement
+`create_config()` and `create_client()` and let `AsyncTTS2HttpExtension` handle
+the request lifecycle:
 
 ```python
-from ten_ai_base.tts2_http import AsyncTTS2HttpExtension
+from ten_ai_base.tts2_http import (
+    AsyncTTS2HttpExtension,
+    AsyncTTS2HttpConfig,
+    AsyncTTS2HttpClient,
+)
+from ten_runtime import AsyncTenEnv
 
 class MyVendorTTSExtension(AsyncTTS2HttpExtension):
+    async def create_config(
+        self, config_json_str: str
+    ) -> AsyncTTS2HttpConfig:
+        return MyVendorTTSConfig.model_validate_json(config_json_str)
+
+    async def create_client(
+        self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv
+    ) -> AsyncTTS2HttpClient:
+        return MyVendorTTSClient(config=config, ten_env=ten_env)
+
     def vendor(self) -> str:
         return "my_vendor"
-
-    async def request_tts(self, text: str, request_id: str) -> AsyncIterator[bytes]:
-        async with httpx.AsyncClient() as client:
-            async with client.stream("POST", self.url, json={"text": text}) as resp:
-                async for chunk in resp.aiter_bytes():
-                    yield chunk
 
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
@@ -223,14 +262,14 @@ class MyVendorASRExtension(AsyncASRBaseExtension):
             await self.ws.close()
             self.ws = None
 
-    async def send_audio(self, frame) -> bool:
+    async def send_audio(self, frame, session_id: str | None) -> bool:
         buf = frame.lock_buf()
         data = bytes(buf)
         frame.unlock_buf(buf)
         await self.ws.send(data)
         return True
 
-    async def finalize(self) -> None:
+    async def finalize(self, session_id: str | None) -> None:
         await self.ws.send(json.dumps({"type": "CloseStream"}))
         # Wait for final results before returning
 
@@ -382,9 +421,11 @@ Default config for the extension. Loaded when no overrides are specified:
 
 ```json
 {
-  "api_key": "${env:MY_VENDOR_API_KEY}",
-  "model": "default-model",
-  "sample_rate": 24000
+  "params": {
+    "api_key": "${env:MY_VENDOR_API_KEY}",
+    "model": "default-model",
+    "sample_rate": 24000
+  }
 }
 ```
 
@@ -400,7 +441,7 @@ Defines the complete agent — nodes, connections, per-instance overrides:
       "graph": {
         "nodes": [
           {"name": "tts", "addon": "my_vendor_tts_python",
-           "property": {"model": "high-quality", "sample_rate": 24000}}
+           "property": {"params": {"model": "high-quality", "sample_rate": 24000}}}
         ],
         "connections": [...]
       }
@@ -435,12 +476,12 @@ Your extension's `tests/configs/` directory needs these config files for the gua
 
 | Config File                          | Purpose                                | Content                                |
 | ------------------------------------ | -------------------------------------- | -------------------------------------- |
-| `property.json`                      | Default test config                    | Valid API key, default model/settings  |
 | `property_basic_audio_setting1.json` | Sample rate test 1                     | `sample_rate: 16000` + valid key       |
 | `property_basic_audio_setting2.json` | Sample rate test 2                     | `sample_rate: 24000` + valid key       |
 | `property_dump.json`                 | Audio dump test                        | `dump: true, dump_path: "./tests/dump_output/"` |
 | `property_miss_required.json`        | Missing params error test              | Empty API key                          |
 | `property_invalid.json`              | Invalid params error test              | Empty or invalid API key               |
+| `property.json`                      | Optional default test config           | Valid API key, default model/settings  |
 
 **Example `property.json`** (for elevenlabs):
 ```json
@@ -498,7 +539,9 @@ Your extension's `tests/configs/` directory needs these config files for the gua
 
 Run with: `task tts-guarder-test EXTENSION=my_vendor_tts_python`
 
-There are **15 tests**. Here's what each validates:
+There are **15 core tests**. Some repositories may also include optional
+vendor-specific checks such as subtitle alignment when the provider exposes
+timing data.
 
 ### Must-Pass Tests
 
@@ -533,7 +576,7 @@ There are **15 tests**. Here's what each validates:
 
 Run with: `task asr-guarder-test EXTENSION=my_vendor_asr_python`
 
-There are **10 tests** (1 skipped by default):
+There are **10 tests** (1 excluded by the default test runner):
 
 | Test                        | What It Validates                                            |
 | --------------------------- | ------------------------------------------------------------ |
@@ -546,7 +589,7 @@ There are **10 tests** (1 skipped by default):
 | `test_dump`                 | Audio dump files created correctly                           |
 | `test_metrics`              | TTFW and TTLW metrics: positive, TTLW > TTFW                |
 | `test_audio_timestamp`      | start_ms and duration_ms accuracy                            |
-| `test_long_duration_stream` | **Skipped by default** — 5+ min stream without timeout       |
+| `test_long_duration_stream` | **Excluded by default test runner** — 5+ min stream without timeout |
 
 ### Critical Pass Criteria
 
@@ -584,17 +627,19 @@ For HTTP/WebSocket vendor APIs:
 
 1. Store all config including `api_key` in `params` dict
 2. Extract `api_key` for auth headers in client constructor
-3. Strip `api_key` from params **only when building the HTTP request payload**
-4. In `update_params()`: add vendor-required params, normalize keys
+3. Keep first-class convenience fields if needed (`model`, `sample_rate`, etc.)
+4. Forward remaining vendor params to the HTTP body or WebSocket query string
+5. Strip secrets only from the outbound request payload / query, not from the in-memory config
+6. In `update_params()`: add vendor-required params, normalize keys
 
 ```python
 # Client constructor
 self.api_key = config.params.get("api_key", "")
 self.headers = {"Authorization": f"Bearer {self.api_key}"}
 
-# Request method
-payload = {**self.config.params}
-payload.pop("api_key", None)
+# Request method / WS URL builder
+vendor_params = {**self.config.params}
+vendor_params.pop("api_key", None)
 ```
 
 ## Bidirectional Extension Pattern
@@ -624,6 +669,7 @@ class MyBridge(AsyncExtension):
 - [ ] Config validation raises ValueError for missing required params
 - [ ] `to_str()` encrypts sensitive fields before logging
 - [ ] `tests/configs/` has all required config files (see Step 6)
+- [ ] Optional vendor-specific tests are documented explicitly when unsupported
 - [ ] `task tts-guarder-test` or `task asr-guarder-test` passes
 - [ ] `task format` passes (Black, line-length 80)
 - [ ] `task lint-extension EXTENSION=my_vendor_tts_python` passes

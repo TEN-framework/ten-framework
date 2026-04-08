@@ -35,13 +35,13 @@ async def on_stop(self, ten_env):
 
 ## CRITICAL: Always Use `task run`
 
-Never start the server with `./bin/api` or `./bin/main` directly.
+Never start the server with `./bin/api` or `./bin/worker` directly.
 `task run` sets the correct PYTHONPATH and starts all services together
 (API server + playground + TMAN Designer).
 
 ## Zombie Worker Processes
 
-Worker processes (`bin/main`) can survive container and server restarts.
+Worker processes (`bin/worker`) can survive container and server restarts.
 Always check for and kill zombies before restarting.
 
 ## .env Loaded at Container Startup Only
@@ -59,12 +59,12 @@ and do a full restart. See [Operations and Restarts](deep_dives/operations_resta
 Python dependencies are lost on container restart. Always reinstall after
 `docker compose down && up`.
 
-## tman install Can Wipe bin/main
+## tman install Can Wipe bin/worker
 
 Running `tman install` when system dependencies have newer versions replaces
-the runtime packages and **deletes `bin/main`**. Use `task install` (full
+the runtime packages and **deletes `bin/worker`**. Use `task install` (full
 rebuild) instead of bare `tman install`. Signs: Worker fails with
-`bin/main: No such file or directory` in logs.
+`bin/worker: No such file or directory` in logs.
 
 ## tman Install Creates Symlinks
 

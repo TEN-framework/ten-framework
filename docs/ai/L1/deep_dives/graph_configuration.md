@@ -42,12 +42,14 @@ Graphs define which extensions run and how they communicate. They are declared i
   "type": "extension",
   "name": "stt",
   "addon": "deepgram_asr_python",
-  "extension_group": "transcription_group",
+  "extension_group": "stt",
   "property": {
-    "api_key": "${env:DEEPGRAM_API_KEY}",
-    "model": "nova-2",
-    "language": "en-US",
-    "sample_rate": 16000
+    "params": {
+      "api_key": "${env:DEEPGRAM_API_KEY}",
+      "model": "nova-2",
+      "language": "en-US",
+      "sample_rate": 16000
+    }
   }
 }
 ```
@@ -66,10 +68,10 @@ Connections define how messages flow between extensions:
 
 ```json
 {
-  "extension": "main",
+  "extension": "main_control",
   "cmd": [
-    {"name": "flush", "dest": [{"extension": "llm"}, {"extension": "tts"}]},
-    {"name": "on_user_joined", "source": [{"extension": "agora_rtc"}]}
+    {"names": ["flush"], "dest": [{"extension": "llm"}, {"extension": "tts"}]},
+    {"names": ["on_user_joined"], "source": [{"extension": "agora_rtc"}]}
   ],
   "data": [
     {"name": "text_data", "source": [{"extension": "llm"}]},
@@ -84,7 +86,10 @@ Each connection block is **from the perspective of the named extension**:
 
 ## Full Graph Example
 
-A basic voice assistant pipeline (ASR → LLM → TTS):
+A minimal `voice_assistant`-style graph skeleton based on the shipped example.
+It shows the explicit node set and external connections that appear in
+`agents/examples/voice-assistant/tenapp/property.json`; higher-level routing inside
+`main_control` is not expanded here.
 
 ```json
 {
@@ -94,62 +99,74 @@ A basic voice assistant pipeline (ASR → LLM → TTS):
     "nodes": [
       {
         "type": "extension", "name": "agora_rtc", "addon": "agora_rtc",
-        "extension_group": "rtc_group",
+        "extension_group": "default",
         "property": {"app_id": "${env:AGORA_APP_ID}", "channel": "default"}
       },
       {
         "type": "extension", "name": "stt", "addon": "deepgram_asr_python",
-        "extension_group": "stt_group",
-        "property": {"api_key": "${env:DEEPGRAM_API_KEY}", "model": "nova-2"}
+        "extension_group": "stt",
+        "property": {"params": {"api_key": "${env:DEEPGRAM_API_KEY}", "model": "nova-2"}}
       },
       {
         "type": "extension", "name": "llm", "addon": "openai_llm2_python",
-        "extension_group": "llm_group",
+        "extension_group": "chatgpt",
         "property": {"api_key": "${env:OPENAI_API_KEY}", "model": "${env:OPENAI_MODEL}"}
       },
       {
         "type": "extension", "name": "tts", "addon": "elevenlabs_tts2_python",
-        "extension_group": "tts_group",
-        "property": {"api_key": "${env:ELEVENLABS_TTS_KEY}"}
+        "extension_group": "tts",
+        "property": {"params": {"api_key": "${env:ELEVENLABS_TTS_KEY}"}}
+      },
+      {
+        "type": "extension", "name": "main_control", "addon": "main_python",
+        "extension_group": "control",
+        "property": {}
+      },
+      {
+        "type": "extension", "name": "message_collector", "addon": "message_collector2",
+        "extension_group": "transcriber",
+        "property": {}
+      },
+      {
+        "type": "extension", "name": "streamid_adapter", "addon": "streamid_adapter",
+        "property": {}
       }
     ],
     "connections": [
       {
+        "extension": "main_control",
+        "cmd": [
+          {"names": ["on_user_joined", "on_user_left"], "source": [{"extension": "agora_rtc"}]}
+        ],
+        "data": [
+          {"name": "asr_result", "source": [{"extension": "stt"}]}
+        ]
+      },
+      {
         "extension": "agora_rtc",
         "audio_frame": [
-          {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
-        ]
-      },
-      {
-        "extension": "stt",
-        "data": [
-          {"name": "asr_result", "dest": [{"extension": "main"}]}
-        ]
-      },
-      {
-        "extension": "main",
-        "cmd": [
-          {"name": "flush", "dest": [{"extension": "llm"}, {"extension": "tts"}]},
-          {"name": "on_user_joined", "source": [{"extension": "agora_rtc"}]}
+          {"name": "pcm_frame", "dest": [{"extension": "streamid_adapter"}]},
+          {"name": "pcm_frame", "source": [{"extension": "tts"}]}
         ],
         "data": [
-          {"name": "text_data", "source": [{"extension": "llm"}]},
-          {"name": "text_data", "dest": [{"extension": "tts"}]}
+          {"name": "data", "source": [{"extension": "message_collector"}]}
         ]
       },
       {
-        "extension": "tts",
-        "data": [
-          {"name": "tts_text_input", "source": [{"extension": "main"}]}
-        ],
+        "extension": "streamid_adapter",
         "audio_frame": [
-          {"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}
+          {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
         ]
       }
     ]
   }
 }
 ```
+
+This example intentionally matches the real explicit graph wiring. If you are adding
+a new TTS vendor, copy a confirmed working graph first, then change only the TTS node,
+manifest dependency, and any vendor-specific properties. Do not infer missing LLM/TTS
+routes from a simplified diagram.
 
 ## Connection Types Reference
 
@@ -366,7 +383,7 @@ Available in `agents/examples/`. Key examples:
 
 | Aspect                | voice-assistant             | voice-assistant-advanced          |
 | --------------------- | --------------------------- | --------------------------------- |
-| Graphs                | 1 (`voice_assistant`)       | 4+ variants (Flux/Apollo/Cartesia)|
+| Graphs                | 2 (`voice_assistant`, `voice_assistant_oracle`) | 4+ variants (Flux/Apollo/Cartesia)|
 | Vendor switching      | Fixed components            | Multiple vendor combinations      |
 | LLM prompts           | Simple greeting             | Multi-step research workflows     |
 | Use case              | Getting started             | Production A/B testing            |

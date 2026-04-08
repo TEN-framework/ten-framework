@@ -10,7 +10,7 @@ All AI agent development happens inside `ai_agents/`:
 ai_agents/
 ├── agents/
 │   ├── ten_packages/
-│   │   ├── extension/           # 93+ extensions (ASR, TTS, LLM, tools, avatar)
+│   │   ├── extension/           # 90+ extensions (ASR, TTS, LLM, tools, avatar)
 │   │   └── system/              # Core runtime packages
 │   │       ├── ten_ai_base/     # Base classes and API interface definitions
 │   │       ├── ten_runtime_python/

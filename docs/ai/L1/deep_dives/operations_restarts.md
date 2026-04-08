@@ -62,16 +62,19 @@ If you see `Port 3000 is in use`, the frontend is on the wrong port.
 
 ## Zombie Worker Cleanup
 
-Worker processes (`bin/main`) run inside Docker but can survive server restarts:
+In the standard `ai_agents` Docker workflow, worker processes are spawned from the
+runtime inside the container and can survive API/frontend restarts. If your team
+launches TEN differently, confirm the process boundary first, then inspect the
+correct namespace:
 
 ```bash
 # Check for zombies
 sudo docker exec ten_agent_dev bash -c \
-  "ps aux | grep 'bin/main' | grep -v grep"
+  "ps aux | grep 'bin/worker --property' | grep -v grep"
 
 # Kill them
 sudo docker exec ten_agent_dev bash -c \
-  "pkill -9 -f 'bin/main'"
+  "pkill -9 -f 'bin/worker --property'"
 ```
 
 Always kill zombies before restarting the server.

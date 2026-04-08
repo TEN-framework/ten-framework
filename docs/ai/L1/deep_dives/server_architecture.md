@@ -34,7 +34,7 @@ containing `property.json` and `manifest.json`.
 | `handlerPing()`                  | `POST /ping`       | Resets session timeout timer        |
 | `handlerList()`                  | `GET /list`        | Lists active workers/channels       |
 | `handlerGenerateToken()`         | `POST /token/generate` | Generates Agora RTC tokens     |
-| `handleAddonDefaultProperties()` | `GET /addon/default-properties` | Extension property.json files |
+| `handleAddonDefaultProperties()` | `GET /dev-tmp/addons/default-properties` | Extension property.json files |
 | `handlerVectorDocumentUpdate()`  | `POST /vector/document/update` | Vector DB updates          |
 | `handlerVectorDocumentUpload()`  | `POST /vector/document/upload` | File uploads for vector DB |
 
@@ -70,7 +70,7 @@ for _, graph := range predefinedGraphs {
 Per-extension property overrides from the request are merged:
 
 ```go
-// req.Properties = {"openai_llm2_python": {"model": "gpt-4o-mini"}}
+// req.Properties = {"llm": {"model": "gpt-4o-mini"}}
 for _, node := range graph.Nodes {
     if props, ok := req.Properties[node.Name]; ok {
         mergeProperties(node.Property, props)
@@ -80,18 +80,35 @@ for _, node := range graph.Nodes {
 
 ### Step 4: Inject Start Parameters
 
-The `startPropMap` (defined in `config.go`) maps request fields to node properties:
+The `startPropMap` (defined in `config.go`) maps request fields to one or more
+target extension/property pairs:
 
 ```go
-var startPropMap = map[string]string{
-    "RemoteStreamId":      "remote_stream_id",
-    "BotStreamId":         "agora_uid",
-    "Token":               "token",
-    "WorkerHttpServerPort": "server_port",
+type Prop struct {
+    ExtensionName string
+    Property      string
+    ConvertType   string
+}
+
+var startPropMap = map[string][]Prop{
+    "RemoteStreamId": {
+        {ExtensionName: "agora_rtc", Property: "remote_stream_id"},
+    },
+    "BotStreamId": {
+        {ExtensionName: "agora_rtc", Property: "stream_id"},
+        {ExtensionName: "agora_rtm", Property: "user_id", ConvertType: "string"},
+    },
+    "Token": {
+        {ExtensionName: "agora_rtc", Property: "token"},
+        {ExtensionName: "agora_rtm", Property: "token"},
+    },
+    "WorkerHttpServerPort": {
+        {ExtensionName: "http_server", Property: "listen_port"},
+    },
 }
 ```
 
-These values are injected into every node that has the corresponding property defined.
+These values are injected only into the matching extension nodes named in the map.
 
 ### Step 5: Channel Auto-Injection
 
@@ -125,7 +142,7 @@ tmpFile := filepath.Join(tmpDir, "property.json")
 os.WriteFile(tmpFile, modifiedJSON, 0644)
 
 // Spawn worker
-cmd := exec.Command("tman", "run", "start", "--property", tmpFile)
+cmd := exec.Command("tman", "run", "start", "--", "--property", tmpFile)
 ```
 
 ## Worker Process Lifecycle
@@ -137,7 +154,7 @@ cmd := exec.Command("tman", "run", "start", "--property", tmpFile)
 Server: processProperty() → temp property.json
     │
     ▼
-Server: exec("tman run start --property <tmp>")
+Server: exec("tman run start -- --property <tmp>")
     │
     ▼
 Worker process starts → loads graph → initializes extensions
@@ -157,9 +174,9 @@ Worker: extensions call on_stop() → on_deinit()
 Worker process terminates
 ```
 
-**Important**: Worker processes run on the **host machine**, not inside Docker.
-They can outlive the server process and even container restarts. Always check for
-zombie workers with `ps -elf | grep 'bin/main'`.
+**Important**: In the standard `ai_agents` Docker workflow, workers are spawned by
+the runtime inside the container. They can still outlive API/frontend restarts, so
+always check for zombie workers in the same process namespace where TEN was started.
 
 ## Session Management
 
@@ -200,9 +217,9 @@ node properties:
 | Request Field          | Node Property        | Purpose                        |
 | ---------------------- | -------------------- | ------------------------------ |
 | `RemoteStreamId`       | `remote_stream_id`   | Remote user's stream ID        |
-| `BotStreamId`          | `agora_uid`          | Bot's Agora UID                |
+| `BotStreamId`          | `stream_id` / `user_id` | Bot stream identifier for Agora RTC / RTM |
 | `Token`                | `token`              | Agora RTC token                |
-| `WorkerHttpServerPort` | `server_port`        | Worker's HTTP server port      |
+| `WorkerHttpServerPort` | `listen_port`        | Worker's HTTP server port      |
 
 ## See Also
 

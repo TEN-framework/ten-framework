@@ -32,18 +32,18 @@ Use `-d` flag with `docker exec` to keep services running after terminal disconn
 ```bash
 # 1. Clean up existing processes
 sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
-ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9 2>/dev/null
+sudo docker exec ten_agent_dev bash -c "ps -elf | grep 'bin/worker --property' | grep -v grep | awk '{print \$4}' | xargs -r kill -9 2>/dev/null"
 
 # 2. Remove stale lock files
 sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
 
 # 3. Install Python dependencies
 sudo docker exec ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced/tenapp && bash scripts/install_python_deps.sh"
+  "cd /app/agents/examples/<example>/tenapp && bash scripts/install_python_deps.sh"
 
 # 4. Start everything in detached mode
 sudo docker exec -d ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"
+  "cd /app/agents/examples/<example> && task run > /tmp/task_run.log 2>&1"
 
 # 5. Wait and verify
 sleep 15
@@ -79,8 +79,8 @@ For production with custom domain and SSL certificates:
 
 ```nginx
 server {
-    listen [::]:453 ssl ipv6only=on;
-    listen 453 ssl;
+    listen [::]:443 ssl ipv6only=on;
+    listen 443 ssl;
     ssl_certificate /etc/letsencrypt/live/oai.agora.io/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/oai.agora.io/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;

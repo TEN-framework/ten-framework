@@ -14,24 +14,32 @@
 | LLM         | `openai_llm2_python`       | `AsyncLLMBaseExtension`     |
 
 ```bash
-cp -r agents/ten_packages/extension/deepgram_tts agents/ten_packages/extension/my_vendor_tts
+cp -r agents/ten_packages/extension/<existing_tts> \
+  agents/ten_packages/extension/my_vendor_tts
 ```
 
 Then:
 1. Rename addon decorator, class names, `manifest.json` `name` field
-2. Implement the abstract methods for your vendor API
-3. Create `tests/configs/` with required config files (see below)
-4. Run guarder tests: `task tts-guarder-test EXTENSION=my_vendor_tts`
-5. Run formatter: `task format`
+2. Keep vendor config in `params`; extract secrets for auth and forward the rest to the vendor request layer
+3. Implement the abstract methods for your vendor API
+4. Create `tests/configs/` with required config files (see below)
+5. Run guarder tests: `task tts-guarder-test EXTENSION=my_vendor_tts`
+6. Run formatter: `task format`
 
-**Required test config files** for TTS: `property.json`, `property_basic_audio_setting1.json`,
+**Typical required test config files** for TTS: `property_basic_audio_setting1.json`,
 `property_basic_audio_setting2.json`, `property_dump.json`, `property_miss_required.json`,
 `property_invalid.json`
+
+Some extensions also keep `property.json` as a default valid config, but the exact
+set depends on the extension template and guarder harness in use.
+
+Optional / vendor-dependent TTS configs:
+- `property_subtitle_alignment.json` if the vendor emits word/segment timestamps
 
 **Required test config files** for ASR: `property_en.json`, `property_zh.json`,
 `property_invalid.json`, `property_dump.json`
 
-For full walkthrough with code and all 15/10 test details, see
+For full walkthrough with code and guarder expectations, see
 [Extension Development](deep_dives/extension_development.md) and [Testing](deep_dives/testing.md).
 
 ## Add Extension to a Graph
@@ -39,8 +47,8 @@ For full walkthrough with code and all 15/10 test details, see
 1. **Add node** to `predefined_graphs[].graph.nodes[]` in the example's `tenapp/property.json`:
    ```json
    {"type": "extension", "name": "my_tts", "addon": "my_tts_python",
-    "extension_group": "tts_group",
-    "property": {"api_key": "${env:MY_API_KEY}"}}
+    "extension_group": "tts",
+    "property": {"params": {"api_key": "${env:MY_API_KEY}"}}}
    ```
 
 2. **Add connections** — wire data flow between extensions:
@@ -55,7 +63,7 @@ For full walkthrough with code and all 15/10 test details, see
    {"type": "extension", "name": "my_tts_python", "version": "0.1.0"}
    ```
 
-4. **Install** (use `task install`, not just `tman install` — the latter can wipe `bin/main`):
+4. **Install** (use `task install`, not just `tman install` — the latter can wipe `bin/worker`):
    ```bash
    docker exec ten_agent_dev bash -c "cd /app/agents/examples/<example> && task install"
    ```
@@ -70,7 +78,10 @@ For full walkthrough with code and all 15/10 test details, see
      "cd /app/agents/examples/<example> && task run > /tmp/task_run.log 2>&1"
    ```
 
-See [Graph Configuration](deep_dives/graph_configuration.md) for connection types and routing patterns.
+See [Graph Configuration](deep_dives/graph_configuration.md) for connection types and
+routing patterns. When adding a TTS vendor, copy a confirmed working voice graph and
+preserve its routing model. Some shipped graphs rely on explicit message connections,
+while others keep part of the orchestration inside `main_control`.
 
 **For complex multi-graph setups** (A/B testing vendors, avatar variants), use
 `rebuild_property.py` instead of hand-editing. See
@@ -83,9 +94,9 @@ Three implementation variants exist:
 
 | Variant              | File                  | Use Case                        |
 | -------------------- | --------------------- | ------------------------------- |
-| Python Cascade       | `main_python_cascade` | ASR → LLM → TTS pipeline       |
-| Python Realtime V2V  | `main_python_realtime`| OpenAI Realtime API (voice-to-voice) |
-| Node.js Cascade      | `main_nodejs_cascade` | TypeScript implementation       |
+| Python Cascade       | `main_cascade_python` | ASR → LLM → TTS pipeline       |
+| Python Realtime V2V  | `main_realtime_python`| OpenAI Realtime API (voice-to-voice) |
+| Node.js Cascade      | `main_nodejs`         | TypeScript implementation       |
 
 Modify `on_data()` to change event routing, `on_cmd()` for tool handling.
 
@@ -136,7 +147,7 @@ docker exec ten_agent_dev bash -c \
 docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/<example>/tenapp && bash scripts/install_python_deps.sh"
 
-# Install extension dependencies only (creates symlinks) — WARNING: can wipe bin/main
+# Install extension dependencies only (creates symlinks) — WARNING: can wipe bin/worker
 docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/<example>/tenapp && tman install"
 ```

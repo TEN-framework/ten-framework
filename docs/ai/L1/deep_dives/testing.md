@@ -24,7 +24,7 @@ docker exec ten_agent_dev bash -c \
 docker exec ten_agent_dev bash -c \
   "cd /app && task test-extension-no-install EXTENSION=agents/ten_packages/extension/deepgram_tts"
 
-# TTS guarder (16 tests)
+# TTS guarder
 docker exec ten_agent_dev bash -c "cd /app && task tts-guarder-test EXTENSION=deepgram_tts"
 
 # ASR guarder (10 tests)
@@ -52,12 +52,12 @@ Each extension can have `tests/` with a `bin/start` entry point:
 my_extension/tests/
 ├── bin/start            # Sets PYTHONPATH, runs pytest
 ├── configs/             # Test config JSON files
-│   ├── property.json
 │   ├── property_basic_audio_setting1.json
 │   ├── property_basic_audio_setting2.json
 │   ├── property_dump.json
 │   ├── property_miss_required.json
-│   └── property_invalid.json
+│   ├── property_invalid.json
+│   └── property.json    # Optional default-valid config in some extensions
 ├── conftest.py          # Fixtures
 └── test_*.py            # Test files
 ```
@@ -75,7 +75,7 @@ ten_packages/extension/${EXT_NAME}:$PYTHONPATH"
 
 ---
 
-## TTS Guarder Tests (15 Tests)
+## TTS Guarder Tests
 
 **Location**: `agents/integration_tests/tts_guarder/`
 
@@ -83,6 +83,8 @@ These tests run against any TTS extension. The manifest template (`manifest-tmpl
 substitutes `{{extension_name}}` with your extension name at runtime.
 
 ### Test Inventory
+
+Core tests every TTS extension should expect:
 
 | # | Test | What It Validates | Pass Criteria |
 |---|------|-------------------|---------------|
@@ -102,6 +104,12 @@ substitutes `{{extension_name}}` with your extension name at runtime.
 | 14 | `test_metrics` | TTFB metric generation | Metrics data present with valid timestamps |
 | 15 | `test_miss_required_params` | Missing API key | Appropriate error returned |
 
+Optional / vendor-dependent coverage:
+
+| Test | What It Validates | When Required |
+|------|-------------------|---------------|
+| `test_subtitle_alignment` | Word/segment timestamp alignment | Only for vendors that expose subtitle or timestamp alignment data |
+
 ### Critical TTS Invariants
 
 1. **Event ordering must be**: `tts_audio_start` -> `pcm_frame`(s) -> `tts_audio_end` per request
@@ -112,15 +120,21 @@ substitutes `{{extension_name}}` with your extension name at runtime.
 
 ### Required TTS Config Files
 
-Your `tests/configs/` must provide:
+Your `tests/configs/` should provide these core files for TTS guarder coverage:
 
 ```
-property.json                      # Valid API key + default settings
 property_basic_audio_setting1.json # sample_rate: 16000 + valid key + dump:true
 property_basic_audio_setting2.json # sample_rate: 24000 + valid key + dump:true
 property_dump.json                 # dump:true + dump_path + valid key
 property_miss_required.json        # Empty/missing API key
 property_invalid.json              # Empty/invalid API key
+```
+
+Optional / template-dependent configs:
+
+```
+property.json                      # Default valid config used by some extension templates
+property_subtitle_alignment.json   # Only if subtitle / word timing alignment is supported
 ```
 
 **Template** (`property_basic_audio_setting1.json`):
@@ -130,7 +144,7 @@ property_invalid.json              # Empty/invalid API key
   "dump_path": "./tests/keep_dump_output/",
   "params": {
     "sample_rate": 16000,
-    "key": "${env:MY_VENDOR_API_KEY}"
+    "api_key": "${env:MY_VENDOR_API_KEY}"
   }
 }
 ```
@@ -139,12 +153,18 @@ property_invalid.json              # Empty/invalid API key
 
 Some extensions don't support multiple sample rates. To skip the sample rate
 comparison (test still runs, just doesn't assert rates differ), the test runner
-checks `ENABLE_SAMPLE_RATE` env var. Extensions like `openai_tts_python` and
-`humeai_tts_python` set this to `False`.
+checks `ENABLE_SAMPLE_RATE` env var. Extensions like `openai_tts_python`,
+`openai_tts2_python`, and `humeai_tts_python` set this to `False`.
+
+### Vendor-Specific Notes
+
+- Not every TTS vendor supports subtitle alignment or word timestamps.
+- If a vendor does not expose that data, document the gap clearly and treat
+  `test_subtitle_alignment` as out of scope rather than forcing fake support.
 
 ---
 
-## ASR Guarder Tests (10 Tests, 1 Skipped)
+## ASR Guarder Tests (10 Tests, 1 Excluded by Test Runner)
 
 **Location**: `agents/integration_tests/asr_guarder/`
 
@@ -168,7 +188,7 @@ checks `ENABLE_SAMPLE_RATE` env var. Extensions like `openai_tts_python` and
 | 7 | `test_dump` | Audio dump functionality | Dump files created with correct data |
 | 8 | `test_metrics` | TTFW and TTLW metrics | TTFW > 0, TTLW > TTFW, both in milliseconds |
 | 9 | `test_audio_timestamp` | start_ms and duration_ms accuracy | Timestamps accurate within tolerance |
-| 10 | `test_long_duration_stream` | **SKIPPED** — 5+ min stream | No timeout or connection drop |
+| 10 | `test_long_duration_stream` | **Excluded by default test runner** — 5+ min stream | No timeout or connection drop |
 
 ### Critical ASR Invariants
 
