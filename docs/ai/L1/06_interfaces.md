@@ -160,6 +160,11 @@ Extensions declare their API interface in `manifest.json`:
 
 Interface JSON files define the standard cmd/data/audio_frame schemas for each extension type.
 
+## Portal References
+
+- [API Events Reference](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/api-reference/events.mdx) [EXTERNAL] — REST event types and payloads
+- [API Schemas Reference](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/api-reference/schemas.mdx) [EXTERNAL] — request/response schema definitions
+
 ## Related Deep Dives
 
 - [Extension Development](deep_dives/extension_development.md) — Implementing abstract methods

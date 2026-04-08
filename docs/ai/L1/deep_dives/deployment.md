@@ -200,6 +200,10 @@ Push mode sends logs to Loki for centralized querying:
 4. Kill any zombie worker processes on host
 5. Verify with `/health` and `/graphs` endpoints
 
+## Portal References
+
+- [Deploy Agent Service](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/deploy_ten_agent/deploy_agent_service.md) [EXTERNAL] — official deployment guide
+
 ## See Also
 
 - [Back to Setup](../01_setup.md)

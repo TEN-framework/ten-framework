@@ -691,6 +691,7 @@ class MyBridge(AsyncExtension):
 - [Create a TTS Extension (89K)](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/extension_dev/create_tts_extension.mdx) [EXTERNAL]
 - [Create an ASR Extension (39K)](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/extension_dev/create_asr_extension.mdx) [EXTERNAL]
 - [Create a Hello World Extension](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/extension_dev/create_hello_world_extension.mdx) [EXTERNAL]
+- [How Interrupt (Flush) Works](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/tutorials/how_does_interrupt_work.md) [EXTERNAL] — cancel/flush flow explained end-to-end
 
 ## See Also
 

@@ -419,6 +419,8 @@ tts --pcm_frame--> agora_rtc
 
 - [Understanding property.json](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/project_structure/property_json.md) [EXTERNAL]
 - [Customize Agent via Code](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/customize_agent/modify-main/index.mdx) [EXTERNAL]
+- [Graph Concepts (official)](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_framework/(latest)/graph/graph.md) [EXTERNAL] — message routing, connection semantics
+- [Message System](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_framework/(latest)/message_system.md) [EXTERNAL] — cmd/data/audio_frame type definitions
 
 ## See Also
 
