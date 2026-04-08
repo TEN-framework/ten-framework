@@ -320,11 +320,17 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     )
 
             elif event_status == EVENT_TTS_END:
-                self.ten_env.log_info(
-                    "Received TTS_END event from Deepgram TTS"
-                )
                 if t.text_input_end:
+                    self.ten_env.log_info(
+                        f"Received final TTS_END event from Deepgram TTS "
+                        f"for request_id: {t.request_id}"
+                    )
                     await self._finalize_request(TTSAudioEndReason.REQUEST_END)
+                else:
+                    self.ten_env.log_debug(
+                        f"Received intermediate TTS_END event from "
+                        f"Deepgram TTS for request_id: {t.request_id}"
+                    )
                 break
 
             elif event_status == EVENT_TTS_ERROR:

@@ -4,7 +4,8 @@
 # See the LICENSE file for more information.
 #
 import json
-from unittest.mock import patch, AsyncMock
+from urllib.parse import parse_qs, urlparse
+from unittest.mock import patch, AsyncMock, MagicMock
 
 
 from ten_runtime import (
@@ -18,7 +19,8 @@ from deepgram_tts.deepgram_tts import (
     EVENT_TTS_END,
     EVENT_TTS_TTFB_METRIC,
 )
-from unittest.mock import MagicMock
+from deepgram_tts.config import DeepgramTTSConfig
+from deepgram_tts.deepgram_tts import DeepgramTTSClient
 
 
 def create_mock_client():
@@ -36,6 +38,37 @@ def create_mock_client():
 
     mock.get.side_effect = mock_get
     return mock
+
+
+def test_params_passthrough():
+    """Additional Deepgram params should be appended to the websocket URL."""
+    config = DeepgramTTSConfig(
+        params={
+            "api_key": "test_api_key",
+            "base_url": "wss://api.deepgram.com/v1/speak",
+            "model": "aura-2-thalia-en",
+            "encoding": "linear16",
+            "sample_rate": 24000,
+            "bit_rate": 64000,
+            "container": "none",
+        }
+    )
+    config.update_params()
+
+    client = DeepgramTTSClient(config=config, ten_env=MagicMock())
+    parsed = urlparse(client._ws_url)
+    query = parse_qs(parsed.query)
+
+    assert parsed.scheme == "wss"
+    assert parsed.netloc == "api.deepgram.com"
+    assert parsed.path == "/v1/speak"
+    assert query["model"] == ["aura-2-thalia-en"]
+    assert query["encoding"] == ["linear16"]
+    assert query["sample_rate"] == ["24000"]
+    assert query["bit_rate"] == ["64000"]
+    assert query["container"] == ["none"]
+    assert "api_key" not in query
+    assert "base_url" not in query
 
 
 # ================ test different sample rates ================

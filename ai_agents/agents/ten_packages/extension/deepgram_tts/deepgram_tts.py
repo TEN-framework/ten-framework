@@ -7,6 +7,7 @@ import asyncio
 import json
 from datetime import datetime
 from typing import AsyncIterator
+from urllib.parse import urlencode
 
 import websockets
 from websockets.asyncio.client import ClientConnection
@@ -65,12 +66,20 @@ class DeepgramTTSClient:
 
     def _build_ws_url(self) -> str:
         base = self.config.base_url
-        params = (
-            f"model={self.config.model}"
-            f"&encoding={self.config.encoding}"
-            f"&sample_rate={self.config.sample_rate}"
-        )
-        return f"{base}?{params}"
+        query_params: dict[str, str | int | float | bool] = {
+            "model": self.config.model,
+            "encoding": self.config.encoding,
+            "sample_rate": self.config.sample_rate,
+        }
+
+        # Forward any additional Deepgram vendor params through the websocket
+        # query string while keeping auth and endpoint configuration out of it.
+        for key, value in self.config.params.items():
+            if key in {"api_key", "base_url"} or value is None:
+                continue
+            query_params[key] = value
+
+        return f"{base}?{urlencode(query_params, doseq=True)}"
 
     async def start(self) -> None:
         """Preheat: establish initial connection."""

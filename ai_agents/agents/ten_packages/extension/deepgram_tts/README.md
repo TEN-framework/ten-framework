@@ -22,6 +22,7 @@ A TEN Framework extension that provides Text-to-Speech (TTS) capabilities using 
 | `params.encoding` | string | `linear16` | Audio encoding format |
 | `params.sample_rate` | int | `24000` | Output sample rate in Hz |
 | `params.base_url` | string | `wss://api.deepgram.com/v1/speak` | WebSocket endpoint |
+| `params.<deepgram_query_param>` | scalar | Optional | Additional Deepgram websocket query parameters passed through to the vendor |
 | `dump` | bool | `false` | Enable audio dumping |
 | `dump_path` | string | `/tmp` | Path for audio dump files |
 
@@ -33,12 +34,17 @@ A TEN Framework extension that provides Text-to-Speech (TTS) capabilities using 
     "api_key": "${env:DEEPGRAM_API_KEY}",
     "model": "aura-2-thalia-en",
     "encoding": "linear16",
-    "sample_rate": 24000
+    "sample_rate": 24000,
+    "container": "none"
   },
   "dump": false,
   "dump_path": "/tmp"
 }
 ```
+
+Known extension-owned keys such as `api_key`, `base_url`, `model`, `encoding`,
+and `sample_rate` are normalized onto the config object. Any remaining scalar
+keys under `params` are appended to the Deepgram websocket query string.
 
 ## Available Voice Models
 
