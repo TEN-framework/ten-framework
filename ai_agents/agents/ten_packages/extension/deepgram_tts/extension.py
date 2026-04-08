@@ -302,6 +302,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if data_msg is not None and isinstance(data_msg, int):
+                    # Overwrite sent_ts to audio-start time so that
+                    # _current_request_interval_ms() measures streaming
+                    # duration (first audio → last audio), not total
+                    # request time. This matches the HTTP base class.
                     self.sent_ts = datetime.now()
                     ttfb = data_msg
                     await self.send_tts_audio_start(

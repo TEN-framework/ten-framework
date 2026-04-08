@@ -17,7 +17,8 @@ from .config import DeepgramTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
-# Event types communicated back to the extension
+# Event types communicated back to the extension.
+# 4 is reserved (used by other TTS extensions for flush events).
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
