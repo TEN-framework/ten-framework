@@ -52,7 +52,7 @@ def detect_arch() -> str:
 def run_cmd(cmd: str) -> int:
     """Run a shell command."""
     print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True)
+    result = subprocess.run(cmd, shell=False, check=True)
     return result.returncode
 
 
