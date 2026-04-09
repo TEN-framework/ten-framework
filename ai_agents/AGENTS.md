@@ -509,7 +509,7 @@ Required `.env` variables depend on extensions used. Common ones:
 - `DEEPGRAM_API_KEY`, `AZURE_ASR_API_KEY`, `AZURE_ASR_REGION`
 
 **TTS:**
-- `ELEVENLABS_TTS_KEY`, `AZURE_TTS_KEY`, `AZURE_TTS_REGION`
+- `ELEVENLABS_TTS_KEY`, `AZURE_TTS_KEY`, `AZURE_TTS_REGION`, `SILICONFLOW_API_KEY`
 
 See `.env.example` for complete list.
 
