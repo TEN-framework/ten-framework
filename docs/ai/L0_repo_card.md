@@ -1,5 +1,7 @@
 # TEN Framework — Repo Card
 
+> Open-source platform for building real-time multimodal AI agents
+
 ## Identity
 
 | Field         | Value                                                                |
