@@ -41,4 +41,3 @@ agents work efficiently. Documentation is structured in three levels under
 
 - `ai_agents/` — primary area for agents, examples, server, integrations
 - `core/`, `packages/`, `build/` — framework internals
-- `ai_agents/AGENTS.md` — workspace-specific guidance for `ai_agents/`
