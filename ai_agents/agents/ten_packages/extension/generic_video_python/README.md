@@ -52,6 +52,6 @@ tests/bin/start
 
 ## Misc
 
-This package is validated against the checked-out provider contract in
-`/home/ubuntu/convoai_to_video`, but the tests use local fixtures and mocks
-rather than importing that repo directly.
+This package is validated against the checked-out `convoai_to_video`
+reference contract, but the tests use local fixtures and mocks rather than
+importing that repo directly.
