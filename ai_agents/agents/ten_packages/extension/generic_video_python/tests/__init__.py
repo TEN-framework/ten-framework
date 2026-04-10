@@ -3,7 +3,3 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-try:
-    from . import addon
-except ModuleNotFoundError:
-    addon = None

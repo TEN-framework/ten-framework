@@ -1,10 +1,14 @@
+import asyncio
+import hashlib
 import json
 import os
-import uuid
-import asyncio
-import requests
-import websockets
 import random
+import tempfile
+import uuid
+from typing import Any
+
+import httpx
+import websockets
 
 from time import time
 from agora_token_builder import RtcTokenBuilder
@@ -31,8 +35,6 @@ SPEAK_END_TIMEOUT = 0.5  # seconds
 
 
 class AgoraGenericRecorder:
-    SESSION_CACHE_PATH = "/tmp/generic_session_id.txt"
-
     def __init__(
         self,
         app_id: str,
@@ -45,13 +47,16 @@ class AgoraGenericRecorder:
         quality: str,
         version: str,
         video_encoding: str,
+        area: str,
         enable_string_uid: bool,
         start_endpoint: str,
         stop_endpoint: str,
         activity_idle_timeout: int,
+        http_client: httpx.AsyncClient | None = None,
+        session_cache_path: str | None = None,
     ):
         # Validate required fields
-        self._validate_config(app_id, api_key, avatar_id)
+        self._validate_config(app_id, api_key, avatar_id, channel_name)
 
         self.app_id = app_id
         self.app_cert = app_cert
@@ -63,36 +68,48 @@ class AgoraGenericRecorder:
         self.quality = quality
         self.version = version
         self.video_encoding = video_encoding
+        self.area = area
         self.enable_string_uid = enable_string_uid
         self.start_endpoint = start_endpoint
         self.stop_endpoint = stop_endpoint
         self.activity_idle_timeout = activity_idle_timeout
 
         self.token_server = self._generate_token(self.uid_avatar, 1)
+        self.session_cache_path = session_cache_path or self._build_cache_path()
 
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
             "x-api-key": self.api_key,
         }
+        self.http_client = http_client or httpx.AsyncClient(timeout=30.0)
+        self._owns_http_client = http_client is None
         self.session_id = None
         self.session_token = None
         self.realtime_endpoint = None
         self.websocket = None
         self.websocket_task = None
         self.heartbeat_task = None
+        self.listener_task = None
         self._should_reconnect = True
         self._connection_broken = False  # Flag to trigger reconnection
 
         self._speak_end_timer_task: asyncio.Task | None = None
         self._speak_end_event = asyncio.Event()
 
-    def _validate_config(self, app_id: str, api_key: str, avatar_id: str):
+    def _validate_config(
+        self,
+        app_id: str,
+        api_key: str,
+        avatar_id: str,
+        channel_name: str,
+    ):
         """Validate required configuration parameters."""
         required_fields = {
             "app_id": app_id,
             "api_key": api_key,
             "avatar_id": avatar_id,
+            "channel_name": channel_name,
         }
 
         for field_name, value in required_fields.items():
@@ -117,21 +134,120 @@ class AgoraGenericRecorder:
             privilege_expired_ts,
         )
 
-    def _load_cached_session_id(self):
-        if os.path.exists(self.SESSION_CACHE_PATH):
-            with open(self.SESSION_CACHE_PATH, "r", encoding="utf-8") as f:
-                return f.read().strip()
+    def _build_cache_path(self) -> str:
+        fingerprint = hashlib.sha1(
+            "|".join(
+                [
+                    self.start_endpoint,
+                    self.stop_endpoint,
+                    self.channel_name,
+                    str(self.uid_avatar),
+                    self.avatar_id,
+                ]
+            ).encode("utf-8")
+        ).hexdigest()[:12]
+        return os.path.join(
+            tempfile.gettempdir(),
+            f"generic_video_session_{fingerprint}.json",
+        )
+
+    def _load_cached_session(self) -> dict[str, str] | None:
+        if os.path.exists(self.session_cache_path):
+            with open(self.session_cache_path, "r", encoding="utf-8") as f:
+                raw = f.read().strip()
+            if not raw:
+                return None
+            try:
+                data = json.loads(raw)
+                if isinstance(data, dict):
+                    return {
+                        "session_id": str(data.get("session_id", "")),
+                        "session_token": str(data.get("session_token", "")),
+                    }
+            except json.JSONDecodeError:
+                return {"session_id": raw, "session_token": ""}
         return None
 
-    def _save_session_id(self, session_id: str):
-        with open(self.SESSION_CACHE_PATH, "w", encoding="utf-8") as f:
-            f.write(session_id)
+    def _save_session(self, session_id: str, session_token: str):
+        with open(self.session_cache_path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "session_id": session_id,
+                    "session_token": session_token,
+                },
+                f,
+            )
 
-    def _clear_session_id_cache(self):
-        if os.path.exists(self.SESSION_CACHE_PATH):
-            os.remove(self.SESSION_CACHE_PATH)
+    def _clear_session_cache(self):
+        if os.path.exists(self.session_cache_path):
+            os.remove(self.session_cache_path)
 
-    def get_connection_status(self) -> dict[str, any]:
+    def _masked_headers(
+        self, headers: dict[str, str] | None = None
+    ) -> dict[str, str]:
+        safe_headers = dict(headers or self.headers)
+        if safe_headers.get("x-api-key"):
+            safe_headers["x-api-key"] = "***masked***"
+        if safe_headers.get("authorization"):
+            safe_headers["authorization"] = "Bearer ***masked***"
+        return safe_headers
+
+    def _build_start_payload(self) -> dict[str, Any]:
+        return {
+            "avatar_id": self.avatar_id,
+            "quality": self.quality,
+            "version": self.version,
+            "video_encoding": self.video_encoding,
+            "activity_idle_timeout": self.activity_idle_timeout,
+            "area": self.area,
+            "agora_settings": {
+                "app_id": self.app_id,
+                "token": self.token_server,
+                "channel": self.channel_name,
+                "uid": str(self.uid_avatar),
+                "enable_string_uid": self.enable_string_uid,
+            },
+        }
+
+    def _build_init_payload(self) -> dict[str, Any]:
+        return {
+            "command": "init",
+            "session_id": self.session_id,
+            "avatar_id": self.avatar_id,
+            "quality": self.quality,
+            "version": self.version,
+            "video_encoding": self.video_encoding,
+            "activity_idle_timeout": self.activity_idle_timeout,
+            "area": self.area,
+            "agora_settings": {
+                "app_id": self.app_id,
+                "token": self.token_server,
+                "channel": self.channel_name,
+                "uid": str(self.uid_avatar),
+                "enable_string_uid": self.enable_string_uid,
+            },
+        }
+
+    def _build_stop_payload(
+        self,
+        session_id: str,
+        session_token: str | None = None,
+    ) -> dict[str, str]:
+        token = session_token or self.session_token or ""
+        if not token:
+            raise ValueError("session_token is required to stop a session")
+        return {
+            "session_id": session_id,
+            "session_token": token,
+        }
+
+    def _websocket_headers(self) -> dict[str, str]:
+        headers: dict[str, str] = {}
+        if self.session_token:
+            headers["authorization"] = f"Bearer {self.session_token}"
+        return headers
+
+    def get_connection_status(self) -> dict[str, Any]:
         """Get current connection status and information."""
         return {
             "connected": self.websocket is not None,
@@ -142,21 +258,32 @@ class AgoraGenericRecorder:
 
     async def connect(self):
         # Check and stop old session if needed
-        old_session_id = self._load_cached_session_id()
-        if old_session_id:
+        old_session = self._load_cached_session()
+        if old_session and old_session.get("session_id"):
             try:
-                self.ten_env.log_info(
-                    f"Found previous session id: {old_session_id}, attempting to stop it."
-                )
-                await self._stop_session(old_session_id)
-                self.ten_env.log_info("Previous session stopped.")
-                self._clear_session_id_cache()
+                old_session_token = old_session.get("session_token", "")
+                if old_session_token:
+                    self.ten_env.log_info(
+                        "Found previous cached session, attempting to stop it."
+                    )
+                    await self._stop_session(
+                        old_session["session_id"],
+                        session_token=old_session_token,
+                    )
+                    self.ten_env.log_info("Previous session stopped.")
+                else:
+                    self.ten_env.log_warn(
+                        "Found legacy cached session without session_token. "
+                        "Clearing cache because stop endpoint now requires both "
+                        "session_id and session_token."
+                    )
+                self._clear_session_cache()
             except Exception as e:
                 self.ten_env.log_error(f"Failed to stop old session: {e}")
 
         try:
             await self._create_session()
-            self._save_session_id(self.session_id)
+            self._save_session(self.session_id, self.session_token)
 
             # Start WebSocket connection
             self.websocket_task = asyncio.create_task(
@@ -203,6 +330,17 @@ class AgoraGenericRecorder:
                     f"Error while cancelling WebSocket task: {e}"
                 )
 
+        if self.listener_task:
+            self.listener_task.cancel()
+            try:
+                await self.listener_task
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error while cancelling listener task: {e}"
+                )
+
         # Stop session
         if self.session_id:
             try:
@@ -213,32 +351,24 @@ class AgoraGenericRecorder:
                     code=ERROR_CODE_FAILED_TO_STOP_SESSION,
                 )
 
+        if self._owns_http_client:
+            await self.http_client.aclose()
+
         self.ten_env.log_info("Disconnection completed")
 
     async def _create_session(self):
-        payload = {
-            "avatar_id": self.avatar_id,
-            "quality": self.quality,
-            "version": self.version,
-            "video_encoding": self.video_encoding,
-            "activity_idle_timeout": self.activity_idle_timeout,
-            "agora_settings": {
-                "app_id": self.app_id,
-                "token": self.token_server,
-                "channel": self.channel_name,
-                "uid": str(self.uid_avatar),
-                "enable_string_uid": self.enable_string_uid,
-            },
-        }
+        payload = self._build_start_payload()
 
         # Log the request details using existing logging mechanism
         self.ten_env.log_info("Creating new session with details:")
         self.ten_env.log_info(f"URL: {self.start_endpoint}")
-        self.ten_env.log_info(f"Headers: {json.dumps(self.headers, indent=2)}")
+        self.ten_env.log_info(
+            f"Headers: {json.dumps(self._masked_headers(), indent=2)}"
+        )
         self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
 
-        response = requests.post(
-            self.start_endpoint, json=payload, headers=self.headers, timeout=30
+        response = await self.http_client.post(
+            self.start_endpoint, json=payload, headers=self.headers
         )
         await self._raise_for_status_verbose(response)
         data = response.json()
@@ -258,7 +388,7 @@ class AgoraGenericRecorder:
     async def _raise_for_status_verbose(self, response):
         try:
             response.raise_for_status()
-        except requests.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             # Try to parse JSON error response
             error_details = f"HTTP {response.status_code} Error: {e}"
             try:
@@ -282,30 +412,32 @@ class AgoraGenericRecorder:
             )
             raise
 
-    async def _stop_session(self, session_id: str):
+    async def _stop_session(
+        self,
+        session_id: str,
+        session_token: str | None = None,
+    ):
         try:
-            # Payload contains only session_id
-            payload = {"session_id": session_id}
-
-            # Add session token to headers for authentication
-            headers = self.headers.copy()
-            if self.session_token:
-                headers["authorization"] = f"Bearer {self.session_token}"
+            payload = self._build_stop_payload(
+                session_id,
+                session_token=session_token,
+            )
 
             self.ten_env.log_info("_stop_session with details:")
             self.ten_env.log_info(f"URL: {self.stop_endpoint}")
             self.ten_env.log_info(
-                f"Headers: {json.dumps({k: v for k, v in headers.items() if k != 'authorization'}, indent=2)}"
+                f"Headers: {json.dumps(self._masked_headers(), indent=2)}"
             )
-            self.ten_env.log_info("Authorization: Bearer ***masked***")
             self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
 
-            # Use DELETE method as specified in API documentation
-            response = requests.delete(
-                self.stop_endpoint, json=payload, headers=headers, timeout=30
+            response = await self.http_client.request(
+                "DELETE",
+                self.stop_endpoint,
+                json=payload,
+                headers=self.headers,
             )
             await self._raise_for_status_verbose(response)
-            self._clear_session_id_cache()
+            self._clear_session_cache()
         except Exception as e:
             self.ten_env.log_error(f"Failed to stop session: {e}")
             raise
@@ -345,12 +477,8 @@ class AgoraGenericRecorder:
                     f"Connecting to WebSocket at {self.realtime_endpoint} (attempt {attempt + 1})"
                 )
 
-                # Prepare WebSocket headers with session token (same as test scripts)
-                headers = {}
-                if self.session_token:
-                    headers["authorization"] = f"Bearer {self.session_token}"
+                headers = self._websocket_headers()
 
-                # Use additional_headers for WebSocket authentication (websockets 10.4)
                 async with websockets.connect(
                     self.realtime_endpoint, additional_headers=headers
                 ) as websocket:
@@ -363,29 +491,15 @@ class AgoraGenericRecorder:
                         "WebSocket connected successfully with headers"
                     )
 
-                    # Send initial configuration payload with init command
-                    initial_payload = {
-                        "command": "init",
-                        "session_id": self.session_id,
-                        "avatar_id": self.avatar_id,
-                        "quality": self.quality,
-                        "version": self.version,
-                        "video_encoding": self.video_encoding,
-                        "activity_idle_timeout": self.activity_idle_timeout,
-                        "agora_settings": {
-                            "app_id": self.app_id,
-                            "token": self.token_server,
-                            "channel": self.channel_name,
-                            "uid": str(self.uid_avatar),
-                            "enable_string_uid": self.enable_string_uid,
-                        },
-                    }
+                    initial_payload = self._build_init_payload()
 
                     await self.websocket.send(json.dumps(initial_payload))
                     self.ten_env.log_info("Sent initial configuration payload")
 
                     # Start listening for messages
-                    asyncio.create_task(self._listen_for_messages())
+                    self.listener_task = asyncio.create_task(
+                        self._listen_for_messages()
+                    )
 
                     # Wait for connection to be broken or cancelled
                     while (
@@ -400,6 +514,13 @@ class AgoraGenericRecorder:
                 attempt += 1
                 await self._handle_connection_error(e, attempt)
             finally:
+                if self.listener_task and not self.listener_task.done():
+                    self.listener_task.cancel()
+                    try:
+                        await self.listener_task
+                    except asyncio.CancelledError:
+                        pass
+                self.listener_task = None
                 self.websocket = None
 
     async def _handle_connection_error(
@@ -435,11 +556,11 @@ class AgoraGenericRecorder:
             )
             try:
                 # Clear old session cache
-                self._clear_session_id_cache()
+                self._clear_session_cache()
 
                 # Create a new session
                 await self._create_session()
-                self._save_session_id(self.session_id)
+                self._save_session(self.session_id, self.session_token)
 
                 self.ten_env.log_info(f"New session created: {self.session_id}")
                 # Continue with normal delay logic instead of immediate retry
