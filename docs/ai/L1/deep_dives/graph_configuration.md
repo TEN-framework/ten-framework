@@ -213,7 +213,7 @@ receive the dynamic channel name without code changes.
 
 1. Add a new entry to `predefined_graphs[]` in the example's `tenapp/property.json`
 2. Ensure all referenced extensions are listed in `tenapp/manifest.json`
-3. Run `tman install` to create symlinks for new dependencies
+3. Run `task install` (not bare `tman install` — it can wipe `bin/worker`)
 4. **Nuclear restart** required (frontend caches the graph list)
 
 ## Generating property.json with rebuild_property.py
@@ -326,20 +326,28 @@ For simple single-graph setups, editing property.json directly is fine.
 
 ## Manifest.json Dependencies
 
-When adding an extension to a graph, ensure its dependency is in `manifest.json`:
+When adding an extension to a graph, ensure its dependency is in `manifest.json`.
+Local extensions in this repo use path-based dependencies:
 
 ```json
 {
   "dependencies": [
-    {"type": "extension", "name": "my_vendor_tts_python", "version": "0.1.0"}
+    {"path": "../../../ten_packages/extension/my_vendor_tts_python"}
   ]
 }
 ```
 
-Then run:
-```bash
-docker exec ten_agent_dev bash -c "cd /app/agents/examples/<example>/tenapp && tman install"
+Published extensions use version-based dependencies:
+
+```json
+{
+  "dependencies": [
+    {"type": "extension", "name": "agora_rtc", "version": "=0.23.9-t1"}
+  ]
+}
 ```
+
+Then run `task install` (not bare `tman install` — it can wipe `bin/worker`).
 
 ## Main Extension Customization
 

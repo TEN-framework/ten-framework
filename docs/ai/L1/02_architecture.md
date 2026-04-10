@@ -47,18 +47,20 @@ which extensions run (nodes) and how data flows between them (connections).
 
 ```json
 {
-  "predefined_graphs": [{
-    "name": "voice_assistant",
-    "auto_start": true,
-    "graph": {
-      "nodes": [
-        {"type": "extension", "name": "stt", "addon": "deepgram_asr_python", "property": {}},
-        {"type": "extension", "name": "llm", "addon": "openai_llm2_python", "property": {}},
-        {"type": "extension", "name": "tts", "addon": "elevenlabs_tts2_python", "property": {}}
-      ],
-      "connections": [...]
-    }
-  }]
+  "ten": {
+    "predefined_graphs": [{
+      "name": "voice_assistant",
+      "auto_start": true,
+      "graph": {
+        "nodes": [
+          {"type": "extension", "name": "stt", "addon": "deepgram_asr_python", "property": {}},
+          {"type": "extension", "name": "llm", "addon": "openai_llm2_python", "property": {}},
+          {"type": "extension", "name": "tts", "addon": "elevenlabs_tts2_python", "property": {}}
+        ],
+        "connections": [...]
+      }
+    }]
+  }
 }
 ```
 

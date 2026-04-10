@@ -58,9 +58,9 @@ For full walkthrough with code and guarder expectations, see
     "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}]}
    ```
 
-3. **Add dependency** to example `tenapp/manifest.json`:
+3. **Add dependency** to example `tenapp/manifest.json` (local extensions use path):
    ```json
-   {"type": "extension", "name": "my_tts_python", "version": "0.1.0"}
+   {"path": "../../../ten_packages/extension/my_tts_python"}
    ```
 
 4. **Install** (use `task install`, not just `tman install` — the latter can wipe `bin/worker`):
