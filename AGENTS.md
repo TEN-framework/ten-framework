@@ -21,13 +21,27 @@ agents work efficiently. Documentation is structured in three levels under
 
 ## Git Conventions
 
-- **Lowercase start** — commit messages begin with a lowercase letter
-- **No AI tool names** — never mention claude, cursor, copilot, cody, aider,
-  gemini, codex, chatgpt, or gpt-3/4
+### Commit messages — conventional commits
+
+- **Format:** `type: description` or `type(scope): description`
+- **Types:** `feat:` (new feature), `fix:` (bug fix), `chore:` (maintenance, version bumps), `test:` (test additions/changes), `docs:` (documentation)
+- **Scoped variant:** `feat(scope):`, `fix(scope):` — e.g. `feat(auth): add token refresh`
+- **Lowercase after prefix** — `feat: add feature`, not `feat: Add feature`
 - **Present tense** — "add feature", not "added feature"
+- **PR number appended** — `feat: add feature (#123)`
+
+### Branch names
+
+- **Format:** `type/short-description` — lowercase, hyphen-separated
+- **Types match commit types:** `feat/`, `fix/`, `chore/`, `test/`, `docs/`
+- **Examples:** `feat/token-refresh`, `fix/null-pointer`, `docs/progressive-disclosure`
+
+### General rules
+
+- **No AI tool names** — never mention claude, cursor, copilot, cody, aider, gemini, codex, chatgpt, or gpt-3/4
 - **No Co-Authored-By trailers** — omit AI attribution lines
 - **No --no-verify** — let git hooks run normally
-- **No git config changes** — do not modify `user.name` or `user.email`
+- **No git config changes** — do not modify user.name or user.email
 
 ## Doc Commands
 

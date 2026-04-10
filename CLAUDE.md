@@ -1,1 +1,1 @@
-Read @AGENTS.md for AI agent instructions and progressive disclosure docs.
+Read @AGENTS.md for AI agent instructions, git conventions, and progressive disclosure docs.
