@@ -13,5 +13,6 @@
     "area": "GLOBAL",
     "start_endpoint": "https://api.example.com/v1/sessions/start",
     "stop_endpoint": "https://api.example.com/v1/sessions/stop",
-    "input_audio_sample_rate": 16000
+    "input_audio_sample_rate": 16000,
+    "params": {}
 }

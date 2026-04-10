@@ -50,6 +50,7 @@ def create_recorder(
     *,
     http_client: httpx.AsyncClient | None = None,
     session_cache_path: str | None = None,
+    vendor_params: dict | None = None,
 ) -> AgoraGenericRecorder:
     return AgoraGenericRecorder(
         app_id="appid",
@@ -67,13 +68,14 @@ def create_recorder(
         start_endpoint="https://example.test/session/start",
         stop_endpoint="https://example.test/session/stop",
         activity_idle_timeout=120,
+        vendor_params=vendor_params,
         http_client=http_client,
         session_cache_path=session_cache_path,
     )
 
 
 def test_start_and_init_payloads_match_contract():
-    recorder = create_recorder()
+    recorder = create_recorder(vendor_params={"model": "vendor-model-1"})
     recorder.session_id = "session-1"
 
     start_payload = recorder._build_start_payload()
@@ -82,9 +84,11 @@ def test_start_and_init_payloads_match_contract():
     assert start_payload["area"] == "NORTH_AMERICA"
     assert start_payload["agora_settings"]["channel"] == "room-a"
     assert start_payload["agora_settings"]["uid"] == "321"
+    assert start_payload["model"] == "vendor-model-1"
     assert init_payload["command"] == "init"
     assert init_payload["session_id"] == "session-1"
     assert init_payload["area"] == "NORTH_AMERICA"
+    assert init_payload["model"] == "vendor-model-1"
 
 
 def test_stop_payload_requires_session_token():
@@ -154,12 +158,17 @@ def test_create_session_sends_area_and_parses_response():
 
     async def _run():
         client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-        recorder = create_recorder(http_client=client)
+        recorder = create_recorder(
+            http_client=client,
+            vendor_params={"model": "vendor-model-1", "style": "studio"},
+        )
         await recorder._create_session()
         await client.aclose()
 
         assert captured["json"]["area"] == "NORTH_AMERICA"
         assert captured["json"]["activity_idle_timeout"] == 120
+        assert captured["json"]["model"] == "vendor-model-1"
+        assert captured["json"]["style"] == "studio"
         assert captured["headers"]["x-api-key"] == "api-key"
         assert recorder.session_id == "session-1"
         assert recorder.realtime_endpoint == "ws://example.test/ws"

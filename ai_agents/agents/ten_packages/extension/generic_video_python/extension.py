@@ -70,6 +70,7 @@ class GenericVideoExtension(AsyncExtension):
                 enable_string_uid=self.config.enable_string_uid,
                 start_endpoint=self.config.start_endpoint,
                 stop_endpoint=self.config.stop_endpoint,
+                vendor_params=self.config.vendor_params,
             )
 
             self.recorder = recorder

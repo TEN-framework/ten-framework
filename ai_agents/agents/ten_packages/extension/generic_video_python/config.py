@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import copy
+from typing import Any
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from ten_ai_base import utils
@@ -22,6 +23,29 @@ VALID_AREAS = {
     "INDIA",
     "JAPAN",
 }
+
+_PARAM_FIELD_ALIASES: dict[str, str] = {
+    "api_key": "generic_video_api_key",
+    "generic_video_api_key": "generic_video_api_key",
+    "agora_appid": "agora_appid",
+    "agora_appcert": "agora_appcert",
+    "channel": "channel",
+    "agora_channel_name": "channel",
+    "agora_avatar_uid": "agora_avatar_uid",
+    "agora_video_uid": "agora_avatar_uid",
+    "avatar_id": "avatar_id",
+    "quality": "quality",
+    "version": "version",
+    "video_encoding": "video_encoding",
+    "enable_string_uid": "enable_string_uid",
+    "activity_idle_timeout": "activity_idle_timeout",
+    "area": "area",
+    "start_endpoint": "start_endpoint",
+    "stop_endpoint": "stop_endpoint",
+    "input_audio_sample_rate": "input_audio_sample_rate",
+}
+
+_PASSTHROUGH_EXCLUDED_KEYS = set(_PARAM_FIELD_ALIASES)
 
 
 class GenericVideoConfig(BaseModel):
@@ -51,6 +75,7 @@ class GenericVideoConfig(BaseModel):
     start_endpoint: str = "https://api.example.com/v1/sessions/start"
     stop_endpoint: str = "https://api.example.com/v1/sessions/stop"
     input_audio_sample_rate: int = 48000
+    params: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
     async def create_async(
@@ -58,8 +83,24 @@ class GenericVideoConfig(BaseModel):
     ) -> "GenericVideoConfig":
         config_json, _ = await ten_env.get_property_to_json("")
         config = cls.model_validate_json(config_json or "{}")
+        config.normalize_params()
         config.validate_required()
         return config
+
+    def normalize_params(self) -> None:
+        params = self._ensure_dict(self.params)
+        normalized_params: dict[str, Any] = {}
+
+        for key, value in params.items():
+            if value is None:
+                continue
+            field_name = _PARAM_FIELD_ALIASES.get(key)
+            if field_name:
+                setattr(self, field_name, value)
+                continue
+            normalized_params[key] = value
+
+        self.params = normalized_params
 
     def validate_required(self) -> None:
         required_fields = {
@@ -86,7 +127,17 @@ class GenericVideoConfig(BaseModel):
             config.generic_video_api_key = utils.encrypt(
                 config.generic_video_api_key
             )
+        if "api_key" in config.params and config.params["api_key"]:
+            config.params["api_key"] = utils.encrypt(config.params["api_key"])
         return f"{config}"
+
+    @property
+    def vendor_params(self) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in self.params.items()
+            if key not in _PASSTHROUGH_EXCLUDED_KEYS and value is not None
+        }
 
     @field_validator("quality")
     @classmethod
@@ -129,3 +180,11 @@ class GenericVideoConfig(BaseModel):
         if value <= 0:
             raise ValueError("input_audio_sample_rate must be > 0")
         return value
+
+    @staticmethod
+    def _ensure_dict(value: Any) -> dict[str, Any]:
+        if isinstance(value, dict):
+            return dict(value)
+        if value is None:
+            return {}
+        return dict(value)

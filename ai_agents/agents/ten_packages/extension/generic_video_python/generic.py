@@ -52,6 +52,7 @@ class AgoraGenericRecorder:
         start_endpoint: str,
         stop_endpoint: str,
         activity_idle_timeout: int,
+        vendor_params: dict[str, Any] | None = None,
         http_client: httpx.AsyncClient | None = None,
         session_cache_path: str | None = None,
     ):
@@ -73,6 +74,7 @@ class AgoraGenericRecorder:
         self.start_endpoint = start_endpoint
         self.stop_endpoint = stop_endpoint
         self.activity_idle_timeout = activity_idle_timeout
+        self.vendor_params = dict(vendor_params or {})
 
         self.token_server = self._generate_token(self.uid_avatar, 1)
         self.session_cache_path = session_cache_path or self._build_cache_path()
@@ -193,7 +195,7 @@ class AgoraGenericRecorder:
         return safe_headers
 
     def _build_start_payload(self) -> dict[str, Any]:
-        return {
+        payload = {
             "avatar_id": self.avatar_id,
             "quality": self.quality,
             "version": self.version,
@@ -208,9 +210,11 @@ class AgoraGenericRecorder:
                 "enable_string_uid": self.enable_string_uid,
             },
         }
+        payload.update(self.vendor_params)
+        return payload
 
     def _build_init_payload(self) -> dict[str, Any]:
-        return {
+        payload = {
             "command": "init",
             "session_id": self.session_id,
             "avatar_id": self.avatar_id,
@@ -227,6 +231,8 @@ class AgoraGenericRecorder:
                 "enable_string_uid": self.enable_string_uid,
             },
         }
+        payload.update(self.vendor_params)
+        return payload
 
     def _build_stop_payload(
         self,

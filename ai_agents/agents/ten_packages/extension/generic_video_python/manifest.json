@@ -65,6 +65,10 @@
         },
         "input_audio_sample_rate": {
           "type": "int64"
+        },
+        "params": {
+          "type": "object",
+          "properties": {}
         }
       }
     }

@@ -43,6 +43,38 @@ def test_config_masks_sensitive_fields():
     assert "******" in config_str or "*" in config_str
 
 
+def test_config_normalizes_known_params_and_keeps_vendor_passthrough():
+    config = GenericVideoConfig.model_validate(
+        {
+            "agora_appid": "appid",
+            "channel": "room-a",
+            "generic_video_api_key": "secret",
+            "avatar_id": "avatar",
+            "start_endpoint": "https://example.test/start",
+            "stop_endpoint": "https://example.test/stop",
+            "params": {
+                "api_key": "secret-2",
+                "agora_channel_name": "room-b",
+                "agora_video_uid": 77,
+                "area": "JAPAN",
+                "model": "vendor-model-1",
+                "style": "cinematic",
+            },
+        }
+    )
+
+    config.normalize_params()
+
+    assert config.generic_video_api_key == "secret-2"
+    assert config.channel == "room-b"
+    assert config.agora_avatar_uid == 77
+    assert config.area == "JAPAN"
+    assert config.vendor_params == {
+        "model": "vendor-model-1",
+        "style": "cinematic",
+    }
+
+
 @pytest.mark.parametrize("quality", ["bad", "HIGH", ""])
 def test_config_rejects_invalid_quality(quality: str):
     with pytest.raises(Exception):

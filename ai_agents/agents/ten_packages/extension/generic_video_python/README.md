@@ -30,10 +30,19 @@ Canonical properties:
 - `start_endpoint`
 - `stop_endpoint`
 - `input_audio_sample_rate`
+- `params`
 
 Backward-compatible aliases still accepted by the loader:
 - `agora_channel_name` -> `channel`
 - `agora_video_uid` -> `agora_avatar_uid`
+
+Vendor passthrough:
+- `params` can contain vendor-specific top-level fields
+- known keys are normalized onto the named config fields first
+- unknown keys are forwarded as top-level keys in both the session start body
+  and the WebSocket `init` message
+- `api_key` inside `params` is accepted as an alias for
+  `generic_video_api_key` and is not forwarded downstream
 
 ## Protocol Notes
 
