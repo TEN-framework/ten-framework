@@ -45,11 +45,15 @@ agents work efficiently. Documentation is structured in three levels under
 
 ## Doc Commands
 
-| Command       | When to Use                                  |
-| ------------- | -------------------------------------------- |
-| `generate docs` | No `docs/ai/` directory exists yet         |
-| `update docs` | Code changed since the `last_reviewed` date  |
-| `test docs`   | Verify docs give agents the right context    |
+| Command       | When to use                                   |
+| ------------- | --------------------------------------------- |
+| generate docs | no `docs/ai/` directory exists yet            |
+| update docs   | code changed since last `last_reviewed` date  |
+| test docs     | verify docs give agents the right context     |
+
+For detailed procedures, read
+[progressive-disclosure-standard.md](docs/progressive-disclosure-standard.md)
+sections 6 (generate) and 7 (bootstrap).
 
 ## Working Areas
 
