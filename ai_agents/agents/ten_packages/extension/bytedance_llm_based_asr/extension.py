@@ -305,7 +305,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         #     ):
         #         return True  # Still consider connected during finalize grace period
 
-        return self.connected and self.client is not None
+        return (
+            self.connected and self.client is not None and self.client.connected
+        )
 
     @override
     async def send_audio(
@@ -351,6 +353,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return True
 
         except Exception as e:
+            if self.stopped:
+                return False
             self.ten_env.log(LogLevel.ERROR, f"Error sending audio: {e}")
             await self._handle_error(e)
             return False
