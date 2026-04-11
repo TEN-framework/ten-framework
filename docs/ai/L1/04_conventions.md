@@ -106,6 +106,10 @@ def to_str(self, sensitive_handling: bool = True) -> str:
 
 - Use `ten_env.log_info()`, `ten_env.log_warn()`, `ten_env.log_error()`, `ten_env.log_debug()`
 - Categories: `LOG_CATEGORY_KEY_POINT` (lifecycle events), `LOG_CATEGORY_VENDOR` (vendor status)
+- Config log messages must use the `config:` prefix — QA automation matches on `(?:config|LOG_CATEGORY_KEY_POINT|KEYPOINT config):` to validate vendor config output:
+  ```python
+  ten_env.log_info(f"config: {self.config.to_str(sensitive_handling=True)}", category=LOG_CATEGORY_KEY_POINT)
+  ```
 - All output goes to `/tmp/task_run.log` inside the container
 
 ## Import Convention
