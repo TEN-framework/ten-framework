@@ -59,7 +59,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             self.config = DeepgramTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
             ten_env.log_info(
-                self.config.to_str(sensitive_handling=True),
+                f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
 
