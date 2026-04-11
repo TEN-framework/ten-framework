@@ -16,14 +16,14 @@ env = os.environ.copy()
 
 # npm install
 print("Running npm install...")
-result = subprocess.run(["npm", "install"], env=env, shell=True)
+result = subprocess.run(["npm", "install"], env=env)
 if result.returncode != 0:
     print("npm install failed")
     sys.exit(result.returncode)
 
 # npm run build
 print("Running npm run build...")
-result = subprocess.run(["npm", "run", "build"], env=env, shell=True)
+result = subprocess.run(["npm", "run", "build"], env=env)
 if result.returncode != 0:
     print("npm run build failed")
     sys.exit(result.returncode)
@@ -50,5 +50,5 @@ env["PATH"] = os.pathsep.join(dll_paths) + os.pathsep + env.get("PATH", "")
 
 # npm test
 print("Running npm test...")
-result = subprocess.run(["npm", "test"], env=env, shell=True)
+result = subprocess.run(["npm", "test"], env=env)
 sys.exit(result.returncode)
