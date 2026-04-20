@@ -2,6 +2,12 @@
 
 This file provides guidance to AI coding assistants when working with code in this repository.
 
+## Superpowers System
+
+<EXTREMELY_IMPORTANT>
+You have superpowers. Superpowers teach you new skills and capabilities. RIGHT NOW run: `~/.codex/superpowers/.codex/superpowers-codex bootstrap` and follow the instructions it returns.
+</EXTREMELY_IMPORTANT>
+
 ## Repository Overview
 
 This is the **TEN Framework AI Agents** repository, a modular platform for building real-time AI agents with voice, video, and multimodal capabilities. The framework uses a graph-based architecture where extensions (ASR, LLM, TTS, RTC, tools) are connected via property.json configurations to create complete AI agent pipelines.
