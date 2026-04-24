@@ -160,6 +160,46 @@ Extensions declare their API interface in `manifest.json`:
 
 Interface JSON files define the standard cmd/data/audio_frame schemas for each extension type.
 
+## Canonical Payload Notes
+
+ASR results should keep `session_id` inside `metadata`, not as a top-level field.
+
+```json
+{
+  "id": "uuid",
+  "text": "hello world",
+  "final": true,
+  "start_ms": 120,
+  "duration_ms": 340,
+  "language": "en-US",
+  "metadata": {
+    "session_id": "session-123",
+    "asr_info": {
+      "vendor": "xai",
+      "locked": false
+    }
+  }
+}
+```
+
+Provider error payloads should include `vendor_info` when available:
+
+```json
+{
+  "module": "tts",
+  "code": -1000,
+  "message": "Unauthorized",
+  "vendor_info": {
+    "vendor": "xai",
+    "code": "401",
+    "message": "Unauthorized"
+  }
+}
+```
+
+ASR metrics may arrive before session metadata is available. `connect_delay`
+only metrics are valid without `session_id`.
+
 ## Portal References
 
 - [API Events Reference](https://github.com/TEN-framework/portal/blob/main/content/docs/ten_agent_examples/api-reference/events.mdx) [EXTERNAL] — REST event types and payloads

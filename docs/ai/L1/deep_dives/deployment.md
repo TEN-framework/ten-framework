@@ -54,6 +54,25 @@ curl -s http://localhost:3000 -o /dev/null -w '%{http_code}' | xargs echo "Playg
 
 Key: `-d` flag keeps processes running. `task run` starts API + playground + TMAN Designer.
 
+## Production Graph Picker Mode
+
+The playground uses two graph APIs depending on frontend mode:
+
+| Mode | Endpoint |
+| ---- | -------- |
+| Edit mode | `/api/dev/v1/graphs` |
+| Normal mode | `/api/agents/graphs` |
+
+If production is accidentally started with `NEXT_PUBLIC_EDIT_GRAPH_MODE=true`,
+the graph picker may be empty and the browser may show `403 Forbidden` for
+`/api/dev/v1/graphs` even though the backend is healthy.
+
+For normal production demos, set:
+
+```bash
+NEXT_PUBLIC_EDIT_GRAPH_MODE=false
+```
+
 ## Cloudflare Tunnel (Free HTTPS)
 
 Quick HTTPS access without domain or SSL setup:

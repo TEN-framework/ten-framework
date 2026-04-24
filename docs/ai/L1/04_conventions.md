@@ -112,6 +112,27 @@ def to_str(self, sensitive_handling: bool = True) -> str:
   ```
 - All output goes to `/tmp/task_run.log` inside the container
 
+## Error Classification
+
+Use `ModuleErrorCode` consistently:
+
+| Situation | Severity | Notes |
+| --------- | -------- | ----- |
+| Missing or invalid required config | `FATAL_ERROR` | Extension should not continue |
+| Auth failure (`401`, `403`, invalid API key) | `FATAL_ERROR` | Include `vendor_info` when available |
+| Transient vendor disconnect / timeout | `NON_FATAL_ERROR` | Retry or reconnect if supported |
+| Retry ceiling reached | `FATAL_ERROR` | Surface terminal failure clearly |
+| Invalid user input for a single request | `NON_FATAL_ERROR` | Request fails, extension keeps running |
+
+Provider-originated failures should include `vendor_info` when possible:
+
+```python
+ModuleErrorVendorInfo(vendor=self.vendor(), code="401", message="Unauthorized")
+```
+
+Before changing corner-case behavior such as empty TTS input, check the guarder
+tests first. Repo test expectations override generic assumptions.
+
 ## Import Convention
 
 ```python

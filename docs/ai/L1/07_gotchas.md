@@ -90,6 +90,37 @@ The playground caches the `/graphs` API response. When adding or removing
 graphs from `property.json`, a full restart is required — simple server
 restart is not enough.
 
+## Guarder Symlink Drift
+
+Guarder apps create their own `ten_packages/extension/*` symlinks. These can
+point at dead host paths and break imports after worktree changes or manual
+copies.
+
+Typical symptom:
+`ModuleNotFoundError: No module named 'ten_packages.extension.<name>'`
+
+Reliable fix inside the container:
+
+```bash
+ln -sf /app/agents/ten_packages/extension/<name> \
+  /app/agents/integration_tests/<guarder>/ten_packages/extension/<name>
+```
+
+## Run Guarders Sequentially
+
+Do not run ASR and TTS guarders in parallel in the same container. Their build
+scripts may collide on shared temp paths and fail with errors like:
+`/tmp/test: Text file busy`
+
+Run one guarder to completion, then start the other.
+
+## Production Graph Picker 403
+
+If the playground requests `/api/dev/v1/graphs` in production, the graph list
+may be empty even though `/api/agents/graphs` is healthy. Check
+`NEXT_PUBLIC_EDIT_GRAPH_MODE`; production deployments should typically set it to
+`false`.
+
 ## Manifest Module Name Must Match
 
 The `name` field in extension `manifest.json` must exactly match the `addon`

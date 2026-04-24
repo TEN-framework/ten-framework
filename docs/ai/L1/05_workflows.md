@@ -42,6 +42,25 @@ Optional / vendor-dependent TTS configs:
 For full walkthrough with code and guarder expectations, see
 [Extension Development](deep_dives/extension_development.md) and [Testing](deep_dives/testing.md).
 
+### New ASR/TTS Extension Checklist
+
+Use one recent strong example as the main template, not just any extension of
+the same type.
+
+| Type | Strong Template | Why |
+| ---- | --------------- | --- |
+| TTS (WS) | `deepgram_tts` | Better lifecycle and standalone test coverage |
+| ASR | `openai_asr_python` | Stronger result-shape testing than thinner templates |
+
+Minimum end-to-end steps:
+1. Verify the vendor wire contract first: endpoint, event names, payload encoding, finalize primitive.
+2. Copy a recent extension with the same transport shape.
+3. Implement config loading, secret redaction, and `config:` logging.
+4. Implement error classification and `vendor_info`.
+5. Add standalone tests before running guarders.
+6. Run guarders sequentially, not in parallel, inside the same container.
+7. Add README and example graph wiring only after the extension tests are green.
+
 ## Add Extension to a Graph
 
 1. **Add node** to `predefined_graphs[].graph.nodes[]` in the example's `tenapp/property.json`:
