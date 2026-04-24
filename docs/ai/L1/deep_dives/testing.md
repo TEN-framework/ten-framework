@@ -73,6 +73,55 @@ ten_packages/system/ten_ai_base/interface:\
 ten_packages/extension/${EXT_NAME}:$PYTHONPATH"
 ```
 
+For local worktree pytest runs outside the container, point `PYTHONPATH` at the
+example app's installed TEN runtime interfaces:
+
+```bash
+PYTHONPATH=ai_agents/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_runtime_python/interface:\
+ai_agents/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_ai_base/interface \
+.venv/bin/pytest ai_agents/agents/ten_packages/extension/<ext>/tests -q
+```
+
+## Minimum Extension Test Matrices
+
+These are the minimum standalone tests to add for a production-ready extension.
+Guarders are not a substitute for these.
+
+### ASR
+
+| Test | Required Assertion |
+| ---- | ------------------ |
+| `test_asr_result` | Emits valid `ASRResult` shape including `metadata.session_id` |
+| `test_finalize` | Finalize sends vendor flush and emits `asr_finalize_end` |
+| `test_reconnect` | Non-fatal retries, fatal retry ceiling, counter reset after success |
+| `test_invalid_params` | Invalid config emits fatal error and does not crash |
+| `test_vendor_error` | Vendor-originated error includes `vendor_info` |
+| `test_dump` | Input audio dump path is written when enabled |
+| `test_metrics` | Emits at least connect-delay or ASR metrics expected by guarder |
+
+### TTS
+
+| Test | Required Assertion |
+| ---- | ------------------ |
+| `test_basic_audio` | `tts_audio_start` -> audio frames -> `tts_audio_end` |
+| `test_flush` | Flush interrupts or completes requests correctly |
+| `test_invalid_api_key` | Fatal auth/config error is surfaced correctly |
+| `test_metrics` | TTFB metrics are emitted |
+| `test_state_machine` | Sequential/interleaved request behavior stays correct |
+| `test_robustness` | Empty, whitespace, punctuation-only, and long text cases match guarder expectations |
+| `test_dump` | Output audio dump is written correctly |
+
+## Extension Done Criteria
+
+Before calling a new vendor extension "done", verify all of these:
+1. Vendor wire contract is confirmed from docs or live capture.
+2. Secrets are redacted in config logs.
+3. Fatal vs non-fatal errors are classified intentionally.
+4. Reconnect path is wired if the README or plan claims reconnect support.
+5. Standalone tests are green.
+6. Guarders pass.
+7. Example graph wiring is runnable.
+
 ---
 
 ## TTS Guarder Tests
@@ -117,6 +166,10 @@ Optional / vendor-dependent coverage:
 3. **Error handling**: Invalid/missing configs produce errors, never crashes
 4. **Empty text**: Must complete fast (audio_end within 500ms), generate no audio
 5. **Flush**: After flush_end, zero data output for 5 seconds
+
+Note: `test_empty_text_request` expects fast completion with `tts_audio_end`,
+not necessarily an error. Check the actual guarder before changing input
+validation behavior.
 
 ### Required TTS Config Files
 
@@ -196,6 +249,8 @@ checks `ENABLE_SAMPLE_RATE` env var. Extensions like `openai_tts_python`,
 2. **Finalize flow**: `asr_finalize` cmd -> `final=True` result -> `asr_finalize_end` response
 3. **Error format**: `{id, module, code, message, vendor_info: {vendor, code, message}}`
 4. **Metrics**: TTFW (Time To First Word) > 0, TTLW (Time To Last Word) > TTFW
+5. **Reconnect**: If reconnect is claimed, tests should prove the retry path is
+   actually wired, not just implemented in a helper class
 
 ### Required ASR Config Files
 
