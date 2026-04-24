@@ -148,6 +148,8 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
+            elif data.get_name() in ("tts_audio_start", "tts_audio_end"):
+                return
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:
