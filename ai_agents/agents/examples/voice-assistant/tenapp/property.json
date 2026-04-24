@@ -135,6 +135,22 @@
                       "extension": "stt"
                     }
                   ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
                 }
               ]
             },
@@ -322,6 +338,22 @@
                       "extension": "stt"
                     }
                   ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
                 }
               ]
             },
@@ -505,6 +537,22 @@
                   "source": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
@@ -693,6 +741,22 @@
                   "source": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
