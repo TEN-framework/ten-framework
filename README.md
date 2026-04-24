@@ -398,6 +398,104 @@ Get instant notifications for new releases and updates. Your support helps us gr
 
 <br>
 
+<br>
+
+## FAQ
+
+### What is TEN Framework?
+
+TEN Framework is an open-source framework for building **real-time multimodal conversational AI** agents. It provides:
+- **Low-latency voice interactions** with WebRTC-based real-time communication
+- **Multimodal support** — voice, video, and text in a single agent
+- **Extensible architecture** — add custom extensions for LLM, TTS, STT, and more
+- **Multi-platform deployment** — run locally, on cloud, or on edge devices (ESP32)
+
+### What are the core components?
+
+| Component | Description |
+|-----------|-------------|
+| **TEN Framework** | Core runtime for agent extensions and lifecycle management |
+| **Agent Examples** | Ready-to-use agent implementations (voice assistant, doodler, etc.) |
+| **TEN VAD** | Voice Activity Detection extension |
+| **Turn Detection** | Semantic turn detection for natural conversations |
+| **Portal** | Web-based management interface |
+
+### How do I get started quickly?
+
+The fastest way to try TEN Framework:
+
+```bash
+# Option 1: Use Codespaces (no local setup required)
+# Click the "Open in Codespaces" button in the README
+
+# Option 2: Local setup with Docker
+cd ai_agents/agents/examples/voice_assistant_responsive
+docker-compose up -d
+
+# Option 3: Manual setup
+# Follow the [Quick Start Guide](https://theten.ai/docs/ten_framework/getting-started/quick-start)
+```
+
+### What LLM and TTS providers are supported?
+
+TEN Framework supports multiple providers through its extension system:
+- **LLM**: OpenAI, Azure OpenAI, Anthropic, Google Gemini, Groq, Ollama (local)
+- **TTS**: Azure TTS, ElevenLabs, Google TTS, Deepgram, Cosy (Alibaba)
+- **STT**: Deepgram, Azure STT, Google STT, Whisper
+- **VAD**: Silero VAD, TEN VAD
+
+You can mix and match providers based on your needs. See the [extension documentation](https://theten.ai/docs) for configuration details.
+
+### How do I customize the voice assistant?
+
+Customize through the extension graph configuration:
+1. **Change LLM provider**: Update the `llm` extension in the graph JSON
+2. **Add tools**: Implement custom extensions with `extend_base`
+3. **Modify prompts**: Edit the system prompt in the LLM extension config
+4. **Add memory**: Integrate with MemU or other memory extensions
+
+### Can I run TEN Framework locally without cloud services?
+
+Yes! Use local providers:
+- **LLM**: Ollama, vLLM, or LM Studio for local LLM inference
+- **TTS**: Coqui TTS or Piper for local text-to-speech
+- **STT**: Whisper.cpp for local speech recognition
+- **VAD**: Silero VAD (runs locally)
+
+Note: Local inference may have higher latency than cloud providers.
+
+### How do I deploy to production?
+
+Options include:
+1. **Docker Compose** — For development and small-scale deployments
+2. **Kubernetes** — For production-scale deployments (see deployment guides)
+3. **Cloud services** — Deploy to AWS, GCP, Azure, or any cloud provider
+4. **Edge devices** — Run on ESP32 and other embedded devices
+
+### What's the difference between TEN Framework and other agent frameworks?
+
+| Feature | TEN Framework | LangChain | CrewAI |
+|---------|--------------|-----------|--------|
+| Real-time voice | ✅ Native WebRTC | ❌ | ❌ |
+| Multimodal | ✅ Voice + Video + Text | ⚠️ Limited | ❌ |
+| Low latency | ✅ <500ms | ❌ | ❌ |
+| Extension system | ✅ Graph-based | ❌ | ❌ |
+| Edge deployment | ✅ ESP32 support | ❌ | ❌ |
+
+### Where can I get help?
+
+- **Documentation**: [theten.ai/docs](https://theten.ai/docs)
+- **Discord**: [Join the community](https://discord.gg/VnPftUzAMJ)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/TEN-framework/ten-framework/issues)
+- **WeChat**: Search for TEN Framework official account
+- **X (Twitter)**: [@TenFramework](https://twitter.com/TenFramework)
+
+<br>
+<div align="right">
+
+[![][back-to-top]][readme-top]
+
+</div>
 ## Questions
 
 TEN Framework is available on these AI-powered Q&A platforms. They can help you find answers quickly and accurately in multiple languages, covering everything from basic setup to advanced implementation details.
