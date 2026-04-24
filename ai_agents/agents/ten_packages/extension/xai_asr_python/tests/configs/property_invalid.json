@@ -1,0 +1,13 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "invalid",
+    "base_url": "wss://api.x.ai/v1/stt",
+    "sample_rate": 16000,
+    "encoding": "pcm",
+    "interim_results": true,
+    "endpointing": 300,
+    "language": "en"
+  }
+}

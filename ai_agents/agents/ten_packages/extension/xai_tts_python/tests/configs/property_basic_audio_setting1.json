@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./tests/keep_dump_output/",
+  "params": {
+    "api_key": "${env:XAI_API_KEY}",
+    "voice_id": "eve",
+    "language": "en",
+    "codec": "pcm",
+    "sample_rate": 16000
+  }
+}
