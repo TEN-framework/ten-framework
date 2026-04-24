@@ -20,18 +20,28 @@ def test_reconnect_manager_escalates_after_max_attempts():
         async def failing_connect():
             raise RuntimeError("disconnect")
 
-        async def error_handler(error):
-            errors.append(error.code)
+        async def error_handler(error, vendor_info=None):
+            errors.append((error.code, vendor_info))
 
         for _ in range(4):
-            await manager.handle_reconnect(failing_connect, error_handler)
+            await manager.handle_reconnect(
+                failing_connect,
+                error_handler,
+                vendor_name="xai",
+                vendor_code="connect_failed",
+            )
 
-        assert errors == [
+        assert [code for code, _ in errors] == [
             int(ModuleErrorCode.NON_FATAL_ERROR.value),
             int(ModuleErrorCode.NON_FATAL_ERROR.value),
             int(ModuleErrorCode.NON_FATAL_ERROR.value),
             int(ModuleErrorCode.FATAL_ERROR.value),
         ]
+        assert all(vendor_info is not None for _, vendor_info in errors)
+        assert all(vendor_info.vendor == "xai" for _, vendor_info in errors)
+        assert all(
+            vendor_info.code == "connect_failed" for _, vendor_info in errors
+        )
 
     asyncio.run(_run())
 
@@ -70,5 +80,13 @@ def test_on_close_retries_until_retry_ceiling():
             int(ModuleErrorCode.NON_FATAL_ERROR.value),
             int(ModuleErrorCode.FATAL_ERROR.value),
         ]
+        observed_vendor_infos = [
+            call.args[1] for call in extension.send_asr_error.await_args_list
+        ]
+        assert all(vendor_info.vendor == "xai" for vendor_info in observed_vendor_infos)
+        assert all(
+            vendor_info.code == "connect_failed"
+            for vendor_info in observed_vendor_infos
+        )
 
     asyncio.run(_run())

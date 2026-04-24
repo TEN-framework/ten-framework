@@ -55,3 +55,24 @@ def test_finalize_timeout_still_emits_finalize_end():
         extension.send_asr_finalize_end.assert_awaited_once()
 
     asyncio.run(_run())
+
+
+def test_finalize_when_disconnected_emits_finalize_end_without_waiting():
+    async def _run():
+        extension = XAIASRExtension("xai_asr_python")
+        extension.ten_env = MagicMock()
+        extension.config = XAIASRConfig(
+            finalize_timeout_ms=10,
+            params={"api_key": "xai-test-key"},
+        )
+        extension.recognition = MagicMock()
+        extension.recognition.is_connected.return_value = False
+        extension.send_asr_finalize_end = AsyncMock()
+
+        await extension.finalize("session-123")
+
+        assert extension.last_finalize_timestamp == 0
+        extension.send_asr_finalize_end.assert_awaited_once()
+        extension.recognition.send_audio_done.assert_not_called()
+
+    asyncio.run(_run())

@@ -57,7 +57,12 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
-        self.reconnect_manager = ReconnectManager(logger=ten_env)
+        # Keep retries bounded, but use a ceiling high enough that the
+        # integration guarder observes the non-fatal retry behavior before
+        # terminal escalation.
+        self.reconnect_manager = ReconnectManager(
+            logger=ten_env, max_attempts=10
+        )
         config_json, _ = await ten_env.get_property_to_json("")
         try:
             self.config = XAIASRConfig.model_validate_json(config_json)
@@ -152,8 +157,16 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     async def finalize(self, _session_id: str | None) -> None:
         assert self.config is not None
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
+        if not self.recognition or not self.is_connected():
+            self.ten_env.log_warn(
+                "asr_finalize: service not connected.",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self._finalize_end()
+            return
+
         self._close_expected = True
-        if self.recognition:
+        try:
             await self.recognition.send_audio_done()
             payload = await self.recognition.wait_for_done(
                 self.config.finalize_timeout_ms
@@ -162,6 +175,13 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
                 await self._emit_asr_result(payload, final=True, locked=False)
             elif not self.recognition.done_event.is_set():
                 self._close_expected = False
+        except asyncio.CancelledError:
+            self.ten_env.log_warn(
+                "asr_finalize: wait for transcript.done was cancelled.",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            self._close_expected = False
+        finally:
             await self._finalize_end()
 
     async def _finalize_end(self) -> None:
@@ -368,6 +388,8 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
             success = await self.reconnect_manager.handle_reconnect(
                 connection_func=self._connect_recognition,
                 error_handler=self.send_asr_error,
+                vendor_name=self.vendor(),
+                vendor_code="connect_failed",
             )
 
             if success:
