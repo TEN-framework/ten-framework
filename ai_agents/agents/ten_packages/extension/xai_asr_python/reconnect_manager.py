@@ -1,6 +1,10 @@
 import asyncio
 from typing import Callable, Awaitable, Optional
-from ten_ai_base.message import ModuleError, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
 from .const import MODULE_NAME_ASR
 
 
@@ -59,6 +63,8 @@ class ReconnectManager:
         error_handler: Optional[
             Callable[[ModuleError], Awaitable[None]]
         ] = None,
+        vendor_name: str | None = None,
+        vendor_code: str = "connect_failed",
     ) -> bool:
         """
         Handle a single reconnection attempt with backoff delay.
@@ -106,16 +112,30 @@ class ReconnectManager:
                 )
 
             if error_handler:
-                await error_handler(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=(
-                            ModuleErrorCode.FATAL_ERROR.value
-                            if is_fatal
-                            else ModuleErrorCode.NON_FATAL_ERROR.value
-                        ),
-                        message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
-                    )
+                error = ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=(
+                        ModuleErrorCode.FATAL_ERROR.value
+                        if is_fatal
+                        else ModuleErrorCode.NON_FATAL_ERROR.value
+                    ),
+                    message=f"Reconnection attempt #{self.attempts} failed: {str(e)}",
                 )
+                vendor_info = (
+                    ModuleErrorVendorInfo(
+                        vendor=vendor_name,
+                        code=vendor_code,
+                        message=str(e),
+                    )
+                    if vendor_name
+                    else None
+                )
+                if vendor_info is not None:
+                    try:
+                        await error_handler(error, vendor_info)
+                    except TypeError:
+                        await error_handler(error)
+                else:
+                    await error_handler(error)
 
             return False
