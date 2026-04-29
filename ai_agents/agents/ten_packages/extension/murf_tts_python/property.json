@@ -4,6 +4,7 @@
     "params": {
         "api_key": "${env:MURF_TTS_KEY||}",
         "model": "FALCON",
-        "sample_rate": 24000
+        "sample_rate": 24000,
+        "voiceId": "Matthew"
     }
 }

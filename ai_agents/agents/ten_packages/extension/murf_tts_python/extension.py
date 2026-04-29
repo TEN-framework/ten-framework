@@ -51,6 +51,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
         self.last_completed_request_id: str | None = None
         self.last_completed_has_cleared_synthesizer = True
         self.current_request_finished: bool = True
+        self.session_id: str = ""
         self.current_turn_id: int | None = None
         self.request_lock = asyncio.Lock()
         self.pcm_write_tasks: set[asyncio.Task] = set()
