@@ -38,23 +38,11 @@
             "api_key": {
               "type": "string"
             },
-            "voiceId": {
+            "voice_id": {
               "type": "string"
             },
-            "multiNativeLocale": {
+            "multi_native_locale": {
               "type": "string"
-            },
-            "style": {
-              "type": "string"
-            },
-            "rate": {
-              "type": "float64"
-            },
-            "pitch": {
-              "type": "float64"
-            },
-            "variation": {
-              "type": "float64"
             },
             "model": {
               "type": "string"
