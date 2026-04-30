@@ -19,6 +19,7 @@ import json
 import os
 import time
 import asyncio
+import pytest
 
 TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
 
@@ -314,7 +315,10 @@ def test_subtitle_alignment(extension_name: str, config_dir: str) -> None:
     """Verify TTS subtitle alignment with audio frames."""
     config_file_path = os.path.join(config_dir, TTS_SUBTITLE_CONFIG_FILE)
     if not os.path.exists(config_file_path):
-        raise FileNotFoundError(f"Config file not found: {config_file_path}")
+        pytest.skip(
+            f"Config file not found: {config_file_path}. "
+            "Subtitle alignment is optional for providers without text timing."
+        )
 
     with open(config_file_path, "r") as f:
         config: dict[str, Any] = json.load(f)

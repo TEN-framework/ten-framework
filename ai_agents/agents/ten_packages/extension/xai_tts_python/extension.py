@@ -11,7 +11,7 @@ from ten_ai_base.message import (
     ModuleType,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from websockets.protocol import State
 from ten_runtime import AsyncTenEnv
@@ -41,9 +41,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         self._audio_start_sent = False
         self._request_text_length = 0
-        self._request_text = ""
-        self._request_metadata: dict = {}
-        self._request_seq_id_map: dict[str, int] = {}
         self._audio_start_timestamp_ms = 0
         self._request_event_interval_ms = 0
 
@@ -126,7 +123,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
     async def _finalize_request(
         self, reason: TTSAudioEndReason, error: ModuleError | None = None
     ) -> None:
-        await self._emit_tts_text_result(reason)
         if not self._audio_start_sent:
             await self.send_tts_audio_start(request_id=self.current_request_id)
             self._audio_start_sent = True
@@ -147,10 +143,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             error=error,
         )
         self.sent_ts = None
-        if self.current_request_id:
-            self._request_seq_id_map.pop(self.current_request_id, None)
-        self._request_text = ""
-        self._request_metadata = {}
         self._audio_start_timestamp_ms = 0
         self._request_event_interval_ms = 0
 
@@ -180,10 +172,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self.sent_ts = None
                 self._audio_start_sent = False
                 self._request_text_length = 0
-                self._request_text = ""
                 self._audio_start_timestamp_ms = 0
                 self._request_event_interval_ms = 0
-                self._request_metadata = t.metadata.copy() if t.metadata else {}
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -217,8 +207,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                     error=error,
                 )
                 self.current_request_finished = True
-                self._request_text = ""
-                self._request_metadata = {}
                 self._request_text_length = 0
                 self.total_audio_bytes = 0
                 self.sent_ts = None
@@ -229,8 +217,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self._request_text_length += len(prepared_text)
                 if self._request_text_length > 15000:
                     raise ValueError("xAI TTS text exceeds 15000 characters")
-                self._request_text += prepared_text
                 self.metrics_add_input_characters(len(prepared_text))
+                self.metrics_add_output_characters(len(prepared_text))
 
             if self._is_stopped:
                 return
@@ -368,34 +356,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
     async def _write_dump(self, data_msg: bytes) -> None:
         if self.current_request_id in self.recorder_map:
             await self.recorder_map[self.current_request_id].write(data_msg)
-
-    async def _emit_tts_text_result(self, reason: TTSAudioEndReason) -> None:
-        if not self.current_request_id or not self._request_text:
-            return
-
-        metadata = self._request_metadata.copy()
-        current_seq_id = self._request_seq_id_map.get(self.current_request_id, 0)
-        self._request_seq_id_map[self.current_request_id] = current_seq_id + 1
-        metadata["turn_seq_id"] = current_seq_id
-        metadata["turn_status"] = (
-            2 if reason == TTSAudioEndReason.INTERRUPTED else 1
-        )
-
-        start_ms = self._audio_start_timestamp_ms
-        if start_ms <= 0:
-            start_ms = int(datetime.now().timestamp() * 1000)
-
-        transcript_result = TTSTextResult(
-            request_id=self.current_request_id,
-            text=self._request_text,
-            start_ms=start_ms,
-            duration_ms=self._calculate_audio_duration_ms(),
-            words=None,
-            text_result_end=True,
-            metadata=metadata,
-        )
-        self.metrics_add_output_characters(len(self._request_text))
-        await self.send_tts_text_result(transcript_result)
 
     async def _ensure_client(self) -> None:
         if self.client is None:
