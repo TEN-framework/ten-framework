@@ -1,7 +1,7 @@
 {
   "type": "extension",
-  "name": "deepgram_asr_python",
-  "version": "0.4.1",
+  "name": "deepgram_tts",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -14,47 +14,52 @@
       "version": "0.7"
     }
   ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
   "api": {
     "interface": [
       {
-        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
       }
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
-            "url": {
-              "type": "string"
-            },
-            "key": {
-              "type": "string"
-            },
             "api_key": {
+              "type": "string"
+            },
+            "base_url": {
               "type": "string"
             },
             "model": {
               "type": "string"
             },
-            "language": {
+            "encoding": {
               "type": "string"
             },
-            "result_language_default": {
-              "type": "string"
+            "sample_rate": {
+              "type": "int32"
             }
           }
         }
       }
     }
-  },
-  "package": {
-    "include": [
-      "manifest.json",
-      "property.json",
-      "**.py",
-      "requirements.txt",
-      "docs/**"
-    ]
   }
 }

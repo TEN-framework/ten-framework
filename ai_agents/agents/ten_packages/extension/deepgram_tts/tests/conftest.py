@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Add project root to sys.path for test imports
+project_root = str(Path(__file__).resolve().parents[6])
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
@@ -5,9 +13,7 @@
 #
 import json
 import threading
-from typing import Any
 from typing_extensions import override
-from _pytest.config import Notset
 import pytest
 from ten_runtime import (
     App,
@@ -99,47 +105,3 @@ def global_setup_and_teardown():
     # Teardown part.
     fake_app_ctx.fake_app.close()
     fake_app_thread.join()
-
-
-def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add command line options for the test."""
-    parser.addoption(
-        "--extension_name",
-        action="store",
-        required=True,
-        help="name of the extension to test",
-    )
-    parser.addoption(
-        "--config_dir",
-        action="store",
-        required=True,
-        help="path to the config directory",
-    )
-    parser.addoption(
-        "--enable_sample_rate",
-        action="store",
-        default="True",
-        help="enable sample rate comparison (True/False)",
-    )
-    parser.addoption(
-        "--enable_subtitle_alignment",
-        action="store",
-        default="False",
-        help="enable subtitle alignment test (True/False)",
-    )
-
-
-@pytest.fixture
-def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
-    return request.config.getoption("--extension_name")
-
-
-@pytest.fixture
-def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
-    return request.config.getoption("--config_dir")
-
-
-@pytest.fixture
-def enable_subtitle_alignment(request: pytest.FixtureRequest) -> bool:
-    value = request.config.getoption("--enable_subtitle_alignment")
-    return str(value).lower() == "true"

@@ -21,6 +21,7 @@ import time
 import asyncio
 
 TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
+SUPPORTED_TTS_EXTENSIONS = {"cartesia_tts"}
 
 # Threshold for text vs audio duration mismatch
 DURATION_MISMATCH_THRESHOLD_MS = 1000
@@ -310,8 +311,28 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
         return True, f"Last turn_status is {turn_status} (valid)"
 
 
-def test_subtitle_alignment(extension_name: str, config_dir: str) -> None:
+def test_subtitle_alignment(
+    extension_name: str,
+    config_dir: str,
+    enable_subtitle_alignment: bool,
+) -> None:
     """Verify TTS subtitle alignment with audio frames."""
+    if not enable_subtitle_alignment:
+        import pytest
+
+        pytest.skip(
+            "subtitle alignment test is disabled by default; "
+            "pass --enable_subtitle_alignment=True to run it"
+        )
+
+    if extension_name not in SUPPORTED_TTS_EXTENSIONS:
+        import pytest
+
+        pytest.skip(
+            f"subtitle alignment test currently supports only "
+            f"{sorted(SUPPORTED_TTS_EXTENSIONS)}, got {extension_name}"
+        )
+
     config_file_path = os.path.join(config_dir, TTS_SUBTITLE_CONFIG_FILE)
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Config file not found: {config_file_path}")

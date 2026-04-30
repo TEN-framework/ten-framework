@@ -305,7 +305,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         #     ):
         #         return True  # Still consider connected during finalize grace period
 
-        return self.connected and self.client is not None
+        return (
+            self.connected and self.client is not None and self.client.connected
+        )
 
     @override
     async def send_audio(
@@ -351,6 +353,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return True
 
         except Exception as e:
+            if self.stopped:
+                return False
             self.ten_env.log(LogLevel.ERROR, f"Error sending audio: {e}")
             await self._handle_error(e)
             return False
@@ -466,16 +470,32 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
+    def _result_level_asr_info_fields(
+        self, result: ASRResponse
+    ) -> dict[str, Any]:
+        """Fields from vendor `result` object that belong in metadata.asr_info.
+
+        Only includes keys when present on the vendor payload (e.g. prefetch).
+        """
+        rd = result.result
+        if not rd or not isinstance(rd, dict):
+            return {}
+        if "prefetch" not in rd:
+            return {}
+        return {"prefetch": rd["prefetch"]}
+
     def _build_metadata_with_asr_info(
         self,
         base_metadata: dict[str, Any] | None = None,
         additional_fields: dict[str, Any] | None = None,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build metadata according to protocol: session_id at root, others in asr_info.
 
         Args:
             base_metadata: Base metadata dict (defaults to self.metadata if None)
             additional_fields: Additional fields to add to asr_info
+            result_level_fields: Vendor result-level fields (e.g. prefetch) for asr_info
 
         Returns:
             Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
@@ -501,6 +521,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if additional_fields:
             asr_info.update(additional_fields)
 
+        # Vendor result-level fields (e.g. prefetch under result.{prefetch})
+        if result_level_fields:
+            asr_info.update(result_level_fields)
+
         # Build final metadata structure
         metadata: dict[str, Any] = {}
         if session_id is not None:
@@ -510,7 +534,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         return metadata
 
     def _extract_final_result_metadata(
-        self, utterance: Utterance
+        self,
+        utterance: Utterance,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions.
 
@@ -524,11 +550,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             additional_fields = utterance.additions
 
         return self._build_metadata_with_asr_info(
-            additional_fields=additional_fields
+            additional_fields=additional_fields,
+            result_level_fields=result_level_fields,
         )
 
     def _extract_non_final_result_metadata(
-        self, utterance: Utterance
+        self,
+        utterance: Utterance,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions for non-final results.
 
@@ -550,7 +579,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 additional_fields["source"] = additions["source"]
 
         return self._build_metadata_with_asr_info(
-            additional_fields=additional_fields
+            additional_fields=additional_fields,
+            result_level_fields=result_level_fields,
         )
 
     def _calculate_utterance_start_ms(
@@ -719,6 +749,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 category=LOG_CATEGORY_VENDOR,
             )
 
+            result_level_asr_info = self._result_level_asr_info_fields(result)
+
             # Process utterances: send definite=true individually,
             # and concatenate adjacent definite=false utterances together
             if not result.utterances:
@@ -728,7 +760,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     result.start_ms
                 )
                 # Build metadata according to protocol: session_id at root, others in asr_info
-                metadata = self._build_metadata_with_asr_info()
+                metadata = self._build_metadata_with_asr_info(
+                    result_level_fields=result_level_asr_info
+                )
                 await self._send_asr_result_from_text(
                     text=result.text,
                     is_final=False,
@@ -767,11 +801,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     if is_final:
                         has_final_result = True
                         metadata = self._extract_final_result_metadata(
-                            utterance
+                            utterance,
+                            result_level_fields=result_level_asr_info,
                         )
                     else:
                         metadata = self._extract_non_final_result_metadata(
-                            utterance
+                            utterance,
+                            result_level_fields=result_level_asr_info,
                         )
 
                     await self._send_asr_result_from_text(
@@ -816,10 +852,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                             "start_time": first.start_time,
                             "duration_ms": last.end_time - first.start_time,
                             "metadata": (
-                                self._extract_final_result_metadata(last)
+                                self._extract_final_result_metadata(
+                                    last,
+                                    result_level_fields=result_level_asr_info,
+                                )
                                 if is_final
                                 else self._extract_non_final_result_metadata(
-                                    last
+                                    last,
+                                    result_level_fields=result_level_asr_info,
                                 )
                             ),
                             "utterance": last,  # Keep reference for timestamp tracking
