@@ -54,6 +54,7 @@ class XAIASRRecognition:
         self.done_event = asyncio.Event()
         self.done_payload: dict[str, Any] | None = None
         self._message_task: asyncio.Task | None = None
+        self._open_notified = False
 
     def _build_url(self) -> str:
         base_url = self.config.get("base_url", "wss://api.x.ai/v1/stt")
@@ -89,6 +90,7 @@ class XAIASRRecognition:
         self.ready_event.clear()
         self.done_event.clear()
         self.done_payload = None
+        self._open_notified = False
         first_message = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
         if isinstance(first_message, bytes):
             raise RuntimeError("Unexpected binary message during xAI STT startup")
@@ -102,6 +104,7 @@ class XAIASRRecognition:
                 f"Unexpected xAI STT startup event: {first_event.get('type')}"
             )
         self.ready_event.set()
+        self._open_notified = True
         await self.callback.on_open()
         self._message_task = asyncio.create_task(self._message_handler())
 
@@ -118,7 +121,9 @@ class XAIASRRecognition:
                 event_type = event.get("type", "")
                 if event_type == "transcript.created":
                     self.ready_event.set()
-                    await self.callback.on_open()
+                    if not self._open_notified:
+                        self._open_notified = True
+                        await self.callback.on_open()
                 elif event_type == "transcript.partial":
                     await self.callback.on_partial_result(event)
                 elif event_type == "transcript.done":
@@ -127,7 +132,8 @@ class XAIASRRecognition:
                     await self.callback.on_done(event)
                 elif event_type == "error":
                     await self.callback.on_error(
-                        str(event.get("message", "Unknown error"))
+                        str(event.get("message", "Unknown error")),
+                        event.get("code"),
                     )
         except websockets.exceptions.ConnectionClosed as e:
             self.ten_env.log_info(f"xAI STT websocket closed: {e}")

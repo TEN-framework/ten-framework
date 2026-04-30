@@ -136,7 +136,7 @@ def test_invalid_api_key_error(mock_websocket_connect):
     # Config with invalid API key
     invalid_key_config = {
         "params": {
-            "api_key": "invalid_api_key_test",
+            "api_key": "xai-invalid-api-key-test",
             "voice_id": "eve",
             "codec": "pcm",
             "sample_rate": 24000,

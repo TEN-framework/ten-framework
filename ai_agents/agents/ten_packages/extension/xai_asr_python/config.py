@@ -1,4 +1,5 @@
 from typing import Any
+import json
 
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
@@ -54,7 +55,7 @@ class XAIASRConfig(BaseModel):
             api_key = config_dict["params"].get("api_key")
             if api_key:
                 config_dict["params"]["api_key"] = encrypt(api_key)
-        return str(config_dict)
+        return json.dumps(config_dict)
 
     @property
     def normalized_language(self) -> str:

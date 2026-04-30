@@ -114,7 +114,7 @@ def test_dump_functionality(MockXAITTSClient):
         "dump": True,
         "dump_path": DUMP_PATH,
         "params": {
-            "api_key": "test_api_key",
+            "api_key": "xai-test-key",
             "voice_id": "eve",
             "codec": "pcm",
             "sample_rate": 24000,
@@ -170,7 +170,7 @@ class ExtensionTesterBasic(ExtensionTester):
 
         tts_input = TTSTextInput(
             request_id="tts_request_basic",
-            text="Hello, this is a test of the Deepgram TTS extension.",
+            text="Hello, this is a test of the xAI TTS extension.",
             text_input_end=True,
         )
         data = Data.create("tts_text_input")
@@ -216,7 +216,7 @@ def test_basic_audio(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -298,7 +298,7 @@ def test_flush(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,

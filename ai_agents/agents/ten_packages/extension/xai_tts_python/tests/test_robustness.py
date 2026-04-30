@@ -76,7 +76,7 @@ def test_empty_text(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -130,7 +130,7 @@ def test_whitespace_text(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -178,7 +178,7 @@ def test_punctuation_only_text(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -236,7 +236,7 @@ def test_long_text(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -296,7 +296,7 @@ def test_special_characters(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
