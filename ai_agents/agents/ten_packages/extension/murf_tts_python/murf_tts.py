@@ -267,7 +267,7 @@ class MurfTTSynthesizer:
         self.ten_env.log_info(
             f"KEYPOINT Sending advanced settings to MURF TTS: {advanced_settings}"
         )
-        message = {"setAdvancedSettings": advanced_settings}
+        message = advanced_settings
         message_json = json.dumps(message)
         await ws.send(message_json)
 
@@ -293,7 +293,7 @@ class MurfTTSynthesizer:
                 message = {"context_id": context_id, "clear": True}
                 message_json = json.dumps(message)
                 await self.ws.send(message_json)
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"KEYPOINT Sent clear command to MURF TTS: {message}"
                 )
         except Exception as e:
@@ -311,7 +311,7 @@ class MurfTTSynthesizer:
             self.channel_tasks,
             return_when=asyncio.FIRST_EXCEPTION,
         )
-        self.ten_env.log_info("MURF TTS channel tasks finished.")
+        self.ten_env.log_debug("MURF TTS channel tasks finished.")
 
         self.channel_tasks.clear()
 
@@ -354,7 +354,7 @@ class MurfTTSynthesizer:
 
             async for message in ws:
                 if self._session_closing:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Session is closing, break receive loop."
                     )
                     break
@@ -376,7 +376,7 @@ class MurfTTSynthesizer:
                     )
 
         except asyncio.CancelledError:
-            self.ten_env.log_info("MURF TTS receive loop cancelled")
+            self.ten_env.log_debug("MURF TTS receive loop cancelled")
             raise
         except Exception as e:
             self.ten_env.log_error(
@@ -404,7 +404,7 @@ class MurfTTSynthesizer:
                     self.first_chunk_of_connection = False
                 # if context is in cleared context ids then skip
                 if context_id in self.cleared_context_ids:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Context ID {context_id} is in cleared context IDs, skipping"
                     )
                 else:
@@ -428,7 +428,7 @@ class MurfTTSynthesizer:
                     await self.response_msgs.put((EVENT_TTS_END, b""))
                     self.request_first_chunk_sent_time.pop(context_id, None)
                 else:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Context ID {context_id} is not the latest context ID, or response messages is not ready, skipping"
                     )
             if "error" in data:
@@ -466,7 +466,9 @@ class MurfTTSynthesizer:
                     first_chunk_sent_time,
                     True,
                 )  # update the first chunk sent time and mark done flag to true
-                self.ten_env.log_info(f"KEYPOINT TTFB metric sent: {ttfb_ms}ms")
+                self.ten_env.log_debug(
+                    f"KEYPOINT TTFB metric sent: {ttfb_ms}ms"
+                )
                 await self.response_msgs.put(
                     (EVENT_TTS_TTFB_METRIC, ttfb_ms)
                 )  # send the TTFB metric to the response messages queue
@@ -480,7 +482,7 @@ class MurfTTSynthesizer:
                 datetime.now(),
                 False,
             )
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"KEYPOINT First chunk sent time for request ID {context_id} set to {self.request_first_chunk_sent_time[context_id]}"
             )
 
@@ -505,7 +507,7 @@ class MurfTTSynthesizer:
             "voice_config": voice_config,
         }
         message_json = json.dumps(message)
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"KEYPOINT Sending text to MURF TTS: {message_json}"
         )
         await ws.send(message_json)
@@ -569,7 +571,7 @@ class MurfTTSClient:
 
     def cancel(self, request_id: str) -> None:
         """Cancel current synthesizer request"""
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"Cancelling current MurfTTS synthesizer for request_id: {request_id}"
         )
 
@@ -580,7 +582,7 @@ class MurfTTSClient:
                     self.response_msgs.get_nowait()
                 except asyncio.QueueEmpty:
                     break
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 "MURF TTS response messages queue cleared during cancel"
             )
 
@@ -588,7 +590,7 @@ class MurfTTSClient:
             self.synthesizer.clear_text_queue()
             self.synthesizer.clear_synthesizer(request_id)
 
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"MurfTTS synthesizer cleared successfully for request_id: {request_id}"
         )
 
@@ -601,7 +603,7 @@ class MurfTTSClient:
         if self.synthesizer:
             self.synthesizer.clear_synthesizer(request_id)
 
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"MurfTTS synthesizer cleared successfully for request_id: {request_id}"
         )
 

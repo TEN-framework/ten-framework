@@ -38,10 +38,10 @@
             "api_key": {
               "type": "string"
             },
-            "voice_id": {
+            "voiceId": {
               "type": "string"
             },
-            "multi_native_locale": {
+            "multiNativeLocale": {
               "type": "string"
             },
             "model": {

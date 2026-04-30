@@ -51,7 +51,6 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
         self.last_completed_request_id: str | None = None
         self.last_completed_has_cleared_synthesizer = True
         self.current_request_finished: bool = True
-        self.session_id: str = ""
         self.current_turn_id: int | None = None
         self.request_lock = asyncio.Lock()
         self.pcm_write_tasks: set[asyncio.Task] = set()
@@ -177,7 +176,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                         )
                         await self.send_tts_audio_data(data)
                     else:
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             "Received empty payload for TTS response"
                         )
                 elif event == EVENT_TTS_TTFB_METRIC:
@@ -197,11 +196,11 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                             extra_metadata=extra_metadata,
                         )
 
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
                         )
                 elif event == EVENT_TTS_END:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Session finished for request ID: {current_request_id}"
                     )
                     await self._handle_tts_audio_end()
@@ -262,7 +261,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
             ):
                 try:
                     await self.recorder_map[current_request_id].flush()
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Flushed PCMWriter for request_id: {current_request_id}"
                     )
                 except Exception as e:
@@ -278,7 +277,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 reason=reason,
             )
 
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"Sent TTS audio end for request ID: {current_request_id}, "
                 f"interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms, "
                 f"reason: {reason}"
@@ -305,7 +304,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
             )
 
             current_request_id = await self._get_current_request_id()
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"current_request_id: {current_request_id}, new request_id: {t.request_id}"
             )
             if self.client is None:
@@ -331,7 +330,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
             if t.request_id != current_request_id:
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"New TTS request with ID: {t.request_id}"
                 )
                 if not self.last_completed_has_cleared_synthesizer:
@@ -357,7 +356,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                         try:
                             await self.recorder_map[old_rid].flush()
                             del self.recorder_map[old_rid]
-                            self.ten_env.log_info(
+                            self.ten_env.log_debug(
                                 f"Cleaned up old PCMWriter for request_id: {old_rid}"
                             )
                         except Exception as e:
@@ -374,7 +373,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
                         )
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
@@ -399,7 +398,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
 
             if t.text_input_end:
                 self.current_request_finished = True
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"text_input_end received for request ID: {t.request_id}"
                 )
 
@@ -410,7 +409,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 ):
                     # Empty text with text_input_end - finish immediately
                     await self._handle_tts_audio_end()
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Sent TTS audio end event, text is empty for request ID: {t.request_id}"
                     )
 
@@ -462,7 +461,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
     async def cancel_tts(self) -> None:
         current_request_id = await self._get_current_request_id()
         if current_request_id:
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"Current request {current_request_id} is being cancelled. Sending INTERRUPTED."
             )
             if self.client:

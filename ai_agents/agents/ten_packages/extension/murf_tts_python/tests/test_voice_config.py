@@ -141,10 +141,8 @@ def test_send_advanced_settings_uses_filtered_params_once_configured():
 
     sent_payload = json.loads(ws.send.await_args.args[0])
     assert sent_payload == {
-        "setAdvancedSettings": {
-            "min_buffer_size": 60,
-            "max_buffer_delay_in_ms": 500,
-        }
+        "min_buffer_size": 60,
+        "max_buffer_delay_in_ms": 500,
     }
 
 
