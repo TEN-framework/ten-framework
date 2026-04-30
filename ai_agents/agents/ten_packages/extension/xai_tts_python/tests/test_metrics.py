@@ -101,7 +101,7 @@ def test_ttfb_metric_is_sent(MockXAITTSClient):
     # --- Test Setup ---
     metrics_config = {
         "params": {
-            "api_key": "test_api_key",
+            "api_key": "xai-test-key",
             "voice_id": "eve",
             "codec": "pcm",
             "sample_rate": 24000,

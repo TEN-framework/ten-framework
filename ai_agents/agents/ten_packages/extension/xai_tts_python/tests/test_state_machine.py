@@ -26,7 +26,7 @@ from xai_tts_python.config import XAITTSConfig
 
 MOCK_CONFIG = {
     "params": {
-        "api_key": "test_api_key",
+        "api_key": "xai-test-key",
         "voice_id": "eve",
         "codec": "pcm",
         "sample_rate": 24000,
@@ -247,7 +247,7 @@ def test_client_empty_text_yields_end():
     async def _run():
         ten_env = MagicMock()
         ten_env.log_warn = MagicMock()
-        config = XAITTSConfig(api_key="test")
+        config = XAITTSConfig(api_key="xai-test-key")
         client = XAITTSClient(config=config, ten_env=ten_env)
 
         events = []
@@ -294,7 +294,7 @@ def test_client_whitespace_text_yields_end():
     async def _run():
         ten_env = MagicMock()
         ten_env.log_warn = MagicMock()
-        config = XAITTSConfig(api_key="test")
+        config = XAITTSConfig(api_key="xai-test-key")
         client = XAITTSClient(config=config, ten_env=ten_env)
 
         events = []

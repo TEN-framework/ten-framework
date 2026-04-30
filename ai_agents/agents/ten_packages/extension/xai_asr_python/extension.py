@@ -107,7 +107,8 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         try:
             await self._connect_recognition()
         except Exception as e:
-            fatal = self._is_fatal_connection_error(str(e))
+            status_code = self._extract_connection_status_code(e)
+            fatal = self._is_fatal_connection_error(status_code)
             self.ten_env.log_error(f"Failed to start xAI STT connection: {e}")
             await self.send_asr_error(
                 ModuleError(
@@ -121,7 +122,11 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
                 ),
                 ModuleErrorVendorInfo(
                     vendor=self.vendor(),
-                    code="connect_failed",
+                    code=(
+                        str(status_code)
+                        if status_code is not None
+                        else "connect_failed"
+                    ),
                     message=str(e),
                 ),
             )
@@ -146,12 +151,19 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         await self.recognition.start(timeout=10)
 
     @staticmethod
-    def _is_fatal_connection_error(error_message: str) -> bool:
-        normalized = error_message.lower()
-        return any(
-            token in normalized
-            for token in ("401", "403", "unauthorized", "forbidden", "api key")
-        )
+    def _extract_connection_status_code(error: Exception) -> int | None:
+        status_code = getattr(error, "status_code", None)
+        if isinstance(status_code, int):
+            return status_code
+        response = getattr(error, "response", None)
+        status_code = getattr(response, "status_code", None)
+        if isinstance(status_code, int):
+            return status_code
+        return None
+
+    @staticmethod
+    def _is_fatal_connection_error(error_code: int | None) -> bool:
+        return error_code in {401, 403}
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
@@ -351,7 +363,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
             f"vendor_error: code: {error_code}, reason: {error_msg}",
             category=LOG_CATEGORY_VENDOR,
         )
-        fatal = "401" in error_msg or "Unauthorized" in error_msg
+        fatal = self._is_fatal_connection_error(error_code)
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,

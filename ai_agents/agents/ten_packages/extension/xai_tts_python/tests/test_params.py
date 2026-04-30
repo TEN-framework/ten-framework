@@ -44,7 +44,7 @@ def test_params_passthrough():
     """Additional xAI params should be appended to the websocket URL."""
     config = XAITTSConfig(
         params={
-            "api_key": "test_api_key",
+            "api_key": "xai-test-key",
             "base_url": "wss://api.x.ai/v1/tts",
             "voice_id": "eve",
             "language": "en",
@@ -115,7 +115,7 @@ def test_sample_rate_16000(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 16000,
@@ -141,7 +141,7 @@ def test_sample_rate_24000(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 24000,
@@ -167,7 +167,7 @@ def test_sample_rate_48000(MockXAITTSClient):
         json.dumps(
             {
                 "params": {
-                    "api_key": "test_api_key",
+                    "api_key": "xai-test-key",
                     "voice_id": "eve",
                     "codec": "pcm",
                     "sample_rate": 48000,

@@ -13,6 +13,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from websockets.protocol import State
 from ten_runtime import AsyncTenEnv
 
 from .config import XAITTSConfig
@@ -44,6 +45,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         self._request_metadata: dict = {}
         self._request_seq_id_map: dict[str, int] = {}
         self._audio_start_timestamp_ms = 0
+        self._request_event_interval_ms = 0
 
     @staticmethod
     def _contains_spoken_content(text: str) -> bool:
@@ -114,11 +116,6 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
     def _create_client(self, ten_env: AsyncTenEnv) -> XAITTSClient:
         return XAITTSClient(config=self.config, ten_env=ten_env)
 
-    async def _ensure_client(self) -> None:
-        if self.client is None:
-            self.client = self._create_client(self.ten_env)
-            await self.client.start()
-
     async def _reconnect_client(self) -> None:
         if self.client:
             await self.client.stop()
@@ -155,6 +152,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         self._request_text = ""
         self._request_metadata = {}
         self._audio_start_timestamp_ms = 0
+        self._request_event_interval_ms = 0
 
     def _calculate_audio_duration_ms(self) -> int:
         bytes_per_sample = self.synthesize_audio_sample_width()
@@ -167,9 +165,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         return int(duration_sec * 1000)
 
     def _calculate_request_event_interval_ms(self) -> int:
-        if self.sent_ts is None:
-            return 0
-        return int((datetime.now() - self.sent_ts).total_seconds() * 1000)
+        return self._request_event_interval_ms
 
     async def request_tts(self, t: TTSTextInput) -> None:
         try:
@@ -186,6 +182,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self._request_text_length = 0
                 self._request_text = ""
                 self._audio_start_timestamp_ms = 0
+                self._request_event_interval_ms = 0
                 self._request_metadata = t.metadata.copy() if t.metadata else {}
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
@@ -201,7 +198,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             if (
                 t.text_input_end
                 and prepared_text
-                and not self._request_text
+                and self._request_text_length == 0
                 and not self._contains_spoken_content(prepared_text)
             ):
                 error = ModuleError(
@@ -226,6 +223,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self.total_audio_bytes = 0
                 self.sent_ts = None
                 self._audio_start_sent = False
+                self._request_event_interval_ms = 0
                 return
             if prepared_text:
                 self._request_text_length += len(prepared_text)
@@ -247,7 +245,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
 
             await self._process_tts_text(prepared_text, t)
         except XAITTSConnectionException as e:
-            await self._handle_connection_error(e)
+            await self._handle_connection_error(e, t.text_input_end)
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
@@ -258,7 +256,15 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 code=ModuleErrorCode.NON_FATAL_ERROR,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
+            if t.text_input_end:
+                await self._finalize_request(
+                    TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                await self.send_tts_error(
+                    request_id=t.request_id,
+                    error=error,
+                )
             await self._reconnect_client()
 
     async def _process_tts_text(self, text: str, t: TTSTextInput) -> None:
@@ -278,7 +284,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                     )
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if isinstance(data_msg, int):
-                    self.sent_ts = datetime.now()
+                    self._request_event_interval_ms = data_msg
                     await self.send_tts_audio_start(
                         request_id=self.current_request_id
                     )
@@ -323,6 +329,46 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             self._audio_start_timestamp_ms = int(datetime.now().timestamp() * 1000)
         return self._audio_start_timestamp_ms + self._calculate_audio_duration_ms()
 
+    async def _handle_connection_error(
+        self, e: XAITTSConnectionException, text_input_end: bool
+    ) -> None:
+        error_code = (
+            ModuleErrorCode.FATAL_ERROR
+            if e.status_code == 401
+            else ModuleErrorCode.NON_FATAL_ERROR
+        )
+        error = ModuleError(
+            message=str(e),
+            module=ModuleType.TTS,
+            code=error_code,
+            vendor_info=ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(e.status_code),
+                message=e.body,
+            ),
+        )
+        if text_input_end:
+            await self._finalize_request(
+                TTSAudioEndReason.ERROR, error=error
+            )
+        else:
+            await self.send_tts_error(
+                request_id=self.current_request_id or "",
+                error=error,
+            )
+
+    async def _setup_recorder(self, request_id: str) -> None:
+        if self.config and self.config.dump:
+            dump_path = os.path.join(
+                self.config.dump_path, f"{request_id}_xai_tts_out.pcm"
+            )
+            os.makedirs(os.path.dirname(dump_path), exist_ok=True)
+            self.recorder_map[request_id] = PCMWriter(dump_path)
+
+    async def _write_dump(self, data_msg: bytes) -> None:
+        if self.current_request_id in self.recorder_map:
+            await self.recorder_map[self.current_request_id].write(data_msg)
+
     async def _emit_tts_text_result(self, reason: TTSAudioEndReason) -> None:
         if not self.current_request_id or not self._request_text:
             return
@@ -351,34 +397,14 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         self.metrics_add_output_characters(len(self._request_text))
         await self.send_tts_text_result(transcript_result)
 
-    async def _handle_connection_error(
-        self, e: XAITTSConnectionException
-    ) -> None:
-        error_code = (
-            ModuleErrorCode.FATAL_ERROR
-            if e.status_code == 401
-            else ModuleErrorCode.NON_FATAL_ERROR
-        )
-        error = ModuleError(
-            message=str(e),
-            module=ModuleType.TTS,
-            code=error_code,
-            vendor_info=ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=str(e.status_code),
-                message=e.body,
-            ),
-        )
-        await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
+    async def _ensure_client(self) -> None:
+        if self.client is None:
+            self.client = self._create_client(self.ten_env)
+            await self.client.start()
+            return
 
-    async def _setup_recorder(self, request_id: str) -> None:
-        if self.config and self.config.dump:
-            dump_path = os.path.join(
-                self.config.dump_path, f"{request_id}_xai_tts_out.pcm"
-            )
-            os.makedirs(os.path.dirname(dump_path), exist_ok=True)
-            self.recorder_map[request_id] = PCMWriter(dump_path)
+        ws = getattr(self.client, "_ws", None)
+        if ws is not None and getattr(ws, "state", None) == State.OPEN:
+            return
 
-    async def _write_dump(self, data_msg: bytes) -> None:
-        if self.current_request_id in self.recorder_map:
-            await self.recorder_map[self.current_request_id].write(data_msg)
+        await self._reconnect_client()

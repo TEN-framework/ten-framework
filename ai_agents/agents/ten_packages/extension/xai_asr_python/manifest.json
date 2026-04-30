@@ -22,6 +22,15 @@
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "finalize_timeout_ms": {
+          "type": "int32"
+        },
         "params": {
           "type": "object",
           "properties": {
