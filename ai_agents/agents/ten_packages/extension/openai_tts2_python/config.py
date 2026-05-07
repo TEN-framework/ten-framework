@@ -38,6 +38,10 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
             self.params["speed"] = 1.0
         if "instructions" not in self.params:
             self.params["instructions"] = ""
+        if "enable_context" not in self.params:
+            self.params["enable_context"] = False
+        if "context_max_history" not in self.params:
+            self.params["context_max_history"] = 0
 
         # Remove input if present (will be set from text)
         if "input" in self.params:

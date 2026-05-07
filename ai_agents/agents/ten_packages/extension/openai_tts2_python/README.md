@@ -27,6 +27,20 @@ All OpenAI TTS-specific settings are configured within the `params` object:
 - `voice` (string, required): Voice identifier (e.g., "coral", "alloy", "echo", "fable", "onyx", "nova", "shimmer")
 - `speed` (float, optional): Speech speed (0.25 to 4.0, default: 1.0)
 - `instructions` (string, optional): Additional instructions for the TTS model
+- `enable_context` (bool, optional): Enable context-aware passthrough fields for custom TTS servers (default: `false`)
+- `context_max_history` (int, optional): Number of previous completed turns to include in `context.context_text` on the first request of each turn (default: `0`)
+
+When `enable_context` is `true`, every outbound request includes:
+
+- `context_id` (string): Always present, uses the current `request_id`
+- `is_start` (bool): Present and `true` only on the first request of the same `request_id`
+- `is_end` (bool): Present and `true` only on the last request where `text_input_end=true`
+
+On the first request of each turn, the extension also sends a `context` object:
+
+- `context.context_id`: Same as the current `request_id`
+- `context.context_type`: Fixed to `conversation_history`
+- `context.context_text`: A JSON string built from the `context` extension's `fetch` history, bounded to the latest `context_max_history` turn IDs. Each entry includes `role`, OpenAI-style `content`, `interrupted`, `start_time`, `end_time`, and `turn_id`.
 
 ### Example Configuration
 
@@ -39,7 +53,9 @@ All OpenAI TTS-specific settings are configured within the `params` object:
     "model": "gpt-4o-mini-tts",
     "voice": "coral",
     "speed": 1.0,
-    "instructions": ""
+    "instructions": "",
+    "enable_context": false,
+    "context_max_history": 0
   }
 }
 ```

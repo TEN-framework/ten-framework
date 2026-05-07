@@ -3,12 +3,29 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+from datetime import datetime
+import asyncio
+import json
+import os
+import traceback
+
+from ten_ai_base.helper import PCMWriter
 from ten_ai_base.tts2_http import (
     AsyncTTS2HttpExtension,
     AsyncTTS2HttpConfig,
     AsyncTTS2HttpClient,
 )
-from ten_runtime import AsyncTenEnv
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleType,
+    ModuleErrorVendorInfo,
+    TTSAudioEndReason,
+)
+from ten_ai_base.tts2 import RequestState
+from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_runtime import AsyncTenEnv, Cmd, Loc, StatusCode
 
 from .config import OpenAITTSConfig
 from .openai_tts import OpenAITTSClient
@@ -55,3 +72,479 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
                 except (TypeError, ValueError):
                     pass
         return 24000
+
+    async def request_tts(self, t: TTSTextInput) -> None:
+        """Handle TTS requests and pass context markers to the client."""
+        try:
+            self.ten_env.log_info(
+                f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+            )
+            if self.client is None:
+                self.ten_env.log_debug(
+                    "TTS client is not initialized, attempting to reinitialize..."
+                )
+                self.client = await self.create_client(
+                    config=self.config,
+                    ten_env=self.ten_env,
+                )
+                self.ten_env.log_debug("TTS client reinitialized successfully.")
+
+            self.ten_env.log_debug(
+                f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}, current_request_finished: {self.current_request_finished}"
+            )
+
+            is_first_chunk = t.request_id != self.current_request_id
+            if is_first_chunk:
+                self.ten_env.log_debug(
+                    f"New TTS request with ID: {t.request_id}"
+                )
+                self.first_chunk = True
+                self.sent_ts = datetime.now()
+                self.current_request_id = t.request_id
+                self.current_request_finished = False
+                self.total_audio_bytes = 0
+                if t.metadata is not None:
+                    self.session_id = t.metadata.get("session_id", "")
+                    self.current_turn_id = t.metadata.get("turn_id", -1)
+                if self.config and self.config.dump:
+                    old_request_ids = [
+                        rid
+                        for rid in self.recorder_map.keys()
+                        if rid != t.request_id
+                    ]
+                    for old_rid in old_request_ids:
+                        try:
+                            await self.recorder_map[old_rid].flush()
+                            del self.recorder_map[old_rid]
+                            self.ten_env.log_debug(
+                                f"Cleaned up old PCMWriter for request_id: {old_rid}"
+                            )
+                        except Exception as e:
+                            self.ten_env.log_error(
+                                f"Error cleaning up PCMWriter for request_id {old_rid}: {e}"
+                            )
+
+                    if t.request_id not in self.recorder_map:
+                        dump_file_path = os.path.join(
+                            self.config.dump_path,
+                            f"{self.vendor()}_dump_{t.request_id}.pcm",
+                        )
+                        self.recorder_map[t.request_id] = PCMWriter(
+                            dump_file_path
+                        )
+                        self.ten_env.log_debug(
+                            f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
+                        )
+            elif self.current_request_finished:
+                self.ten_env.log_error(
+                    f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                )
+                return
+
+            if t.text_input_end:
+                self.ten_env.log_debug(
+                    f"finish session for request ID: {t.request_id}"
+                )
+                self.current_request_finished = True
+
+            self.metrics_add_output_characters(len(t.text))
+
+            self.ten_env.log_debug(
+                f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
+            )
+            data = self.client.get(
+                t.text,
+                t.request_id,
+                is_first_chunk=is_first_chunk,
+                is_end=t.text_input_end,
+                context=(
+                    await self._build_context_payload(t)
+                    if is_first_chunk
+                    else None
+                ),
+            )
+
+            chunk_count = 0
+
+            async for audio_chunk, event_status in data:
+                if event_status == TTS2HttpResponseEventType.RESPONSE:
+                    if audio_chunk is not None and len(audio_chunk) > 0:
+                        chunk_count += 1
+                        self.total_audio_bytes += len(audio_chunk)
+                        duration_ms = self._calculate_audio_duration_ms()
+                        self.ten_env.log_debug(
+                            f"receive_audio:  duration: {duration_ms} of request id: {self.current_request_id}",
+                            category=LOG_CATEGORY_VENDOR,
+                        )
+
+                        if self.first_chunk:
+                            self.request_ts = datetime.now()
+                            if self.sent_ts:
+                                await self.send_tts_audio_start(
+                                    request_id=self.current_request_id,
+                                )
+                                ttfb = int(
+                                    (
+                                        datetime.now() - self.sent_ts
+                                    ).total_seconds()
+                                    * 1000
+                                )
+                                extra_metadata = (
+                                    self.client.get_extra_metadata()
+                                )
+                                await self.send_tts_ttfb_metrics(
+                                    request_id=self.current_request_id,
+                                    ttfb_ms=ttfb,
+                                    extra_metadata=extra_metadata,
+                                )
+                                self.ten_env.log_debug(
+                                    f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                                )
+                            self.first_chunk = False
+
+                        if (
+                            self.config
+                            and self.config.dump
+                            and self.current_request_id
+                            and self.current_request_id in self.recorder_map
+                        ):
+                            await self.recorder_map[
+                                self.current_request_id
+                            ].write(audio_chunk)
+
+                        self.metrics_add_recv_audio_chunks(audio_chunk)
+                        await self.send_tts_audio_data(audio_chunk)
+                    else:
+                        self.ten_env.log_debug(
+                            "Received empty payload for TTS response"
+                        )
+                        if self.request_ts and t.text_input_end:
+                            await self._send_audio_end_and_finish(
+                                request_id=self.current_request_id,
+                                reason=TTSAudioEndReason.REQUEST_END,
+                                log_message=f"Sent TTS audio end event, interval: {self._calculate_request_event_interval_ms()}ms, duration: {self._calculate_audio_duration_ms()}ms",
+                            )
+
+                elif event_status == TTS2HttpResponseEventType.END:
+                    self.ten_env.log_debug(
+                        "Received TTS_END event from TTS"
+                    )
+                    if self.request_ts and t.text_input_end:
+                        await self._send_audio_end_and_finish(
+                            request_id=self.current_request_id,
+                            reason=TTSAudioEndReason.REQUEST_END,
+                            log_message=f"Sent TTS audio end event, interval: {self._calculate_request_event_interval_ms()}ms, duration: {self._calculate_audio_duration_ms()}ms",
+                        )
+                    break
+
+                elif event_status == TTS2HttpResponseEventType.FLUSH:
+                    self.ten_env.log_debug(
+                        "Received TTS_FLUSH event from TTS"
+                    )
+                    if self.request_ts:
+                        await self._send_audio_end_and_finish(
+                            request_id=self.current_request_id,
+                            reason=TTSAudioEndReason.INTERRUPTED,
+                        )
+                    break
+
+                elif event_status == TTS2HttpResponseEventType.INVALID_KEY_ERROR:
+                    error_msg = (
+                        audio_chunk.decode("utf-8")
+                        if audio_chunk
+                        else "Unknown API key error"
+                    )
+                    request_id = self.current_request_id or t.request_id
+                    await self._handle_error_with_text_input_end(
+                        request_id=request_id,
+                        error=ModuleError(
+                            message=error_msg,
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
+                        ),
+                        text_input_end=t.text_input_end,
+                    )
+                    return
+
+                elif event_status == TTS2HttpResponseEventType.ERROR:
+                    error_msg = (
+                        audio_chunk.decode("utf-8")
+                        if audio_chunk
+                        else "Unknown client error"
+                    )
+                    request_id = self.current_request_id or t.request_id
+                    await self._handle_error_with_text_input_end(
+                        request_id=request_id,
+                        error=ModuleError(
+                            message=error_msg,
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.NON_FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
+                        ),
+                        text_input_end=t.text_input_end,
+                    )
+                    return
+
+            self.ten_env.log_debug(
+                f"TTS processing completed, total chunks: {chunk_count}"
+            )
+
+            if self.request_ts and t.text_input_end and self.current_request_id:
+                if self.current_request_id in self.request_states:
+                    current_state = self.request_states[self.current_request_id]
+                    if current_state == RequestState.FINALIZING:
+                        self.ten_env.log_info(
+                            f"Stream ended without END event for request {self.current_request_id}, sending audio_end",
+                            category=LOG_CATEGORY_KEY_POINT,
+                        )
+                        await self._send_audio_end_and_finish(
+                            request_id=self.current_request_id,
+                            reason=TTSAudioEndReason.REQUEST_END,
+                        )
+
+        except Exception as e:
+            self.ten_env.log_error(
+                f"Error in request_tts: {traceback.format_exc()}"
+            )
+            request_id = self.current_request_id or t.request_id
+            await self._handle_error_with_text_input_end(
+                request_id=request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
+                text_input_end=t.text_input_end,
+            )
+
+    async def _build_context_payload(self, t: TTSTextInput) -> dict | None:
+        """Build first-chunk context by fetching history from the context extension."""
+        if not self.config:
+            return None
+
+        max_history = int(self.config.params.get("context_max_history", 0) or 0)
+        current_turn_id = self._resolve_current_turn_id(t)
+        if max_history <= 0:
+            context_entries: list[dict[str, object]] = []
+        else:
+            context_entries = await self._fetch_context_history(
+                request_id=t.request_id,
+                max_history=max_history,
+                current_turn_id=current_turn_id,
+            )
+
+        return {
+            "context_id": t.request_id,
+            "context_text": json.dumps(context_entries, ensure_ascii=False),
+            "context_type": "conversation_history",
+        }
+
+    async def _fetch_context_history(
+        self,
+        request_id: str,
+        max_history: int,
+        current_turn_id: int | None = None,
+    ) -> list[dict[str, object]]:
+        """Fetch recent context history from the context extension."""
+        if self.ten_env is None:
+            return []
+
+        try:
+            fetch_cmd = Cmd.create("fetch")
+            fetch_cmd.set_property_int("limit", -1)
+            fetch_cmd.set_dests([Loc("", "", "context")])
+            result, err = await asyncio.wait_for(
+                self.ten_env.send_cmd(fetch_cmd),
+                timeout=0.5,
+            )
+            if err is not None:
+                self.ten_env.log_warn(
+                    "fetch context history failed: "
+                    f"request_id={request_id}, error={err}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                return []
+            if result is None or result.get_status_code() != StatusCode.OK:
+                status = result.get_status_code() if result else "none"
+                self.ten_env.log_warn(
+                    "fetch context history returned invalid status: "
+                    f"request_id={request_id}, status={status}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                return []
+
+            detail_json, detail_err = result.get_property_to_json("detail")
+            if detail_err is not None or not detail_json:
+                self.ten_env.log_warn(
+                    "fetch context history missing detail: "
+                    f"request_id={request_id}, error={detail_err}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                return []
+
+            detail = json.loads(detail_json)
+            contents = (
+                detail.get("contents", []) if isinstance(detail, dict) else []
+            )
+            self.ten_env.log_debug(
+                "Fetched raw context history for TTS: "
+                f"request_id={request_id}, detail={detail_json}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            formatted = self._format_context_history(
+                contents,
+                max_history,
+                current_turn_id=current_turn_id,
+            )
+            self.ten_env.log_debug(
+                "Fetched context history for TTS: "
+                f"request_id={request_id}, "
+                f"raw_messages={len(contents)}, "
+                f"context_entries={len(formatted)}, "
+                f"max_history={max_history}, "
+                f"current_turn_id={current_turn_id}, "
+                f"formatted={json.dumps(formatted, ensure_ascii=False)}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            return formatted
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn(
+                "fetch context history timeout: "
+                f"request_id={request_id}, timeout_s=0.5",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            return []
+        except Exception as exc:
+            self.ten_env.log_warn(
+                "fetch context history exception: "
+                f"request_id={request_id}, error={exc}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            return []
+
+    def _format_context_history(
+        self,
+        contents: list[dict],
+        max_history: int,
+        current_turn_id: int | None = None,
+    ) -> list[dict[str, object]]:
+        """Convert raw context.fetch messages into bounded TTS context entries."""
+        normalized_entries: list[dict[str, object]] = []
+        for item in contents:
+            if not isinstance(item, dict):
+                continue
+
+            role = item.get("role")
+            if role not in ("user", "assistant"):
+                continue
+
+            content_parts = self._normalize_openai_content(item.get("content"))
+            if not content_parts:
+                continue
+
+            timestamp = self._extract_message_timestamp(item)
+            metadata = item.get("metadata", {})
+            interrupted = (
+                bool(metadata.get("interrupted", False))
+                if isinstance(metadata, dict)
+                else False
+            )
+            end_time = (
+                metadata.get("interrupt_timestamp", timestamp)
+                if isinstance(metadata, dict)
+                else timestamp
+            )
+            turn_id = item.get("turn_id", 0)
+            if current_turn_id is not None and turn_id == current_turn_id:
+                continue
+
+            normalized_entries.append(
+                {
+                    "role": role,
+                    "content": content_parts,
+                    "interrupted": interrupted,
+                    "start_time": timestamp,
+                    "end_time": end_time,
+                    "turn_id": turn_id,
+                }
+            )
+
+        if max_history <= 0 or not normalized_entries:
+            return normalized_entries
+
+        selected_turn_ids: list[int] = []
+        for entry in reversed(normalized_entries):
+            turn_id = entry.get("turn_id", 0)
+            if not isinstance(turn_id, int):
+                continue
+            if turn_id not in selected_turn_ids:
+                selected_turn_ids.append(turn_id)
+            if len(selected_turn_ids) >= max_history:
+                break
+
+        if not selected_turn_ids:
+            return []
+
+        selected_turn_id_set = set(selected_turn_ids)
+        return [
+            entry
+            for entry in normalized_entries
+            if entry.get("turn_id") in selected_turn_id_set
+        ]
+
+    def _resolve_current_turn_id(self, t: TTSTextInput) -> int | None:
+        """Resolve current turn id so current in-progress turn can be excluded."""
+        if isinstance(t.metadata, dict):
+            metadata_turn_id = t.metadata.get("turn_id")
+            if isinstance(metadata_turn_id, int):
+                return metadata_turn_id
+
+        if isinstance(self.current_turn_id, int) and self.current_turn_id >= 0:
+            return self.current_turn_id
+        return None
+
+    def _normalize_openai_content(
+        self, content: object
+    ) -> list[dict[str, str]]:
+        """Normalize fetch content into OpenAI-style text content parts."""
+        if isinstance(content, str):
+            stripped = content.strip()
+            if not stripped:
+                return []
+            return [{"type": "text", "text": stripped}]
+
+        if isinstance(content, list):
+            normalized_parts: list[dict[str, str]] = []
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                if part.get("type") != "text":
+                    continue
+                text = part.get("text")
+                if isinstance(text, str) and text.strip():
+                    normalized_parts.append(
+                        {"type": "text", "text": text.strip()}
+                    )
+            return normalized_parts
+
+        return []
+
+    def _extract_message_timestamp(self, item: dict) -> int:
+        """Extract message timestamp from top-level or metadata."""
+        timestamp = item.get("timestamp")
+        if isinstance(timestamp, int):
+            return timestamp
+
+        metadata = item.get("metadata", {})
+        if isinstance(metadata, dict):
+            metadata_timestamp = metadata.get("timestamp")
+            if isinstance(metadata_timestamp, int):
+                return metadata_timestamp
+
+        return 0
