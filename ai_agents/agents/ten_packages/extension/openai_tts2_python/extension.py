@@ -4,7 +4,6 @@
 # See the LICENSE file for more information.
 #
 from datetime import datetime
-import asyncio
 import json
 import os
 import traceback
@@ -25,10 +24,18 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.tts2 import RequestState
 from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
-from ten_runtime import AsyncTenEnv, Cmd, Loc, StatusCode
+from ten_runtime import AsyncTenEnv, Cmd, StatusCode
+from ten_runtime.cmd_result import CmdResult
+from uap_utils import TaskInfo
 
 from .config import OpenAITTSConfig
 from .openai_tts import OpenAITTSClient
+
+
+CMD_IN_EVENT = "ten_event"
+EVENTTYPE_START = "start"
+CMD_PROPERTY_TASKINFO = "taskInfo"
+CMD_PROPERTY_PAYLOAD = "payload"
 
 
 class OpenAITTSExtension(AsyncTTS2HttpExtension):
@@ -44,6 +51,7 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
         # Type hints for better IDE support
         self.config: OpenAITTSConfig = None
         self.client: OpenAITTSClient = None
+        self.task: TaskInfo | None = None
 
     # ============================================================
     # Required method implementations
@@ -73,6 +81,36 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
                     pass
         return 24000
 
+    def _context_enabled(self) -> bool:
+        return bool(
+            self.config
+            and self.config.params.get("enable_session_context", False)
+        )
+
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        cmd_name = cmd.get_name()
+        ten_env.log_debug(f"on_cmd: {cmd_name}")
+        if cmd_name == CMD_IN_EVENT:
+            event_type, _ = cmd.get_property_string("type")
+            if event_type == EVENTTYPE_START:
+                buf, _ = cmd.get_property_buf(CMD_PROPERTY_PAYLOAD)
+                event = json.loads(buf)
+                ten_env.log_debug(f"event start {event}")
+                if CMD_PROPERTY_TASKINFO in event:
+                    self.task = TaskInfo.model_validate(
+                        event[CMD_PROPERTY_TASKINFO]
+                    )
+                    ten_env.log_debug(f"task info: {self.task}")
+                    if self.client is not None:
+                        self.client.set_task(self.task)
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
+            await ten_env.return_result(cmd_result)
+            ten_env.log_debug(f"on_cmd: {cmd_name} end")
+            return
+
+        await super().on_cmd(ten_env, cmd)
+        ten_env.log_debug(f"on_cmd: {cmd_name} end")
+
     async def request_tts(self, t: TTSTextInput) -> None:
         """Handle TTS requests and pass context markers to the client."""
         try:
@@ -87,6 +125,8 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
                     config=self.config,
                     ten_env=self.ten_env,
                 )
+                if self.task is not None:
+                    self.client.set_task(self.task)
                 self.ten_env.log_debug("TTS client reinitialized successfully.")
 
             self.ten_env.log_debug(
@@ -157,9 +197,10 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
                 t.request_id,
                 is_first_chunk=is_first_chunk,
                 is_end=t.text_input_end,
+                request_seq_id=self._resolve_request_seq_id(t),
                 context=(
                     await self._build_context_payload(t)
-                    if is_first_chunk
+                    if is_first_chunk and self._context_enabled()
                     else None
                 ),
             )
@@ -324,227 +365,28 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
             )
 
     async def _build_context_payload(self, t: TTSTextInput) -> dict | None:
-        """Build first-chunk context by fetching history from the context extension."""
-        if not self.config:
+        """Read session context from metadata and pass it through unchanged."""
+        if not self._context_enabled():
+            return None
+        if not isinstance(t.metadata, dict):
             return None
 
-        max_history = int(self.config.params.get("context_max_history", 0) or 0)
-        current_turn_id = self._resolve_current_turn_id(t)
-        if max_history <= 0:
-            context_entries: list[dict[str, object]] = []
-        else:
-            context_entries = await self._fetch_context_history(
-                request_id=t.request_id,
-                max_history=max_history,
-                current_turn_id=current_turn_id,
-            )
+        session_context = t.metadata.get("session_context")
+        if not isinstance(session_context, str):
+            return None
 
+        self.ten_env.log_debug(
+            f"Resolved session_context from metadata for request_id={t.request_id}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
         return {
-            "context_id": t.request_id,
-            "context_text": json.dumps(context_entries, ensure_ascii=False),
-            "context_type": "conversation_history",
+            "context_text": session_context,
         }
 
-    async def _fetch_context_history(
-        self,
-        request_id: str,
-        max_history: int,
-        current_turn_id: int | None = None,
-    ) -> list[dict[str, object]]:
-        """Fetch recent context history from the context extension."""
-        if self.ten_env is None:
-            return []
-
-        try:
-            fetch_cmd = Cmd.create("fetch")
-            fetch_cmd.set_property_int("limit", -1)
-            fetch_cmd.set_dests([Loc("", "", "context")])
-            result, err = await asyncio.wait_for(
-                self.ten_env.send_cmd(fetch_cmd),
-                timeout=0.5,
-            )
-            if err is not None:
-                self.ten_env.log_warn(
-                    "fetch context history failed: "
-                    f"request_id={request_id}, error={err}",
-                    category=LOG_CATEGORY_KEY_POINT,
-                )
-                return []
-            if result is None or result.get_status_code() != StatusCode.OK:
-                status = result.get_status_code() if result else "none"
-                self.ten_env.log_warn(
-                    "fetch context history returned invalid status: "
-                    f"request_id={request_id}, status={status}",
-                    category=LOG_CATEGORY_KEY_POINT,
-                )
-                return []
-
-            detail_json, detail_err = result.get_property_to_json("detail")
-            if detail_err is not None or not detail_json:
-                self.ten_env.log_warn(
-                    "fetch context history missing detail: "
-                    f"request_id={request_id}, error={detail_err}",
-                    category=LOG_CATEGORY_KEY_POINT,
-                )
-                return []
-
-            detail = json.loads(detail_json)
-            contents = (
-                detail.get("contents", []) if isinstance(detail, dict) else []
-            )
-            self.ten_env.log_debug(
-                "Fetched raw context history for TTS: "
-                f"request_id={request_id}, detail={detail_json}",
-                category=LOG_CATEGORY_KEY_POINT,
-            )
-            formatted = self._format_context_history(
-                contents,
-                max_history,
-                current_turn_id=current_turn_id,
-            )
-            self.ten_env.log_debug(
-                "Fetched context history for TTS: "
-                f"request_id={request_id}, "
-                f"raw_messages={len(contents)}, "
-                f"context_entries={len(formatted)}, "
-                f"max_history={max_history}, "
-                f"current_turn_id={current_turn_id}, "
-                f"formatted={json.dumps(formatted, ensure_ascii=False)}",
-                category=LOG_CATEGORY_KEY_POINT,
-            )
-            return formatted
-        except asyncio.TimeoutError:
-            self.ten_env.log_warn(
-                "fetch context history timeout: "
-                f"request_id={request_id}, timeout_s=0.5",
-                category=LOG_CATEGORY_KEY_POINT,
-            )
-            return []
-        except Exception as exc:
-            self.ten_env.log_warn(
-                "fetch context history exception: "
-                f"request_id={request_id}, error={exc}",
-                category=LOG_CATEGORY_KEY_POINT,
-            )
-            return []
-
-    def _format_context_history(
-        self,
-        contents: list[dict],
-        max_history: int,
-        current_turn_id: int | None = None,
-    ) -> list[dict[str, object]]:
-        """Convert raw context.fetch messages into bounded TTS context entries."""
-        normalized_entries: list[dict[str, object]] = []
-        for item in contents:
-            if not isinstance(item, dict):
-                continue
-
-            role = item.get("role")
-            if role not in ("user", "assistant"):
-                continue
-
-            content_parts = self._normalize_openai_content(item.get("content"))
-            if not content_parts:
-                continue
-
-            timestamp = self._extract_message_timestamp(item)
-            metadata = item.get("metadata", {})
-            interrupted = (
-                bool(metadata.get("interrupted", False))
-                if isinstance(metadata, dict)
-                else False
-            )
-            end_time = (
-                metadata.get("interrupt_timestamp", timestamp)
-                if isinstance(metadata, dict)
-                else timestamp
-            )
-            turn_id = item.get("turn_id", 0)
-            if current_turn_id is not None and turn_id == current_turn_id:
-                continue
-
-            normalized_entries.append(
-                {
-                    "role": role,
-                    "content": content_parts,
-                    "interrupted": interrupted,
-                    "start_time": timestamp,
-                    "end_time": end_time,
-                    "turn_id": turn_id,
-                }
-            )
-
-        if max_history <= 0 or not normalized_entries:
-            return normalized_entries
-
-        selected_turn_ids: list[int] = []
-        for entry in reversed(normalized_entries):
-            turn_id = entry.get("turn_id", 0)
-            if not isinstance(turn_id, int):
-                continue
-            if turn_id not in selected_turn_ids:
-                selected_turn_ids.append(turn_id)
-            if len(selected_turn_ids) >= max_history:
-                break
-
-        if not selected_turn_ids:
-            return []
-
-        selected_turn_id_set = set(selected_turn_ids)
-        return [
-            entry
-            for entry in normalized_entries
-            if entry.get("turn_id") in selected_turn_id_set
-        ]
-
-    def _resolve_current_turn_id(self, t: TTSTextInput) -> int | None:
-        """Resolve current turn id so current in-progress turn can be excluded."""
+    def _resolve_request_seq_id(self, t: TTSTextInput) -> int:
+        """Resolve request_seq_id from TTSTextInput metadata."""
         if isinstance(t.metadata, dict):
-            metadata_turn_id = t.metadata.get("turn_id")
-            if isinstance(metadata_turn_id, int):
-                return metadata_turn_id
-
-        if isinstance(self.current_turn_id, int) and self.current_turn_id >= 0:
-            return self.current_turn_id
-        return None
-
-    def _normalize_openai_content(
-        self, content: object
-    ) -> list[dict[str, str]]:
-        """Normalize fetch content into OpenAI-style text content parts."""
-        if isinstance(content, str):
-            stripped = content.strip()
-            if not stripped:
-                return []
-            return [{"type": "text", "text": stripped}]
-
-        if isinstance(content, list):
-            normalized_parts: list[dict[str, str]] = []
-            for part in content:
-                if not isinstance(part, dict):
-                    continue
-                if part.get("type") != "text":
-                    continue
-                text = part.get("text")
-                if isinstance(text, str) and text.strip():
-                    normalized_parts.append(
-                        {"type": "text", "text": text.strip()}
-                    )
-            return normalized_parts
-
-        return []
-
-    def _extract_message_timestamp(self, item: dict) -> int:
-        """Extract message timestamp from top-level or metadata."""
-        timestamp = item.get("timestamp")
-        if isinstance(timestamp, int):
-            return timestamp
-
-        metadata = item.get("metadata", {})
-        if isinstance(metadata, dict):
-            metadata_timestamp = metadata.get("timestamp")
-            if isinstance(metadata_timestamp, int):
-                return metadata_timestamp
-
+            turn_seq_id = t.metadata.get("turn_seq_id")
+            if isinstance(turn_seq_id, int):
+                return turn_seq_id
         return 0

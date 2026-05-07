@@ -27,20 +27,24 @@ All OpenAI TTS-specific settings are configured within the `params` object:
 - `voice` (string, required): Voice identifier (e.g., "coral", "alloy", "echo", "fable", "onyx", "nova", "shimmer")
 - `speed` (float, optional): Speech speed (0.25 to 4.0, default: 1.0)
 - `instructions` (string, optional): Additional instructions for the TTS model
-- `enable_context` (bool, optional): Enable context-aware passthrough fields for custom TTS servers (default: `false`)
-- `context_max_history` (int, optional): Number of previous completed turns to include in `context.context_text` on the first request of each turn (default: `0`)
+- `enable_session_context` (bool, optional): Enable business-level session context passthrough (default: `false`)
+- `enable_request_id` (bool, optional): Enable business-level request identifiers passthrough (default: `false`)
 
-When `enable_context` is `true`, every outbound request includes:
+When `params.enable_request_id` is `true`, outbound requests include:
 
-- `context_id` (string): Always present, uses the current `request_id`
-- `is_start` (bool): Present and `true` only on the first request of the same `request_id`
-- `is_end` (bool): Present and `true` only on the last request where `text_input_end=true`
+- `request_id` (string): Always present, uses the current `request_id`
+- `request_seq_id` (int): Uses `TTSTextInput.metadata["turn_seq_id"]`
+- `request_end` (bool): Present and `true` only on the last request where `text_input_end=true`
 
-On the first request of each turn, the extension also sends a `context` object:
+When `params.enable_session_context` is `true`, outbound requests include:
 
-- `context.context_id`: Same as the current `request_id`
-- `context.context_type`: Fixed to `conversation_history`
-- `context.context_text`: A JSON string built from the `context` extension's `fetch` history, bounded to the latest `context_max_history` turn IDs. Each entry includes `role`, OpenAI-style `content`, `interrupted`, `start_time`, `end_time`, and `turn_id`.
+- `session_id` (string): Uses `taskInfo.taskId`
+
+On the first request of each turn, the extension also sends a `session_context` object:
+
+- `session_context.type`: Fixed to `conversation_history`
+- `session_context.version`: Fixed to `v1`
+- `session_context.context`: The previous `context_text` JSON string built from the `context` extension's `fetch` history. Each entry includes `role`, OpenAI-style `content`, `interrupted`, `start_time`, `end_time`, and `turn_id`.
 
 ### Example Configuration
 
@@ -54,8 +58,8 @@ On the first request of each turn, the extension also sends a `context` object:
     "voice": "coral",
     "speed": 1.0,
     "instructions": "",
-    "enable_context": false,
-    "context_max_history": 0
+    "enable_session_context": false,
+    "enable_request_id": false
   }
 }
 ```
