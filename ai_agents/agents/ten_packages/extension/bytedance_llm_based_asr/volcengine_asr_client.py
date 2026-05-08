@@ -506,6 +506,14 @@ class VolcengineASRClient:
         if not self.websocket:
             raise RuntimeError("WebSocket not connected")
 
+        request_payload = {
+            "request": self.config.get_request_config(),
+        }
+        if self.ten_env:
+            self.ten_env.log_info(
+                "full_client_request params (request section): "
+                + json.dumps(request_payload, ensure_ascii=False),
+            )
         request = RequestBuilder.new_full_client_request(self.seq, self.config)
         self.seq += 1
         await self.websocket.send(request)

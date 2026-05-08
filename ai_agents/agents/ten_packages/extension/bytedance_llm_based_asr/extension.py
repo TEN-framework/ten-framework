@@ -44,6 +44,7 @@ from ten_runtime import (
 )
 
 from .config import BytedanceASRLLMConfig
+from .dialog_ctx import build_volc_dialog_context_str
 from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
 from .log_id_dumper_manager import LogIdDumperManager
 from .const import (
@@ -136,6 +137,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Enable utterance grouping
         self.enable_utterance_grouping: bool = True
+
+        self._update_configs_lock: asyncio.Lock = asyncio.Lock()
 
     @override
     def vendor(self) -> str:
@@ -638,8 +641,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         duration_ms: int,
         language: str,
         metadata: dict[str, Any],
-    ) -> None:
-        """Send ASR result with given text and metadata."""
+    ) -> bool:
+        """Send ASR result with given text and metadata.
+
+        Returns False when the result is not sent (e.g. empty text with omit enabled).
+        """
+        if (
+            self.config
+            and self.config.get_omit_empty_text_results()
+            and not text.strip()
+        ):
+            return False
+
         asr_result = ASRResult(
             text=text,
             final=is_final,
@@ -650,6 +663,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             metadata=metadata,
         )
         await self.send_asr_result(asr_result)
+        return True
 
     async def _track_utterance_timestamps(self, result: ASRResponse) -> None:
         """Track utterance timestamps and send two-pass delay metrics."""
@@ -763,7 +777,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 metadata = self._build_metadata_with_asr_info(
                     result_level_fields=result_level_asr_info
                 )
-                await self._send_asr_result_from_text(
+                sent = await self._send_asr_result_from_text(
                     text=result.text,
                     is_final=False,
                     start_ms=actual_start_ms,
@@ -799,7 +813,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
                     # Extract metadata (always include invoke_type and source for all results)
                     if is_final:
-                        has_final_result = True
                         metadata = self._extract_final_result_metadata(
                             utterance,
                             result_level_fields=result_level_asr_info,
@@ -810,7 +823,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                             result_level_fields=result_level_asr_info,
                         )
 
-                    await self._send_asr_result_from_text(
+                    sent = await self._send_asr_result_from_text(
                         text=utterance.text,
                         is_final=is_final,
                         start_ms=actual_start_ms,
@@ -818,6 +831,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         language=result.language,
                         metadata=metadata,
                     )
+                    if is_final and sent:
+                        has_final_result = True
             else:
                 # Filter out invalid utterances first
                 valid_utterances = [
@@ -875,10 +890,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         merged["start_time"]
                     )
 
-                    if is_final:
-                        has_final_result = True
-
-                    await self._send_asr_result_from_text(
+                    sent = await self._send_asr_result_from_text(
                         text=merged["text"],
                         is_final=is_final,
                         start_ms=actual_start_ms,
@@ -886,6 +898,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         language=result.language,
                         metadata=merged["metadata"],
                     )
+                    if is_final and sent:
+                        has_final_result = True
 
             # finalize end signal if there was any final result
             if has_final_result:
@@ -1046,7 +1060,132 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         )
         self.connected = False
 
+    @staticmethod
+    def _set_update_configs_cmd_result(
+        cmd_result: CmdResult, *, code: int, message: str
+    ) -> None:
+        """Match ten_ai_base cmd_in convention: result.code + result.message."""
+        cmd_result.set_property_int("code", code)
+        cmd_result.set_property_string("message", message)
+
+    async def _run_update_configs(
+        self, payload: dict[str, Any]
+    ) -> tuple[bool, str]:
+        if not self.config:
+            return False, "config not loaded"
+        if payload.get("schema_version") != 1:
+            return False, "unsupported schema_version"
+        raw = payload.get("dialog_messages")
+        if raw is not None and not isinstance(raw, list):
+            return False, "dialog_messages must be a list"
+
+        dialog_messages: list[Any] = raw if isinstance(raw, list) else []
+
+        context_str = build_volc_dialog_context_str(
+            dialog_messages,
+            language=self.config.language,
+        )
+        req = self.config.params.setdefault("request", {})
+        corpus = req.setdefault("corpus", {})
+        if context_str is None:
+            corpus.pop("context", None)
+        else:
+            corpus["context"] = context_str
+
+        self.ten_env.log_info(
+            f"update_configs: corpus.context set, reconnecting (messages={len(dialog_messages)}): "
+            f"{json.dumps(dialog_messages, ensure_ascii=False)}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+
+        await self.stop_connection()
+        await self.start_connection()
+
+        return True, ""
+
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         """Handle commands."""
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        await ten_env.return_result(cmd_result)
+        if cmd.get_name() != "update_configs":
+            await super().on_cmd(ten_env, cmd)
+            return
+
+        try:
+            prop_json, jerr = cmd.get_property_to_json(None)
+            if jerr or not prop_json:
+                ten_env.log_error(
+                    f"update_configs: missing_or_invalid_cmd_json err={jerr!r}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message="missing_or_invalid_cmd_json",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            try:
+                payload = json.loads(prop_json)
+            except json.JSONDecodeError as e:
+                ten_env.log_error(
+                    f"update_configs: invalid_json {e}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message=f"invalid_json:{e}",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            if not isinstance(payload, dict):
+                ten_env.log_error(
+                    "update_configs: payload_not_object",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message="payload_not_object",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            async with self._update_configs_lock:
+                ok, err_msg = await self._run_update_configs(payload)
+
+            if ok:
+                cmd_result = CmdResult.create(StatusCode.OK, cmd)
+                self._set_update_configs_cmd_result(
+                    cmd_result,
+                    code=0,
+                    message="volc_dialog_ctx",
+                )
+            else:
+                ten_env.log_error(
+                    f"update_configs: {err_msg}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    cmd_result,
+                    code=-1,
+                    message=err_msg,
+                )
+            await ten_env.return_result(cmd_result)
+        except Exception as e:
+            ten_env.log_error(
+                f"update_configs: unexpected error: {e}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            self._set_update_configs_cmd_result(
+                cmd_result,
+                code=-1,
+                message=str(e),
+            )
+            await ten_env.return_result(cmd_result)
