@@ -1,12 +1,12 @@
 {
   "type": "system",
   "name": "ten_runtime_go",
-  "version": "0.11.64",
+  "version": "0.11.65",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.64"
+      "version": "0.11.65"
     }
   ],
   "package": {
