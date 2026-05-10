@@ -8,6 +8,7 @@ import argparse
 import sys
 import os
 from build.scripts import cmd_exec
+from build.ten_common.rust import target_dir_tag
 
 
 class ArgumentInfo(argparse.Namespace):
@@ -111,6 +112,8 @@ if __name__ == "__main__":
         returncode, _ = cmd_exec.run_cmd(cmd, args.log_level)
         if returncode:
             raise RuntimeError("Failed to run cargo build.")
+
+        target_dir_tag.ensure_cargo_target_dir_tag(args.target_path)
 
     except Exception as exc:
         print(exc)
