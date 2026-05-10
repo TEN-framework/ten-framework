@@ -22,8 +22,8 @@ def ensure_cargo_target_dir_tag(target_dir: str | Path) -> None:
 
     tag_path = target_dir_path / CACHEDIR_TAG_FILENAME
     if tag_path.is_file():
-      existing_content = tag_path.read_text(encoding="utf-8")
-      if existing_content == CACHEDIR_TAG_CONTENT:
-          return
+        existing_content = tag_path.read_text(encoding="utf-8")
+        if existing_content == CACHEDIR_TAG_CONTENT:
+            return
 
     tag_path.write_text(CACHEDIR_TAG_CONTENT, encoding="utf-8")

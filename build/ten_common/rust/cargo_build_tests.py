@@ -9,7 +9,10 @@ import json
 import sys
 import os
 from build.scripts import cmd_exec, fs_utils, timestamp_proxy
-from build.ten_common.rust import target_dir_tag
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import target_dir_tag
 
 
 class ArgumentInfo(argparse.Namespace):
