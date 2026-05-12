@@ -11,7 +11,7 @@ import os
 import websockets
 from dataclasses import asdict, dataclass
 from ten_ai_base.message import ModuleMetrics
-from typing import Any
+from typing import Any, cast
 from typing_extensions import override
 
 from ten_ai_base.asr import (
@@ -52,41 +52,41 @@ from .const import (
 )
 
 
-def _apply_string_field_under_params(
-    params: dict[str, Any], field_path: str, value: str
-) -> tuple[bool, str]:
-    """Set or clear a nested key under params using dot-separated path.
-
-    Empty ``value`` removes the terminal key (same as prior dialog_ctx clear).
-
-    For each prefix segment: if the key is missing, an empty dict is created;
-    if the key exists and its value is not a dict, the call fails with
-    ``path_conflict_non_dict_at:...`` and ``params`` is left unchanged for
-    that traversal (no silent overwrite of scalars/lists/etc.).
-    """
-    parts = [p for p in field_path.split(".") if p]
-    if not parts:
-        return False, "empty_field_path"
-    cur: Any = params
-    for key in parts[:-1]:
-        if not isinstance(cur, dict):
-            return False, f"path_not_dict_at:{key}"
-        if key not in cur:
-            nxt: dict[str, Any] = {}
-            cur[key] = nxt
-            cur = nxt
-        elif isinstance(cur[key], dict):
-            cur = cur[key]
+def _deep_merge_dict(target: dict[str, Any], patch: dict[str, Any]) -> None:
+    """Merge ``patch`` into ``target`` in place; dict values recurse."""
+    for key, patch_val in patch.items():
+        if (
+            key in target
+            and isinstance(target[key], dict)
+            and isinstance(patch_val, dict)
+        ):
+            _deep_merge_dict(target[key], patch_val)
         else:
-            return False, f"path_conflict_non_dict_at:{key}"
-    last = parts[-1]
-    if not isinstance(cur, dict):
-        return False, "parent_not_dict"
-    if value == "":
-        cur.pop(last, None)
-    else:
-        cur[last] = value
-    return True, ""
+            target[key] = patch_val
+
+
+def _strip_empty_request_corpus_context(params: dict[str, Any]) -> None:
+    """Normalize ``request.corpus.context`` after ``update_configs`` merges JSON into ``params``.
+
+    Contract for runtime config patches (``update_configs`` payload → merged into
+    ``config.params``):
+
+    - If ``request`` or ``corpus`` is missing or not a ``dict``, this function is a no-op.
+    - If ``corpus.context`` is the empty string ``""``, the ``context`` key is **removed**
+      from ``corpus``. That is interpreted as "clear dialog / hot context" for the next
+      connection, not as "send an explicit empty string field" to the service.
+
+    Limitation: callers cannot use this path to force the wire request to include
+    ``context: ""`` while keeping the key; only omission vs non-empty string is supported.
+    """
+    request = params.get("request")
+    if not isinstance(request, dict):
+        return
+    corpus = request.get("corpus")
+    if not isinstance(corpus, dict):
+        return
+    if corpus.get("context") == "":
+        corpus.pop("context", None)
 
 
 @dataclass
@@ -1109,28 +1109,34 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     ) -> tuple[bool, str]:
         if not self.config:
             return False, "config not loaded"
-        if payload.get("schema_version") != 1:
-            return False, "unsupported schema_version"
-        field_path = payload.get("field_path")
-        if not isinstance(field_path, str) or not field_path.strip():
-            return False, "field_path must be a non-empty string"
-        raw_val = payload.get("value", "")
-        if raw_val is not None and not isinstance(raw_val, str):
-            return False, "value must be a string when present"
-        value = "" if raw_val is None else raw_val
+
+        params_patch = payload.get("params")
+        url_val = payload.get("url")
+        dump_present = "dump" in payload
+
+        has_params = isinstance(params_patch, dict) and bool(params_patch)
+        has_url = isinstance(url_val, str) and bool(url_val.strip())
 
         params = self.config.params
         if not isinstance(params, dict):
             return False, "params_not_dict"
-        ok, err = _apply_string_field_under_params(
-            params, field_path.strip(), value
-        )
-        if not ok:
-            return False, err
+
+        if has_url:
+            params["api_url"] = cast(str, url_val).strip()
+
+        if dump_present:
+            self.config.dump = bool(payload["dump"])
+
+        keys_for_log: list[str] = []
+        if has_params:
+            patch = cast(dict[str, Any], params_patch)
+            keys_for_log = list(patch.keys())
+            _deep_merge_dict(params, patch)
+            _strip_empty_request_corpus_context(params)
 
         self.ten_env.log_info(
-            f"update_configs: params[{field_path!r}] updated, reconnecting "
-            f"(value_len={len(value)})",
+            "update_configs: merged payload keys into config, reconnecting "
+            f"(params_keys={keys_for_log})",
             category=LOG_CATEGORY_KEY_POINT,
         )
 

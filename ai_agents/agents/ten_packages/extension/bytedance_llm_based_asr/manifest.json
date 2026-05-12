@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_llm_based_asr",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "dependencies": [
     {
       "type": "system",
@@ -43,45 +43,7 @@
           }
         }
       }
-    },
-    "cmd_in": [
-      {
-        "name": "update_configs",
-        "property": {
-          "properties": {
-            "schema_version": {
-              "type": "int32"
-            },
-            "field_path": {
-              "type": "string"
-            },
-            "value": {
-              "type": "string"
-            },
-            "metadata": {
-              "type": "object",
-              "properties": {}
-            }
-          },
-          "required": [
-            "schema_version",
-            "field_path"
-          ]
-        },
-        "result": {
-          "property": {
-            "properties": {
-              "code": {
-                "type": "int64"
-              },
-              "message": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    ]
+    }
   },
   "package": {
     "include": [
