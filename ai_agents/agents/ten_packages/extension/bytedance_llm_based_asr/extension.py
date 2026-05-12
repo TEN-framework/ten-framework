@@ -44,13 +44,49 @@ from ten_runtime import (
 )
 
 from .config import BytedanceASRLLMConfig
-from .dialog_ctx import build_volc_dialog_context_str
 from .volcengine_asr_client import VolcengineASRClient, ASRResponse, Utterance
 from .log_id_dumper_manager import LogIdDumperManager
 from .const import (
     DUMP_FILE_NAME,
     is_reconnectable_error,
 )
+
+
+def _apply_string_field_under_params(
+    params: dict[str, Any], field_path: str, value: str
+) -> tuple[bool, str]:
+    """Set or clear a nested key under params using dot-separated path.
+
+    Empty ``value`` removes the terminal key (same as prior dialog_ctx clear).
+
+    For each prefix segment: if the key is missing, an empty dict is created;
+    if the key exists and its value is not a dict, the call fails with
+    ``path_conflict_non_dict_at:...`` and ``params`` is left unchanged for
+    that traversal (no silent overwrite of scalars/lists/etc.).
+    """
+    parts = [p for p in field_path.split(".") if p]
+    if not parts:
+        return False, "empty_field_path"
+    cur: Any = params
+    for key in parts[:-1]:
+        if not isinstance(cur, dict):
+            return False, f"path_not_dict_at:{key}"
+        if key not in cur:
+            nxt: dict[str, Any] = {}
+            cur[key] = nxt
+            cur = nxt
+        elif isinstance(cur[key], dict):
+            cur = cur[key]
+        else:
+            return False, f"path_conflict_non_dict_at:{key}"
+    last = parts[-1]
+    if not isinstance(cur, dict):
+        return False, "parent_not_dict"
+    if value == "":
+        cur.pop(last, None)
+    else:
+        cur[last] = value
+    return True, ""
 
 
 @dataclass
@@ -1075,26 +1111,26 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return False, "config not loaded"
         if payload.get("schema_version") != 1:
             return False, "unsupported schema_version"
-        raw = payload.get("dialog_messages")
-        if raw is not None and not isinstance(raw, list):
-            return False, "dialog_messages must be a list"
+        field_path = payload.get("field_path")
+        if not isinstance(field_path, str) or not field_path.strip():
+            return False, "field_path must be a non-empty string"
+        raw_val = payload.get("value", "")
+        if raw_val is not None and not isinstance(raw_val, str):
+            return False, "value must be a string when present"
+        value = "" if raw_val is None else raw_val
 
-        dialog_messages: list[Any] = raw if isinstance(raw, list) else []
-
-        context_str = build_volc_dialog_context_str(
-            dialog_messages,
-            language=self.config.language,
+        params = self.config.params
+        if not isinstance(params, dict):
+            return False, "params_not_dict"
+        ok, err = _apply_string_field_under_params(
+            params, field_path.strip(), value
         )
-        req = self.config.params.setdefault("request", {})
-        corpus = req.setdefault("corpus", {})
-        if context_str is None:
-            corpus.pop("context", None)
-        else:
-            corpus["context"] = context_str
+        if not ok:
+            return False, err
 
         self.ten_env.log_info(
-            f"update_configs: corpus.context set, reconnecting (messages={len(dialog_messages)}): "
-            f"{json.dumps(dialog_messages, ensure_ascii=False)}",
+            f"update_configs: params[{field_path!r}] updated, reconnecting "
+            f"(value_len={len(value)})",
             category=LOG_CATEGORY_KEY_POINT,
         )
 
@@ -1163,7 +1199,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 self._set_update_configs_cmd_result(
                     cmd_result,
                     code=0,
-                    message="volc_dialog_ctx",
+                    message="",
                 )
             else:
                 ten_env.log_error(
