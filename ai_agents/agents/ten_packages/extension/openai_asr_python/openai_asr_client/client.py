@@ -130,6 +130,8 @@ class OpenAIAsrClient(WebSocketClient):
         # then send the transcription session update param to the server.
         # so we need to wait for the server to be ready.
         self.params_ready_event = asyncio.Event()
+        self._pending_audio_messages: list[str] = []
+        self._pending_commit_requested = False
 
         super().__init__(end_point, logger=self.logger, **kwargs)
 
@@ -147,12 +149,34 @@ class OpenAIAsrClient(WebSocketClient):
             event_id=None,
             session=self._params,
         )
-        await self.send(session.model_dump_json(exclude_none=True))
+        self.logger.debug("Queue transcription_session.update")
+        await self.send(
+            session.model_dump_json(exclude_none=True),
+            priority=0,
+        )
+
+    async def _flush_pending_audio(self):
+        if self._pending_audio_messages:
+            self.logger.debug(
+                f"Flushing {len(self._pending_audio_messages)} pending audio messages"
+            )
+        for message in self._pending_audio_messages:
+            await self.send(message, priority=10)
+        self._pending_audio_messages.clear()
+
+        if self._pending_commit_requested:
+            self.logger.debug("Flushing pending input_audio_buffer.commit")
+            await self.send(
+                json.dumps({"type": "input_audio_buffer.commit"}),
+                priority=20,
+            )
+            self._pending_commit_requested = False
 
     async def _handle_event(self, message: dict):
         _type = message.get("type")
         if _type == "transcription_session.updated":
             self.params_ready_event.set()
+            await self._flush_pending_audio()
             await self._call_listener(
                 self._listener.on_asr_start,
                 Session[TranscriptionParam](
@@ -257,14 +281,28 @@ class OpenAIAsrClient(WebSocketClient):
 
     async def send_pcm_data(self, data: bytes):
         base64_data = base64.b64encode(data).decode("utf-8")
-        await self.send(
-            json.dumps(
-                {"type": "input_audio_buffer.append", "audio": base64_data}
-            )
+        message = json.dumps(
+            {"type": "input_audio_buffer.append", "audio": base64_data}
         )
+        if not self.params_ready_event.is_set():
+            self._pending_audio_messages.append(message)
+            self.logger.debug(
+                f"Buffer input_audio_buffer.append before session ready, pending={len(self._pending_audio_messages)}"
+            )
+            return
+        await self.send(message, priority=10)
 
     async def send_end_of_stream(self):
-        await self.send(json.dumps({"type": "input_audio_buffer.commit"}))
+        if not self.params_ready_event.is_set():
+            self._pending_commit_requested = True
+            self.logger.debug(
+                "Buffer input_audio_buffer.commit before session ready"
+            )
+            return
+        await self.send(
+            json.dumps({"type": "input_audio_buffer.commit"}),
+            priority=20,
+        )
 
     async def send_heartbeat(self):
         await self.send(b"")
