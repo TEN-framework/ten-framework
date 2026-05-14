@@ -67,6 +67,8 @@ class WebSocketClient(ABC):
         self._message_queue: asyncio.PriorityQueue[
             tuple[int, int, str | bytes]
         ] = asyncio.PriorityQueue()
+        # Keep sequence monotonic across reconnects so queued messages retain
+        # stable FIFO order within the same priority.
         self._message_sequence = 0
         self._shutdown_event = asyncio.Event()
         self._main_task: asyncio.Task | None = None
