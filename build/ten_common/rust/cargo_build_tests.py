@@ -9,6 +9,10 @@ import json
 import sys
 import os
 from build.scripts import cmd_exec, fs_utils, timestamp_proxy
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import target_dir_tag
 
 
 class ArgumentInfo(argparse.Namespace):
@@ -191,6 +195,8 @@ if __name__ == "__main__":
             raise RuntimeError(f"Failed to build rust tests: {logs}")
         else:
             print(logs)
+
+        target_dir_tag.ensure_cargo_target_dir_tag(args.target_path)
 
         # The prefix of the unit test binary is the crate name (i.e., the
         # 'name' in [[bin]] or [[lib]] in a crate).

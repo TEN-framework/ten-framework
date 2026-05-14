@@ -136,8 +136,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 if not (
                     self.config.params.get("enable_endpoint_detection", False)
                 ):
-                    raise ValueError(
-                        "endpoint detection must be enabled when finalize_mode is IGNORE"
+                    ten_env.log_error(
+                        "endpoint detection must be enabled when finalize_mode is IGNORE",
+                        category=LOG_CATEGORY_KEY_POINT,
                     )
             if self.config.dump:
                 self.audio_dumper = Dumper(

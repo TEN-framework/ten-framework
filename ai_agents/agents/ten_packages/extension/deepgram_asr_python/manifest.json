@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "deepgram_asr_python",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "dependencies": [
     {
       "type": "system",
@@ -38,6 +38,9 @@
               "type": "string"
             },
             "language": {
+              "type": "string"
+            },
+            "result_language_default": {
               "type": "string"
             }
           }

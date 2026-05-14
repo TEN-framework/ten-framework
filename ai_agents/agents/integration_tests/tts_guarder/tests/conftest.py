@@ -121,6 +121,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default="True",
         help="enable sample rate comparison (True/False)",
     )
+    parser.addoption(
+        "--enable_subtitle_alignment",
+        action="store",
+        default="False",
+        help="enable subtitle alignment test (True/False)",
+    )
 
 
 @pytest.fixture
@@ -131,3 +137,9 @@ def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
 @pytest.fixture
 def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
     return request.config.getoption("--config_dir")
+
+
+@pytest.fixture
+def enable_subtitle_alignment(request: pytest.FixtureRequest) -> bool:
+    value = request.config.getoption("--enable_subtitle_alignment")
+    return str(value).lower() == "true"

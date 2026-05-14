@@ -107,9 +107,8 @@ class DeepgramASRConfig(BaseModel):
         params_dict = self.params or {}
         return "flux" in (params_dict.get("model", "") or "").lower()
 
-    @property
-    def normalized_language(self) -> str:
-        """Convert language code to normalized format for Deepgram"""
+    @staticmethod
+    def _map_language_code_to_bcp47(language_code: str) -> str:
         language_map = {
             "zh": "zh-CN",
             "en": "en-US",
@@ -124,10 +123,24 @@ class DeepgramASRConfig(BaseModel):
             "hi": "hi-IN",
             "ar": "ar-AE",
         }
+        return language_map.get(language_code, language_code)
+
+    @property
+    def normalized_language(self) -> str:
+        """Convert language code to normalized format for Deepgram"""
         params_dict = self.params or {}
         if self.is_flux_model:
             # For flux models, use the 'language' param directly
             language_code = params_dict.get("language", "en-US")
         else:
             language_code = params_dict.get("language", "") or ""
-        return language_map.get(language_code, language_code)
+        return self._map_language_code_to_bcp47(language_code)
+
+    @property
+    def asr_result_language(self) -> str:
+        """ASRResult.language: uses params.result_language_default as-is when set (no code mapping)."""
+        params_dict = self.params or {}
+        rld = params_dict.get("result_language_default")
+        if rld is not None and str(rld).strip() != "":
+            return str(rld).strip()
+        return self.normalized_language

@@ -31,3 +31,17 @@ prepare mutiple text for testing different scenario
 # Run the test
 bash tests/bin/start tests/test_elevenlabs_tts_basic.py::test_short_text --extension_name=elevenlbas_tts_python
 ```
+
+## Subtitle Alignment Test
+
+The subtitle alignment test is disabled by default in TTS guarder.
+
+```bash
+# Default guarder run: subtitle alignment test is skipped
+task tts-guarder-test EXTENSION=cartesia_tts
+
+# Explicitly enable subtitle alignment test
+task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
+```
+
+Currently, `test_subtitle_alignment.py` only runs for `cartesia_tts`.
