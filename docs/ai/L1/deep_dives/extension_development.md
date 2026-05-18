@@ -360,6 +360,13 @@ These are sent automatically by the base class. You don't need to send them manu
 }
 ```
 
+**Field semantics**:
+- `request_event_interval_ms`: wall-clock between the first audio chunk arrival
+  and the last audio chunk arrival for this `request_id` — the audio receive
+  window. **Not** TTFB; TTFB is reported separately via the `metrics` channel.
+- `request_total_audio_duration_ms`: total audio duration computed from the
+  received byte count and the configured PCM format.
+
 **Reason values**: `REQUEST_END` (1) = normal completion, `INTERRUPTED` (2) = flush/cancel,
 `ERROR` (3) = failure.
 
