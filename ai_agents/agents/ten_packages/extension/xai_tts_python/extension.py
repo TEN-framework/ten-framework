@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import traceback
 
-from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
     ModuleError,
