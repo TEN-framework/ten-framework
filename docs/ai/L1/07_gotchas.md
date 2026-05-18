@@ -132,19 +132,24 @@ Killing `node` and `bun` is not enough — `next-server` is a separate process
 that holds port 3000. If port 3000 is occupied, Next.js silently starts on
 3001+ which isn't Docker-exposed, making the frontend appear down.
 
-## CI `lint` Fails on Black-Dirty Code
+## CI `lint` Runs Both Black and Pylint
 
-The `lint` CI check on every PR runs `task check`, which runs `black --check`
-on `agents/ten_packages/extension/` and `agents/examples/`. If you commit
-from a host shell rather than inside the container, the repo's pre-commit
-hook does not run and any black-dirty file will land in the PR and fail CI.
-Run `task format && task check` inside the container before every push:
+The `lint` CI check on every PR runs two task targets:
+
+- `task check` — `black --check` (formatting)
+- `task lint` — `pylint` (any warning is fatal, including W0611 unused-import)
+
+If you commit from a host shell rather than inside the container, the repo's
+pre-commit hook does not run and either failure will surface only in CI.
+Before every push:
 
 ```bash
-sudo docker exec ten_agent_dev bash -c "cd /app && task format && task check"
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task format && task check && task lint"
 ```
 
-See [Formatting](04_conventions.md#formatting).
+Common foot-gun: leaving an unused import after a refactor. Pylint is strict
+and a single W0611 fails the build. See [Formatting](04_conventions.md#formatting).
 
 ## Docker Permission Denied
 
