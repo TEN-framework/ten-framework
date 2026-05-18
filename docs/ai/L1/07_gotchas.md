@@ -132,6 +132,15 @@ Killing `node` and `bun` is not enough — `next-server` is a separate process
 that holds port 3000. If port 3000 is occupied, Next.js silently starts on
 3001+ which isn't Docker-exposed, making the frontend appear down.
 
+## Docker Permission Denied
+
+`docker ps` fails with `permission denied while trying to connect to the
+docker API at unix:///var/run/docker.sock` when the current user is not in
+the `docker` group. The fix is `sudo docker …` for every invocation, not
+adding the user to the group mid-session. Examples in this doc set are
+inconsistent (some show `docker exec`, others `sudo docker exec`) — on a
+host where the bare form fails, treat every example as needing `sudo`.
+
 ## Apple Silicon Docker
 
 Docker containers may need Rosetta for x86 images on Apple Silicon Macs.
