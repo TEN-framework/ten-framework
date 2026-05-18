@@ -7,6 +7,8 @@ import asyncio
 import json
 from unittest.mock import patch, AsyncMock, MagicMock
 
+from websockets.protocol import State
+
 
 from ten_runtime import (
     ExtensionTester,
@@ -318,6 +320,50 @@ def test_connect_backoff_recovers_after_exhausted_cycle():
             await client._connect_with_backoff("second")
 
         succeeding.assert_awaited_once()
+
+    asyncio.run(_run())
+
+
+def test_get_after_cancel_reconnects_instead_of_failing():
+    """Regression: cancel() sets _is_cancelled and _needs_reconnect, then
+    the next get() must clear the cancellation flag before _reconnect runs
+    or the backoff loop short-circuits with a 499 and the request fails."""
+
+    async def _run():
+        ten_env = MagicMock()
+        ten_env.log_info = MagicMock()
+        ten_env.log_warn = MagicMock()
+        ten_env.log_error = MagicMock()
+
+        config = XAITTSConfig(api_key="xai-test-key")
+        client = XAITTSClient(config=config, ten_env=ten_env)
+
+        # Simulate the state right after cancel(): the WS is gone, but
+        # the flags are still set.
+        client._is_cancelled = True
+        client._needs_reconnect = True
+        client._ws = None
+
+        async def succeed(*_args, **_kwargs):
+            mock_ws = MagicMock()
+            mock_ws.send = AsyncMock()
+            mock_ws.state = State.OPEN
+
+            async def recv_audio_done():
+                return json.dumps({"type": "audio.done"})
+
+            mock_ws.recv = AsyncMock(side_effect=recv_audio_done)
+            client._ws = mock_ws
+
+        with patch.object(client, "_connect", AsyncMock(side_effect=succeed)):
+            events = []
+            async for _, event in client.get("hello"):
+                events.append(event)
+
+        # No 499 / no XAITTSConnectionException leaked out, request ran
+        # through to the EVENT_TTS_END sentinel.
+        assert EVENT_TTS_END in events
+        assert client._is_cancelled is False
 
     asyncio.run(_run())
 

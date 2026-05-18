@@ -140,12 +140,17 @@ class XAITTSClient:
             yield None, EVENT_TTS_END
             return
 
+        # A previous cancel()/stop() may have set _is_cancelled = True. A
+        # fresh request must clear it before reaching _reconnect /
+        # _ensure_connection, otherwise the backoff loop short-circuits
+        # with a 499 and the next TTS request after a barge-in fails.
+        self._is_cancelled = False
+
         if self._needs_reconnect:
             await self._reconnect()
             self._needs_reconnect = False
 
         await self._ensure_connection()
-        self._is_cancelled = False
         if not self._ttfb_sent:
             self._sent_ts = datetime.now()
 
