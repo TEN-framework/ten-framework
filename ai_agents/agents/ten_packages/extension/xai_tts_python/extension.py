@@ -42,7 +42,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         self._audio_start_sent = False
         self._request_text_length = 0
         self._audio_start_timestamp_ms = 0
-        self._request_event_interval_ms = 0
+        self._first_audio_chunk_ts: datetime | None = None
+        self._last_audio_chunk_ts: datetime | None = None
 
     @staticmethod
     def _contains_spoken_content(text: str) -> bool:
@@ -144,7 +145,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         )
         self.sent_ts = None
         self._audio_start_timestamp_ms = 0
-        self._request_event_interval_ms = 0
+        self._first_audio_chunk_ts = None
+        self._last_audio_chunk_ts = None
 
     def _calculate_audio_duration_ms(self) -> int:
         bytes_per_sample = self.synthesize_audio_sample_width()
@@ -157,7 +159,12 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         return int(duration_sec * 1000)
 
     def _calculate_request_event_interval_ms(self) -> int:
-        return self._request_event_interval_ms
+        if self._first_audio_chunk_ts is None or self._last_audio_chunk_ts is None:
+            return 0
+        return int(
+            (self._last_audio_chunk_ts - self._first_audio_chunk_ts).total_seconds()
+            * 1000
+        )
 
     async def request_tts(self, t: TTSTextInput) -> None:
         try:
@@ -173,7 +180,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self._audio_start_sent = False
                 self._request_text_length = 0
                 self._audio_start_timestamp_ms = 0
-                self._request_event_interval_ms = 0
+                self._first_audio_chunk_ts = None
+                self._last_audio_chunk_ts = None
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -211,7 +219,8 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self.total_audio_bytes = 0
                 self.sent_ts = None
                 self._audio_start_sent = False
-                self._request_event_interval_ms = 0
+                self._first_audio_chunk_ts = None
+                self._last_audio_chunk_ts = None
                 return
             if prepared_text:
                 self._request_text_length += len(prepared_text)
@@ -266,13 +275,14 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                     chunk_timestamp_ms = self._get_next_audio_chunk_timestamp_ms()
                     self.metrics_add_recv_audio_chunks(data_msg)
                     self.total_audio_bytes += len(data_msg)
+                    self._last_audio_chunk_ts = datetime.now()
                     await self._write_dump(data_msg)
                     await self.send_tts_audio_data(
                         data_msg, timestamp=chunk_timestamp_ms
                     )
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if isinstance(data_msg, int):
-                    self._request_event_interval_ms = data_msg
+                    self._first_audio_chunk_ts = datetime.now()
                     await self.send_tts_audio_start(
                         request_id=self.current_request_id
                     )
