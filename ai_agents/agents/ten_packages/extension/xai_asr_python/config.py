@@ -38,7 +38,7 @@ class XAIASRConfig(BaseModel):
             params.setdefault(key, value)
         self.params = params
 
-    def validate(self) -> None:
+    def validate_config(self) -> None:
         if not self.params.get("api_key"):
             raise ValueError("xAI API key is required")
         if self.params.get("sample_rate") not in {

@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import random
 from datetime import datetime
 from typing import AsyncIterator
 from urllib.parse import urlencode
@@ -13,7 +14,7 @@ from websockets.protocol import State
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
-from .config import XAITTSConfig
+from .config import XAITTSConfig, _is_sensitive_key
 
 
 EVENT_TTS_RESPONSE = 1
@@ -77,6 +78,13 @@ class XAITTSClient:
                 "optimize_streaming_latency",
                 "text_normalization",
             }:
+                continue
+            # Defensive: never forward a key whose name looks sensitive into
+            # the URL where it could land in proxy logs.
+            if _is_sensitive_key(key):
+                self.ten_env.log_warn(
+                    f"dropping sensitive-looking param {key!r} from ws url"
+                )
                 continue
             if value is not None:
                 query_params[key] = value
@@ -241,7 +249,13 @@ class XAITTSClient:
 
     async def _connect_with_backoff(self, reason: str) -> None:
         last_error: Exception | None = None
-        while self._connect_exp_cnt < MAX_CONNECT_ATTEMPTS:
+        attempt = 0
+        while attempt < MAX_CONNECT_ATTEMPTS:
+            if self._is_cancelled:
+                raise XAITTSConnectionException(
+                    status_code=499,
+                    body="xAI TTS connection cancelled",
+                )
             try:
                 await self._connect()
                 return
@@ -252,21 +266,27 @@ class XAITTSClient:
             except Exception as e:
                 last_error = e
 
-            self._connect_exp_cnt += 1
-            if self._connect_exp_cnt >= MAX_CONNECT_ATTEMPTS:
+            attempt += 1
+            self._connect_exp_cnt = attempt
+            if attempt >= MAX_CONNECT_ATTEMPTS:
                 break
 
-            backoff_seconds = min(
-                BASE_BACKOFF_SECONDS * (2 ** (self._connect_exp_cnt - 1)),
-                4.0,
-            )
+            base = min(BASE_BACKOFF_SECONDS * (2 ** (attempt - 1)), 4.0)
+            # Add ±20% jitter so multi-replica deployments do not all
+            # reconnect at the same millisecond after a shared outage.
+            backoff_seconds = base * (0.8 + random.random() * 0.4)
             self.ten_env.log_info(
                 f"vendor_status_changed: retrying xai tts websocket "
                 f"after {reason} failure in {backoff_seconds:.2f}s "
-                f"(attempt {self._connect_exp_cnt}/{MAX_CONNECT_ATTEMPTS})",
+                f"(attempt {attempt}/{MAX_CONNECT_ATTEMPTS})",
                 category=LOG_CATEGORY_VENDOR,
             )
             await asyncio.sleep(backoff_seconds)
+            if self._is_cancelled:
+                raise XAITTSConnectionException(
+                    status_code=499,
+                    body="xAI TTS connection cancelled",
+                )
 
         message = (
             str(last_error)

@@ -287,6 +287,71 @@ def test_connect_backoff_limit():
     asyncio.run(_run())
 
 
+def test_connect_backoff_recovers_after_exhausted_cycle():
+    """Regression: an exhausted _connect_with_backoff cycle must not leave
+    the client permanently un-reconnectable. The next call must run the
+    full retry budget instead of bailing immediately.
+    """
+
+    async def _run():
+        ten_env = MagicMock()
+        ten_env.log_info = MagicMock()
+        ten_env.log_warn = MagicMock()
+        ten_env.log_error = MagicMock()
+
+        config = XAITTSConfig(api_key="xai-test-key")
+        client = XAITTSClient(config=config, ten_env=ten_env)
+
+        failing = AsyncMock(side_effect=RuntimeError("temporary outage"))
+        with patch.object(client, "_connect", failing):
+            try:
+                await client._connect_with_backoff("first")
+            except XAITTSConnectionException:
+                pass
+
+        first_cycle_calls = failing.await_count
+        assert first_cycle_calls == 5
+
+        # After the cycle is exhausted, simulate the service coming back.
+        succeeding = AsyncMock()
+        with patch.object(client, "_connect", succeeding):
+            await client._connect_with_backoff("second")
+
+        succeeding.assert_awaited_once()
+
+    asyncio.run(_run())
+
+
+def test_connect_backoff_respects_cancellation():
+    """If stop() is called during the backoff window the loop should bail
+    rather than continue retrying."""
+
+    async def _run():
+        ten_env = MagicMock()
+        ten_env.log_info = MagicMock()
+        ten_env.log_warn = MagicMock()
+        ten_env.log_error = MagicMock()
+
+        config = XAITTSConfig(api_key="xai-test-key")
+        client = XAITTSClient(config=config, ten_env=ten_env)
+        client._is_cancelled = True
+
+        failing = AsyncMock(side_effect=RuntimeError("would retry forever"))
+        with patch.object(client, "_connect", failing):
+            try:
+                await client._connect_with_backoff("test")
+            except XAITTSConnectionException as exc:
+                assert exc.status_code == 499
+            else:
+                raise AssertionError(
+                    "Expected cancellation to short-circuit backoff"
+                )
+
+        failing.assert_not_called()
+
+    asyncio.run(_run())
+
+
 def test_client_whitespace_text_yields_end():
     """get() with whitespace-only text should yield
     EVENT_TTS_END."""

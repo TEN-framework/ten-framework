@@ -26,6 +26,10 @@ from .xai_tts import (
 )
 
 
+# Per xAI TTS docs: a single request accepts at most 15000 characters.
+MAX_REQUEST_TEXT_CHARS = 15000
+
+
 class XAITTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -58,7 +62,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 )
             self.config = XAITTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
-            self.config.validate()
+            self.config.validate_config()
             ten_env.log_info(
                 f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -237,8 +241,14 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self._last_audio_chunk_ts = None
                 return
             if prepared_text:
-                if self._request_text_length + len(prepared_text) > 15000:
-                    raise ValueError("xAI TTS text exceeds 15000 characters")
+                if (
+                    self._request_text_length + len(prepared_text)
+                    > MAX_REQUEST_TEXT_CHARS
+                ):
+                    raise ValueError(
+                        f"xAI TTS text exceeds "
+                        f"{MAX_REQUEST_TEXT_CHARS} characters"
+                    )
                 self._request_text_length += len(prepared_text)
                 self.metrics_add_input_characters(len(prepared_text))
                 self.metrics_add_output_characters(len(prepared_text))

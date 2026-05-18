@@ -13,11 +13,14 @@ class ReconnectManager:
     Manages bounded reconnection attempts with exponential backoff.
 
     Features:
-    - Bounded retry attempts (`max_attempts`, default: 4)
-    - Exponential backoff strategy with maximum delay cap: 0.5s, 1s, 2s, 4s (capped)
-    - Maximum delay cap to prevent overwhelming the service provider (default: 4s)
-    - Automatic counter reset after successful connection
-    - Detailed logging for monitoring and debugging
+    - Bounded retry attempts (caller chooses `max_attempts`; default 4).
+      The xAI ASR extension overrides this to 10 because the audio
+      buffer holds 10 MB and can tolerate longer outages.
+    - Exponential backoff: `base_delay * 2^(attempts-1)`, capped at `max_delay`
+      (default 0.5s, 1s, 2s, 4s, then 4s thereafter).
+    - Automatic counter reset after a successful connection (via
+      `mark_connection_successful`).
+    - Detailed logging for monitoring and debugging.
     """
 
     def __init__(

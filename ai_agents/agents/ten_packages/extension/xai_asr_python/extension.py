@@ -25,7 +25,12 @@ from ten_ai_base.message import (
 from ten_runtime import AsyncTenEnv, AudioFrame
 
 from .config import XAIASRConfig
-from .const import DUMP_FILE_NAME, MODULE_NAME_ASR
+from .const import (
+    AUDIO_BUFFER_BYTE_LIMIT,
+    DUMP_FILE_NAME,
+    MODULE_NAME_ASR,
+    RECONNECT_MAX_ATTEMPTS,
+)
 from .recognition import XAIASRRecognition, XAIASRRecognitionCallback
 from .reconnect_manager import ReconnectManager
 
@@ -42,6 +47,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         self._stop_requested = False
         self._close_expected = False
         self.connection_start_timestamp = 0
+        self._init_failed = False
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -61,13 +67,13 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         # integration guarder observes the non-fatal retry behavior before
         # terminal escalation.
         self.reconnect_manager = ReconnectManager(
-            logger=ten_env, max_attempts=10
+            logger=ten_env, max_attempts=RECONNECT_MAX_ATTEMPTS
         )
         config_json, _ = await ten_env.get_property_to_json("")
         try:
             self.config = XAIASRConfig.model_validate_json(config_json)
             self.config.apply_defaults()
-            self.config.validate()
+            self.config.validate_config()
             ten_env.log_info(
                 f"config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -80,6 +86,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
                 await self.audio_dumper.start()
         except Exception as e:
             ten_env.log_error(f"Invalid xAI config: {e}")
+            self._init_failed = True
             self.config = XAIASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -91,6 +98,10 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
 
     @override
     async def start_connection(self) -> None:
+        if self._init_failed:
+            # on_init already emitted a FATAL error; do not re-emit a second
+            # one for the same root cause.
+            return
         assert self.config is not None
         api_key = self.config.params.get("api_key", "")
         if not api_key or str(api_key).strip() == "":
@@ -213,7 +224,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+        return ASRBufferConfigModeKeep(byte_limit=AUDIO_BUFFER_BYTE_LIMIT)
 
     @override
     def input_audio_sample_rate(self) -> int:
@@ -230,10 +241,11 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
+            frame.unlock_buf(buf)
+            buf = None
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
             await self.recognition.send_audio_frame(audio_data)
-            frame.unlock_buf(buf)
             return True
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio to xAI STT: {e}")
@@ -289,7 +301,10 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     ) -> None:
         assert self.config is not None
         text = message_data.get("text", "")
-        if not text and not final:
+        # Empty-text results carry no information for downstream consumers
+        # regardless of the `final` flag; finalize() already filters on
+        # payload.get("text") before reaching here.
+        if not text:
             return
         start_ms = int((message_data.get("start", 0) or 0) * 1000)
         duration_ms = int((message_data.get("duration", 0) or 0) * 1000)

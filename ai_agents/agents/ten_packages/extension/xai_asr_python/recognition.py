@@ -1,6 +1,6 @@
 import asyncio
 import json
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any
 from urllib.parse import urlencode
 
@@ -12,7 +12,7 @@ from ten_ai_base.timeline import AudioTimeline
 from ten_runtime import AsyncTenEnv
 
 
-class XAIASRRecognitionCallback:
+class XAIASRRecognitionCallback(ABC):
     @abstractmethod
     async def on_open(self):
         pass
@@ -105,7 +105,7 @@ class XAIASRRecognition:
             if first_event.get("type") != "transcript.created":
                 raise RuntimeError(
                     f"Unexpected xAI STT startup event: "
-                    f"{first_event.get('type')}"
+                    f"type={first_event.get('type')!r}, payload={first_message!r}"
                 )
             self.ready_event.set()
             self._open_notified = True

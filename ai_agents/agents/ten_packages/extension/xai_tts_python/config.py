@@ -31,34 +31,48 @@ class XAITTSConfig(BaseModel):
     dump_path: str = "/tmp"
     params: dict[str, Any] = Field(default_factory=dict)
 
+    _TYPED_PARAM_KEYS = (
+        "api_key",
+        "base_url",
+        "voice_id",
+        "language",
+        "codec",
+        "sample_rate",
+        "bit_rate",
+        "optimize_streaming_latency",
+        "text_normalization",
+    )
+
     def update_params(self) -> None:
         params = self._ensure_dict(self.params)
         self.params = params
 
-        self.api_key = str(params.pop("api_key", self.api_key) or "")
-        self.base_url = str(params.pop("base_url", self.base_url) or "")
-        self.voice_id = str(params.pop("voice_id", self.voice_id) or "")
-        self.language = str(params.pop("language", self.language) or "")
-        self.codec = str(params.pop("codec", self.codec) or "")
+        self.api_key = str(params.get("api_key", self.api_key) or "")
+        self.base_url = str(params.get("base_url", self.base_url) or "")
+        self.voice_id = str(params.get("voice_id", self.voice_id) or "")
+        self.language = str(params.get("language", self.language) or "")
+        self.codec = str(params.get("codec", self.codec) or "")
         self.sample_rate = int(
-            params.pop("sample_rate", self.sample_rate) or self.sample_rate
+            params.get("sample_rate", self.sample_rate) or self.sample_rate
         )
         self.bit_rate = int(
-            params.pop("bit_rate", self.bit_rate) or self.bit_rate
+            params.get("bit_rate", self.bit_rate) or self.bit_rate
         )
         self.optimize_streaming_latency = int(
-            params.pop(
+            params.get(
                 "optimize_streaming_latency",
                 self.optimize_streaming_latency,
             )
             or self.optimize_streaming_latency
         )
         self.text_normalization = self._coerce_bool(
-            params.pop("text_normalization", self.text_normalization),
+            params.get("text_normalization", self.text_normalization),
             self.text_normalization,
         )
+        for key in self._TYPED_PARAM_KEYS:
+            params.pop(key, None)
 
-    def validate(self) -> None:
+    def validate_config(self) -> None:
         if not self.api_key:
             raise ValueError("API key is required")
         if self.sample_rate not in {8000, 16000, 22050, 24000, 44100, 48000}:

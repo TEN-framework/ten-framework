@@ -10,7 +10,7 @@ def test_invalid_sample_rate():
     config = XAIASRConfig(params={"api_key": "xai-test-key", "sample_rate": 1})
     config.apply_defaults()
     try:
-        config.validate()
+        config.validate_config()
     except ValueError as exc:
         assert "Unsupported sample_rate" in str(exc)
     else:
@@ -21,7 +21,7 @@ def test_invalid_encoding():
     config = XAIASRConfig(params={"api_key": "xai-test-key", "encoding": "mp3"})
     config.apply_defaults()
     try:
-        config.validate()
+        config.validate_config()
     except ValueError as exc:
         assert "Unsupported encoding" in str(exc)
     else:
