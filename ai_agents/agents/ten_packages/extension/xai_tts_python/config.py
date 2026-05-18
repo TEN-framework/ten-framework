@@ -61,8 +61,6 @@ class XAITTSConfig(BaseModel):
     def validate(self) -> None:
         if not self.api_key:
             raise ValueError("API key is required")
-        if not self.api_key.startswith("xai-"):
-            raise ValueError("API key must start with 'xai-'")
         if self.sample_rate not in {8000, 16000, 22050, 24000, 44100, 48000}:
             raise ValueError(f"Unsupported sample rate: {self.sample_rate}")
         if self.codec not in {"pcm", "mp3", "wav", "mulaw", "ulaw", "alaw"}:

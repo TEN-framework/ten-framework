@@ -135,8 +135,16 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             reason=reason,
         )
         await self.send_usage_metrics(self.current_request_id or "")
-        if self.current_request_id in self.recorder_map:
-            await self.recorder_map[self.current_request_id].flush()
+        recorder = (
+            self.recorder_map.pop(self.current_request_id, None)
+            if self.current_request_id
+            else None
+        )
+        if recorder is not None:
+            try:
+                await recorder.flush()
+            except Exception as e:
+                self.ten_env.log_error(f"Error flushing PCMWriter: {e}")
         await self.finish_request(
             request_id=self.current_request_id,
             reason=reason,
@@ -333,7 +341,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
     ) -> None:
         error_code = (
             ModuleErrorCode.FATAL_ERROR
-            if e.status_code == 401
+            if e.status_code in {401, 403}
             else ModuleErrorCode.NON_FATAL_ERROR
         )
         error = ModuleError(

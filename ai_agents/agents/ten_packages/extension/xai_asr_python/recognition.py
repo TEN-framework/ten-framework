@@ -86,27 +86,42 @@ class XAIASRRecognition:
             },
             open_timeout=timeout,
         )
-        self.is_started = True
-        self.ready_event.clear()
-        self.done_event.clear()
-        self.done_payload = None
-        self._open_notified = False
-        first_message = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
-        if isinstance(first_message, bytes):
-            raise RuntimeError("Unexpected binary message during xAI STT startup")
-        first_event = json.loads(first_message)
-        self.ten_env.log_debug(
-            f"vendor_result: startup: {first_message}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-        if first_event.get("type") != "transcript.created":
-            raise RuntimeError(
-                f"Unexpected xAI STT startup event: {first_event.get('type')}"
+        try:
+            self.is_started = True
+            self.ready_event.clear()
+            self.done_event.clear()
+            self.done_payload = None
+            self._open_notified = False
+            first_message = await asyncio.wait_for(
+                self.websocket.recv(), timeout=timeout
             )
-        self.ready_event.set()
-        self._open_notified = True
-        await self.callback.on_open()
-        self._message_task = asyncio.create_task(self._message_handler())
+            if isinstance(first_message, bytes):
+                raise RuntimeError(
+                    "Unexpected binary message during xAI STT startup"
+                )
+            first_event = json.loads(first_message)
+            self.ten_env.log_debug(
+                f"vendor_result: startup: {first_message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            if first_event.get("type") != "transcript.created":
+                raise RuntimeError(
+                    f"Unexpected xAI STT startup event: "
+                    f"{first_event.get('type')}"
+                )
+            self.ready_event.set()
+            self._open_notified = True
+            await self.callback.on_open()
+            self._message_task = asyncio.create_task(self._message_handler())
+        except Exception:
+            self.is_started = False
+            if self.websocket is not None:
+                try:
+                    await self.websocket.close()
+                except Exception:
+                    pass
+                self.websocket = None
+            raise
 
     async def _message_handler(self) -> None:
         try:
@@ -147,11 +162,13 @@ class XAIASRRecognition:
         if not self.websocket or not self.is_connected():
             raise RuntimeError("WebSocket not connected")
         await self.ready_event.wait()
-        sample_rate = self.config.get("sample_rate", 16000)
+        sample_rate = int(self.config.get("sample_rate", 16000))
         encoding = str(self.config.get("encoding", "pcm")).lower()
-        bytes_per_sample = 1 if encoding in {"mulaw", "ulaw", "alaw"} else 2
-        duration_ms = int(
-            len(audio_data) / (sample_rate / 1000 * bytes_per_sample)
+        channels = int(self.config.get("channels", 1) or 1)
+        bytes_per_sample = 1 if encoding in {"mulaw", "alaw"} else 2
+        bytes_per_ms = sample_rate / 1000 * bytes_per_sample * channels
+        duration_ms = (
+            int(len(audio_data) / bytes_per_ms) if bytes_per_ms > 0 else 0
         )
         self.audio_timeline.add_user_audio(duration_ms)
         await self.websocket.send(audio_data)

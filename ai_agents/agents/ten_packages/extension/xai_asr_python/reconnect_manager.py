@@ -131,10 +131,7 @@ class ReconnectManager:
                     else None
                 )
                 if vendor_info is not None:
-                    try:
-                        await error_handler(error, vendor_info)
-                    except TypeError:
-                        await error_handler(error)
+                    await error_handler(error, vendor_info)
                 else:
                     await error_handler(error)
 

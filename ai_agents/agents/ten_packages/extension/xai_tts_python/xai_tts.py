@@ -64,11 +64,7 @@ class XAITTSClient:
         query_params["optimize_streaming_latency"] = (
             self.config.optimize_streaming_latency
         )
-        query_params["text_normalization"] = (
-            str(self.config.text_normalization).lower() == "true"
-            if isinstance(self.config.text_normalization, str)
-            else self.config.text_normalization
-        )
+        query_params["text_normalization"] = self.config.text_normalization
         for key, value in self.config.params.items():
             if key in {
                 "api_key",
@@ -229,8 +225,12 @@ class XAITTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
         except InvalidStatus as e:
+            response = getattr(e, "response", None)
+            status_code = getattr(response, "status_code", None) or getattr(
+                e, "status_code", 0
+            )
             raise XAITTSConnectionException(
-                status_code=e.response.status_code,
+                status_code=int(status_code or 0),
                 body=str(e),
             ) from e
         except Exception as e:
@@ -278,7 +278,7 @@ class XAITTSClient:
         raise XAITTSConnectionException(status_code=503, body=message)
 
     async def _ensure_connection(self) -> None:
-        if not self._ws:
+        if not self.is_connected():
             await self._connect_with_backoff("connect")
 
     async def _reconnect(self) -> None:
