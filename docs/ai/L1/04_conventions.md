@@ -150,6 +150,18 @@ from ten import Addon
 - Check: `task check`
 - Excludes: `third_party/`, `http_server_python/`, `ten_packages/system`
 
+> **Run before every push.** `task check` is wired into the repo's `lint`
+> CI step. If you commit black-dirty code from a host shell (outside the
+> container), the pre-commit hook does not run and CI flags the PR.
+> The reliable habit is:
+>
+> ```bash
+> sudo docker exec ten_agent_dev bash -c "cd /app && task format && task check"
+> ```
+>
+> Run this after any change under `agents/ten_packages/extension/` or
+> `agents/examples/` and before `git push`.
+
 ## Design Principles
 
 - **YAGNI**: Only implement what is needed now, not what might be needed later
