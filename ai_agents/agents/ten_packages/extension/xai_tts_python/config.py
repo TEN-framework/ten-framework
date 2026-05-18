@@ -8,6 +8,14 @@ from ten_ai_base import utils
 from pydantic import BaseModel, Field
 
 
+_SENSITIVE_SUBSTRINGS = ("key", "token", "secret", "signature", "password")
+
+
+def _is_sensitive_key(name: str) -> bool:
+    lowered = name.lower()
+    return any(token in lowered for token in _SENSITIVE_SUBSTRINGS)
+
+
 class XAITTSConfig(BaseModel):
     api_key: str = ""
     base_url: str = "wss://api.x.ai/v1/tts"
@@ -68,6 +76,11 @@ class XAITTSConfig(BaseModel):
 
         if config.api_key:
             config.api_key = utils.encrypt(config.api_key)
+
+        if isinstance(config.params, dict):
+            for key, value in list(config.params.items()):
+                if value and _is_sensitive_key(key):
+                    config.params[key] = utils.encrypt(str(value))
 
         return f"{config}"
 

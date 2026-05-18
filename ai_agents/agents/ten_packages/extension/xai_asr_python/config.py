@@ -5,6 +5,14 @@ from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 
 
+_SENSITIVE_SUBSTRINGS = ("key", "token", "secret", "signature", "password")
+
+
+def _is_sensitive_key(name: str) -> bool:
+    lowered = name.lower()
+    return any(token in lowered for token in _SENSITIVE_SUBSTRINGS)
+
+
 XAI_DEFAULT_PARAMS = {
     "base_url": "wss://api.x.ai/v1/stt",
     "sample_rate": 16000,
@@ -52,9 +60,9 @@ class XAIASRConfig(BaseModel):
     def to_json(self, sensitive_handling: bool = False) -> str:
         config_dict = self.model_dump()
         if sensitive_handling and config_dict["params"]:
-            api_key = config_dict["params"].get("api_key")
-            if api_key:
-                config_dict["params"]["api_key"] = encrypt(api_key)
+            for key, value in list(config_dict["params"].items()):
+                if value and _is_sensitive_key(key):
+                    config_dict["params"][key] = encrypt(str(value))
         return json.dumps(config_dict)
 
     @property
