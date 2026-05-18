@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 import websockets
 from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import InvalidStatus
+from websockets.protocol import State
 
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
@@ -124,6 +125,9 @@ class XAITTSClient:
     def reset_ttfb(self) -> None:
         self._sent_ts = None
         self._ttfb_sent = False
+
+    def is_connected(self) -> bool:
+        return self._ws is not None and self._ws.state == State.OPEN
 
     async def get(
         self, text: str

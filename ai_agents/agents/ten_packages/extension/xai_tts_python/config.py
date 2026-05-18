@@ -45,8 +45,9 @@ class XAITTSConfig(BaseModel):
             )
             or self.optimize_streaming_latency
         )
-        self.text_normalization = bool(
-            params.pop("text_normalization", self.text_normalization)
+        self.text_normalization = self._coerce_bool(
+            params.pop("text_normalization", self.text_normalization),
+            self.text_normalization,
         )
 
     def validate(self) -> None:
@@ -75,3 +76,18 @@ class XAITTSConfig(BaseModel):
         if isinstance(value, dict):
             return value
         return {}
+
+    @staticmethod
+    def _coerce_bool(value: Any, default: bool) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"true", "1", "yes", "on"}:
+                return True
+            if normalized in {"false", "0", "no", "off", ""}:
+                return False
+            return default
+        if isinstance(value, (int, float)):
+            return bool(value)
+        return default

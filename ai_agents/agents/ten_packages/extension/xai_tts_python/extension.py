@@ -13,7 +13,6 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from websockets.protocol import State
 from ten_runtime import AsyncTenEnv
 
 from .config import XAITTSConfig
@@ -223,9 +222,9 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                 self._last_audio_chunk_ts = None
                 return
             if prepared_text:
-                self._request_text_length += len(prepared_text)
-                if self._request_text_length > 15000:
+                if self._request_text_length + len(prepared_text) > 15000:
                     raise ValueError("xAI TTS text exceeds 15000 characters")
+                self._request_text_length += len(prepared_text)
                 self.metrics_add_input_characters(len(prepared_text))
                 self.metrics_add_output_characters(len(prepared_text))
 
@@ -373,8 +372,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             await self.client.start()
             return
 
-        ws = getattr(self.client, "_ws", None)
-        if ws is not None and getattr(ws, "state", None) == State.OPEN:
+        if self.client.is_connected():
             return
 
         await self._reconnect_client()

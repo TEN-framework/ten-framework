@@ -207,8 +207,6 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         if self.recognition:
             await self.recognition.close()
             self.recognition = None
-        self._stop_requested = False
-        self._close_expected = False
 
     @override
     def is_connected(self) -> bool:
@@ -229,6 +227,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     ) -> bool:
         if self.recognition is None or not self.is_connected():
             return False
+        buf = None
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
@@ -239,10 +238,11 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
             return True
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio to xAI STT: {e}")
-            try:
-                frame.unlock_buf(buf)
-            except Exception:
-                pass
+            if buf is not None:
+                try:
+                    frame.unlock_buf(buf)
+                except Exception:
+                    pass
             return False
 
     @override

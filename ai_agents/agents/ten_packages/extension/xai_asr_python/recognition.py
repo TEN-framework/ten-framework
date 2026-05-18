@@ -148,7 +148,11 @@ class XAIASRRecognition:
             raise RuntimeError("WebSocket not connected")
         await self.ready_event.wait()
         sample_rate = self.config.get("sample_rate", 16000)
-        duration_ms = int(len(audio_data) / (sample_rate / 1000 * 2))
+        encoding = str(self.config.get("encoding", "pcm")).lower()
+        bytes_per_sample = 1 if encoding in {"mulaw", "ulaw", "alaw"} else 2
+        duration_ms = int(
+            len(audio_data) / (sample_rate / 1000 * bytes_per_sample)
+        )
         self.audio_timeline.add_user_audio(duration_ms)
         await self.websocket.send(audio_data)
 
