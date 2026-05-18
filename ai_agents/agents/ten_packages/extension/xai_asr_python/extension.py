@@ -169,7 +169,8 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     async def finalize(self, _session_id: str | None) -> None:
         assert self.config is not None
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        if not self.recognition or not self.is_connected():
+        recognition = self.recognition
+        if recognition is None or not recognition.is_connected():
             self.ten_env.log_warn(
                 "asr_finalize: service not connected.",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -179,13 +180,13 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
 
         self._close_expected = True
         try:
-            await self.recognition.send_audio_done()
-            payload = await self.recognition.wait_for_done(
+            await recognition.send_audio_done()
+            payload = await recognition.wait_for_done(
                 self.config.finalize_timeout_ms
             )
             if payload and payload.get("text"):
                 await self._emit_asr_result(payload, final=True, locked=False)
-            elif not self.recognition.done_event.is_set():
+            elif not recognition.done_event.is_set():
                 self._close_expected = False
         except asyncio.CancelledError:
             self.ten_env.log_warn(
