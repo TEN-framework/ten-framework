@@ -81,9 +81,7 @@ class XAIASRRecognition:
         self.ten_env.log_info(f"Connecting to xAI STT: {url}")
         self.websocket = await websockets.connect(
             url,
-            additional_headers={
-                "Authorization": f"Bearer {self.api_key}"
-            },
+            additional_headers={"Authorization": f"Bearer {self.api_key}"},
             open_timeout=timeout,
         )
         try:
@@ -153,7 +151,9 @@ class XAIASRRecognition:
         except websockets.exceptions.ConnectionClosed as e:
             self.ten_env.log_info(f"xAI STT websocket closed: {e}")
         except Exception as e:
-            await self.callback.on_error(f"WebSocket message handler error: {e}")
+            await self.callback.on_error(
+                f"WebSocket message handler error: {e}"
+            )
         finally:
             self.is_started = False
             await self.callback.on_close()

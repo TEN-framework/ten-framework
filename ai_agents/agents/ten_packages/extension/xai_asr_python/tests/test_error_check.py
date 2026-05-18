@@ -62,8 +62,6 @@ def test_error_check():
         }
     }
     tester = XAIAsrExtensionTester()
-    tester.set_test_mode_single(
-        "xai_asr_python", json.dumps(property_json)
-    )
+    tester.set_test_mode_single("xai_asr_python", json.dumps(property_json))
     err = tester.run()
     assert err is None

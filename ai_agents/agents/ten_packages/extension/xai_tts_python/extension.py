@@ -53,7 +53,9 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             await super().on_init(ten_env)
             config_json_str, _ = await self.ten_env.get_property_to_json("")
             if not config_json_str or config_json_str.strip() == "{}":
-                raise ValueError("Configuration is empty. Required api_key is missing.")
+                raise ValueError(
+                    "Configuration is empty. Required api_key is missing."
+                )
             self.config = XAITTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
             self.config.validate()
@@ -166,10 +168,15 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
         return int(duration_sec * 1000)
 
     def _calculate_request_event_interval_ms(self) -> int:
-        if self._first_audio_chunk_ts is None or self._last_audio_chunk_ts is None:
+        if (
+            self._first_audio_chunk_ts is None
+            or self._last_audio_chunk_ts is None
+        ):
             return 0
         return int(
-            (self._last_audio_chunk_ts - self._first_audio_chunk_ts).total_seconds()
+            (
+                self._last_audio_chunk_ts - self._first_audio_chunk_ts
+            ).total_seconds()
             * 1000
         )
 
@@ -283,7 +290,9 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
                     if self._first_audio_chunk_ts is None:
                         self._first_audio_chunk_ts = now
                     self._last_audio_chunk_ts = now
-                    chunk_timestamp_ms = self._get_next_audio_chunk_timestamp_ms()
+                    chunk_timestamp_ms = (
+                        self._get_next_audio_chunk_timestamp_ms()
+                    )
                     self.metrics_add_recv_audio_chunks(data_msg)
                     self.total_audio_bytes += len(data_msg)
                     await self._write_dump(data_msg)
@@ -333,8 +342,12 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
 
     def _get_next_audio_chunk_timestamp_ms(self) -> int:
         if self._audio_start_timestamp_ms <= 0:
-            self._audio_start_timestamp_ms = int(datetime.now().timestamp() * 1000)
-        return self._audio_start_timestamp_ms + self._calculate_audio_duration_ms()
+            self._audio_start_timestamp_ms = int(
+                datetime.now().timestamp() * 1000
+            )
+        return (
+            self._audio_start_timestamp_ms + self._calculate_audio_duration_ms()
+        )
 
     async def _handle_connection_error(
         self, e: XAITTSConnectionException, text_input_end: bool
@@ -355,9 +368,7 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             ),
         )
         if text_input_end:
-            await self._finalize_request(
-                TTSAudioEndReason.ERROR, error=error
-            )
+            await self._finalize_request(TTSAudioEndReason.ERROR, error=error)
         else:
             await self.send_tts_error(
                 request_id=self.current_request_id or "",

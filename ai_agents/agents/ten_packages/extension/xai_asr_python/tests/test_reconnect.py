@@ -72,7 +72,8 @@ def test_on_close_retries_until_retry_ceiling():
 
         assert extension._connect_recognition.await_count == 4
         observed_codes = [
-            call.args[0].code for call in extension.send_asr_error.await_args_list
+            call.args[0].code
+            for call in extension.send_asr_error.await_args_list
         ]
         assert observed_codes == [
             int(ModuleErrorCode.NON_FATAL_ERROR.value),
@@ -83,7 +84,9 @@ def test_on_close_retries_until_retry_ceiling():
         observed_vendor_infos = [
             call.args[1] for call in extension.send_asr_error.await_args_list
         ]
-        assert all(vendor_info.vendor == "xai" for vendor_info in observed_vendor_infos)
+        assert all(
+            vendor_info.vendor == "xai" for vendor_info in observed_vendor_infos
+        )
         assert all(
             vendor_info.code == "connect_failed"
             for vendor_info in observed_vendor_infos

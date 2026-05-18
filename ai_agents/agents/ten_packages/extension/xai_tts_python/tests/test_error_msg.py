@@ -59,7 +59,9 @@ def test_empty_params_fatal_error():
     }
 
     tester = ExtensionTesterEmptyParams()
-    tester.set_test_mode_single("xai_tts_python", json.dumps(empty_params_config))
+    tester.set_test_mode_single(
+        "xai_tts_python", json.dumps(empty_params_config)
+    )
 
     print("Running test...")
     tester.run()
@@ -144,7 +146,9 @@ def test_invalid_api_key_error(mock_websocket_connect):
     }
 
     tester = ExtensionTesterInvalidApiKey()
-    tester.set_test_mode_single("xai_tts_python", json.dumps(invalid_key_config))
+    tester.set_test_mode_single(
+        "xai_tts_python", json.dumps(invalid_key_config)
+    )
 
     print("Running test with mock...")
     tester.run()

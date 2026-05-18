@@ -141,9 +141,7 @@ class XAITTSClient:
         if not self._ttfb_sent:
             self._sent_ts = datetime.now()
 
-        await self._ws.send(
-            json.dumps({"type": "text.delta", "delta": text})
-        )
+        await self._ws.send(json.dumps({"type": "text.delta", "delta": text}))
         await self._ws.send(json.dumps({"type": "text.done"}))
 
         try:

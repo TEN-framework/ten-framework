@@ -138,9 +138,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         api_key = self.config.params.get("api_key", "")
         if self.is_connected():
             await self.stop_connection()
-        self.connection_start_timestamp = int(
-            datetime.now().timestamp() * 1000
-        )
+        self.connection_start_timestamp = int(datetime.now().timestamp() * 1000)
         self.recognition = XAIASRRecognition(
             api_key=api_key,
             audio_timeline=self.audio_timeline,

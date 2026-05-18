@@ -18,9 +18,7 @@ def test_invalid_sample_rate():
 
 
 def test_invalid_encoding():
-    config = XAIASRConfig(
-        params={"api_key": "xai-test-key", "encoding": "mp3"}
-    )
+    config = XAIASRConfig(params={"api_key": "xai-test-key", "encoding": "mp3"})
     config.apply_defaults()
     try:
         config.validate()
@@ -31,7 +29,9 @@ def test_invalid_encoding():
 
 
 def test_config_redacts_api_key():
-    config = XAIASRConfig(params={"api_key": "xai-super-secret", "language": "en"})
+    config = XAIASRConfig(
+        params={"api_key": "xai-super-secret", "language": "en"}
+    )
     config.apply_defaults()
 
     safe_str = config.to_json(sensitive_handling=True)

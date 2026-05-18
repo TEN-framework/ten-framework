@@ -351,9 +351,7 @@ def test_auth_error_single_emission(MockClient):
     mock.reset_ttfb = lambda: None
 
     async def mock_get_auth_fail(text):
-        raise XAITTSConnectionException(
-            status_code=401, body="Unauthorized"
-        )
+        raise XAITTSConnectionException(status_code=401, body="Unauthorized")
         yield  # make it a generator  # pragma: no cover
 
     mock.get.side_effect = mock_get_auth_fail
