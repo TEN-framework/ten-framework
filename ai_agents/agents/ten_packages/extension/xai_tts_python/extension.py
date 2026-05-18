@@ -271,17 +271,19 @@ class XAITTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(f"Received event_status: {event_status}")
             if event_status == EVENT_TTS_RESPONSE:
                 if data_msg and isinstance(data_msg, bytes):
+                    now = datetime.now()
+                    if self._first_audio_chunk_ts is None:
+                        self._first_audio_chunk_ts = now
+                    self._last_audio_chunk_ts = now
                     chunk_timestamp_ms = self._get_next_audio_chunk_timestamp_ms()
                     self.metrics_add_recv_audio_chunks(data_msg)
                     self.total_audio_bytes += len(data_msg)
-                    self._last_audio_chunk_ts = datetime.now()
                     await self._write_dump(data_msg)
                     await self.send_tts_audio_data(
                         data_msg, timestamp=chunk_timestamp_ms
                     )
             elif event_status == EVENT_TTS_TTFB_METRIC:
                 if isinstance(data_msg, int):
-                    self._first_audio_chunk_ts = datetime.now()
                     await self.send_tts_audio_start(
                         request_id=self.current_request_id
                     )
