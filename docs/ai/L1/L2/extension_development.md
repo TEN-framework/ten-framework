@@ -295,6 +295,48 @@ class MyVendorASRExtension(AsyncASRBaseExtension):
 **Buffer strategy**: Override `buffer_strategy()` to return `ASRBufferConfigModeKeep`
 if you want audio buffered during disconnects (default discards).
 
+#### Canonical `asr_result` payload
+
+`session_id` lives inside `metadata`, never as a top-level field. Locked-interim
+vs final is signalled at `metadata.asr_info.locked` (true = stable interim that
+should not be reverted by a later partial; final = true = utterance ended).
+
+```json
+{
+  "id": "uuid",
+  "text": "hello world",
+  "final": true,
+  "start_ms": 120,
+  "duration_ms": 340,
+  "language": "en-US",
+  "metadata": {
+    "session_id": "session-123",
+    "asr_info": {
+      "vendor": "xai",
+      "locked": false
+    }
+  }
+}
+```
+
+#### Canonical error payload with `vendor_info`
+
+```json
+{
+  "module": "tts",
+  "code": -1000,
+  "message": "Unauthorized",
+  "vendor_info": {
+    "vendor": "xai",
+    "code": "401",
+    "message": "Unauthorized"
+  }
+}
+```
+
+`code` is the framework-level severity (-1000 fatal, 1000 non-fatal). `vendor_info.code`
+is the vendor-native status (HTTP code, vendor error code, etc.).
+
 ### LLM Extension
 
 ```python

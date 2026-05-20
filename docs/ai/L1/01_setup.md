@@ -132,4 +132,4 @@ docker exec ten_agent_dev bash -c "strings /tmp/task_run.log | tail -n 80"
 
 ## Related Deep Dives
 
-- [Deployment](deep_dives/deployment.md) — Docker Compose, Cloudflare tunnel, Nginx, Grafana monitoring
+- [Deployment](L2/deployment.md) — Docker Compose, Cloudflare tunnel, Nginx, Grafana monitoring

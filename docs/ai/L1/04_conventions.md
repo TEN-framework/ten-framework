@@ -173,4 +173,4 @@ from ten import Addon
 
 ## Related Deep Dives
 
-- [Extension Development](deep_dives/extension_development.md) — Full creation guide with implementation walkthroughs
+- [Extension Development](L2/extension_development.md) — Full creation guide with implementation walkthroughs
