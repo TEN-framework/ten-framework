@@ -13,7 +13,6 @@ import atexit
 from .audio_mixer import AudioMixer
 from .storage import StorageFactory
 
-
 # Global registry of active recorders for signal handling
 _active_recorders = []
 
@@ -43,6 +42,11 @@ class ConversationRecorderExtension(AsyncExtension):
         self.users_count = 0
         self._flush_counter = 0
         self._signals_registered = False
+
+    def _get_loop(self) -> asyncio.AbstractEventLoop:
+        if self.loop is None:
+            self.loop = asyncio.get_running_loop()
+        return self.loop
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("ConversationRecorderExtension on_init")
@@ -154,10 +158,11 @@ class ConversationRecorderExtension(AsyncExtension):
 
         ten_env.log_info("Starting recording session...")
         self.is_recording = True
+        loop = self._get_loop()
 
         # Open storage in executor to avoid blocking
         if self.storage:
-            await self.loop.run_in_executor(None, self.storage.open)
+            await loop.run_in_executor(None, self.storage.open)
             if hasattr(self.storage, "actual_file_path"):
                 ten_env.log_info(
                     f"Recording to file: {self.storage.actual_file_path}"
@@ -171,16 +176,18 @@ class ConversationRecorderExtension(AsyncExtension):
 
         ten_env.log_info("Stopping recording session...")
         self.is_recording = False
+        loop = self._get_loop()
         if self.recording_task:
             await self.recording_task
             self.recording_task = None
 
         if self.storage:
             file_path = getattr(self.storage, "actual_file_path", None)
-            await self.loop.run_in_executor(None, self.storage.close)
+            await loop.run_in_executor(None, self.storage.close)
             ten_env.log_info(f"Recording saved to: {file_path}")
 
     async def _recording_loop(self, ten_env: AsyncTenEnv):
+        loop = self._get_loop()
         while self.is_recording:
             try:
                 # Sleep approx one chunk duration (40ms)
@@ -191,7 +198,7 @@ class ConversationRecorderExtension(AsyncExtension):
 
                 if mixed_bytes and self.storage:
                     # Write in thread pool
-                    await self.loop.run_in_executor(
+                    await loop.run_in_executor(
                         None, self.storage.write, mixed_bytes
                     )
 
@@ -200,9 +207,7 @@ class ConversationRecorderExtension(AsyncExtension):
                 if self._flush_counter >= 25:
                     self._flush_counter = 0
                     if self.storage:
-                        await self.loop.run_in_executor(
-                            None, self.storage.flush
-                        )
+                        await loop.run_in_executor(None, self.storage.flush)
 
             except Exception as e:
                 ten_env.log_error(f"Error in recording loop: {e}")
