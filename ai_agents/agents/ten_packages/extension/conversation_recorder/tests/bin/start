@@ -4,6 +4,6 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
-export PYTHONPATH=.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:$PYTHONPATH
+export PYTHONPATH=../../:.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:$PYTHONPATH
 
 pytest -s tests/ "$@"
