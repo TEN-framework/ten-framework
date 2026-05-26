@@ -10,6 +10,8 @@ import asyncio
 import json
 import signal
 import atexit
+import urllib.request
+import os
 from .audio_mixer import AudioMixer
 from .storage import StorageFactory
 
@@ -28,6 +30,22 @@ def _signal_handler(signum, _frame):
     _emergency_close_all()
     # Re-raise to allow normal shutdown
     raise SystemExit(128 + signum)
+
+
+def _send_webhook_request(ten_env, url: str, payload: dict):
+    try:
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_body = response.read().decode('utf-8')
+            ten_env.log_info(f"Webhook response status: {response.status}, body: {res_body}")
+    except Exception as e:
+        ten_env.log_warn(f"Failed to send webhook: {e}")
 
 
 class ConversationRecorderExtension(AsyncExtension):
@@ -183,8 +201,31 @@ class ConversationRecorderExtension(AsyncExtension):
 
         if self.storage:
             file_path = getattr(self.storage, "actual_file_path", None)
-            await loop.run_in_executor(None, self.storage.close)
+            try:
+                await loop.run_in_executor(None, self.storage.close)
+            except Exception as err:
+                ten_env.log_error(
+                    f"Failed to save recording at {file_path}: {err}"
+                )
+                raise
+            file_path = getattr(self.storage, "actual_file_path", file_path)
             ten_env.log_info(f"Recording saved to: {file_path}")
+
+            webhook_url = self.config.get("webhook_url") or os.getenv("CONVERSATION_RECORD_WEBHOOK_URL")
+            if webhook_url:
+                import time
+                channel_name = self.config.get("channel", "")
+                payload = {
+                    "channel_name": channel_name,
+                    "status": "uploaded",
+                    "file_path": file_path,
+                    "timestamp": int(time.time() * 1000)
+                }
+                ten_env.log_info(f"Sending recording upload webhook to {webhook_url} with payload {payload}")
+                try:
+                    await loop.run_in_executor(None, _send_webhook_request, ten_env, webhook_url, payload)
+                except Exception as webhook_err:
+                    ten_env.log_warn(f"Failed to await webhook request: {webhook_err}")
 
     async def _recording_loop(self, ten_env: AsyncTenEnv):
         loop = self._get_loop()

@@ -26,6 +26,12 @@
     "api": {
         "property": {
             "properties": {
+                "webhook_url": {
+                    "type": "string"
+                },
+                "channel": {
+                    "type": "string"
+                },
                 "storage_type": {
                     "type": "string"
                 },
