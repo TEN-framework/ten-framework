@@ -110,7 +110,6 @@ class OpenAIAsrClient(WebSocketClient):
             "intent": "transcription",
         }
         end_point = urllib.parse.urljoin(base_url, "realtime")
-
         end_point += "?" + urllib.parse.urlencode(query_params)
 
         kwargs["additional_headers"] = [
@@ -126,15 +125,16 @@ class OpenAIAsrClient(WebSocketClient):
                 ("OpenAI-Project", self.project)
             )
 
-        # for beta realtime api, we must connect with the server first,
-        # then send the transcription session update param to the server.
-        # so we need to wait for the server to be ready.
+        # Session must be initialized before any audio/commit is sent.
         self.params_ready_event = asyncio.Event()
+        self._pending_audio_messages: list[str] = []
+        # Stream-level assumption: pre-ready commit requests are coalesced.
+        self._pending_commit_requested = False
+        self._pending_lock = asyncio.Lock()
 
         super().__init__(end_point, logger=self.logger, **kwargs)
 
     async def _call_listener(self, func: Callable, *args, **kwargs):
-        # awaitable function
         if asyncio.iscoroutinefunction(func):
             await func(*args, **kwargs)
         else:
@@ -147,12 +147,37 @@ class OpenAIAsrClient(WebSocketClient):
             event_id=None,
             session=self._params,
         )
-        await self.send(session.model_dump_json(exclude_none=True))
+        self.logger.debug("Queue transcription_session.update")
+        await self.send(
+            session.model_dump_json(exclude_none=True),
+            priority=0,
+        )
+
+    async def _flush_pending_audio_locked(self):
+        if self._pending_audio_messages:
+            self.logger.debug(
+                "Flushing %d pending audio messages",
+                len(self._pending_audio_messages),
+            )
+        for message in self._pending_audio_messages:
+            await self.send(message, priority=10)
+        self._pending_audio_messages.clear()
+
+        if self._pending_commit_requested:
+            self.logger.debug("Flushing pending input_audio_buffer.commit")
+            await self.send(
+                json.dumps({"type": "input_audio_buffer.commit"}),
+                priority=20,
+            )
+            self._pending_commit_requested = False
 
     async def _handle_event(self, message: dict):
         _type = message.get("type")
         if _type == "transcription_session.updated":
-            self.params_ready_event.set()
+            # Keep send_pcm_data blocked during flush so ordering is preserved.
+            async with self._pending_lock:
+                await self._flush_pending_audio_locked()
+                self.params_ready_event.set()
             await self._call_listener(
                 self._listener.on_asr_start,
                 Session[TranscriptionParam](
@@ -162,39 +187,35 @@ class OpenAIAsrClient(WebSocketClient):
                 ),
             )
             return
-        elif _type == "conversation.item.input_audio_transcription.delta":
+        if _type == "conversation.item.input_audio_transcription.delta":
             await self._call_listener(
                 self._listener.on_asr_delta,
                 TranscriptionResultDelta.model_validate(message),
             )
             return
-        elif _type == "conversation.item.input_audio_transcription.completed":
+        if _type == "conversation.item.input_audio_transcription.completed":
             await self._call_listener(
                 self._listener.on_asr_completed,
                 TranscriptionResultCompleted.model_validate(message),
             )
             return
-        elif _type == "input_audio_buffer.committed":
+        if _type == "input_audio_buffer.committed":
             await self._call_listener(
                 self._listener.on_asr_committed,
                 TranscriptionResultCommitted.model_validate(message),
             )
             return
-        else:
-            await self._call_listener(self._listener.on_other_event, message)
-            return
+        await self._call_listener(self._listener.on_other_event, message)
 
     async def _handle_error(self, message: Session[Error]):
         if (
             not self.params_ready_event.is_set()
             and message.session.type == "invalid_request_error"
         ):
-            # params invalid, call the server error listener then stop the client
             await self._call_listener(
                 self._listener.on_asr_server_error, message
             )
             await self.stop()
-            return
 
     @override
     async def on_open(self):
@@ -206,7 +227,6 @@ class OpenAIAsrClient(WebSocketClient):
         try:
             message = json.loads(message)
         except Exception as e:
-            # unexpected message, call the client error listener
             msg = f"💥 An error occurred to parse message: {message}"
             self.logger.error(msg)
             await self._call_listener(
@@ -221,7 +241,6 @@ class OpenAIAsrClient(WebSocketClient):
             self.logger.error(
                 f"💥 An error occurred. unknown message type: {message}"
             )
-            # ignore the error, just return
             return
 
         if _type == "error":
@@ -237,6 +256,7 @@ class OpenAIAsrClient(WebSocketClient):
 
     @override
     async def on_close(self, code: int, reason: str):
+        self.params_ready_event.clear()
         self.logger.warning(
             f"🔴 Connection closed. Code: {code}, Reason: {reason}"
         )
@@ -247,24 +267,39 @@ class OpenAIAsrClient(WebSocketClient):
         await self._call_listener(
             self._listener.on_asr_client_error, str(error), error
         )
-        return
 
     @override
     async def on_reconnect(self):
         self.logger.info("🔄 Try to reconnect to the server.")
         self.params_ready_event.clear()
-        return
 
     async def send_pcm_data(self, data: bytes):
         base64_data = base64.b64encode(data).decode("utf-8")
-        await self.send(
-            json.dumps(
-                {"type": "input_audio_buffer.append", "audio": base64_data}
-            )
+        message = json.dumps(
+            {"type": "input_audio_buffer.append", "audio": base64_data}
         )
+        async with self._pending_lock:
+            if not self.params_ready_event.is_set():
+                self._pending_audio_messages.append(message)
+                self.logger.debug(
+                    "Buffer input_audio_buffer.append before session ready, pending=%d",
+                    len(self._pending_audio_messages),
+                )
+                return
+            await self.send(message, priority=10)
 
     async def send_end_of_stream(self):
-        await self.send(json.dumps({"type": "input_audio_buffer.commit"}))
+        async with self._pending_lock:
+            if not self.params_ready_event.is_set():
+                self._pending_commit_requested = True
+                self.logger.debug(
+                    "Buffer input_audio_buffer.commit before session ready"
+                )
+                return
+            await self.send(
+                json.dumps({"type": "input_audio_buffer.commit"}),
+                priority=20,
+            )
 
     async def send_heartbeat(self):
         await self.send(b"")
@@ -338,18 +373,8 @@ if __name__ == "__main__":
             log_level="DEBUG",
             auto_reconnect=True,
         )
-        logger = client.logger
+        client_task = asyncio.create_task(client.start())
+        await send_audio_data(client)
+        await client_task
 
-        try:
-            asyncio.create_task(send_audio_data(client))
-            await client.start()
-        except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received.")
-        finally:
-            logger.info("Main is shutting down the client...")
-            await client.stop()
-
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+    asyncio.run(main())

@@ -64,7 +64,12 @@ class WebSocketClient(ABC):
         self._reconnect_total_delay = 0
         self._last_send_time = 0
         self._websocket: websockets.ClientConnection | None = None
-        self._message_queue: asyncio.Queue[str | bytes] = asyncio.Queue()
+        self._message_queue: asyncio.PriorityQueue[
+            tuple[int, int, str | bytes]
+        ] = asyncio.PriorityQueue()
+        # Keep sequence monotonic across reconnects so queued messages retain
+        # stable FIFO order within the same priority.
+        self._message_sequence = 0
         self._shutdown_event = asyncio.Event()
         self._main_task: asyncio.Task | None = None
 
@@ -122,7 +127,7 @@ class WebSocketClient(ABC):
                 await asyncio.sleep(0.01)
                 continue
             try:
-                message = await asyncio.wait_for(
+                _, _, message = await asyncio.wait_for(
                     self._message_queue.get(), timeout=1.0
                 )
                 if self._websocket is None:
@@ -295,12 +300,15 @@ class WebSocketClient(ABC):
 
         self._logger.info("Shutdown complete.")
 
-    async def send(self, message: str | bytes):
+    async def send(self, message: str | bytes, priority: int = 10):
         """
         Send a message to the server.
         This is a thread-safe async method that puts the message in a queue for sending.
         """
-        await self._message_queue.put(message)
+        self._message_sequence += 1
+        await self._message_queue.put(
+            (priority, self._message_sequence, message)
+        )
 
     def is_connected(self) -> bool:
         """Check if the client is alive."""

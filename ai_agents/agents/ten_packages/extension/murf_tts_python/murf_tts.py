@@ -2,6 +2,7 @@ import asyncio
 import json
 import base64
 from datetime import datetime
+from typing import Any
 
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
@@ -23,8 +24,28 @@ EVENT_TTS_END = 2
 EVENT_TTS_TTFB_METRIC = 3
 EVENT_TTS_ERROR = 4
 
+VOICE_CONFIG_PARAM_KEYS = (
+    "voice_id",
+    "voiceId",
+    "locale",
+    "multiNativeLocale",
+    "multi_native_locale",
+    "style",
+    "rate",
+    "pitch",
+    "variation",
+    "pronunciationDictionary",
+    "pronunciation_dictionary",
+)
+
+ADVANCED_SETTINGS_PARAM_KEYS = (
+    "min_buffer_size",
+    "max_buffer_delay_in_ms",
+)
+
 
 class MurfTTSynthesizer:
+
     def __init__(
         self,
         config: MurfTTSConfig,
@@ -104,7 +125,7 @@ class MurfTTSynthesizer:
     async def _process_websocket(self) -> None:
         """Main websocket connection monitoring and reconnection logic"""
         try:
-            self.ten_env.log_debug(
+            self.ten_env.log_info(
                 "Starting MURF TTS websocket connection process"
             )
 
@@ -120,11 +141,12 @@ class MurfTTSynthesizer:
                 self.first_chunk_of_connection = True
                 try:
                     await self._send_voice_config(ws)
-                    self.ten_env.log_debug(
+                    await self._send_advanced_settings(ws)
+                    self.ten_env.log_info(
                         "MURF TTS websocket connected successfully"
                     )
                     if self._session_closing:
-                        self.ten_env.log_debug("Session is closing, break.")
+                        self.ten_env.log_info("Session is closing, break.")
                         return
 
                     # Start send and receive tasks
@@ -139,7 +161,7 @@ class MurfTTSynthesizer:
                     await self._await_channel_tasks()
 
                 except websockets.ConnectionClosed as e:
-                    self.ten_env.log_debug(
+                    self.ten_env.log_info(
                         f"MURF TTS websocket connection closed: {e}."
                     )
                     if self._max_retries_exceeded:
@@ -190,19 +212,62 @@ class MurfTTSynthesizer:
         finally:
             if self.ws:
                 await self.ws.close()
-            self.ten_env.log_debug(
+            self.ten_env.log_info(
                 "MURF TTS websocket connection process ended."
             )
 
+    def _get_voice_config_from_params(self) -> dict[str, Any]:
+        params = self.config.params
+        voice_config: dict[str, Any] = {}
+        if not params:
+            return voice_config
+
+        for key in VOICE_CONFIG_PARAM_KEYS:
+            value = params.get(key)
+            if value is None:
+                continue
+            if isinstance(value, str) and not value:
+                continue
+            voice_config[key] = value
+
+        return voice_config
+
+    def _get_advanced_settings_from_params(self) -> dict[str, Any]:
+        params = self.config.params
+        advanced_settings: dict[str, Any] = {}
+        if not params:
+            return advanced_settings
+
+        for key in ADVANCED_SETTINGS_PARAM_KEYS:
+            value = params.get(key)
+            if value is None:
+                continue
+            advanced_settings[key] = value
+
+        return advanced_settings
+
     async def _send_voice_config(self, ws: WebSocketClientProtocol) -> None:
         """Send voice config to MURF TTS"""
-        voice_config = {
-            **self.config.params,
-        }
-        self.ten_env.log_debug(
+        voice_config = self._get_voice_config_from_params()
+        self.ten_env.log_info(
             f"KEYPOINT Sending voice config to MURF TTS: {voice_config}"
         )
-        message = {"voiceConfig": voice_config}
+        message = {"voice_config": voice_config}
+        message_json = json.dumps(message)
+        await ws.send(message_json)
+
+    async def _send_advanced_settings(
+        self, ws: WebSocketClientProtocol
+    ) -> None:
+        """Send advanced settings to MURF TTS once per websocket connection."""
+        advanced_settings = self._get_advanced_settings_from_params()
+        if not advanced_settings:
+            return
+
+        self.ten_env.log_info(
+            f"KEYPOINT Sending advanced settings to MURF TTS: {advanced_settings}"
+        )
+        message = advanced_settings
         message_json = json.dumps(message)
         await ws.send(message_json)
 
@@ -433,8 +498,14 @@ class MurfTTSynthesizer:
     ):
         """Internal text sending implementation for MURF TTS"""
 
+        voice_config = self._get_voice_config_from_params()
         # Create MURF TTS text message
-        message = {"text": text, "context_id": context_id, "end": is_last}
+        message = {
+            "text": text,
+            "context_id": context_id,
+            "end": is_last,
+            "voice_config": voice_config,
+        }
         message_json = json.dumps(message)
         self.ten_env.log_debug(
             f"KEYPOINT Sending text to MURF TTS: {message_json}"
@@ -453,7 +524,7 @@ class MurfTTSynthesizer:
                 break  # if the queue is empty then break
 
     async def close(self):
-        self.ten_env.log_debug("Closing MurfTTSynthesizer")
+        self.ten_env.log_info("Closing MurfTTSynthesizer")
 
         # Set closing flag
         self._session_closing = True
@@ -538,10 +609,10 @@ class MurfTTSClient:
 
     async def close(self):
         """Close MurfTTS client"""
-        self.ten_env.log_debug("Closing MurfTTSClient")
+        self.ten_env.log_info("Closing MurfTTSClient")
 
         # Close current synthesizer
         if self.synthesizer:
             await self.synthesizer.close()
 
-        self.ten_env.log_debug("MurfTTSClient closed")
+        self.ten_env.log_info("MurfTTSClient closed")

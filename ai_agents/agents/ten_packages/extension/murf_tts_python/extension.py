@@ -58,7 +58,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
-            ten_env.log_debug("on_init")
+            ten_env.log_info("on_init")
 
             config_json, _ = await self.ten_env.get_property_to_json("")
             if not config_json or config_json.strip() == "{}":
@@ -110,7 +110,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
-                ten_env.log_debug(
+                ten_env.log_info(
                     f"Flushed PCMWriter for request_id: {request_id}"
                 )
             except Exception as e:
@@ -119,11 +119,11 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 )
 
         await super().on_stop(ten_env)
-        ten_env.log_debug("on_stop")
+        ten_env.log_info("on_stop")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
-        ten_env.log_debug("on_deinit")
+        ten_env.log_info("on_deinit")
 
     def vendor(self) -> str:
         return "murf"
@@ -311,7 +311,7 @@ class MurfTTSExtension(AsyncTTS2BaseExtension):
                 self.client = MurfTTSClient(
                     self.config, self.ten_env, self.vendor(), self.response_msgs
                 )
-                self.ten_env.log_debug("TTS client reinitialized successfully.")
+                self.ten_env.log_info("TTS client reinitialized successfully.")
 
             if (
                 self.last_completed_request_id
