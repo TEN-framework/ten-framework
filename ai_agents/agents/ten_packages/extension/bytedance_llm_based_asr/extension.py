@@ -1067,7 +1067,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.attempts = 0  # Reset retry attempts on successful connection
 
         self.ten_env.log_info(
-            "Successfully connected to Volcengine ASR service"
+            "Successfully connected to Volcengine ASR service!"
         )
 
     def _on_connected(self) -> None:
