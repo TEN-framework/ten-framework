@@ -31,6 +31,7 @@ boto3                  # Only needed for S3 storage
 | `filename` | string | auto-generated | Custom filename (works with all storage modes) |
 | `start_trigger` | string | `"on_user_joined"` | When to start recording: `"on_user_joined"` or `"on_start"` |
 | `sample_rate` | int | `24000` | Audio sample rate in Hz |
+| `source_prebuffer_ms` | int | `120` | Per-source recording jitter buffer before audio is drained to the WAV |
 
 ### GCS Storage Properties
 

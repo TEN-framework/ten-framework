@@ -74,8 +74,12 @@ class ConversationRecorderExtension(AsyncExtension):
 
         # Get sample rate from config, default to 24000Hz (Gemini output rate)
         sample_rate = self.config.get("sample_rate", 24000)
+        source_prebuffer_ms = self.config.get("source_prebuffer_ms", 120)
 
-        self.mixer = AudioMixer(sample_rate=sample_rate)
+        self.mixer = AudioMixer(
+            sample_rate=sample_rate,
+            source_prebuffer_ms=source_prebuffer_ms,
+        )
         self.storage = StorageFactory.create_storage(
             self.config.get("storage_type", "local"), self.config
         )
@@ -200,6 +204,7 @@ class ConversationRecorderExtension(AsyncExtension):
             self.recording_task = None
 
         if self.storage:
+            await self._drain_mixer(ten_env)
             file_path = getattr(self.storage, "actual_file_path", None)
             try:
                 await loop.run_in_executor(None, self.storage.close)
@@ -211,21 +216,52 @@ class ConversationRecorderExtension(AsyncExtension):
             file_path = getattr(self.storage, "actual_file_path", file_path)
             ten_env.log_info(f"Recording saved to: {file_path}")
 
-            webhook_url = self.config.get("webhook_url") or os.getenv("CONVERSATION_RECORD_WEBHOOK_URL")
+            webhook_url = self.config.get("webhook_url") or os.getenv(
+                "CONVERSATION_RECORD_WEBHOOK_URL"
+            )
             if webhook_url:
                 import time
+
                 channel_name = self.config.get("channel", "")
                 payload = {
                     "channel_name": channel_name,
                     "status": "uploaded",
                     "file_path": file_path,
-                    "timestamp": int(time.time() * 1000)
+                    "timestamp": int(time.time() * 1000),
                 }
-                ten_env.log_info(f"Sending recording upload webhook to {webhook_url} with payload {payload}")
+                ten_env.log_info(
+                    f"Sending recording upload webhook to {webhook_url} "
+                    f"with payload {payload}"
+                )
                 try:
-                    await loop.run_in_executor(None, _send_webhook_request, ten_env, webhook_url, payload)
+                    await loop.run_in_executor(
+                        None,
+                        _send_webhook_request,
+                        ten_env,
+                        webhook_url,
+                        payload,
+                    )
                 except Exception as webhook_err:
-                    ten_env.log_warn(f"Failed to await webhook request: {webhook_err}")
+                    ten_env.log_warn(
+                        f"Failed to await webhook request: {webhook_err}"
+                    )
+
+    async def _drain_mixer(self, ten_env: AsyncTenEnv):
+        if not getattr(self, "mixer", None) or not self.storage:
+            return
+
+        loop = self._get_loop()
+        while True:
+            mixed_bytes = self.mixer.mix_next_chunk(drain=True)
+            if not mixed_bytes:
+                break
+            try:
+                await loop.run_in_executor(
+                    None, self.storage.write, mixed_bytes
+                )
+            except Exception as e:
+                ten_env.log_error(f"Error draining recording mixer: {e}")
+                raise
 
     async def _recording_loop(self, ten_env: AsyncTenEnv):
         loop = self._get_loop()

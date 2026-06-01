@@ -47,6 +47,9 @@
                 "sample_rate": {
                     "type": "int32"
                 },
+                "source_prebuffer_ms": {
+                    "type": "int32"
+                },
                 "gcp_bucket_name": {
                     "type": "string"
                 },
