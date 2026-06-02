@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_llm_based_asr",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "dependencies": [
     {
       "type": "system",

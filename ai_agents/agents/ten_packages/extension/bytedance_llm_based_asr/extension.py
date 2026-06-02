@@ -8,6 +8,7 @@ import copy
 import itertools
 import json
 import os
+import time
 import websockets
 from dataclasses import asdict, dataclass
 from ten_ai_base.message import ModuleMetrics
@@ -139,6 +140,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Connection state
         self.connected: bool = False
+        self.connection_start_timestamp: int = 0
         self.client: VolcengineASRClient | None = None
         self.config: BytedanceASRLLMConfig | None = None
         self.last_finalize_timestamp: int = 0
@@ -275,6 +277,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             if self.log_id_dumper_manager:
                 await self.log_id_dumper_manager.create_dumper()
 
+            self.connection_start_timestamp = int(time.time() * 1000)
             await self.client.connect()
             # Do NOT set self.connected = True here (callback-driven pattern)
             # Connection state will be set in _on_connected() callback when server confirms
@@ -1077,8 +1080,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         This matches azure_asr_python pattern where _azure_event_handler_on_session_started()
         sets connected=True.
         """
+        connection_delay_ms = (
+            int(time.time() * 1000) - self.connection_start_timestamp
+        )
+
         self.ten_env.log_info(
-            f"vendor_status_changed: session_id: {self.session_id}",
+            f"vendor_status_changed: session_id: {self.session_id}, "
+            f"connection_delay_ms: {connection_delay_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
 
@@ -1087,6 +1095,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Perform initialization that was previously in start_connection()
         self._initialize_connection_state()
+
+        asyncio.create_task(
+            self.send_connect_delay_metrics(connection_delay_ms)
+        )
 
     def _on_disconnected(self) -> None:
         """Handle connection lost."""
