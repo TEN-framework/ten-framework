@@ -3,16 +3,30 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from time import time
+from typing import TypedDict
 
-from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 from spatius import new_avatar_session, AgoraEgressConfig
 
 from .avatar_base import AsyncAvatarBaseExtension
+
+
+class SpatiusParams(TypedDict, total=False):
+    """User-facing params accepted by the Spatius extension."""
+
+    spatius_api_key: str
+    spatius_app_id: str
+    spatius_avatar_id: str
+    agora_uid: str
+    agora_token: str
+    agora_appid: str
+    agora_channel: str
+    region: str
+    sample_rate: int | str
+    session_expire_minutes: int | str
 
 
 @dataclass
@@ -22,15 +36,87 @@ class SpatiusConfig(BaseConfig):
     spatius_api_key: str = ""
     spatius_app_id: str = ""
     spatius_avatar_id: str = ""
-    region: str = ""
-    agora_avatar_uid: str = ""
+
+    agora_uid: str = ""
+    agora_token: str = ""
     agora_appid: str = ""
-    agora_appcert: str = ""
-    channel: str = ""
+    agora_channel: str = ""
+
+    region: str = ""
     sample_rate: int = 24000
     session_expire_minutes: int = 30
+
+    params: SpatiusParams = field(default_factory=dict)
+
     dump: bool = False
     dump_path: str = ""
+
+    def update_params(self) -> None:
+        """Copy user-facing params into normalized config fields."""
+        if "spatius_api_key" in self.params:
+            self.spatius_api_key = self.params["spatius_api_key"]
+
+        if "spatius_app_id" in self.params:
+            self.spatius_app_id = self.params["spatius_app_id"]
+
+        if "spatius_avatar_id" in self.params:
+            self.spatius_avatar_id = self.params["spatius_avatar_id"]
+
+        if "agora_uid" in self.params:
+            self.agora_uid = self.params["agora_uid"]
+
+        if "agora_token" in self.params:
+            self.agora_token = self.params["agora_token"]
+
+        if "agora_appid" in self.params:
+            self.agora_appid = self.params["agora_appid"]
+
+        if "agora_channel" in self.params:
+            self.agora_channel = self.params["agora_channel"]
+
+        if "region" in self.params:
+            self.region = self.params["region"]
+
+        if "sample_rate" in self.params:
+            self.sample_rate = int(self.params["sample_rate"])
+
+        if "session_expire_minutes" in self.params:
+            self.session_expire_minutes = int(
+                self.params["session_expire_minutes"]
+            )
+
+    def validate_params(self) -> None:
+        """Validate required configuration parameters."""
+        required_fields = {
+            "params.spatius_api_key": self.spatius_api_key,
+            "params.spatius_app_id": self.spatius_app_id,
+            "params.spatius_avatar_id": self.spatius_avatar_id,
+            "params.agora_uid": self.agora_uid,
+            "params.agora_token": self.agora_token,
+            "params.agora_appid": self.agora_appid,
+            "params.agora_channel": self.agora_channel,
+        }
+
+        missing_fields = [
+            k
+            for k, v in required_fields.items()
+            if not v or (isinstance(v, str) and not v.strip())
+        ]
+        if missing_fields:
+            raise ValueError(
+                f"Missing required fields: {', '.join(missing_fields)}"
+            )
+
+        if self.sample_rate <= 0:
+            raise ValueError("sample_rate must be greater than 0")
+
+        if self.session_expire_minutes <= 0:
+            raise ValueError("session_expire_minutes must be greater than 0")
+
+        try:
+            int(self.agora_uid)
+        except ValueError as exc:
+            raise ValueError("params.agora_uid must be an integer") from exc
 
 
 class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
@@ -52,7 +138,8 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         """Handle animation frames received from avatar service."""
         if self.ten_env:
             self.ten_env.log_debug(
-                f"[Spatius] Frame received: {len(frame_data)} bytes, is_last={is_last}"
+                f"[Spatius] Frame received: {len(frame_data)} bytes, "
+                f"is_last={is_last}"
             )
 
     def _on_error(self, error: Exception) -> None:
@@ -74,42 +161,23 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         try:
             self.config = await SpatiusConfig.create_async(ten_env)
             self.ten_env = ten_env
-
-            # Validate required fields
-            required_fields = {
-                "spatius_api_key": self.config.spatius_api_key,
-                "spatius_app_id": self.config.spatius_app_id,
-                "spatius_avatar_id": self.config.spatius_avatar_id,
-                "agora_avatar_uid": self.config.agora_avatar_uid,
-                "agora_appid": self.config.agora_appid,
-                "channel": self.config.channel,
-            }
-
-            missing_fields = [k for k, v in required_fields.items() if not v]
-            if missing_fields:
-                ten_env.log_error(
-                    f"[Spatius] Missing required fields: {', '.join(missing_fields)}"
-                )
-                return False
-
-            if self.config.sample_rate <= 0:
-                ten_env.log_error(
-                    f"[Spatius] Invalid sample_rate: {self.config.sample_rate}"
-                )
-                return False
+            self.config.update_params()
+            self.config.validate_params()
 
             ten_env.log_info(
-                f"[Spatius] Config loaded: "
+                "config: [Spatius] "
                 "api_key="
                 f"{self._masked_api_key()}, "
                 f"app_id={self.config.spatius_app_id}, "
                 f"avatar_id={self.config.spatius_avatar_id}, "
                 f"region={self._region() or '(sdk default)'}, "
-                f"agora_avatar_uid={self.config.agora_avatar_uid}, "
+                f"agora_uid={self.config.agora_uid}, "
+                f"agora_token={self._masked_agora_token()}, "
                 f"agora_appid={self.config.agora_appid}, "
-                f"channel={self.config.channel}, "
+                f"agora_channel={self.config.agora_channel}, "
                 f"sample_rate={self.config.sample_rate}, "
-                f"session_expire_minutes={self.config.session_expire_minutes}"
+                "session_expire_minutes="
+                f"{self.config.session_expire_minutes}"
             )
             return True
 
@@ -123,25 +191,15 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             return "(short)"
         return f"***{self.config.spatius_api_key[-4:]}"
 
+    def _masked_agora_token(self) -> str:
+        """Return a redacted Agora token for logs."""
+        if len(self.config.agora_token) <= 4:
+            return "(short)"
+        return f"***{self.config.agora_token[-4:]}"
+
     def _region(self) -> str:
         """Return the configured Spatius region."""
         return (self.config.region or "").strip()
-
-    def _generate_agora_token(self, uid: int) -> str:
-        """Generate the Agora RTC token used by avatar egress."""
-        if not self.config.agora_appcert:
-            return self.config.agora_appid
-
-        expire_time = 3600
-        privilege_expired_ts = int(time()) + expire_time
-        return RtcTokenBuilder.buildTokenWithUid(
-            self.config.agora_appid,
-            self.config.agora_appcert,
-            self.config.channel,
-            uid,
-            1,
-            privilege_expired_ts,
-        )
 
     def get_target_sample_rate(self) -> list[int]:
         """Return the configured sample rate expected by spatius SDK."""
@@ -154,12 +212,12 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         )
 
         # Create avatar session using spatius with Agora egress.
-        avatar_uid = int(self.config.agora_avatar_uid)
+        avatar_uid = int(self.config.agora_uid)
         agora_egress = AgoraEgressConfig(
-            channel_name=self.config.channel,
-            token=self._generate_agora_token(avatar_uid),
+            channel_name=self.config.agora_channel,
+            token=self.config.agora_token,
             uid=avatar_uid,
-            publisher_id=self.config.agora_avatar_uid,
+            publisher_id=self.config.agora_uid,
         )
 
         session_kwargs = {
