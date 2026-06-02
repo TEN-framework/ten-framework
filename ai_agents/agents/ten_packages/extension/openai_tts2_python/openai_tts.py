@@ -29,7 +29,6 @@ from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
-from uap_utils import TaskInfo
 
 from .config import OpenAITTSConfig
 
@@ -87,7 +86,6 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.config = config
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
-        self.task: TaskInfo | None = None
 
         # Build headers - merge user-provided headers with defaults
         api_key = self.config.params.get("api_key", "")
@@ -125,17 +123,12 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.ten_env.log_debug("OpenAITTS: cancel() called.")
         self._is_cancelled = True
 
-    def set_task(self, task: TaskInfo) -> None:
-        """Set task info for business-level request fields."""
-        self.task = task
-
     async def get(
         self,
         text: str,
         request_id: str,
         is_first_chunk: bool = False,
         is_end: bool = False,
-        request_seq_id: int = 0,
         context: dict[str, Any] | None = None,
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         """
@@ -155,17 +148,10 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         """
         self._is_cancelled = False
 
-        enable_session_context = bool(
-            self.config.params.get("enable_session_context", False)
-        )
-        enable_request_id = bool(
-            self.config.params.get("enable_request_id", False)
-        )
+        enable_context = bool(self.config.params.get("enable_context", False))
 
         if len(text.strip()) == 0 and not (
-            (
-                enable_session_context or enable_request_id
-            ) and (is_first_chunk or is_end)
+            enable_context and (is_first_chunk or is_end)
         ):
             self.ten_env.log_warn(
                 f"OpenAITTS: empty text for request_id: {request_id}.",
@@ -180,7 +166,6 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                 request_id=request_id,
                 is_first_chunk=is_first_chunk,
                 is_end=is_end,
-                request_seq_id=request_seq_id,
                 context=context,
             )
             log_payload = self._build_log_payload(payload)
@@ -312,39 +297,25 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         request_id: str,
         is_first_chunk: bool = False,
         is_end: bool = False,
-        request_seq_id: int = 0,
         context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build the outbound JSON payload for the TTS server."""
         payload = {**self.config.params}
         payload.pop("api_key", None)
         payload.pop("base_url", None)
-        payload.pop("enable_session_context", None)
-        payload.pop("enable_request_id", None)
 
-        enable_session_context = bool(
-            self.config.params.get("enable_session_context", False)
-        )
-        enable_request_id = bool(
-            self.config.params.get("enable_request_id", False)
-        )
+        enable_context = bool(payload.pop("enable_context", False))
+        payload.pop("context_max_history", None)
         payload["input"] = text
 
-        if enable_request_id:
-            payload["request_id"] = request_id
-            payload["request_seq_id"] = request_seq_id
+        if enable_context:
+            payload["context_id"] = request_id
+            if is_first_chunk:
+                payload["is_start"] = True
+                if context:
+                    payload["context"] = context
             if is_end:
-                payload["request_end"] = True
-
-        if enable_session_context:
-            session_id = getattr(self.task, "taskId", "") if self.task else ""
-            payload["session_id"] = session_id
-            if is_first_chunk and context:
-                payload["session_context"] = {
-                    "type": "conversation_history",
-                    "version": "v1",
-                    "context": context.get("context_text", ""),
-                }
+                payload["is_end"] = True
 
         return payload
 

@@ -673,8 +673,8 @@ def test_enable_context_payload(MockLimits, MockTimeout, MockAsyncClient):
 
     config_default = OpenAITTSConfig(params=dict(common_params))
     config_default.update_params()
-    assert config_default.params["enable_session_context"] is False
-    assert config_default.params["enable_request_id"] is False
+    assert config_default.params["enable_context"] is False
+    assert config_default.params["context_max_history"] == 0
 
     client_default = OpenAITTSClient(config_default, mock_ten_env)
     payload_default = client_default._build_request_payload(
@@ -682,170 +682,60 @@ def test_enable_context_payload(MockLimits, MockTimeout, MockAsyncClient):
         request_id="req-1",
         is_first_chunk=True,
         is_end=True,
-        request_seq_id=0,
     )
-    assert "request_id" not in payload_default
-    assert "request_seq_id" not in payload_default
-    assert "request_end" not in payload_default
-    assert "session_context" not in payload_default
+    assert "context_max_history" not in payload_default
+    assert "enable_context" not in payload_default
+    assert "context_id" not in payload_default
+    assert "is_start" not in payload_default
+    assert "is_end" not in payload_default
 
     config_context = OpenAITTSConfig(
-        params={
-            **common_params,
-            "enable_session_context": True,
-            "enable_request_id": True,
-        }
+        params={**common_params, "enable_context": True}
     )
     config_context.update_params()
     client_context = OpenAITTSClient(config_context, mock_ten_env)
-    client_context.set_task(MagicMock(taskId="agent-123"))
 
     payload_first = client_context._build_request_payload(
         text="hello",
         request_id="req-2",
         is_first_chunk=True,
         is_end=False,
-        request_seq_id=7,
         context={
             "context_id": "req-2",
             "context_text": "[]",
             "context_type": "conversation_history",
         },
     )
-    assert payload_first["request_id"] == "req-2"
-    assert payload_first["request_seq_id"] == 7
-    assert payload_first["session_id"] == "agent-123"
-    assert payload_first["session_context"]["type"] == "conversation_history"
-    assert payload_first["session_context"]["version"] == "v1"
-    assert payload_first["session_context"]["context"] == "[]"
-    assert "request_end" not in payload_first
-    assert "enable_session_context" not in payload_first
-    assert "enable_request_id" not in payload_first
+    assert "context_max_history" not in payload_first
+    assert payload_first["context_id"] == "req-2"
+    assert payload_first["is_start"] is True
+    assert payload_first["context"]["context_type"] == "conversation_history"
+    assert "is_end" not in payload_first
 
     payload_last = client_context._build_request_payload(
         text="world",
         request_id="req-2",
         is_first_chunk=False,
         is_end=True,
-        request_seq_id=8,
     )
-    assert payload_last["request_id"] == "req-2"
-    assert payload_last["request_seq_id"] == 8
-    assert payload_last["request_end"] is True
+    assert payload_last["context_id"] == "req-2"
+    assert "is_start" not in payload_last
+    assert payload_last["is_end"] is True
 
     payload_single = client_context._build_request_payload(
         text="",
         request_id="req-3",
         is_first_chunk=True,
         is_end=True,
-        request_seq_id=9,
         context={
             "context_id": "req-3",
             "context_text": "[]",
             "context_type": "conversation_history",
         },
     )
-    assert payload_single["request_id"] == "req-3"
-    assert payload_single["request_seq_id"] == 9
-    assert payload_single["request_end"] is True
-
-
-def test_on_cmd_start_sets_task_info():
-    """Tests that start event taskInfo is stored and passed to client."""
-    from openai_tts2_python.extension import (
-        OpenAITTSExtension,
-        CMD_IN_EVENT,
-        CMD_PROPERTY_PAYLOAD,
-    )
-    from ten_runtime import Cmd
-
-    extension = OpenAITTSExtension("tts")
-    extension.ten_env = MagicMock()
-    extension.ten_env.log_debug = MagicMock()
-    extension.ten_env.return_result = AsyncMock()
-    extension.client = MagicMock()
-    extension.client.set_task = MagicMock()
-
-    cmd = MagicMock(spec=Cmd)
-    cmd.get_name.return_value = CMD_IN_EVENT
-    cmd.get_property_string.return_value = ("start", None)
-    cmd.get_property_buf.return_value = (
-        json.dumps(
-            {
-                "taskInfo": {
-                    "appId": "app",
-                    "vid": 1,
-                    "taskId": "agent-task-id",
-                    "taskName": "agent-task-id",
-                    "service": "svc",
-                    "workerId": "w",
-                    "workSpace": "/tmp",
-                    "graphName": "basic",
-                    "template": "tmpl",
-                    "taskLabels": {},
-                    "info": {},
-                    "createTs": 1,
-                    "apiVersion": "v2",
-                    "geoLocation": {},
-                }
-            }
-        ).encode(),
-        None,
-    )
-
-    import asyncio
-
-    asyncio.run(extension.on_cmd(extension.ten_env, cmd))
-
-    assert extension.task is not None
-    assert extension.task.taskId == "agent-task-id"
-    extension.client.set_task.assert_called_once()
-
-
-def test_payload_can_send_session_context_without_request_fields():
-    """Tests that session context can be enabled independently of request id fields."""
-    from openai_tts2_python.openai_tts import OpenAITTSClient
-    from openai_tts2_python.config import OpenAITTSConfig
-    from ten_runtime import AsyncTenEnv
-    from unittest.mock import MagicMock
-
-    mock_ten_env = MagicMock(spec=AsyncTenEnv)
-    mock_ten_env.log_info = MagicMock()
-    mock_ten_env.log_debug = MagicMock()
-    mock_ten_env.log_error = MagicMock()
-    mock_ten_env.log_warn = MagicMock()
-
-    config = OpenAITTSConfig(
-        params={
-            "api_key": "test_key",
-            "model": "gpt-4o-mini-tts",
-            "voice": "coral",
-            "enable_session_context": True,
-            "enable_request_id": False,
-        }
-    )
-    config.update_params()
-    client = OpenAITTSClient(config, mock_ten_env)
-    client.set_task(MagicMock(taskId="agent-456"))
-
-    payload = client._build_request_payload(
-        text="hello",
-        request_id="req-456",
-        is_first_chunk=True,
-        is_end=False,
-        request_seq_id=3,
-        context={
-            "context_id": "req-456",
-            "context_text": "[]",
-            "context_type": "conversation_history",
-        },
-    )
-
-    assert "request_id" not in payload
-    assert "request_seq_id" not in payload
-    assert "request_end" not in payload
-    assert payload["session_id"] == "agent-456"
-    assert payload["session_context"]["type"] == "conversation_history"
+    assert payload_single["context_id"] == "req-3"
+    assert payload_single["is_start"] is True
+    assert payload_single["is_end"] is True
 
 
 @patch("openai_tts2_python.openai_tts.AsyncClient")
@@ -870,7 +760,44 @@ def test_request_tts_passes_context_markers(
     extension.ten_env.log_debug = MagicMock()
     extension.ten_env.log_error = MagicMock()
     extension.ten_env.log_warn = MagicMock()
-    extension.ten_env.send_cmd = AsyncMock()
+    fetch_result = MagicMock()
+    fetch_result.get_status_code.return_value = StatusCode.OK
+    fetch_result.get_property_to_json.return_value = (
+        json.dumps(
+            {
+                "contents": [
+                    {
+                        "role": "user",
+                        "content": "old user",
+                        "turn_id": 9,
+                        "timestamp": 900,
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "old answer",
+                        "turn_id": 9,
+                        "timestamp": 950,
+                        "metadata": {"interrupted": False},
+                    },
+                    {
+                        "role": "user",
+                        "content": "current user should be excluded",
+                        "turn_id": 10,
+                        "timestamp": 1000,
+                    },
+                    {
+                        "role": "assistant",
+                        "content": "current answer should be excluded",
+                        "turn_id": 10,
+                        "timestamp": 1100,
+                        "metadata": {"interrupted": False},
+                    },
+                ]
+            }
+        ),
+        None,
+    )
+    extension.ten_env.send_cmd = AsyncMock(return_value=(fetch_result, None))
     extension.send_tts_audio_start = AsyncMock()
     extension.send_tts_ttfb_metrics = AsyncMock()
     extension.send_tts_audio_data = AsyncMock()
@@ -884,13 +811,11 @@ def test_request_tts_passes_context_markers(
             "api_key": "test_key",
             "model": "gpt-4o-mini-tts",
             "voice": "coral",
-            "enable_session_context": True,
-            "enable_request_id": True,
-        },
+            "enable_context": True,
+        }
     )
     config.update_params()
     extension.config = config
-    extension.task = MagicMock(taskId="agent-xyz")
 
     class StubClient:
         def __init__(self):
@@ -919,7 +844,6 @@ def test_request_tts_passes_context_markers(
                     "request_id": request_id,
                     "is_first_chunk": is_first_chunk,
                     "is_end": is_end,
-                    "request_seq_id": request_seq_id,
                     "context": context,
                 }
             )
@@ -938,30 +862,7 @@ def test_request_tts_passes_context_markers(
                 request_id="req-100",
                 text="hello",
                 text_input_end=False,
-                metadata={
-                    "turn_id": 10,
-                    "turn_seq_id": 0,
-                    "session_context": json.dumps(
-                        [
-                            {
-                                "role": "user",
-                                "content": [{"type": "text", "text": "old user"}],
-                                "interrupted": False,
-                                "start_time": 900,
-                                "end_time": 900,
-                                "turn_id": 9,
-                            },
-                            {
-                                "role": "assistant",
-                                "content": [{"type": "text", "text": "old answer"}],
-                                "interrupted": False,
-                                "start_time": 950,
-                                "end_time": 950,
-                                "turn_id": 9,
-                            },
-                        ]
-                    ),
-                },
+                metadata={"turn_id": 10},
             )
         )
         await extension.request_tts(
@@ -969,7 +870,7 @@ def test_request_tts_passes_context_markers(
                 request_id="req-100",
                 text="world",
                 text_input_end=True,
-                metadata={"turn_id": 10, "turn_seq_id": 1},
+                metadata={"turn_id": 10},
             )
         )
 
@@ -978,8 +879,11 @@ def test_request_tts_passes_context_markers(
     assert len(stub_client.calls) == 2
     assert stub_client.calls[0]["is_first_chunk"] is True
     assert stub_client.calls[0]["is_end"] is False
-    assert stub_client.calls[0]["request_seq_id"] == 0
-    assert stub_client.calls[0]["context"]["context_text"] is not None
+    assert stub_client.calls[0]["context"]["context_id"] == "req-100"
+    assert (
+        stub_client.calls[0]["context"]["context_type"]
+        == "conversation_history"
+    )
     first_history = json.loads(stub_client.calls[0]["context"]["context_text"])
     assert len(first_history) == 2
     assert first_history[0]["role"] == "user"
@@ -988,4 +892,127 @@ def test_request_tts_passes_context_markers(
     assert first_history[1]["content"][0]["text"] == "old answer"
     assert stub_client.calls[1]["is_first_chunk"] is False
     assert stub_client.calls[1]["is_end"] is True
-    assert stub_client.calls[1]["request_seq_id"] == 1
+
+
+def test_context_history_window():
+    """Tests that fetch history is bounded by the latest N turn_ids."""
+    from openai_tts2_python.extension import OpenAITTSExtension
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    extension = OpenAITTSExtension("tts")
+    extension.config = OpenAITTSConfig(
+        params={
+            "api_key": "test_key",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+            "enable_context": True,
+            "context_max_history": 2,
+        }
+    )
+    extension.config.update_params()
+
+    raw_contents = [
+        {
+            "role": "user",
+            "content": "turn-1-user",
+            "turn_id": 1,
+            "timestamp": 1000,
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "turn-1"}],
+            "interrupted": False,
+            "turn_id": 1,
+            "timestamp": 1100,
+            "metadata": {},
+        },
+        {
+            "role": "user",
+            "content": "turn-2-user",
+            "turn_id": 2,
+            "timestamp": 2000,
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "turn-2"}],
+            "turn_id": 2,
+            "timestamp": 2100,
+            "metadata": {"interrupted": True, "interrupt_timestamp": 2150},
+        },
+        {
+            "role": "user",
+            "content": "turn-3-user",
+            "turn_id": 3,
+            "timestamp": 3000,
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "text", "text": "turn-3"}],
+            "turn_id": 3,
+            "timestamp": 3100,
+            "metadata": {},
+        },
+    ]
+
+    history = extension._format_context_history(raw_contents, 2)
+
+    assert len(history) == 4
+    assert history[0]["turn_id"] == 2
+    assert history[1]["turn_id"] == 2
+    assert history[2]["turn_id"] == 3
+    assert history[3]["turn_id"] == 3
+    assert history[1]["interrupted"] is True
+    assert history[1]["end_time"] == 2150
+    assert history[3]["content"][0]["text"] == "turn-3"
+
+
+def test_context_history_excludes_current_turn():
+    """Tests that the current turn is excluded from context_text history."""
+    from openai_tts2_python.extension import OpenAITTSExtension
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    extension = OpenAITTSExtension("tts")
+    extension.config = OpenAITTSConfig(
+        params={
+            "api_key": "test_key",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+            "enable_context": True,
+            "context_max_history": 10,
+        }
+    )
+    extension.config.update_params()
+
+    raw_contents = [
+        {"role": "user", "content": "old-user", "turn_id": 1, "timestamp": 100},
+        {
+            "role": "assistant",
+            "content": "old-assistant",
+            "turn_id": 1,
+            "timestamp": 110,
+            "metadata": {},
+        },
+        {
+            "role": "user",
+            "content": "current-user",
+            "turn_id": 2,
+            "timestamp": 200,
+        },
+        {
+            "role": "assistant",
+            "content": "current-assistant",
+            "turn_id": 2,
+            "timestamp": 210,
+            "metadata": {},
+        },
+    ]
+
+    history = extension._format_context_history(
+        raw_contents,
+        10,
+        current_turn_id=2,
+    )
+
+    assert len(history) == 2
+    assert history[0]["turn_id"] == 1
+    assert history[1]["turn_id"] == 1
