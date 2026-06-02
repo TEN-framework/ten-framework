@@ -10,7 +10,6 @@ import json
 import ssl
 import certifi
 import time
-import copy
 
 # ============================================================================
 # Performance Optimization: Module-level pre-import of httpx
@@ -124,12 +123,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self._is_cancelled = True
 
     async def get(
-        self,
-        text: str,
-        request_id: str,
-        is_first_chunk: bool = False,
-        is_end: bool = False,
-        context: dict[str, Any] | None = None,
+        self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         """
         Process a single TTS request.
@@ -148,11 +142,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         """
         self._is_cancelled = False
 
-        enable_context = bool(self.config.params.get("enable_context", False))
-
-        if len(text.strip()) == 0 and not (
-            enable_context and (is_first_chunk or is_end)
-        ):
+        if len(text.strip()) == 0:
             self.ten_env.log_warn(
                 f"OpenAITTS: empty text for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
@@ -161,36 +151,22 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             return
 
         try:
-            payload = self._build_request_payload(
-                text=text,
-                request_id=request_id,
-                is_first_chunk=is_first_chunk,
-                is_end=is_end,
-                context=context,
-            )
-            log_payload = self._build_log_payload(payload)
+            # Build request payload - pass through all params (except api_key and base_url)
+            payload = {**self.config.params}
+            payload.pop("api_key", None)  # Remove api_key from headers
+            payload.pop("base_url", None)  # Remove base_url from payload
+
+            # Set input to the text to be synthesized
+            payload["input"] = text
 
             self.ten_env.log_debug(
-                "OpenAITTS request details: "
-                f"request_id={request_id}, "
-                f"url={self.config.url}, "
-                f"is_first_chunk={is_first_chunk}, "
-                f"is_end={is_end}, "
-                f"payload={json.dumps(log_payload, ensure_ascii=False)}",
-                category=LOG_CATEGORY_VENDOR,
+                f"OpenAITTS: sending request for request_id: {request_id}"
             )
 
             # Send streaming request
             async with self.client.stream(
                 "POST", self.config.url, headers=self.headers, json=payload
             ) as response:
-                self.ten_env.log_debug(
-                    "OpenAITTS response received: "
-                    f"request_id={request_id}, "
-                    f"status_code={response.status_code}, "
-                    f"headers={dict(response.headers)}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
                 # Check cancellation flag
                 if self._is_cancelled:
                     self.ten_env.log_debug(
@@ -290,38 +266,6 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                 yield error_message.encode(
                     "utf-8"
                 ), TTS2HttpResponseEventType.ERROR
-
-    def _build_request_payload(
-        self,
-        text: str,
-        request_id: str,
-        is_first_chunk: bool = False,
-        is_end: bool = False,
-        context: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Build the outbound JSON payload for the TTS server."""
-        payload = {**self.config.params}
-        payload.pop("api_key", None)
-        payload.pop("base_url", None)
-
-        enable_context = bool(payload.pop("enable_context", False))
-        payload.pop("context_max_history", None)
-        payload["input"] = text
-
-        if enable_context:
-            payload["context_id"] = request_id
-            if is_first_chunk:
-                payload["is_start"] = True
-                if context:
-                    payload["context"] = context
-            if is_end:
-                payload["is_end"] = True
-
-        return payload
-
-    def _build_log_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Return a full copy of the outbound payload for debug logging."""
-        return copy.deepcopy(payload)
 
     async def clean(self):
         """Clean up resources."""
