@@ -140,6 +140,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Connection state
         self.connected: bool = False
+        self.connection_cnt: int = 0
         self.connection_start_timestamp: int = 0
         self.client: VolcengineASRClient | None = None
         self.config: BytedanceASRLLMConfig | None = None
@@ -220,6 +221,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self.enable_utterance_grouping = (
                 self.config.get_enable_utterance_grouping()
             )
+
+            await self._send_connection_cnt_metrics()
 
         except Exception as e:
             self.ten_env.log_error(f"Configuration error: {e}")
@@ -1073,6 +1076,16 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             "Successfully connected to Volcengine ASR service"
         )
 
+    async def _send_connection_cnt_metrics(self) -> None:
+        """Report active connection count on init and connect/disconnect transitions."""
+        await self._send_asr_metrics(
+            ModuleMetrics(
+                module=ModuleType.ASR,
+                vendor=self.vendor(),
+                metrics={"connection_cnt": self.connection_cnt},
+            )
+        )
+
     def _on_connected(self) -> None:
         """Handle connection established (callback-driven state change).
 
@@ -1080,13 +1093,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         This matches azure_asr_python pattern where _azure_event_handler_on_session_started()
         sets connected=True.
         """
+        if self.connected:
+            return
+
         connection_delay_ms = (
             int(time.time() * 1000) - self.connection_start_timestamp
         )
+        self.connection_cnt += 1
 
         self.ten_env.log_info(
             f"vendor_status_changed: session_id: {self.session_id}, "
-            f"connection_delay_ms: {connection_delay_ms}",
+            f"connection_delay_ms: {connection_delay_ms}, "
+            f"connection_cnt: {self.connection_cnt}",
             category=LOG_CATEGORY_VENDOR,
         )
 
@@ -1099,14 +1117,22 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         asyncio.create_task(
             self.send_connect_delay_metrics(connection_delay_ms)
         )
+        asyncio.create_task(self._send_connection_cnt_metrics())
 
     def _on_disconnected(self) -> None:
         """Handle connection lost."""
+        if not self.connected:
+            return
+
+        self.connection_cnt -= 1
+        self.connected = False
+
         self.ten_env.log_info(
-            f"vendor_status_changed: session_id: {self.session_id}",
+            f"vendor_status_changed: session_id: {self.session_id}, "
+            f"connection_cnt: {self.connection_cnt}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.connected = False
+        asyncio.create_task(self._send_connection_cnt_metrics())
 
     @staticmethod
     def _set_update_configs_cmd_result(
