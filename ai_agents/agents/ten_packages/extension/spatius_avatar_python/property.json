@@ -1,0 +1,14 @@
+{
+    "spatius_api_key": "${env:SPATIUS_API_KEY|}",
+    "spatius_app_id": "${env:SPATIUS_APP_ID|}",
+    "spatius_avatar_id": "",
+    "region": "",
+    "agora_avatar_uid": "",
+    "agora_appid": "${env:AGORA_APP_ID|}",
+    "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+    "channel": "",
+    "sample_rate": 24000,
+    "session_expire_minutes": 30,
+    "dump": false,
+    "dump_path": ""
+}
