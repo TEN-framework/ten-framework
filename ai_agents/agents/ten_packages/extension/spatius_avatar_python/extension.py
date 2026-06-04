@@ -5,8 +5,10 @@
 #
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from time import time
 from typing import TypedDict
 
+from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 from spatius import new_avatar_session, AgoraEgressConfig
@@ -23,6 +25,7 @@ class SpatiusParams(TypedDict, total=False):
     agora_uid: str
     agora_token: str
     agora_appid: str
+    agora_appcert: str
     agora_channel: str
     region: str
     sample_rate: int | str
@@ -40,12 +43,14 @@ class SpatiusConfig(BaseConfig):
     agora_uid: str = ""
     agora_token: str = ""
     agora_appid: str = ""
+    agora_appcert: str = ""
     agora_channel: str = ""
 
     region: str = ""
     sample_rate: int = 24000
     session_expire_minutes: int = 30
 
+    channel: str = ""
     params: SpatiusParams = field(default_factory=dict)
 
     dump: bool = False
@@ -71,8 +76,14 @@ class SpatiusConfig(BaseConfig):
         if "agora_appid" in self.params:
             self.agora_appid = self.params["agora_appid"]
 
+        if "agora_appcert" in self.params:
+            self.agora_appcert = self.params["agora_appcert"]
+
         if "agora_channel" in self.params:
             self.agora_channel = self.params["agora_channel"]
+
+        if self._has_value(self.channel):
+            self.agora_channel = self.channel
 
         if "region" in self.params:
             self.region = self.params["region"]
@@ -92,7 +103,6 @@ class SpatiusConfig(BaseConfig):
             "params.spatius_app_id": self.spatius_app_id,
             "params.spatius_avatar_id": self.spatius_avatar_id,
             "params.agora_uid": self.agora_uid,
-            "params.agora_token": self.agora_token,
             "params.agora_appid": self.agora_appid,
             "params.agora_channel": self.agora_channel,
         }
@@ -107,6 +117,14 @@ class SpatiusConfig(BaseConfig):
                 f"Missing required fields: {', '.join(missing_fields)}"
             )
 
+        if not self._has_value(self.agora_token) and not self._has_value(
+            self.agora_appcert
+        ):
+            raise ValueError(
+                "Either params.agora_token or params.agora_appcert "
+                "must be provided"
+            )
+
         if self.sample_rate <= 0:
             raise ValueError("sample_rate must be greater than 0")
 
@@ -117,6 +135,25 @@ class SpatiusConfig(BaseConfig):
             int(self.agora_uid)
         except ValueError as exc:
             raise ValueError("params.agora_uid must be an integer") from exc
+
+    def resolve_agora_token(self) -> str:
+        """Return configured Agora token or generate one from app cert."""
+        if self._has_value(self.agora_token):
+            return self.agora_token
+
+        privilege_expired_ts = int(time()) + (self.session_expire_minutes * 60)
+        return RtcTokenBuilder.buildTokenWithUid(
+            self.agora_appid,
+            self.agora_appcert,
+            self.agora_channel,
+            int(self.agora_uid),
+            1,
+            privilege_expired_ts,
+        )
+
+    @staticmethod
+    def _has_value(value: str) -> bool:
+        return bool(value and value.strip())
 
 
 class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
@@ -174,6 +211,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 f"agora_uid={self.config.agora_uid}, "
                 f"agora_token={self._masked_agora_token()}, "
                 f"agora_appid={self.config.agora_appid}, "
+                f"agora_appcert={self._masked_agora_appcert()}, "
                 f"agora_channel={self.config.agora_channel}, "
                 f"sample_rate={self.config.sample_rate}, "
                 "session_expire_minutes="
@@ -193,9 +231,19 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
 
     def _masked_agora_token(self) -> str:
         """Return a redacted Agora token for logs."""
+        if not self.config.agora_token:
+            return "(generated from app cert)"
         if len(self.config.agora_token) <= 4:
             return "(short)"
         return f"***{self.config.agora_token[-4:]}"
+
+    def _masked_agora_appcert(self) -> str:
+        """Return a redacted Agora app certificate for logs."""
+        if not self.config.agora_appcert:
+            return "(empty)"
+        if len(self.config.agora_appcert) <= 4:
+            return "(short)"
+        return f"***{self.config.agora_appcert[-4:]}"
 
     def _region(self) -> str:
         """Return the configured Spatius region."""
@@ -213,9 +261,10 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
 
         # Create avatar session using spatius with Agora egress.
         avatar_uid = int(self.config.agora_uid)
+        agora_token = self.config.resolve_agora_token()
         agora_egress = AgoraEgressConfig(
             channel_name=self.config.agora_channel,
-            token=self.config.agora_token,
+            token=agora_token,
             uid=avatar_uid,
             publisher_id=self.config.agora_uid,
         )

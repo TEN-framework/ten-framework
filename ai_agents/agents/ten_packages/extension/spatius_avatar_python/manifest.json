@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "spatius_avatar_python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -32,6 +32,24 @@
         "dump_path": {
           "type": "string"
         },
+        "channel": {
+          "type": "string"
+        },
+        "agora_uid": {
+          "type": "string"
+        },
+        "agora_token": {
+          "type": "string"
+        },
+        "agora_appid": {
+          "type": "string"
+        },
+        "agora_appcert": {
+          "type": "string"
+        },
+        "agora_channel": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
@@ -51,6 +69,9 @@
               "type": "string"
             },
             "agora_appid": {
+              "type": "string"
+            },
+            "agora_appcert": {
               "type": "string"
             },
             "agora_channel": {

@@ -1,6 +1,12 @@
 {
     "dump": false,
     "dump_path": "",
+    "channel": "",
+    "agora_uid": "",
+    "agora_token": "",
+    "agora_appid": "",
+    "agora_appcert": "",
+    "agora_channel": "",
     "params": {
         "spatius_api_key": "${env:SPATIUS_API_KEY|}",
         "spatius_app_id": "${env:SPATIUS_APP_ID|}",
@@ -8,6 +14,7 @@
         "agora_uid": "",
         "agora_token": "",
         "agora_appid": "${env:AGORA_APP_ID|}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
         "agora_channel": "",
         "region": "",
         "sample_rate": 24000,

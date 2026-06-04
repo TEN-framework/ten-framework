@@ -72,7 +72,7 @@ Lifecycle (Automatic):
 2. on_start() → calls connect_to_avatar() → starts audio loop
 3. Audio arrives → sample rate checked → queued → calls send_audio_to_avatar()
 4. flush command → calls interrupt_avatar()
-5. tts_audio_end event → calls send_eof_to_avatar() (if reason=1)
+5. tts_audio_end event → calls send_eof_to_avatar()
 6. on_stop() → calls disconnect_from_avatar() → cleanup
 
 You don't need to override on_init/on_start/on_stop!
@@ -227,7 +227,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
 
         Called automatically in two scenarios:
         1. When drain command is received (manual trigger)
-        2. When tts_audio_end event arrives with reason=1 (TTS completion)
+        2. When tts_audio_end event arrives
 
         Example:
             async def send_eof_to_avatar(self) -> None:
@@ -384,22 +384,22 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
 
         if data_name == "tts_audio_end":
             json_str, _ = data.get_property_to_json(None)
+            reason = None
+            request_id = "unknown"
             if json_str:
                 payload = json.loads(json_str)
                 reason = payload.get("reason")
                 request_id = payload.get("request_id", "unknown")
-                ten_env.log_info(
-                    f"{self.LOG_PREFIX} tts_audio_end: "
-                    f"reason={reason}, request_id={request_id}"
-                )
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} tts_audio_end: "
+                f"reason={reason}, request_id={request_id}"
+            )
 
-                # reason=1 means TTS generation complete
-                if reason == 1:
-                    ten_env.log_info(
-                        f"{self.LOG_PREFIX} TTS complete "
-                        f"(request_id={request_id}), sending EOF"
-                    )
-                    await self._on_tts_audio_end(ten_env)
+            ten_env.log_info(
+                f"{self.LOG_PREFIX} TTS audio ended "
+                f"(request_id={request_id}), sending EOF"
+            )
+            await self._on_tts_audio_end(ten_env)
 
     # ========================================================================
     # AUDIO HANDLING - Managed by base class
