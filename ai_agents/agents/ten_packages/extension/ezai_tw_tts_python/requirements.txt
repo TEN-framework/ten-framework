@@ -1,0 +1,6 @@
+pydantic
+requests
+soundfile
+git+https://github.com/samx81/text_utils.git
+WeTextProcessing
+opencc
