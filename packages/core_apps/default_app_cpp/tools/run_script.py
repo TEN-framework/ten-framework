@@ -7,6 +7,7 @@
 
 import argparse
 import platform
+import shlex
 import subprocess
 import sys
 
@@ -52,7 +53,8 @@ def detect_arch() -> str:
 def run_cmd(cmd: str) -> int:
     """Run a shell command."""
     print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True)
+    # Use shell=False to avoid shell injection vulnerabilities
+    result = subprocess.run(shlex.split(cmd), shell=False, check=True)
     return result.returncode
 
 
