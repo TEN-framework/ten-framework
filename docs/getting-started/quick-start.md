@@ -582,6 +582,120 @@ pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirement
 
 **Solution**: Right-click PowerShell and select "Run as Administrator"
 
+## Running Natively on Linux or WSL2 (Without Docker)
+
+TEN Framework can run directly on Linux or inside WSL2 without Docker. This section covers the additional steps needed for a native setup.
+
+### WSL2 Setup
+
+If you are on Windows and prefer a native Linux environment without Docker, enable WSL2 first:
+
+```powershell
+# Enable WSL2 (run in PowerShell as Administrator)
+wsl --install
+wsl --set-default-version 2
+```
+
+After installation, launch your WSL2 distribution (e.g. Ubuntu 22.04) and follow the Linux steps below.
+
+### Linux / WSL2 Prerequisites
+
+In addition to the common requirements (Python 3.10, Go 1.20+, Node.js), native Linux setups need a C/C++ compiler:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get update
+sudo apt-get install -y gcc g++ make
+
+# Fedora / RHEL
+sudo dnf install gcc gcc-c++ make
+```
+
+### Install tman on Linux / WSL2
+
+Use the package repository (recommended):
+
+```bash
+sudo add-apt-repository ppa:ten-framework/ten-framework
+sudo apt update
+sudo apt install tman
+```
+
+Or install via the one-line script:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
+```
+
+### Build and Run a TEN App Natively
+
+The workflow is identical to the standard Quick Start once tman is installed:
+
+```bash
+# 1. Create and enter the demo app
+tman install app transcriber_demo
+cd transcriber_demo
+
+# 2. Install dependencies and build
+tman install
+tman run install_deps
+tman run build
+
+# 3. Configure environment and start
+cp .env.example .env   # fill in your API keys
+tman run start
+```
+
+### WSL2-Specific Notes
+
+**Port forwarding from Windows host**
+
+WSL2 runs inside a VM with its own IP address. To access a service running on port 8001 inside WSL2 from your Windows browser, run this in PowerShell as Administrator:
+
+```powershell
+netsh interface portproxy add v4tov4 listenport=8001 listenaddress=0.0.0.0 connectport=8001 connectaddress=$(wsl hostname -I)
+```
+
+Then open `http://localhost:8001` in your Windows browser.
+
+**Audio device access in WSL2**
+
+WSL2 does not expose audio devices by default. If an extension requires microphone input (e.g. `azure_asr_python`), use one of:
+
+- **WSLg** (Windows 11, WSL2 kernel ≥ 5.15): Audio is automatically bridged via PulseAudio. No additional setup needed if you are on a supported build.
+- **PulseAudio forwarding** (Windows 10): Install a PulseAudio server on Windows (e.g. [PulseAudio for Windows](https://www.freedesktop.org/wiki/Software/PulseAudio/Ports/Windows/Support/)), then set `PULSE_SERVER=tcp:$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}')` in your WSL2 session.
+- **Route audio externally**: Point the ASR extension to a remote audio stream instead of a local microphone.
+
+**File system performance**
+
+For best build performance, keep the TEN project directory inside the WSL2 file system (`~/` or `/home/...`), not in a Windows-mounted path (`/mnt/c/...`). Mixed file-system access can significantly slow down Go and C++ builds.
+
+### Troubleshooting (Linux / WSL2)
+
+**`tman: command not found` after installation**
+
+Add the tman binary directory to your PATH:
+
+```bash
+echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**`libpython3.10.so.1.0: cannot open shared object file`**
+
+```bash
+export LD_LIBRARY_PATH=$(python3.10 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))"):$LD_LIBRARY_PATH
+```
+
+Add this line to `~/.bashrc` to make it permanent.
+
+**Go build fails with `cgo: C compiler not found`**
+
+```bash
+sudo apt-get install gcc
+export CGO_ENABLED=1
+```
+
 ## Get Help
 
 - **GitHub Issues**: <https://github.com/TEN-framework/ten-framework/issues>
