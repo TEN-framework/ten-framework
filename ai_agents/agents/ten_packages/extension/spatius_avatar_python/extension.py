@@ -11,6 +11,7 @@ from typing import TypedDict
 from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
+from ten_ai_base.utils import encrypt
 from spatius import new_avatar_session, AgoraEgressConfig
 
 from .avatar_base import AsyncAvatarBaseExtension
@@ -225,25 +226,23 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
 
     def _masked_api_key(self) -> str:
         """Return a redacted Spatius API key for logs."""
-        if len(self.config.spatius_api_key) <= 4:
-            return "(short)"
-        return f"***{self.config.spatius_api_key[-4:]}"
+        return self._encrypt_config_value(self.config.spatius_api_key)
 
     def _masked_agora_token(self) -> str:
         """Return a redacted Agora token for logs."""
         if not self.config.agora_token:
             return "(generated from app cert)"
-        if len(self.config.agora_token) <= 4:
-            return "(short)"
-        return f"***{self.config.agora_token[-4:]}"
+        return self._encrypt_config_value(self.config.agora_token)
 
     def _masked_agora_appcert(self) -> str:
         """Return a redacted Agora app certificate for logs."""
-        if not self.config.agora_appcert:
+        return self._encrypt_config_value(self.config.agora_appcert)
+
+    @staticmethod
+    def _encrypt_config_value(value: str) -> str:
+        if not value:
             return "(empty)"
-        if len(self.config.agora_appcert) <= 4:
-            return "(short)"
-        return f"***{self.config.agora_appcert[-4:]}"
+        return encrypt(value)
 
     def _region(self) -> str:
         """Return the configured Spatius region."""
