@@ -88,7 +88,7 @@ class SpeechSynthesizer:
         data = None
         response = dict()
         response["session_id"] = session_id
-        for chunk in r.iter_content(None):
+        for chunk in r.iter_content(chunk_size=None):
             if data is None:
                 try:
                     rsp = json.loads(chunk)
@@ -96,7 +96,7 @@ class SpeechSynthesizer:
                     response["Message"] = rsp["Response"]["Error"]["Message"]
                     self.listener.on_fail(response)
                     return
-                except:
+                except (json.JSONDecodeError, ValueError):
                     data = chunk
                     response["data"] = data
                     self.listener.on_message(response)
