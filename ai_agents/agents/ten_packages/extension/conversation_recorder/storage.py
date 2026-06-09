@@ -190,29 +190,26 @@ class GCSStorage(BaseStorage):
 
             # Upload to GCS
             if local_path and os.path.exists(local_path):
-                try:
-                    _, bucket = self._get_gcs_client()
-                    blob_name = self.upload_prefix.rstrip("/")
-                    if blob_name:
-                        blob_name = (
-                            f"{blob_name}/{os.path.basename(local_path)}"
-                        )
-                    else:
-                        blob_name = os.path.basename(local_path)
-
-                    blob = bucket.blob(blob_name)
-                    blob.upload_from_filename(local_path)
-                    self.actual_file_path = (
-                        f"gs://{self.bucket_name}/{blob_name}"
+                _, bucket = self._get_gcs_client()
+                blob_name = self.upload_prefix.rstrip("/")
+                if blob_name:
+                    blob_name = (
+                        f"{blob_name}/{os.path.basename(local_path)}"
                     )
-                finally:
-                    # Cleanup temp file
-                    try:
-                        os.remove(local_path)
-                        if self.temp_dir:
-                            os.rmdir(self.temp_dir)
-                    except OSError:
-                        pass
+                else:
+                    blob_name = os.path.basename(local_path)
+
+                blob = bucket.blob(blob_name)
+                blob.upload_from_filename(local_path)
+                self.actual_file_path = f"gs://{self.bucket_name}/{blob_name}"
+
+                # Preserve the local recording if the upload raises.
+                try:
+                    os.remove(local_path)
+                    if self.temp_dir:
+                        os.rmdir(self.temp_dir)
+                except OSError:
+                    pass
 
             self.local_storage = None
 
@@ -350,30 +347,29 @@ class S3Storage(BaseStorage):
 
             # Upload to S3
             if local_path and os.path.exists(local_path):
+                s3_client = self._get_s3_client()
+                key = self.upload_prefix.rstrip("/")
+                if key:
+                    key = f"{key}/{os.path.basename(local_path)}"
+                else:
+                    key = os.path.basename(local_path)
+
+                s3_client.upload_file(local_path, self.bucket_name, key)
+
+                # Build the actual file path URL
+                if self.endpoint_url:
+                    self.actual_file_path = (
+                        f"{self.endpoint_url}/{self.bucket_name}/{key}"
+                    )
+                else:
+                    self.actual_file_path = f"s3://{self.bucket_name}/{key}"
+
+                # Preserve the local recording if the upload raises.
                 try:
-                    s3_client = self._get_s3_client()
-                    key = self.upload_prefix.rstrip("/")
-                    if key:
-                        key = f"{key}/{os.path.basename(local_path)}"
-                    else:
-                        key = os.path.basename(local_path)
-
-                    s3_client.upload_file(local_path, self.bucket_name, key)
-
-                    # Build the actual file path URL
-                    if self.endpoint_url:
-                        self.actual_file_path = (
-                            f"{self.endpoint_url}/{self.bucket_name}/{key}"
-                        )
-                    else:
-                        self.actual_file_path = f"s3://{self.bucket_name}/{key}"
-                finally:
-                    # Cleanup temp file
-                    try:
-                        os.remove(local_path)
-                        if self.temp_dir:
-                            os.rmdir(self.temp_dir)
-                    except OSError:
-                        pass
+                    os.remove(local_path)
+                    if self.temp_dir:
+                        os.rmdir(self.temp_dir)
+                except OSError:
+                    pass
 
             self.local_storage = None

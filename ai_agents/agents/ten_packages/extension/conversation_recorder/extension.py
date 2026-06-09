@@ -10,9 +10,10 @@ import asyncio
 import json
 import signal
 import atexit
+import urllib.request
+import os
 from .audio_mixer import AudioMixer
 from .storage import StorageFactory
-
 
 # Global registry of active recorders for signal handling
 _active_recorders = []
@@ -31,6 +32,22 @@ def _signal_handler(signum, _frame):
     raise SystemExit(128 + signum)
 
 
+def _send_webhook_request(ten_env, url: str, payload: dict):
+    try:
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(
+            url,
+            data=data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            res_body = response.read().decode('utf-8')
+            ten_env.log_info(f"Webhook response status: {response.status}, body: {res_body}")
+    except Exception as e:
+        ten_env.log_warn(f"Failed to send webhook: {e}")
+
+
 class ConversationRecorderExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -44,6 +61,11 @@ class ConversationRecorderExtension(AsyncExtension):
         self._flush_counter = 0
         self._signals_registered = False
 
+    def _get_loop(self) -> asyncio.AbstractEventLoop:
+        if self.loop is None:
+            self.loop = asyncio.get_running_loop()
+        return self.loop
+
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("ConversationRecorderExtension on_init")
         config_json, _ = await ten_env.get_property_to_json()
@@ -52,8 +74,12 @@ class ConversationRecorderExtension(AsyncExtension):
 
         # Get sample rate from config, default to 24000Hz (Gemini output rate)
         sample_rate = self.config.get("sample_rate", 24000)
+        source_prebuffer_ms = self.config.get("source_prebuffer_ms", 120)
 
-        self.mixer = AudioMixer(sample_rate=sample_rate)
+        self.mixer = AudioMixer(
+            sample_rate=sample_rate,
+            source_prebuffer_ms=source_prebuffer_ms,
+        )
         self.storage = StorageFactory.create_storage(
             self.config.get("storage_type", "local"), self.config
         )
@@ -154,10 +180,11 @@ class ConversationRecorderExtension(AsyncExtension):
 
         ten_env.log_info("Starting recording session...")
         self.is_recording = True
+        loop = self._get_loop()
 
         # Open storage in executor to avoid blocking
         if self.storage:
-            await self.loop.run_in_executor(None, self.storage.open)
+            await loop.run_in_executor(None, self.storage.open)
             if hasattr(self.storage, "actual_file_path"):
                 ten_env.log_info(
                     f"Recording to file: {self.storage.actual_file_path}"
@@ -171,16 +198,73 @@ class ConversationRecorderExtension(AsyncExtension):
 
         ten_env.log_info("Stopping recording session...")
         self.is_recording = False
+        loop = self._get_loop()
         if self.recording_task:
             await self.recording_task
             self.recording_task = None
 
         if self.storage:
+            await self._drain_mixer(ten_env)
             file_path = getattr(self.storage, "actual_file_path", None)
-            await self.loop.run_in_executor(None, self.storage.close)
+            try:
+                await loop.run_in_executor(None, self.storage.close)
+            except Exception as err:
+                ten_env.log_error(
+                    f"Failed to save recording at {file_path}: {err}"
+                )
+                raise
+            file_path = getattr(self.storage, "actual_file_path", file_path)
             ten_env.log_info(f"Recording saved to: {file_path}")
 
+            webhook_url = self.config.get("webhook_url") or os.getenv(
+                "CONVERSATION_RECORD_WEBHOOK_URL"
+            )
+            if webhook_url:
+                import time
+
+                channel_name = self.config.get("channel", "")
+                payload = {
+                    "channel_name": channel_name,
+                    "status": "uploaded",
+                    "file_path": file_path,
+                    "timestamp": int(time.time() * 1000),
+                }
+                ten_env.log_info(
+                    f"Sending recording upload webhook to {webhook_url} "
+                    f"with payload {payload}"
+                )
+                try:
+                    await loop.run_in_executor(
+                        None,
+                        _send_webhook_request,
+                        ten_env,
+                        webhook_url,
+                        payload,
+                    )
+                except Exception as webhook_err:
+                    ten_env.log_warn(
+                        f"Failed to await webhook request: {webhook_err}"
+                    )
+
+    async def _drain_mixer(self, ten_env: AsyncTenEnv):
+        if not getattr(self, "mixer", None) or not self.storage:
+            return
+
+        loop = self._get_loop()
+        while True:
+            mixed_bytes = self.mixer.mix_next_chunk(drain=True)
+            if not mixed_bytes:
+                break
+            try:
+                await loop.run_in_executor(
+                    None, self.storage.write, mixed_bytes
+                )
+            except Exception as e:
+                ten_env.log_error(f"Error draining recording mixer: {e}")
+                raise
+
     async def _recording_loop(self, ten_env: AsyncTenEnv):
+        loop = self._get_loop()
         while self.is_recording:
             try:
                 # Sleep approx one chunk duration (40ms)
@@ -191,7 +275,7 @@ class ConversationRecorderExtension(AsyncExtension):
 
                 if mixed_bytes and self.storage:
                     # Write in thread pool
-                    await self.loop.run_in_executor(
+                    await loop.run_in_executor(
                         None, self.storage.write, mixed_bytes
                     )
 
@@ -200,9 +284,7 @@ class ConversationRecorderExtension(AsyncExtension):
                 if self._flush_counter >= 25:
                     self._flush_counter = 0
                     if self.storage:
-                        await self.loop.run_in_executor(
-                            None, self.storage.flush
-                        )
+                        await loop.run_in_executor(None, self.storage.flush)
 
             except Exception as e:
                 ten_env.log_error(f"Error in recording loop: {e}")
