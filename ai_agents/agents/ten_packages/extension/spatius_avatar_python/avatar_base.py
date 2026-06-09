@@ -62,7 +62,7 @@ That's it! The base class handles everything else:
 - Audio processing loop
 - Sample rate validation
 - Audio dumping (if enabled)
-- Command handling (flush)
+- Command handling (flush, drain)
 - Lifecycle management
 - Error handling
 
@@ -72,14 +72,13 @@ Lifecycle (Automatic):
 2. on_start() → calls connect_to_avatar() → starts audio loop
 3. Audio arrives → sample rate checked → queued → calls send_audio_to_avatar()
 4. flush command → calls interrupt_avatar()
-5. tts_audio_end event → calls send_eof_to_avatar()
+5. drain command → calls send_eof_to_avatar()
 6. on_stop() → calls disconnect_from_avatar() → cleanup
 
 You don't need to override on_init/on_start/on_stop!
 """
 
 import asyncio
-import json
 from abc import ABC, abstractmethod
 from typing import Any
 import os
@@ -103,6 +102,7 @@ from ten_ai_base.message import ErrorMessage, ModuleType
 
 # Avatar-specific constants
 MODULE_TYPE_AVATAR = "avatar"
+CMD_IN_DRAIN = "drain"
 
 
 class AsyncAvatarBaseExtension(AsyncExtension, ABC):
@@ -225,9 +225,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         """
         [REQUIRED] Signal end of audio stream.
 
-        Called automatically in two scenarios:
-        1. When drain command is received (manual trigger)
-        2. When tts_audio_end event arrives
+        Called automatically when drain command is received.
 
         Example:
             async def send_eof_to_avatar(self) -> None:
@@ -373,6 +371,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             await self._handle_flush(ten_env)
             await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
 
+        elif cmd_name == CMD_IN_DRAIN:
+            ten_env.log_info(
+                f"KEYPOINT [on_cmd:{CMD_IN_DRAIN}]",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self._handle_drain(ten_env)
+
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result)
         ten_env.log_info(f"{self.LOG_PREFIX} on_cmd completed: {cmd_name}")
@@ -381,25 +386,6 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         """Handle incoming data events."""
         data_name = data.get_name()
         ten_env.log_info(f"{self.LOG_PREFIX} on_data received: {data_name}")
-
-        if data_name == "tts_audio_end":
-            json_str, _ = data.get_property_to_json(None)
-            reason = None
-            request_id = "unknown"
-            if json_str:
-                payload = json.loads(json_str)
-                reason = payload.get("reason")
-                request_id = payload.get("request_id", "unknown")
-            ten_env.log_info(
-                f"{self.LOG_PREFIX} tts_audio_end: "
-                f"reason={reason}, request_id={request_id}"
-            )
-
-            ten_env.log_info(
-                f"{self.LOG_PREFIX} TTS audio ended "
-                f"(request_id={request_id}), sending EOF"
-            )
-            await self._on_tts_audio_end(ten_env)
 
     # ========================================================================
     # AUDIO HANDLING - Managed by base class
@@ -514,8 +500,8 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Error interrupting: {e}")
 
-    async def _on_tts_audio_end(self, ten_env: AsyncTenEnv) -> None:
-        """Handle tts_audio_end event."""
+    async def _handle_drain(self, ten_env: AsyncTenEnv) -> None:
+        """Handle drain command."""
         if not self._audio_processing_enabled:
             ten_env.log_info(
                 f"{self.LOG_PREFIX} Audio processing disabled, skipping EOF"

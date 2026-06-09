@@ -9,7 +9,7 @@
 - ✅ Built-in audio queue and processing loop
 - ✅ Sample rate validation
 - ✅ Error handling and logging
-- ✅ Command handling (flush, tts_audio_end)
+- ✅ Command handling (flush, drain)
 - ✅ Optional audio dumping for debugging
 
 ---
@@ -85,7 +85,7 @@ async def send_audio_to_avatar(self, audio_data: bytes) -> None:
 ### 6. `send_eof_to_avatar() -> None`
 **Purpose:** Signal end of audio stream.
 **Called:** Automatically when:
-- `tts_audio_end` event arrives with `reason=1` (TTS completion)
+- `drain` command is received
 
 ```python
 async def send_eof_to_avatar(self) -> None:
@@ -218,7 +218,7 @@ The base class handles the complete lifecycle automatically:
 
 4. Commands (automatic)
    └─> flush command → interrupt_avatar()
-   └─> tts_audio_end event → send_eof_to_avatar()
+   └─> drain command → send_eof_to_avatar()
 
 5. on_stop()
    └─> Stop audio processing loop
@@ -283,10 +283,10 @@ When a `flush` command is received:
 2. `interrupt_avatar()` is called
 3. `flush` command is forwarded
 
-### TTS Audio End Event
-When `tts_audio_end` event arrives with `reason=1`:
-1. `send_eof_to_avatar()` is called automatically
-2. Signals that TTS generation is complete
+### Drain Command
+When a `drain` command is received:
+1. `send_eof_to_avatar()` is queued behind pending audio
+2. Signals that TTS playback audio has drained
 
 ---
 

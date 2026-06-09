@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "spatius_avatar_python",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "dependencies": [
     {
       "type": "system",
@@ -95,14 +95,12 @@
         "name": "pcm_frame"
       }
     ],
-    "data_in": [
-      {
-        "name": "tts_audio_end"
-      }
-    ],
     "cmd_in": [
       {
         "name": "flush"
+      },
+      {
+        "name": "drain"
       }
     ]
   },
