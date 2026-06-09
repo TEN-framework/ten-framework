@@ -436,7 +436,7 @@ class TwilioCallServer:
                 # Try to close the connection gracefully
                 try:
                     await websocket.close()
-                except:
+                except Exception:
                     pass
             finally:
                 self._log_info("WebSocket connection closed")
