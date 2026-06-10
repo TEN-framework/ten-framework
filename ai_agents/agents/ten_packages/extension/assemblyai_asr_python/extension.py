@@ -134,11 +134,19 @@ class AssemblyAIASRExtension(
             assemblyai_config = {
                 "sample_rate": self.config.sample_rate,
                 "encoding": self.config.encoding,
+                "speech_model": self.config.speech_model,
                 "end_of_turn_confidence_threshold": self.config.end_of_turn_confidence_threshold,
                 "format_turns": self.config.format_turns,
                 "keyterms_prompt": self.config.keyterms_prompt,
+                # min_turn_silence supersedes the deprecated min_end_of_turn_silence_when_confident
+                "min_turn_silence": self.config.min_turn_silence,
                 "min_end_of_turn_silence_when_confident": self.config.min_end_of_turn_silence_when_confident,
                 "max_turn_silence": self.config.max_turn_silence,
+                "language_detection": self.config.language_detection,
+                "prompt": self.config.prompt,
+                "vad_threshold": self.config.vad_threshold,
+                "speaker_labels": self.config.speaker_labels,
+                "max_speakers": self.config.max_speakers,
             }
             self.ten_env.log_info(f"AssemblyAI ASR config: {assemblyai_config}")
             self.recognition = AssemblyAIWSRecognition(
