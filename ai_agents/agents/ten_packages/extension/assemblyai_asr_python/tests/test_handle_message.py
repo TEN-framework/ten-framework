@@ -97,3 +97,40 @@ def test_unknown_message_is_routed_to_event_not_error():
     assert callback.errors == []
     assert len(callback.events) == 1
     assert callback.events[0]["type"] == "SomeFutureEvent"
+
+
+class _RaisingWebSocket:
+    """Async-iterable websocket whose iteration raises the given exception."""
+
+    def __init__(self, exc: BaseException) -> None:
+        self._exc = exc
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise self._exc
+
+
+def test_connection_closed_passes_string_args_to_on_error():
+    """
+    On a WebSocket close, on_error must receive string arguments. AssemblyAI v3
+    reports errors via close codes (there is no in-band error message type), and
+    on_error feeds ModuleError(message=str)/ModuleErrorVendorInfo(code=str), so
+    passing the raw exception/int code would raise a Pydantic validation error.
+    """
+    from websockets.exceptions import ConnectionClosed
+
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+    recognition.websocket = _RaisingWebSocket(
+        ConnectionClosed("connection closed: 4001 (some reason)")
+    )
+
+    asyncio.run(recognition._message_handler())
+
+    assert len(callback.errors) == 1
+    error_msg, error_code = callback.errors[0]
+    assert isinstance(error_msg, str)
+    assert isinstance(error_code, str)
+    assert error_code == "4001"

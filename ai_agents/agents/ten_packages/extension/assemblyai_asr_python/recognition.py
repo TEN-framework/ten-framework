@@ -159,7 +159,7 @@ class AssemblyAIWSRecognition:
             )
             if self.callback:
                 if code != 0:
-                    await self.callback.on_error(e, code)
+                    await self.callback.on_error(str(e), str(code))
 
         except WebSocketException as e:
             error_msg = f"WebSocket error: {e}"
@@ -167,11 +167,12 @@ class AssemblyAIWSRecognition:
             if self.callback:
                 await self.callback.on_error(error_msg)
         except asyncio.CancelledError:
-            if self.callback:
-                await self.callback.on_error(e)
+            # Normal task cancellation during shutdown is not an error; let it
+            # propagate after the finally block runs on_close().
+            raise
         except Exception as e:
             if self.callback:
-                await self.callback.on_error(e)
+                await self.callback.on_error(str(e))
         finally:
             self.is_started = False
             if self.callback:
