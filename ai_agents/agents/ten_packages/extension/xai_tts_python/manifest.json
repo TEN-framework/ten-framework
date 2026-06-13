@@ -1,0 +1,75 @@
+{
+  "type": "extension",
+  "name": "xai_tts_python",
+  "version": "0.1.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "base_url": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "codec": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "bit_rate": {
+              "type": "int32"
+            },
+            "optimize_streaming_latency": {
+              "type": "int32"
+            },
+            "text_normalization": {
+              "type": "bool"
+            }
+          }
+        }
+      }
+    }
+  }
+}

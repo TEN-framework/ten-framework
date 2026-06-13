@@ -47,11 +47,4 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
         return "openai"
 
     def synthesize_audio_sample_rate(self) -> int:
-        if self.config and self.config.params:
-            sample_rate = self.config.params.get("sample_rate")
-            if sample_rate is not None:
-                try:
-                    return int(sample_rate)
-                except (TypeError, ValueError):
-                    pass
         return 24000
