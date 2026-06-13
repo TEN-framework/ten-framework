@@ -114,11 +114,15 @@ class AssemblyAIWSRecognition:
                     await self.callback.on_event(message_data)
 
             else:
+                # Unrecognized message types (e.g. "SpeechStarted") are
+                # informational vendor events, not errors. Routing them to
+                # on_error would feed a dict into ModuleError(message=str) and
+                # raise a Pydantic validation error, so surface them as events.
                 self.ten_env.log_info(
                     f"[AssemblyAI] Unknown message: {message_data}"
                 )
                 if self.callback:
-                    await self.callback.on_error(message_data)
+                    await self.callback.on_event(message_data)
 
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse message JSON: {e}"
