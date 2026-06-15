@@ -166,11 +166,10 @@ class AssemblyAIWSRecognition:
             self.ten_env.log_error(f"[AssemblyAI] {error_msg}")
             if self.callback:
                 await self.callback.on_error(error_msg)
-        except asyncio.CancelledError:
-            # Normal task cancellation during shutdown is not an error; let it
-            # propagate after the finally block runs on_close().
-            raise
         except Exception as e:
+            # Note: asyncio.CancelledError derives from BaseException, so it is
+            # not caught here and propagates after the finally block runs
+            # on_close() — normal task cancellation during shutdown.
             if self.callback:
                 await self.callback.on_error(str(e))
         finally:
