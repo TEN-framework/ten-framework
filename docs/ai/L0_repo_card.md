@@ -12,7 +12,7 @@
 | Language      | Python (extensions), Go (API server), TypeScript/React (playground)  |
 | Deploy Target | Docker container (`ten_agent_dev`), Taskfile-based build             |
 | Owner         | TEN Framework team                                                   |
-| Last Reviewed | 2026-04-07                                                           |
+| Last Reviewed | 2026-05-18                                                           |
 
 ## L1 Index
 

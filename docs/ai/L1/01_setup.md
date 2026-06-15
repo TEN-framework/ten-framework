@@ -21,6 +21,12 @@ docker ps | grep ten_agent_dev   # Verify running
 
 Container image: `ghcr.io/ten-framework/ten_agent_build:0.7.14`
 
+**Permissions:** if your user is not in the `docker` group, prefix every
+`docker` / `docker exec` / `docker compose` command in this guide with `sudo`.
+A bare `docker ps` failing with `permission denied while trying to connect to
+the docker API at unix:///var/run/docker.sock` is the diagnostic — switch to
+`sudo docker ps` and the rest works.
+
 ## Environment Variables
 
 **Single .env file**: `ai_agents/.env` — the ONLY source of environment config.
@@ -126,4 +132,4 @@ docker exec ten_agent_dev bash -c "strings /tmp/task_run.log | tail -n 80"
 
 ## Related Deep Dives
 
-- [Deployment](deep_dives/deployment.md) — Docker Compose, Cloudflare tunnel, Nginx, Grafana monitoring
+- [Deployment](L2/deployment.md) — Docker Compose, Cloudflare tunnel, Nginx, Grafana monitoring

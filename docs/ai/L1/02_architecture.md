@@ -140,5 +140,5 @@ receives the dynamic channel value without code changes.
 
 ## Related Deep Dives
 
-- [Server Architecture](deep_dives/server_architecture.md) — Go server internals, property injection pipeline
-- [Graph Configuration](deep_dives/graph_configuration.md) — Node schema, connection wiring, parallel routing
+- [Server Architecture](L2/server_architecture.md) — Go server internals, property injection pipeline
+- [Graph Configuration](L2/graph_configuration.md) — Node schema, connection wiring, parallel routing

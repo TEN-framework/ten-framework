@@ -295,6 +295,48 @@ class MyVendorASRExtension(AsyncASRBaseExtension):
 **Buffer strategy**: Override `buffer_strategy()` to return `ASRBufferConfigModeKeep`
 if you want audio buffered during disconnects (default discards).
 
+#### Canonical `asr_result` payload
+
+`session_id` lives inside `metadata`, never as a top-level field. Locked-interim
+vs final is signalled at `metadata.asr_info.locked` (true = stable interim that
+should not be reverted by a later partial; final = true = utterance ended).
+
+```json
+{
+  "id": "uuid",
+  "text": "hello world",
+  "final": true,
+  "start_ms": 120,
+  "duration_ms": 340,
+  "language": "en-US",
+  "metadata": {
+    "session_id": "session-123",
+    "asr_info": {
+      "vendor": "xai",
+      "locked": false
+    }
+  }
+}
+```
+
+#### Canonical error payload with `vendor_info`
+
+```json
+{
+  "module": "tts",
+  "code": -1000,
+  "message": "Unauthorized",
+  "vendor_info": {
+    "vendor": "xai",
+    "code": "401",
+    "message": "Unauthorized"
+  }
+}
+```
+
+`code` is the framework-level severity (-1000 fatal, 1000 non-fatal). `vendor_info.code`
+is the vendor-native status (HTTP code, vendor error code, etc.).
+
 ### LLM Extension
 
 ```python
@@ -359,6 +401,13 @@ These are sent automatically by the base class. You don't need to send them manu
   "metadata": {"session_id": "sess1", "turn_id": 1}
 }
 ```
+
+**Field semantics**:
+- `request_event_interval_ms`: wall-clock between the first audio chunk arrival
+  and the last audio chunk arrival for this `request_id` — the audio receive
+  window. **Not** TTFB; TTFB is reported separately via the `metrics` channel.
+- `request_total_audio_duration_ms`: total audio duration computed from the
+  received byte count and the configured PCM format.
 
 **Reason values**: `REQUEST_END` (1) = normal completion, `INTERRUPTED` (2) = flush/cancel,
 `ERROR` (3) = failure.

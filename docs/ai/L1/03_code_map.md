@@ -114,4 +114,4 @@ Extensions reference these via `manifest.json`:
 
 ## Related Deep Dives
 
-- [Extension Development](deep_dives/extension_development.md) — Full creation guide with base class details
+- [Extension Development](L2/extension_development.md) — Full creation guide with base class details
