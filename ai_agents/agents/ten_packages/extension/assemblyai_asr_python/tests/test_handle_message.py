@@ -120,11 +120,14 @@ def test_connection_closed_passes_string_args_to_on_error():
     passing the raw exception/int code would raise a Pydantic validation error.
     """
     from websockets.exceptions import ConnectionClosed
+    from websockets.frames import Close
 
     callback = _RecordingCallback()
     recognition = _make_recognition(callback)
+    # websockets >=14 requires Close frame objects (rcvd, sent), not a string;
+    # str(ConnectionClosed) then contains the "4001" code the handler parses.
     recognition.websocket = _RaisingWebSocket(
-        ConnectionClosed("connection closed: 4001 (some reason)")
+        ConnectionClosed(Close(4001, "some reason"), None)
     )
 
     asyncio.run(recognition._message_handler())
