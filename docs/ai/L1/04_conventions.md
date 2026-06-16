@@ -150,6 +150,21 @@ from ten import Addon
 - Check: `task check`
 - Excludes: `third_party/`, `http_server_python/`, `ten_packages/system`
 
+> **Run before every push.** CI runs both `task check` (black format check)
+> and `task lint` (pylint — any warning is fatal). Either failing blocks
+> merge. If you commit from a host shell (outside the container), the
+> pre-commit hook does not run and the PR fails CI.
+> The reliable habit is:
+>
+> ```bash
+> sudo docker exec ten_agent_dev bash -c \
+>   "cd /app && task format && task check && task lint"
+> ```
+>
+> Run this after any change under `agents/ten_packages/extension/` or
+> `agents/examples/` and before `git push`. `task lint` is strict — even
+> a single `W0611: unused-import` warning fails CI.
+
 ## Design Principles
 
 - **YAGNI**: Only implement what is needed now, not what might be needed later
@@ -158,4 +173,4 @@ from ten import Addon
 
 ## Related Deep Dives
 
-- [Extension Development](deep_dives/extension_development.md) — Full creation guide with implementation walkthroughs
+- [Extension Development](L2/extension_development.md) — Full creation guide with implementation walkthroughs

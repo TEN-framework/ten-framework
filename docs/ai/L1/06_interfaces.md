@@ -162,43 +162,14 @@ Interface JSON files define the standard cmd/data/audio_frame schemas for each e
 
 ## Canonical Payload Notes
 
-ASR results should keep `session_id` inside `metadata`, not as a top-level field.
+- ASR `asr_result`: keep `session_id` inside `metadata`, never as a top-level
+  field. Locked-interim vs final lives at `metadata.asr_info.locked`.
+- Error payloads: include `vendor_info` (vendor name + vendor code + vendor
+  message) whenever the failure originated upstream.
+- ASR `connect_delay` metrics are valid before `session_id` is known; other
+  metrics should wait.
 
-```json
-{
-  "id": "uuid",
-  "text": "hello world",
-  "final": true,
-  "start_ms": 120,
-  "duration_ms": 340,
-  "language": "en-US",
-  "metadata": {
-    "session_id": "session-123",
-    "asr_info": {
-      "vendor": "xai",
-      "locked": false
-    }
-  }
-}
-```
-
-Provider error payloads should include `vendor_info` when available:
-
-```json
-{
-  "module": "tts",
-  "code": -1000,
-  "message": "Unauthorized",
-  "vendor_info": {
-    "vendor": "xai",
-    "code": "401",
-    "message": "Unauthorized"
-  }
-}
-```
-
-ASR metrics may arrive before session metadata is available. `connect_delay`
-only metrics are valid without `session_id`.
+See [Extension Development](L2/extension_development.md) for full example payloads.
 
 ## Portal References
 
@@ -207,6 +178,6 @@ only metrics are valid without `session_id`.
 
 ## Related Deep Dives
 
-- [Extension Development](deep_dives/extension_development.md) — Implementing abstract methods
-- [Server Architecture](deep_dives/server_architecture.md) — Endpoint handlers and property injection
-- [Graph Configuration](deep_dives/graph_configuration.md) — Full connection wiring examples
+- [Extension Development](L2/extension_development.md) — Implementing abstract methods
+- [Server Architecture](L2/server_architecture.md) — Endpoint handlers and property injection
+- [Graph Configuration](L2/graph_configuration.md) — Full connection wiring examples

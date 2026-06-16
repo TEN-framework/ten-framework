@@ -52,7 +52,7 @@ Editing `.env` while the container is running has **no effect**. You must
 ## Next.js Lock File
 
 After crashes, `.next/dev/lock` becomes stale, preventing restart. Delete it
-and do a full restart. See [Operations and Restarts](deep_dives/operations_restarts.md).
+and do a full restart. See [Operations and Restarts](L2/operations_restarts.md).
 
 ## Python Deps Not Persisted
 
@@ -132,6 +132,34 @@ Killing `node` and `bun` is not enough — `next-server` is a separate process
 that holds port 3000. If port 3000 is occupied, Next.js silently starts on
 3001+ which isn't Docker-exposed, making the frontend appear down.
 
+## CI `lint` Runs Both Black and Pylint
+
+The `lint` CI check on every PR runs two task targets:
+
+- `task check` — `black --check` (formatting)
+- `task lint` — `pylint` (any warning is fatal, including W0611 unused-import)
+
+If you commit from a host shell rather than inside the container, the repo's
+pre-commit hook does not run and either failure will surface only in CI.
+Before every push:
+
+```bash
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task format && task check && task lint"
+```
+
+Common foot-gun: leaving an unused import after a refactor. Pylint is strict
+and a single W0611 fails the build. See [Formatting](04_conventions.md#formatting).
+
+## Docker Permission Denied
+
+`docker ps` fails with `permission denied while trying to connect to the
+docker API at unix:///var/run/docker.sock` when the current user is not in
+the `docker` group. The fix is `sudo docker …` for every invocation, not
+adding the user to the group mid-session. Examples in this doc set are
+inconsistent (some show `docker exec`, others `sudo docker exec`) — on a
+host where the bare form fails, treat every example as needing `sudo`.
+
 ## Apple Silicon Docker
 
 Docker containers may need Rosetta for x86 images on Apple Silicon Macs.
@@ -143,6 +171,6 @@ Before cloning on Windows: `git config --global core.autocrlf false`
 
 ## Related Deep Dives
 
-- [Operations and Restarts](deep_dives/operations_restarts.md) — Full restart procedures, port debugging, recovery
-- [Deployment](deep_dives/deployment.md) — Production setup, persistent startup
-- [Server Architecture](deep_dives/server_architecture.md) — Worker lifecycle, session management
+- [Operations and Restarts](L2/operations_restarts.md) — Full restart procedures, port debugging, recovery
+- [Deployment](L2/deployment.md) — Production setup, persistent startup
+- [Server Architecture](L2/server_architecture.md) — Worker lifecycle, session management

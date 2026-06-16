@@ -40,7 +40,7 @@ Optional / vendor-dependent TTS configs:
 `property_invalid.json`, `property_dump.json`
 
 For full walkthrough with code and guarder expectations, see
-[Extension Development](deep_dives/extension_development.md) and [Testing](deep_dives/testing.md).
+[Extension Development](L2/extension_development.md) and [Testing](L2/testing.md).
 
 ### New ASR/TTS Extension Checklist
 
@@ -82,29 +82,20 @@ Minimum end-to-end steps:
    {"path": "../../../ten_packages/extension/my_tts_python"}
    ```
 
-4. **Install** (use `task install`, not just `tman install` — the latter can wipe `bin/worker`):
-   ```bash
-   docker exec ten_agent_dev bash -c "cd /app/agents/examples/<example> && task install"
-   ```
+4. **Install** with `task install` (not bare `tman install` — the latter can wipe `bin/worker`).
 
-5. **Nuclear restart** (required when graphs are added/removed):
-   ```bash
-   sudo docker exec ten_agent_dev bash -c \
-     "pkill -9 -f 'bin/api'; pkill -9 -f bun; pkill -9 -f node; pkill -9 -f next-server; pkill -9 -f tman"
-   sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
-   sleep 30  # wait for port 3000 TIME_WAIT to clear
-   sudo docker exec -d ten_agent_dev bash -c \
-     "cd /app/agents/examples/<example> && task run > /tmp/task_run.log 2>&1"
-   ```
+5. **Nuclear restart** — required when graphs are added/removed. See
+   [Setup → Restart Procedures](01_setup.md#restart-procedures) for the exact
+   command sequence.
 
-See [Graph Configuration](deep_dives/graph_configuration.md) for connection types and
+See [Graph Configuration](L2/graph_configuration.md) for connection types and
 routing patterns. When adding a TTS vendor, copy a confirmed working voice graph and
 preserve its routing model. Some shipped graphs rely on explicit message connections,
 while others keep part of the orchestration inside `main_control`.
 
 **For complex multi-graph setups** (A/B testing vendors, avatar variants), use
 `rebuild_property.py` instead of hand-editing. See
-[Generating property.json](deep_dives/graph_configuration.md#generating-propertyjson-with-rebuild_propertypy).
+[Generating property.json](L2/graph_configuration.md#generating-propertyjson-with-rebuild_propertypy).
 
 ## Customize the Main Extension
 
@@ -122,27 +113,17 @@ Modify `on_data()` to change event routing, `on_cmd()` for tool handling.
 ## Run Tests
 
 ```bash
-# All tests
-docker exec ten_agent_dev bash -c "cd /app && task test"
+# Standalone (single extension, with install)
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task test-extension EXTENSION=agents/ten_packages/extension/<ext>"
 
-# Single extension (with dependency install)
-docker exec ten_agent_dev bash -c \
-  "cd /app && task test-extension EXTENSION=agents/ten_packages/extension/deepgram_tts"
-
-# Single extension (skip install — faster)
-docker exec ten_agent_dev bash -c \
-  "cd /app && task test-extension-no-install EXTENSION=agents/ten_packages/extension/deepgram_tts"
-
-# ASR guarder integration tests
-docker exec ten_agent_dev bash -c \
-  "cd /app && task asr-guarder-test EXTENSION=azure_asr_python"
-
-# TTS guarder integration tests
-docker exec ten_agent_dev bash -c \
-  "cd /app && task tts-guarder-test EXTENSION=deepgram_tts"
+# Integration guarder (ASR or TTS — run sequentially, not in parallel)
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task tts-guarder-test EXTENSION=<ext> CONFIG_DIR=tests/configs"
 ```
 
-See [Testing](deep_dives/testing.md) for test structure and debugging.
+Other variants (`task test`, `task test-extension-no-install`, `task asr-guarder-test`) and
+debugging guidance live in [Testing](L2/testing.md).
 
 ## Restart After Changes
 
@@ -157,40 +138,29 @@ See [Testing](deep_dives/testing.md) for test structure and debugging.
 
 ## Build and Install
 
+Always prefer `task install` over bare `tman install`:
+
 ```bash
-# Full install (first time or after adding extensions) — ALWAYS prefer this
-docker exec ten_agent_dev bash -c \
+sudo docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/<example> && task install"
-
-# Install Python deps only
-docker exec ten_agent_dev bash -c \
-  "cd /app/agents/examples/<example>/tenapp && bash scripts/install_python_deps.sh"
-
-# Install extension dependencies only (creates symlinks) — WARNING: can wipe bin/worker
-docker exec ten_agent_dev bash -c \
-  "cd /app/agents/examples/<example>/tenapp && tman install"
 ```
+
+Python-deps-only and `tman install` variants are in
+[Setup → Install and Run](01_setup.md#install-and-run).
 
 ## Update Extension Code in Running Container
 
-See [Operations and Restarts](deep_dives/operations_restarts.md) for the full procedure
-including `docker cp` syntax, symlink verification, and restart steps.
+See [Operations and Restarts](L2/operations_restarts.md) for `docker cp` syntax,
+symlink verification, and restart steps.
 
-## Pre-Commit Checks
+## Pre-Commit / Pre-Push Checks
 
-```bash
-# Format Python code (Black, line-length 80)
-docker exec ten_agent_dev bash -c "cd /app && task format"
-
-# Check formatting without modifying
-docker exec ten_agent_dev bash -c "cd /app && task check"
-```
-
-Pre-commit hooks validate: API key patterns, Black formatting, conventional commit messages.
+See [Conventions → Formatting](04_conventions.md#formatting) — `task format && task check && task lint`
+must all pass before pushing; CI runs both `task check` and `task lint`.
 
 ## Related Deep Dives
 
-- [Extension Development](deep_dives/extension_development.md) — Full extension creation with code examples
-- [Graph Configuration](deep_dives/graph_configuration.md) — Connection wiring and routing patterns
-- [Testing](deep_dives/testing.md) — Test infrastructure, guarder tests, debugging
-- [Operations and Restarts](deep_dives/operations_restarts.md) — Full restart procedures, recovery
+- [Extension Development](L2/extension_development.md) — Full extension creation with code examples
+- [Graph Configuration](L2/graph_configuration.md) — Connection wiring and routing patterns
+- [Testing](L2/testing.md) — Test infrastructure, guarder tests, debugging
+- [Operations and Restarts](L2/operations_restarts.md) — Full restart procedures, recovery

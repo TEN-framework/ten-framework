@@ -84,5 +84,5 @@ These are auto-generated — never modify or commit them:
 
 ## Related Deep Dives
 
-- [Deployment](deep_dives/deployment.md) — Production security considerations
-- [Server Architecture](deep_dives/server_architecture.md) — Server-side validation details
+- [Deployment](L2/deployment.md) — Production security considerations
+- [Server Architecture](L2/server_architecture.md) — Server-side validation details
