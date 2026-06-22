@@ -144,6 +144,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
             speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs, "100"
         )
 
+        speech_config.set_property_by_name("OPENSSL_DISABLE_CRL_CHECK", "true")
+
         # Dump the Azure SDK log to the dump path if dump is enabled.
         if self.config.dump and self.config.dump_path:
             azure_log_file_path = os.path.join(
