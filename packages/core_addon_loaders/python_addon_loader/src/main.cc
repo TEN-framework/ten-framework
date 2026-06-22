@@ -242,8 +242,6 @@ class python_addon_loader_t : public ten::addon_loader_t {
         TEN_LOGE(
             "[Python addon loader] Failed to finalize python runtime, rc: %d",
             rc);
-
-        TEN_ASSERT(0, "Should not happen.");
       } else {
         TEN_LOGI("[Python addon loader] python de-initialized");
       }
