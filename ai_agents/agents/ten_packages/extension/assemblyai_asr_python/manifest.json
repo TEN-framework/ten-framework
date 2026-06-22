@@ -52,10 +52,31 @@
                                 "type": "string"
                             }
                         },
+                        "speech_model": {
+                            "type": "string"
+                        },
+                        "language_detection": {
+                            "type": "bool"
+                        },
+                        "min_turn_silence": {
+                            "type": "int64"
+                        },
                         "min_end_of_turn_silence_when_confident": {
                             "type": "int64"
                         },
                         "max_turn_silence": {
+                            "type": "int64"
+                        },
+                        "prompt": {
+                            "type": "string"
+                        },
+                        "vad_threshold": {
+                            "type": "float64"
+                        },
+                        "speaker_labels": {
+                            "type": "bool"
+                        },
+                        "max_speakers": {
                             "type": "int64"
                         }
                     }
