@@ -234,6 +234,7 @@ class MetricsTester(AsyncExtensionTester):
                 
                 # Get request_total_audio_duration_ms (actual audio duration)
                 received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                received_event_interval_ms, _ = data.get_property_int("request_event_interval_ms")
                 
                 # Validate audio duration: request_total_audio_duration_ms should be consistent with the length calculated from the PCM file
                 pcm_audio_duration_ms = self._calculate_pcm_audio_duration_ms()
@@ -245,6 +246,15 @@ class MetricsTester(AsyncExtensionTester):
                     ten_env.log_info(f"✅ Audio duration validation passed. PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
                 else:
                     ten_env.log_info(f"Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms")
+
+                if received_event_interval_ms > 0:
+                    event_interval_diff = abs(received_event_interval_ms - actual_duration_ms)
+                    if event_interval_diff > AUDIO_DURATION_TOLERANCE_MS:
+                        self._stop_test_with_error(ten_env, f"Event interval mismatch. Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms, Diff: {event_interval_diff:.2f}ms")
+                        return
+                    ten_env.log_info(f"✅ Event interval validation passed. Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms, Diff: {event_interval_diff:.2f}ms")
+                else:
+                    ten_env.log_info(f"Skipping event interval validation - Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms")
                 
                 # Record actual elapsed time (for debugging)
                 ten_env.log_info(f"Actual event duration: {actual_duration_ms:.2f}ms")
