@@ -1,20 +1,37 @@
 import numpy as np
 import threading
+from dataclasses import dataclass, field
 from typing import Dict, Deque
 from collections import deque
 
 
+@dataclass
+class _SourceBuffer:
+    samples: Deque[float] = field(default_factory=deque)
+    ready: bool = False
+
+
 class AudioMixer:
-    def __init__(self, sample_rate=24000, channels=1, chunk_duration_ms=40):
+    def __init__(
+        self,
+        sample_rate=24000,
+        channels=1,
+        chunk_duration_ms=40,
+        source_prebuffer_ms=120,
+    ):
         self.sample_rate = sample_rate
         self.channels = channels
         # Calculate chunk size in samples.
         # e.g., 24000Hz * 0.04s = 960 samples
         self.chunk_size = int(self.sample_rate * (chunk_duration_ms / 1000.0))
+        self.prebuffer_size = max(
+            self.chunk_size,
+            int(self.sample_rate * (source_prebuffer_ms / 1000.0)),
+        )
 
-        # Buffers: map string(stream_id) -> Deque[float] (samples)
+        # Buffers: map string(stream_id) -> source playout state.
         # We use deque for efficient pop from left.
-        self.buffers: Dict[str, Deque[float]] = {}
+        self.buffers: Dict[str, _SourceBuffer] = {}
         self.lock = threading.Lock()
 
     def _resample(
@@ -65,40 +82,63 @@ class AudioMixer:
 
         with self.lock:
             if source_id not in self.buffers:
-                self.buffers[source_id] = deque()
+                self.buffers[source_id] = _SourceBuffer()
 
             # Extend deque with samples
-            self.buffers[source_id].extend(audio_array)
+            self.buffers[source_id].samples.extend(audio_array)
 
-    def mix_next_chunk(self) -> bytes:
+    def mix_next_chunk(self, drain: bool = False) -> bytes:
         """
         Extracts `chunk_size` samples from all buffers, mixes them, and returns bytes.
-        If a buffer has insufficient data, it contributes 0 (silence) for the missing part.
+        A source must have a small prebuffer before playout starts. This avoids
+        writing bursty model audio as alternating audio/silence fragments.
+        If a ready source underruns, it waits to rebuffer instead of consuming
+        a partial chunk. `drain=True` consumes partial tails during shutdown.
         If ALL buffers are empty, returns empty bytes (indicating no data to write).
         """
         with self.lock:
             # Check if any buffer has data
-            has_data = any(len(buf) > 0 for buf in self.buffers.values())
+            has_data = any(
+                len(source.samples) > 0 for source in self.buffers.values()
+            )
             if not has_data:
                 return b""
 
             # Initialize mixer buffer
             mixed_chunk = np.zeros(self.chunk_size, dtype=np.float32)
+            consumed_any = False
 
             # Mix each source
-            for buf in self.buffers.values():
-                # Extract up to chunk_size samples
-                count = min(len(buf), self.chunk_size)
-                if count > 0:
-                    # Create temporary array from deque slice
-                    # Iterating deque is fast enough for 960 items?
-                    # Ideally we'd chunk this better, but for python MVP this is readable.
-                    # Optimization: slice deque to list then array.
-                    samples = [buf.popleft() for _ in range(count)]
-                    samples_arr = np.array(samples, dtype=np.float32)
+            for source in self.buffers.values():
+                available = len(source.samples)
+                if available == 0:
+                    continue
 
-                    # Add to mix
-                    mixed_chunk[:count] += samples_arr
+                if drain:
+                    count = min(available, self.chunk_size)
+                else:
+                    if not source.ready:
+                        if available < self.prebuffer_size:
+                            continue
+                        source.ready = True
+
+                    if available < self.chunk_size:
+                        source.ready = False
+                        continue
+
+                    count = self.chunk_size
+
+                # Create temporary array from deque slice. This is small
+                # (usually 960 samples) and keeps the logic simple.
+                samples = [source.samples.popleft() for _ in range(count)]
+                samples_arr = np.array(samples, dtype=np.float32)
+
+                # Add to mix
+                mixed_chunk[:count] += samples_arr
+                consumed_any = True
+
+            if not consumed_any:
+                return b""
 
             # Clip and convert to int16
             mixed_chunk = np.clip(mixed_chunk, -32768, 32767)

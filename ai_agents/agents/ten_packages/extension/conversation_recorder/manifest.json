@@ -26,6 +26,12 @@
     "api": {
         "property": {
             "properties": {
+                "webhook_url": {
+                    "type": "string"
+                },
+                "channel": {
+                    "type": "string"
+                },
                 "storage_type": {
                     "type": "string"
                 },
@@ -39,6 +45,9 @@
                     "type": "string"
                 },
                 "sample_rate": {
+                    "type": "int32"
+                },
+                "source_prebuffer_ms": {
                     "type": "int32"
                 },
                 "gcp_bucket_name": {
