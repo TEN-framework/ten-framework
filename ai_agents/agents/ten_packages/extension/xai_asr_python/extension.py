@@ -402,9 +402,29 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         if self._stop_requested:
             return
         if self._close_expected:
+            # xAI STT is a single-utterance protocol: the server closes the
+            # socket after each transcript.done. Subsequent turns need a
+            # fresh connection. Schedule a clean reconnect (not the
+            # backoff path — this is a planned cycle, not a failure).
+            # The base class buffers audio frames in the meantime and
+            # flushes them from on_open.
             self._close_expected = False
+            asyncio.create_task(self._reconnect_after_finalize())
             return
         await self._handle_reconnect()
+
+    async def _reconnect_after_finalize(self) -> None:
+        if self._stop_requested:
+            return
+        try:
+            await self._connect_recognition()
+        except Exception as e:
+            self.ten_env.log_warn(
+                f"xAI STT post-finalize reconnect failed: {e}; "
+                f"falling back to reconnect manager backoff",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._handle_reconnect()
 
     async def _handle_reconnect(self) -> None:
         if not self.reconnect_manager:

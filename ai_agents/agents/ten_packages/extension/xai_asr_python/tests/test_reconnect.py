@@ -53,6 +53,82 @@ def test_reconnect_counter_resets_after_success():
     assert manager.attempts == 0
 
 
+def test_on_close_expected_after_finalize_reconnects_fresh_socket():
+    """Regression: xAI STT is a single-utterance protocol — the server
+    closes the socket after transcript.done. Previously on_close returned
+    early when _close_expected was True, leaving recognition=None and
+    dropping every subsequent turn. Verify on_close now schedules a
+    fresh _connect_recognition() so the next utterance can be captured.
+    """
+
+    async def _run():
+        extension = XAIASRExtension("xai_asr_python")
+        extension.ten_env = MagicMock()
+        extension.reconnect_manager = MagicMock()
+        extension._connect_recognition = AsyncMock()
+        extension.send_asr_error = AsyncMock()
+
+        # State right after finalize() ran and the vendor closed the socket.
+        extension._stop_requested = False
+        extension._close_expected = True
+        extension.recognition = MagicMock()
+
+        await extension.on_close()
+        # The reconnect is scheduled as a task; wait for it to complete.
+        pending = [
+            t for t in asyncio.all_tasks() if t is not asyncio.current_task()
+        ]
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        # _close_expected reset, recognition cleared, fresh connect attempted.
+        assert extension._close_expected is False
+        assert extension.recognition is None
+        extension._connect_recognition.assert_awaited_once()
+        # The backoff reconnect path was NOT used — this is a planned cycle.
+        extension.send_asr_error.assert_not_awaited()
+
+    asyncio.run(_run())
+
+
+def test_on_close_expected_falls_back_to_backoff_if_reconnect_fails():
+    """If the planned reconnect after finalize raises, the extension
+    should fall back to the bounded reconnect-manager backoff path
+    instead of silently leaving the session dead."""
+
+    async def _run():
+        extension = XAIASRExtension("xai_asr_python")
+        extension.ten_env = MagicMock()
+        extension.reconnect_manager = ReconnectManager(
+            base_delay=0,
+            max_delay=0,
+            max_attempts=2,
+            logger=MagicMock(),
+        )
+        extension.send_asr_error = AsyncMock()
+        extension._connect_recognition = AsyncMock(
+            side_effect=RuntimeError("xai down")
+        )
+
+        extension._stop_requested = False
+        extension._close_expected = True
+        extension.recognition = MagicMock()
+
+        await extension.on_close()
+        pending = [
+            t for t in asyncio.all_tasks() if t is not asyncio.current_task()
+        ]
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        # First attempt is the planned reconnect; on failure the backoff
+        # path runs max_attempts=2 times.
+        assert extension._connect_recognition.await_count >= 3
+        assert extension.send_asr_error.await_count >= 1
+
+    asyncio.run(_run())
+
+
 def test_on_close_retries_until_retry_ceiling():
     async def _run():
         extension = XAIASRExtension("xai_asr_python")
