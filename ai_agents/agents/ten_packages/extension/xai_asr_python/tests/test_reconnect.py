@@ -74,6 +74,7 @@ def test_on_close_expected_after_finalize_reconnects_fresh_socket():
         extension.recognition = MagicMock()
 
         await extension.on_close()
+        assert extension._finalize_reconnect_task is not None
         # The reconnect is scheduled as a task; wait for it to complete.
         pending = [
             t for t in asyncio.all_tasks() if t is not asyncio.current_task()
@@ -84,6 +85,7 @@ def test_on_close_expected_after_finalize_reconnects_fresh_socket():
         # _close_expected reset, recognition cleared, fresh connect attempted.
         assert extension._close_expected is False
         assert extension.recognition is None
+        assert extension._finalize_reconnect_task is None
         extension._connect_recognition.assert_awaited_once()
         # The backoff reconnect path was NOT used — this is a planned cycle.
         extension.send_asr_error.assert_not_awaited()
@@ -115,6 +117,7 @@ def test_on_close_expected_falls_back_to_backoff_if_reconnect_fails():
         extension.recognition = MagicMock()
 
         await extension.on_close()
+        assert extension._finalize_reconnect_task is not None
         pending = [
             t for t in asyncio.all_tasks() if t is not asyncio.current_task()
         ]
@@ -123,8 +126,37 @@ def test_on_close_expected_falls_back_to_backoff_if_reconnect_fails():
 
         # First attempt is the planned reconnect; on failure the backoff
         # path runs max_attempts=2 times.
+        assert extension._finalize_reconnect_task is None
         assert extension._connect_recognition.await_count >= 3
         assert extension.send_asr_error.await_count >= 1
+
+    asyncio.run(_run())
+
+
+def test_stop_connection_cancels_pending_finalize_reconnect_task():
+    async def _run():
+        extension = XAIASRExtension("xai_asr_python")
+        extension.ten_env = MagicMock()
+        recognition = MagicMock()
+        recognition.close = AsyncMock()
+        extension.recognition = recognition
+
+        blocker = asyncio.Event()
+
+        async def pending_reconnect():
+            await blocker.wait()
+
+        task = asyncio.create_task(pending_reconnect())
+        extension._finalize_reconnect_task = task
+
+        await extension.stop_connection()
+        await asyncio.gather(task, return_exceptions=True)
+
+        assert extension._stop_requested is True
+        recognition.close.assert_awaited_once()
+        assert extension.recognition is None
+        assert extension._finalize_reconnect_task is None
+        assert task.cancelled()
 
     asyncio.run(_run())
 
