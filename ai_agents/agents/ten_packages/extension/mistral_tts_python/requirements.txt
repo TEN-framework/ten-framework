@@ -1,0 +1,4 @@
+httpx
+certifi
+pydantic>=2.0.0
+typing-extensions

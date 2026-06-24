@@ -1,0 +1,8 @@
+{
+    "dump": false,
+    "params": {
+        "api_key": "${env:MISTRAL_API_KEY}",
+        "model": "voxtral-mini-tts-2603",
+        "voice": "${env:MISTRAL_TTS_VOICE}"
+    }
+}
