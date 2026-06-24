@@ -38,6 +38,7 @@ class RequestContext:
     finished: bool = False
     total_audio_bytes: int = 0
     audio_start_sent: bool = False
+    ttfb_sent: bool = False
     sample_rate: int | None = None
     sent_ts: datetime | None = None
     session_id: str = ""
@@ -160,6 +161,8 @@ class GradiumTTSExtension(AsyncTTS2BaseExtension):
         return "gradium"
 
     def synthesize_audio_sample_rate(self) -> int:
+        if self.current_request_sample_rate:
+            return self.current_request_sample_rate
         if self.config:
             return self.config.get_sample_rate()
         return 24000
@@ -266,11 +269,13 @@ class GradiumTTSExtension(AsyncTTS2BaseExtension):
                         )
                         context.audio_start_sent = True
                         self._audio_start_sent = True
-                    await self.send_tts_ttfb_metrics(
-                        request_id=request_id,
-                        ttfb_ms=data_msg,
-                        extra_metadata=self.client.get_extra_metadata(),
-                    )
+                    if not context.ttfb_sent:
+                        await self.send_tts_ttfb_metrics(
+                            request_id=request_id,
+                            ttfb_ms=data_msg,
+                            extra_metadata=self.client.get_extra_metadata(),
+                        )
+                        context.ttfb_sent = True
 
             elif event_status == EVENT_TTS_END:
                 if t.text_input_end:
