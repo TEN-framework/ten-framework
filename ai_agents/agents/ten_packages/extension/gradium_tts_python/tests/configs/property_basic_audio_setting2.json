@@ -1,6 +1,6 @@
 {
-    "dump": false,
-    "dump_path": "/tmp",
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
     "params": {
         "api_key": "${env:GRADIUM_API_KEY}",
         "base_url": "wss://api.gradium.ai/api/speech/tts",
