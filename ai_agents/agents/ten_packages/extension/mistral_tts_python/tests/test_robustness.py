@@ -23,32 +23,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
-import struct
-
-
-def _wav_header(
-    sample_rate: int = 24000, channels: int = 1, bits: int = 16
-) -> bytes:
-    byte_rate = sample_rate * channels * bits // 8
-    block_align = channels * bits // 8
-    return (
-        b"RIFF"
-        + struct.pack("<I", 0xFFFFFFFF)
-        + b"WAVE"
-        + b"fmt "
-        + struct.pack(
-            "<IHHIIHH",
-            16,
-            1,
-            channels,
-            sample_rate,
-            byte_rate,
-            block_align,
-            bits,
-        )
-        + b"data"
-        + struct.pack("<I", 0xFFFFFFFF)
-    )
 
 
 # ================ test reconnect after connection drop(robustness) ================
@@ -179,9 +153,9 @@ def test_reconnect_after_connection_drop(
             # Mock aread() for error body reading (not used in success case)
             mock_response.aread = AsyncMock(return_value=b"")
 
-            # Mock aiter_bytes() for streaming audio data
+            # Mock aiter_bytes() for streaming audio data (headerless raw
+            # float32 PCM, as Mistral's `pcm` response returns).
             async def mock_aiter_bytes():
-                yield _wav_header()
                 yield b"\x44\x55\x66\x77"
 
             mock_response.aiter_bytes = mock_aiter_bytes

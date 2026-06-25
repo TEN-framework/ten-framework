@@ -9,8 +9,8 @@ using Mistral's OpenAI-compatible HTTP API (`POST /v1/audio/speech`).
 - Voxtral models (e.g. `voxtral-mini-tts-2603`)
 - Preset voices (`voice`), saved cloned voices (`voice_id`), or one-off
   reference clips (`ref_audio`) — forwarded straight through to the vendor
-- Robust WAV → PCM16 mono conversion (handles int16 / int24 / int32 and
-  IEEE-float WAV payloads), output at 24 kHz
+- Streaming float32 → PCM16 mono conversion of Voxtral's raw `pcm` output, at
+  24 kHz
 - Optional audio dumping for debugging
 - API-key authentication via the `Authorization` header
 
@@ -33,7 +33,7 @@ using Mistral's OpenAI-compatible HTTP API (`POST /v1/audio/speech`).
 > A voice is not required by this extension: Voxtral accepts a preset or saved
 > `voice_id`, or a one-off `ref_audio` clip, and otherwise uses a default
 > voice. Any extra params you set (e.g. `ref_audio`) are forwarded to the
-> vendor unchanged. `response_format` is always set to `wav` internally and
+> vendor unchanged. `response_format` is always set to `pcm` internally and
 > converted to PCM16.
 >
 > Note: the cloud API (`api.mistral.ai`) uses `voice_id`. The self-hosted
@@ -58,9 +58,10 @@ using Mistral's OpenAI-compatible HTTP API (`POST /v1/audio/speech`).
 
 - Mistral's TTS API applies content moderation; disallowed input is rejected
   with HTTP 403. The extension surfaces this as an error event.
-- Mistral's raw `pcm` format is float32 LE, so this extension requests `wav`
-  (self-describing) and converts to the PCM16 mono that the TEN `pcm_frame`
-  contract expects.
+- Mistral's raw `pcm` format is headerless float32 LE at 24 kHz mono, so this
+  extension requests `pcm` (lowest latency — no container header to buffer) and
+  rescales each sample to the PCM16 mono that the TEN `pcm_frame` contract
+  expects.
 
 ## Architecture
 
@@ -69,7 +70,7 @@ This extension follows the `AsyncTTS2HttpExtension` pattern:
 - **Extension**: `MistralTTSExtension` — inherits from `AsyncTTS2HttpExtension`
 - **Config**: `MistralTTSConfig` — extends `AsyncTTS2HttpConfig`
 - **Client**: `MistralTTSClient` — extends `AsyncTTS2HttpClient`, handles the
-  Mistral API call and WAV → PCM16 conversion (`WavToPcm16`)
+  Mistral API call and float32 → PCM16 conversion (`Float32ToPcm16`)
 
 ## API Reference
 

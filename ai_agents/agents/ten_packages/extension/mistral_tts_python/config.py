@@ -9,11 +9,12 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 # Mistral (Voxtral) TTS defaults.
 DEFAULT_BASE_URL = "https://api.mistral.ai/v1"
 DEFAULT_MODEL = "voxtral-mini-tts-2603"
-# Voxtral can emit pcm/wav/flac/mp3/aac/opus. We request `wav` because it is
-# self-describing: the client parses the WAV header to learn the real sample
-# format (Mistral's raw `pcm` is float32 LE, which is NOT the PCM16 the TEN
-# `pcm_frame` contract expects) and converts it to PCM16 mono.
-DEFAULT_RESPONSE_FORMAT = "wav"
+# Voxtral can emit pcm/wav/flac/mp3/aac/opus. We request the raw `pcm` stream
+# (lowest latency: no container header to buffer before the first audio) and
+# convert it to PCM16 mono on the fly. Mistral's `pcm` is headerless float32 LE
+# at 24 kHz, which is NOT the PCM16 the TEN `pcm_frame` contract expects, so the
+# client rescales each float32 sample to int16 (see Float32ToPcm16).
+DEFAULT_RESPONSE_FORMAT = "pcm"
 
 
 class MistralTTSConfig(AsyncTTS2HttpConfig):
@@ -47,8 +48,8 @@ class MistralTTSConfig(AsyncTTS2HttpConfig):
         if "input" in self.params:
             del self.params["input"]
 
-        # Always request a self-describing WAV stream; the client converts it
-        # to PCM16 mono regardless of the underlying WAV sample format.
+        # Always request the raw float32 `pcm` stream; the client rescales it
+        # to PCM16 mono (the format Voxtral's `pcm` actually emits).
         self.params["response_format"] = DEFAULT_RESPONSE_FORMAT
 
         # Set endpoint URL from base_url if url is not provided

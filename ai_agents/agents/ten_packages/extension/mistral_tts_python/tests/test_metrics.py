@@ -24,32 +24,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
-import struct
-
-
-def _wav_header(
-    sample_rate: int = 24000, channels: int = 1, bits: int = 16
-) -> bytes:
-    byte_rate = sample_rate * channels * bits // 8
-    block_align = channels * bits // 8
-    return (
-        b"RIFF"
-        + struct.pack("<I", 0xFFFFFFFF)
-        + b"WAVE"
-        + b"fmt "
-        + struct.pack(
-            "<IHHIIHH",
-            16,
-            1,
-            channels,
-            sample_rate,
-            byte_rate,
-            block_align,
-            bits,
-        )
-        + b"data"
-        + struct.pack("<I", 0xFFFFFFFF)
-    )
 
 
 # ================ test metrics ================
@@ -122,7 +96,7 @@ def test_ttfb_metric_is_sent(MockAsyncClient):
     async def mock_aiter_bytes():
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield _wav_header()
+        # One raw float32 PCM sample (headerless, as Mistral's `pcm` returns).
         yield b"\x11\x22\x33\x44"
 
     mock_response.aiter_bytes = mock_aiter_bytes

@@ -28,35 +28,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush, TTS2HttpResponseEventType
-import struct
-
-
-def _wav_header(
-    sample_rate: int = 24000, channels: int = 1, bits: int = 16
-) -> bytes:
-    """Build a minimal PCM16 WAV header. The client's parser ignores the
-    declared sizes and streams everything after the `data` chunk id, so
-    placeholder sizes are fine for mocked streams."""
-    byte_rate = sample_rate * channels * bits // 8
-    block_align = channels * bits // 8
-    return (
-        b"RIFF"
-        + struct.pack("<I", 0xFFFFFFFF)
-        + b"WAVE"
-        + b"fmt "
-        + struct.pack(
-            "<IHHIIHH",
-            16,
-            1,
-            channels,
-            sample_rate,
-            byte_rate,
-            block_align,
-            bits,
-        )
-        + b"data"
-        + struct.pack("<I", 0xFFFFFFFF)
-    )
 
 
 # ================ test dump file functionality ================
@@ -142,7 +113,8 @@ def test_dump_functionality(MockAsyncClient):
     os.makedirs(DUMP_PATH)
 
     # --- Mock Configuration ---
-    # Create some fake audio data to be streamed
+    # Create some fake raw float32 PCM data to be streamed (4-byte aligned so
+    # every sample converts cleanly). Mistral's `pcm` response is headerless.
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
@@ -151,7 +123,6 @@ def test_dump_functionality(MockAsyncClient):
     mock_response.status_code = 200
 
     async def mock_aiter_bytes():
-        yield _wav_header()
         yield fake_audio_chunk_1
         await asyncio.sleep(0.01)
         yield fake_audio_chunk_2
@@ -328,7 +299,6 @@ def test_flush_logic(MockAsyncClient):
 
     async def mock_aiter_bytes():
         nonlocal cancel_called
-        yield _wav_header()
         for i in range(20):
             # Check if cancel was called
             if cancel_called:

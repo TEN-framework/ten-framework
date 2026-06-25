@@ -18,15 +18,15 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 # ================ test config defaults ================
 def test_update_params_defaults():
-    """update_params() sets the Mistral defaults and forces response_format=wav."""
+    """update_params() sets the Mistral defaults and forces response_format=pcm."""
     from mistral_tts_python.config import MistralTTSConfig
 
     config = MistralTTSConfig(params={"api_key": "test_key"})
     config.update_params()
 
     assert config.params["model"] == "voxtral-mini-tts-2603"
-    # Always WAV (self-describing) regardless of what the caller passed.
-    assert config.params["response_format"] == "wav"
+    # Always raw float32 `pcm` regardless of what the caller passed.
+    assert config.params["response_format"] == "pcm"
     # We do not inject a voice default — voice is optional for Voxtral.
     assert "voice" not in config.params
     # Default endpoint is the Mistral OpenAI-compatible speech endpoint.
@@ -34,13 +34,13 @@ def test_update_params_defaults():
     print("✅ Defaults test passed.")
 
 
-def test_response_format_is_forced_to_wav():
-    """Even if the caller asks for pcm/mp3, we override to wav."""
+def test_response_format_is_forced_to_pcm():
+    """Even if the caller asks for wav/mp3, we override to pcm."""
     from mistral_tts_python.config import MistralTTSConfig
 
-    config = MistralTTSConfig(params={"api_key": "k", "response_format": "pcm"})
+    config = MistralTTSConfig(params={"api_key": "k", "response_format": "wav"})
     config.update_params()
-    assert config.params["response_format"] == "wav"
+    assert config.params["response_format"] == "pcm"
     print("✅ response_format override test passed.")
 
 

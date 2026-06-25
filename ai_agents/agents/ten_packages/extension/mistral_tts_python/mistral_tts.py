@@ -5,12 +5,12 @@ Mistral exposes an OpenAI-compatible Text-to-Speech endpoint
 (`POST {base_url}/audio/speech`, default base_url `https://api.mistral.ai/v1`).
 We talk to it with httpx directly (no vendor SDK) so we can stream the audio.
 
-Why WAV (and not raw `pcm`): Mistral's `response_format="pcm"` is documented as
-"raw float32 LE samples", which is NOT the PCM16 the TEN `pcm_frame` contract
-expects. Instead we request `response_format="wav"` and convert the
-self-describing WAV stream to PCM16 mono on the fly (see WavToPcm16), so the
-extension is correct whether the vendor's WAV payload is int16, int24/32, or
-IEEE float.
+Audio format: we request `response_format="pcm"`, which Voxtral emits as a
+headerless stream of raw float32 LE samples at 24 kHz mono. That is NOT the
+PCM16 the TEN `pcm_frame` contract expects, so the client rescales each float32
+sample to signed 16-bit on the fly (see Float32ToPcm16). Requesting raw `pcm`
+(rather than a container like `wav`) keeps time-to-first-audio low — there is no
+header to buffer before the first samples arrive.
 """
 
 from typing import Any, AsyncIterator, Tuple
@@ -43,160 +43,46 @@ from .config import MistralTTSConfig
 _GLOBAL_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
-# WAV format tags (from the `fmt ` chunk's audioFormat field).
-WAVE_FORMAT_PCM = 0x0001
-WAVE_FORMAT_IEEE_FLOAT = 0x0003
-WAVE_FORMAT_EXTENSIBLE = 0xFFFE
-
 PCM16_MAX = 32767
+_FLOAT32_BYTES = 4  # one 32-bit IEEE-float sample
 
 
-class WavToPcm16:
-    """Streaming converter: WAV bytes in, PCM16 mono little-endian bytes out.
+class Float32ToPcm16:
+    """Streaming converter: raw float32 LE bytes in, PCM16 LE bytes out.
 
-    The vendor sends a WAV container whose `fmt ` chunk declares the real sample
-    format. We buffer just enough of the head to parse that chunk, then convert
-    every subsequent `data` byte to signed 16-bit mono. Partial input frames are
-    held back between calls so we never split a sample.
+    Mistral's `response_format="pcm"` is a headerless stream of 32-bit
+    little-endian IEEE-float samples (24 kHz mono). We rescale each sample from
+    [-1, 1] to signed 16-bit, holding back a trailing partial sample
+    (< 4 bytes) between feeds so a float is never split across chunk boundaries.
     """
 
     def __init__(self) -> None:
-        self._header_parsed = False
-        self._head = bytearray()
-        self._remainder = bytearray()  # leftover bytes < one input frame
-        self.audio_format = WAVE_FORMAT_PCM
-        self.channels = 1
-        self.bits_per_sample = 16
-        self.sample_rate = 0
-
-    @property
-    def passthrough(self) -> bool:
-        """True when the source is already PCM16 mono (no conversion needed)."""
-        return (
-            self.audio_format == WAVE_FORMAT_PCM
-            and self.bits_per_sample == 16
-            and self.channels == 1
-        )
+        self._remainder = bytearray()  # leftover bytes < one float32 sample
 
     def feed(self, chunk: bytes) -> bytes:
-        """Feed a chunk of the WAV stream; return PCM16 bytes now available."""
-        if not self._header_parsed:
-            self._head.extend(chunk)
-            if not self._try_parse_header():
-                return b""  # still waiting for the full header
-            # _try_parse_header set self._remainder to the post-header PCM bytes
-            chunk = bytes(self._remainder)
-            self._remainder = bytearray()
-
-        return self._convert(chunk)
-
-    def _try_parse_header(self) -> bool:
-        buf = self._head
-        if len(buf) < 12 or buf[0:4] != b"RIFF" or buf[8:12] != b"WAVE":
-            # Not (yet) a recognizable RIFF/WAVE head. Keep buffering up to a
-            # sane cap before giving up.
-            if len(buf) > 65536:
-                raise ValueError("Mistral TTS: stream is not a valid WAV")
-            return False
-
-        fmt = buf.find(b"fmt ")
-        data = buf.find(b"data")
-        if fmt == -1 or data == -1 or len(buf) < data + 8:
-            if len(buf) > 65536:
-                raise ValueError("Mistral TTS: WAV header not found in stream")
-            return False
-
-        # `body` points at the fmt chunk data (after the 8-byte chunk header).
-        # Layout: audioFormat(2) numChannels(2) sampleRate(4) byteRate(4)
-        #         blockAlign(2) bitsPerSample(2) ...
-        body = fmt + 8  # skip "fmt " id (4) + chunk size (4)
-        self.audio_format = int.from_bytes(buf[body : body + 2], "little")
-        self.channels = max(
-            1, int.from_bytes(buf[body + 2 : body + 4], "little")
-        )
-        self.sample_rate = int.from_bytes(buf[body + 4 : body + 8], "little")
-        self.bits_per_sample = int.from_bytes(
-            buf[body + 14 : body + 16], "little"
-        )
-
-        if self.audio_format == WAVE_FORMAT_EXTENSIBLE:
-            # For WAVE_FORMAT_EXTENSIBLE the real format tag is the first 2
-            # bytes of the SubFormat GUID at body+24.
-            sub = body + 24
-            if len(buf) >= sub + 2:
-                self.audio_format = int.from_bytes(buf[sub : sub + 2], "little")
-
-        self._remainder = bytearray(buf[data + 8 :])
-        self._head = bytearray()
-        self._header_parsed = True
-        return True
-
-    def _convert(self, chunk: bytes) -> bytes:
+        """Feed a chunk of the float32 stream; return PCM16 bytes available."""
         if not chunk:
             return b""
 
         data = bytes(self._remainder) + chunk
         self._remainder = bytearray()
 
-        if self.passthrough:
-            return data
-
-        frame = self.channels * (self.bits_per_sample // 8)
-        if frame <= 0:
-            raise ValueError(
-                f"Mistral TTS: unsupported WAV format "
-                f"(format={self.audio_format}, bits={self.bits_per_sample})"
-            )
-
-        usable = (len(data) // frame) * frame
+        count = len(data) // _FLOAT32_BYTES
+        usable = count * _FLOAT32_BYTES
         if usable < len(data):
             self._remainder = bytearray(data[usable:])
             data = data[:usable]
         if not data:
             return b""
 
-        return self._frames_to_pcm16(data, frame)
-
-    def _frames_to_pcm16(self, data: bytes, frame: int) -> bytes:
-        ch = self.channels
-        bits = self.bits_per_sample
-        fmt = self.audio_format
-        out = bytearray()
-
-        for i in range(0, len(data), frame):
-            acc = 0.0
-            for c in range(ch):
-                off = i + c * (bits // 8)
-                acc += self._sample_to_float(data, off, fmt, bits)
-            value = acc / ch  # downmix to mono, normalized to [-1, 1]
-            s = int(max(-1.0, min(1.0, value)) * PCM16_MAX)
-            out += struct.pack("<h", s)
-        return bytes(out)
-
-    @staticmethod
-    def _sample_to_float(data: bytes, off: int, fmt: int, bits: int) -> float:
-        """Decode one sample at `off` into a float in [-1, 1]."""
-        if fmt == WAVE_FORMAT_IEEE_FLOAT:
-            if bits == 32:
-                return struct.unpack_from("<f", data, off)[0]
-            if bits == 64:
-                return struct.unpack_from("<d", data, off)[0]
-        elif fmt == WAVE_FORMAT_PCM:
-            if bits == 8:  # unsigned
-                return (data[off] - 128) / 128.0
-            if bits == 16:
-                return struct.unpack_from("<h", data, off)[0] / 32768.0
-            if bits == 24:
-                b = data[off : off + 3]
-                val = b[0] | (b[1] << 8) | (b[2] << 16)
-                if val & 0x800000:
-                    val -= 0x1000000
-                return val / 8388608.0
-            if bits == 32:
-                return struct.unpack_from("<i", data, off)[0] / 2147483648.0
-        raise ValueError(
-            f"Mistral TTS: unsupported WAV sample (format={fmt}, bits={bits})"
-        )
+        floats = struct.unpack(f"<{count}f", data)
+        # Clamp to [-1, 1] before scaling; map NaN (`f != f`) to silence so a
+        # corrupt sample can't crash the stream. ±inf clamps cleanly.
+        ints = [
+            0 if f != f else int(max(-1.0, min(1.0, f)) * PCM16_MAX)
+            for f in floats
+        ]
+        return struct.pack(f"<{count}h", *ints)
 
 
 class MistralTTSClient(AsyncTTS2HttpClient):
@@ -206,7 +92,7 @@ class MistralTTSClient(AsyncTTS2HttpClient):
     Features:
     - OpenAI-compatible `/v1/audio/speech` request shape
     - Parameter passthrough (all params except api_key and base_url)
-    - WAV -> PCM16 mono conversion (handles int and IEEE-float WAV)
+    - float32 PCM -> PCM16 mono conversion (Voxtral's raw `pcm` format)
     - Comprehensive error handling and cancellation support
     """
 
@@ -291,7 +177,7 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                 f"MistralTTS: sending request for request_id: {request_id}"
             )
 
-            converter = WavToPcm16()
+            converter = Float32ToPcm16()
 
             # Send streaming request
             async with self.client.stream(
@@ -342,7 +228,7 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                         ), TTS2HttpResponseEventType.ERROR
                     return
 
-                # Stream audio data, converting WAV -> PCM16 mono on the fly.
+                # Stream audio, converting float32 PCM -> PCM16 mono on the fly.
                 async for chunk in response.aiter_bytes():
                     if self._is_cancelled:
                         self.ten_env.log_debug(

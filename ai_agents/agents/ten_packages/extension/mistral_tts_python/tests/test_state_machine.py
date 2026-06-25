@@ -21,32 +21,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
-import struct
-
-
-def _wav_header(
-    sample_rate: int = 24000, channels: int = 1, bits: int = 16
-) -> bytes:
-    byte_rate = sample_rate * channels * bits // 8
-    block_align = channels * bits // 8
-    return (
-        b"RIFF"
-        + struct.pack("<I", 0xFFFFFFFF)
-        + b"WAVE"
-        + b"fmt "
-        + struct.pack(
-            "<IHHIIHH",
-            16,
-            1,
-            channels,
-            sample_rate,
-            byte_rate,
-            block_align,
-            bits,
-        )
-        + b"data"
-        + struct.pack("<I", 0xFFFFFFFF)
-    )
 
 
 class StateMachineExtensionTester(ExtensionTester):
@@ -226,10 +200,9 @@ def test_sequential_requests_state_machine(MockAsyncClient):
         mock_response.status_code = 200
 
         async def mock_aiter_bytes():
-            yield _wav_header()
+            # Headerless raw float32 PCM bytes (as Mistral's `pcm` returns).
             for i in range(3):
                 await asyncio.sleep(0.01)
-                # 18 bytes (even) so it forms whole PCM16 samples.
                 yield ("mock_audio_data_%02d" % (i + 1)).encode()
 
         mock_response.aiter_bytes = mock_aiter_bytes
@@ -309,7 +282,6 @@ def test_request_state_transitions(MockAsyncClient):
 
     async def mock_aiter_bytes():
         await asyncio.sleep(0.01)
-        yield _wav_header()
         yield b"audio_chunkX"
 
     mock_response.aiter_bytes = mock_aiter_bytes

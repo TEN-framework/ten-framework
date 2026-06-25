@@ -48,6 +48,6 @@ class MistralTTSExtension(AsyncTTS2HttpExtension):
         return "mistral"
 
     def synthesize_audio_sample_rate(self) -> int:
-        # Voxtral TTS emits 24 kHz audio. The client downmixes/converts the
-        # vendor's WAV stream to PCM16 mono at this rate.
+        # Voxtral TTS emits 24 kHz audio. The client converts the vendor's raw
+        # float32 PCM stream to PCM16 mono at this rate.
         return 24000
