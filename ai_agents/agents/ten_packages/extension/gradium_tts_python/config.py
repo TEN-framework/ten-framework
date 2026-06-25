@@ -12,26 +12,17 @@ from pydantic import BaseModel, Field
 from ten_ai_base import utils
 
 GRADIUM_DEFAULT_WS_URL = "wss://api.gradium.ai/api/speech/tts"
-PCM_OUTPUT_FORMATS = {
-    "pcm",
-    "pcm_8000",
-    "pcm_16000",
-    "pcm_22050",
-    "pcm_24000",
-    "pcm_44100",
-    "pcm_48000",
-}
+SUPPORTED_SAMPLE_RATES = {8000, 16000, 22050, 24000, 44100, 48000}
 
 
 class GradiumTTSConfig(BaseModel):
     """Configuration for Gradium TTS."""
 
     api_key: str = ""
-    base_url: str = GRADIUM_DEFAULT_WS_URL
+    url: str = GRADIUM_DEFAULT_WS_URL
     model_name: str = "default"
     voice_id: str = "cLONiZ4hQ8VpQ4Sz"
     voice: str = ""
-    output_format: str = ""
     sample_rate: int = 24000
     json_config: dict[str, Any] | str | None = None
     close_ws_on_eos: bool = True
@@ -41,6 +32,11 @@ class GradiumTTSConfig(BaseModel):
     dump_path: str = "/tmp"
     params: dict[str, Any] = Field(default_factory=dict)
 
+    # Gradium only supports PCM output. The wire-level format string is always
+    # derived from `sample_rate` (see update_params); it is not a user-settable
+    # knob, so format and sample rate can never disagree.
+    output_format: str = ""
+
     def update_params(self) -> None:
         """Normalize extension-owned config from params and keep vendor extras."""
         params = self._ensure_dict(self.params)
@@ -48,11 +44,10 @@ class GradiumTTSConfig(BaseModel):
 
         for key in (
             "api_key",
-            "base_url",
+            "url",
             "model_name",
             "voice_id",
             "voice",
-            "output_format",
             "json_config",
             "close_ws_on_eos",
             "retry_for_s",
@@ -64,27 +59,28 @@ class GradiumTTSConfig(BaseModel):
         if "sample_rate" in params:
             self.sample_rate = int(params.pop("sample_rate"))
 
+        # Gradium only supports PCM; the output format is derived from
+        # sample_rate. Drop any user-supplied output_format so it can neither
+        # conflict with sample_rate nor be double-sent as a vendor extra.
+        params.pop("output_format", None)
+
         if "dump" in params:
             self.dump = bool(params.pop("dump"))
 
         if "dump_path" in params:
             self.dump_path = str(params.pop("dump_path"))
 
-        self.output_format = self._normalize_output_format(
-            self.output_format, self.sample_rate
-        )
-        self.sample_rate = self._sample_rate_from_output_format(
-            self.output_format, self.sample_rate
-        )
+        self.output_format = f"pcm_{int(self.sample_rate)}"
 
     def validate(self) -> None:
         if not self.api_key.strip():
             raise ValueError("API key is required")
         if not self.voice_id.strip() and not self.voice.strip():
             raise ValueError("Either voice_id or voice is required")
-        if self.output_format not in PCM_OUTPUT_FORMATS:
+        if self.sample_rate not in SUPPORTED_SAMPLE_RATES:
             raise ValueError(
-                "output_format must be one of " f"{sorted(PCM_OUTPUT_FORMATS)}"
+                "sample_rate must be one of "
+                f"{sorted(SUPPORTED_SAMPLE_RATES)}"
             )
 
     def to_str(self, sensitive_handling: bool = True) -> str:
@@ -99,7 +95,7 @@ class GradiumTTSConfig(BaseModel):
         return f"{config}"
 
     def websocket_url(self) -> str:
-        return self.base_url.strip() or GRADIUM_DEFAULT_WS_URL
+        return self.url.strip() or GRADIUM_DEFAULT_WS_URL
 
     def get_sample_rate(self) -> int:
         return self.sample_rate
@@ -109,22 +105,3 @@ class GradiumTTSConfig(BaseModel):
         if isinstance(value, dict):
             return value
         return {}
-
-    @staticmethod
-    def _normalize_output_format(output_format: str, sample_rate: int) -> str:
-        if output_format:
-            return str(output_format).lower()
-        return f"pcm_{int(sample_rate)}"
-
-    @staticmethod
-    def _sample_rate_from_output_format(
-        output_format: str, current_sample_rate: int
-    ) -> int:
-        if output_format == "pcm":
-            return current_sample_rate or 48000
-        if output_format.startswith("pcm_"):
-            try:
-                return int(output_format.split("_", maxsplit=1)[1])
-            except (IndexError, ValueError):
-                return current_sample_rate
-        return current_sample_rate

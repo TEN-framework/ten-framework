@@ -35,7 +35,7 @@ def test_params_passthrough():
     config = GradiumTTSConfig(
         params={
             "api_key": "test_api_key",
-            "base_url": "wss://api.gradium.ai/api/speech/tts",
+            "url": "wss://api.gradium.ai/api/speech/tts",
             "voice_id": "cLONiZ4hQ8VpQ4Sz",
             "sample_rate": 16000,
             "json_config": {"speed": 1.1},
@@ -63,6 +63,29 @@ def test_params_passthrough():
     assert payload["emotion"] == "calm"
     assert "api_key" not in payload
     assert client is not None
+
+
+def test_output_format_derived_from_sample_rate_only():
+    """Gradium only supports PCM: sample_rate is the single source of truth.
+    A user-supplied output_format must be ignored (neither override the
+    derived pcm_<rate> nor leak into the vendor params as a duplicate)."""
+    config = GradiumTTSConfig(
+        params={
+            "api_key": "test_api_key",
+            "voice_id": "cLONiZ4hQ8VpQ4Sz",
+            "sample_rate": 24000,
+            # Conflicting / unsupported on purpose — must be dropped.
+            "output_format": "pcm_16000",
+        }
+    )
+    config.update_params()
+    config.validate()
+
+    # sample_rate wins; output_format is derived from it, not the input.
+    assert config.output_format == "pcm_24000"
+    assert config.get_sample_rate() == 24000
+    # output_format is not carried through as a vendor passthrough param.
+    assert "output_format" not in config.params
 
 
 class ExtensionTesterSampleRate(ExtensionTester):

@@ -43,7 +43,7 @@
             "api_key": {
               "type": "string"
             },
-            "base_url": {
+            "url": {
               "type": "string"
             },
             "model_name": {
@@ -53,9 +53,6 @@
               "type": "string"
             },
             "voice": {
-              "type": "string"
-            },
-            "output_format": {
               "type": "string"
             },
             "sample_rate": {
