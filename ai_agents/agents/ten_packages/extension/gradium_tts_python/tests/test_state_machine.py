@@ -222,7 +222,9 @@ def test_client_reuses_open_connection_without_closed_attr():
         ws.state = State.OPEN
         client.ws = ws
 
-        with patch("gradium_tts_python.gradium_tts.websockets.connect") as connect:
+        with patch(
+            "gradium_tts_python.gradium_tts.websockets.connect"
+        ) as connect:
             await client._connect()
             connect.assert_not_called()
 

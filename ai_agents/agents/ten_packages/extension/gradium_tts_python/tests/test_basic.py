@@ -369,9 +369,17 @@ class ExtensionTesterInterleavedGrouping(ExtensionTester):
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         for request_id, text, text_input_end in [
             ("interleave_req_1", "Request one starts with a list:", False),
-            ("interleave_req_2", "Request two starts now and stays separate.", False),
+            (
+                "interleave_req_2",
+                "Request two starts now and stays separate.",
+                False,
+            ),
             ("interleave_req_1", " 1, 2, 3, and finally ends here.", True),
-            ("interleave_req_2", " It also finishes in one vendor request.", True),
+            (
+                "interleave_req_2",
+                " It also finishes in one vendor request.",
+                True,
+            ),
         ]:
             payload = TTSTextInput(
                 request_id=request_id,

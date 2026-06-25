@@ -268,7 +268,9 @@ class GradiumTTSClient:
         error_message = message.get("message", "Unknown error")
         code = str(message.get("code", ""))
         body = error_message if not code else f"{error_message} (code: {code})"
-        status_code = 401 if code == "1008" or self._looks_like_auth_error(body) else 500
+        status_code = (
+            401 if code == "1008" or self._looks_like_auth_error(body) else 500
+        )
         return GradiumTTSConnectionException(status_code=status_code, body=body)
 
     def _parse_message(self, raw_msg: str | bytes) -> dict[str, Any] | None:

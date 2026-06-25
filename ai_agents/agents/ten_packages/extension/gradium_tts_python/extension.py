@@ -147,7 +147,10 @@ class GradiumTTSExtension(AsyncTTS2BaseExtension):
             await self._clear_local_request_state()
 
     async def cancel_tts(self) -> None:
-        if self.current_request_id and self.current_request_id in self.request_contexts:
+        if (
+            self.current_request_id
+            and self.current_request_id in self.request_contexts
+        ):
             self.request_contexts[self.current_request_id].finished = True
         self.current_request_finished = True
         if self.current_request_id and self.client:
@@ -407,11 +410,7 @@ class GradiumTTSExtension(AsyncTTS2BaseExtension):
             self.recorder_map[request_id] = PCMWriter(dump_file_path)
 
     async def _write_dump(self, request_id: str, data: bytes) -> None:
-        if (
-            self.config
-            and self.config.dump
-            and request_id in self.recorder_map
-        ):
+        if self.config and self.config.dump and request_id in self.recorder_map:
             try:
                 await self.recorder_map[request_id].write(data)
             except Exception as exc:
@@ -423,10 +422,7 @@ class GradiumTTSExtension(AsyncTTS2BaseExtension):
         return int((datetime.now() - context.sent_ts).total_seconds() * 1000)
 
     def _calculate_audio_duration_ms(self, context: RequestContext) -> int:
-        sample_rate = (
-            context.sample_rate
-            or self.synthesize_audio_sample_rate()
-        )
+        sample_rate = context.sample_rate or self.synthesize_audio_sample_rate()
         if sample_rate <= 0:
             return 0
 
