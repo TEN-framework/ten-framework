@@ -1,0 +1,10 @@
+{
+    "params": {
+        "api_url": "${env:BLAZE_STT_API_URL}",
+        "api_key": "${env:BLAZE_STT_API_KEY}",
+        "language": "vi",
+        "model": "stt-stream-1.5",
+        "timeout": 3600,
+        "enable_log": false
+    }
+}
