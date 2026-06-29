@@ -78,6 +78,25 @@ When using `docker cp` to update extension code, trailing slashes create
 nested directories. Use `docker cp ./ext/. container:/path/ext/` syntax.
 Signs: `ModuleNotFoundError: No module named 'ten_packages.extension.X'`.
 
+## Vendor "PCM" Is Not Always PCM16
+
+The TEN `pcm_frame` contract expects **signed 16-bit (PCM16) mono**. A vendor's
+`response_format: "pcm"` may be something else — e.g. Mistral/Voxtral streams
+headerless **float32 LE** at 24 kHz. Sending those bytes through unconverted
+produces noise. Convert in the client before yielding `RESPONSE`, and make
+`synthesize_audio_sample_rate()` return the rate you actually emit (24000 for
+Voxtral), not a default.
+
+Two practical traps when converting a stream:
+- **Don't split a sample across chunk boundaries.** float32 is 4 bytes; buffer a
+  trailing partial sample between `aiter_bytes()` chunks (see `Float32ToPcm16` in
+  `mistral_tts_python`).
+- **Clamp before scaling** to `[-1, 1]` and map NaN to silence so one corrupt
+  sample can't crash the stream.
+
+Requesting raw `pcm` (vs. a container like `wav`/`mp3`) also lowers
+time-to-first-audio — there is no header to buffer before the first samples.
+
 ## Audio Routing: Split at Source Only
 
 When routing audio to multiple destinations, the split must happen at the
