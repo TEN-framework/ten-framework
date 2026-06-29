@@ -19,6 +19,7 @@ class FinalizeReconnectMode(str, Enum):
 
 class HoldingMode(str, Enum):
     FALSE = "false"
+    SENTENCE_TERMINATOR = "sentence_terminator"
     FINALIZE = "finalize"
     ENDPOINTING_ONLY = "endpointing_only"
 
@@ -59,11 +60,10 @@ class SonioxASRConfig(BaseModel):
             if key in params:
                 value = params[key]
                 if key == "holding_mode" and isinstance(value, str):
-                    value = (
-                        HoldingMode(value)
-                        if value in ("false", "finalize", "endpointing_only")
-                        else HoldingMode.FALSE
-                    )
+                    try:
+                        value = HoldingMode(value)
+                    except ValueError:
+                        value = HoldingMode.FALSE
                 setattr(self, key, value)
                 del params[key]
 
