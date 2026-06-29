@@ -26,19 +26,22 @@ using Mistral's OpenAI-compatible HTTP API (`POST /v1/audio/speech`).
 
 - `api_key` (string, required): Mistral API key
 - `model` (string): Voxtral model (default: `voxtral-mini-tts-2603`)
-- `voice_id` (string): A preset voice (e.g. `casual_male`, `jane_confident`)
-  or a saved/cloned voice id — this is the cloud API's voice field
+- `voice_id` / `voice` (string): The voice to synthesize with. The cloud API
+  (`api.mistral.ai`) uses `voice_id`; the self-hosted vLLM-Omni server uses
+  `voice`. Both are forwarded unchanged, so set whichever your deployment
+  expects. Available voices vary by account/plan — list them with:
+  `curl -H "Authorization: Bearer $MISTRAL_API_KEY" https://api.mistral.ai/v1/audio/voices`
+  (e.g. `en_paul_neutral`, `gb_oliver_neutral`).
 - `base_url` (string): API base (default: `https://api.mistral.ai/v1`)
 
-> A voice is not required by this extension: Voxtral accepts a preset or saved
-> `voice_id`, or a one-off `ref_audio` clip, and otherwise uses a default
-> voice. Any extra params you set (e.g. `ref_audio`) are forwarded to the
-> vendor unchanged. `response_format` is always set to `pcm` internally and
-> converted to PCM16.
+> The live cloud API **requires** a voice (or a one-off `ref_audio` clip): a
+> request with neither is rejected with HTTP 400. This extension does not
+> enforce it locally — whatever you put in `params` is forwarded to the vendor
+> unchanged (including `ref_audio`) — so make sure your config sets one.
+> `response_format` is always set to `pcm` internally and converted to PCM16.
 >
-> Note: the cloud API (`api.mistral.ai`) uses `voice_id`. The self-hosted
-> vLLM-Omni server uses `voice` instead — both pass through unchanged, so set
-> whichever your deployment expects.
+> The bundled test configs read the voice from `${env:MISTRAL_TTS_VOICE}` (e.g.
+> `en_paul_neutral`); set that env var when running the guarder tests.
 
 ### Example Configuration
 
@@ -49,7 +52,7 @@ using Mistral's OpenAI-compatible HTTP API (`POST /v1/audio/speech`).
   "params": {
     "api_key": "${env:MISTRAL_API_KEY}",
     "model": "voxtral-mini-tts-2603",
-    "voice_id": "casual_male"
+    "voice_id": "en_paul_neutral"
   }
 }
 ```
