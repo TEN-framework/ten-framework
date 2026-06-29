@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 import pysbd
+
+
 class SentenceBoundaryDetector:
     """Detects sentence boundaries for zh/en Soniox finality gating."""
 
