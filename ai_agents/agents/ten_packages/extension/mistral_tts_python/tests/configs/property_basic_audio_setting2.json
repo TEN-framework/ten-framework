@@ -1,5 +1,6 @@
 {
-    "dump": false,
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
     "params": {
         "api_key": "${env:MISTRAL_API_KEY}",
         "base_url": "https://api.mistral.ai/v1",

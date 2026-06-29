@@ -1,4 +1,4 @@
-httpx
+httpx[http2]
 certifi
 pydantic>=2.0.0
 typing-extensions
