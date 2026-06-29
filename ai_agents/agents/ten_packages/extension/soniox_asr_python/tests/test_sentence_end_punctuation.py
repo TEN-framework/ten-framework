@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 
 from ..text_utils import SentenceBoundaryDetector
-from ..websocket import SonioxTranscriptToken
+from ..websocket import SonioxFinToken, SonioxTranscriptToken
 from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
@@ -427,6 +427,43 @@ def test_english_abbreviation_waits_for_sentence_end(patch_soniox_ws):
     )
     err = tester.run()
     assert err is None, f"test_english_abbreviation_waits err: {err}"
+
+
+def test_deferred_tokens_flushed_as_final_on_session_finalize(patch_soniox_ws):
+    from .conftest import create_fake_websocket_mocks, inject_websocket_mocks
+
+    async def custom_connect():
+        await patch_soniox_ws.websocket_client.trigger_open()
+        await asyncio.sleep(0.1)
+        await patch_soniox_ws.websocket_client.trigger_transcript(
+            _tokens("台北选手戴资颖", is_final=True),
+            0,
+            0,
+        )
+        await asyncio.sleep(0.1)
+        await patch_soniox_ws.websocket_client.trigger_transcript(
+            [SonioxFinToken("<fin>", True)],
+            0,
+            0,
+        )
+
+    mocks = create_fake_websocket_mocks(
+        patch_soniox_ws,
+        on_connect=custom_connect,
+    )
+    inject_websocket_mocks(patch_soniox_ws, mocks)
+
+    tester = SonioxSentenceEndTester(
+        expected_batches=[
+            [(False, "台北选手戴资颖")],
+            [(True, "台北选手戴资颖")],
+        ],
+    )
+    tester.set_test_mode_single(
+        "soniox_asr_python", json.dumps(_property_json())
+    )
+    err = tester.run()
+    assert err is None, f"test_deferred_tokens_flushed_on_finalize err: {err}"
 
 
 def test_non_zh_en_runtime_result_follows_vendor_finality(patch_soniox_ws):

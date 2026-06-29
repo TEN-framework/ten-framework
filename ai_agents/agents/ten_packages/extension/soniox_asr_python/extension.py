@@ -112,6 +112,27 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     def _clear_deferred_vendor_final_tokens(self) -> None:
         self._deferred_vendor_final_tokens = []
 
+    async def _flush_deferred_vendor_final_tokens(self) -> None:
+        """Force-emit deferred vendor-final tokens as final on session boundary.
+
+        Used when the session ends (<fin>) before a complete sentence was
+        detected. Translation is not passed here: sentence_terminator mode does
+        not use translation in current deployments.
+        """
+        if not self._deferred_vendor_final_tokens:
+            return
+        if (
+            self.config is None
+            or self.config.holding_mode != HoldingMode.SENTENCE_TERMINATOR
+        ):
+            self._clear_deferred_vendor_final_tokens()
+            return
+
+        tokens = self._deferred_vendor_final_tokens
+        self._clear_deferred_vendor_final_tokens()
+        asr_results = self._create_asr_results(tokens, True)
+        await self._publish_asr_results(asr_results, [])
+
     def _adjust_tokens_for_sentence_end_finality(
         self,
         transcript_tokens: List[SonioxTranscriptToken],
@@ -171,8 +192,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.config.params.get("enable_endpoint_detection", False)
         ):
             return HoldingMode.FALSE
-        if configured == HoldingMode.SENTENCE_TERMINATOR:
-            return HoldingMode.SENTENCE_TERMINATOR
         return configured
 
     @override
@@ -503,7 +522,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self, flush_reason: str = "session finalize"
     ) -> None:
         self.ten_env.log_info("finalize end")
-        self._clear_deferred_vendor_final_tokens()
+        # Emit any transcript held back for sentence-end detection.
+        await self._flush_deferred_vendor_final_tokens()
         if self._effective_holding_mode() == HoldingMode.ENDPOINTING_ONLY:
             # Only flush on disconnect; <end> is handled in _handle_transcript.
             # Do not flush on <fin> (session finalize) so segment boundary and TTLW
@@ -793,7 +813,14 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         asr_results: List[ASRResult],
         translation_tokens: List[SonioxTranslationToken],
     ) -> None:
-        """Publish one asr_result per segment, then asr_results batch."""
+        """Publish one asr_result per segment, then one asr_results batch.
+
+        Per-segment asr_result is kept for backward compatibility. In a mixed
+        final/non-final batch, translation is sent only for final segments:
+        Soniox emits translation tokens with is_final=true, and partial ASR
+        segments must not trigger a translation event.
+        """
+
         for index, result in enumerate(asr_results):
             if index > 0 and not result.id:
                 result.id = self._get_uuid()
@@ -806,15 +833,33 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.last_transcript_is_final = result.final
             self.last_transcript_id = result_id
 
+            # Gate on runtime ASR finality, not translation_token.is_final.
             if translation_tokens:
-                await self._send_translation_results(
-                    translation_tokens,
-                    result.final,
-                    result.text,
-                    result.start_ms,
-                    result.duration_ms,
-                    result_id,
-                )
+                if (
+                    self.config is None
+                    or self.config.holding_mode
+                    == HoldingMode.SENTENCE_TERMINATOR
+                ):
+                    # In SENTENCE_TERMINATOR mode, asr_results are sent in segments, so it is necessary to determine whether it is the final segment
+                    if result.final:
+                        await self._send_translation_results(
+                            translation_tokens,
+                            result.final,
+                            result.text,
+                            result.start_ms,
+                            result.duration_ms,
+                            result_id,
+                        )
+                else:
+                    # other modes, send translation for each segment (per language)
+                    await self._send_translation_results(
+                        translation_tokens,
+                        result.final,
+                        result.text,
+                        result.start_ms,
+                        result.duration_ms,
+                        result_id,
+                    )
 
         await self._send_asr_results_data(asr_results)
 
@@ -831,13 +876,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             f"send asr_results: {payload}",
             category=LOG_CATEGORY_KEY_POINT,
         )
-
-    async def _send_published_asr_results(
-        self,
-        asr_results: List[ASRResult],
-        translation_tokens: List[SonioxTranslationToken],
-    ) -> None:
-        await self._publish_asr_results(asr_results, translation_tokens)
 
     async def _send_transcript_and_translation(
         self,
@@ -896,7 +934,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         # Send as Data message with name 'asr_translation_result'
         data = Data.create("asr_translation_result")
-        data.set_property_from_json("", translation_result.model_dump_json())
+        data.set_property_from_json(None, translation_result.model_dump_json())
 
         self.ten_env.log_info(
             f"send_asr_translation_result: {translation_result.model_dump_json()}",
@@ -911,42 +949,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         Create ASRResult objects from a list of SonioxTranscriptToken, grouped by language.
         """
         return self._create_asr_results_for_group(tokens, is_final)
-
-    def _create_asr_results_by_token_finality(
-        self, tokens: List[SonioxTranscriptToken]
-    ) -> List[ASRResult]:
-        """Create ASRResult segments grouped by finality boundary and language."""
-        results: List[ASRResult] = []
-        for group_tokens, group_is_final in self._split_tokens_by_finality(
-            tokens
-        ):
-            results.extend(
-                self._create_asr_results_for_group(group_tokens, group_is_final)
-            )
-        return results
-
-    def _split_tokens_by_finality(
-        self, tokens: List[SonioxTranscriptToken]
-    ) -> List[tuple[List[SonioxTranscriptToken], bool]]:
-        if not tokens:
-            return []
-
-        groups: List[tuple[List[SonioxTranscriptToken], bool]] = []
-        current_tokens = [tokens[0]]
-        current_is_final = bool(tokens[0].is_final)
-
-        for token in tokens[1:]:
-            token_is_final = bool(token.is_final)
-            if token_is_final == current_is_final:
-                current_tokens.append(token)
-                continue
-
-            groups.append((current_tokens, current_is_final))
-            current_tokens = [token]
-            current_is_final = token_is_final
-
-        groups.append((current_tokens, current_is_final))
-        return groups
 
     def _create_asr_results_for_group(
         self, tokens: List[SonioxTranscriptToken], is_final: bool
