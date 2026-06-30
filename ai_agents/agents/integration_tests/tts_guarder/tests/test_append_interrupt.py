@@ -613,6 +613,10 @@ class AppendInterruptTester(AsyncExtensionTester):
                         ten_env.log_info(f"⚠️ Received unexpected data '{name}' after flush_end for group {self.current_group_index + 1} (count: {self.post_flush_end_data_count})")
                         return
                 else:
+                    # metrics (non-ttfb) after flush_end is expected (usage metrics)
+                    if name == "metrics":
+                        ten_env.log_info(f"ℹ️ Received expected metrics data after flush_end (count: {self.post_flush_end_data_count})")
+                        return
                     # For other data types, count as unexpected
                     self.post_flush_end_data_count += 1
                     ten_env.log_info(f"⚠️ Received unexpected data '{name}' after flush_end (count: {self.post_flush_end_data_count})")

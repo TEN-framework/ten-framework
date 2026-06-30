@@ -1,6 +1,6 @@
 # Voice Assistant
 
-A comprehensive voice assistant with real-time conversation capabilities using Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
+A configurable voice assistant with real-time conversation capabilities using Agora RTC, interchangeable STT/TTS providers, and an OpenAI-compatible LLM.
 
 ## Features
 
@@ -13,14 +13,25 @@ A comprehensive voice assistant with real-time conversation capabilities using A
 1. **Agora Account**: Get credentials from [Agora Console](https://console.agora.io/)
    - `AGORA_APP_ID` - Your Agora App ID (required)
 
-2. **Deepgram Account**: Get credentials from [Deepgram Console](https://console.deepgram.com/)
-   - `DEEPGRAM_API_KEY` - Your Deepgram API key (required)
+2. **STT Provider**: choose the graph you want to run
+   - `DEEPGRAM_API_KEY` for the default `voice_assistant` graph
+   - `XAI_API_KEY` for `voice_assistant_xai_asr` or `voice_assistant_xai_full`
 
 3. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
    - `OPENAI_API_KEY` - Your OpenAI API key (required)
 
-4. **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
+4. **TTS Provider**: choose the graph you want to run
+   - `ELEVENLABS_TTS_KEY` for the default `voice_assistant` graph or `voice_assistant_xai_asr`
+   - `XAI_API_KEY` for `voice_assistant_xai_tts` or `voice_assistant_xai_full`
+
+### Provider-specific keys
+
+- **Deepgram Account**: Get credentials from [Deepgram Console](https://console.deepgram.com/)
+   - `DEEPGRAM_API_KEY` - Your Deepgram API key (required)
+- **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
    - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
+- **xAI Account**: Get credentials from [xAI Console](https://console.x.ai/)
+   - `XAI_API_KEY` - Your xAI Voice API key (required for xAI STT/TTS graphs)
 
 ### Optional Environment Variables
 
@@ -51,6 +62,9 @@ OPENAI_PROXY_URL=your_proxy_url_here
 # ElevenLabs (required for text-to-speech)
 ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
 
+# xAI (required for xAI speech-to-text and/or text-to-speech graphs)
+XAI_API_KEY=your_xai_api_key_here
+
 # Optional
 WEATHERAPI_API_KEY=your_weather_api_key_here
 ```
@@ -71,13 +85,32 @@ cd agents/examples/voice-assistant
 task run
 ```
 
-The voice assistant starts with all capabilities enabled.
+The stack starts the TEN app, API server, frontend, and TMAN Designer.
 
 ### 4. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:8080
 - **TMAN Designer**: http://localhost:49483
+
+### 5. Choose a Graph
+
+The frontend reads the `graph` URL query parameter and matches it against
+`tenapp/property.json` `predefined_graphs[].name`.
+
+Available graph names:
+
+- `voice_assistant` - Deepgram STT + OpenAI-compatible LLM + ElevenLabs TTS
+- `voice_assistant_xai_asr` - xAI STT + OpenAI-compatible LLM + ElevenLabs TTS
+- `voice_assistant_xai_tts` - Deepgram STT + OpenAI-compatible LLM + xAI TTS
+- `voice_assistant_xai_full` - xAI STT + OpenAI-compatible LLM + xAI TTS
+
+Examples:
+
+```text
+http://localhost:3000/?graph=voice_assistant_xai_full
+https://ten-demo.agora.io/?graph=voice_assistant_xai_full
+```
 
 ## Configuration
 
@@ -189,6 +222,7 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-ap
 
 - [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
+- [xAI API Documentation](https://docs.x.ai/)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
 - [TEN Framework Documentation](https://doc.theten.ai)

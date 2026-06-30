@@ -19,11 +19,12 @@ Before sending audio, you must authenticate and configure the transcription sess
   "enable_non_final_tokens": true,
   "max_non_final_tokens_duration_ms": 360,
   "enable_endpoint_detection": false,
+  "holding_mode": "false",
   "client_reference_id": ""
 }
 ```
 
-`api_key`, `model`, `audio_format` are required, others are optional.
+`api_key`, `model`, `audio_format` are required, others are optional. `holding_mode` may be `"false"`, `"finalize"`, or `"endpointing_only"`; with `endpointing_only`, enable `enable_endpoint_detection` so segment boundaries follow endpointing.
 
 ## Audio Streaming
 

@@ -282,7 +282,7 @@ class AssemblyAIASRExtension(
     async def on_event(self, message_data: Dict[str, Any]) -> None:
         """Handle callback when event is received"""
         self.ten_env.log_info(
-            "vendor_status_changed: on_event message_data: {message_data}",
+            f"vendor_status_changed: on_event message_data: {message_data}",
             category=LOG_CATEGORY_VENDOR,
         )
 

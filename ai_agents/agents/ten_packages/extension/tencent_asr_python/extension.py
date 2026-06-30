@@ -285,6 +285,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
         language_to_iso_639_1 = {
             "zh": "zh-CN",
+            "zh_en": "zh-CN",
             "zh-PY": "zh-CN",
             "zh-TW": "zh-TW",
             "zh_edu": "zh-CN",
@@ -301,6 +302,13 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         }
 
         return language_to_iso_639_1.get(language, language)
+
+    def _get_asr_result_language(self) -> str:
+        if self.config and self.config.params.result_language_default:
+            s = (self.config.params.result_language_default or "").strip()
+            if s:
+                return s
+        return self._get_language()
 
     async def _handle_asr_result(
         self, result: RecoginizeResult, message_id: str | None = None
@@ -325,7 +333,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             + self.sent_user_audio_duration_ms_before_last_reset
         )
 
-        language = self._get_language()
+        language = self._get_asr_result_language()
 
         asr_result = ASRResult(
             id=message_id,

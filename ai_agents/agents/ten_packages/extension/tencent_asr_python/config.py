@@ -61,6 +61,10 @@ class Params(BaseModel):
         default=1000,
         description="VAD silence detection threshold in ms, range 240-2000. default: 1000. needvad=1 is required",
     )
+    result_language_default: str | None = Field(
+        default=None,
+        description="BCP-47 language for ASRResult when set; otherwise derived from engine_model_type",
+    )
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     _encrypt_fields = encrypting_serializer("appid", "secretkey", "secretid")
@@ -122,6 +126,7 @@ class Params(BaseModel):
                     "mute_pkg_duration_ms",
                     "keep_alive_interval",
                     "log_level",
+                    "result_language_default",
                 },
             )
         )

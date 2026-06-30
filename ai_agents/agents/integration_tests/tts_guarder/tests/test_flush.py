@@ -205,6 +205,10 @@ class FlushTester(AsyncExtensionTester):
         else:
             # Check if any other data is received after flush_end
             if self.flush_end_received:
+                # Non-ttfb metrics (e.g. connect_delay, usage) after flush are expected
+                if name == "metrics":
+                    ten_env.log_info(f"ℹ️ Received expected metrics data after flush_end")
+                    return
                 self.post_flush_end_data_count += 1
                 ten_env.log_info(f"⚠️ Received data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
                 return

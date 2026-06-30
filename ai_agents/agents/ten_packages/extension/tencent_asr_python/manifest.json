@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_asr_python",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "display_name": {
     "locales": {
       "en-US": {
@@ -100,6 +100,9 @@
               "type": "string"
             },
             "engine_model_type": {
+              "type": "string"
+            },
+            "result_language_default": {
               "type": "string"
             }
           }

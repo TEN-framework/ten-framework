@@ -115,7 +115,11 @@ ten_go_error_t ten_go_copy_c_str_to_slice_and_free(const char *src,
   ten_go_error_t cgo_error;
   TEN_GO_ERROR_INIT(cgo_error);
 
-  strcpy(dest, src);
+  // Use memcpy instead of strcpy. The Go side allocates exactly strlen(src)
+  // bytes (without room for '\0'). strcpy would write the '\0' terminator one
+  // byte past the buffer, causing a heap overflow.
+  size_t len = strlen(src);
+  memcpy(dest, src, len);
   TEN_FREE(src);
 
   return cgo_error;

@@ -24,6 +24,11 @@ Soniox ASR (Automatic Speech Recognition) extension for TEN Framework.
 - `language_hints`: Primary language for recognition (default: ["en"])
 - `sample_rate`: Audio sample rate in Hz (default: 16000)
 - `drain_holding_until_fin`: Whether to hold final tokens until drain (default: true)
+- `holding_mode`: How to hold/buffer recognition segments. One of:
+  - `"false"` (default): Emit results as produced, no holding.
+  - `"finalize"`: Hold until session finalize, then flush (same as legacy `finalize_holding: true`).
+  - `"endpointing_only"`: Hold until endpoint signal or session end; segment boundaries follow endpointing only. Requires `enable_endpoint_detection: true`; otherwise effective mode falls back to `"false"`.
+  - `"sentence_terminator"`: Hold vendor `is_final` segments until a complete sentence boundary is detected via **pySBD** (English `.` and abbreviations) plus local strong terminator clusters (`。！？……`、`!!!`、`...`, etc.). Each emission includes tokens through the last detected boundary within the accumulated vendor-final buffer; trailing tokens after that boundary remain deferred. Comma-only boundaries (for example `，`) are not treated as sentence ends. Trailing punctuation-only tokens (for example `。`) are merged with deferred text before evaluating boundaries.
 - `dump`: Enable audio dumping for debugging (default: false)
 - `dump_path`: Path for audio dump files (default: ".")
 
@@ -72,6 +77,10 @@ Run the tests using:
 cd tests
 ./bin/start
 ```
+
+## Migration
+
+- `finalize_holding` has been removed. Use `holding_mode: "finalize"` instead of `finalize_holding: true`. Migration can be done in config/translation layer (e.g. map `finalize_holding: true` → `holding_mode: "finalize"`).
 
 ## Notes
 

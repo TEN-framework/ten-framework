@@ -67,6 +67,19 @@ def test_params_passthrough(MockCartesiaTTSClient):
     mock_instance = MockCartesiaTTSClient.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
+    mock_instance.cancel = AsyncMock()
+    mock_instance.set_current_request_id = AsyncMock()
+    mock_instance.send_audio_end_signal = AsyncMock()
+    mock_instance.text_to_speech = AsyncMock()
+
+    import asyncio
+
+    # Mock get_audio and get_words to block forever (no audio in this test)
+    async def _block_forever():
+        await asyncio.Future()
+
+    mock_instance.get_audio = AsyncMock(side_effect=_block_forever)
+    mock_instance.get_words = AsyncMock(side_effect=_block_forever)
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 import random
-from typing import AsyncGenerator, List
+from typing import Any, AsyncGenerator, List
 from pydantic import BaseModel
 import httpx
 from openai import AsyncOpenAI, AsyncStream
@@ -51,6 +51,7 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    custom_headers: dict[str, Any] = field(default_factory=dict)
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -77,13 +78,23 @@ class OpenAIChatGPT:
             ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
             self.http_client = httpx.AsyncClient(proxy=config.proxy_url)
 
+        default_headers = {
+            "api-key": config.api_key,
+            "Authorization": f"Bearer {config.api_key}",
+        }
+        for key, value in config.custom_headers.items():
+            if isinstance(value, (dict, list)):
+                ten_env.log_warn(
+                    f"Skipping custom header '{key}':"
+                    f" value must be a scalar, got {type(value).__name__}"
+                )
+                continue
+            default_headers[str(key)] = str(value)
+
         self.client = AsyncOpenAI(
             api_key=config.api_key,
             base_url=config.base_url,
-            default_headers={
-                "api-key": config.api_key,
-                "Authorization": f"Bearer {config.api_key}",
-            },
+            default_headers=default_headers,
             http_client=self.http_client,
         )
 

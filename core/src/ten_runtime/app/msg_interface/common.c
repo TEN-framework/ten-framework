@@ -149,8 +149,17 @@ static bool ten_app_handle_msg_default_handler(ten_app_t *self,
         ten_app_do_connection_migration_or_push_to_engine_queue(
             connection, dest_engine, msg);
       } else {
-        // Could not find or create the engine, return an error message.
+        // Could not find or create the engine.
 
+        if (!ten_msg_is_cmd_and_result(msg)) {
+          // Non-cmd messages (data, video_frame, audio_frame) do not expect
+          // a response. Just discard them and log a warning.
+          TEN_LOGW("Discard message to non-existent graph '%s'.",
+                   ten_string_get_raw_str(dest_graph_id));
+          return true;
+        }
+
+        // For cmd-type messages, return an error cmd_result.
         ten_shared_ptr_t *cmd_result =
             ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, msg);
         ten_msg_set_property(cmd_result, TEN_STR_DETAIL,

@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "agent_demo",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "dependencies": [
     {
       "type": "system",
@@ -65,6 +65,9 @@
     },
     {
       "path": "../../../ten_packages/extension/tencent_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/xai_asr_python"
     },
     {
       "path": "../../../ten_packages/extension/xfyun_asr_bigmodel_python"
@@ -142,10 +145,25 @@
       "path": "../../../ten_packages/extension/tencent_tts_python"
     },
     {
+      "path": "../../../ten_packages/extension/xai_tts_python"
+    },
+    {
       "path": "../../../ten_packages/extension/message_collector2"
     },
     {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/oracle_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/oracle_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/murf_tts_python"
     }
   ],
   "scripts": {

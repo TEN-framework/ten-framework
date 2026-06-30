@@ -109,6 +109,10 @@ class AsyncExtension(_Extension):
 
     async def _configure_routine(self, ten_env: TenEnv):
         """Configuration routine executed in the global thread"""
+        ten_env.log_info(
+            f"_configure_routine: enter for {self.name}, asyncio_thread={threading.current_thread().ident}"
+        )
+
         self._ten_loop = asyncio.get_running_loop()
 
         # Create a virtual thread object for AsyncTenEnv
@@ -119,8 +123,21 @@ class AsyncExtension(_Extension):
             ten_env, self._ten_loop, current_thread, self._global_thread_manager
         )
 
+        ten_env.log_info(
+            f"_configure_routine: before on_configure for {self.name}"
+        )
+
         await self._wrapper_on_config(self._async_ten_env)
+
+        ten_env.log_info(
+            f"_configure_routine: on_configure done, calling on_configure_done for {self.name}"
+        )
+
         ten_env.on_configure_done()
+
+        ten_env.log_info(
+            f"_configure_routine: on_configure_done called for {self.name}, awaiting stop event"
+        )
 
         # Suspend until stopEvent is set.
         await self._ten_stop_event.wait()
@@ -153,17 +170,33 @@ class AsyncExtension(_Extension):
 
     def _proxy_on_configure_single_thread(self, ten_env: TenEnv) -> None:
         """Single thread mode configuration handling"""
+        ten_env.log_info(
+            f"_proxy_on_configure_single_thread: enter, thread={threading.current_thread().ident}"
+        )
+
         self._global_thread_manager = GlobalThreadManager()
 
         # Increment reference count
         self._global_thread_manager.increment_ref_count()
 
+        ten_env.log_info(
+            "_proxy_on_configure_single_thread: before get_or_start_thread"
+        )
+
         # Get or start the global main thread
         main_loop = self._global_thread_manager.get_or_start_thread(ten_env)
 
+        ten_env.log_info(
+            f"_proxy_on_configure_single_thread: got loop={id(main_loop)}, submitting coroutine"
+        )
+
         # Submit configuration task to global event loop
-        asyncio.run_coroutine_threadsafe(
+        future = asyncio.run_coroutine_threadsafe(
             self._configure_routine(ten_env), main_loop
+        )
+
+        ten_env.log_info(
+            f"_proxy_on_configure_single_thread: coroutine submitted, future={future}"
         )
 
     def _proxy_on_configure_multi_thread(self, ten_env: TenEnv) -> None:

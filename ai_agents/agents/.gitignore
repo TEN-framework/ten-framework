@@ -38,6 +38,7 @@ interface/
 lib/
 /out/
 *.pcm
+!**/test_data/**/*.pcm
 .release
 session_control.conf.agora
 xdump_config

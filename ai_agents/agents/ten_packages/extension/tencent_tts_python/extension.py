@@ -133,6 +133,9 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 f"reason: {reason}"
             )
 
+            # Send usage metrics
+            await self.send_usage_metrics(self.current_request_id or "")
+
             # Finish request to complete state transition
             await self.finish_request(
                 request_id=self.current_request_id,
@@ -264,6 +267,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
+                # Track character metrics
+                self.metrics_add_output_characters(len(t.text))
                 await self.client.synthesize_audio(t.text, t.text_input_end)
             if t.text_input_end:
                 self.ten_env.log_debug(
@@ -350,6 +355,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                                     self.synthesize_audio_sample_width(),
                                 )
                             )
+                            # Track audio metrics
+                            self.metrics_add_recv_audio_chunks(audio_data)
                             await self.send_tts_audio_data(audio_data)
                         else:
                             self.ten_env.log_error(

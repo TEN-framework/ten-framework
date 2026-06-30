@@ -323,13 +323,15 @@ class MetricsTester(AsyncExtensionTester):
         actual_vendor = metrics_data.get("vendor")
         ten_env.log_info(f"Received metrics from vendor: {actual_vendor}")
 
-        # Validate session_id in metadata
-        metadata = metrics_data.get("metadata", {})
-        if not self._validate_session_id(ten_env, metadata):
-            return False
-
-        # Extract metrics
+        # Extract metrics for early use
         metrics = metrics_data.get("metrics", {})
+        # connect_delay metrics may be sent before session_id is available; skip metadata validation
+        is_connect_delay_only = set(metrics.keys()) <= {"connect_delay"}
+        if not is_connect_delay_only:
+            metadata = metrics_data.get("metadata", {})
+            if not self._validate_session_id(ten_env, metadata):
+                return False
+
         if "ttfw" in metrics:
             self.ttfw = metrics["ttfw"]
             ten_env.log_info(f"✅ TTFW: {self.ttfw}")

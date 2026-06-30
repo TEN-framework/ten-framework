@@ -114,11 +114,15 @@ class AssemblyAIWSRecognition:
                     await self.callback.on_event(message_data)
 
             else:
+                # Unrecognized message types (e.g. "SpeechStarted") are
+                # informational vendor events, not errors. Routing them to
+                # on_error would feed a dict into ModuleError(message=str) and
+                # raise a Pydantic validation error, so surface them as events.
                 self.ten_env.log_info(
                     f"[AssemblyAI] Unknown message: {message_data}"
                 )
                 if self.callback:
-                    await self.callback.on_error(message_data)
+                    await self.callback.on_event(message_data)
 
         except json.JSONDecodeError as e:
             error_msg = f"Failed to parse message JSON: {e}"
@@ -155,19 +159,19 @@ class AssemblyAIWSRecognition:
             )
             if self.callback:
                 if code != 0:
-                    await self.callback.on_error(e, code)
+                    await self.callback.on_error(str(e), str(code))
 
         except WebSocketException as e:
             error_msg = f"WebSocket error: {e}"
             self.ten_env.log_error(f"[AssemblyAI] {error_msg}")
             if self.callback:
                 await self.callback.on_error(error_msg)
-        except asyncio.CancelledError:
-            if self.callback:
-                await self.callback.on_error(e)
         except Exception as e:
+            # Note: asyncio.CancelledError derives from BaseException, so it is
+            # not caught here and propagates after the finally block runs
+            # on_close() — normal task cancellation during shutdown.
             if self.callback:
-                await self.callback.on_error(e)
+                await self.callback.on_error(str(e))
         finally:
             self.is_started = False
             if self.callback:

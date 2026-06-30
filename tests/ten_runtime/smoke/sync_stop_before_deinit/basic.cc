@@ -72,17 +72,7 @@ class test_extension_b : public ten::extension_t {
  public:
   explicit test_extension_b(const char *name) : ten::extension_t(name) {}
 
-  void on_start(ten::ten_env_t &ten_env) override {
-    ten_env.on_start_done();
-
-    // Wait for extension_a to be created and started.
-    ten_sleep_ms(2000);
-
-    // Trigger graph shutdown as soon as both extensions are started.
-    auto close_app_cmd = ten::close_app_cmd_t::create();
-    close_app_cmd->set_dests({{""}});
-    ten_env.send_cmd(std::move(close_app_cmd));
-  }
+  void on_start(ten::ten_env_t &ten_env) override { ten_env.on_start_done(); }
 
   void on_stop(ten::ten_env_t &ten_env) override {
     // Complete stop immediately — extension_a is still sleeping.
@@ -193,8 +183,9 @@ TEST(SyncStopBeforeDeinit, Basic) {  // NOLINT
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
 
-  ten_thread_join(app_thread, -1);
   delete client;
+
+  ten_thread_join(app_thread, -1);
 
   ASSERT_TRUE(test_completed.load(std::memory_order_acquire))
       << "Test did not complete — on_deinit of extension_b was never reached";

@@ -50,6 +50,10 @@ static void proxy_on_configure(ten_extension_t *extension, ten_env_t *ten_env) {
   TEN_ASSERT(ten_env, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Invalid argument.");
 
+  const char *ext_name = ten_string_get_raw_str(&extension->name);
+
+  TEN_LOGI("[%s] proxy_on_configure: before acquiring GIL", ext_name);
+
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
   PyGILState_STATE prev_state = ten_py_gil_state_ensure_internal();
@@ -57,6 +61,8 @@ static void proxy_on_configure(ten_extension_t *extension, ten_env_t *ten_env) {
   // thread.
   TEN_ASSERT(prev_state == PyGILState_UNLOCKED,
              "The GIL should not be help by the extension thread now.");
+
+  TEN_LOGI("[%s] proxy_on_configure: GIL acquired", ext_name);
 
   ten_py_extension_t *py_extension =
       (ten_py_extension_t *)ten_binding_handle_get_me_in_target_lang(
@@ -73,6 +79,9 @@ static void proxy_on_configure(ten_extension_t *extension, ten_env_t *ten_env) {
                  ten_env_proxy_check_integrity(py_ten_env->c_ten_env_proxy),
              "Invalid argument.");
 
+  TEN_LOGI("[%s] proxy_on_configure: before calling _proxy_on_configure",
+           ext_name);
+
   PyObject *py_res =
       PyObject_CallMethod((PyObject *)py_extension, "_proxy_on_configure", "O",
                           py_ten_env->actual_py_ten_env);
@@ -81,12 +90,17 @@ static void proxy_on_configure(ten_extension_t *extension, ten_env_t *ten_env) {
   bool err_occurred = ten_py_check_and_clear_py_error();
   TEN_ASSERT(!err_occurred, "Should not happen.");
 
+  TEN_LOGI("[%s] proxy_on_configure: _proxy_on_configure returned, releasing GIL",
+           ext_name);
+
   // We should release the GIL but not destroy the PyThreadState. The
   // PyThreadState will not be released until the last extension calls
   // 'on_deinit_done' in the group.
   py_ten_env->py_thread_state = ten_py_eval_save_thread();
 
   py_ten_env->need_to_release_gil_state = true;
+
+  TEN_LOGI("[%s] proxy_on_configure: done", ext_name);
 }
 
 static void proxy_on_init(ten_extension_t *extension, ten_env_t *ten_env) {

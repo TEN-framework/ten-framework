@@ -47,6 +47,4 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
         return "openai"
 
     def synthesize_audio_sample_rate(self) -> int:
-        """Return the sample rate for synthesized audio."""
-        # OpenAI TTS fixed sample rate
         return 24000

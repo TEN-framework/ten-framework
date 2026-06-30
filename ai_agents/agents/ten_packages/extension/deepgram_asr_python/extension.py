@@ -450,7 +450,7 @@ class DeepgramASRExtension(
                     final=is_final,
                     start_ms=actual_start_ms,
                     duration_ms=duration_ms,
-                    language=self.config.normalized_language,
+                    language=self.config.asr_result_language,
                     metadata=metadata,
                 )
 
@@ -484,7 +484,7 @@ class DeepgramASRExtension(
                     final=is_final,
                     start_ms=actual_start_ms,
                     duration_ms=duration_ms,
-                    language=self.config.normalized_language,
+                    language=self.config.asr_result_language,
                 )
 
         except Exception as e:
