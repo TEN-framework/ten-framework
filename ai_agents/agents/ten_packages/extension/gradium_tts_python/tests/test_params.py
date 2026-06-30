@@ -1,3 +1,4 @@
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -5,30 +6,32 @@ from ten_ai_base.struct import TTSTextInput
 from ten_runtime import Data, ExtensionTester, TenEnvTester
 
 from gradium_tts_python.config import GradiumTTSConfig
-from gradium_tts_python.gradium_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_TTFB_METRIC,
-    GradiumTTSClient,
-)
+from gradium_tts_python.gradium_tts import GradiumTTSClient
+
+from .gradium_mocks import make_streaming_mock_client
 
 
 def create_mock_client():
-    mock = MagicMock()
-    mock.start = AsyncMock()
-    mock.clean = AsyncMock()
-    mock.cancel = AsyncMock()
-    mock.get_ready_sample_rate.return_value = 24000
-    mock.get_extra_metadata.return_value = {}
-    fake_audio = b"\x00\x01\x02\x03" * 100
+    return make_streaming_mock_client(
+        audio_chunks=(b"\x00\x01\x02\x03" * 100,), ttfb_ms=100
+    )
 
-    async def mock_get(_text: str, *_args):
-        yield 100, EVENT_TTS_TTFB_METRIC
-        yield fake_audio, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
 
-    mock.get.side_effect = mock_get
-    return mock
+def _capture_setup_payload(config: GradiumTTSConfig) -> dict:
+    """Run _send_setup against a mock socket and return the sent payload."""
+
+    async def _run():
+        sent: list = []
+        client = GradiumTTSClient(config=config, ten_env=MagicMock())
+
+        async def _capture(payload):
+            sent.append(payload)
+
+        client._send_json = AsyncMock(side_effect=_capture)
+        await client._send_setup()
+        return sent[0]
+
+    return asyncio.run(_run())
 
 
 def test_params_passthrough():
@@ -38,7 +41,7 @@ def test_params_passthrough():
             "url": "wss://api.gradium.ai/api/speech/tts",
             "voice_id": "cLONiZ4hQ8VpQ4Sz",
             "sample_rate": 16000,
-            "json_config": {"speed": 1.1},
+            "json_config": '{"speed": 1.1}',
             "close_ws_on_eos": False,
             "emotion": "calm",
         }
@@ -46,23 +49,35 @@ def test_params_passthrough():
     config.update_params()
     config.validate()
 
-    client = GradiumTTSClient(config=config, ten_env=MagicMock())
-    payload = {
-        "type": "setup",
-        "model_name": config.model_name,
-        "voice_id": config.voice_id,
-        "output_format": config.output_format,
-        "close_ws_on_eos": config.close_ws_on_eos,
-        "json_config": config.json_config,
-        **config.params,
-    }
-
     assert config.websocket_url() == "wss://api.gradium.ai/api/speech/tts"
     assert config.output_format == "pcm_16000"
     assert config.get_sample_rate() == 16000
+    # json_config stays a string on the model (matches the manifest schema).
+    assert config.json_config == '{"speed": 1.1}'
+
+    payload = _capture_setup_payload(config)
+
+    # json_config is parsed into an object before being sent on the wire.
+    assert payload["json_config"] == {"speed": 1.1}
+    # vendor extras pass through; api_key is never sent in setup.
     assert payload["emotion"] == "calm"
+    assert payload["close_ws_on_eos"] is False
     assert "api_key" not in payload
-    assert client is not None
+
+
+def test_json_config_invalid_json_is_sent_as_is():
+    config = GradiumTTSConfig(
+        params={
+            "api_key": "test_api_key",
+            "voice_id": "cLONiZ4hQ8VpQ4Sz",
+            "json_config": "not-json",
+        }
+    )
+    config.update_params()
+    config.validate()
+
+    payload = _capture_setup_payload(config)
+    assert payload["json_config"] == "not-json"
 
 
 def test_output_format_derived_from_sample_rate_only():

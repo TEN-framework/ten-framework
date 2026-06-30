@@ -40,7 +40,14 @@ class GradiumTTSConnectionException(Exception):
 
 
 class GradiumTTSClient:
-    """Gradium TTS websocket client with one websocket per request."""
+    """Gradium TTS websocket client: one streaming session per request.
+
+    Each text segment is forwarded to the vendor as it arrives (no local
+    batching), matching Gradium's LLM-to-TTS streaming guidance and the
+    behaviour of the other websocket TTS extensions. The caller opens a
+    session, sends text segments, signals end_of_stream, and reads audio
+    concurrently via audio_events().
+    """
 
     def __init__(
         self,
@@ -73,40 +80,32 @@ class GradiumTTSClient:
         self._is_cancelled = True
         await self._disconnect()
 
-    async def get(
-        self, text: str, _request_id: str, _text_input_end: bool
-    ) -> AsyncIterator[tuple[bytes | int | None, int]]:
-        if len(text.strip()) == 0:
-            yield None, EVENT_TTS_END
-            return
-
+    async def start_session(self) -> None:
+        """Open a fresh websocket and complete setup for a new request."""
         self._is_cancelled = False
         self._last_ready = {}
         self._sent_ts = None
         self._ttfb_sent = False
         await self._disconnect()
         await self._connect()
+        await self._send_setup()
+        await self._wait_for_ready()
 
-        try:
-            await self._send_setup()
-            await self._wait_for_ready()
-
+    async def send_text(self, text: str) -> None:
+        """Forward a single text segment to the vendor immediately."""
+        if self._sent_ts is None:
             self._sent_ts = datetime.now()
-            await self._send_json({"type": "text", "text": text})
-            await self._send_json({"type": "end_of_stream"})
+        await self._send_json({"type": "text", "text": text})
 
-            async for event in self._iter_messages():
-                yield event
-        except GradiumTTSConnectionException:
-            raise
-        except Exception as exc:
-            self.ten_env.log_error(
-                f"vendor_error: {exc}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            yield str(exc).encode("utf-8"), EVENT_TTS_ERROR
-        finally:
-            await self._disconnect()
+    async def end_input(self) -> None:
+        """Signal that no more text is coming for the current request."""
+        await self._send_json({"type": "end_of_stream"})
+
+    def audio_events(
+        self,
+    ) -> AsyncIterator[tuple[bytes | int | None, int]]:
+        """Yield audio/ttfb/end/error events until the session ends."""
+        return self._iter_messages()
 
     def is_connected(self) -> bool:
         return self.ws is not None and self.ws.state == State.OPEN
@@ -160,8 +159,9 @@ class GradiumTTSClient:
             payload["voice_id"] = self.config.voice_id
         elif self.config.voice:
             payload["voice"] = self.config.voice
-        if self.config.json_config is not None:
-            payload["json_config"] = self.config.json_config
+        json_config = self._build_json_config()
+        if json_config is not None:
+            payload["json_config"] = json_config
         if self.config.retry_for_s is not None:
             payload["retry_for_s"] = self.config.retry_for_s
         if self.config.pronunciation_id:
@@ -173,6 +173,27 @@ class GradiumTTSClient:
             payload[key] = value
 
         await self._send_json(payload)
+
+    def _build_json_config(self) -> Any:
+        """Parse the configured json_config string into an object for the wire.
+
+        json_config is a JSON string (manifest schema only allows a string).
+        Gradium expects an object, so parse it here. If it is already a dict
+        or is not valid JSON, send it through unchanged.
+        """
+        raw = self.config.json_config
+        if not raw:
+            return None
+        if isinstance(raw, dict):
+            return raw
+        try:
+            return json.loads(raw)
+        except (TypeError, ValueError):
+            self.ten_env.log_warn(
+                "json_config is not valid JSON; sending it as-is",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return raw
 
     async def _wait_for_ready(self) -> None:
         assert self.ws is not None
@@ -222,7 +243,10 @@ class GradiumTTSClient:
             except Exception as exc:
                 if self._is_cancelled:
                     break
-                if getattr(exc, "code", None) == 1000:
+                # A clean close (code 1000) is a normal end-of-stream, not an
+                # error. On websockets >= 14 the code lives on exc.rcvd/exc.sent,
+                # so read it via _close_code rather than a top-level exc.code.
+                if self._close_code(exc) == 1000:
                     yield None, EVENT_TTS_END
                     break
                 yield str(exc).encode("utf-8"), EVENT_TTS_ERROR
@@ -303,10 +327,25 @@ class GradiumTTSClient:
             )
         )
 
+    @staticmethod
+    def _close_code(exc: Exception) -> int | None:
+        """Extract the websocket close code across websockets versions.
+
+        websockets >= 14 exposes the close frame via ``exc.rcvd`` / ``exc.sent``
+        (each a ``Close`` carrying a ``.code``) and no longer has a top-level
+        ``exc.code``. Fall back to ``exc.code`` for older versions and for the
+        hand-built exceptions used in tests.
+        """
+        for attr in ("rcvd", "sent"):
+            code = getattr(getattr(exc, attr, None), "code", None)
+            if isinstance(code, int):
+                return code
+        code = getattr(exc, "code", None)
+        return code if isinstance(code, int) else None
+
     @classmethod
     def _closed_during_setup(cls, exc: Exception) -> bool:
-        code = getattr(exc, "code", None)
-        if code in {1000, 1008, 1011}:
+        if cls._close_code(exc) in {1000, 1008, 1011}:
             return True
         return cls._looks_like_auth_error(str(exc))
 

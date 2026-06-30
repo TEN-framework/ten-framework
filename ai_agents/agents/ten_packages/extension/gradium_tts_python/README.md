@@ -20,7 +20,7 @@ A TEN Framework Text-to-Speech extension for Gradium's streaming websocket API.
 | `params.voice_id` | string | `cLONiZ4hQ8VpQ4Sz` | Gradium voice ID |
 | `params.voice` | string | empty | Optional alternate voice selector if `voice_id` is omitted |
 | `params.sample_rate` | int | `24000` | PCM sample rate (one of 8000/16000/22050/24000/44100/48000); Gradium only supports PCM, so the wire `output_format` is derived as `pcm_<sample_rate>` |
-| `params.json_config` | object/string | empty | Optional Gradium voice tuning payload |
+| `params.json_config` | string (JSON) | empty | Optional Gradium voice-tuning payload as a JSON string, e.g. `'{"speed": 1.1}'` |
 | `params.close_ws_on_eos` | bool | `true` | Ask Gradium to close the websocket at EOS |
 | `params.retry_for_s` | float | empty | Optional Gradium retry window |
 | `params.pronunciation_id` | string | empty | Optional Gradium pronunciation resource |

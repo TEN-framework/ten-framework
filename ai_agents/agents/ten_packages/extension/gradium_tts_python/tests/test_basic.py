@@ -4,18 +4,15 @@ import json
 import os
 import shutil
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from ten_ai_base.struct import TTSFlush, TTSTextInput
 from ten_runtime import Data, ExtensionTester, TenEnvTester
 
 from gradium_tts_python.config import GradiumTTSConfig
 from gradium_tts_python.extension import GradiumTTSExtension
-from gradium_tts_python.gradium_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_TTFB_METRIC,
-)
+
+from .gradium_mocks import make_streaming_mock_client
 
 MOCK_CONFIG = {
     "params": {
@@ -82,26 +79,11 @@ def test_dump_functionality(mock_client):
         shutil.rmtree(dump_path)
     os.makedirs(dump_path)
 
-    mock_instance = mock_client.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {
-        "voice_id": "cLONiZ4hQ8VpQ4Sz"
-    }
-
-    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
-    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
-
-    async def mock_get_audio_stream(_text: str, *_args):
-        yield 255, EVENT_TTS_TTFB_METRIC
-        yield fake_audio_chunk_1, EVENT_TTS_RESPONSE
-        await asyncio.sleep(0.01)
-        yield fake_audio_chunk_2, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
+    mock_client.return_value = make_streaming_mock_client(
+        audio_chunks=(b"\x11\x22\x33\x44" * 20, b"\xaa\xbb\xcc\xdd" * 20),
+        ttfb_ms=255,
+        extra_metadata={"voice_id": "cLONiZ4hQ8VpQ4Sz"},
+    )
 
     tester = ExtensionTesterDump()
     dump_config = {
@@ -160,21 +142,10 @@ class ExtensionTesterBasic(ExtensionTester):
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
 def test_basic_audio(mock_client):
-    mock_instance = mock_client.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {}
-
-    fake_audio_chunk = b"\x00\x01\x02\x03" * 100
-
-    async def mock_get_audio_stream(_text: str, *_args):
-        yield 150, EVENT_TTS_TTFB_METRIC
-        yield fake_audio_chunk, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
+    mock_client.return_value = make_streaming_mock_client(
+        audio_chunks=(b"\x00\x01\x02\x03" * 100,),
+        ttfb_ms=150,
+    )
 
     tester = ExtensionTesterBasic()
     tester.set_test_mode_single("gradium_tts_python", json.dumps(MOCK_CONFIG))
@@ -223,19 +194,7 @@ class ExtensionTesterFlush(ExtensionTester):
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
 def test_flush(mock_client):
-    mock_instance = mock_client.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {}
-
-    async def mock_get_audio_stream(_text: str, *_args):
-        yield 80, EVENT_TTS_TTFB_METRIC
-        yield b"\x00\x01" * 100, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
+    mock_client.return_value = make_streaming_mock_client(ttfb_ms=80)
 
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single("gradium_tts_python", json.dumps(MOCK_CONFIG))
@@ -244,22 +203,21 @@ def test_flush(mock_client):
     assert tester.audio_end_received
 
 
-class ExtensionTesterBufferedFragments(ExtensionTester):
+class ExtensionTesterSegments(ExtensionTester):
+    """Send several segments under one request_id, end with text_input_end."""
+
     def __init__(self):
         super().__init__()
         self.audio_end_received = False
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         for text, text_input_end in [
-            ("Sure!", False),
-            (" Here you go:\n\n1,", False),
-            (" 2,", False),
-            (" 3,", False),
-            (" 10.", False),
-            ("", True),
+            ("Hello world, this is the first sentence.", False),
+            (" This is the second sentence.", False),
+            (" And the third.", True),
         ]:
             payload = TTSTextInput(
-                request_id="tts_request_buffered",
+                request_id="tts_request_segments",
                 text=text,
                 text_input_end=text_input_end,
                 metadata={"session_id": "s", "turn_id": 1},
@@ -277,163 +235,39 @@ class ExtensionTesterBufferedFragments(ExtensionTester):
 
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
-def test_comma_delimited_fragments_are_buffered(mock_client):
+def test_segments_are_forwarded_immediately(mock_client):
+    """Each non-empty segment is forwarded to the vendor as it arrives,
+    in order, over a single session; the empty text_input_end finalizes."""
     sent_texts = []
-    mock_instance = MagicMock()
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {}
+    mock_client.return_value = make_streaming_mock_client(sent_texts=sent_texts)
 
-    async def mock_get_audio_stream(text: str, *_args):
-        sent_texts.append(text)
-        yield 175, EVENT_TTS_TTFB_METRIC
-        yield b"\x00\x01" * 100, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
-    mock_client.return_value = mock_instance
-
-    tester = ExtensionTesterBufferedFragments()
-    tester.set_test_mode_single("gradium_tts_python", json.dumps(MOCK_CONFIG))
-    tester.run()
-
-    assert tester.audio_end_received
-    assert sent_texts == ["Sure! Here you go:\n\n1, 2, 3, 10."]
-
-
-class ExtensionTesterAppendInputGrouping(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.audio_end_received = False
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        for text, text_input_end in [
-            ("Hello world, this is the first text input.", False),
-            (" This is the second text input for testing.", False),
-            ("", True),
-        ]:
-            payload = TTSTextInput(
-                request_id="tts_request_append_grouped",
-                text=text,
-                text_input_end=text_input_end,
-                metadata={"session_id": "s", "turn_id": 1},
-            )
-            data = Data.create("tts_text_input")
-            data.set_property_from_json(None, payload.model_dump_json())
-            ten_env_tester.send_data(data)
-
-        ten_env_tester.on_start_done()
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        if data.get_name() == "tts_audio_end":
-            self.audio_end_received = True
-            ten_env.stop_test()
-
-
-@patch("gradium_tts_python.extension.GradiumTTSClient")
-def test_short_append_input_group_uses_single_vendor_request(mock_client):
-    sent_texts = []
-    mock_instance = MagicMock()
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {}
-
-    async def mock_get_audio_stream(text: str, *_args):
-        sent_texts.append(text)
-        yield 125, EVENT_TTS_TTFB_METRIC
-        yield b"\x00\x01" * 100, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
-    mock_client.return_value = mock_instance
-
-    tester = ExtensionTesterAppendInputGrouping()
+    tester = ExtensionTesterSegments()
     tester.set_test_mode_single("gradium_tts_python", json.dumps(MOCK_CONFIG))
     tester.run()
 
     assert tester.audio_end_received
     assert sent_texts == [
-        "Hello world, this is the first text input. This is the second text input for testing.",
+        "Hello world, this is the first sentence.",
+        " This is the second sentence.",
+        " And the third.",
     ]
-
-
-class ExtensionTesterInterleavedGrouping(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.audio_end_received = []
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        for request_id, text, text_input_end in [
-            ("interleave_req_1", "Request one starts with a list:", False),
-            (
-                "interleave_req_2",
-                "Request two starts now and stays separate.",
-                False,
-            ),
-            ("interleave_req_1", " 1, 2, 3, and finally ends here.", True),
-            (
-                "interleave_req_2",
-                " It also finishes in one vendor request.",
-                True,
-            ),
-        ]:
-            payload = TTSTextInput(
-                request_id=request_id,
-                text=text,
-                text_input_end=text_input_end,
-                metadata={"session_id": "s", "turn_id": 1},
-            )
-            data = Data.create("tts_text_input")
-            data.set_property_from_json(None, payload.model_dump_json())
-            ten_env_tester.send_data(data)
-        ten_env_tester.on_start_done()
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        if data.get_name() == "tts_audio_end":
-            request_id, _ = data.get_property_string("request_id")
-            self.audio_end_received.append(request_id)
-            if len(self.audio_end_received) == 2:
-                ten_env.stop_test()
 
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
-def test_interleaved_requests_keep_separate_buffers(mock_client):
-    sent_texts = []
-    mock_instance = MagicMock()
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {}
-
-    async def mock_get_audio_stream(text: str, request_id: str, *_args):
-        sent_texts.append((request_id, text))
-        yield 125, EVENT_TTS_TTFB_METRIC
-        yield b"\x00\x01" * 100, EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_stream
+def test_single_session_per_request(mock_client):
+    """All segments of one request share a single streaming session."""
+    mock_instance = make_streaming_mock_client()
     mock_client.return_value = mock_instance
 
-    tester = ExtensionTesterInterleavedGrouping()
+    tester = ExtensionTesterSegments()
     tester.set_test_mode_single("gradium_tts_python", json.dumps(MOCK_CONFIG))
     tester.run()
 
-    assert tester.audio_end_received == ["interleave_req_1", "interleave_req_2"]
-    assert sent_texts == [
-        (
-            "interleave_req_1",
-            "Request one starts with a list: 1, 2, 3, and finally ends here.",
-        ),
-        (
-            "interleave_req_2",
-            "Request two starts now and stays separate. It also finishes in one vendor request.",
-        ),
-    ]
+    assert tester.audio_end_received
+    # One session opened and ended for the whole request, not one per segment.
+    assert mock_instance.start_session.await_count == 1
+    assert mock_instance.end_input.await_count == 1
+    assert mock_instance.send_text.await_count == 3
 
 
 @patch("gradium_tts_python.extension.PCMWriter")

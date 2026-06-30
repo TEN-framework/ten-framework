@@ -1,15 +1,10 @@
-import asyncio
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 from ten_ai_base.struct import TTSTextInput
 from ten_runtime import Data, ExtensionTester, TenEnvTester
 
-from gradium_tts_python.gradium_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_TTFB_METRIC,
-)
+from .gradium_mocks import make_streaming_mock_client
 
 
 class ExtensionTesterMetrics(ExtensionTester):
@@ -53,22 +48,11 @@ class ExtensionTesterMetrics(ExtensionTester):
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
 def test_ttfb_metric_is_sent(mock_client):
-    mock_instance = mock_client.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {
-        "voice_id": "cLONiZ4hQ8VpQ4Sz"
-    }
-
-    async def mock_get_audio_with_delay(_text: str, *_args):
-        await asyncio.sleep(0.2)
-        yield 255, EVENT_TTS_TTFB_METRIC
-        yield b"\x11\x22\x33", EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_with_delay
+    mock_client.return_value = make_streaming_mock_client(
+        audio_chunks=(b"\x11\x22\x33",),
+        ttfb_ms=255,
+        extra_metadata={"voice_id": "cLONiZ4hQ8VpQ4Sz"},
+    )
 
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
@@ -96,8 +80,8 @@ class ExtensionTesterSegmentedMetrics(ExtensionTesterMetrics):
         first = TTSTextInput(
             request_id="tts_request_segmented_metrics",
             text=(
-                "This is a long enough first sentence to trigger a streamed "
-                "flush from the Gradium extension implementation."
+                "This is the first sentence streamed to the vendor "
+                "immediately as it arrives."
             ),
             text_input_end=False,
         )
@@ -116,21 +100,13 @@ class ExtensionTesterSegmentedMetrics(ExtensionTesterMetrics):
 
 @patch("gradium_tts_python.extension.GradiumTTSClient")
 def test_ttfb_metric_is_only_sent_once_per_request(mock_client):
-    mock_instance = mock_client.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.clean = AsyncMock()
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_ready_sample_rate.return_value = 24000
-    mock_instance.get_extra_metadata.return_value = {
-        "voice_id": "cLONiZ4hQ8VpQ4Sz"
-    }
-
-    async def mock_get_audio_segmented(_text: str, *_args):
-        yield 111, EVENT_TTS_TTFB_METRIC
-        yield b"\x11\x22\x33", EVENT_TTS_RESPONSE
-        yield None, EVENT_TTS_END
-
-    mock_instance.get.side_effect = mock_get_audio_segmented
+    """A multi-segment request shares one streaming session and emits a
+    single ttfb metric, even though several text segments are forwarded."""
+    mock_client.return_value = make_streaming_mock_client(
+        audio_chunks=(b"\x11\x22\x33",),
+        ttfb_ms=111,
+        extra_metadata={"voice_id": "cLONiZ4hQ8VpQ4Sz"},
+    )
 
     tester = ExtensionTesterSegmentedMetrics()
     tester.set_test_mode_single(

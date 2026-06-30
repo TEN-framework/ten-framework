@@ -24,7 +24,10 @@ class GradiumTTSConfig(BaseModel):
     voice_id: str = "cLONiZ4hQ8VpQ4Sz"
     voice: str = ""
     sample_rate: int = 24000
-    json_config: dict[str, Any] | str | None = None
+    # JSON string carrying Gradium's optional voice-tuning payload. Kept as a
+    # string so it matches the manifest schema (params.json_config: string);
+    # the client parses it into an object before sending it on the wire.
+    json_config: str | None = None
     close_ws_on_eos: bool = True
     retry_for_s: float | None = None
     pronunciation_id: str = ""
