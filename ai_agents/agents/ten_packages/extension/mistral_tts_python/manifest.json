@@ -22,7 +22,8 @@
       "**.tent",
       "**.py",
       "README.md",
-      "requirements.txt"
+      "requirements.txt",
+      "pyproject.toml"
     ]
   },
   "api": {
