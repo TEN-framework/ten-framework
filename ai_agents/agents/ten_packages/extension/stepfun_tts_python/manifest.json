@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "stepfun_tts_python",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "dependencies": [
     {
       "type": "system",
@@ -20,6 +20,7 @@
       "property.json",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

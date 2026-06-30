@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "rime_http_tts",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "dependencies": [
     {
       "type": "system",
@@ -21,6 +21,7 @@
       "**.tent",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

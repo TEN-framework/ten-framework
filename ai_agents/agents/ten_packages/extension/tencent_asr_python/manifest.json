@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_asr_python",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "display_name": {
     "locales": {
       "en-US": {
@@ -119,6 +119,7 @@
       "property.json",
       "**.py",
       "tencent_asr_client/**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

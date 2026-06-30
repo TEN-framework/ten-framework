@@ -1,0 +1,10 @@
+[project]
+name = "sarvam-asr-python"
+version = "0.1.3"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.14.1",
+    "numpy>=2.2.6",
+    "pydantic>=2.13.4",
+    "websockets~=14.0",
+]

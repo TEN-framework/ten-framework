@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "xai_tts_python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -20,6 +20,7 @@
       "property.json",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

@@ -1,0 +1,8 @@
+[project]
+name = "blaze-tts-python"
+version = "1.0.1"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]

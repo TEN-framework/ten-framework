@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "soniox_asr_python",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "dependencies": [
     {
       "type": "system",
@@ -19,6 +19,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**",
       "*.md"

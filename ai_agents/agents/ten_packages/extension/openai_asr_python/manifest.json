@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_asr_python",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "display_name": {
     "locales": {
       "en-US": {
@@ -118,6 +118,7 @@
       "property.json",
       "**.py",
       "openai_asr_client/**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

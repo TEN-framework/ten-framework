@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "aws_asr_python",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "display_name": {
     "locales": {
       "en-US": {
@@ -118,6 +118,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

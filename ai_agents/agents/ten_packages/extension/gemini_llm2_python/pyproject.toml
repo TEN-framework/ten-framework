@@ -1,0 +1,7 @@
+[project]
+name = "gemini-llm2-python"
+version = "0.1.1"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.24.0",
+]

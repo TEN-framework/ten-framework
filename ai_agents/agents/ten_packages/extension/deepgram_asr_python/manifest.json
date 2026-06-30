@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "deepgram_asr_python",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "dependencies": [
     {
       "type": "system",
@@ -53,6 +53,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]
