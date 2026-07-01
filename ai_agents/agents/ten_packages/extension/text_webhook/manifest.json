@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "text_webhook",
-  "version": "0.8.18",
+  "version": "0.8.19",
   "dependencies": [
     {
       "type": "system",
@@ -16,6 +16,7 @@
       "BUILD.gn",
       "**.tent",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "src/**.tent",
       "src/**.py",

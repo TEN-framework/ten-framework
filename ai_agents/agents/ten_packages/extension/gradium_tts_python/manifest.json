@@ -19,8 +19,8 @@
       "manifest.json",
       "property.json",
       "**.py",
-      "pyproject.toml",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

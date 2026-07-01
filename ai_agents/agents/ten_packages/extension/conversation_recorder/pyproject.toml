@@ -1,0 +1,10 @@
+[project]
+name = "conversation-recorder"
+version = "0.1.1"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3>=1.43.37",
+    "google-cloud-storage>=3.12.0",
+    "numpy>=2.2.6",
+    "scipy>=1.15.3",
+]

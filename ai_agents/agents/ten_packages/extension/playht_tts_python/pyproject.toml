@@ -1,0 +1,9 @@
+[project]
+name = "playht-tts-python"
+version = "0.5.4"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "pyht>=0.1.14",
+    "typing-extensions>=4.15.0",
+]

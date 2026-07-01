@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "azure_asr_python",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "dependencies": [
     {
       "type": "system",
@@ -44,6 +44,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

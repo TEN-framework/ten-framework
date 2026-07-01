@@ -1,0 +1,9 @@
+[project]
+name = "azure-tts-python"
+version = "0.3.1"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-cognitiveservices-speech==1.45.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.15.0",
+]

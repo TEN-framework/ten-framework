@@ -1,0 +1,7 @@
+[project]
+name = "glue-python-async"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.2.6",
+]

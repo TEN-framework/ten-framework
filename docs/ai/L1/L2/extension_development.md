@@ -243,6 +243,62 @@ class MyVendorTTSExtension(AsyncTTS2HttpExtension):
         return self.config.sample_rate
 ```
 
+The extension class is thin — the real work lives in the **client**
+(`AsyncTTS2HttpClient`). The base class drives the request lifecycle (queuing,
+interleaving, `tts_audio_start`/`end`, flush) and calls your client's `get()`
+once per request. You implement `get()` as an async generator that yields
+`(audio_bytes | None, event_type)` tuples, where `event_type` is a
+`TTS2HttpResponseEventType`:
+
+| Event type          | Yield with                | Meaning                                       |
+| ------------------- | ------------------------- | --------------------------------------------- |
+| `RESPONSE`          | `(pcm16_bytes, RESPONSE)` | One audio chunk — must be PCM16 mono          |
+| `END`               | `(None, END)`             | Request completed successfully                |
+| `FLUSH`             | `(None, FLUSH)`           | Cancelled mid-stream (check your cancel flag) |
+| `ERROR`             | `(msg_bytes, ERROR)`      | Non-fatal vendor/network error                |
+| `INVALID_KEY_ERROR` | `(msg_bytes, INVALID_KEY_ERROR)` | Fatal auth/permission error (401/403)  |
+
+```python
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
+from ten_ai_base.struct import TTS2HttpResponseEventType
+
+class MyVendorTTSClient(AsyncTTS2HttpClient):
+    async def get(self, text, request_id):
+        if not text.strip():
+            yield None, TTS2HttpResponseEventType.END   # empty text completes fast
+            return
+        self._is_cancelled = False
+        async with self.client.stream("POST", self.url, json=payload) as resp:
+            if resp.status_code != 200:
+                err = (await resp.aread()).decode("utf-8", "replace")
+                ev = (TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                      if resp.status_code in (401, 403)
+                      else TTS2HttpResponseEventType.ERROR)
+                yield err.encode(), ev
+                return
+            async for chunk in resp.aiter_bytes():
+                if self._is_cancelled:
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    return
+                yield chunk, TTS2HttpResponseEventType.RESPONSE  # PCM16 mono
+            yield None, TTS2HttpResponseEventType.END
+
+    async def cancel(self):            # set the flag get() polls between chunks
+        self._is_cancelled = True
+
+    async def clean(self):             # close the httpx client on teardown
+        await self.client.aclose()
+
+    def get_extra_metadata(self) -> dict:   # surfaced on TTFB metrics
+        return {"model": self.config.params.get("model", "")}
+```
+
+**Auth and error classification**: extract `api_key` from `params` into an
+`Authorization` header in the constructor; classify 401/403 (and vendor
+`invalid_api_key` codes) as `INVALID_KEY_ERROR`, everything else as `ERROR`.
+For a complete reference implementation see `mistral_tts_python` (streaming
+httpx, error classification, audio conversion) or `rime_http_tts`.
+
 ### ASR Extension
 
 ```python

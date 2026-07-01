@@ -46,11 +46,13 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         self.reconnect_manager: ReconnectManager | None = None
         self._stop_requested = False
         self._close_expected = False
+        self._finalize_reconnect_task: asyncio.Task | None = None
         self.connection_start_timestamp = 0
         self._init_failed = False
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        self._cancel_finalize_reconnect_task()
         await super().on_deinit(ten_env)
         if self.audio_dumper:
             await self.audio_dumper.stop()
@@ -214,6 +216,7 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
     @override
     async def stop_connection(self) -> None:
         self._stop_requested = True
+        self._cancel_finalize_reconnect_task()
         if self.recognition:
             await self.recognition.close()
             self.recognition = None
@@ -402,9 +405,50 @@ class XAIASRExtension(AsyncASRBaseExtension, XAIASRRecognitionCallback):
         if self._stop_requested:
             return
         if self._close_expected:
+            # xAI STT is a single-utterance protocol: the server closes the
+            # socket after each transcript.done. Subsequent turns need a
+            # fresh connection. Schedule a clean reconnect (not the
+            # backoff path — this is a planned cycle, not a failure).
+            # The base class buffers audio frames in the meantime and
+            # flushes them from on_open.
             self._close_expected = False
+            self._schedule_finalize_reconnect()
             return
         await self._handle_reconnect()
+
+    def _schedule_finalize_reconnect(self) -> None:
+        self._cancel_finalize_reconnect_task()
+        self._finalize_reconnect_task = asyncio.create_task(
+            self._reconnect_after_finalize()
+        )
+        self._finalize_reconnect_task.add_done_callback(
+            self._clear_finalize_reconnect_task
+        )
+
+    def _cancel_finalize_reconnect_task(self) -> None:
+        if (
+            self._finalize_reconnect_task
+            and not self._finalize_reconnect_task.done()
+        ):
+            self._finalize_reconnect_task.cancel()
+        self._finalize_reconnect_task = None
+
+    def _clear_finalize_reconnect_task(self, task: asyncio.Task) -> None:
+        if self._finalize_reconnect_task is task:
+            self._finalize_reconnect_task = None
+
+    async def _reconnect_after_finalize(self) -> None:
+        if self._stop_requested:
+            return
+        try:
+            await self._connect_recognition()
+        except Exception as e:
+            self.ten_env.log_warn(
+                f"xAI STT post-finalize reconnect failed: {e}; "
+                f"falling back to reconnect manager backoff",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._handle_reconnect()
 
     async def _handle_reconnect(self) -> None:
         if not self.reconnect_manager:

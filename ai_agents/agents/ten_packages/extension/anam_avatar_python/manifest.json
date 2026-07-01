@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "anam_avatar_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -15,6 +15,7 @@
       "property.json",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },
