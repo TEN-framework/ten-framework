@@ -62,7 +62,7 @@ That's it! The base class handles everything else:
 - Audio processing loop
 - Sample rate validation
 - Audio dumping (if enabled)
-- Command handling (flush, drain)
+- Command handling (flush, finalize)
 - Lifecycle management
 - Error handling
 
@@ -72,7 +72,7 @@ Lifecycle (Automatic):
 2. on_start() → calls connect_to_avatar() → starts audio loop
 3. Audio arrives → sample rate checked → queued → calls send_audio_to_avatar()
 4. flush command → calls interrupt_avatar()
-5. drain command → calls send_eof_to_avatar()
+5. finalize data → calls send_eof_to_avatar()
 6. on_stop() → calls disconnect_from_avatar() → cleanup
 
 You don't need to override on_init/on_start/on_stop!
@@ -102,7 +102,7 @@ from ten_ai_base.message import ErrorMessage, ModuleType
 
 # Avatar-specific constants
 MODULE_TYPE_AVATAR = "avatar"
-CMD_IN_DRAIN = "drain"
+DATA_IN_FINALIZE = "finalize"
 
 
 class AsyncAvatarBaseExtension(AsyncExtension, ABC):
@@ -225,7 +225,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         """
         [REQUIRED] Signal end of audio stream.
 
-        Called automatically when drain command is received.
+        Called automatically when finalize data is received.
 
         Example:
             async def send_eof_to_avatar(self) -> None:
@@ -371,13 +371,6 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             await self._handle_flush(ten_env)
             await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
 
-        elif cmd_name == CMD_IN_DRAIN:
-            ten_env.log_info(
-                f"KEYPOINT [on_cmd:{CMD_IN_DRAIN}]",
-                category=LOG_CATEGORY_KEY_POINT,
-            )
-            await self._handle_drain(ten_env)
-
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result)
         ten_env.log_info(f"{self.LOG_PREFIX} on_cmd completed: {cmd_name}")
@@ -386,6 +379,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         """Handle incoming data events."""
         data_name = data.get_name()
         ten_env.log_info(f"{self.LOG_PREFIX} on_data received: {data_name}")
+
+        if data_name == DATA_IN_FINALIZE:
+            ten_env.log_info(
+                f"KEYPOINT [on_data:{DATA_IN_FINALIZE}]",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self._handle_finalize(ten_env)
 
     # ========================================================================
     # AUDIO HANDLING - Managed by base class
@@ -500,8 +500,8 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Error interrupting: {e}")
 
-    async def _handle_drain(self, ten_env: AsyncTenEnv) -> None:
-        """Handle drain command."""
+    async def _handle_finalize(self, ten_env: AsyncTenEnv) -> None:
+        """Handle finalize data."""
         if not self._audio_processing_enabled:
             ten_env.log_info(
                 f"{self.LOG_PREFIX} Audio processing disabled, skipping EOF"

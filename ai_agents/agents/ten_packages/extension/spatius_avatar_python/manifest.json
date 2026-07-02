@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "spatius_avatar_python",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "dependencies": [
     {
       "type": "system",
@@ -99,9 +99,11 @@
     "cmd_in": [
       {
         "name": "flush"
-      },
+      }
+    ],
+    "data_in": [
       {
-        "name": "drain"
+        "name": "finalize"
       }
     ]
   },
