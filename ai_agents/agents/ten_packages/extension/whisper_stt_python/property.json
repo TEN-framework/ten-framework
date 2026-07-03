@@ -1,0 +1,14 @@
+{
+    "dump": false,
+    "dump_path": "/tmp",
+    "finalize_mode": "disconnect",
+    "silence_duration_ms": 1000,
+    "params": {
+        "model": "base",
+        "device": "cpu",
+        "compute_type": "int8",
+        "language": "en",
+        "task": "transcribe",
+        "sample_rate": 16000
+    }
+}

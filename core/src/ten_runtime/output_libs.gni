@@ -1,0 +1,85 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//core/src/ten_utils/output_libs.gni")
+import("//third_party/yyjson/output_libs.gni")
+
+ten_runtime_output_libs = []
+
+if (is_win) {
+  if (is_mingw) {
+    # MinGW uses .dll.a import library
+    ten_runtime_output_libs += [
+      "${root_out_dir}/ten_runtime.dll",
+      "${root_out_dir}/libten_runtime.dll.a",
+    ]
+  } else {
+    ten_runtime_output_libs += [
+      "${root_out_dir}/ten_runtime.dll",
+      "${root_out_dir}/ten_runtime.dll.lib",
+    ]
+  }
+} else if (is_mac) {
+  ten_runtime_output_libs += [ "${root_out_dir}/libten_runtime.dylib" ]
+} else if (is_linux) {
+  ten_runtime_output_libs += [ "${root_out_dir}/libten_runtime.so" ]
+}
+
+if (is_linux) {
+  ten_runtime_python_output_libs =
+      [ "${root_out_dir}/libten_runtime_python.so" ]
+} else if (is_mac) {
+  # According to the explanation in https://bugs.python.org/issue43898, even on
+  # macOS, when Python imports a Python C extension, the file extension must be
+  # `.so` and cannot be `.dylib`.
+  ten_runtime_python_output_libs =
+      [ "${root_out_dir}/libten_runtime_python.so" ]
+} else if (is_win) {
+  if (is_mingw) {
+    # MinGW: output_name="ten_runtime_python" generates:
+    # - .pyd file: ten_runtime_python.pyd (renamed to libten_runtime_python.pyd by copy target)
+    # - import lib: libten_runtime_python.pyd.a (auto "lib" prefix from mingw.gni)
+    # The final files used by the package are:
+    ten_runtime_python_output_libs = [
+      "${root_out_dir}/libten_runtime_python.pyd",
+      "${root_out_dir}/libten_runtime_python.pyd.a",
+    ]
+  } else {
+    ten_runtime_python_output_libs = [
+      "${root_out_dir}/libten_runtime_python.pyd",
+      "${root_out_dir}/libten_runtime_python.pyd.lib",
+    ]
+  }
+}
+
+# Note: ten_runtime_go_output_libs is no longer used since it's
+# a static library now.
+
+if (is_win) {
+  if (is_mingw) {
+    # MinGW: .node extension with lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/libten_runtime_nodejs.node",
+    ]
+  } else if (is_clang) {
+    # clang-cl build: nodejs is compiled under msvc_force toolchain
+    _msvc_toolchain = "//.gnfiles/build/toolchain/msvc_force:msvc_force"
+    _msvc_target_out_dir = get_label_info(
+        "//core/src/ten_runtime/binding/nodejs/native:ten_runtime_nodejs_msvc(${_msvc_toolchain})",
+        "root_out_dir")
+    ten_runtime_nodejs_output_libs = [
+      "${_msvc_target_out_dir}/ten_runtime_nodejs.node",
+    ]
+  } else {
+    # MSVC: .node extension without lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/ten_runtime_nodejs.node",
+    ]
+  }
+} else {
+  ten_runtime_nodejs_output_libs =
+      [ "${root_out_dir}/libten_runtime_nodejs.node" ]
+}

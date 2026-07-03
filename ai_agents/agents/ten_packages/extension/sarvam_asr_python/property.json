@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "${env:SARVAM_ASR_KEY|}",
+    "model": "saarika:v2.5",
+    "language": "hi-IN",
+    "sample_rate": 16000
+  }
+}

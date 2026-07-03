@@ -1,0 +1,45 @@
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  run-tenapp-prod:
+    desc: run tenapp in production
+    dir: ./agents
+    cmds:
+      - tman run start
+
+  run-plivo-server-prod:
+    desc: run Plivo server in production
+    dir: ./server
+    env:
+      PYTHONPATH: "/app:/app/server:{{.PYTHONPATH}}"
+    cmds:
+      - python3 main.py --tenapp-dir /app/agents
+
+  run-frontend-prod:
+    desc: run frontend in production
+    dir: ./frontend
+    cmds:
+      - bun start
+
+  run-ngrok-prod:
+    desc: run ngrok tunnel for WebSocket support
+    dir: ./
+    cmds:
+      - ./start-with-ngrok.sh
+    background: true
+
+  run-prod:
+    desc: run all services in production
+    deps:
+      - task: run-plivo-server-prod
+      - task: run-frontend-prod
+      - task: run-ngrok-prod
+
+  health-check:
+    desc: check if all services are running
+    cmds:
+      - curl -f http://localhost:3000 || echo "Frontend not responding"
+      - curl -f http://localhost:8080/health || echo "Plivo server not responding"
+      - curl -f http://localhost:4040 || echo "Ngrok tunnel not responding"

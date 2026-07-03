@@ -1,0 +1,15 @@
+{
+  "type": "app",
+  "name": "app_2",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "addon_b",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": ["**"]
+  }
+}

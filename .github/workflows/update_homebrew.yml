@@ -1,0 +1,340 @@
+name: Update Homebrew Formula
+
+# This workflow is triggered when tman workflows complete
+# It waits for all platform-specific tman binaries to be uploaded,
+# then automatically updates the Homebrew formula with new version and checksums
+
+on:
+  workflow_run:
+    workflows:
+      - "Tman Mac x64 (Including Designer UI)"
+      - "Tman Mac Arm64 (Including Designer UI)"
+      - "Tman Linux x64 (Including Designer UI)"
+      - "Tman Linux ARM64 (Including Designer UI)"
+    types:
+      - completed
+    # Note: We don't filter by branches here because release events run on tags, not branches
+
+  # Allow manual trigger for testing or emergency updates
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to update (e.g., 0.11.35)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update-formula:
+    # Only run on successful workflow completion or manual trigger
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'release')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug workflow_run event
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          echo "🔍 Debugging workflow_run event:"
+          echo "  Event name: ${{ github.event_name }}"
+          echo "  Workflow name: ${{ github.event.workflow_run.name }}"
+          echo "  Workflow event: ${{ github.event.workflow_run.event }}"
+          echo "  Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "  Head branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "  Head sha: ${{ github.event.workflow_run.head_sha }}"
+          echo ""
+          if [ "${{ github.event.workflow_run.event }}" != "release" ]; then
+            echo "⏭️ This workflow was triggered by '${{ github.event.workflow_run.event }}' event, not 'release'."
+            echo "   Job will be skipped (only release events trigger Homebrew updates)."
+          elif [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "⏭️ Triggering workflow conclusion was '${{ github.event.workflow_run.conclusion }}', not 'success'."
+            echo "   Job will be skipped (only successful workflows trigger Homebrew updates)."
+          else
+            echo "✅ All conditions met. Proceeding with Homebrew update..."
+          fi
+
+      - name: Get version from workflow or input
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # Extract version from the release event
+            # The workflow_run event doesn't directly provide tag info,
+            # so we fetch the latest release
+            VERSION=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version to update: $VERSION"
+
+      - name: Wait and verify all release assets are uploaded
+        id: verify_assets
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const version = process.env.VERSION;
+
+            // Expected files for Homebrew
+            const expectedFiles = [
+              'tman-mac-release-x64.zip',
+              'tman-mac-release-arm64.zip',
+              'tman-linux-release-x64.zip',
+              'tman-linux-release-arm64.zip'
+            ];
+
+            console.log(`🔍 Checking for assets in version: ${version}`);
+            console.log(`📋 Expected files:`, expectedFiles);
+
+            // Try to get the release
+            let release;
+            try {
+              release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: version
+              });
+            } catch (error) {
+              console.error(`❌ Failed to get release for tag ${version}:`, error.message);
+              throw error;
+            }
+
+            // Wait up to 30 minutes for all files (4 platforms can take time)
+            const maxAttempts = 60; // 60 attempts
+            const waitSeconds = 30; // 30 seconds between attempts
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              // Get current assets
+              const currentRelease = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: version
+              });
+
+              const assetNames = currentRelease.data.assets.map(a => a.name);
+              const foundFiles = expectedFiles.filter(f => assetNames.includes(f));
+              const missingFiles = expectedFiles.filter(f => !assetNames.includes(f));
+
+              console.log(`⏳ Attempt ${attempt}/${maxAttempts}:`);
+              console.log(`   ✅ Found (${foundFiles.length}/4):`, foundFiles);
+
+              if (missingFiles.length > 0) {
+                console.log(`   ❌ Missing (${missingFiles.length}/4):`, missingFiles);
+              }
+
+              // Check if all files are present
+              if (foundFiles.length === expectedFiles.length) {
+                console.log('');
+                console.log('🎉 All expected tman release assets are present!');
+                console.log('✅ Ready to update Homebrew formula');
+
+                // Export asset URLs for download
+                const assetUrls = {};
+                for (const file of expectedFiles) {
+                  const asset = currentRelease.data.assets.find(a => a.name === file);
+                  assetUrls[file] = asset.browser_download_url;
+                }
+
+                core.setOutput('all_ready', 'true');
+                core.setOutput('asset_urls', JSON.stringify(assetUrls));
+                return;
+              }
+
+              // Not all files ready, wait and retry
+              if (attempt < maxAttempts) {
+                console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                console.log('');
+                await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+              }
+            }
+
+            // Timeout - not all files uploaded
+            console.log('');
+            console.log('❌ Timeout: Not all tman release assets were uploaded within 30 minutes');
+            console.log('⚠️  Homebrew formula will NOT be updated');
+            core.setFailed('Missing release assets after timeout');
+
+      - name: Download release assets and calculate SHA256
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        id: checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          echo "📥 Downloading release assets..."
+
+          # Download all platform-specific tman binaries
+          curl -L -o tman-mac-x64.zip \
+            "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tman-mac-release-x64.zip"
+
+          curl -L -o tman-mac-arm64.zip \
+            "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tman-mac-release-arm64.zip"
+
+          curl -L -o tman-linux-x64.zip \
+            "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tman-linux-release-x64.zip"
+
+          curl -L -o tman-linux-arm64.zip \
+            "https://github.com/${{ github.repository }}/releases/download/${VERSION}/tman-linux-release-arm64.zip"
+
+          echo ""
+          echo "🔐 Calculating SHA256 checksums..."
+
+          # Calculate SHA256 for each file
+          MAC_X64_SHA=$(sha256sum tman-mac-x64.zip | awk '{print $1}')
+          MAC_ARM64_SHA=$(sha256sum tman-mac-arm64.zip | awk '{print $1}')
+          LINUX_X64_SHA=$(sha256sum tman-linux-x64.zip | awk '{print $1}')
+          LINUX_ARM64_SHA=$(sha256sum tman-linux-arm64.zip | awk '{print $1}')
+
+          # Output checksums for logging
+          echo ""
+          echo "Checksums calculated:"
+          echo "  Mac x64:     $MAC_X64_SHA"
+          echo "  Mac ARM64:   $MAC_ARM64_SHA"
+          echo "  Linux x64:   $LINUX_X64_SHA"
+          echo "  Linux ARM64: $LINUX_ARM64_SHA"
+          echo ""
+
+          # Export for next steps
+          echo "mac_x64_sha=$MAC_X64_SHA" >> $GITHUB_OUTPUT
+          echo "mac_arm64_sha=$MAC_ARM64_SHA" >> $GITHUB_OUTPUT
+          echo "linux_x64_sha=$LINUX_X64_SHA" >> $GITHUB_OUTPUT
+          echo "linux_arm64_sha=$LINUX_ARM64_SHA" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-ten-framework repository
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: TEN-framework/homebrew-ten-framework
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-ten-framework
+
+      - name: Update tman formula from template
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          MAC_X64_SHA="${{ steps.checksums.outputs.mac_x64_sha }}"
+          MAC_ARM64_SHA="${{ steps.checksums.outputs.mac_arm64_sha }}"
+          LINUX_X64_SHA="${{ steps.checksums.outputs.linux_x64_sha }}"
+          LINUX_ARM64_SHA="${{ steps.checksums.outputs.linux_arm64_sha }}"
+
+          cd homebrew-ten-framework/Formula
+
+          echo "📝 Updating tman.rb with version $VERSION"
+
+          # Generate formula from template
+          sed -e "s/__VERSION__/$VERSION/g" \
+              -e "s/__MAC_X64_SHA256__/$MAC_X64_SHA/g" \
+              -e "s/__MAC_ARM64_SHA256__/$MAC_ARM64_SHA/g" \
+              -e "s/__LINUX_X64_SHA256__/$LINUX_X64_SHA/g" \
+              -e "s/__LINUX_ARM64_SHA256__/$LINUX_ARM64_SHA/g" \
+              tman.rb.template > tman.rb
+
+          echo "✅ Formula updated successfully"
+          echo ""
+          echo "📄 Formula content preview:"
+          head -30 tman.rb
+
+      - name: Commit and push changes
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          repository: homebrew-ten-framework
+          branch: main
+          commit_message: |
+            Update tman to ${{ steps.version.outputs.version }}
+
+            Automated update with new checksums
+          file_pattern: "Formula/tman.rb"
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
+          commit_author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          skip_dirty_check: false
+          skip_fetch: false
+
+      - name: Create summary
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 🍺 Homebrew Formula Updated Successfully
+
+          **Version**: ${{ steps.version.outputs.version }}
+
+          ### ✅ Checksums
+
+          | Platform | SHA256 |
+          |----------|--------|
+          | Mac x64 | `${{ steps.checksums.outputs.mac_x64_sha }}` |
+          | Mac ARM64 | `${{ steps.checksums.outputs.mac_arm64_sha }}` |
+          | Linux x64 | `${{ steps.checksums.outputs.linux_x64_sha }}` |
+          | Linux ARM64 | `${{ steps.checksums.outputs.linux_arm64_sha }}` |
+
+          ### 📦 Installation
+
+          Users can now install or upgrade with:
+
+          ```bash
+          brew update
+          brew upgrade tman
+          ```
+
+          Or fresh install:
+
+          ```bash
+          brew tap TEN-framework/ten-framework
+          brew install tman
+          ```
+
+          ### 🔗 Links
+
+          - [Homebrew Tap Repository](https://github.com/TEN-framework/homebrew-ten-framework)
+          - [Release ${{ steps.version.outputs.version }}](https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }})
+          EOF
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_body = `## ⚠️ Homebrew Formula Update Failed
+
+            The automatic Homebrew formula update failed for release \`${{ steps.version.outputs.version }}\`.
+
+            **Workflow**: ${{ github.workflow }}
+            **Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ### Possible Issues:
+
+            1. Not all tman release assets were uploaded within the timeout period
+            2. Network issues downloading release assets
+            3. Permission issues with HOMEBREW_TAP_TOKEN
+            4. Git conflicts in homebrew-ten-framework repository
+
+            ### Manual Update Steps:
+
+            1. Download release assets from: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }}
+            2. Calculate SHA256 checksums
+            3. Update \`Formula/tman.rb\` in homebrew-ten-framework
+            4. Commit and push changes
+
+            See [Homebrew documentation](https://github.com/${{ github.repository }}/tree/main/tools/homebrew) for details.
+
+            cc: @${{ github.actor }}
+            `;
+
+            // You can optionally create an issue for tracking
+            // Uncomment the following lines if you want to auto-create issues
+            /*
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Homebrew formula update failed for ${process.env.VERSION}`,
+              body: issue_body,
+              labels: ['homebrew', 'automation', 'release']
+            });
+            */
+
+            console.log(issue_body);

@@ -1,0 +1,142 @@
+{
+  "type": "extension",
+  "name": "minimax_tts_websocket_python",
+  "version": "0.4.1",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Minimax TTS (WebSocket) Python"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Minimax TTS over WebSocket with voice, model, and audio controls."
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "README.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "tts",
+    "minimax",
+    "websocket"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "group_id": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "voice": {
+              "type": "string"
+            },
+            "lang_code": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "float64"
+            },
+            "pitch": {
+              "type": "float64"
+            },
+            "volume": {
+              "type": "float64"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "audio_format": {
+              "type": "string"
+            },
+            "encoding": {
+              "type": "string"
+            },
+            "instructions": {
+              "type": "string"
+            },
+            "model_id": {
+              "type": "string"
+            },
+            "voice_id": {
+              "type": "string"
+            },
+            "request_timeout_seconds": {
+              "type": "int64"
+            },
+            "optimize_streaming_latency": {
+              "type": "int64"
+            },
+            "stability": {
+              "type": "float64"
+            },
+            "style": {
+              "type": "float64"
+            },
+            "similarity_boost": {
+              "type": "float64"
+            },
+            "speaker_boost": {
+              "type": "bool"
+            }
+          }
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

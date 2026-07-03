@@ -1,0 +1,11 @@
+{
+  "type": "extension",
+  "name": "ext_a",
+  "version": "2.0.0",
+  "dependencies": [],
+  "supports": [
+    {
+      "os": "linux"
+    }
+  ]
+}

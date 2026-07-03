@@ -1,0 +1,238 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "voice_image_kids",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "voice_image_kids",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "openai_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "api_key": "${env:OPENAI_API_KEY}",
+                "model": "whisper-1",
+                "language": "en"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "llm",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "model": "${env:OPENAI_MODEL|gpt-4o-mini}",
+                "max_tokens": 512,
+                "prompt": "You are a friendly AI art assistant for kids! When children describe what they want to draw, help them create amazing doodles.\n\nGuidelines:\n- Keep responses short, fun, and encouraging\n- When they describe an image idea, use the generate_image tool immediately\n- Always request simple hand-drawn doodle line art on white paper\n- Use only two colors: the line color and the white background (no shading, gradients, or fills)\n- Default to black lines unless the child or UI specifies another line color\n- Avoid 3D, animation, realism, or painterly rendering\n- Always say \"drawing\" instead of \"generating\"\n- After drawing, celebrate their creativity!\n- If the image can't be created, gently suggest something similar\n\nExample:\nKid: \"I want a purple dragon!\"\nYou: \"Ooh, a purple dragon! Let me draw that for you!\" [calls generate_image with a simple doodle prompt: purple lines on white paper, two colors only]",
+                "greeting": "Hey doodle buddy! Ready to draw together? Tell me what you want to doodle!",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "openai_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "params": {
+                  "api_key": "${env:OPENAI_API_KEY}",
+                  "model": "tts-1",
+                  "voice": "nova",
+                  "speed": 1.0
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "image_gen_tool",
+              "addon": "openai_gpt_image_python",
+              "extension_group": "tools",
+              "property": {
+                "params": {
+                  "api_key": "${env:OPENAI_API_KEY}",
+                  "model": "dall-e-3",
+                  "size": "1024x1024",
+                  "quality": "standard",
+                  "response_format": "url",
+                  "fallback_model": "dall-e-3"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hey doodle buddy! Ready to draw together? Tell me what you want to doodle!"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "image_gen_tool"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "content_data",
+                  "source": [
+                    {
+                      "extension": "image_gen_tool"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "message_collector",
+              "data": [
+                {
+                  "name": "message",
+                  "source": [
+                    {
+                      "extension": "image_gen_tool"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

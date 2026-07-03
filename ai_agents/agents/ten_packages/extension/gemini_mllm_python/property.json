@@ -1,0 +1,23 @@
+{
+    "api_key": "${env:GEMINI_API_KEY}",
+    "temperature": 0.9,
+    "model": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+    "max_tokens": 2048,
+    "voice": "Puck",
+    "language": "en-US",
+    "server_vad": true,
+    "transcribe_user": true,
+    "transcribe_agent": true,
+    "affective_dialog": false,
+    "proactive_audio": false,
+    "turn_coverage": "all_input",
+    "greeting": "",
+    "input_sample_rate": 16000,
+    "output_sample_rate": 24000,
+    "audio_out": true,
+    "audio_chunk_bytes": 1024,
+    "dump": false,
+    "dump_path": "",
+    "media_resolution": "MEDIA_RESOLUTION_MEDIUM",
+    "prompt": ""
+}

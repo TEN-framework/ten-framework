@@ -1,0 +1,41 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext1",
+              "addon": "ext1",
+              "extension_group": "ext_group"
+            },
+            {
+              "type": "extension",
+              "name": "ext2",
+              "addon": "ext2",
+              "extension_group": "ext_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ext1",
+              "cmd": [
+                {
+                  "name": "hello_world",
+                  "dest": [
+                    {
+                      "extension": "ext2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

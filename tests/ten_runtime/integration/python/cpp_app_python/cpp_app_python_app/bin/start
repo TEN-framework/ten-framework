@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# Note: This is an example explaining how to specify the version of the embedded Python interpreter
+# by setting an environment variable.
+# Find libpython.so using find_libpython.py and set TEN_PYTHON_LIB_PATH
+if [ -x "ten_packages/system/ten_runtime_python/tools/find_libpython.py" ]; then
+  LIBPYTHON_PATH=$(python3 ten_packages/system/ten_runtime_python/tools/find_libpython.py)
+  if [ -n "$LIBPYTHON_PATH" ]; then
+    export TEN_PYTHON_LIB_PATH="$LIBPYTHON_PATH"
+  fi
+fi
+
+./bin/cpp_app_python_app

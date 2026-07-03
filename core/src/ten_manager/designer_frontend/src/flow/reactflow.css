@@ -1,0 +1,112 @@
+/*
+ * Copyright © 2025 Agora
+ * This file is part of TEN Framework, an open source project.
+ * Licensed under the Apache License, Version 2.0, with certain conditions.
+ * Refer to the "LICENSE" file in the root directory for more information.
+ */
+@reference "tailwindcss";
+
+.react-flow__panel.react-flow__attribution {
+  background-color: transparent;
+}
+
+.react-flow {
+  --xy-theme-selected: #f57dbd;
+  --xy-theme-hover: #c5c5c5;
+  --xy-theme-edge-hover: black;
+  --xy-theme-color-focus: #e8e8e8;
+
+  --xy-node-border-default: 1px solid #ededed;
+
+  --xy-node-boxshadow-default:
+    0px 3.54px 4.55px 0px #00000005, 0px 3.54px 4.55px 0px #0000000d,
+    0px 0.51px 1.01px 0px #0000001a;
+
+  --xy-node-border-radius-default: 8px;
+
+  --xy-handle-background-color-default: #ffffff;
+  --xy-handle-border-color-default: #aaaaaa;
+
+  --xy-edge-label-color-default: #505050;
+
+  --xy-node-background-color-default: #ffffff;
+  --xy-node-color-default: #000000;
+}
+
+.dark .react-flow {
+  --xy-theme-selected: #f57dbd;
+  --xy-theme-hover: #4a4a4a;
+  --xy-theme-edge-hover: #ffffff;
+  --xy-theme-color-focus: #3a3a3a;
+
+  --xy-node-border-default: 1px solid #333333;
+  --xy-node-background-color-default: #242424;
+  --xy-node-color-default: #ffffff;
+
+  --xy-handle-background-color-default: #333333;
+  --xy-handle-border-color-default: #666666;
+
+  --xy-edge-label-color-default: #a0a0a0;
+
+  --xy-node-boxshadow-default:
+    0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.05),
+    0px 3.54px 4.55px 0px rgba(255, 255, 255, 0.13),
+    0px 0.51px 1.01px 0px rgba(255, 255, 255, 0.2);
+}
+.react-flow__node-group {
+  background-color: rgba(207, 182, 255, 0.4);
+  border-color: #9e86ed;
+}
+
+/* .react-flow__edge.selectable:hover .react-flow__edge-path,
+.react-flow__edge.selectable.selected .react-flow__edge-path {
+  stroke: var(--xy-theme-edge-hover);
+} */
+
+.react-flow__handle {
+  background-color: var(--xy-handle-background-color-default);
+}
+
+.react-flow__handle.connectionindicator:hover {
+  pointer-events: all;
+  border-color: var(--xy-theme-edge-hover);
+  background-color: var(--xy-handle-background-color-default);
+}
+
+.react-flow__handle.connectionindicator:focus,
+.react-flow__handle.connectingfrom,
+.react-flow__handle.connectingto {
+  border-color: var(--xy-theme-edge-hover);
+}
+
+.react-flow__node-resizer {
+  border-radius: 0;
+  border: none;
+}
+
+.react-flow__resize-control.handle {
+  background-color: #ffffff;
+  border-color: #9e86ed;
+  border-radius: 0;
+  width: 5px;
+  height: 5px;
+}
+
+/* Custom Variables */
+.react-flow {
+  --bg-color: rgb(17, 17, 17);
+  --text-color: rgb(243, 244, 246);
+  /* --node-border-radius: 10px; */
+  --node-box-shadow:
+    10px 0 15px rgba(42, 138, 246, 0.3), -10px 0 15px rgba(233, 42, 103, 0.3);
+  /* background-color: var(--bg-color);
+  color: var(--text-color); */
+}
+
+/* Custom Styles */
+
+@keyframes spinner {
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}

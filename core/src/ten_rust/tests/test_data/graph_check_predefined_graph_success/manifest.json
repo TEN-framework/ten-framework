@@ -1,0 +1,22 @@
+{
+  "type": "app",
+  "name": "check_predefined_graph_success",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "addon_a",
+      "version": "0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "addon_b",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "app",
+  "name": "graph_with_selector",
+  "version": "0.1.0",
+  "dependencies": [],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

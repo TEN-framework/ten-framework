@@ -1,0 +1,74 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "ext_1",
+              "addon": "default_extension_nodejs",
+              "extension_group": "default_extension_group",
+              "property": {
+                "send_cmd_on_start": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "ext_2",
+              "addon": "default_extension_nodejs",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ext_1",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "ext_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

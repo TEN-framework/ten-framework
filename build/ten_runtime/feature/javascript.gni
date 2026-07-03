@@ -1,0 +1,155 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("npm_install") {
+  action(target_name) {
+    script = "//.gnfiles/build/scripts/npm_install.py"
+
+    args = [
+      "--project-dir",
+      rebase_path("//"),
+      "--package-json",
+      rebase_path(invoker.package_json),
+      "--output-dir",
+      rebase_path(invoker.output_dir),
+      "--platform",
+      target_os,
+      "--log-level",
+      "${log_level}",
+    ]
+
+    sources = [ rebase_path(invoker.package_json) ]
+    outputs = [ invoker.output_dir + "/node_modules" ]
+
+    if (defined(invoker.package_lock_json) && invoker.package_lock_json != "") {
+      args += [
+        "--package-lock-json",
+        rebase_path(invoker.package_lock_json),
+      ]
+
+      sources += [ rebase_path(invoker.package_lock_json) ]
+      outputs += [ invoker.output_dir + "/package-lock.json" ]
+    }
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+  }
+}
+
+# Build the TEN library based on Node.js. It first ensures the necessary NPM
+# dependencies are installed, then syncs the source code, modifies the
+# `tsconfig.json`, runs the build scripts, and generates the required
+# `path.json` file.
+template("nodejs_library") {
+  _target_name = target_name
+
+  npm_install("${target_name}_ensure_npm") {
+    package_json = invoker.package_json
+    output_dir = invoker.output_dir
+
+    if (defined(invoker.package_lock_json) && invoker.package_lock_json != "") {
+      package_lock_json = invoker.package_lock_json
+    }
+  }
+
+  action(target_name) {
+    # We use 'npm run build' is because it allows the project to decide which
+    # build method is preferred.
+    script = "//.gnfiles/build/scripts/npm_run_build.py"
+
+    args = [
+      "--project-dir",
+      rebase_path("//"),
+      "--log-level",
+      "${log_level}",
+    ]
+    args += [
+      "--tsconfig-file",
+      rebase_path(invoker.tsconfig),
+    ]
+    args += [
+      "--out-dir",
+      rebase_path(invoker.output_dir),
+    ]
+    if (defined(invoker.references) && invoker.references != []) {
+      args += [
+        "--ref",
+        string_join(",", invoker.references),
+      ]
+    }
+    args += [
+      "--platform",
+      target_os,
+    ]
+    if (defined(invoker.remove_node_modules) &&
+        invoker.remove_node_modules == true) {
+      args += [
+        "--remove-node_modules",
+        "True",
+      ]
+    }
+    if (defined(invoker.remove_tsbuildinfo) &&
+        invoker.remove_tsbuildinfo == true) {
+      args += [
+        "--remove-tsbuildinfo",
+        "True",
+      ]
+    }
+    if (defined(invoker.remove_src) && invoker.remove_src == true) {
+      args += [
+        "--remove-src",
+        "True",
+      ]
+    }
+    if (defined(invoker.library_path) && invoker.library_path != "") {
+      args += [
+        "--library-path",
+        invoker.library_path,
+      ]
+    }
+
+    args += [ "--build-target" ]
+    if (defined(invoker.build_target) && invoker.build_target != "") {
+      args += [ invoker.build_target ]
+    } else {
+      args += [ "build" ]
+    }
+
+    if (defined(invoker.extra_args) && invoker.extra_args != []) {
+      foreach(arg, invoker.extra_args) {
+        args += [
+          "--extra-args",
+          "${arg}",
+        ]
+      }
+    }
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+
+    if (defined(deps)) {
+      deps += [ ":${_target_name}_ensure_npm" ]
+    } else {
+      deps = [ ":${_target_name}_ensure_npm" ]
+    }
+
+    ts_config_outdir_relative_path =
+        exec_script("//.gnfiles/build/scripts/get_tsconfig_outdir.py",
+                    [ rebase_path(invoker.tsconfig) ],
+                    "trim string")
+
+    outputs = [ "${invoker.output_dir}/${ts_config_outdir_relative_path}" ]
+    if (defined(invoker.library_path) && invoker.library_path != "") {
+      outputs += [ "${invoker.output_dir}/path.json" ]
+    }
+  }
+}

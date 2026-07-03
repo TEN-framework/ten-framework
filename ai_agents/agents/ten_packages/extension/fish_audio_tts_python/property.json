@@ -1,0 +1,10 @@
+{
+    "params": {
+        "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+        "reference_id": "59cb5986671546eaa6ca8ae6f29f6d22",
+        "top_p": 0.7,
+        "sample_rate": 16000,
+        "temperature": 0.7,
+        "backend": "speech-1.5"
+    }
+}

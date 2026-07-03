@@ -1,0 +1,71 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext_1",
+              "addon": "addon_1",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "ext_2",
+              "addon": "addon_2",
+              "extension_group": "some_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ext_1",
+              "cmd": [
+                {
+                  "name": "cmd_1",
+                  "dest": [
+                    {
+                      "extension": "ext_2"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data_1",
+                  "dest": [
+                    {
+                      "extension": "ext_2"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "audio_frame_1",
+                  "dest": [
+                    {
+                      "extension": "ext_2"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame_1",
+                  "dest": [
+                    {
+                      "extension": "ext_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

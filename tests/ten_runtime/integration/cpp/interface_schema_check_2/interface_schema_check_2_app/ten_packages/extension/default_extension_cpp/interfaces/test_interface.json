@@ -1,0 +1,21 @@
+{
+  "data_out": [
+    {
+      "name": "text_data",
+      "property": {
+        "properties": {
+          "text": {
+            "type": "int64",
+            "description": {
+              "locales": {
+                "en-US": {
+                  "content": "Test description"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

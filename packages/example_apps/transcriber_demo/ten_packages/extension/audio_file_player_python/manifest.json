@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "audio_file_player_python",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Audio File Player Python Extension"
+      },
+      "zh-CN": {
+        "content": "音频文件播放器 Python 扩展"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Audio file player extension that reads wav/mp3/pcm files, converts to 16kHz PCM and sends audio frames at 10ms intervals"
+      },
+      "zh-CN": {
+        "content": "音频文件播放器扩展，读取 wav/mp3/pcm 文件，转换为 16kHz PCM 并按 10ms 间隔发送音频帧"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "audio",
+    "player"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "api": {
+    "cmd_in": [
+      {
+        "name": "start_play",
+        "property": {
+          "properties": {
+            "file_path": {
+              "type": "string"
+            },
+            "loop_playback": {
+              "type": "bool"
+            }
+          }
+        }
+      },
+      {
+        "name": "stop_play"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ]
+  }
+}

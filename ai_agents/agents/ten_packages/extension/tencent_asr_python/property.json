@@ -1,0 +1,7 @@
+{
+    "params": {
+        "appid": "${env:TENCENT_ASR_APP_ID|}",
+        "secretkey": "${env:TENCENT_ASR_SECRET_KEY|}",
+        "secretid": "${env:TENCENT_ASR_SECRET_ID|}"
+    }
+}

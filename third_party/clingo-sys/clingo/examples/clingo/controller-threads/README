@@ -1,0 +1,8 @@
+This example shows how clingo's asynchronous solving capabilities can be used
+in a client server scenario using the threading module.
+
+To start call:
+    python controller.py
+
+The solver can then be controlled from the command line. An overview of the
+available commands is printed on the screen.

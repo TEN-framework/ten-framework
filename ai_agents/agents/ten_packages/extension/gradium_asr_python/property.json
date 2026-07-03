@@ -1,0 +1,10 @@
+{
+  "params": {
+    "api_key": "${env:GRADIUM_API_KEY|}",
+    "region": "us",
+    "model_name": "default",
+    "input_format": "pcm",
+    "sample_rate": 24000,
+    "language": ""
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "addon_a",
+              "addon": "addon_a",
+              "extension_group": "a"
+            },
+            {
+              "type": "subgraph",
+              "name": "subgraph_1",
+              "graph": {
+                "import_uri": "graphs/test_graph.json"
+              },
+              "property": {
+                "key": "value"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "addon_a",
+              "cmd": [
+                {
+                  "name": "C",
+                  "dest": [
+                    {
+                      "subgraph": "subgraph_1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

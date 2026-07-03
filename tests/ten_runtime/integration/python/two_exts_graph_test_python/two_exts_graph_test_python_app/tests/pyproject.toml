@@ -1,0 +1,25 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+[project]
+name = "two-exts-graph-test-python-tests"
+description = "Two extensions graph test written in Python tests"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "pytest",
+  "ten-runtime-python",
+  "pytest-ten",
+  "typing-extensions",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["."]
+
+[tool.uv.sources]
+ten-runtime-python = { path = "../ten_packages/system/ten_runtime_python", editable = true }
+pytest-ten = { path = "../ten_packages/system/pytest_ten", editable = true }

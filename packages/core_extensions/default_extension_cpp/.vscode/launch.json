@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "standalone test (lldb, launch)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/default_extension_cpp_test",
+      "args": [
+        // "--gtest_filter=*",
+      ],
+      "cwd": "${workspaceFolder}",
+    }
+  ]
+}

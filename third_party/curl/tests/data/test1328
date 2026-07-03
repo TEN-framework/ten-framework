@@ -1,0 +1,70 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+globbing
+--fail
+</keywords>
+</info>
+
+<reply>
+<data>
+HTTP/1.1 404 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 6
+Funny-head: yesyes
+
+-noo-
+</data>
+<data1>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 6
+Connection: close
+Funny-head: yesyes
+
+-yes-
+</data1>
+<datacheck>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Content-Length: 6
+Connection: close
+Funny-head: yesyes
+
+-yes-
+</datacheck>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP GET a globbed range with -f
+ </name>
+ <command>
+-f 'http://%HOSTIP:%HTTPPORT/[%TESTNUMBER0000-%TESTNUMBER0001]' -o %LOGDIR/#1
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER0000 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /%TESTNUMBER0001 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

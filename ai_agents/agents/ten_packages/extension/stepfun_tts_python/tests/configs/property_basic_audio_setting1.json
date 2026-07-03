@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:STEPFUN_TTS_KEY}",
+        "base_url": "wss://api.stepfun.com/v1/realtime/audio",
+        "model": "step-tts-mini",
+        "voice_id": "cixingnansheng",
+        "sample_rate": 16000
+    }
+}

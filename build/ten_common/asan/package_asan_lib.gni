@@ -1,0 +1,60 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("package_asan_lib") {
+  assert(defined(invoker.dest_asan_lib_dir),
+         "dest_asan_lib_dir is not defined.")
+
+  action(target_name) {
+    script = "//build/ten_common/scripts/package_asan_lib.py"
+
+    if (is_mac) {
+      asan_lib_name = "libclang_rt.asan_osx_dynamic.dylib"
+    } else if (is_linux) {
+      asan_lib_name = "libasan.so"
+    } else {
+      assert(false && "Should not happen.")
+    }
+
+    dest_asan_lib_dir = invoker.dest_asan_lib_dir
+    dest_asan_lib_path = "${dest_asan_lib_dir}/${asan_lib_name}"
+    asan_lib_depfile = "${target_gen_dir}/copy_asan_lib_depfile"
+
+    args = [ "--target-arch" ]
+    if (target_cpu == "x64") {
+      args += [ "x64" ]
+    } else if (target_cpu == "x86") {
+      args += [ "x86" ]
+    } else if (target_cpu == "arm64") {
+      args += [ "arm64" ]
+    } else {
+      assert(false && "Need to support more arch.")
+    }
+
+    args += [ "--target-os" ]
+    if (is_mac) {
+      args += [ "mac" ]
+    } else if (is_linux) {
+      if (is_clang) {
+        args += [ "linux_clang" ]
+      } else {
+        args += [ "linux" ]
+      }
+    } else {
+      assert(false && "Need to support more os.")
+    }
+
+    args += [
+      "--asan-lib-dst-loc",
+      rebase_path(dest_asan_lib_path),
+      "--depfile",
+      rebase_path(asan_lib_depfile),
+    ]
+
+    outputs = [ dest_asan_lib_path ]
+    depfile = asan_lib_depfile
+  }
+}

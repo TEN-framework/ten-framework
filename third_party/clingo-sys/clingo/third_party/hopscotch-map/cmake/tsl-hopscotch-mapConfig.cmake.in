@@ -1,0 +1,9 @@
+# This module sets the following variables:
+# * tsl-hopscotch-map_FOUND - true if tsl-hopscotch-map found on the system
+# * tsl-hopscotch-map_INCLUDE_DIRS - the directory containing tsl-hopscotch-map headers
+@PACKAGE_INIT@
+
+if(NOT TARGET tsl::hopscotch_map)
+  include("${CMAKE_CURRENT_LIST_DIR}/tsl-hopscotch-mapTargets.cmake")
+  get_target_property(tsl-hopscotch-map_INCLUDE_DIRS tsl::hopscotch_map INTERFACE_INCLUDE_DIRECTORIES)
+endif()

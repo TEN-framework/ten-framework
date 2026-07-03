@@ -1,0 +1,8 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "sample_rate": 16000,
+        "key": "${env:ELEVENLABS_TTS_KEY}"
+    }
+}

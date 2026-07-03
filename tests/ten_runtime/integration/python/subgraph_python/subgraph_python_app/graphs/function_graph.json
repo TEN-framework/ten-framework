@@ -1,0 +1,107 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "power",
+      "addon": "default_extension_python",
+      "extension_group": "power"
+    },
+    {
+      "type": "extension",
+      "name": "multi",
+      "addon": "default_extension_python",
+      "extension_group": "multi"
+    },
+    {
+      "type": "extension",
+      "name": "substract",
+      "addon": "default_extension_python",
+      "extension_group": "substract"
+    },
+    {
+      "type": "extension",
+      "name": "function_entry",
+      "addon": "default_extension_python",
+      "extension_group": "function_entry"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "function_entry",
+      "data": [
+        {
+          "name": "data",
+          "dest": [
+            {
+              "extension": "power"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "power",
+      "data": [
+        {
+          "name": "data",
+          "dest": [
+            {
+              "extension": "multi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "multi",
+      "data": [
+        {
+          "name": "data",
+          "dest": [
+            {
+              "extension": "substract"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "substract",
+      "data": [
+        {
+          "name": "data",
+          "dest": [
+            {
+              "extension": "function_entry"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exposed_messages": [
+    {
+      "type": "cmd_in",
+      "name": "function_call",
+      "extension": "function_entry"
+    }
+  ],
+  "exposed_properties": [
+    {
+      "name": "base",
+      "extension": "function_entry"
+    },
+    {
+      "name": "power",
+      "extension": "power"
+    },
+    {
+      "name": "multi",
+      "extension": "multi"
+    },
+    {
+      "name": "substract",
+      "extension": "substract"
+    }
+  ]
+}

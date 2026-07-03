@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Minimal configuration for getting started
+language: "en-US"
+reviews:
+  profile: "chill"
+  high_level_summary: true
+  auto_review:
+    enabled: true
+    drafts: false
+  tools:
+    # Backend
+    ruff: # Python
+      enabled: true
+    gitleaks:
+      enabled: true
+  path_filters:
+    # Exclude these paths (prefix with !)
+    - "!core/**"
+    - "!tests/**"
+    - "!tools/**"
+    - "!packages/**"
+    - "!build/**"
+    - "!third_party/**"
+    - "!.devcontainer/**"
+    - "!.github/**"
+    - "!.vscode/**"
+    - "!**.md"
+    - "!ai_agents/docs/**"
+    - "!ai_agents/esp32-client/**"
+    - "!ai_agents/Dockerfile"
+    - "!ai_agents/docker-compose.yml"
+    - "!ai_agents/playground/**"
+    - "!ai_agents/agents/examples/demo/**"

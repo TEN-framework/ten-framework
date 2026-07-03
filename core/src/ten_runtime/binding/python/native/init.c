@@ -1,0 +1,204 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+#include "include_internal/ten_runtime/binding/python/addon/addon.h"
+#include "include_internal/ten_runtime/binding/python/addon/addon_manager.h"
+#include "include_internal/ten_runtime/binding/python/app/app.h"
+#include "include_internal/ten_runtime/binding/python/common/buf.h"
+#include "include_internal/ten_runtime/binding/python/common/error.h"
+#include "include_internal/ten_runtime/binding/python/extension/extension.h"
+#include "include_internal/ten_runtime/binding/python/msg/audio_frame.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd_result.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/start_graph_cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/stop_graph_cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/trigger_life_cycle_cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/data.h"
+#include "include_internal/ten_runtime/binding/python/msg/msg.h"
+#include "include_internal/ten_runtime/binding/python/msg/video_frame.h"
+#include "include_internal/ten_runtime/binding/python/ten_env/ten_env.h"
+#include "include_internal/ten_runtime/binding/python/test/env_tester.h"
+#include "include_internal/ten_runtime/binding/python/test/extension_tester.h"
+
+// Note on memory leaks of Python VM.
+//
+// The Python VM seems to consistently have memory leaks. In the official Python
+// test suite, the ability to detect leaks is even turned off.
+// https://github.com/python/buildmaster-config/blob/main/master/custom/factories.py#L240.
+//
+// Additionally, in Atheris: A Coverage-Guided, Native Python Fuzzer
+// (https://github.com/google/atheris/blob/master/native_extension_fuzzing.md#leak-detection),
+// it is also recommended to disable the leak detection when using Python.
+//
+// Therefore, we can only enable LSan in some simple test cases. Beyond that, we
+// largely need to rely on the TEN's own memory tracking feature to ensure that
+// the TEN itself has no memory leaks. This feature in the TEN can be seen in
+// the TEN Memory Sanitizer.
+
+static PyModuleDef *ten_py_runtime_module(void) {
+  static struct PyMethodDef module_methods[] = {
+      {"_ten_py_addon_manager_register_addon_as_extension",
+       ten_py_addon_manager_register_addon_as_extension, METH_VARARGS,
+       "Register an addon as an extension"},
+
+      {"_ten_py_addon_manager_add_extension_addon",
+       ten_py_addon_manager_add_extension_addon, METH_VARARGS,
+       "Add an addon to the addon manager"},
+
+      {"_ten_py_msg_register_type", ten_py_msg_register_msg_type, METH_VARARGS,
+       "Register the Python Msg class for later tp_alloc use"},
+
+      {"_ten_py_cmd_register_type", ten_py_cmd_register_cmd_type, METH_VARARGS,
+       "Register the Python Cmd class for later tp_alloc use"},
+
+      {"_ten_py_cmd_result_register_type",
+       ten_py_cmd_result_register_cmd_result_type, METH_VARARGS,
+       "Register the Python CmdResult class for later tp_alloc use"},
+
+      {"_ten_py_cmd_start_graph_register_type",
+       ten_py_cmd_start_graph_register_type, METH_VARARGS,
+       "Register the Python StartGraphCmd class for later tp_alloc use"},
+
+      {"_ten_py_cmd_stop_graph_register_type",
+       ten_py_cmd_stop_graph_register_type, METH_VARARGS,
+       "Register the Python StopGraphCmd class for later tp_alloc use"},
+
+      {"_ten_py_cmd_trigger_life_cycle_register_type",
+       ten_py_cmd_trigger_life_cycle_register_type, METH_VARARGS,
+       "Register the Python TriggerLifeCycleCmd class for later tp_alloc use"},
+
+      {"_ten_py_data_register_type", ten_py_data_register_data_type,
+       METH_VARARGS, "Register the Python Data class for later tp_alloc use"},
+
+      {"_ten_py_video_frame_register_type",
+       ten_py_video_frame_register_video_frame_type, METH_VARARGS,
+       "Register the Python VideoFrame class for later tp_alloc use"},
+
+      {"_ten_py_audio_frame_register_type",
+       ten_py_audio_frame_register_audio_frame_type, METH_VARARGS,
+       "Register the Python AudioFrame class for later tp_alloc use"},
+
+      {"_ten_py_ten_env_register_type", ten_py_ten_env_register_ten_env_type,
+       METH_VARARGS, "Register the Python TenEnv class for later tp_alloc use"},
+
+      {"_ten_py_ten_env_tester_register_type",
+       ten_py_ten_env_tester_register_ten_env_tester_type, METH_VARARGS,
+       "Register the Python TenEnvTester class for later tp_alloc use"},
+
+      {"_ten_py_error_register_type", ten_py_error_register_error_type,
+       METH_VARARGS, "Register the Python Error class for later tp_alloc use"},
+
+      {NULL, NULL, 0, NULL}};
+
+  static struct PyModuleDef module_def = {
+      PyModuleDef_HEAD_INIT,
+      "libten_runtime_python",
+      NULL,
+      -1,
+      module_methods,
+      NULL,
+      0,
+      0,
+      0,
+  };
+
+  return &module_def;
+}
+
+PyMODINIT_FUNC PyInit_libten_runtime_python(void) {
+  PyObject *module = PyModule_Create(ten_py_runtime_module());
+  if (!module) {
+    return ten_py_raise_py_system_error_exception(
+        "Failed create ten_runtime_python module.");
+  }
+
+  if (!ten_py_addon_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_app_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_ten_env_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_extension_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_msg_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_result_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_start_graph_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_stop_graph_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_trigger_life_cycle_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_data_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_video_frame_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_audio_frame_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_buf_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_extension_tester_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_ten_env_tester_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_error_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  return module;
+}

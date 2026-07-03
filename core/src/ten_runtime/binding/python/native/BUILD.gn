@@ -1,0 +1,190 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/ten.gni")
+
+config("ten_runtime_python_config") {
+  include_dirs = ten_runtime_common_includes
+
+  python_version = "3"  # "3" by default
+
+  python_cflags_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "cflags",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    python_cflags_args += [ "--is-mingw" ]
+  }
+  python_cflags = exec_script("//build/ten_common/python/python_config.py",
+                              python_cflags_args,
+                              "list lines")
+
+  cflags = []
+
+  # -fPIC are ignored because they are unused for Windows
+  # Ref: https://stackoverflow.com/questions/5674613/compiling-a-dynamically-linked-library
+  #      https://stackoverflow.com/questions/4787069/autoconf-set-fpic-only-when-necessary
+  if (!is_win) {
+    cflags = python_cflags + [ "-fPIC" ]
+  } else if (is_mingw) {
+    # For MinGW (GCC on Windows), python_config.py already generates GCC-style flags
+    cflags = python_cflags
+
+    # Undefine Py_DEBUG to use release Python library even in debug builds
+    # Standard Python installations on Windows only provide release libraries
+    # Also undefine _DEBUG which Python headers use to determine debug mode
+    cflags += [
+      "-UPy_DEBUG",
+      "-U_DEBUG",
+    ]
+  } else {
+    # For clang-cl(MSVC) on Windows, convert /I"path" to /imsvcpath (without space or quotes)
+    # /imsvc treats the path as a system include directory, which helps clang-cl find Python headers
+    foreach(flag, python_cflags) {
+      processed_flag = string_replace(flag, "/I\"", "/imsvc")
+      processed_flag = string_replace(processed_flag, "\"", "")
+      cflags += [ processed_flag ]
+    }
+
+    # Undefine Py_DEBUG to use release Python library even in debug builds
+    # Standard Python installations on Windows only provide release libraries
+    # Also undefine _DEBUG which Python headers use to determine debug mode
+    cflags += [
+      "/UPy_DEBUG",
+      "/U_DEBUG",
+    ]
+  }
+
+  # Note: python_config.py now uses python-config without --embed flag
+  # for building extension modules (not embedding Python interpreter).
+  # This ensures we don't link against libpython, making the extension
+  # compatible with different Python 3.8+ versions.
+  ldflags_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "ldflags",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    ldflags_args += [ "--is-mingw" ]
+  }
+  ldflags = exec_script("//build/ten_common/python/python_config.py",
+                        ldflags_args,
+                        "list lines")
+
+  if (is_mac) {
+    # Must be renamed to python module name.
+    ldflags += [
+      "-install_name",
+      "ten_runtime_python.so",
+    ]
+  }
+
+  # Add rpath to find ten_runtime library.
+  if (is_mac) {
+    ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
+  } else if (is_linux || is_mingw) {
+    # MinGW uses GNU ld and supports rpath
+    ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  } else if (is_win) {
+    # On Windows, prevent MSVC from automatically looking for python3XX_d.lib
+    # Standard Python installations only provide release libraries
+    ldflags += [ "/NODEFAULTLIB:python310_d.lib" ]
+  }
+
+  # Only export "ten" relevant symbols.
+  if (is_mac) {
+    ldflags += [
+      "-Xlinker",
+      "-exported_symbols_list",
+      "-Xlinker",
+      rebase_path("//build/ten_runtime/ld_script/mac_for_python_binding"),
+    ]
+  } else if (is_linux) {
+    ldflags += [ "-Wl,--version-script=" + rebase_path(
+                     "//build/ten_runtime/ld_script/linux_for_python_binding") ]
+  }
+
+  # Note: python_config.py now uses python-config without --embed flag,
+  # so libs won't include libpython for extension modules.
+  libs_args = [
+    "--python-version",
+    python_version,
+    "--target-os",
+    target_os,
+    "--config-type",
+    "libs",
+    "--log-level",
+    "0",
+  ]
+  if (is_mingw) {
+    libs_args += [ "--is-mingw" ]
+  }
+  libs = exec_script("//build/ten_common/python/python_config.py",
+                     libs_args,
+                     "list lines")
+}
+
+ten_shared_library("ten_runtime_python") {
+  configs = [ ":ten_runtime_python_config" ]
+
+  if (is_mac || is_linux) {
+    add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
+    remove_configs = [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
+  }
+
+  sources = [ "init.c" ]
+
+  deps = [
+    "addon",
+    "app",
+    "common",
+    "extension",
+    "msg",
+    "ten_env",
+    "test",
+    "//core/src/ten_runtime:ten_runtime_library",
+  ]
+
+  if (is_mac) {
+    # According to the explanation in https://bugs.python.org/issue43898, even
+    # on macOS, when Python imports a Python C extension, the file extension
+    # must be `.so` and cannot be `.dylib`.
+    output_extension = "so"
+  } else if (is_win) {
+    # On Windows, Python C extensions must be .pyd files.
+    # Python requires the module name: "from libten_runtime_python import ..."
+    # For MinGW: Use output_name="ten_runtime_python" to generate:
+    #   - ten_runtime_python.pyd (will be renamed to libten_runtime_python.pyd)
+    #   - libten_runtime_python.pyd.a (import library with auto "lib" prefix)
+    # For MSVC: Use output_name="libten_runtime_python" directly.
+    if (is_mingw) {
+      output_name = "ten_runtime_python"
+    } else {
+      output_name = "libten_runtime_python"
+    }
+    output_extension = "pyd"
+  }
+}
+
+# For MinGW, rename the .pyd file to include "lib" prefix for Python import
+if (is_win && is_mingw) {
+  copy("ten_runtime_python_rename") {
+    sources = [ "${root_out_dir}/ten_runtime_python.pyd" ]
+    outputs = [ "${root_out_dir}/libten_runtime_python.pyd" ]
+    deps = [ ":ten_runtime_python" ]
+  }
+}

@@ -1,0 +1,43 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/options.gni")
+import("//build/ten_runtime/options.gni")
+import("//build/ten_runtime/ten.gni")
+import("//build/ten_utils/options.gni")
+
+# When you want to get the output of the console in real time, you can use this
+# pool.
+pool("serialized_action_pool") {
+  depth = 1
+}
+
+group("ten_framework_all") {
+  deps = [
+    "//core/src/ten_runtime",
+    "//core/src/ten_runtime/binding",
+    "//packages/core_addon_loaders",
+    "//packages/core_apps",
+    "//packages/core_extensions",
+    "//packages/core_protocols",
+    "//packages/core_systems",
+    "//packages/example_apps",
+    "//packages/example_extensions",
+    "//third_party",
+  ]
+
+  if (ten_enable_ten_rust) {
+    deps += [ "//core/src/ten_rust" ]
+  }
+
+  if (ten_enable_ten_manager) {
+    deps += [ "//core/src/ten_manager" ]
+  }
+
+  if (ten_enable_tests) {
+    deps += [ "//tests" ]
+  }
+}

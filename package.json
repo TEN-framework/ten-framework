@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "lint": "biome check --all --config-path biome.json",
+    "lint:fix": "biome check --write --unsafe --config-path biome.json",
+    "format": "biome format --all --config-path biome.json",
+    "format:write": "biome format --write --config-path biome.json"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.17.1"
+  }
+}

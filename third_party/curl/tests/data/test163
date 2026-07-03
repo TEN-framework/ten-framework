@@ -1,0 +1,82 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP POST
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 10
+
+blablabla
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+Mime
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP multipart formpost with contents from a file
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/we/want/%TESTNUMBER -F "name=<%LOGDIR/field%TESTNUMBER" -F tool=curl
+</command>
+# We create this file before the command is invoked!
+<file name="%LOGDIR/field%TESTNUMBER">
+contents
+from
+a
+file
+
+newlinens?
+yes please
+        
+[tab][CR] too
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<strip>
+^(Content-Type: multipart/form-data;|------------).*
+</strip>
+<protocol>
+POST /we/want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 304
+Content-Type: multipart/form-data; boundary=----------------------------c2d1767eb6ac
+
+------------------------------c2d1767eb6ac
+Content-Disposition: form-data; name="name"
+
+contents
+from
+a
+file
+
+newlinens?
+yes please
+        
+[tab][CR] too
+
+------------------------------c2d1767eb6ac
+Content-Disposition: form-data; name="tool"
+
+curl
+------------------------------c2d1767eb6ac--
+</protocol>
+</verify>
+</testcase>

@@ -1,0 +1,65 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "default",
+              "addon": "default_extension_go",
+              "extension_group": "default"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "default"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

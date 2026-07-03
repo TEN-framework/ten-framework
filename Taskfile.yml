@@ -1,0 +1,39 @@
+version: "3"
+
+includes:
+  ai_agents:
+    taskfile: ai_agents/Taskfile.yml
+    dir: ai_agents
+
+vars:
+  OS: "linux"
+  ARCH: "x64"
+  BUILD_TYPE: "debug"
+
+tasks:
+  gen-tman:
+    desc: generate tman for local development
+    vars:
+      GEN_EXTRA_ARGS: "log_level=1 ten_enable_ten_rust=true ten_enable_ten_manager=true ten_enable_tests_cleanup=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false"
+    cmds:
+      - tgn gen {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} -- {{ .GEN_EXTRA_ARGS }} {{ .CLI_ARGS }}
+
+  build-tman:
+    desc: build tman only
+    cmds:
+      - tgn build:"ten_manager_package tests/ten_manager" {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} {{ .CLI_ARGS }}
+
+  gen:
+    desc: gen
+    cmds:
+      - tgn gen {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} {{ .CLI_ARGS }}
+
+  build:
+    desc: build
+    cmds:
+      - tgn build {{ .OS }} {{ .ARCH }} {{ .BUILD_TYPE }} {{ .CLI_ARGS }}
+
+  clean:
+    desc: clean build
+    cmds:
+      - rm -rf out

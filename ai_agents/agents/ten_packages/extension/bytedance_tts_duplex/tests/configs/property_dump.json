@@ -1,0 +1,8 @@
+{
+    "dump": true,
+    "dump_path": "./tests/dump_output/",
+    "params": {
+        "app_id": "${env:BYTEDANCE_TTS_APPID}",
+        "token": "${env:BYTEDANCE_TTS_TOKEN}"
+    }
+}

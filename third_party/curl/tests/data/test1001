@@ -1,0 +1,105 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP PUT
+HTTP proxy
+HTTP Digest auth
+Resume
+Content-Range
+CUSTOMREQUEST
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 100 Continue
+Server: Microsoft-IIS/5.0
+Date: Sun, 03 Apr 2005 14:57:45 GMT
+X-Powered-By: ASP.NET
+
+HTTP/1.1 401 authentication please swsbounce
+Server: Microsoft-IIS/6.0
+WWW-Authenticate: Digest realm="testrealm", nonce="1053604144"
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 0
+
+</data>
+<data1000>
+HTTP/1.1 200 A OK
+Server: Microsoft-IIS/6.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 3
+
+ok
+</data1000>
+
+<datacheck>
+HTTP/1.1 100 Continue
+Server: Microsoft-IIS/5.0
+Date: Sun, 03 Apr 2005 14:57:45 GMT
+X-Powered-By: ASP.NET
+
+HTTP/1.1 401 authentication please swsbounce
+Server: Microsoft-IIS/6.0
+WWW-Authenticate: Digest realm="testrealm", nonce="1053604144"
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 0
+
+HTTP/1.1 200 A OK
+Server: Microsoft-IIS/6.0
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 3
+
+ok
+</datacheck>
+
+</reply>
+
+# Client-side
+<client>
+#
+<server>
+http
+</server>
+<features>
+!SSPI
+crypto
+proxy
+</features>
+ <name>
+HTTP POST --digest with PUT and resumed upload and modified method
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER -u auser:apasswd --digest -T %LOGDIR/%TESTNUMBER -x  http://%HOSTIP:%HTTPPORT -C 2 -X GET
+</command>
+<file name="%LOGDIR/%TESTNUMBER">
+test
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://%HOSTIP:%HTTPPORT/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+Content-Range: bytes 2-4/5
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+Content-Length: 0
+
+GET http://%HOSTIP:%HTTPPORT/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+Authorization: Digest username="auser", realm="testrealm", nonce="1053604144", uri="/%TESTNUMBER", response="6af4d89c952f4dd4cc215a6878dc499d"
+Content-Range: bytes 2-4/5
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+Content-Length: 3
+
+st
+</protocol>
+</verify>
+</testcase>

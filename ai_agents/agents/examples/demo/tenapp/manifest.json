@@ -1,0 +1,64 @@
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "path": "../../../ten_packages/extension/azure_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/azure_mllm_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/azure_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/coze_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/dify_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/gemini_mllm_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/message_collector2"
+    },
+    {
+      "path": "../../../ten_packages/extension/oceanbase_powerrag_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/openai_mllm_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "path": "../../../ten_packages/extension/weatherapi_tool_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/minimax_tts_websocket_python"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "app",
+  "name": "graph_add_connection_for_selector",
+  "version": "0.1.0",
+  "dependencies": [],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

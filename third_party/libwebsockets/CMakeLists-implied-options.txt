@@ -1,0 +1,423 @@
+#
+# libwebsockets - small server side websockets and web server implementation
+#
+# Copyright (C) 2010 - 2020 Andy Green <andy@warmcat.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#
+# This part of the CMakeLists.txt defines internal logic between options
+
+if(IOS)
+    set(LWS_DETECTED_PLAT_IOS 1)
+endif()
+
+# Workaround for ESP-IDF
+# Detect ESP_PLATFORM environment flag, if exist, set LWS_WITH_ESP32.
+# Otherwise the user may not be able to run configuration ESP-IDF in the first time.
+if (ESP_PLATFORM)
+	message(STATUS "ESP-IDF enabled")
+	set(LWS_WITH_ESP32 ON)
+	set(LWS_WITH_ZLIB OFF)
+	set(LWS_HAVE_mbedtls_ssl_get_alpn_protocol 1)
+else()
+	set(LWS_WITH_ESP32_HELPER OFF)
+endif()
+
+if (LWS_WITH_ESP32)
+	set(LWS_PLAT_FREERTOS 1)
+endif()
+
+if (LWS_PLAT_OPTEE)
+	set(LWS_WITH_UDP 0)
+endif()
+
+if (LWS_PLAT_FREERTOS OR (${CMAKE_SYSTEM_NAME} MATCHES "QNX"))
+	message(STATUS "No LWS_WITH_DIR or LWS_WITH_LEJP_CONF")
+	set(LWS_WITH_DIR OFF)
+	set(LWS_WITH_LEJP_CONF OFF)
+	message("LWS_WITH_DIR ${LWS_WITH_DIR}")
+else()
+	message(STATUS "Compiled with LWS_WITH_DIR and LWS_WITH_LEJP_CONF")
+	set(LWS_WITH_DIR ON)
+	set(LWS_WITH_LEJP_CONF ON)
+endif()
+
+if (LWS_FOR_GITOHASHI)
+	set(LWS_WITH_THREADPOOL 1)
+	set(LWS_WITH_HTTP2 1)
+	set(LWS_UNIX_SOCK 1)
+	set(LWS_WITH_HTTP_PROXY 1)
+	set(LWS_WITH_FTS 1)
+	set(LWS_WITH_DISKCACHE 1)
+	set(LWS_WITH_LWSAC 1)
+	set(LWS_WITH_LEJP_CONF 1)
+	set(LWS_WITH_SPAWN 1)
+	set(LWS_WITH_FSMOUNT 1)
+	set(LWS_WITH_STRUCT_JSON 1)
+	set(LWS_WITH_STRUCT_SQLITE3 1)
+endif()
+
+if(LWS_WITH_DISTRO_RECOMMENDED)
+	set(LWS_WITH_HTTP2 1)				# selfcontained
+	set(LWS_WITH_LWSWS 1)				# libuv
+	set(LWS_WITH_CGI 1)				# selfcontained
+	set(LWS_WITH_HTTP_STREAM_COMPRESSION 1)		# libz and brotli if avail
+	set(LWS_IPV6 1)					# selfcontained
+	set(LWS_WITH_ZIP_FOPS 1)			# libz
+	set(LWS_WITH_SOCKS5 1)				# selfcontained
+	set(LWS_WITH_RANGES 1)				# selfcontained
+	set(LWS_WITH_ACME 1)				# selfcontained / tls
+	set(LWS_WITH_SYS_METRICS 1)			# selfcontained
+	set(LWS_WITH_GLIB 1)				# glib
+	set(LWS_WITH_LIBUV 1)				# libuv
+	set(LWS_WITH_LIBEV 1)				# libev
+	set(LWS_WITH_LIBEVENT 1)			# libevent
+	set(LWS_WITH_EVLIB_PLUGINS 1)			# event libraries created as plugins / individual packages
+	set(LWS_WITHOUT_EXTENSIONS 0)			# libz
+	set(LWS_ROLE_DBUS 1)				# dbus-related libs
+	set(LWS_WITH_FTS 1)				# selfcontained
+	set(LWS_WITH_THREADPOOL 1)			# pthreads
+	set(LWS_UNIX_SOCK 1)				# selfcontained
+	set(LWS_WITH_HTTP_PROXY 1)			# selfcontained
+	set(LWS_WITH_DISKCACHE 1)			# selfcontained
+	set(LWS_WITH_LWSAC 1)				# selfcontained
+	set(LWS_WITH_LEJP_CONF 1)			# selfcontained
+	set(LWS_WITH_PLUGINS_BUILTIN 1)			# selfcontained
+	set(LWS_ROLE_RAW_PROXY 1)			# selfcontained
+	set(LWS_WITH_GENCRYPTO 1)			# selfcontained / tls
+	set(LWS_WITH_CBOR 1)				# selfcontained
+	set(LWS_WITH_COSE 1)				# selfcontained
+	set(LWS_WITH_JOSE 1)				# selfcontained
+	set(LWS_WITH_STRUCT_JSON 1)			# selfcontained
+	set(LWS_WITH_STRUCT_SQLITE3 1)			# sqlite3
+	set(LWS_WITH_SPAWN 1)				# selfcontained
+# libmount is problematic on Centos 8 / RHEL 8
+#	set(LWS_WITH_FSMOUNT 1)
+	set(LWS_ROLE_MQTT 1)				# selfcontained
+	set(LWS_WITH_SECURE_STREAMS 1)			# selfcontained
+	set(LWS_WITH_SECURE_STREAMS_PROXY_API 1)	# selfcontained
+	set(LWS_WITH_DIR 1)				# selfcontained
+endif()
+
+# LWS_WITH_EVENT_LIBS is set if any event lib selected
+
+if (LWS_WITH_LIBEV OR
+    LWS_WITH_LIBUV OR
+    LWS_WITH_LIBEVENT OR
+    LWS_WITH_GLIB OR
+    LWS_WITH_SDEVENT OR
+    LWS_WITH_ULOOP)
+	set(LWS_WITH_EVENT_LIBS 1)
+else()
+	unset(LWS_WITH_EVENT_LIBS)
+endif()
+
+if (LWS_WITH_SECURE_STREAMS_PROXY_API)
+	set(LWS_WITH_LWS_DSH 1)
+	set(LWS_WITH_UNIX_SOCK 1)
+	set(LWS_WITH_SYS_SMD 1)
+endif()
+
+if (NOT LWS_WITH_NETWORK)
+	set(LWS_ROLE_MQTT 0)
+	set(LWS_ROLE_H1 0)
+	set(LWS_ROLE_WS 0)
+	set(LWS_ROLE_RAW 0)
+	set(LWS_WITHOUT_EXTENSIONS 1)
+	set(LWS_WITHOUT_SERVER 1)
+	set(LWS_WITHOUT_CLIENT 1)
+	set(LWS_WITH_HTTP2 0)
+	set(LWS_WITH_SOCKS5 0)
+	set(LWS_UNIX_SOCK 0)
+	set(LWS_WITH_HTTP_PROXY 0)
+	set(LWS_WITH_PLUGINS 0)
+	set(LWS_WITH_LWSWS 0)
+	set(LWS_WITH_CGI 0)
+	set(LWS_ROLE_RAW_PROXY 0)
+	set(LWS_WITH_PEER_LIMITS 0)
+	set(LWS_WITH_HTTP_STREAM_COMPRESSION 0)
+	set(LWS_WITH_HTTP_BROTLI 0)
+	set(LWS_WITH_POLL 0)
+	set(LWS_WITH_SEQUENCER 0)
+	set(LWS_ROLE_DBUS 0)
+	set(LWS_WITH_LWS_DSH 0)
+	set(LWS_WITH_THREADPOOL 0)
+	set(LWS_WITH_SYS_SMD 0)
+endif()
+
+if (LWS_WITH_CGI)
+	set(LWS_WITH_SPAWN 1)
+endif()
+
+if (LWS_WITH_STRUCT_SQLITE3)
+	set(LWS_WITH_SQLITE3 1)
+endif()
+
+if (LWS_WITH_HTTP_BASIC_AUTH)
+	# WWW_AUTHENTICATE used by basic auth is an "uncommon header"
+	set(LWS_WITH_HTTP_UNCOMMON_HEADERS 1)
+endif()
+
+if (LWS_WITH_SECURE_STREAMS_AUTH_SIGV4)
+	set(LWS_WITH_GENCRYPTO 1)
+endif()
+
+if (APPLE)
+	set(LWS_ROLE_DBUS 0)
+endif()
+
+if(NOT DEFINED CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+endif()
+
+if (LWS_PLAT_FREERTOS)
+	set(LWS_UNIX_SOCK 0)
+endif()
+
+if (LWS_PLAT_FREERTOS)
+	set(LWS_WITH_FTS 0)
+endif()
+
+if (LWS_WITH_HTTP2)
+	set(LWS_ROLE_H2 1)
+endif()
+if (LWS_WITH_CGI)
+	set(LWS_ROLE_CGI 1)
+endif()
+
+if (NOT LWS_ROLE_WS)
+	set(LWS_WITHOUT_EXTENSIONS 1)
+endif()
+
+unset(LWS_WITH_LIBUV_INTERNAL)
+
+if (LWS_WITH_LWSWS)
+ message(STATUS "LWS_WITH_LWSWS --> Enabling LWS_WITH_PLUGINS and LWS_WITH_LIBUV")
+ set(LWS_WITH_PLUGINS 1)
+ set(LWS_WITH_LIBUV 1)
+ set(LWS_WITH_LIBUV_INTERNAL 1)
+ set(LWS_WITH_EVENT_LIBS 1) # implied by LIBUV_INTERNAL
+ set(LWS_WITH_ACCESS_LOG 1)
+ set(LWS_WITH_SYS_METRICS 1)
+ set(LWS_WITH_LEJP 1)
+ set(LWS_WITH_LEJP_CONF 1)
+ set(LWS_WITH_PEER_LIMITS 1)
+ set(LWS_ROLE_RAW_PROXY 1)
+endif()
+
+# sshd plugin
+if (LWS_WITH_PLUGINS)
+ set(LWS_WITH_GENCRYPTO 1)
+endif()
+
+if (LWS_ROLE_RAW_PROXY)
+ set (LWS_WITH_CLIENT 1)
+ set (LWS_WITH_SERVER 1)
+endif()
+
+if (LWS_WITH_ACME)
+ set (LWS_WITH_CLIENT 1)
+ set (LWS_WITH_SERVER 1)
+ set (LWS_WITH_JOSE 1)
+endif()
+
+if (LWS_WITH_JOSE)
+ set(LWS_WITH_LEJP 1)
+ set(LWS_WITH_GENCRYPTO 1)
+endif()
+
+if (LWS_WITH_PLUGINS AND NOT LWS_WITH_LIBUV)
+message(STATUS "LWS_WITH_PLUGINS --> Enabling LWS_WITH_LIBUV")
+ set(LWS_WITH_LIBUV 1)
+ set(LWS_WITH_EVENT_LIBS 1)
+endif()
+
+if (LWS_WITH_PLUGINS OR LWS_WITH_CGI)
+	# sshd plugin
+ set(LWS_WITH_GENCRYPTO 1)
+endif()
+
+if (LWS_PLAT_FREERTOS)
+ set(LWS_WITH_SHARED OFF)
+ if (LWS_WITH_SSL)
+  set(LWS_WITH_MBEDTLS ON)
+ endif()
+  # set(LWS_WITHOUT_CLIENT ON)
+ set(LWS_WITHOUT_TESTAPPS ON)
+ set(LWS_WITHOUT_EXTENSIONS ON)
+ set(LWS_WITH_PLUGINS OFF)
+ set(LWS_WITH_RANGES ON)
+ # this implies no pthreads in the lib
+ set(LWS_MAX_SMP 1)
+ set(LWS_HAVE_MALLOC 1)
+ set(LWS_HAVE_REALLOC 1)
+ set(LWS_HAVE_GETIFADDRS 1)
+ set(LWS_WITH_CUSTOM_HEADERS 0)
+endif()
+
+#if (LWS_WITH_ESP32)
+# set(LWS_WITH_ZIP_FOPS 1)
+#endif()
+
+if (WIN32)
+#set(LWS_MAX_SMP 1)
+if (LWS_WITH_PLUGINS)
+set(LWS_WITH_LIBUV_INTERNAL 1)
+endif()
+endif()
+
+if (LWS_WITHOUT_SERVER)
+set(LWS_WITH_LWSWS OFF)
+endif()
+
+if (LWS_WITH_LEJP_CONF)
+	set(LWS_WITH_DIR 1)
+endif()
+
+# confirm H1 relationships
+
+if (NOT LWS_ROLE_H1 AND LWS_ROLE_H2)
+	message(FATAL_ERROR "H2 requires LWS_ROLE_H1")
+endif()
+
+if (NOT LWS_ROLE_H1 AND LWS_ROLE_WS)
+	message(FATAL_ERROR "WS requires LWS_ROLE_H1")
+endif()
+
+if (NOT LWS_ROLE_H1 AND LWS_ROLE_CGI)
+	message(FATAL_ERROR "CGI requires LWS_ROLE_H1")
+endif()
+
+# confirm HTTP relationships
+
+if (NOT LWS_ROLE_H1 AND NOT LWS_ROLE_H2 AND LWS_WITH_HTTP_PROXY)
+	message(FATAL_ERROR "LWS_WITH_LWSWS requires LWS_ROLE_H1")
+endif()
+
+if (NOT LWS_ROLE_H1 AND NOT LWS_ROLE_H2 AND LWS_WITH_HTTP_PROXY)
+	message(FATAL_ERROR "LWS_WITH_HTTP_PROXY requires LWS_ROLE_H1")
+endif()
+
+if (NOT LWS_ROLE_H1 AND NOT LWS_ROLE_H2 AND LWS_WITH_RANGES)
+	message(FATAL_ERROR "LWS_WITH_RANGES requires LWS_ROLE_H1")
+endif()
+
+if (NOT LWS_ROLE_H1 AND NOT LWS_ROLE_H2 AND LWS_WITH_ACCESS_LOG)
+	message(FATAL_ERROR "LWS_WITH_ACCESS_LOG requires LWS_ROLE_H1")
+endif()
+
+if (LWS_WITH_HTTP_PROXY AND (LWS_WITHOUT_CLIENT OR LWS_WITHOUT_SERVER))
+	message("You have to enable both client and server for http proxy")
+	set(LWS_WITH_HTTP_PROXY 0)
+endif()
+
+if (NOT LWS_WITHOUT_EXTENSIONS OR LWS_WITH_ZIP_FOPS)
+	set(LWS_WITH_ZLIB 1)
+endif()
+
+if (LWS_WITH_SECURE_STREAMS)
+	set(LWS_WITH_SECURE_STREAMS_SYS_AUTH_API_AMAZON_COM 1)
+endif()
+
+if (NOT (LWS_WITH_STATIC OR LWS_WITH_SHARED))
+	message(FATAL_ERROR "Makes no sense to compile with neither static nor shared libraries.")
+endif()
+
+if (LWS_WITHOUT_DAEMONIZE OR WIN32)
+	set(LWS_NO_DAEMONIZE 1)
+endif()
+
+if (LWS_IPV6)
+	set(LWS_WITH_IPV6 1)
+endif()
+
+if (LWS_UNIX_SOCK)
+    set(LWS_WITH_UNIX_SOCK 1)
+endif()
+
+if (NOT LWS_MAX_SMP)
+	set(LWS_MAX_SMP 1)
+endif()
+if ("${LWS_MAX_SMP}" STREQUAL "")
+	set(LWS_MAX_SMP 1)
+endif()
+
+set(LWS_WITH_CLIENT 1)
+if (LWS_WITHOUT_CLIENT)
+	set(LWS_WITH_CLIENT)
+	set(LWS_WITH_SECURE_STREAMS 0)
+endif()
+set(LWS_WITH_SERVER 1)
+if (LWS_WITHOUT_SERVER)
+	set(LWS_WITH_SERVER)
+endif()
+
+# using any abstract protocol enables LWS_WITH_ABSTRACT
+
+#if (LWS_WITH_SMTP)
+#	set(LWS_WITH_ABSTRACT 1)
+#endif()
+
+if (NOT LWS_WITH_EVLIB_PLUGINS AND (LWS_WITH_LIBEV AND LWS_WITH_LIBEVENT))
+	message(FATAL_ERROR "Sorry libev and libevent conflict with each others' namespace, you can only have one or the other")
+endif()
+
+if (LWS_SSL_SERVER_WITH_ECDH_CERT)
+	set(LWS_SSL_SERVER_WITH_ECDH_CERT 1)
+endif()
+
+# LWS_OPENSSL_SUPPORT deprecated... use LWS_WITH_TLS
+if (LWS_WITH_SSL OR LWS_WITH_MBEDTLS)
+	set(LWS_OPENSSL_SUPPORT 1)
+	set(LWS_WITH_TLS 1)
+endif()
+
+if (NOT LWS_WITH_SSL)
+	set(LWS_WITHOUT_BUILTIN_SHA1 OFF)
+endif()
+# protocol plugins dont make any sense either
+if (LWS_WITH_PLUGINS AND NOT LWS_WITH_SHARED)
+	message("Deselecting PLUGINS since building static")
+	set(LWS_WITH_PLUGINS 0)
+endif()
+
+if (LWS_WITH_TLS_SESSIONS)
+	if (NOT LWS_WITH_NETWORK OR NOT LWS_WITH_CLIENT)
+		message("TLS_SESSIONS support requires client, disabling")
+		set(LWS_WITH_TLS_SESSIONS OFF)
+	endif()
+endif()
+
+# if we're only building static, we don't want event lib plugins
+#
+if (LWS_WITH_EVLIB_PLUGINS AND NOT LWS_WITH_SHARED)
+	message("Deselecting EVLIB_PLUGINS since building static")
+	set(LWS_WITH_EVLIB_PLUGINS 0)
+endif()
+
+if (LWS_WITH_PLUGINS OR (LWS_WITH_EVLIB_PLUGINS AND LWS_WITH_EVENT_LIBS))
+	set(LWS_WITH_PLUGINS_API 1)
+endif()
+
+if (WIN32 AND NOT LWS_EXT_PTHREAD_LIBRARIES)
+        set(LWS_MAX_SMP 1)
+        message("SMD requires pthreads")
+        set(LWS_WITH_SYS_SMD 0)
+endif()
+

@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:OPENAI_TTS_KEY}",
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+        "instructions": "",
+        "speed": 1.0
+    }
+}

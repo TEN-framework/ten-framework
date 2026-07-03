@@ -1,0 +1,36 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "some_extension",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "some_extension",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "some_extension",
+                      "app": "localhost"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

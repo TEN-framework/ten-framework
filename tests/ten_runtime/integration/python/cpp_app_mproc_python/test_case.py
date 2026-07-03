@@ -1,0 +1,157 @@
+"""
+Test cpp_app_mproc_python.
+"""
+
+import subprocess
+import os
+import sys
+from sys import stdout
+from .utils import http, build_config, build_pkg, fs_utils
+
+
+def http_request():
+    return http.post(
+        "http://127.0.0.1:8002/",
+        {
+            "ten": {
+                "name": "test",
+            },
+        },
+    )
+
+
+def test_cpp_app_mproc_python():
+    """Test client and app server."""
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.join(base_path, "../../../../../")
+
+    my_env = os.environ.copy()
+
+    # Set the required environment variables for the test.
+    my_env["PYTHONMALLOC"] = "malloc"
+    my_env["PYTHONDEVMODE"] = "1"
+
+    app_dir_name = "cpp_app_mproc_python_app"
+    app_root_path = os.path.join(base_path, "cpp_app_mproc_python_app")
+    app_language = "cpp"
+
+    build_config_args = build_config.parse_build_config(
+        os.path.join(root_dir, "tgn_args.txt"),
+    )
+
+    # Before starting, cleanup the old app package.
+    fs_utils.remove_tree(app_root_path)
+
+    print(f'Assembling and building package "{app_dir_name}".')
+
+    rc = build_pkg.prepare_and_build_app(
+        build_config_args,
+        root_dir,
+        base_path,
+        app_dir_name,
+        app_language,
+    )
+    if rc != 0:
+        assert False, "Failed to build package."
+
+    # Step 1: Bootstrap Python dependencies (update pyproject.toml and sync)
+    print("Bootstrapping Python dependencies...")
+    rc = build_pkg.bootstrap_python_dependencies(
+        app_root_path, my_env, log_level=1
+    )
+    if rc != 0:
+        assert False, "Failed to bootstrap Python dependencies."
+
+    # Step 2: Activate virtual environment for Go/C++ app
+    # Go/C++ app needs to find Python packages in the uv-managed venv
+    venv_path = os.path.join(app_root_path, ".venv")
+    if os.path.exists(venv_path):
+        my_env["VIRTUAL_ENV"] = venv_path
+        if sys.platform == "win32":
+            venv_bin_dir = os.path.join(venv_path, "Scripts")
+
+            # Add site-packages to PYTHONPATH so embedded Python can find dependencies
+            site_packages = os.path.join(venv_path, "Lib", "site-packages")
+            if os.path.exists(site_packages):
+                my_env["PYTHONPATH"] = (
+                    site_packages + os.pathsep + my_env.get("PYTHONPATH", "")
+                )
+        else:
+            venv_bin_dir = os.path.join(venv_path, "bin")
+        my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
+        print(f"Activated virtual environment at {venv_path}")
+
+    # Step 3: Setup AddressSanitizer if needed
+    if sys.platform == "linux":
+        if (
+            build_config_args.enable_sanitizer
+            and not build_config_args.is_clang
+        ):
+            libasan_path = os.path.join(
+                base_path,
+                (
+                    "cpp_app_mproc_python_app/ten_packages/system/"
+                    "ten_runtime/lib/libasan.so"
+                ),
+            )
+
+            if os.path.exists(libasan_path):
+                print("Using AddressSanitizer library.")
+                my_env["LD_PRELOAD"] = libasan_path
+
+    if sys.platform == "win32":
+        start_script = os.path.join(app_root_path, "bin", "start.py")
+
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
+
+        server_cmd = [sys.executable, start_script]
+    else:
+        server_cmd = os.path.join(app_root_path, "bin/start")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
+
+    server = subprocess.Popen(
+        server_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=app_root_path,
+    )
+
+    is_started = http.is_app_started("127.0.0.1", 8002, 30)
+    if not is_started:
+        print("The cpp_app_mproc_python is not started after 30 seconds.")
+
+        server.kill()
+        exit_code = server.wait()
+        print("The exit code of cpp_app_mproc_python: ", exit_code)
+
+        assert exit_code == 0
+        assert False
+
+        return
+
+    try:
+        resp = http_request()
+        assert resp != 500
+        print(resp)
+
+    finally:
+        is_stopped = http.stop_app("127.0.0.1", 8002, 30)
+        if not is_stopped:
+            print("The cpp_app_mproc_python can not stop after 30 seconds.")
+            server.kill()
+
+        exit_code = server.wait()
+        print("The exit code of cpp_app_mproc_python: ", exit_code)
+
+        assert exit_code == 0
+
+        if build_config_args.ten_enable_tests_cleanup is True:
+            # Testing complete. If builds are only created during the testing
+            # phase, we can clear the build results to save disk space.
+            fs_utils.remove_tree(app_root_path)

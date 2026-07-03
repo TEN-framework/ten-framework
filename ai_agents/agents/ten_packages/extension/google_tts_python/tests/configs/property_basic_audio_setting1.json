@@ -1,0 +1,10 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "credentials": "${env:GOOGLE_TTS_CREDENTIALS}",
+        "AudioConfig": {
+            "sample_rate_hertz": 16000
+        }
+    }
+}

@@ -1,0 +1,104 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+#include "include_internal/ten_runtime/addon/addon_host.h"
+#include "include_internal/ten_runtime/app/app.h"
+#include "include_internal/ten_runtime/binding/python/common/error.h"
+#include "include_internal/ten_runtime/binding/python/extension/extension.h"
+#include "include_internal/ten_runtime/binding/python/ten_env/ten_env.h"
+#include "object.h"
+#include "ten_runtime/app/app.h"
+#include "ten_runtime/ten_env/internal/on_xxx_done.h"
+#include "ten_utils/macro/mark.h"
+#include "ten_utils/macro/memory.h"
+
+typedef struct ten_py_ten_env_on_create_instance_done_ctx_t {
+  ten_addon_host_t *addon_host;
+  void *instance;
+  void *context;
+} ten_py_ten_env_on_create_instance_done_ctx_t;
+
+static void ten_app_addon_host_on_create_instance_done(void *from, void *args) {
+  ten_app_t *app = (ten_app_t *)from;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
+
+  ten_py_ten_env_on_create_instance_done_ctx_t *ctx =
+      (ten_py_ten_env_on_create_instance_done_ctx_t *)args;
+  TEN_ASSERT(ctx, "Should not happen.");
+
+  ten_addon_host_t *addon_host = ctx->addon_host;
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, true),
+             "Should not happen.");
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool rc = ten_env_on_create_instance_done(addon_host->ten_env, ctx->instance,
+                                            ctx->context, &err);
+  if (!rc) {
+    TEN_LOGE("ten_env.on_create_instance_done() in python binding failed: %s",
+             ten_error_message(&err));
+    TEN_ASSERT(0, "Should not happen.");
+  }
+
+  ten_error_deinit(&err);
+
+  TEN_FREE(ctx);
+}
+
+PyObject *ten_py_ten_env_on_create_instance_done(PyObject *self,
+                                                 TEN_UNUSED PyObject *args) {
+  ten_py_ten_env_t *py_ten_env = (ten_py_ten_env_t *)self;
+  TEN_ASSERT(py_ten_env && ten_py_ten_env_check_integrity(py_ten_env),
+             "Invalid argument.");
+
+  ten_py_extension_t *extension = NULL;
+  void *context = NULL;
+
+  if (!PyArg_ParseTuple(args, "O!n", ten_py_extension_py_type(), &extension,
+                        &context)) {
+    ten_py_raise_py_value_error_exception(
+        "Invalid argument count when ten_env.on_create_instance_done.");
+  }
+
+  ten_env_t *c_ten_env = py_ten_env->c_ten_env;
+  TEN_ASSERT(c_ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(c_ten_env, false), "Should not happen.");
+
+  TEN_ASSERT(c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
+             "Should not happen.");
+
+  ten_addon_host_t *addon_host = ten_env_get_attached_addon(c_ten_env);
+  TEN_ASSERT(addon_host, "Should not happen.");
+  TEN_ASSERT(ten_addon_host_check_integrity(addon_host, false),
+             "Should not happen.");
+
+  ten_app_t *app = addon_host->attached_app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
+  ten_py_ten_env_on_create_instance_done_ctx_t *ctx =
+      TEN_MALLOC(sizeof(ten_py_ten_env_on_create_instance_done_ctx_t));
+  TEN_ASSERT(ctx, "Failed to allocate memory.");
+
+  ctx->addon_host = addon_host;
+  ctx->instance = extension->c_extension;
+  ctx->context = context;
+
+  int post_task_rc = ten_runloop_post_task_tail(
+      ten_app_get_attached_runloop(app),
+      ten_app_addon_host_on_create_instance_done, app, ctx);
+  TEN_ASSERT(post_task_rc == 0, "Failed to post task.");
+
+  // It's necessary to keep the reference of the extension object to
+  // prevent the python object from being destroyed when GC is triggered util
+  // the addon's 'on_destroy_instance' function is called.
+  Py_INCREF(extension);
+
+  Py_RETURN_NONE;
+}

@@ -1,0 +1,95 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+declare_args() {
+  # The rust projects (i.e., ten_rust and ten_manager) depend on the C static
+  # library (ex: ten_utils), thus the rust projects must be compiled with asan
+  # enabled if the C library is compiled with asan. There are two ways to
+  # enable asan in rust:
+  #
+  # 1. Using the RUSTFLAGS environment variable. Ex:
+  #    RUSTFLAGS="-Zsanitizer=address" cargo build.
+  # 2. Using the cargo config file, i.e., create a `config.toml` file in the
+  #    `.cargo` folder in the source tree of the rust project. Ex, we can
+  #    create a `config.toml` file in `ten_framework/.cargo` folder, and add
+  #    the following content:
+  #
+  #    [target.x86_64-unknown-linux-gnu]
+  #    rustflags = ["-Z", "sanitizer=address"]
+  #
+  #    [build]
+  #    target = "x86_64-unknown-linux-gnu"
+  #
+  # The second way has a limitation: the cargo config file only effects on the
+  # builds in the subfolder of the location of the config file. Ex: we add the
+  # cargo config in `ten_framework` as above. If we run `cargo build` in the
+  # source folder of ten_manager or ten_rust, the cargo config effects. As
+  # cargo toolchain supports building rust projects outside of the source
+  # crate, using the `--manifest-path` option. In other words, we can build
+  # ten_rust in any folder. The cargo config in the `ten_framework` folder will
+  # not effect if we build ten_rust in some folder outside of ten_framework
+  # such as a 'out' folder which is a sibling node of ten_framework. In summary,
+  # the cargo config effect as follows.
+  #
+  #   - <parent>
+  #     - ten_framework  <= works under this folder
+  #       - .cargo
+  #     - out            <= not works
+  #   - <sibling>        <= not works
+  #
+  # Therefore, the first way is more flexible. That is the default way we use
+  # in TGN toolchain.
+  #
+  # However, the first way can not work well in some cases, ex: develop rust
+  # in an IDE such as VSCode. In VSCode, when we open a rust file including a
+  # `main` function or a `test` function, there will be some trigger to run the
+  # functions, ex: a `Run|Debug` button on the main function, or a `Run Test|
+  # Debug` button on the test function. The trigger is a task in VSCode, we can
+  # not customize the task to add the RUSTFLAGS environment variable
+  # automatically. In addition, if we want to manually run cargo commands in the
+  # terminal to compile the source code or run some tests during development,
+  # it is not convenient to add the RUSTFLAGS environment variable every time.
+  # And the content of the RUSTFLAGS environment variable is different between
+  # different compilers and platforms.
+  #
+  # So we add a new option here, to control whether to auto generate the cargo
+  # config file under ten_framework if asan is enabled by `enable_sanitizer`.
+  # The combination of the `enable_sanitizer` and `ten_rust_enable_gen_cargo_config`
+  # is as follows.
+  #
+  # - enable_sanitizer = false
+  #   - ten_rust_enable_gen_cargo_config = true or false
+  #
+  #     => The asan is disabled, and the cargo config file is not generated.
+  #
+  # - enable_sanitizer = true
+  #   - ten_rust_enable_gen_cargo_config = false
+  #
+  #     => The asan is enabled, which means the C library is compiled with asan.
+  #     => The cargo config is not generated. The rust projects will be compiled
+  #        with asan by setting the RUSTFLAGS environment variable if using tgn.
+  #     => Running the trigger button in the VSCode or manually running `cargo
+  #        build` in the terminal will be FAILED.
+  #
+  #   - ten_rust_enable_gen_cargo_config = true
+  #
+  #     => The asan is enabled.
+  #     => The cargo config file is generated in ten_framework.
+  #     => Running the trigger button in the VSCode or manully running `cargo
+  #        build` in the source folder of the rust projects will be success.
+  #
+  # Setting this option to true by default to make the development more
+  # convenient, then developers do not need to care about this option.
+  ten_rust_enable_gen_cargo_config = true
+}
+
+declare_args() {
+  teb_rust_enable_cbindgen = false
+}
+
+declare_args() {
+  ten_rust_enable_tests = true
+}

@@ -1,0 +1,12 @@
+{
+  "extension": [
+    {
+      "name": "ext_d",
+      "version": "2.0.0",
+      "supports": {
+        "os": "linux",
+        "arch": "arm64"
+      }
+    }
+  ]
+}

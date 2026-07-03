@@ -1,0 +1,21 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "app_key": "${env:BYTEDANCE_ASR_LLM_APP_KEY|}",
+        "access_key": "${env:BYTEDANCE_ASR_LLM_ACCESS_KEY|}",
+        "language": "zh-CN",
+        "omit_empty_text_results": false,
+        "resource_id": "${env:BYTEDANCE_ASR_LLM_RESOURCE_ID|}",
+        "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
+        "audio": {
+            "format": "pcm"
+        },
+        "request": {
+            "show_utterances": true,
+            "model_name": "bigmodel",
+            "result_type": "single",
+            "enable_nonstream": true
+        }
+    }
+}

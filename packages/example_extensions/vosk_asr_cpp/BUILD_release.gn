@@ -1,0 +1,52 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/feature/ten_package_test.gni")
+import("//build/options.gni")
+
+ten_package("vosk_asr_cpp") {
+  package_kind = "extension"
+  enable_build = true
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [
+    "include",
+    "include/nlohmann_json",
+  ]
+
+  # Add rpath to find vosk library.
+  if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../lib_private" ]
+  } else if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../lib_private" ]
+  }
+
+  lib_dirs = [ "lib_private" ]
+  libs = [ "vosk" ]
+}
+
+if (ten_enable_standalone_test) {
+  # Note: To perform gtest standalone testing, need to first install the
+  # googletest system package.
+  #
+  # ```shell
+  # tman install system googletest
+  # ```
+  ten_package_test("vosk_asr_cpp_test") {
+    package_kind = "extension"
+
+    sources = [
+      ".ten/app/ten_packages/system/googletest/src/gtest-all.cc",
+      ".ten/app/ten_packages/system/googletest/src/gtest_main.cc",
+      "tests/basic.cc",
+    ]
+
+    include_dirs = [
+      ".ten/app/ten_packages/system/googletest",
+      ".ten/app/ten_packages/system/googletest/include",
+    ]
+  }
+}

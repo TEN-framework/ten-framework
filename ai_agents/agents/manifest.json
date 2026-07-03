@@ -1,0 +1,17 @@
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ]
+}

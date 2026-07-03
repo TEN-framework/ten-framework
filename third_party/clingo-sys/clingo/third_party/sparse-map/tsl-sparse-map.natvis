@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <!-- Written in VC 2017 15.7 but is expected to be compatible with VC 2015 -->
+
+    <!-- Visualization that shows the index in the name column and the key-value pair in the value column -->
+    <Type Name="tsl::sparse_map&lt;*&gt;" Priority="Medium">
+        <AlternativeType Name="tsl::sparse_set&lt;*&gt;"/>
+        <DisplayString>{{ size={m_ht.m_nb_elements} }}</DisplayString>
+        <Expand>
+            <Item Name="[bucket_count]" IncludeView="detailed">m_ht.m_bucket_count</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_bucket_count != 0" IncludeView="detailed">((float)m_ht.m_nb_elements) / ((float)m_ht.m_bucket_count)</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_bucket_count == 0" IncludeView="detailed">0</Item>
+            <Item Name="[max_load_factor]" IncludeView="detailed">m_ht.m_max_load_factor</Item>
+            <CustomListItems>
+                <Variable Name="bucket" InitialValue="m_ht.m_sparse_buckets"/>
+                <Variable Name="element" InitialValue="bucket-&gt;m_values"/>
+                <Variable Name="num_elements" InitialValue="bucket-&gt;m_nb_elements"/>
+
+                <Size>m_ht.m_nb_elements</Size>
+                <Loop>
+                    <Loop>
+                        <Break Condition="num_elements == 0"/>
+                        <Item>*element</Item>
+                        <Exec>++element</Exec>
+                        <Exec>--num_elements</Exec>
+                    </Loop>
+                    <Break Condition="bucket-&gt;m_last_array"/>
+                    <Exec>++bucket</Exec>
+                    <Exec>element = bucket-&gt;m_values</Exec>
+                    <Exec>num_elements = bucket-&gt;m_nb_elements</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <!-- Visualization that shows the key in the name column and the key-value pair in the value column -->
+    <Type Name="tsl::sparse_map&lt;*&gt;" ExcludeView="ShowElementsByIndex" Priority="MediumHigh">
+        <DisplayString>{{ size={m_ht.m_nb_elements} }}</DisplayString>
+        <Expand>
+            <Item Name="[bucket_count]" IncludeView="detailed">m_ht.m_bucket_count</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_bucket_count != 0" IncludeView="detailed">((float)m_ht.m_nb_elements) / ((float)m_ht.m_bucket_count)</Item>
+            <Item Name="[load_factor]" Condition="m_ht.m_bucket_count == 0" IncludeView="detailed">0</Item>
+            <Item Name="[max_load_factor]" IncludeView="detailed">m_ht.m_max_load_factor</Item>
+            <CustomListItems>
+                <Variable Name="bucket" InitialValue="m_ht.m_sparse_buckets"/>
+                <Variable Name="element" InitialValue="bucket-&gt;m_values"/>
+                <Variable Name="num_elements" InitialValue="bucket-&gt;m_nb_elements"/>
+
+                <Size>m_ht.m_nb_elements</Size>
+                <Loop>
+                    <Loop>
+                        <Break Condition="num_elements == 0"/>
+                        <Item Name="[{element-&gt;first}]">*element</Item>
+                        <Exec>++element</Exec>
+                        <Exec>--num_elements</Exec>
+                    </Loop>
+                    <Break Condition="bucket-&gt;m_last_array"/>
+                    <Exec>++bucket</Exec>
+                    <Exec>element = bucket-&gt;m_values</Exec>
+                    <Exec>num_elements = bucket-&gt;m_nb_elements</Exec>
+                </Loop>
+            </CustomListItems>
+        </Expand>
+    </Type>
+
+    <Type Name="tsl::detail_sparse_hash::sparse_hash&lt;*&gt;::sparse_iterator&lt;*&gt;">
+        <DisplayString Condition="m_sparse_array_it != 0">{*m_sparse_array_it}</DisplayString>
+        <DisplayString Condition="m_sparse_array_it == 0">end</DisplayString>
+        <Expand>
+            <ExpandedItem Condition="m_sparse_array_it != 0">*m_sparse_array_it</ExpandedItem>
+        </Expand>
+    </Type>
+</AutoVisualizer>

@@ -1,0 +1,11 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_common/asan/package_asan_lib.gni")
+
+package_asan_lib("package_asan_lib_for_ten_framework_standalone_test") {
+  dest_asan_lib_dir = "${root_out_dir}/tests/standalone"
+}

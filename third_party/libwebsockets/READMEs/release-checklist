@@ -1,0 +1,65 @@
+Release Checklist
+-----------------
+
+1) non-CI QA
+ 
+ a) valgrind test servers + client + browser
+
+2) soname bump?
+
+ a) We need one if we added / changed / removed apis
+
+  - CMakeLists.txt
+
+   set(SOVERSION "6")
+
+  - scripts/libwebsockets.spec
+
+  -/%{_libdir}/libwebsockets.so.6
+  +/%{_libdir}/libwebsockets.so.7
+
+3) changelog
+
+ a) Add next version tag header.
+
+ b) Classify as
+
+    - NEW
+    - CHANGE
+    - REMOVE
+
+4) main version bump
+
+  - CMakeLists.txt
+
+   set(CPACK_PACKAGE_VERSION_MAJOR "1")
+   set(CPACK_PACKAGE_VERSION_MINOR "6")
+   set(CPACK_PACKAGE_VERSION_PATCH "0")
+
+5) Announce latest version on README.md
+
+6) Make sure all new READMEs and public headers are in libwebsockets.dox
+
+7) signed tag
+
+  git tag -s vX.Y[.Z]
+
+8) git
+
+ a) push
+ 
+ b) final CI check, if fail delete tag, kill pushed tags, restart flow
+
+9) website
+
+ a) update latest tag for release branch
+
+10) post-relase version bump
+
+Bump the PATCH part of the version to 99
+
+-set(CPACK_PACKAGE_VERSION_PATCH "0")
++set(CPACK_PACKAGE_VERSION_PATCH "99")
+
+to reflect it's newer than any stable release but not a new version yet.
+

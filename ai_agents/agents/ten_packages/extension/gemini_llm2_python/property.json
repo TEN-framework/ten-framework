@@ -1,0 +1,9 @@
+{
+  "api_key": "${env:GEMINI_API_KEY}",
+  "model": "gemini-3-flash",
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+  "temperature": 0.7,
+  "top_p": 0.95,
+  "max_tokens": 4096,
+  "prompt": "You are a helpful assistant."
+}

@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "${env:SMALLEST_API_KEY|}",
+    "model": "pulse",
+    "language": "es",
+    "sample_rate": 16000
+  }
+}

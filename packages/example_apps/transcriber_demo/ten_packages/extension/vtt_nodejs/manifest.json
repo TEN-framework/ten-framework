@@ -1,0 +1,119 @@
+{
+  "type": "extension",
+  "name": "vtt_nodejs",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "VTT Recorder Extension"
+      },
+      "zh-CN": {
+        "content": "VTT 录制扩展"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Records audio frames and ASR results, generates VTT subtitle files"
+      },
+      "zh-CN": {
+        "content": "录制音频帧和 ASR 结果，生成 VTT 字幕文件"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "tags": [
+    "nodejs",
+    "vtt",
+    "subtitle",
+    "recorder",
+    "transcription"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "**",
+      ".vscode/**",
+      "docs/**"
+    ]
+  },
+  "api": {
+    "cmd_in": [
+      {
+        "name": "start_recording"
+      },
+      {
+        "name": "stop_recording"
+      },
+      {
+        "name": "list_sessions"
+      },
+      {
+        "name": "get_session",
+        "property": {
+          "properties": {
+            "session_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "delete_session",
+        "property": {
+          "properties": {
+            "session_id": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "asr_result",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "final": {
+              "type": "bool"
+            },
+            "start_ms": {
+              "type": "int64"
+            },
+            "duration_ms": {
+              "type": "int64"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start",
+    "build": "python3 tools/run_script.py build"
+  }
+}

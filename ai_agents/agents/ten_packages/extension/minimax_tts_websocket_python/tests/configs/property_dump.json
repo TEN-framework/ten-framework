@@ -1,0 +1,17 @@
+{
+    "dump": true,
+    "dump_path": "./tests/dump_output/",
+    "params": {
+        "key": "${env:MINIMAX_TTS_KEY}",
+        "group_id": "${env:MINIMAX_TTS_GROUPID}",
+        "model": "speech-01-turbo",
+        "audio_setting": {
+            "format": "pcm",
+            "sample_rate": 16000,
+            "channels": 1
+        },
+        "voice_setting": {
+            "voice_id": "female-shaonv"
+        }
+    }
+}

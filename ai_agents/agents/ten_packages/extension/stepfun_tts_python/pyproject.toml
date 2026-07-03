@@ -1,0 +1,7 @@
+[project]
+name = "stepfun-tts-python"
+version = "0.4.3"
+requires-python = ">=3.10"
+dependencies = [
+    "websockets~=14.0",
+]

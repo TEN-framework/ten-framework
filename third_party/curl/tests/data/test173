@@ -1,0 +1,82 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP POST
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 11
+
+blablabla
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+Mime
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP RFC1867-formpost a file from stdin with "faked" filename
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/we/want/%TESTNUMBER -F field1=contents1 -F "fileupload=@-;filename=/dev/null;type=text/x-null;format=x-curl"
+</command>
+
+<stdin>
+line1
+line2
+line3
+line4
+line5
+line6
+line7
+line8
+</stdin>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<strip>
+^(Content-Type: multipart/form-data;|------------).*
+</strip>
+<protocol>
+POST /we/want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 360
+Content-Type: multipart/form-data; boundary=----------------------------5dbea401cd8c
+
+------------------------------5dbea401cd8c
+Content-Disposition: form-data; name="field1"
+
+contents1
+------------------------------5dbea401cd8c
+Content-Disposition: form-data; name="fileupload"; filename="/dev/null"
+Content-Type: text/x-null;format=x-curl
+
+line1
+line2
+line3
+line4
+line5
+line6
+line7
+line8
+
+------------------------------5dbea401cd8c--
+</protocol>
+</verify>
+</testcase>

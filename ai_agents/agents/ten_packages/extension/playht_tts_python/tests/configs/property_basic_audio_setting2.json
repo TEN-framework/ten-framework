@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:PLAYHT_TTS_SECRET_KEY|}",
+        "user_id": "${env:PLAYHT_TTS_USER_ID|}",
+        "voice_engine": "PlayDialog",
+        "voice": "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
+        "sample_rate": 32000
+    }
+}

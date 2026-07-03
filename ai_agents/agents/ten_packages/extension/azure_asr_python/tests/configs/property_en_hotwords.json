@@ -1,0 +1,11 @@
+{
+    "params": {
+        "key": "${env:AZURE_ASR_API_KEY}",
+        "region": "${env:AZURE_ASR_REGION}",
+        "language": "en-US",
+        "hotwords": [
+            "aaa",
+            "bbb"
+        ]
+    }
+}

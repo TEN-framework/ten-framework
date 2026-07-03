@@ -1,0 +1,69 @@
+/* BEGIN_HEADER */
+#include "mbedtls/pkcs12.h"
+#include "common.h"
+
+typedef enum
+{
+   USE_NULL_INPUT = 0,
+   USE_GIVEN_INPUT = 1,
+} input_usage_method_t;
+
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_PKCS12_C
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE */
+void pkcs12_derive_key( int md_type, int key_size_arg,
+                        data_t *password_arg, int password_usage,
+                        data_t *salt_arg, int salt_usage,
+                        int iterations,
+                        data_t* expected_output, int expected_status )
+
+{
+   int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+   unsigned char *output_data = NULL;
+
+   unsigned char *password = NULL;
+   size_t password_len = 0;
+   unsigned char *salt = NULL;
+   size_t salt_len = 0;
+   size_t key_size = key_size_arg;
+
+   if( password_usage == USE_GIVEN_INPUT )
+      password = password_arg->x;
+
+   password_len = password_arg->len;
+
+   if( salt_usage == USE_GIVEN_INPUT )
+      salt = salt_arg->x;
+
+   salt_len = salt_arg->len;
+
+   ASSERT_ALLOC( output_data, key_size );
+
+   ret = mbedtls_pkcs12_derivation( output_data,
+                                    key_size,
+                                    password,
+                                    password_len,
+                                    salt,
+                                    salt_len,
+                                    md_type,
+                                    MBEDTLS_PKCS12_DERIVE_KEY,
+                                    iterations );
+
+   TEST_EQUAL( ret, expected_status );
+
+   if( expected_status == 0 )
+   {
+      ASSERT_COMPARE( expected_output->x, expected_output->len,
+                      output_data, key_size );
+   }
+
+exit:
+   mbedtls_free( output_data );
+
+}
+/* END_CASE */

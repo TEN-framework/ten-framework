@@ -1,0 +1,235 @@
+$ cat control_01.lua | clingo lua.lp blocks_01.lp world.lp lua_interpret.lp 0
+
+clingo version 4.1
+Reading from lua.lp ...
+Ground: base_1
+Ground: init(1,0)
+Ground: state(1,0)
+=============
+TIME 0
+Solving...
+Answer: 1
+order(-1,1,0,0)
+SATISFIABLE
+=============
+Ground: base_2
+Ground: init(2,0)
+Ground: state(2,0)
+=============
+TIME 0
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(1)
+Ground: state(1,1)
+Ground: move(1,1)
+Ground: state(2,1)
+Ground: move(2,1)
+=============
+TIME 1
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(2)
+Ground: state(1,2)
+Ground: move(1,2)
+Ground: state(2,2)
+Ground: move(2,2)
+=============
+TIME 2
+Solving...
+Answer: 1
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,0,1) object(2,1) target(0,1) order(-1,1,0,2) order(1,2,1,2) order(-1,2,0,2) object(1,2) target(2,2)
+SATISFIABLE
+=============
+Ground: base_3
+Ground: init(3,0)
+Ground: state(3,0)
+Ground: move(3,1)
+Ground: state(3,1)
+Ground: move(3,2)
+Ground: state(3,2)
+=============
+TIME 2
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(3)
+Ground: state(1,3)
+Ground: move(1,3)
+Ground: state(2,3)
+Ground: move(2,3)
+Ground: state(3,3)
+Ground: move(3,3)
+=============
+TIME 3
+Solving...
+Answer: 1
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) target(0,1) order(-1,1,0,2) order(-1,2,0,2) object(2,2) order(-1,3,2,0) order(-1,3,0,1) order(1,3,2,2) order(-1,3,0,2) object(3,1) target(3,2) order(-1,1,0,3) order(1,2,1,3) order(-1,2,0,3) order(1,3,2,3) order(-1,3,0,3) object(1,3) target(2,3)
+SATISFIABLE
+=============
+Ground: base_4
+Ground: init(4,0)
+Ground: state(4,0)
+Ground: move(4,1)
+Ground: state(4,1)
+Ground: move(4,2)
+Ground: state(4,2)
+Ground: move(4,3)
+Ground: state(4,3)
+=============
+TIME 3
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(4)
+Ground: state(1,4)
+Ground: move(1,4)
+Ground: state(2,4)
+Ground: move(2,4)
+Ground: state(3,4)
+Ground: move(3,4)
+Ground: state(4,4)
+Ground: move(4,4)
+=============
+TIME 4
+Solving...
+Answer: 1
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) target(0,1) order(-1,1,0,2) order(-1,2,1,2) order(-1,3,2,0) order(-1,3,0,1) order(-1,3,0,2) object(3,1) target(3,2) order(-1,1,0,3) order(-1,2,0,3) order(1,3,2,3) order(-1,3,0,3) object(2,3) order(1,4,3,0) order(-1,4,2,0) order(-1,4,2,1) order(-1,4,3,2) order(1,4,2,3) order(-1,4,3,3) object(4,2) target(4,3) order(-1,1,0,4) order(1,2,1,4) order(-1,2,0,4) order(1,3,2,4) order(-1,3,0,4) order(1,4,2,4) order(-1,4,3,4) object(1,4) target(2,4)
+SATISFIABLE
+=============
+Ground: base_5
+Ground: init(5,1)
+Ground: state(5,1)
+Ground: move(5,1)
+Ground: move(5,2)
+Ground: state(5,2)
+Ground: move(5,3)
+Ground: state(5,3)
+Ground: move(5,4)
+Ground: state(5,4)
+=============
+TIME 4
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(5)
+Ground: state(1,5)
+Ground: move(1,5)
+Ground: state(2,5)
+Ground: move(2,5)
+Ground: state(3,5)
+Ground: move(3,5)
+Ground: state(4,5)
+Ground: move(4,5)
+Ground: state(5,5)
+Ground: move(5,5)
+=============
+TIME 5
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(6)
+Ground: state(1,6)
+Ground: move(1,6)
+Ground: state(2,6)
+Ground: move(2,6)
+Ground: state(3,6)
+Ground: move(3,6)
+Ground: state(4,6)
+Ground: move(4,6)
+Ground: state(5,6)
+Ground: move(5,6)
+=============
+TIME 6
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(7)
+Ground: state(1,7)
+Ground: move(1,7)
+Ground: state(2,7)
+Ground: move(2,7)
+Ground: state(3,7)
+Ground: move(3,7)
+Ground: state(4,7)
+Ground: move(4,7)
+Ground: state(5,7)
+Ground: move(5,7)
+=============
+TIME 7
+Solving...
+Answer: 1
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) order(-1,1,0,2) order(-1,2,1,2) target(0,2) order(-1,3,2,0) order(-1,3,2,1) order(-1,3,0,2) object(3,1) object(3,2) order(-1,1,0,3) order(-1,2,1,3) order(-1,3,0,3) target(0,3) order(1,4,3,0) order(-1,4,2,0) order(1,4,3,1) order(-1,4,2,1) order(-1,4,2,2) order(-1,4,2,3) order(-1,1,0,4) order(-1,2,1,4) order(-1,3,0,4) order(-1,4,3,4) object(4,4) target(3,4) order(1,5,3,1) order(-1,5,4,1) order(-1,5,4,2) order(-1,5,0,3) order(-1,5,0,4) object(5,3) target(5,1) order(-1,1,0,5) order(-1,2,0,5) order(1,3,2,5) order(-1,3,0,5) order(1,4,2,5) order(-1,4,3,5) order(-1,5,0,5) object(2,5) target(4,5) order(-1,1,0,6) order(1,2,1,6) order(-1,2,0,6) order(1,3,2,6) order(-1,3,0,6) order(1,4,2,6) order(-1,4,3,6) order(-1,5,0,6) object(1,6) target(2,6) order(-1,1,0,7) order(1,2,1,7) order(-1,2,0,7) order(1,3,2,7) order(-1,3,0,7) order(1,4,2,7) order(-1,4,3,7) order(-1,5,1,7) object(5,7) target(1,7)
+Answer: 2
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) order(-1,1,0,2) order(-1,2,1,2) target(0,2) order(-1,3,2,0) order(-1,3,2,1) order(-1,3,0,2) object(3,1) object(3,2) order(-1,1,0,3) order(-1,2,1,3) order(-1,3,0,3) target(0,3) order(1,4,3,0) order(-1,4,2,0) order(1,4,3,1) order(-1,4,2,1) order(-1,4,2,2) order(-1,4,2,3) order(-1,1,0,4) order(-1,2,1,4) order(-1,3,0,4) order(-1,4,3,4) object(4,4) target(3,4) order(1,5,3,1) order(-1,5,4,1) order(-1,5,4,2) order(-1,5,0,3) order(-1,5,0,4) object(5,3) target(5,1) order(-1,1,0,5) order(-1,2,0,5) order(1,3,2,5) order(-1,3,0,5) order(1,4,2,5) order(-1,4,3,5) order(-1,5,0,5) object(2,5) target(4,5) order(-1,1,0,6) order(-1,2,0,6) order(1,3,2,6) order(-1,3,0,6) order(1,4,2,6) order(-1,4,3,6) order(-1,5,2,6) object(5,6) target(2,6) order(-1,1,0,7) order(1,2,1,7) order(-1,2,0,7) order(1,3,2,7) order(-1,3,0,7) order(1,4,2,7) order(-1,4,3,7) order(1,5,1,7) order(-1,5,2,7) object(1,7) target(5,7)
+SATISFIABLE
+=============
+Ground: base_6
+Ground: init(6,0)
+Ground: state(6,0)
+Ground: move(6,1)
+Ground: state(6,1)
+Ground: move(6,2)
+Ground: state(6,2)
+Ground: move(6,3)
+Ground: state(6,3)
+Ground: move(6,4)
+Ground: state(6,4)
+Ground: move(6,5)
+Ground: state(6,5)
+Ground: move(6,6)
+Ground: state(6,6)
+Ground: move(6,7)
+Ground: state(6,7)
+=============
+TIME 7
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(8)
+Ground: state(1,8)
+Ground: move(1,8)
+Ground: state(2,8)
+Ground: move(2,8)
+Ground: state(3,8)
+Ground: move(3,8)
+Ground: state(4,8)
+Ground: move(4,8)
+Ground: state(5,8)
+Ground: move(5,8)
+Ground: state(6,8)
+Ground: move(6,8)
+=============
+TIME 8
+Solving...
+UNSATISFIABLE
+=============
+Ground: table(9)
+Ground: state(1,9)
+Ground: move(1,9)
+Ground: state(2,9)
+Ground: move(2,9)
+Ground: state(3,9)
+Ground: move(3,9)
+Ground: state(4,9)
+Ground: move(4,9)
+Ground: state(5,9)
+Ground: move(5,9)
+Ground: state(6,9)
+Ground: move(6,9)
+=============
+TIME 9
+Solving...
+Answer: 1
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) order(-1,1,0,2) order(-1,2,1,2) target(0,2) order(-1,3,2,0) order(-1,3,2,1) order(-1,3,0,2) object(3,1) object(3,2) order(-1,1,0,3) order(-1,2,1,3) order(-1,3,0,3) target(0,3) order(1,4,3,0) order(-1,4,2,0) order(1,4,3,1) order(-1,4,2,1) order(-1,4,2,2) order(-1,4,2,3) order(-1,1,0,4) order(-1,2,1,4) order(-1,3,0,4) order(-1,4,2,4) target(0,4) order(1,5,3,1) order(-1,5,4,1) order(-1,5,4,2) order(-1,5,0,3) order(-1,5,0,4) object(5,3) target(5,1) order(-1,1,0,5) order(-1,2,1,5) order(-1,3,0,5) order(-1,4,2,5) order(-1,5,0,5) object(3,5) order(-1,1,0,6) order(-1,2,1,6) order(-1,3,0,6) order(-1,4,3,6) order(-1,5,0,6) object(4,6) target(3,6) order(-1,1,0,7) order(-1,2,0,7) order(1,3,2,7) order(-1,3,0,7) order(1,4,2,7) order(-1,4,3,7) order(-1,5,0,7) object(2,7) target(4,7) order(1,6,3,0) order(-1,6,4,0) order(1,6,5,1) order(-1,6,4,1) order(1,6,5,2) order(-1,6,4,2) order(-1,6,4,3) order(-1,6,0,4) order(1,6,3,5) order(-1,6,0,5) order(1,6,3,6) order(-1,6,0,6) order(1,6,3,7) order(-1,6,0,7) object(6,4) target(6,5) order(-1,1,0,8) order(-1,2,0,8) order(1,3,2,8) order(-1,3,0,8) order(1,4,2,8) order(-1,4,3,8) order(-1,5,2,8) order(1,6,3,8) order(-1,6,0,8) object(5,8) target(2,8) order(-1,1,0,9) order(1,2,1,9) order(-1,2,0,9) order(1,3,2,9) order(-1,3,0,9) order(1,4,2,9) order(-1,4,3,9) order(1,5,1,9) order(-1,5,2,9) order(1,6,3,9) order(-1,6,0,9) object(1,9) target(5,9)
+Answer: 2
+order(-1,1,0,0) order(-1,2,1,0) order(-1,1,0,1) order(-1,2,1,1) order(-1,1,0,2) order(-1,2,1,2) target(0,2) order(-1,3,2,0) order(-1,3,2,1) order(-1,3,0,2) object(3,1) object(3,2) order(-1,1,0,3) order(-1,2,1,3) order(-1,3,0,3) target(0,3) order(1,4,3,0) order(-1,4,2,0) order(1,4,3,1) order(-1,4,2,1) order(-1,4,2,2) order(-1,4,2,3) order(-1,1,0,4) order(-1,2,1,4) order(-1,3,0,4) order(-1,4,2,4) target(0,4) order(1,5,3,1) order(-1,5,4,1) order(-1,5,4,2) order(-1,5,0,3) order(-1,5,0,4) object(5,3) target(5,1) order(-1,1,0,5) order(-1,2,1,5) order(-1,3,0,5) order(-1,4,2,5) order(-1,5,0,5) object(3,5) order(-1,1,0,6) order(-1,2,1,6) order(-1,3,0,6) order(-1,4,3,6) order(-1,5,0,6) object(4,6) target(3,6) order(-1,1,0,7) order(-1,2,0,7) order(1,3,2,7) order(-1,3,0,7) order(1,4,2,7) order(-1,4,3,7) order(-1,5,0,7) object(2,7) target(4,7) order(1,6,3,0) order(-1,6,4,0) order(1,6,5,1) order(-1,6,4,1) order(1,6,5,2) order(-1,6,4,2) order(-1,6,4,3) order(-1,6,0,4) order(1,6,3,5) order(-1,6,0,5) order(1,6,3,6) order(-1,6,0,6) order(1,6,3,7) order(-1,6,0,7) object(6,4) target(6,5) order(-1,1,0,8) order(1,2,1,8) order(-1,2,0,8) order(1,3,2,8) order(-1,3,0,8) order(1,4,2,8) order(-1,4,3,8) order(-1,5,0,8) order(1,6,3,8) order(-1,6,0,8) object(1,8) target(2,8) order(-1,1,0,9) order(1,2,1,9) order(-1,2,0,9) order(1,3,2,9) order(-1,3,0,9) order(1,4,2,9) order(-1,4,3,9) order(-1,5,1,9) order(1,6,3,9) order(-1,6,0,9) object(5,9) target(1,9)
+SATISFIABLE
+=============
+SATISFIABLE
+
+Models       : 7
+Calls        : 15
+Time         : 0.068s (Solving: 0.01s 1st Model: 0.00s Unsat: 0.01s)
+CPU Time     : 0.060s

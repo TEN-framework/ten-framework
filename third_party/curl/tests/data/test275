@@ -1,0 +1,90 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP CONNECT
+HTTP Basic auth
+HTTP proxy
+HTTP proxy Basic auth
+proxytunnel
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<connect>
+HTTP/1.1 200 OK
+Connected-fine: sure
+
+</connect>
+
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Content-Length: 9
+
+contents
+</data>
+<datacheck>
+HTTP/1.1 200 OK
+Connected-fine: sure
+
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Content-Length: 9
+
+contents
+</datacheck>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+http-proxy
+</server>
+ <name>
+HTTP CONNECT with proxytunnel getting two URLs from the same host
+ </name>
+ <command>
+http://remotesite.com.%TESTNUMBER:%HTTPPORT/we/want/that/page/%TESTNUMBER -p -x %HOSTIP:%PROXYPORT --user iam:myself --proxy-user youare:yourself http://remotesite.com.%TESTNUMBER:%HTTPPORT/we/want/that/page/%TESTNUMBER
+</command>
+<features>
+proxy
+</features>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<proxy>
+CONNECT remotesite.com.%TESTNUMBER:%HTTPPORT HTTP/1.1
+Host: remotesite.com.%TESTNUMBER:%HTTPPORT
+Proxy-Authorization: Basic eW91YXJlOnlvdXJzZWxm
+User-Agent: curl/%VERSION
+Proxy-Connection: Keep-Alive
+
+</proxy>
+<protocol>
+GET /we/want/that/page/%TESTNUMBER HTTP/1.1
+Host: remotesite.com.%TESTNUMBER:%HTTPPORT
+Authorization: Basic aWFtOm15c2VsZg==
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /we/want/that/page/%TESTNUMBER HTTP/1.1
+Host: remotesite.com.%TESTNUMBER:%HTTPPORT
+Authorization: Basic aWFtOm15c2VsZg==
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

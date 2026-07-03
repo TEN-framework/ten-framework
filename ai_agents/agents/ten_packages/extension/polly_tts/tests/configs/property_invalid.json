@@ -1,0 +1,14 @@
+{
+    "dump": false,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "aws_access_key_id": "invalid",
+        "aws_secret_access_key": "invalid",
+        "region_name": "invalid",
+        "engine": "invalid",
+        "voice": "Joanna",
+        "sample_rate": "16000",
+        "lang_code": "en-US",
+        "audio_format": "pcm"
+    }
+}

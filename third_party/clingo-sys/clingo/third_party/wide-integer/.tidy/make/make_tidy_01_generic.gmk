@@ -1,0 +1,83 @@
+﻿# ------------------------------------------------------------------------------
+#  Copyright Christopher Kormanyos 2022.
+#  Distributed under the Boost Software License,
+#  Version 1.0. (See accompanying file LICENSE_1_0.txt
+#  or copy at http://www.boost.org/LICENSE_1_0.txt)
+# ------------------------------------------------------------------------------
+
+PATH_MAKE        = $(CURDIR)
+PATH_PRJ         = $(PATH_MAKE)/../..
+PATH_SRC         = $(PATH_PRJ)
+PATH_TMP         = $(PATH_MAKE)/tmp
+PATH_ERR         = $(PATH_MAKE)/err
+
+CAT              = cat
+GNUECHO          = echo
+LS               = ls
+MKDIR            = mkdir
+TIDY             = clang-tidy
+RM               = rm
+SED              = sed
+
+include make_tidy_02_files.gmk
+include make_tidy_03_flags.gmk
+
+FILES_ALL        = $(FILES_PRJ)
+FILES_TIDY_TXT   = $(addprefix $(PATH_TMP)/, $(notdir $(addsuffix .tidy_txt, $(FILES_ALL))))
+
+# ------------------------------------------------------------------------------
+# VPATH definition: VPATH is required for make to find the source files.
+# ------------------------------------------------------------------------------
+VPATH    := $(sort $(dir $(FILES_ALL)))
+
+# ------------------------------------------------------------------------------
+# Main dependency: Run clang-tidy on all files and tidy tidy results.
+# ------------------------------------------------------------------------------
+
+.PHONY: tidy
+tidy: $(FILES_TIDY_TXT)
+  # Summarize tidy results
+	@$(GNUECHO) +++ summarize clang-tidy results
+	@$(GNUECHO) +++ concatenate $(PATH_TMP)/*.tidy_txt to $(PATH_TMP)/all.tidy_txt
+	@$(CAT) $(PATH_TMP)/*.tidy_txt > $(PATH_TMP)/all.tidy_txt
+	@$(GNUECHO)
+	@$(GNUECHO) +++ verify existence of $(PATH_TMP)/all.tidy_txt
+	@$(LS) -la $(PATH_TMP)/all.tidy_txt
+	@$(GNUECHO)
+	@$(GNUECHO) +++ print summary of tidy from $(PATH_TMP)/all.tidy_txt:
+	@-$(SED) -n l $(PATH_TMP)/all.tidy_txt
+	@$(GNUECHO)
+
+
+# ------------------------------------------------------------------------------
+# Clean temporary files.
+# ------------------------------------------------------------------------------
+
+.PHONY: prepare
+prepare:
+  # creating output directories
+	@$(GNUECHO) +++ creating output directories
+	@-$(MKDIR) -p $(PATH_ERR)
+	@-$(MKDIR) -p $(PATH_TMP)
+	@$(GNUECHO)
+	@$(GNUECHO) +++ cleaning output directories
+	@-$(RM) -rf $(PATH_ERR)/*.tidy_err
+	@-$(RM) -rf $(PATH_TMP)/*.tidy_txt
+	@$(GNUECHO)
+	@$(GNUECHO) +++ print clang-tidy version
+	@$(TIDY) --version
+	@$(GNUECHO)
+	@$(GNUECHO) +++ print include paths
+	@$(GNUECHO) $(C_INCLUDES)
+	@$(GNUECHO)
+
+# ------------------------------------------------------------------------------
+# pattern rule for clang-tidy analysis of cpp-files
+# ------------------------------------------------------------------------------
+$(PATH_TMP)/%.tidy_txt : %.cpp
+	@-$(GNUECHO) +++ tidying: $<
+	@-$(TIDY) $(TIDY_FLAGS) $< -- $(CXX_FLAGS) $(C_INCLUDES) $(C_DEFINES) > $(PATH_TMP)/$(basename $(@F)).tidy_txt 2> $(PATH_ERR)/$(basename $(@F)).tidy_err
+	@-$(GNUECHO)
+	@-$(GNUECHO) +++ print $(PATH_ERR)/$(basename $(@F)).tidy_err
+	@-$(SED) -n l $(PATH_ERR)/$(basename $(@F)).tidy_err
+	@-$(GNUECHO)

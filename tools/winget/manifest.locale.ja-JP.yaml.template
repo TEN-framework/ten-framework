@@ -1,0 +1,47 @@
+PackageIdentifier: ten-framework.tman
+
+PackageVersion: __VERSION__
+
+PackageLocale: ja-JP
+
+Publisher: TEN Framework チーム
+
+PublisherUrl: https://github.com/TEN-framework
+
+PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
+
+PackageName: tman
+
+PackageUrl: https://github.com/TEN-framework/ten-framework
+
+License: Apache 2.0 with certain conditions
+
+LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
+
+ShortDescription: TEN Framework パッケージマネージャー
+
+Description: |-
+  tmanはTEN Frameworkの公式パッケージマネージャーです。
+  開発者が拡張機能、プロトコル、その他のTENフレームワークコンポーネントを管理するのに役立ちます。
+
+  主な機能：
+  - TENパッケージの簡単なインストールと管理
+  - 自動依存関係解決
+  - パッケージのバージョン管理と更新
+  - 複数のパッケージタイプのサポート（拡張機能、プロトコルなど）
+  - TEN Frameworkプロジェクトとのシームレスな統合
+
+  TEN Frameworkはリアルタイム通信アプリケーションを構築するための強力なフレームワークであり、
+  tmanを使用すると、コミュニティパッケージでアプリケーションを簡単に拡張およびカスタマイズできます。
+
+Tags:
+  - package-manager
+  - ten-framework
+  - extension-manager
+  - developer-tools
+  - cli
+  - ten
+
+ManifestType: locale
+
+ManifestVersion: 1.6.0

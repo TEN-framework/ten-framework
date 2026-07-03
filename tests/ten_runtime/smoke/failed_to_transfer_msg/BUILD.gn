@@ -1,0 +1,24 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_runtime_glob("failed_to_transfer_msg") {
+  file_list = all_native_files
+  deps = [
+    "//third_party/msgpack:msgpackc",
+    "//third_party/nlohmann_json",
+  ]
+  include_dirs = [
+    "//packages",
+    "//tests/ten_runtime",
+  ]
+  public_deps = [
+    "//third_party/googlemock",
+    "//third_party/googletest",
+  ]
+}

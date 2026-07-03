@@ -1,0 +1,9 @@
+{
+    "api_key": "${env:GLM_API_KEY}",
+    "temperature": 0.9,
+    "max_tokens": 2048,
+    "server_vad": true,
+    "dump": false,
+    "prompt": "",
+    "base_url": "wss://open.bigmodel.cn"
+}

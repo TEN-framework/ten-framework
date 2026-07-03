@@ -1,0 +1,14 @@
+{
+    "params": {
+        "key": "${env:MINIMAX_TTS_API_KEY|}",
+        "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
+        "model": "speech-02-turbo",
+        "audio_setting": {
+            "sample_rate": 16000
+        },
+        "voice_setting": {
+            "voice_id": "female-shaonv"
+        },
+        "url": "wss://api.minimax.io/ws/v1/t2a_v2"
+    }
+}

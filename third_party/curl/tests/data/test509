@@ -1,0 +1,41 @@
+<testcase>
+<info>
+<keywords>
+memory callbacks
+</keywords>
+</info>
+#
+# Server-side
+<reply>
+</reply>
+
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+http
+</features>
+# tool is what to use instead of 'curl'
+<tool>
+lib%TESTNUMBER
+</tool>
+
+<name>
+initialization with memory callbacks and actual usage
+</name>
+<command>
+nothing
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<stdout>
+Callbacks were invoked!
+</stdout>
+</verify>
+
+</testcase>

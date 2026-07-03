@@ -1,0 +1,4 @@
+This example shows the use of recursive conditional literals.
+
+Example call:
+    clingo encoding.lp instance.lp

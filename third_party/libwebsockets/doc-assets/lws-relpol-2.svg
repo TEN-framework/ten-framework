@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="135.68mm" height="69.688mm" version="1.1" viewBox="0 0 135.68018 69.688057" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<marker id="a" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<linearGradient id="b" x1="1000.2" x2="993.99" y1="928.57" y2="992.97" gradientTransform="matrix(-.19888 .028535 .028535 .19888 110.19 -89.467)" gradientUnits="userSpaceOnUse">
+			<stop stop-color="#e9ddaf" offset="0"/>
+			<stop stop-color="#504416" offset="1"/>
+		</linearGradient>
+		<filter id="d" x="-.060394" y="-.055053" width="1.1208" height="1.1101" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="0.44336333"/>
+		</filter>
+		<filter id="c" x="-.038095" y="-.079938" width="1.0762" height="1.1599" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="24.327513"/>
+		</filter>
+	</defs>
+	<g transform="translate(132.66 -92.741)">
+		<rect transform="matrix(.08226 0 0 .08226 160.24 368.6)" x="-3502.3" y="-3295.1" width="1532.6" height="730.39" filter="url(#c)"/>
+		<rect x="-129.09" y="96.313" width="126.07" height="60.082" fill="#fff"/>
+		<rect x="-96.346" y="137.61" width="62.355" height="5.7258" fill-opacity=".91732"/>
+		<path d="m-57.724 138.73 39.644-31.888 4.5554 5.4173-38.66 31.888z" fill="#00f" stroke="#000" stroke-width=".021765px"/>
+		<g transform="matrix(.08226 0 0 .08226 209.08 204.79)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<circle cx="-59.501" cy="132.08" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<path transform="matrix(-.75166 .10785 .10785 .75166 -2080.3 632.8)" d="m-2725.9-287.4c-0.4737 0.0104-0.7327 0.29435-0.9193 0.61443-2.45 4.2318-6.125 10.579-7.35 12.695-0.6344 1.3127 0.5828 2.8675 1.0263 3.5972 0.5853 0.7769 0.802 1.1542 1.8469 1.882 1.1717 0.46167 2.3507 0.56335 2.8066 0.53435s2.7265 0.26464 4.5434-1.3364c1.1317-2.0971 4.6213-8.6717 6.8848-12.866 0.2058-0.37197 0.6954-0.86583-0.1364-1.3663-2.8286-1.2472-5.6572-2.4941-8.4858-3.7414-0.077-0.0104-0.1488-0.0149-0.2165-0.0134zm-4.2607 15.885a1.1359 1.0667 0 0 1 1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1359 -1.0666 1.1359 1.0667 0 0 1 1.1359 -1.0666z" filter="url(#d)" stroke="#000" stroke-width=".26458px"/>
+		<path d="m-62.36 122.52c0.3571-0.0433 0.5825 0.14227 0.7573 0.36273 2.2979 2.9166 5.7448 7.2912 6.8937 8.7496 0.6185 0.91825-0.1287 2.2186-0.3834 2.8149-0.356 0.64707-0.4783 0.95366-1.1853 1.6135-0.8309 0.47338-1.7057 0.67692-2.0515 0.70427-0.3459 0.0273-2.0213 0.49302-3.5596-0.51443-1.0769-1.4542-4.409-6.0198-6.5628-8.9283-0.1947-0.25737-0.616-0.57542-0.045-1.0413 1.9917-1.2426 3.9833-2.4853 5.9749-3.7279 0.057-0.0161 0.1104-0.0267 0.1614-0.0332zm4.9157 11.48a0.81001 0.86256 81.835 0 0 -0.73879 0.92424 0.81001 0.86256 81.835 0 0 0.96889 0.67917 0.81001 0.86256 81.835 0 0 0.7387 -0.92418 0.81001 0.86256 81.835 0 0 -0.9688 -0.67923z" fill="url(#b)" stroke="#000" stroke-width=".20091px"/>
+		<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width=".20123">
+			<path d="m-63.003 123.99 6.3983 8.4695"/>
+			<path d="m-66.817 126.33 6.4415 8.7713"/>
+			<path d="m-64.931 125.21 6.4288 8.5557"/>
+		</g>
+		<text x="-78.984398" y="142.32184" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="6.5983px" letter-spacing="0px" stroke-width=".034366" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-78.984398" y="142.32184" fill="#ffffff" stroke-width=".034366">master</tspan></text>
+		<g fill-opacity=".91732">
+			<circle cx="-27.354" cy="140.42" r="2.8446"/>
+			<circle cx="-20.787" cy="140.45" r="2.8446" opacity=".742"/>
+			<circle cx="-14.325" cy="140.59" r="2.8446" opacity=".497"/>
+			<circle cx="-115.88" cy="140.11" r="2.8446" opacity=".522"/>
+			<circle cx="-109.32" cy="140.15" r="2.8446" opacity=".73"/>
+			<circle cx="-102.86" cy="140.29" r="2.8446"/>
+			<circle cx="-96.288" cy="140.42" r="2.8446"/>
+			<circle cx="-33.921" cy="140.43" r="2.8446"/>
+		</g>
+		<g letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text transform="rotate(30.874)" x="13.613972" y="144.56674" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" stroke-width=".027864" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="13.613972" y="144.56674" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.0.0</tspan></text>
+			<text transform="rotate(-39.355)" x="-104.55833" y="68.824959" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.5255px" stroke-width=".028779" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-104.55833" y="68.824959" fill="#000000" stroke-width=".028779">v3.0-stable</tspan></text>
+			<text x="-86.001366" y="108.6248" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.1788px" stroke-width=".021765" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-86.001366" y="108.6248">When a release happens, master</tspan><tspan x="-86.001366" y="113.84833">is copied into a release-specific</tspan><tspan x="-86.001366" y="119.07185">-stable branch and tagged</tspan></text>
+		</g>
+		<path d="m-111.25 152.21h87.407" fill="none" marker-end="url(#a)" stroke="#000" stroke-width=".8444"/>
+	</g>
+</svg>

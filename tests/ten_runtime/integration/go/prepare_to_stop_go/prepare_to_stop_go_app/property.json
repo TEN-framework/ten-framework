@@ -1,0 +1,102 @@
+{
+  "ten": {
+    "uri": "msgpack://127.0.0.1:8007/",
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "A",
+              "addon": "extension_a",
+              "extension_group": "nodetest_group"
+            },
+            {
+              "type": "extension",
+              "name": "B",
+              "addon": "extension_b",
+              "extension_group": "nodetest_group"
+            },
+            {
+              "type": "extension",
+              "name": "C",
+              "addon": "extension_c",
+              "extension_group": "nodetest_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "A",
+              "cmd": [
+                {
+                  "name": "start",
+                  "dest": [
+                    {
+                      "extension": "B"
+                    }
+                  ]
+                },
+                {
+                  "name": "stop",
+                  "dest": [
+                    {
+                      "extension": "B"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "B",
+              "cmd": [
+                {
+                  "name": "start",
+                  "dest": [
+                    {
+                      "extension": "C"
+                    }
+                  ]
+                },
+                {
+                  "name": "stop",
+                  "dest": [
+                    {
+                      "extension": "C"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "C"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

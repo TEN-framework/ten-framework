@@ -1,0 +1,47 @@
+PackageIdentifier: ten-framework.tman
+
+PackageVersion: __VERSION__
+
+PackageLocale: zh-TW
+
+Publisher: TEN Framework 團隊
+
+PublisherUrl: https://github.com/TEN-framework
+
+PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
+
+PackageName: tman
+
+PackageUrl: https://github.com/TEN-framework/ten-framework
+
+License: Apache 2.0 with certain conditions
+
+LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
+
+ShortDescription: TEN Framework 套件管理器
+
+Description: |-
+  tman 是 TEN Framework 的官方套件管理器。
+  它幫助開發者管理擴充套件、通訊協定和其他 TEN 框架元件。
+
+  主要特性：
+  - 輕鬆安裝和管理 TEN 套件
+  - 自動相依性解析
+  - 套件版本控制和更新
+  - 支援多種套件類型（擴充套件、通訊協定等）
+  - 與 TEN Framework 專案無縫整合
+
+  TEN Framework 是一個強大的即時通訊應用程式框架，
+  tman 讓您可以輕鬆擴充和客製化應用程式。
+
+Tags:
+  - package-manager
+  - ten-framework
+  - extension-manager
+  - developer-tools
+  - cli
+  - ten
+
+ManifestType: locale
+
+ManifestVersion: 1.6.0

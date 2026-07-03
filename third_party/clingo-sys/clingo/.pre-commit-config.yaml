@@ -1,0 +1,28 @@
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+      exclude: ^.github/
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
+        exclude: ^.github/
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.0
+    hooks:
+    - id: black
+      exclude: ^.github/
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.8
+    hooks:
+      - id: clang-format
+        exclude: /_clingo\.c$
+        types_or: [c++, c, cuda]

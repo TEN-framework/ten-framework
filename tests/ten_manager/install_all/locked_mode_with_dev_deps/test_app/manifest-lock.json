@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "version": "2.0.0",
+      "hash": "9c3f624fcc3e1bf4619f59e1f1be7d8901673dcba625ef2afe26ba50f7252fe4",
+      "supports": [
+        {
+          "os": "linux"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "version": "1.0.0",
+      "hash": "9e8b0e60ec038138070920d51f6970bab5e7bf257b208f4597b5718a2f4aaec0",
+      "dependencies": [
+        {
+          "type": "extension",
+          "name": "ext_a"
+        }
+      ]
+    }
+  ]
+}

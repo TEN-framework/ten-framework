@@ -1,0 +1,31 @@
+name: Trigger Sync Remote Docs
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag name"
+        required: false
+        type: string
+        default: "latest"
+
+jobs:
+  trigger_sync_remote_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger remote workflow_dispatch
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.TEN_FRAMEWORK_PORTAL_ACTION_PAT }} # need repo + workflow permissions
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'TEN-framework',
+              repo: 'portal',
+              workflow_id: 'sync-remote-docs.yml', // target workflow
+              ref: 'main', // branch
+              inputs: {
+                target_tag: '${{ github.event.release.tag_name || github.event.inputs.tag_name }}' // workflow_dispatch.inputs.target_tag
+              }
+            });

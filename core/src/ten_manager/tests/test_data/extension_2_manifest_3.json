@@ -1,0 +1,19 @@
+{
+  "type": "extension",
+  "name": "extension_addon_2",
+  "version": "0.1.0",
+  "api": {
+    "cmd_in": [
+      {
+        "name": "change_name",
+        "property": {
+          "properties": {
+            "aaa": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

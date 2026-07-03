@@ -1,0 +1,19 @@
+{
+  "type": "extension",
+  "name": "extension_addon_1",
+  "version": "0.1.0",
+  "api": {
+    "cmd_out": [
+      {
+        "name": "test_cmd_for_update",
+        "property": {
+          "properties": {
+            "original_source": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

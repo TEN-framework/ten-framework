@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "standalone test (debugpy, launch)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "/usr/bin/python3",
+      "module": "pytest",
+      "args": [
+        "-s",
+        "tests/"
+      ],
+      "env": {
+        "TEN_ENABLE_PYTHON_DEBUG": "true",
+        "PYTHONPATH": "${workspaceFolder}/.ten/app/ten_packages/system/ten_runtime_python/lib:${workspaceFolder}/.ten/app/ten_packages/system/ten_runtime_python/interface:${workspaceFolder}/.ten/app:${workspaceFolder}/.ten/app/ten_packages/system/ten_ai_base/interface"
+      },
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}

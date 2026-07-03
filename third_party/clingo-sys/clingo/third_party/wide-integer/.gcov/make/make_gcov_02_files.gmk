@@ -1,0 +1,38 @@
+﻿# ------------------------------------------------------------------------------
+#  Copyright Christopher Kormanyos 2022.
+#  Distributed under the Boost Software License,
+#  Version 1.0. (See accompanying file LICENSE_1_0.txt
+#  or copy at http://www.boost.org/LICENSE_1_0.txt)
+# ------------------------------------------------------------------------------
+
+FILES_PRJ  =   $(PATH_SRC)/test/test                                            \
+               $(PATH_SRC)/test/test_uintwide_t_boost_backend                   \
+               $(PATH_SRC)/test/test_uintwide_t_edge_cases                      \
+               $(PATH_SRC)/test/test_uintwide_t_examples                        \
+               $(PATH_SRC)/test/test_uintwide_t_float_convert                   \
+               $(PATH_SRC)/test/test_uintwide_t_int_convert                     \
+               $(PATH_SRC)/test/test_uintwide_t_n_base                          \
+               $(PATH_SRC)/test/test_uintwide_t_n_binary_ops_base               \
+               $(PATH_SRC)/test/test_uintwide_t_spot_values                     \
+               $(PATH_SRC)/examples/example000a_builtin_convert                 \
+               $(PATH_SRC)/examples/example000_numeric_limits                   \
+               $(PATH_SRC)/examples/example001_mul_div                          \
+               $(PATH_SRC)/examples/example001a_div_mod                         \
+               $(PATH_SRC)/examples/example002_shl_shr                          \
+               $(PATH_SRC)/examples/example003_sqrt                             \
+               $(PATH_SRC)/examples/example003a_cbrt                            \
+               $(PATH_SRC)/examples/example004_rootk_pow                        \
+               $(PATH_SRC)/examples/example005_powm                             \
+               $(PATH_SRC)/examples/example005a_pow_factors_of_p99              \
+               $(PATH_SRC)/examples/example006_gcd                              \
+               $(PATH_SRC)/examples/example007_random_generator                 \
+               $(PATH_SRC)/examples/example008_miller_rabin_prime               \
+               $(PATH_SRC)/examples/example008a_miller_rabin_prime              \
+               $(PATH_SRC)/examples/example009_timed_mul                        \
+               $(PATH_SRC)/examples/example009a_timed_mul_4_by_4                \
+               $(PATH_SRC)/examples/example009b_timed_mul_8_by_8                \
+               $(PATH_SRC)/examples/example010_uint48_t                         \
+               $(PATH_SRC)/examples/example011_uint24_t                         \
+               $(PATH_SRC)/examples/example012_rsa_crypto                       \
+               $(PATH_SRC)/examples/example013_ecdsa_sign_verify                \
+               $(PATH_SRC)/examples/example014_pi_spigot_wide

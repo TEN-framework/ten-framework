@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  ten-building-ubuntu-2204:
+    build: .
+    image: ten/building/ubuntu/22.04
+    tty: true
+    volumes:
+      - /tmp/ten:/tmp/ten
+    environment:
+      - PATH=/tmp/ten/ten_gn:$PATH

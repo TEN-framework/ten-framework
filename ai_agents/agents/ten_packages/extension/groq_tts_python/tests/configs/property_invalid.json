@@ -1,0 +1,8 @@
+{
+    "params": {
+        "api_key": "invalid",
+        "model": "invalid",
+        "voice": "Arista-PlayAI",
+        "sample_rate": 16000
+    }
+}

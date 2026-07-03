@@ -1,0 +1,5 @@
+# Memory integration
+requests
+
+# Optional: for better error handling
+pydantic

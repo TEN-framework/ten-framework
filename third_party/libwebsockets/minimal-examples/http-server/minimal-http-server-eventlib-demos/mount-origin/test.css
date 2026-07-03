@@ -1,0 +1,190 @@
+
+span.title {
+	font-size:18pt;
+	font-family: Arial;
+	font-weight:normal;
+	text-align:center;
+	color:#000000;
+}
+span.mount {
+	font-size:10pt;
+	font-family: Arial;
+	font-weight:normal;
+	text-align:center;
+	color:#000000;
+}
+span.mountname {
+	font-size:14pt;
+	font-family: Arial;
+	font-weight:bold;
+	text-align:center;
+	color:#404010;
+}
+span.n {
+	font-size:12pt;
+	font-family: Arial;
+	font-weight:normal;
+	text-align:center;
+	color:#808020;
+}
+span.v {
+	font-size:12pt;
+	font-family: Arial;
+	font-weight:bold;
+	text-align:center;
+	color:#202020;
+}
+span.m1 {
+	font-size:12pt;
+	font-family: Arial;
+	font-weight:bold;
+	text-align:center;
+	color:#202020;
+}
+span.m2 {
+	font-size:12pt;
+	font-family: Arial;
+	font-weight:normal;
+	text-align:center;
+	color:#202020;
+}
+
+.browser { font-size:12pt; font-family: Arial; font-weight:normal; text-align:center; color:#ffff00; vertical-align:middle; text-align:center; background:#d0b070; padding:12px; -webkit-border-radius:10px; border-radius:10px;}
+.group2 { vertical-align:middle;
+	text-align:center;
+	background:#f0f0e0; 
+	padding:12px; 
+	-webkit-border-radius:10px; 
+	border-radius:10px; }
+.explain { vertical-align:middle;
+	text-align:center;
+	background:#f0f0c0; padding:12px;
+	-webkit-border-radius:10px;
+	border-radius:10px;
+	color:#404000;
+	padding:3px;
+}
+td.wsstatus { vertical-align:middle; width:200px; height:50px;
+	text-align:center;
+	background:#f0f0c0; padding:6px;
+	-webkit-border-radius:8px;
+	border-radius:8px;
+	color:#404000; }
+.tdform { vertical-align:middle; width:200px; height:50px;
+	text-align:center;
+	background:#f0f0d0; padding:6px;
+	-webkit-border-radius:8px;
+	margin:10px;
+	border-radius:8px;
+	border: 1px solid black;
+	border-collapse: collapse;font-size:18pt; font-family: Arial; font-weight:normal; text-align:center; color:#000000; 
+	color:#404000; }
+	
+td.l { vertical-align:middle;
+	text-align:center;
+	background:#d0d0b0; 
+	padding:3px; 
+	-webkit-border-radius:3px;
+	border-radius:3px; }
+	
+td.bigger { font-size:120%; }
+
+div.bgw {  background:white }
+div.conninfo {
+	border: solid 2px #e0d040;
+	padding: 4px;
+	width: 500px;
+	height:350px;
+	overflow: auto;
+}
+span.f12 { font-size:12pt }
+	
+.content { vertical-align:top; text-align:center; background:#fffff0; padding:12px; -webkit-border-radius:10px; border-radius:10px; }
+.canvas { vertical-align:top; text-align:center; background:#efefd0; padding:12px; -webkit-border-radius:10px; border-radius:10px; }
+.tabs {
+  position: relative;   
+  min-height: 750px; /* This part sucks */
+  clear: both;
+  margin: 25px 0;
+}
+.tab {
+  float: left;
+}
+.tab label {
+  background: #eee; 
+  padding: 10px; 
+  border: 1px solid #ccc; 
+  margin-left: -1px; 
+  position: relative;
+  left: 1px; 
+}
+.tab [type=radio] {
+  display: none;   
+}
+.content {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  background: white;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  border: 1px solid #ccc; 
+}
+[type=radio]:checked ~ label {
+  background: white;
+  border-bottom: 1px solid white;
+  z-index: 2;
+}
+[type=radio]:checked ~ label ~ .content {
+  z-index: 1;
+}
+
+	td.wsstatus { vertical-align:middle; width:200px; height:50px;
+		text-align:center;
+		background:#f0f0c0; padding:6px;
+		-webkit-border-radius:8px;
+		border-radius:8px;
+		color:#404000; }
+	td.l { vertical-align:middle;
+		text-align:center;
+		background:#d0d0b0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.dl { vertical-align:middle;
+		text-align:center;
+		background:#c0c0c0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.c { vertical-align:middle;
+		text-align:center;
+		background:#c0c0a0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.c0 { vertical-align:middle;
+		text-align:center;
+		background:#b0b090; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.dc0 { vertical-align:middle;
+		text-align:center;
+		background:#a0a0a0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.c1 { vertical-align:middle;
+		text-align:center;
+		background:#c0c0c0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }
+	td.t { vertical-align:middle;
+		text-align:center;
+		background:#e0e0c0; 
+		padding:3px; 
+		-webkit-border-radius:3px; 
+		border-radius:3px; }

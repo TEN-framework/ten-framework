@@ -1,0 +1,49 @@
+<testcase>
+
+#Informational
+<info>
+<keywords>
+RTSP
+OPTIONS
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+RTSP/1.0 200 OK
+Server: RTSPD/libcurl-test
+CSeq: 1
+Public: DESCRIBE, OPTIONS, SETUP, TEARDOWN, PLAY, PAUSE
+Curl-Private: swsclose
+</data>
+</reply>
+
+# Client-Side
+<client>
+<server>
+rtsp
+</server>
+<tool>
+lib%TESTNUMBER
+</tool>
+
+<name>
+simple RTSP OPTIONS command
+</name>
+<command>
+rtsp://%HOSTIP:%RTSPPORT/%TESTNUMBER
+</command>
+</client>
+
+<verify>
+<protocol>
+OPTIONS rtsp://%HOSTIP:%RTSPPORT/%TESTNUMBER RTSP/1.0
+CSeq: 1
+User-Agent: test%TESTNUMBER
+Test-Number: %TESTNUMBER
+
+</protocol>
+</verify>
+
+</testcase>

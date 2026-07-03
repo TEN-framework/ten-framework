@@ -1,0 +1,106 @@
+{
+  "type": "extension",
+  "name": "gemini_mllm_python",
+  "version": "0.2.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "realtime/**.tent",
+      "realtime/**.py",
+      "pyproject.toml"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/mllm-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "float32"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "server_vad": {
+          "type": "bool"
+        },
+        "audio_out": {
+          "type": "bool"
+        },
+        "input_transcript": {
+          "type": "bool"
+        },
+        "input_sample_rate": {
+          "type": "int32"
+        },
+        "output_sample_rate": {
+          "type": "int32"
+        },
+        "transcribe_user": {
+          "type": "bool"
+        },
+        "transcribe_agent": {
+          "type": "bool"
+        },
+        "affective_dialog": {
+          "type": "bool"
+        },
+        "proactive_audio": {
+          "type": "bool"
+        },
+        "turn_coverage": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "audio_chunk_bytes": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "media_resolution": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

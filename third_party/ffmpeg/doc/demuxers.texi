@@ -1,0 +1,1165 @@
+@chapter Demuxers
+@c man begin DEMUXERS
+
+Demuxers are configured elements in FFmpeg that can read the
+multimedia streams from a particular type of file.
+
+When you configure your FFmpeg build, all the supported demuxers
+are enabled by default. You can list all available ones using the
+configure option @code{--list-demuxers}.
+
+You can disable all the demuxers using the configure option
+@code{--disable-demuxers}, and selectively enable a single demuxer with
+the option @code{--enable-demuxer=@var{DEMUXER}}, or disable it
+with the option @code{--disable-demuxer=@var{DEMUXER}}.
+
+The option @code{-demuxers} of the ff* tools will display the list of
+enabled demuxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
+
+The description of some of the currently available demuxers follows.
+
+@section aa
+
+Audible Format 2, 3, and 4 demuxer.
+
+This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
+
+@section aac
+
+Raw Audio Data Transport Stream AAC demuxer.
+
+This demuxer is used to demux an ADTS input containing a single AAC stream
+alongwith any ID3v1/2 or APE tags in it.
+
+@section apng
+
+Animated Portable Network Graphics demuxer.
+
+This demuxer is used to demux APNG files.
+All headers, but the PNG signature, up to (but not including) the first
+fcTL chunk are transmitted as extradata.
+Frames are then split as being all the chunks between two fcTL ones, or
+between the last fcTL and IEND chunks.
+
+@table @option
+@item -ignore_loop @var{bool}
+Ignore the loop variable in the file if set. Default is enabled.
+
+@item -max_fps @var{int}
+Maximum framerate in frames per second. Default of 0 imposes no limit.
+
+@item -default_fps @var{int}
+Default framerate in frames per second when none is specified in the file
+(0 meaning as fast as possible). Default is 15.
+
+@end table
+
+@section asf
+
+Advanced Systems Format demuxer.
+
+This demuxer is used to demux ASF files and MMS network streams.
+
+@table @option
+@item -no_resync_search @var{bool}
+Do not try to resynchronize by looking for a certain optional start code.
+@end table
+
+@anchor{concat}
+@section concat
+
+Virtual concatenation script demuxer.
+
+This demuxer reads a list of files and other directives from a text file and
+demuxes them one after the other, as if all their packets had been muxed
+together.
+
+The timestamps in the files are adjusted so that the first file starts at 0
+and each next file starts where the previous one finishes. Note that it is
+done globally and may cause gaps if all streams do not have exactly the same
+length.
+
+All files must have the same streams (same codecs, same time base, etc.).
+
+The duration of each file is used to adjust the timestamps of the next file:
+if the duration is incorrect (because it was computed using the bit-rate or
+because the file is truncated, for example), it can cause artifacts. The
+@code{duration} directive can be used to override the duration stored in
+each file.
+
+@subsection Syntax
+
+The script is a text file in extended-ASCII, with one directive per line.
+Empty lines, leading spaces and lines starting with '#' are ignored. The
+following directive is recognized:
+
+@table @option
+
+@item @code{file @var{path}}
+Path to a file to read; special characters and spaces must be escaped with
+backslash or single quotes.
+
+All subsequent file-related directives apply to that file.
+
+@item @code{ffconcat version 1.0}
+Identify the script type and version.
+
+To make FFmpeg recognize the format automatically, this directive must
+appear exactly as is (no extra space or byte-order-mark) on the very first
+line of the script.
+
+@item @code{duration @var{dur}}
+Duration of the file. This information can be specified from the file;
+specifying it here may be more efficient or help if the information from the
+file is not available or accurate.
+
+If the duration is set for all files, then it is possible to seek in the
+whole concatenated video.
+
+@item @code{inpoint @var{timestamp}}
+In point of the file. When the demuxer opens the file it instantly seeks to the
+specified timestamp. Seeking is done so that all streams can be presented
+successfully at In point.
+
+This directive works best with intra frame codecs, because for non-intra frame
+ones you will usually get extra packets before the actual In point and the
+decoded content will most likely contain frames before In point too.
+
+For each file, packets before the file In point will have timestamps less than
+the calculated start timestamp of the file (negative in case of the first
+file), and the duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified In point.
+
+Because of potential packets before the specified In point, packet timestamps
+may overlap between two concatenated files.
+
+@item @code{outpoint @var{timestamp}}
+Out point of the file. When the demuxer reaches the specified decoding
+timestamp in any of the streams, it handles it as an end of file condition and
+skips the current and all the remaining packets from all streams.
+
+Out point is exclusive, which means that the demuxer will not output packets
+with a decoding timestamp greater or equal to Out point.
+
+This directive works best with intra frame codecs and formats where all streams
+are tightly interleaved. For non-intra frame codecs you will usually get
+additional packets with presentation timestamp after Out point therefore the
+decoded content will most likely contain frames after Out point too. If your
+streams are not tightly interleaved you may not get all the packets from all
+streams before Out point and you may only will be able to decode the earliest
+stream until Out point.
+
+The duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified Out point.
+
+@item @code{file_packet_metadata @var{key=value}}
+Metadata of the packets of the file. The specified metadata will be set for
+each file packet. You can specify this directive multiple times to add multiple
+metadata entries.
+This directive is deprecated, use @code{file_packet_meta} instead.
+
+@item @code{file_packet_meta @var{key} @var{value}}
+Metadata of the packets of the file. The specified metadata will be set for
+each file packet. You can specify this directive multiple times to add multiple
+metadata entries.
+
+@item @code{option @var{key} @var{value}}
+Option to access, open and probe the file.
+Can be present multiple times.
+
+@item @code{stream}
+Introduce a stream in the virtual file.
+All subsequent stream-related directives apply to the last introduced
+stream.
+Some streams properties must be set in order to allow identifying the
+matching streams in the subfiles.
+If no streams are defined in the script, the streams from the first file are
+copied.
+
+@item @code{exact_stream_id @var{id}}
+Set the id of the stream.
+If this directive is given, the string with the corresponding id in the
+subfiles will be used.
+This is especially useful for MPEG-PS (VOB) files, where the order of the
+streams is not reliable.
+
+@item @code{stream_meta @var{key} @var{value}}
+Metadata for the stream.
+Can be present multiple times.
+
+@item @code{stream_codec @var{value}}
+Codec for the stream.
+
+@item @code{stream_extradata @var{hex_string}}
+Extradata for the string, encoded in hexadecimal.
+
+@item @code{chapter @var{id} @var{start} @var{end}}
+Add a chapter. @var{id} is an unique identifier, possibly small and
+consecutive.
+
+@end table
+
+@subsection Options
+
+This demuxer accepts the following option:
+
+@table @option
+
+@item safe
+If set to 1, reject unsafe file paths and directives.
+A file path is considered safe if it
+does not contain a protocol specification and is relative and all components
+only contain characters from the portable character set (letters, digits,
+period, underscore and hyphen) and have no period at the beginning of a
+component.
+
+If set to 0, any file name is accepted.
+
+The default is 1.
+
+@item auto_convert
+If set to 1, try to perform automatic conversions on packet data to make the
+streams concatenable.
+The default is 1.
+
+Currently, the only conversion is adding the h264_mp4toannexb bitstream
+filter to H.264 streams in MP4 format. This is necessary in particular if
+there are resolution changes.
+
+@item segment_time_metadata
+If set to 1, every packet will contain the @var{lavf.concat.start_time} and the
+@var{lavf.concat.duration} packet metadata values which are the start_time and
+the duration of the respective file segments in the concatenated output
+expressed in microseconds. The duration metadata is only set if it is known
+based on the concat file.
+The default is 0.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Use absolute filenames and include some comments:
+@example
+# my first filename
+file /mnt/share/file-1.wav
+# my second filename including whitespace
+file '/mnt/share/file 2.wav'
+# my third filename including whitespace plus single quote
+file '/mnt/share/file 3'\''.wav'
+@end example
+
+@item
+Allow for input format auto-probing, use safe filenames and set the duration of
+the first file:
+@example
+ffconcat version 1.0
+
+file file-1.wav
+duration 20.0
+
+file subdir/file-2.wav
+@end example
+@end itemize
+
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
+@subsection Options
+
+This demuxer accepts the following option:
+
+@table @option
+
+@item cenc_decryption_key
+16-byte key, in hex, to decrypt files encrypted using ISO Common Encryption (CENC/AES-128 CTR; ISO/IEC 23001-7).
+
+@end table
+
+@section dvdvideo
+
+DVD-Video demuxer, powered by libdvdnav and libdvdread.
+
+Can directly ingest DVD titles, specifically sequential PGCs, into
+a conversion pipeline. Menu assets, such as background video or audio,
+can also be demuxed given the menu's coordinates (at best effort).
+
+Block devices (DVD drives), ISO files, and directory structures are accepted.
+Activate with @code{-f dvdvideo} in front of one of these inputs.
+
+This demuxer does NOT have decryption code of any kind. You are on your own
+working with encrypted DVDs, and should not expect support on the matter.
+
+Underlying playback is handled by libdvdnav, and structure parsing by libdvdread.
+FFmpeg must be built with GPL library support available as well as the
+configure switches @code{--enable-libdvdnav} and @code{--enable-libdvdread}.
+
+You will need to provide either the desired "title number" or exact PGC/PG coordinates.
+Many open-source DVD players and tools can aid in providing this information.
+If not specified, the demuxer will default to title 1 which works for many discs.
+However, due to the flexibility of the format, it is recommended to check manually.
+There are many discs that are authored strangely or with invalid headers.
+
+If the input is a real DVD drive, please note that there are some drives which may
+silently fail on reading bad sectors from the disc, returning random bits instead
+which is effectively corrupt data. This is especially prominent on aging or rotting discs.
+A second pass and integrity checks would be needed to detect the corruption.
+This is not an FFmpeg issue.
+
+@subsection Background
+
+DVD-Video is not a directly accessible, linear container format in the
+traditional sense. Instead, it allows for complex and programmatic playback of
+carefully muxed MPEG-PS streams that are stored in headerless VOB files.
+To the end-user, these streams are known simply as "titles", but the actual
+logical playback sequence is defined by one or more "PGCs", or Program Group Chains,
+within the title. The PGC is in turn comprised of multiple "PGs", or Programs",
+which are the actual video segments (and for a typical video feature, sequentially
+ordered). The PGC structure, along with stream layout and metadata, are stored in
+IFO files that need to be parsed. PGCs can be thought of as playlists in easier terms.
+
+An actual DVD player relies on user GUI interaction via menus and an internal VM
+to drive the direction of demuxing. Generally, the user would either navigate (via menus)
+or automatically be redirected to the PGC of their choice. During this process and
+the subsequent playback, the DVD player's internal VM also maintains a state and
+executes instructions that can create jumps to different sectors during playback.
+This is why libdvdnav is involved, as a linear read of the MPEG-PS blobs on the
+disc (VOBs) is not enough to produce the right sequence in many cases.
+
+There are many other DVD structures (a long subject) that will not be discussed here.
+NAV packets, in particular, are handled by this demuxer to build accurate timing
+but not emitted as a stream. For a good high-level understanding, refer to:
+@url{https://code.videolan.org/videolan/libdvdnav/-/blob/master/doc/dvd_structures}
+
+@subsection Options
+
+This demuxer accepts the following options:
+
+@table @option
+
+@item title @var{int}
+The title number to play. Must be set if @option{pgc} and @option{pg} are not set.
+Not applicable to menus.
+Default is 0 (auto), which currently only selects the first available title (title 1)
+and notifies the user about the implications.
+
+@item chapter_start @var{int}
+The chapter, or PTT (part-of-title), number to start at. Not applicable to menus.
+Default is 1.
+
+@item chapter_end @var{int}
+The chapter, or PTT (part-of-title), number to end at. Not applicable to menus.
+Default is 0, which is a special value to signal end at the last possible chapter.
+
+@item angle @var{int}
+The video angle number, referring to what is essentially an additional
+video stream that is composed from alternate frames interleaved in the VOBs.
+Not applicable to menus.
+Default is 1.
+
+@item region @var{int}
+The region code to use for playback. Some discs may use this to default playback
+at a particular angle in different regions. This option will not affect the region code
+of a real DVD drive, if used as an input. Not applicable to menus.
+Default is 0, "world".
+
+@item menu @var{bool}
+Demux menu assets instead of navigating a title. Requires exact coordinates
+of the menu (@option{menu_lu}, @option{menu_vts}, @option{pgc}, @option{pg}).
+Default is false.
+
+@item menu_lu @var{int}
+The menu language to demux. In DVD, menus are grouped by language.
+Default is 1, the first language unit.
+
+@item menu_vts @var{int}
+The VTS where the menu lives, or 0 if it is a VMG menu (root-level).
+Default is 1, menu of the first VTS.
+
+@item pgc @var{int}
+The entry PGC to start playback, in conjunction with @option{pg}.
+Alternative to setting @option{title}.
+Chapter markers are not supported at this time.
+Must be explicitly set for menus.
+Default is 0, automatically resolve from value of @option{title}.
+
+@item pg @var{int}
+The entry PG to start playback, in conjunction with @option{pgc}.
+Alternative to setting @option{title}.
+Chapter markers are not supported at this time.
+Default is 1, the first PG of the PGC.
+
+@item preindex @var{bool}
+Enable this to have accurate chapter (PTT) markers and duration measurement,
+which requires a slow second pass read in order to index the chapter marker
+timestamps from NAV packets. This is non-ideal extra work for real optical drives.
+It is recommended and faster to use this option with a backup of the DVD structure
+stored on a hard drive. Not compatible with @option{pgc} and @option{pg}.
+Default is 0, false.
+
+@item trim @var{bool}
+Skip padding cells (i.e. cells shorter than 1 second) from the beginning.
+There exist many discs with filler segments at the beginning of the PGC,
+often with junk data intended for controlling a real DVD player's
+buffering speed and with no other material data value.
+Not applicable to menus.
+Default is 1, true.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Open title 3 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -title 3 -i <path to DVD> ...
+@end example
+
+@item
+Open chapters 3-6 from title 1 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -chapter_start 3 -chapter_end 6 -title 1 -i <path to DVD> ...
+@end example
+
+@item
+Open only chapter 5 from title 1 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -chapter_start 5 -chapter_end 5 -title 1 -i <path to DVD> ...
+@end example
+
+@item
+Demux menu with language 1 from VTS 1, PGC 1, starting at PG 1:
+@example
+ffmpeg -f dvdvideo -menu 1 -menu_lu 1 -menu_vts 1 -pgc 1 -pg 1 -i <path to DVD> ...
+@end example
+@end itemize
+
+@section ea
+
+Electronic Arts Multimedia format demuxer.
+
+This format is used by various Electronic Arts games.
+
+@subsection Options
+
+@table @option
+
+@item merge_alpha @var{bool}
+
+Normally the VP6 alpha channel (if exists) is returned as a secondary video
+stream, by setting this option you can make the demuxer return a single video
+stream which contains the alpha channel in addition to the ordinary video.
+
+@end table
+
+@section imf
+
+Interoperable Master Format demuxer.
+
+This demuxer presents audio and video streams found in an IMF Composition, as
+specified in @url{https://doi.org/10.5594/SMPTE.ST2067-2.2020, SMPTE ST 2067-2}.
+
+@example
+ffmpeg [-assetmaps <path of ASSETMAP1>,<path of ASSETMAP2>,...] -i <path of CPL> ...
+@end example
+
+If @code{-assetmaps} is not specified, the demuxer looks for a file called
+@file{ASSETMAP.xml} in the same directory as the CPL.
+
+@section flv, live_flv, kux
+
+Adobe Flash Video Format demuxer.
+
+This demuxer is used to demux FLV files and RTMP network streams. In case of live network streams, if you force format, you may use live_flv option instead of flv to survive timestamp discontinuities.
+KUX is a flv variant used on the Youku platform.
+
+@example
+ffmpeg -f flv -i myfile.flv ...
+ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
+@end example
+
+
+@table @option
+@item -flv_metadata @var{bool}
+Allocate the streams according to the onMetaData array content.
+
+@item -flv_ignore_prevtag @var{bool}
+Ignore the size of previous tag value.
+
+@item -flv_full_metadata @var{bool}
+Output all context of the onMetadata.
+@end table
+
+@section gif
+
+Animated GIF demuxer.
+
+It accepts the following options:
+
+@table @option
+@item min_delay
+Set the minimum valid delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 2.
+
+@item max_gif_delay
+Set the maximum valid delay between frames in hundredth of seconds.
+Range is 0 to 65535. Default value is 65535 (nearly eleven minutes),
+the maximum value allowed by the specification.
+
+@item default_delay
+Set the default delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 10.
+
+@item ignore_loop
+GIF files can contain information to loop a certain number of times (or
+infinitely). If @option{ignore_loop} is set to 1, then the loop setting
+from the input will be ignored and looping will not occur. If set to 0,
+then looping will occur and will cycle the number of times according to
+the GIF. Default value is 1.
+@end table
+
+For example, with the overlay filter, place an infinitely looping GIF
+over another video:
+@example
+ffmpeg -i input.mp4 -ignore_loop 0 -i input.gif -filter_complex overlay=shortest=1 out.mkv
+@end example
+
+Note that in the above example the shortest option for overlay filter is
+used to end the output video at the length of the shortest input file,
+which in this case is @file{input.mp4} as the GIF in this example loops
+infinitely.
+
+@section hls
+
+HLS demuxer
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
+
+It accepts the following options:
+
+@table @option
+@item live_start_index
+segment index to start live streams at (negative values are from the end).
+
+@item prefer_x_start
+prefer to use #EXT-X-START if it's in playlist instead of live_start_index.
+
+@item allowed_extensions
+',' separated list of file extensions that hls is allowed to access.
+
+@item extension_picky
+This blocks disallowed extensions from probing
+It also requires all available segments to have matching extensions to the format
+except mpegts, which is always allowed.
+It is recommended to set the whitelists correctly instead of depending on extensions
+Enabled by default.
+
+@item max_reload
+Maximum number of times a insufficient list is attempted to be reloaded.
+Default value is 1000.
+
+@item m3u8_hold_counters
+The maximum number of times to load m3u8 when it refreshes without new segments.
+Default value is 1000.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP streams.
+Enabled by default.
+
+@item http_multiple
+Use multiple HTTP connections for downloading HTTP segments.
+Enabled by default for HTTP/1.1 servers.
+
+@item http_seekable
+Use HTTP partial requests for downloading HTTP segments.
+0 = disable, 1 = enable, -1 = auto, Default is auto.
+
+@item seg_format_options
+Set options for the demuxer of media segments using a list of key=value pairs separated by @code{:}.
+
+@item seg_max_retry
+Maximum number of times to reload a segment on error, useful when segment skip on network error is not desired.
+Default value is 0.
+@end table
+
+@section image2
+
+Image file demuxer.
+
+This demuxer reads from a list of image files specified by a pattern.
+The syntax and meaning of the pattern is specified by the
+option @var{pattern_type}.
+
+The pattern may contain a suffix which is used to automatically
+determine the format of the images contained in the files.
+
+The size, the pixel format, and the format of each image must be the
+same for all the files in the sequence.
+
+This demuxer accepts the following options:
+@table @option
+@item framerate
+Set the frame rate for the video stream. It defaults to 25.
+@item loop
+If set to 1, loop over the input. Default value is 0.
+@item pattern_type
+Select the pattern type used to interpret the provided filename.
+
+@var{pattern_type} accepts one of the following values.
+@table @option
+@item none
+Disable pattern matching, therefore the video will only contain the specified
+image. You should use this option if you do not want to create sequences from
+multiple images and your filenames may contain special pattern characters.
+@item sequence
+Select a sequence pattern type, used to specify a sequence of files
+indexed by sequential numbers.
+
+A sequence pattern may contain the string "%d" or "%0@var{N}d", which
+specifies the position of the characters representing a sequential
+number in each filename matched by the pattern. If the form
+"%d0@var{N}d" is used, the string representing the number in each
+filename is 0-padded and @var{N} is the total number of 0-padded
+digits representing the number. The literal character '%' can be
+specified in the pattern with the string "%%".
+
+If the sequence pattern contains "%d" or "%0@var{N}d", the first filename of
+the file list specified by the pattern must contain a number
+inclusively contained between @var{start_number} and
+@var{start_number}+@var{start_number_range}-1, and all the following
+numbers must be sequential.
+
+For example the pattern "img-%03d.bmp" will match a sequence of
+filenames of the form @file{img-001.bmp}, @file{img-002.bmp}, ...,
+@file{img-010.bmp}, etc.; the pattern "i%%m%%g-%d.jpg" will match a
+sequence of filenames of the form @file{i%m%g-1.jpg},
+@file{i%m%g-2.jpg}, ..., @file{i%m%g-10.jpg}, etc.
+
+Note that the pattern must not necessarily contain "%d" or
+"%0@var{N}d", for example to convert a single image file
+@file{img.jpeg} you can employ the command:
+@example
+ffmpeg -i img.jpeg img.png
+@end example
+
+@item glob
+Select a glob wildcard pattern type.
+
+The pattern is interpreted like a @code{glob()} pattern. This is only
+selectable if libavformat was compiled with globbing support.
+
+@item glob_sequence @emph{(deprecated, will be removed)}
+Select a mixed glob wildcard/sequence pattern.
+
+If your version of libavformat was compiled with globbing support, and
+the provided pattern contains at least one glob meta character among
+@code{%*?[]@{@}} that is preceded by an unescaped "%", the pattern is
+interpreted like a @code{glob()} pattern, otherwise it is interpreted
+like a sequence pattern.
+
+All glob special characters @code{%*?[]@{@}} must be prefixed
+with "%". To escape a literal "%" you shall use "%%".
+
+For example the pattern @code{foo-%*.jpeg} will match all the
+filenames prefixed by "foo-" and terminating with ".jpeg", and
+@code{foo-%?%?%?.jpeg} will match all the filenames prefixed with
+"foo-", followed by a sequence of three characters, and terminating
+with ".jpeg".
+
+This pattern type is deprecated in favor of @var{glob} and
+@var{sequence}.
+@end table
+
+Default value is @var{glob_sequence}.
+@item pixel_format
+Set the pixel format of the images to read. If not specified the pixel
+format is guessed from the first image file in the sequence.
+@item start_number
+Set the index of the file matched by the image file pattern to start
+to read from. Default value is 0.
+@item start_number_range
+Set the index interval range to check when looking for the first image
+file in the sequence, starting from @var{start_number}. Default value
+is 5.
+@item ts_from_file
+If set to 1, will set frame timestamp to modification time of image file. Note
+that monotonity of timestamps is not provided: images go in the same order as
+without this option. Default value is 0.
+If set to 2, will set frame timestamp to the modification time of the image file in
+nanosecond precision.
+@item video_size
+Set the video size of the images to read. If not specified the video
+size is guessed from the first image file in the sequence.
+@item export_path_metadata
+If set to 1, will add two extra fields to the metadata found in input, making them
+also available for other filters (see @var{drawtext} filter for examples). Default
+value is 0. The extra fields are described below:
+@table @option
+@item lavf.image2dec.source_path
+Corresponds to the full path to the input file being read.
+@item lavf.image2dec.source_basename
+Corresponds to the name of the file being read.
+@end table
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Use @command{ffmpeg} for creating a video from the images in the file
+sequence @file{img-001.jpeg}, @file{img-002.jpeg}, ..., assuming an
+input frame rate of 10 frames per second:
+@example
+ffmpeg -framerate 10 -i 'img-%03d.jpeg' out.mkv
+@end example
+
+@item
+As above, but start by reading from a file with index 100 in the sequence:
+@example
+ffmpeg -framerate 10 -start_number 100 -i 'img-%03d.jpeg' out.mkv
+@end example
+
+@item
+Read images matching the "*.png" glob pattern , that is all the files
+terminating with the ".png" suffix:
+@example
+ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
+@end example
+@end itemize
+
+@section libgme
+
+The Game Music Emu library is a collection of video game music file emulators.
+
+See @url{https://bitbucket.org/mpyne/game-music-emu/overview} for more information.
+
+It accepts the following options:
+
+@table @option
+
+@item track_index
+Set the index of which track to demux. The demuxer can only export one track.
+Track indexes start at 0. Default is to pick the first track. Number of tracks
+is exported as @var{tracks} metadata entry.
+
+@item sample_rate
+Set the sampling rate of the exported track. Range is 1000 to 999999. Default is 44100.
+
+@item max_size @emph{(bytes)}
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read.
+Default is 50 MiB.
+
+@end table
+
+@section libmodplug
+
+ModPlug based module demuxer
+
+See @url{https://github.com/Konstanty/libmodplug}
+
+It will export one 2-channel 16-bit 44.1 kHz audio stream.
+Optionally, a @code{pal8} 16-color video stream can be exported with or without printed metadata.
+
+It accepts the following options:
+
+@table @option
+@item noise_reduction
+Apply a simple low-pass filter. Can be 1 (on) or 0 (off). Default is 0.
+
+@item reverb_depth
+Set amount of reverb. Range 0-100. Default is 0.
+
+@item reverb_delay
+Set delay in ms, clamped to 40-250 ms. Default is 0.
+
+@item bass_amount
+Apply bass expansion a.k.a. XBass or megabass. Range is 0 (quiet) to 100 (loud). Default is 0.
+
+@item bass_range
+Set cutoff i.e. upper-bound for bass frequencies. Range is 10-100 Hz. Default is 0.
+
+@item surround_depth
+Apply a Dolby Pro-Logic surround effect. Range is 0 (quiet) to 100 (heavy). Default is 0.
+
+@item surround_delay
+Set surround delay in ms, clamped to 5-40 ms. Default is 0.
+
+@item max_size
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read. Range is 0 to 100 MiB.
+0 removes buffer size limit (not recommended). Default is 5 MiB.
+
+@item video_stream_expr
+String which is evaluated using the eval API to assign colors to the generated video stream.
+Variables which can be used are @code{x}, @code{y}, @code{w}, @code{h}, @code{t}, @code{speed},
+@code{tempo}, @code{order}, @code{pattern} and @code{row}.
+
+@item video_stream
+Generate video stream. Can be 1 (on) or 0 (off). Default is 0.
+
+@item video_stream_w
+Set video frame width in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_h
+Set video frame height in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_ptxt
+Print metadata on video stream. Includes @code{speed}, @code{tempo}, @code{order}, @code{pattern},
+@code{row} and @code{ts} (time in ms). Can be 1 (on) or 0 (off). Default is 1.
+
+@end table
+
+@section libopenmpt
+
+libopenmpt based module demuxer
+
+See @url{https://lib.openmpt.org/libopenmpt/} for more information.
+
+Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
+option.
+
+It accepts the following options:
+
+@table @option
+@item subsong
+Set the subsong index. This can be either  'all', 'auto', or the index of the
+subsong. Subsong indexes start at 0. The default is 'auto'.
+
+The default value is to let libopenmpt choose.
+
+@item layout
+Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
+The default value is STEREO.
+
+@item sample_rate
+Set the sample rate for libopenmpt to output.
+Range is from 1000 to INT_MAX. The value default is 48000.
+@end table
+
+@section mov/mp4/3gp
+
+Demuxer for Quicktime File Format & ISO/IEC Base Media File Format (ISO/IEC 14496-12 or MPEG-4 Part 12, ISO/IEC 15444-12 or JPEG 2000 Part 12).
+
+Registered extensions: mov, mp4, m4a, 3gp, 3g2, mj2, psp, m4b, ism, ismv, isma, f4v
+
+@subsection Options
+
+This demuxer accepts the following options:
+@table @option
+@item enable_drefs
+Enable loading of external tracks, disabled by default.
+Enabling this can theoretically leak information in some use cases.
+
+@item use_absolute_path
+Allows loading of external tracks via absolute paths, disabled by default.
+Enabling this poses a security risk. It should only be enabled if the source
+is known to be non-malicious.
+
+@item seek_streams_individually
+When seeking, identify the closest point in each stream individually and demux packets in
+that stream from identified point. This can lead to a different sequence of packets compared
+to demuxing linearly from the beginning. Default is true.
+
+@item ignore_editlist
+Ignore any edit list atoms. The demuxer, by default, modifies the stream index to reflect the
+timeline described by the edit list. Default is false.
+
+@item advanced_editlist
+Modify the stream index to reflect the timeline described by the edit list. @code{ignore_editlist}
+must be set to false for this option to be effective.
+If both @code{ignore_editlist} and this option are set to false, then only the
+start of the stream index is modified to reflect initial dwell time or starting timestamp
+described by the edit list. Default is true.
+
+@item ignore_chapters
+Don't parse chapters. This includes GoPro 'HiLight' tags/moments. Note that chapters are
+only parsed when input is seekable. Default is false.
+
+@item use_mfra_for
+For seekable fragmented input, set fragment's starting timestamp from media fragment random access box, if present.
+
+Following options are available:
+@table @samp
+@item auto
+Auto-detect whether to set mfra timestamps as PTS or DTS @emph{(default)}
+
+@item dts
+Set mfra timestamps as DTS
+
+@item pts
+Set mfra timestamps as PTS
+
+@item 0
+Don't use mfra box to set timestamps
+@end table
+
+@item use_tfdt
+For fragmented input, set fragment's starting timestamp to @code{baseMediaDecodeTime} from the @code{tfdt} box.
+Default is enabled, which will prefer to use the @code{tfdt} box to set DTS. Disable to use the @code{earliest_presentation_time} from the @code{sidx} box.
+In either case, the timestamp from the @code{mfra} box will be used if it's available and @code{use_mfra_for} is
+set to pts or dts.
+
+@item export_all
+Export unrecognized boxes within the @var{udta} box as metadata entries. The first four
+characters of the box type are set as the key. Default is false.
+
+@item export_xmp
+Export entire contents of @var{XMP_} box and @var{uuid} box as a string with key @code{xmp}. Note that
+if @code{export_all} is set and this option isn't, the contents of @var{XMP_} box are still exported
+but with key @code{XMP_}. Default is false.
+
+@item activation_bytes
+4-byte key required to decrypt Audible AAX and AAX+ files. See Audible AAX subsection below.
+
+@item audible_fixed_key
+Fixed key used for handling Audible AAX/AAX+ files. It has been pre-set so should not be necessary to
+specify.
+
+@item decryption_key
+16-byte key, in hex, to decrypt files encrypted using ISO Common Encryption (CENC/AES-128 CTR; ISO/IEC 23001-7).
+
+@item max_stts_delta
+Very high sample deltas written in a trak's stts box may occasionally be intended but usually they are written in
+error or used to store a negative value for dts correction when treated as signed 32-bit integers. This option lets
+the user set an upper limit, beyond which the delta is clamped to 1. Values greater than the limit if negative when
+cast to int32 are used to adjust onward dts.
+
+Unit is the track time scale. Range is 0 to UINT_MAX. Default is @code{UINT_MAX - 48000*10} which allows up to
+a 10 second dts correction for 48 kHz audio streams while accommodating 99.9% of @code{uint32} range.
+
+@item interleaved_read
+Interleave packets from multiple tracks at demuxer level. For badly interleaved files, this prevents playback issues
+caused by large gaps between packets in different tracks, as MOV/MP4 do not have packet placement requirements.
+However, this can cause excessive seeking on very badly interleaved files, due to seeking between tracks, so disabling
+it may prevent I/O issues, at the expense of playback.
+
+@end table
+
+@subsection Audible AAX
+
+Audible AAX files are encrypted M4B files, and they can be decrypted by specifying a 4 byte activation secret.
+@example
+ffmpeg -activation_bytes 1CEB00DA -i test.aax -vn -c:a copy output.mp4
+@end example
+
+@section mpegts
+
+MPEG-2 transport stream demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item resync_size
+Set size limit for looking up a new synchronization. Default value is
+65536.
+
+@item skip_unknown_pmt
+Skip PMTs for programs not defined in the PAT. Default value is 0.
+
+@item fix_teletext_pts
+Override teletext packet PTS and DTS values with the timestamps calculated
+from the PCR of the first program which the teletext stream is part of and is
+not discarded. Default value is 1, set this option to 0 if you want your
+teletext packet PTS and DTS values untouched.
+
+@item ts_packetsize
+Output option carrying the raw packet size in bytes.
+Show the detected raw packet size, cannot be set by the user.
+
+@item scan_all_pmts
+Scan and combine all PMTs. The value is an integer with value from -1
+to 1 (-1 means automatic setting, 1 means enabled, 0 means
+disabled). Default value is -1.
+
+@item merge_pmt_versions
+Re-use existing streams when a PMT's version is updated and elementary
+streams move to different PIDs. Default value is 0.
+
+@item max_packet_size
+Set maximum size, in bytes, of packet emitted by the demuxer. Payloads above this size
+are split across multiple packets. Range is 1 to INT_MAX/2. Default is 204800 bytes.
+@end table
+
+@section mpjpeg
+
+MJPEG encapsulated in multi-part MIME demuxer.
+
+This demuxer allows reading of MJPEG, where each frame is represented as a part of
+multipart/x-mixed-replace stream.
+@table @option
+
+@item strict_mime_boundary
+Default implementation applies a relaxed standard to multi-part MIME boundary detection,
+to prevent regression with numerous existing endpoints not generating a proper MIME
+MJPEG stream. Turning this option on by setting it to 1 will result in a stricter check
+of the boundary value.
+@end table
+
+@section rawvideo
+
+Raw video demuxer.
+
+This demuxer allows one to read raw video data. Since there is no header
+specifying the assumed video parameters, the user must specify them
+in order to be able to decode the data correctly.
+
+This demuxer accepts the following options:
+@table @option
+
+@item framerate
+Set input video frame rate. Default value is 25.
+
+@item pixel_format
+Set the input video pixel format. Default value is @code{yuv420p}.
+
+@item video_size
+Set the input video size. This value must be specified explicitly.
+@end table
+
+For example to read a rawvideo file @file{input.raw} with
+@command{ffplay}, assuming a pixel format of @code{rgb24}, a video
+size of @code{320x240}, and a frame rate of 10 images per second, use
+the command:
+@example
+ffplay -f rawvideo -pixel_format rgb24 -video_size 320x240 -framerate 10 input.raw
+@end example
+
+@anchor{rcwtdec}
+@section rcwt
+
+RCWT (Raw Captions With Time) is a format native to ccextractor, a commonly
+used open source tool for processing 608/708 Closed Captions (CC) sources.
+For more information on the format, see @ref{rcwtenc,,,ffmpeg-formats}.
+
+This demuxer implements the specification as of March 2024, which has
+been stable and unchanged since April 2014.
+
+@subsection Examples
+
+@itemize
+@item
+Render CC to ASS using the built-in decoder:
+@example
+ffmpeg -i CC.rcwt.bin CC.ass
+@end example
+Note that if your output appears to be empty, you may have to manually
+set the decoder's @option{data_field} option to pick the desired CC substream.
+
+@item
+Convert an RCWT backup to Scenarist (SCC) format:
+@example
+ffmpeg -i CC.rcwt.bin -c:s copy CC.scc
+@end example
+Note that the SCC format does not support all of the possible CC extensions
+that can be stored in RCWT (such as EIA-708).
+@end itemize
+
+@section sbg
+
+SBaGen script demuxer.
+
+This demuxer reads the script language used by SBaGen
+@url{http://uazu.net/sbagen/} to generate binaural beats sessions. A SBG
+script looks like that:
+@example
+-SE
+a: 300-2.5/3 440+4.5/0
+b: 300-2.5/0 440+4.5/3
+off: -
+NOW      == a
++0:07:00 == b
++0:14:00 == a
++0:21:00 == b
++0:30:00    off
+@end example
+
+A SBG script can mix absolute and relative timestamps. If the script uses
+either only absolute timestamps (including the script start time) or only
+relative ones, then its layout is fixed, and the conversion is
+straightforward. On the other hand, if the script mixes both kind of
+timestamps, then the @var{NOW} reference for relative timestamps will be
+taken from the current time of day at the time the script is read, and the
+script layout will be frozen according to that reference. That means that if
+the script is directly played, the actual times will match the absolute
+timestamps up to the sound controller's clock accuracy, but if the user
+somehow pauses the playback or seeks, all times will be shifted accordingly.
+
+@section tedcaptions
+
+JSON captions used for @url{http://www.ted.com/, TED Talks}.
+
+TED does not provide links to the captions, but they can be guessed from the
+page. The file @file{tools/bookmarklets.html} from the FFmpeg source tree
+contains a bookmarklet to expose them.
+
+This demuxer accepts the following option:
+@table @option
+@item start_time
+Set the start time of the TED talk, in milliseconds. The default is 15000
+(15s). It is used to sync the captions with the downloadable videos, because
+they include a 15s intro.
+@end table
+
+Example: convert the captions to a format most players understand:
+@example
+ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
+@end example
+
+@section vapoursynth
+
+Vapoursynth wrapper.
+
+Due to security concerns, Vapoursynth scripts will not
+be autodetected so the input format has to be forced. For ff* CLI tools,
+add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
+
+This demuxer accepts the following option:
+@table @option
+@item max_script_size
+The demuxer buffers the entire script into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of scripts that can be read.
+Default is 1 MiB.
+@end table
+
+@section w64
+
+Sony Wave64 Audio demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item max_size
+See the same option for the @ref{wav} demuxer.
+@end table
+
+@anchor{wav}
+@section wav
+
+RIFF Wave Audio demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item max_size
+Specify the maximum packet size in bytes for the demuxed packets. By default
+this is set to 0, which means that a sensible value is chosen based on the
+input format.
+@end table
+
+@c man end DEMUXERS

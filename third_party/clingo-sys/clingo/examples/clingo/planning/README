@@ -1,0 +1,6 @@
+This example shows how to solve a conformant planning problem. Note that this
+is a disjunctive encoding.
+
+Example calls:
+    clingo planning-lua.lp encoding.lp instances/coins01.lp
+    clingo planning-lua.lp encoding.lp instances/comm02.lp

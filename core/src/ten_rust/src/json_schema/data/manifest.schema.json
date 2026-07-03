@@ -1,0 +1,363 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$defs": {
+    "packageType": {
+      "type": "string",
+      "enum": [
+        "app",
+        "extension",
+        "system",
+        "protocol",
+        "addon_loader"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "os": {
+      "type": "string",
+      "enum": [
+        "linux",
+        "win",
+        "mac"
+      ]
+    },
+    "arch": {
+      "type": "string",
+      "enum": [
+        "x86",
+        "x64",
+        "arm",
+        "arm64"
+      ]
+    },
+    "supportItem": {
+      "type": "object",
+      "properties": {
+        "os": {
+          "$ref": "#/$defs/os"
+        },
+        "arch": {
+          "$ref": "#/$defs/arch"
+        }
+      }
+    },
+    "notEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "localeString": {
+      // Adhere to the BCP47 standard.
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "localizedText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locales"
+      ],
+      "properties": {
+        "locales": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/localeString"
+          },
+          "patternProperties": {
+            "^[a-z]{2}(-[A-Z]{2})?$": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "content": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "import_uri": {
+                  "type": "string",
+                  "minLength": 1,
+                  "anyOf": [
+                    {
+                      "format": "uri-reference"
+                    },
+                    {
+                      "pattern": "^\\$\\{app_base_dir\\}.*$"
+                    }
+                  ]
+                }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "content"
+                  ]
+                },
+                {
+                  "required": [
+                    "import_uri"
+                  ]
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
+        }
+      }
+    },
+    "description": {
+      "$ref": "#/$defs/localizedText"
+    },
+    "displayName": {
+      "$ref": "#/$defs/localizedText"
+    },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
+    },
+    "alphanumericCharacters": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "versionRequirement": {
+      "type": "string",
+      // Currently, tman uses the Rust semver crate, while the cloud store uses
+      // the npm semver package. The semver requirement specifications of these
+      // two packages are not completely identical. For example:
+      //
+      // - The Rust semver crate uses "," to separate different ranges, whereas
+      //   the npm semver package uses a space (" ") to separate different
+      //   requirement ranges.
+      // - The npm semver package uses "||" to unify different ranges, but the
+      //   Rust semver crate does not support this feature.
+      //
+      // Since TEN is a cross-language system, it needs to define its own semver
+      // requirement specification. This specification could follow either the
+      // Rust or npm format or other spec, but in either case, tman or the cloud
+      // store would need to make adaptations.
+      //
+      // Therefore, the current approach is to simplify the specification to
+      // only support a single-range semver requirement, which is the common
+      // subset of both the npm semver package and the Rust semver crate.
+      "pattern": "^(?:\\^|~|>|<|>=|<=|=)?\\d+(?:\\.\\d+)?(?:\\.\\d+)?(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "httpsUri": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "fileUri": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^file://"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/path"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "name",
+              "version"
+            ],
+            "properties": {
+              "type": {
+                "$ref": "#/$defs/packageType"
+              },
+              "name": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "version": {
+                "$ref": "#/$defs/versionRequirement"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "type": {
+      "$ref": "#/$defs/packageType"
+    },
+    "name": {
+      "$ref": "#/$defs/alphanumericCharacters"
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "description": {
+      "$ref": "#/$defs/description"
+    },
+    "display_name": {
+      "$ref": "#/$defs/displayName"
+    },
+    "readme": {
+      "$ref": "#/$defs/localizedText"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(ten:)?[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    },
+    "dependencies": {
+      "$ref": "#/$defs/dependencies"
+    },
+    "dev_dependencies": {
+      "$ref": "#/$defs/dependencies"
+    },
+    "api": {
+      "$ref": "#/$defs/interfaceSchema"
+    },
+    "supports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/supportItem"
+      }
+    },
+    "package": {
+      "type": "object",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "scripts": {
+      "type": "object",
+      "propertyNames": { // The property name should be alphanumericCharacters.
+        "$ref": "#/$defs/alphanumericCharacters"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "type",
+    "name",
+    "version"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "anyOf": [
+      {
+        "properties": {
+          "type": {
+            "const": "system"
+          }
+        }
+      },
+      {
+        "properties": {
+          "type": {
+            "const": "protocol"
+          }
+        }
+      },
+      {
+        "properties": {
+          "type": {
+            "const": "addon_loader"
+          }
+        }
+      }
+    ]
+  },
+  "then": {
+    "not": {
+      "required": [
+        "predefined_graphs",
+        "api"
+      ]
+    }
+  },
+  "else": {
+    "if": {
+      "properties": {
+        "type": {
+          "const": "app"
+        }
+      }
+    },
+    "then": {
+      "properties": {
+        // In the app's `manifest.json`, only the specification of the `api`
+        // property is allowed; other APIs are not permitted to be specified.
+        "api": {
+          "type": "object",
+          "properties": {
+            "property": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "propertyNames": {
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "else": {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "extension"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "predefined_graphs"
+          ]
+        }
+      }
+    }
+  }
+}

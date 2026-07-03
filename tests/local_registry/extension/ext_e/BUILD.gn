@@ -1,0 +1,23 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/packaging.gni")
+
+ten_package_packaging("1.0.0") {
+  sources = [ "1.0.0/manifest.json" ]
+
+  target_path = get_label_info("1.0.0", "dir")
+
+  pkg_src_root_dir = "${target_path}"
+  output_path = "${root_out_dir}/${target_path}/ext_e_1.0.0_all.all.all.tpkg"
+
+  manifest_output_path =
+      "${root_out_dir}/${target_path}/ext_e_1.0.0_all.all.all_manifest.json"
+}
+
+group("ext_e") {
+  deps = [ ":1.0.0" ]
+}

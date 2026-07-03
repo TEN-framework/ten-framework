@@ -1,0 +1,46 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "test_graph",
+        "graph": {
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ],
+                  "name": "existing_cmd"
+                },
+                {
+                  "name": "new_cmd1",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "new_cmd2",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_3"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

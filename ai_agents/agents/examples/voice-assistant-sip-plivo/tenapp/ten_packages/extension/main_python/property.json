@@ -1,0 +1,10 @@
+{
+  "greeting": "Hello, I am your AI assistant.",
+  "plivo_auth_id": "${env:PLIVO_AUTH_ID}",
+  "plivo_auth_token": "${env:PLIVO_AUTH_TOKEN}",
+  "plivo_from_number": "${env:PLIVO_FROM_NUMBER}",
+  "plivo_server_port": 9000,
+  "plivo_public_server_url": "${env:PLIVO_PUBLIC_SERVER_URL}",
+  "plivo_use_https": false,
+  "plivo_use_wss": false
+}

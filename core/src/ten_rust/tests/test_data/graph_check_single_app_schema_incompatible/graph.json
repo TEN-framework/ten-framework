@@ -1,0 +1,46 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "addon": "addon_a",
+      "extension_group": "some_group",
+      "app": "http://localhost:8001"
+    },
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "addon": "addon_b",
+      "extension_group": "some_group",
+      "app": "http://localhost:8001"
+    },
+    {
+      "type": "extension",
+      "name": "ext_c",
+      "addon": "addon_c",
+      "extension_group": "some_group",
+      "app": "http://localhost:8002"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext_a",
+      "app": "http://localhost:8001",
+      "cmd": [
+        {
+          "name": "cmd_1",
+          "dest": [
+            {
+              "extension": "ext_b",
+              "app": "http://localhost:8001"
+            },
+            {
+              "extension": "ext_c",
+              "app": "http://localhost:8002"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[project]
+name = "deepgram-ws-asr-python"
+version = "0.1.1"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.9.0",
+    "pydantic>=2.0.0",
+]

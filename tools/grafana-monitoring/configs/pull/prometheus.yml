@@ -1,0 +1,18 @@
+# Prometheus Configuration - Pull Mode Only
+# Scrapes metrics directly from application, does not use OTEL Collector
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ten-framework-monitor'
+    mode: 'pull'
+
+scrape_configs:
+  - job_name: 'ten-framework'
+    static_configs:
+      - targets: ['host.docker.internal:49484']
+        labels:
+          group: 'ten_runtime'
+    scrape_interval: 5s
+    scrape_timeout: 5s

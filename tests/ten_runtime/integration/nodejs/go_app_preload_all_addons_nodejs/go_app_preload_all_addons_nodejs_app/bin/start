@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+export NODE_PATH=ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
+export PYTHONMALLOC=malloc
+export PYTHONDEVMODE=1
+
+exec bin/main

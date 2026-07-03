@@ -1,0 +1,83 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_manager/options.gni")
+import("//build/ten_runtime/options.gni")
+
+template("ten_package_publish") {
+  _target_name = target_name
+
+  tg_timestamp_proxy_file =
+      "${target_gen_dir}/ten_package_publish_${_target_name}"
+
+  action("ten_package_publish_${_target_name}") {
+    script = "//build/ten_runtime/feature/publish.py"
+
+    args = [ "--tman-path" ]
+    if (is_win) {
+      args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman.exe") ]
+    } else {
+      args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman") ]
+    }
+
+    args += [
+      "--config-file",
+      rebase_path("${root_out_dir}/tests/local_registry/config.json"),
+    ]
+
+    args += [
+      "--base-dir",
+      invoker.base_dir,
+    ]
+
+    args += [
+      "--tg-timestamp-proxy-file",
+      rebase_path(tg_timestamp_proxy_file),
+    ]
+
+    args += [
+      "--os",
+      target_os,
+      "--cpu",
+      target_cpu,
+    ]
+
+    args += [
+      "--log-level",
+      "${log_level}",
+    ]
+
+    sources = []
+    outputs = [ tg_timestamp_proxy_file ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [
+      "//build/ten_runtime/feature:create_tman_config",
+      "//core/src/ten_manager",
+    ]
+  }
+
+  group("${target_name}") {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ ":ten_package_publish_${_target_name}" ]
+  }
+}

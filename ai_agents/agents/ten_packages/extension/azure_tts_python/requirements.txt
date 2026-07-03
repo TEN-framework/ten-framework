@@ -1,0 +1,5 @@
+typing-extensions
+pydantic>=2.0.0
+# The Azure TTS extension must rely on azure-cognitiveservices-speech==1.45.0.
+# This version conflicts with the Azure ASR extension, so they cannot coexist.
+azure-cognitiveservices-speech==1.45.0

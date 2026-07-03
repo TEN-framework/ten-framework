@@ -1,0 +1,10 @@
+{
+    "params": {
+        "aws_access_key_id": "${env:AWS_TTS_ACCESS_KEY_ID|}",
+        "aws_secret_access_key": "${env:AWS_TTS_SECRET_ACCESS_KEY|}",
+        "engine": "neural",
+        "voice": "Joanna",
+        "sample_rate": "16000",
+        "lang_code": "en-US"
+    }
+}

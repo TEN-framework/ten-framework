@@ -1,0 +1,7 @@
+wrap_comments = true
+use_small_heuristics = "Max"
+format_strings = true
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+struct_lit_single_line = false
+fn_params_layout = "Tall"

@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "params": {
+        "appid": "xxx",
+        "secretkey": "xxx",
+        "secretid": "xxx",
+        "finalize_mode": "vendor_defined",
+        "engine_model_type": "16k_en",
+        "word_info": 2
+    }
+}

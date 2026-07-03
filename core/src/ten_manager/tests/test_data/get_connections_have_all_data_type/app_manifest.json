@@ -1,0 +1,22 @@
+{
+  "type": "app",
+  "name": "all_data_type",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    },
+    {
+      "type": "extension",
+      "name": "extension_addon_1",
+      "version": "0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "extension_addon_2",
+      "version": "0.1.0"
+    }
+  ]
+}

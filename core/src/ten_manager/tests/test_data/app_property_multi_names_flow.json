@@ -1,0 +1,128 @@
+{
+  "ten": {
+    "uri": "http://example.com:8000",
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "extension_1",
+              "addon": "extension_addon_1",
+              "extension_group": "extension_group_1"
+            },
+            {
+              "type": "extension",
+              "name": "extension_2",
+              "addon": "extension_addon_2",
+              "extension_group": "extension_group_1",
+              "property": {
+                "a": 1
+              }
+            },
+            {
+              "type": "extension",
+              "name": "extension_3",
+              "addon": "extension_addon_3",
+              "extension_group": "extension_group_1"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "hello_world",
+                  "dest": [
+                    {
+                      "extension": "extension_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "default_with_app_uri",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_1",
+              "name": "extension_1"
+            },
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_2",
+              "name": "extension_2",
+              "property": {
+                "a": 1
+              }
+            },
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_3",
+              "name": "extension_3"
+            }
+          ],
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "hello_world",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "multi_name_1",
+                    "multi_name_2",
+                    "multi_name_3"
+                  ],
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "addon_not_found",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "extension_1",
+              "addon": "extension_addon_1_not_found",
+              "extension_group": "default"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "app_property": "sample value"
+}

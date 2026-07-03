@@ -1,0 +1,41 @@
+{
+  "type": "extension",
+  "name": "ext_a",
+  "version": "1.2.3",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "sys_a",
+      "version": "1.0.0"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "${app_base_dir}/ten_packages/system/sys_a/interfaces/interface_a.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "foo": {
+          "type": "bool"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "hello",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      }
+    ]
+  }
+}

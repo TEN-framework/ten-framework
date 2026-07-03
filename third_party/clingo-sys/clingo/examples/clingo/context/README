@@ -1,0 +1,6 @@
+This example shows how to use Python classes or Lua tables to organize code
+using the scripting interface.
+
+Example calls:
+    clingo context-py.lp encoding.lp --outf=3 0
+    clingo context-lua.lp encoding.lp --outf=3 0

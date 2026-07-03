@@ -1,0 +1,38 @@
+<testcase>
+<info>
+<keywords>
+SMTP
+NOOP
+CUSTOMREQUEST
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+smtp
+</server>
+ <name>
+SMTP NOOP (CUSTOMREQUEST)
+ </name>
+ <command>
+smtp://%HOSTIP:%SMTPPORT/%TESTNUMBER -X NOOP -I
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+EHLO %TESTNUMBER
+NOOP
+QUIT
+</protocol>
+</verify>
+</testcase>

@@ -1,0 +1,7 @@
+This example shows how to extend a logic program.
+
+Example Calls:
+    clingo load-py.lp
+    clingo load-lua.lp
+    gringo -t load-py.lp
+    gringo -t load-lua.lp

@@ -1,0 +1,11 @@
+--2018-11-25 07:54:30--  https://www.gravatar.com/avatar/c50933ca2aa61e0fe2c43d46bb6b59cb/?s=128
+Resolving www.gravatar.com (www.gravatar.com)... 192.0.73.2, 2a04:fa87:fffe::c000:4902
+Connecting to www.gravatar.com (www.gravatar.com)|192.0.73.2|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 24761 (24K) [image/png]
+Saving to: ‘/tmp/q’
+
+/tmp/q                     0%[                                 ]       0  --.-KB/s               /tmp/q                   100%[================================>]  24.18K  --.-KB/s    in 0.01s
+
+2018-11-25 07:54:31 (2.04 MB/s) - ‘/tmp/q’ saved [24761/24761]
+

@@ -1,0 +1,31 @@
+{
+  "type": "extension",
+  "name": "ext_b",
+  "version": "1.2.3",
+  "api": {
+    "cmd_in": [
+      {
+        "name": "C",
+        "property": {
+          "properties": {
+            "prop_str": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "C",
+        "property": {
+          "properties": {
+            "prop_str": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

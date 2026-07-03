@@ -1,0 +1,57 @@
+<testcase>
+<info>
+<keywords>
+HTTPS
+HTTP GET
+timeout
+FAILURE
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Connection: close
+
+_data_result_data_
+</data>
+<postcmd>
+wait 20
+</postcmd>
+</reply>
+
+# Client-side
+<client>
+<features>
+SSL
+</features>
+<server>
+https
+</server>
+<killserver>
+https
+</killserver>
+ <name>
+HTTPS with 8 secs timeout
+ </name>
+ <command>
+-k https://%HOSTIP:%HTTPSPORT/want/%TESTNUMBER -m 8
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPSPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+<errorcode>
+28
+</errorcode>
+</verify>
+</testcase>

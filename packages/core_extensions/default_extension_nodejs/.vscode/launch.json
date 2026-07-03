@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "standalone test (nodejs) (mocha, launch)",
+      "type": "node",
+      "request": "launch",
+      "program": "node_modules/mocha/bin/_mocha",
+      "stopOnEntry": true,
+      "args": [
+        "--no-timeouts",
+        "--package",
+        "package.json",
+      ],
+      "cwd": "${workspaceFolder}/tests",
+      "env": {
+        "NODE_PATH": "../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH",
+      },
+      "runtimeArgs": [
+        "--expose-gc",
+        "--loader",
+        "ts-node/esm",
+        "--no-warnings",
+      ]
+    },
+  ]
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <!-- Written in VC 2017 15.7 but is expected to be compatible with VC 2015 -->
+
+    <Type Name="tsl::ordered_map&lt;*&gt;">
+        <AlternativeType Name="tsl::ordered_set&lt;*&gt;"/>
+        <DisplayString>{m_ht.m_values}</DisplayString>
+        <Expand>
+            <Item Name="[bucket_count]" IncludeView="detailed">m_ht.m_buckets_data._Mypair._Myval2._Mylast - m_ht.m_buckets_data._Mypair._Myval2._Myfirst</Item>
+            <Item Name="[max_load_factor]" IncludeView="detailed">m_ht.m_max_load_factor</Item>
+            <ExpandedItem>m_ht.m_values</ExpandedItem>
+        </Expand>
+    </Type>
+
+    <Type Name="tsl::detail_ordered_hash::ordered_hash&lt;*&gt;::ordered_iterator&lt;*&gt;">
+        <DisplayString>{m_iterator}</DisplayString>
+        <Expand>
+            <ExpandedItem>m_iterator</ExpandedItem>
+        </Expand>
+    </Type>
+</AutoVisualizer>

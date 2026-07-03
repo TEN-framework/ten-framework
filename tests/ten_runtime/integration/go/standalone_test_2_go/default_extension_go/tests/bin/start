@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -e
+
+# Jump to the extension root directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+# Check if the ./ten/app directory exists.
+if [ ! -d ".ten/app" ]; then
+  echo "The ./ten/app directory does not exist. Please install it first."
+  exit 1
+fi
+
+# Get the extension name according to pwd.
+extension_name=$(basename "$(pwd)")
+
+# Check if the ./ten/app/ten_packages/extension/$extension_name directory exists.
+if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
+  echo "The ./ten/app/ten_packages/extension/$extension_name directory does not exist. Please install with standalone mode."
+  exit 1
+fi
+
+# Jump to the extension directory.
+cd ".ten/app/ten_packages/extension/$extension_name"
+
+# The executable is in .ten/app/bin/, and libraries are in .ten/app/ten_packages/system/ten_runtime/lib/
+# So rpath should be: @loader_path/../ten_packages/system/ten_runtime/lib (macOS) or $ORIGIN/../ten_packages/system/ten_runtime/lib (Linux)
+if [[ "$(uname)" == "Darwin" ]]; then
+  export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/../ten_packages/system/ten_runtime/lib"
+else
+  export CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_utils -lten_runtime -lten_runtime_go -Wl,-rpath,\$ORIGIN/../ten_packages/system/ten_runtime/lib"
+fi
+
+# Print the current directory.
+echo "Current directory: $(pwd)"
+
+go test -c ./tests/... -o ./.ten/app/bin/"${extension_name}"_test "$@"
+
+# Run the test case.
+./.ten/app/bin/"${extension_name}"_test -test.v

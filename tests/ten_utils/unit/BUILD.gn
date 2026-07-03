@@ -1,0 +1,66 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/options.gni")
+import("//build/ten_utils/options.gni")
+import("//build/ten_utils/utils.gni")
+
+ten_utils_glob("unit") {
+  no_current = true
+
+  file_list = [
+    "backtrace_sort_test.cc",
+    "ten_base64_test.cc",
+    "ten_file_test.cc",
+    "ten_list_test.cc",
+    "ten_lock_test.cc",
+    "ten_macro_test.cc",
+    "ten_manifest_test.cc",
+    "ten_path_test.cc",
+    "ten_random_test.cc",
+    "ten_rbtree_test.cc",
+    "ten_rwlock_test.cc",
+    "ten_schema_test.cc",
+    "ten_semver_test.cpp",
+    "ten_sharedptr_test.cc",
+    "ten_shm_test.cc",
+    "ten_skiplist_test.cc",
+    "ten_string_test.cc",
+    "ten_thread_test.cc",
+    "sm_test.cc",
+    "ten_json_test.cc",
+    "ten_value_test.cc",
+  ]
+
+  if (is_linux || is_mac) {
+    file_list += [
+      "ten_mmap_test.cc",
+      "ten_file_test_posix.cc",
+    ]
+  }
+
+  public_deps = [
+    "//core/src/ten_utils/io/general/loops",
+    "//third_party/googletest",
+    "//third_party/nlohmann_json",
+  ]
+
+  if (ten_enable_ten_rust) {
+    file_list += [ "backtrace_rust_ffi_test.cc" ]
+    public_deps += [ "//core/src/ten_rust:ten_rust_binding" ]
+  }
+
+  deps = [ "//tests/ten_utils/common" ]
+
+  include_dirs = [
+    "//tests",
+    "//tests/ten_utils",
+  ]
+
+  if (is_clang) {
+    cflags_cc = [ "-Wno-c++11-narrowing" ]
+  }
+}

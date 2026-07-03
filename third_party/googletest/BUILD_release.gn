@@ -1,0 +1,43 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+config("gtest_header") {
+  include_dirs = [
+    ".",
+    "include",
+  ]
+}
+
+source_set("googletest") {
+  public_configs = [ ":gtest_header" ]
+
+  sources = [ "src/gtest-all.cc" ]
+}
+
+source_set("gtest_main") {
+  public_configs = [ ":gtest_header" ]
+
+  sources = [ "src/gtest_main.cc" ]
+}
+
+config("googletest_common_config") {
+  include_dirs = [ "//ten_packages/system/googletest/include" ]
+}
+
+config("config_for_app") {
+  configs = [ ":googletest_common_config" ]
+}
+
+config("config_for_ten_packages") {
+  configs = [ ":googletest_common_config" ]
+}
+
+config("config_for_standalone_ten_packages") {
+  include_dirs = [
+    "//.ten/app/ten_packages/system/googletest",
+    "//.ten/app/ten_packages/system/googletest/include",
+  ]
+}

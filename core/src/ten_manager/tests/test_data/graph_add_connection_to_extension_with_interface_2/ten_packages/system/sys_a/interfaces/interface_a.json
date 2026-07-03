@@ -1,0 +1,87 @@
+{
+  "interface": [
+    {
+      "import_uri": "${app_base_dir}/ten_packages/system/sys_a/interfaces/interface_b.json"
+    }
+  ],
+  "property": {
+    "properties": {
+      "a": {
+        "type": "string"
+      }
+    }
+  },
+  "cmd_in": [
+    {
+      "name": "cmd_in_a",
+      "property": {
+        "properties": {
+          "collection_name": {
+            "type": "string"
+          },
+          "top_k": {
+            "type": "int64"
+          },
+          "embedding": {
+            "type": "array",
+            "items": {
+              "type": "float64"
+            }
+          }
+        },
+        "required": [
+          "collection_name",
+          "top_k",
+          "embedding"
+        ]
+      },
+      "result": {
+        "property": {
+          "properties": {
+            "response": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "score": {
+                    "type": "float64"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "cmd_out": [
+    {
+      "name": "cmd_out_a",
+      "property": {
+        "properties": {
+          "message": {
+            "type": "buf"
+          }
+        }
+      }
+    }
+  ],
+  "data_in": [
+    {
+      "name": "data"
+    }
+  ],
+  "audio_frame_in": [
+    {
+      "name": "audio_frame_in_a"
+    }
+  ],
+  "audio_frame_out": [
+    {
+      "name": "audio_frame_out_a"
+    }
+  ]
+}

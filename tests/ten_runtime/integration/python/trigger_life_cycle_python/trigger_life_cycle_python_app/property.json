@@ -1,0 +1,104 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main",
+              "addon": "default_extension_python",
+              "extension_group": "main"
+            },
+            {
+              "type": "extension",
+              "name": "biz",
+              "addon": "default_extension_python",
+              "extension_group": "biz",
+              "property": {
+                "ten": {
+                  "manual_trigger_life_cycle": [
+                    {
+                      "stage": "start"
+                    },
+                    {
+                      "stage": "stop"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "main"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "main",
+              "cmd": [
+                {
+                  "name": "check_start",
+                  "dest": [
+                    {
+                      "extension": "biz"
+                    }
+                  ]
+                },
+                {
+                  "name": "check_stop",
+                  "dest": [
+                    {
+                      "extension": "biz"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

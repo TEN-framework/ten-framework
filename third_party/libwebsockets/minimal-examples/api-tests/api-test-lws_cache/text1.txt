@@ -1,0 +1,3 @@
+# Netscape HTTP Cookie File
+host.com	FALSE	/	FALSE	1234	mycookie	value
+host.com	FALSE	/xxx	FALSE	1234	mycookie	valuexxx

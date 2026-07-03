@@ -1,0 +1,13 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": []
+        }
+      }
+    ]
+  }
+}

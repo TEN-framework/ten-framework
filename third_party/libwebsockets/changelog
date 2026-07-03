@@ -1,0 +1,730 @@
+Changelog
+---------
+
+v4.3.0
+======
+
+ - Add full CBOR stream parsing and writing support, with huge
+   amount of test vectors and resumable printf type write apis
+   See ./READMEs/README.cbor-lecp.md
+ - Add COSE key and signing / validation support with huge amount of
+   test vectors
+    cose_sign[1] ES256/384/512, RS256/384/512
+    cose_mac0    HS256/384/512
+   See ./READMEs/README.cbor-cose.md
+ - JIT Trust: for constrained devices, provides a way to determine the
+   trusted CA certs the peer requires, and instantiate just those.
+   This allows generic client browsing without the overhead of ~130
+   x.509 CA certs in memory permanently.
+   See ./READMEs/README.jit-trust.md
+ - Add support for client Netscape cookie jar with caching
+ - Secure Streams: issue LWSSSCS_EVENT_WAIT_CANCELLED state() when
+   lws_cancel_service() called, so cross-thread events can be handled
+   in SS
+ - Actively assert() on attempt to destroy SS handles still active in
+   the call stack, use DESTROY_ME returns instead so caller can choose
+   how to handle it.
+ - Improved Client Connection Error report strings for tls errors
+ - SMP: Use a private fakewsi for PROTOCOL_INIT so pts cannot try to
+   use the same one concurrently
+ - MbedTLS v3 support for all release changes, as well as retaining
+   support for v2.x
+ - MQTT client: support QoS2
+ - Event lib ops can now be set at context creation time directly,
+   bringing full event lib hooking to custom event loops.  See
+   minimal-http-server-eventlib-custom
+ - Extra APIs to recover AKID and SKID from x.509 in mbedtls and openssl
+ - Improve http redirect to handle h2-> h2 cleanly
+ - IPv4+6 listen sockets on vhosts are now done with two separate
+   sockets bound individually to AF_INET and AF_INET6 addresses,
+   handled by the same vhost listen flow.
+ - Improved tls restriction handling
+ - Log contexts: allow objects to log into local logging contexts, by
+   lws_context, vhost, wsi and ss handle.  Each context has its own
+   emit function and log level. See ./READMEs/README.logging.md
+ - Upgrade compiler checking to default to -Werror -Wall -Wextra
+ - Fault injection apis now also support pseudo-random number binding
+   within a specified range, eg,
+   --fault-injection "f1(10%),f1_delay(123..456)"
+ - Remove LWS_WITH_DEPRECATED_THINGS, remove master branch
+ - Interface binding now uses ipv6 scoring to select bind address
+
+v4.2.0
+======
+
+ - Sai coverage upgrades, 495 builds on 27 platforms, including OSX M1,
+   Xenial, Bionic and Focal Ubuntu, Debian Sid and Buster on both 32 and
+   64-bit OS, and NetBSD, Solaris, FreeBSD, Windows, ESP32.
+   Ctest run on more scenarios including all LWS_WITH_DISTRO_RECOMMENDED.
+   More tests use valgrind if available on platform.
+ - RFC7231 date and time parsing and retry-after wired up to lws_retry
+ - `LWS_WITH_SUL_DEBUGGING` checks that no sul belonging to Secure Streams
+   and wsi objects are left registered on destruction
+ - Netlink monitoring on Linux dynamically tracks interface address and
+   routing changes, and immediately closes connections on invalidated
+   routes.
+ - RFC6724 DNS results sorting over ipv4 + ipv6 results, according to
+   available dynamic route information
+ - Support new event library, sdevent (systemd native loop), via
+   `LWS_WITH_SDEVENT`
+ - Reduce .rodata cost of role structs by making them sparse
+ - Additional Secure Streams QA tests and runtime state transition
+   validation
+ - SMD-over-ss-proxy documentation and helpers to simplify forwarding
+ - SSPC stream buffering at proxy and client set from policy by streamtype
+ - Trigger Captive Portal Detection if DNS resolution fails
+ - Switch all logs related to wsi and Secure Streams to use unique,
+   descriptive tags instead of pointers (which may be reallocated)
+ - Use NOITCE logging for Secure Streams and wsi lifecycle logging using
+   tags
+ - Update SSPC serialization to include versioning on initial handshake,
+   and pass client pid to proxy so related objects are tagged with it
+ - Enable errors on -Wconversion pedantic type-related build issues
+   throughout the lws sources and upgrade every affected cast.
+ - Windows remove WSA event implementation and replace with WSAPoll, with
+   a pair of UDP sockets instead of pipe() for `lws_cancel_service()`
+ - `lws_strcmp_wildcard()` helper that understand "x*", "x*y", "x*y*" etc
+ - `LWS_WITH_PLUGINS_BUILTIN` cmake option just builds plugins into the main
+ library image directly
+ - Secure Streams proxy supports policy for flow control between proxy and
+ clients
+ - libressl also supported along with boringssl, wolfssl
+ - prepared for openssl v3 compatibility, for main function and GENCRYPTO
+ - Fault injection apis can confirm operation of 48 error paths and counting
+ - `LWS_WITH_SYS_METRICS` keeps stats and reports them to user-defined
+ function, compatible with openmetrics
+ - windows platform knows how to prepare openssl with system trust store certs
+ - `LWS_WITH_SYS_CONMON` allows selected client connections to make precise
+ measurements of connection performance and DNS results, and report them in a struct
+ - New native support for uloop event loop (OpenWRT loop)
+ - More options around JWT
+ - Support TLS session caching and reuse by default, on both OpenSSL and
+ mbedtls
+ - Many fixes and improvements...
+
+v4.1.0
+======
+
+ - NEW: travis / appveyor / bintray are replaced by Sai
+   https://libwebsockets.org/sai/ which for lws currently does 193 builds per
+   git push on 16 platforms, all self-hosted.  The homebrew bash scripts used
+   to select Minimal examples are replaced by CTest.  Platforms currently
+   include Fedora/AMD/GCC, Windows/AMD/mingw32, Windows/AMD/mingw64, Android/
+   aarch64/LLVM, esp-idf (on WROVER-KIT and HELTEC physical boards), Fedora/
+   RISCV (on QEMU)/GCC, CentOS8/AMD/GCC, Gentoo/AMD/GCC, Bionic/AMD/GCC,
+   Linkit 7697, Focal/AMD/GCC, Windows (on QEMU)/AMD/MSVC,
+   Focal/aarch64-RPI4/GCC, iOS/aarch64/LLVM and OSX/AMD/LLVM.
+
+ - NEW: The single CMakeLists.txt has been refactored and modernized into smaller
+ CMakeLists.txt in the subdirectory along with the code that is being managed
+ for build by it.  Build options are still listed in the top level as before
+ but the new way is much more maintainable.
+
+ - NEW: event lib support on Unix is now built into dynamically loaded plugins
+ and brought in at runtime, allowing all of the support to be built in
+ isolation without conflicts, and separately packaged with individual
+ dependencies.  See ./READMEs/event-libs.md for details and how to force
+ the old static build into lws method.
+
+ - NEW: Captive Portal Detection.  Lws can determine if the active default
+ route is able to connect to the internet, or is in a captive portal type
+ situation, by trying to connect to a remote server that will respond in an
+ unusual way, like provide a 204.
+
+ - NEW: Secure streams: Support system trust store if it exists
+                        Build on Windows
+			Support lws raw socket protocol in SS
+			Support Unix Domain Socket transport
+
+ - NEW: Windows: Support Unix Domain Sockets same as other platforms
+
+ - NEW: Windows: Build using native pthreads, async dns, ipv6 on MSVC
+
+ - NEW: lws_struct: BLOB support
+
+ - NEW: lws_sul: Now provides two sorted timer domains, a default one as
+ before, and another whose scheduled events are capable to wake the system from suspend
+
+ - NEW: System Message Distribution: lws_smd provides a very lightweight way
+ to pass short messages between subsystems both in RTOS type case where the
+ subsystems are all on the lws event loop, and in the case participants are in
+ different processes, using Secure Streams proxying.   Participants register a bitmap
+ of message classes they care about; if no particpant cares about a particular message,
+ it is rejected at allocation time for the sender, making it cheap to provide messages
+ speculatively.  See lib/system/smd/README.md for full details.
+
+ - NEW: lws_drivers: wrappers for SDK driver abstractions (or actual drivers)
+		 See lib/drivers/README.md, example implementations
+		 minimal-examples/embedded/esp32/esp-wrover-kit
+                     - generic gpio
+		     - generic LED (by name)    lib/drivers/led/README.md
+		     - generic PWM, sophisticated interpolated table
+		                    sequencers with crossfade  
+		     - generic button (by name), with debounce and press classification
+		                       emitting rich SMD click, long-click, double-click,
+				       down, repeat, up JSON messages
+				       lib/drivers/button/README.md
+		     - bitbang i2c on generic gpio (hw support can use same
+		                       abstract API)
+		     - bitbang spi on generic gpio (hw support can use same
+		                       abstract API)
+		     - generic display object, can be wired up to controller
+		                  drivers that hook up by generic i2c or spi,
+				  generic backlight PWM sequencing and
+				  blanking timer support
+		     - generic settings storage: get and set blobs by name
+		     - generic network device: netdev abstract class with
+	                                       WIFI / Ethernet implementations
+					       using underlying SDK APIs;
+					       generic 80211 Scan managements
+					       and credentials handling via
+					       lws_settings
+		     This is the new way to provide embedded platform
+		     functionality that was in the past done like
+		     esp32-factory.  Unlike the old way, the new way has no
+		     native apis in it and can be built on other SDK / SoCs
+		     the same.
+
+ - NEW: Security-aware JWS JWT (JSON Web Tokens) apis are provided on top of the existing
+ JOSE / JWS apis.  All the common algorithms are available along with some
+ high level apis like lws http cookie -> JWT struct -> lws http cookie.
+
+ - REMOVED: esp32-helper and friends used by esp32-factory now lws_drivers
+ exists
+
+ - REMOVED: generic sessions and friends now JWT is provided
+
+v4.0.0
+======
+
+ - NEW: Lws is now under the MIT license, see ./LICENSE for details
+ 
+ - NEW: GLIB native event loop support, lws + gtk example
+
+ - NEW: native lws MQTT client... supports client stream binding like h2 when
+   multiple logical connections are going to the same endpoint over MQTT, they
+   transparently and independently share the one connection + tls tunnel
+ 
+ - NEW: "Secure Streams"... if you are making a device with client connections
+   to the internet or cloud, this allows separation of the communications
+   policy (endpoints, tls cert validation, protocols, etc) from the code, with
+   the goal you can combine streams, change protocols and cloud provision, and
+   reflect that in the device's JSON policy document without having to change
+   any code.
+
+ - NEW: lws_system: New lightweight and efficient Asynchronous DNS resolver
+   implementation for both A and AAAA records, supports recursive (without
+   recursion in code) lookups, caching, and getaddrinfo() compatible results
+   scheme (from cache directly without per-consumer allocation).  Able to
+   perform DNS lookups without introducing latency in the event loop.
+
+ - NEW: lws_system: ntpclient implementation with interface for setting system
+   time via lws_system ops
+ 
+ - NEW: lws_system: dhcpclient implementation
+ 
+ - NEW: Connection validity tracking, autoproduce PING/PONG for protocols that
+   support it if not informed that the connection has passed data in both
+   directions recently enough
+
+ - NEW: lws_retry: standardized exponential backoff and retry timing based
+   around backoff table and lws_sul
+
+ - NEW: there are official public helpers for unaligned de/serialization of all
+   common types, see eh, lws_ser_wu16be() in include/libwebsockets/lws-misc.h
+
+ - NEW: lws_tls_client_vhost_extra_cert_mem() api allows attaching extra certs
+   to a client vhost from DER in memory
+   
+ - NEW: lws_system: generic blobs support passing auth tokens, per-connection
+   client certs etc from platform into lws
+
+ - NEW: public helpers to consume and produce ipv4/6 addresses in a clean way,
+   along with lws_sockaddr46 type now public.  See eg, lws_sockaddr46-based
+   lws_sa46_parse_numeric_address(), lws_write_numeric_address()
+   in include/libwebsockets/lws-network-helper.h
+
+ - Improved client redirect handling, h2 compatibility
+ 
+ - NEW: lwsac: additional features for constant folding support (strings that
+   already are in the lwsac can be pointed to without copying again), backfill
+   (look for gaps in previous chunks that could take a new use size), and
+   lwsac_extend() so last use() can attempt to use more unallocated chunk space
+
+ - NEW: lws_humanize: apis for reporting scalar quanties like 1234 as "1.234KB"
+   with the scaled symbol strings passed in by caller
+
+ - NEW: freertos: support lws_cancel_service() by using UDP pair bound to lo,
+   since it doesn't have logical pipes
+
+ - NEW: "esp32" plat, which implemented freertos plat compatibility on esp32, is
+   renamed to "freertos" plat, targeting esp32 and other freertos platforms
+
+ - NEW: base64 has an additional api supporting stateful decode, where the input
+   is not all in the same place at the same time and can be processed
+   incrementally
+
+ - NEW: lws ws proxy: support RFC8441
+   
+ - NEW: lws_spawn_piped apis: generic support for vforking a process with child
+   wsis attached to its stdin, stdout and stderr via pipes.  When processes are
+   reaped, a specified callback is triggered.  Currently Linux + OSX.
+   
+ - NEW: lws_fsmount apis: Linux-only overlayfs mount and unmount management for
+   aggregating read-only layers with disposable, changeable upper layer fs
+
+ - Improvements for RTOS / small build case bring the footprint of lws v4 below
+   that of v3.1 on ARM 
+   
+ - lws_tokenize: flag specifying # should mark rest of line as comment
+
+ - NEW: minimal example for integrating libasound / alsa via raw file
+
+ - lws_struct: sqlite and json / lejp translation now usable
+
+
+v3.2.0
+======
+
+ - This is the last planned release under LGPLv2+SLE.  It's not planned to be
+   maintained like previous releases, please switch to master for the latest
+   stuff or continue to use v3.1-stable until the next release under the
+   new MIT license.
+
+ - NEW: completely refactored scheduler with a unified, sorted us-resolution
+   linked-list implementation.  All polled checks like timeout are migrated
+   to use the new timers, which also work on the event lib implementations.
+   Faster operation, us-resolution timeouts and generic scheduled callbacks
+   from the event loop.
+
+ - NEW: lws_dsh specialized buffer memory allocator that can borrow space
+   from other cooperating buffers on the same list.
+
+ - NEW: lws_sequencer allows managing multi-connection processes and
+   retries
+
+ - NEW: memory buffer cert support
+
+ - NEW: LWS_WITH_NETWORK in CMake... can be configured without any network-
+   related code at all
+
+ - NEW: builds on QNX 6.5 and SmartOS
+
+ - NEW: JOSE / JWK / JWS / JWE support, for all common ciphers and algs,
+   works on OpenSSL and mbedtls backends
+
+ - NEW: gencrypto now has genaes and genec in addition to genrsa, works
+   on OpenSSL and mbedtls backends
+
+ - NEW: raw_proxy role
+
+ - NEW: Basic Auth works on ws connections
+
+ - CHANGE: REMOVED: LWS_WITH_GENRSA, LWS_WITH_GENHASH, LWS_WITH_GENEC,
+ LWS_WITH_GENAES have all been removed and combined into LWS_WITH_GENCRYPTO
+
+ - CHANGE: REMOVED: LWS_WITH_JWS, LWS_WITH_JWE have been removed and combined
+ into LWS_WITH_JOSE
+
+v3.1.0
+======
+
+ - CHANGE: REMOVED: lws_client_connect() and lws_client_connect_extended()
+   compatibility apis for lws_client_connect_via_info() have been marked as
+   deprecated for several versions and are now removed.  Use
+   lws_client_connect_via_info() directly instead.
+
+ - CHANGE: CMAKE:
+     - LWS_WITH_HTTP2:         now defaults ON
+
+ - CHANGE: Minimal examples updated to use Content Security Policy best
+   practices, using
+   `LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE` vhost
+   option flag and disabling of inline style and scripts.  A side-effect of
+   this is that buffers used to marshal headers have to be prepared to take
+   more content than previously... LWS_RECOMMENDED_MIN_HEADER_SPACE (2048
+   currently) is available for user (and internal) use to logically tie the
+   buffer size to this usecase (and follow future increases).
+
+ - NEW: CMAKE
+     - LWS_FOR_GITOHASHI: sets various cmake options suitable for gitohashi
+     - LWS_WITH_ASAN: for Linux, enable build with ASAN
+
+     Don't forget LWS_WITH_DISTRO_RECOMMENDED, which enables a wide range of lws
+     options suitable for a distro build of the library.
+     
+ - NEW: lws threadpool - lightweight pool of pthreads integrated to lws wsi, with
+   all synchronization to event loop handled internally, queue for excess tasks
+   [threadpool docs](https://libwebsockets.org/git/libwebsockets/tree/lib/misc/threadpool)
+   [threadpool minimal example](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/ws-server/minimal-ws-server-threadpool)
+   Cmake config: `-DLWS_WITH_THREADPOOL=1`
+
+ - NEW: libdbus support integrated on lws event loop
+   [lws dbus docs](https://libwebsockets.org/git/libwebsockets/tree/lib/roles/dbus)
+   [lws dbus client minimal examples](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/dbus-client)
+   [lws dbus server minimal examples](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/dbus-server)
+   Cmake config: `-DLWS_ROLE_DBUS=1`
+
+ - NEW: lws allocated chunks (lwsac) - helpers for optimized mass allocation of small
+   objects inside a few larger malloc chunks... if you need to allocate a lot of
+   inter-related structs for a limited time, this removes per-struct allocation
+   library overhead completely and removes the need for any destruction handling
+   [lwsac docs](https://libwebsockets.org/git/libwebsockets/tree/lib/misc/lwsac)
+   [lwsac minimal example](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/api-tests/api-test-lwsac)
+   Cmake Config: `-DLWS_WITH_LWSAC=1`
+
+ - NEW: lws tokenizer - helper api for robustly tokenizing your own strings without
+   allocating or adding complexity.  Configurable by flags for common delimiter
+   sets and comma-separated-lists in the tokenizer.  Detects and reports syntax
+   errors.
+   [lws_tokenize docs](https://libwebsockets.org/git/libwebsockets/tree/include/libwebsockets/lws-tokenize.h)
+   [lws_tokenize minimal example / api test](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/api-tests/api-test-lws_tokenize)
+
+ - NEW: lws full-text search - optimized trie generation, serialization,
+   autocomplete suggestion generation and instant global search support extensible
+   to huge corpuses of UTF-8 text while remaining super lightweight on resources.
+   [full-text search docs](https://libwebsockets.org/git/libwebsockets/tree/lib/misc/fts)
+   [full-text search minimal example / api test](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/api-tests/api-test-fts)
+   [demo](https://libwebsockets.org/ftsdemo/)
+   [demo sources](https://libwebsockets.org/git/libwebsockets/tree/plugins/protocol_fulltext_demo.c)
+   Cmake config: `-DLWS_WITH_FTS=1 -DLWS_WITH_LWSAC=1`
+
+ - NEW: gzip + brotli http server-side compression - h1 and h2 automatic advertising
+   of server compression and application to files with mimetypes "text/*",
+   "application/javascript" and "image/svg.xml".
+   Cmake config: `-DLWS_WITH_HTTP_STREAM_COMPRESSION=1`, `-DLWS_WITH_HTTP_BROTLI=1`
+
+ - NEW: managed disk cache - API for managing a directory containing cached files
+   with hashed names, and automatic deletion of LRU files once the cache is
+   above a given limit.
+   [lws diskcache docs](https://libwebsockets.org/git/libwebsockets/tree/include/libwebsockets/lws-diskcache.h)
+   Cmake config: `-DLWS_WITH_DISKCACHE=1`
+
+ - NEW: http reverse proxy - lws mounts support proxying h1 or h2 requests to
+   a local or remote IP, or unix domain socket over h1.  This allows microservice
+   type architectures where parts of the common URL space are actually handled
+   by external processes which may be remote or on the same machine.
+   [lws gitohashi serving](https://libwebsockets.org/git/) is handled this way.
+   CMake config: `-DLWS_WITH_HTTP_PROXY=1`
+   
+ - NEW: lws_buflist - internally several types of ad-hoc malloc'd buffer have
+   been replaced by a new, exported api `struct lws_buflist`.  This allows
+   multiple buffers to be chained and drawn down in strict FIFO order.
+
+ - NEW: In the case of h1 upgrade, the connection header is checked to contain
+   "upgrade".   The vhost flag LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK
+   also causes the Host: header to be confirmed to match the vhost name and
+   listen port.
+   
+ - NEW: If no 404 redirect for `lws_return_http_status()` is specified for the vhost,
+   the status page produced will try to bring in a stylesheet `/error.css`.  This allows
+   you to produce styled 404 or other error pages with logos, graphics etc.  See
+   https://libwebsockets.org/git/badrepo for an example of what you can do with it.
+
+v3.0.0
+======
+
+ - CHANGE: Clients used to call LWS_CALLBACK_CLOSED same as servers...
+   LWS_CALLBACK_CLIENT_CLOSED has been introduced and is called for clients
+   now.
+   
+ - CHANGE: LWS_CALLBACK_CLIENT_CONNECTION_ERROR used to only be directed at
+   protocols[0].  However in many cases, the protocol to bind to was provided
+   at client connection info time and the wsi bound accordingly.  In those
+   cases, CONNECTION_ERROR is directed at the bound protocol, not protcols[0]
+   any more.
+
+ - CHANGE: CMAKE: the following cmake defaults have changed with this version:
+ 
+     - LWS_WITH_ZIP_FOPS:      now defaults OFF
+     - LWS_WITH_RANGES:        now defaults OFF
+     - LWS_WITH_ZLIB:          now defaults OFF
+     - LWS_WITHOUT_EXTENSIONS: now defaults ON
+     
+ - CHANGE: REMOVED: lws_alloc_vfs_file() (read a file to malloc buffer)
+ 
+ - CHANGE: REMOVED: lws_read() (no longer useful outside of lws internals)
+ 
+ - CHANGE: REMOVED: ESP8266... ESP32 is now within the same price range and much
+   more performant
+   
+ - CHANGE: soname bump... don't forget to `ldconfig`
+     
+ - NEW: all event libraries support "foreign" loop integration where lws itself
+   if just a temporary user of the loop unrelated to the actual loop lifecycle.
+   
+   See `minimal-http-server-eventlib-foreign` for example code demonstrating
+   this for all the event libraries.
+   
+   Internal loop in lws is also supported and demonstrated by
+   `minimal-http-server-eventlib`.
+ 
+ - NEW: ws-over-h2 support.  This is a new RFC-on-the-way supported by Chrome
+   and shortly firefox that allows ws connections to be multiplexed back to the
+   server on the same tcp + tls wrapper h2 connection that the html and scripts
+   came in on.  This is hugely faster that discrete connections.
+ 
+ - NEW: UDP socket adoption and related event callbacks
+ 
+ - NEW: Multi-client connection binding, queuing and pipelining support.
+ 
+   Lws detects multiple client connections to the same server and port, and
+   optimizes how it handles them according to the server type and provided
+   flags.  For http/1.0, all occur with individual parallel connections.  For
+   http/1.1, you can enable keepalive pipelining, so the connections occur
+   sequentially on a single network connection.  For http/2, they all occur
+   as parallel streams within a single h2 network connection.
+   
+   See minimal-http-client-multi for example code. 
+   
+ - NEW: High resolution timer API for wsi, get a callback on your wsi with
+   LWS_CALLBACK_TIMER, set and reset the timer with lws_set_timer_usecs(wsi, us)
+   Actual resolution depends on event backend.  Works with all backends, poll,
+   libuv, libevent, and libev.
+   
+ - NEW: Protocols can arrange vhost-protocol instance specific callbacks with
+   second resolution using `lws_timed_callback_vh_protocol()`
+
+ - NEW: ACME client plugin for self-service TLS certificates
+  
+ - NEW: RFC7517 JSON Web Keys RFC7638 JWK thumbprint, and RFC7515 JSON Web
+    signatures support
+  
+ - NEW: lws_cancel_service() now provides a generic way to synchronize events
+   from other threads, which appear as a LWS_CALLBACK_EVENT_WAIT_CANCELLED
+   callback on all protocols.  This is compatible with all the event libraries.
+
+ - NEW: support BSD poll() where changes to the poll wait while waiting are
+   undone.
+
+ - NEW: Introduce generic hash, hmac and RSA apis that operate the same
+   regardless of OpenSSL or mbedTLS tls backend
+  
+ - NEW: Introduce X509 element query api that works the same regardless of
+   OpenSSL or mbedTLS tls backend
+    
+ - NEW: Introduce over 30 "minimal examples" in ./minimal-examples... these
+   replace most of the old test servers
+   
+    - test-echo -> minimal-ws-server-echo and minimal-ws-client-echo
+
+    - test-server-libuv / -libevent / -libev ->
+         minimal-https-server-eventlib / -eventlib-foreign / -eventlib-demos
+
+    - test-server-v2.0 -> folded into all the minimal servers
+
+    - test-server direct http serving -> minimal-http-server-dynamic
+    
+   The minimal examples allow individual standalone build using their own
+   small CMakeLists.txt.
+   
+ - NEW: lws now detects any back-to-back writes that did not go through the
+   event loop inbetween and reports them.  This will flag any possibility of
+   failure rather than wait until the problem happens.
+   
+ - NEW: CMake has LWS_WITH_DISTRO_RECOMMENDED to select features that are
+   appropriate for distros
+   
+ - NEW: Optional vhost URL `error_document_404` if given causes a redirect there
+   instead of serve the default 404 page.
+   
+ - NEW: lws_strncpy() wrapper guarantees NUL in copied string even if it was
+   truncated to fit.
+   
+ - NEW: for client connections, local protocol binding name can be separated
+   from the ws subprotocol name if needed, using .local_protocol_name
+
+ - NEW: Automatic detection of time discontiguities
+   
+ - NEW: Applies TCP_USER_TIMEOUT for Linux tcp keepalive where available
+     
+ - QA: 1600 tests run on each commit in Travis CI, including almost all
+   Autobahn in client and server mode, various h2load tests, h2spec, attack.sh
+   the minimal example selftests and others.
+
+ - QA: fix small warnings introduced on gcc8.x (eg, Fedora 28)
+ 
+ - QA: Add most of -Wextra on gcc (-Wsign-compare, -Wignored-qualifiers,
+   -Wtype-limits, -Wuninitialized)
+   
+ - QA: clean out warnings on windows
+ 
+ - QA: pass all 146 h2spec tests now on strict
+ 
+ - QA: introduce 35 selftests that operate different minimal examples against
+   each other and confirm the results.
+ 
+ - QA: LWS_WITH_MINIMAL_EXAMPLES allows mass build of all relevant minimal-
+   examples with the LWS build, for CI and to make all the example binaries
+   available from the lws build dir ./bin
+ 
+ - REFACTOR: the lws source directory layout in ./lib has been radically
+   improved, and there are now README.md files in selected subdirs with extra
+   documentation of interest to people working on lws itself.
+
+ - REFACTOR: pipelined transactions return to the event loop before starting the
+   next part. 
+ 
+ - REFACTOR: TLS: replace all TLS library constants with generic LWS ones and
+   adapt all the TLS library code to translate to these common ones.
+   
+   Isolated all the tls-related private stuff in `./lib/tls/private.h`, and all
+   the mbedTLS stuff in `./lib/tls/mbedtls` + openSSL stuff in
+   `./lib/tls/openssl`
+   
+ - REFACTOR: the various kinds of wsi possible with lws have been extracted
+   from the main code and isolated into "roles" in `./lib/roles` which
+   communicate with the core code via an ops struct.  Everything related to
+   ah is migrated to the http role.
+   
+   wsi modes are eliminated and replaced by the ops pointer for the role the
+   wsi is performing.  Generic states for wsi are available to control the
+   lifecycle using core code.
+   
+   Adding new "roles" is now much easier with the changes and ops struct to
+   plug into.
+
+ - REFACTOR: reduce four different kinds of buffer management in lws into a
+   generic scatter-gather struct lws_buflist. 
+
+ - REFACTOR: close notifications go through event loop
+
+
+v2.4.0
+======
+
+ - HTTP/2 server support is now mature and usable!  LWS_WITH_HTTP2=1 enables it.
+   Uses ALPN to serve HTTP/2, HTTP/1 and ws[s] connections all from the same
+   listen port seamlessly.  (Requires ALPN-capable OpenSSL 1.1 or mbedTLS).
+
+ - LWS_WITH_MBEDTLS=1 at CMake now builds and works against mbedTLS instead of
+   OpenSSL.  Most things work identically, although on common targets where
+   OpenSSL has acceleration, mbedTLS is many times slower in operation.  However
+   it is a lot smaller codewise.
+   
+ - Generic hash apis introduced that work the same on mbedTLS or OpenSSL backend
+ 
+ - LWS_WITH_PEER_LIMITS tracks IPs across all vhosts and allows restrictions on
+   both the number of simultaneous connections and wsi in use for any single IP
+
+ - lws_ring apis provide a generic single- or multi-tail ringbuffer... mirror
+   protocol now uses this.  Features include ring elements may be sized to fit
+   structs in the ringbuffer, callback when no tail any longer needs an element
+   and it can be deleted, and zerocopy options to write new members directly
+   into the ringbuffer, and use the ringbuffer element by address too.
+ 
+ - abstract ssh 2 server plugin included, with both plugin and standalone
+   demos provided.  You can bind the plugin to a vhost and also serve full-
+   strength ssh from the vhost.  IO from the ssh server is controlled by an
+   "ops" struct of callbacks for tx, rx, auth etc.
+   
+ - Many fixes, cleanups, source refactors and other improvements.
+
+
+v2.3.0
+======
+
+ - ESP32 OpenSSL support for client and server
+
+ - ESP32 4 x WLAN credential slots may be configured
+
+ - Libevent event loop support
+
+ - SOCKS5 proxy support
+
+ - lws_meta protocol for websocket connection multiplexing
+
+ - lws_vhost_destroy() added... allows dynamic removal of listening
+   vhosts.  Vhosts with shared listen sockets adopt the listen socket
+   automatically if the owner is destroyed.
+
+ - IPv6 on Windows
+
+ - Improved CGI handling suitable for general CGI scripting, eg, PHP
+
+ - Convert even the "old style" test servers to use statically included
+   plugin sources
+
+ - LWS_WITH_STATS cmake option dumps resource usage and timing information
+   every few seconds to debug log, including latency information about
+   delay from asking for writeable callback to getting it
+
+ - Large (> 2GB) files may be served
+
+ - LWS_WITH_HTTP_PROXY Cmake option adds proxying mounts
+
+ - Workaround for libev build by disabling -Werror on the test app
+
+ - HTTP2 support disabled since no way to serve websockets on it
+
+
+v2.2.0
+======
+
+Major new features
+
+ - A mount can be protected by Basic Auth... in lwsws it looks like this
+
+ ```
+{
+        "mountpoint": "/basic-auth",
+        "origin": "file://_lws_ddir_/libwebsockets-test-server/private",
+        "basic-auth": "/var/www/balogins-private"
+}
+```
+
+The text file named in `basic-auth` contains user:password information
+one per line.
+
+See README.lwsws.md for more information.
+
+ - RFC7233 RANGES support in lws server... both single and multipart.
+ This allows seeking for multimedia file serving and download resume.
+ It's enabled by default but can be disabled by CMake option.
+
+ - On Linux, lwsws can reload configuration without dropping ongoing
+ connections, when sent a SIGHUP.  The old configuration drops its
+ listen sockets so the new configuration can listen on them.
+ New connections connect to the server instance with the new
+ configuration.  When all old connections eventually close, the old
+ instance automatically exits.  This is equivalent to
+ `systemctl reload apache`
+
+ - New `adopt` api allow adoption including SSL negotiation and
+ for raw sockets and file descriptors.
+
+ - Chunked transfer encoding supported for client and server
+
+ - Adaptations to allow operations inside OPTEE Secure World
+
+ - ESP32 initial port - able to do all test server functions. See
+ README.build.md
+
+ - Serving gzipped files from inside a ZIP file is supported... this
+ includes directly serving the gzipped content if the client
+ indicated it could accept it (ie, almost all browsers) saving
+ bandwidth and time.  For clients that can't accept it, lws
+ automatically decompresses and serves the content in memory-
+ efficient chunks. Only a few hundred bytes of heap are needed
+ to serve any size file from inside the zip.  See README.coding.md
+
+ - RAW file descriptors may now be adopted into the lws event loop,
+ independent of event backend (including poll service).
+ See README.coding.md
+
+ - RAW server socket descriptors may now be enabled on the vhost if
+ the first thing sent on the connection is not a valid http method.
+ The user code can associate these with a specific protocol per
+ vhost, and RAW-specific callbacks appear there for creation, rx,
+ writable and close.  See libwebsockets-test-server-v2.0 for an example.
+ See README.coding.md
+
+ - RAW client connections are now possible using the method "RAW".
+ After connection, the socket is associated to the protocol
+ named in the client connection info and RAW-specific callbacks
+ appear there for creation, rx, writable and close.
+ See libwebsockets-test-client (with raw://) for an example.
+ See README.coding.md
+
+
+(for earlier changelogs, see the tagged releases)

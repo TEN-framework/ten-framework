@@ -1,0 +1,57 @@
+{
+  "type": "start_graph",
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_2",
+      "addon": "basic_hello_world_2__test_extension",
+      "extension_group": "test_extension_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext_1",
+      "addon": "basic_hello_world_1__test_extension",
+      "extension_group": "test_extension_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext_1",
+      "cmd": [
+        {
+          "name": "test",
+          "dest": [
+            {
+              "extension": "ext_2",
+              "msg_conversion": {
+                "type": "per_property",
+                "rules": [
+                  {
+                    "path": "ten.name",
+                    "conversion_mode": "fixed_value",
+                    "value": "bbb"
+                  },
+                  {
+                    "path": "test_prop_string",
+                    "conversion_mode": "fixed_value",
+                    "value": "hello"
+                  },
+                  {
+                    "path": "test_prop_bool_fixed",
+                    "conversion_mode": "fixed_value",
+                    "value": true
+                  },
+                  {
+                    "path": "test_prop_bool_from_origin",
+                    "conversion_mode": "from_original",
+                    "original_path": "prop_bool"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

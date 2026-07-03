@@ -1,0 +1,74 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_manager/options.gni")
+import("//build/ten_runtime/options.gni")
+
+# Package the content of a folder into a TEN package.
+template("ten_package_packaging") {
+  _target_name = target_name
+
+  action("ten_package_packaging_${_target_name}") {
+    script = "//build/ten_runtime/feature/packaging.py"
+
+    args = [ "--tman-path" ]
+    if (is_win) {
+      args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman.exe") ]
+    } else {
+      args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman") ]
+    }
+
+    args += [
+      "--pkg-src-root-dir",
+      rebase_path(invoker.pkg_src_root_dir),
+      "--output-path",
+      rebase_path(invoker.output_path),
+      "--log-level",
+      "${log_level}",
+    ]
+
+    outputs = [ invoker.output_path ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "sources",
+                           ])
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [
+      "//build/ten_runtime/feature:create_tman_config",
+      "//core/src/ten_manager",
+    ]
+  }
+
+  # Add the copy_manifest action to copy the manifest.json from source to output
+  if (defined(invoker.manifest_output_path)) {
+    copy("copy_manifest_${_target_name}") {
+      source_manifest_path =
+          rebase_path(invoker.pkg_src_root_dir) + "/manifest.json"
+      sources = [ source_manifest_path ]
+      outputs = [ invoker.manifest_output_path ]
+    }
+  }
+
+  group("${target_name}") {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+    public_deps = [ ":ten_package_packaging_${_target_name}" ]
+
+    # Add copy_manifest dependency if manifest paths are provided
+    if (defined(invoker.manifest_output_path)) {
+      public_deps += [ ":copy_manifest_${_target_name}" ]
+    }
+  }
+}

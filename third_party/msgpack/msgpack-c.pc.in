@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: MessagePack
+Description: Binary-based efficient object serialization library
+Version: @VERSION@
+Libs: -L${libdir} -lmsgpack-c
+Cflags: -I${includedir}

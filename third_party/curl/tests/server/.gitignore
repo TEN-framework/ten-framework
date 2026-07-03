@@ -1,0 +1,14 @@
+# Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+#
+# SPDX-License-Identifier: curl
+
+fake_ntlm
+getpart
+resolve
+rtspd
+sockfilt
+sws
+tftpd
+socksd
+disabled
+mqttd

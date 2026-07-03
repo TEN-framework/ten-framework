@@ -1,0 +1,55 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+cookies
+</keywords>
+</info>
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Server: Microsoft-IIS/4.0
+Date: Tue, 25 Sep 2001 19:37:44 GMT
+Content-Type: text/html
+Connection: close
+Content-Length: 21
+
+This server says moo
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP, junk session cookies
+ </name>
+ <command>
+%HOSTIP:%HTTPPORT/want/%TESTNUMBER -b %LOGDIR/injar%TESTNUMBER -j
+</command>
+<file name="%LOGDIR/injar%TESTNUMBER">
+%HOSTIP	FALSE	/	FALSE	2139150993	mooo	indeed
+%HOSTIP	FALSE	/	FALSE	0		moo1	indeed
+%HOSTIP	FALSE	/	FALSE	1		moo2	indeed
+</file>
+<features>
+cookies
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Cookie: mooo=indeed
+
+</protocol>
+</verify>
+</testcase>

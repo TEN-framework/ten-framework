@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollView"
+    tools:context="org.libwebsockets.client.MainActivity"
+    android:theme="@android:style/Theme.Holo.Light"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <RelativeLayout
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/warmcat" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/editText_serverLocation"
+            android:hint="Hostname or IP address"
+            android:background="@android:drawable/editbox_background"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat"
+            android:singleLine="true"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_below="@+id/imageView"
+            android:layout_alignParentStart="true" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/editText_portNumber"
+            android:background="@android:drawable/editbox_background"
+            android:hint="Port number"
+            android:text="7681"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat"
+            android:singleLine="true"
+            android:layout_below="@+id/editText_serverLocation"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin" />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="(dis)connect"
+            android:id="@+id/button"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat"
+            android:onClick="clickStart"
+            android:layout_below="@+id/editText_portNumber"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="@dimen/activity_vertical_margin" />
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="dumb-increment-protocol"
+            android:id="@+id/textView_counter"
+            android:layout_centerHorizontal="true"
+            android:gravity="center_vertical|center_horizontal"
+            android:layout_alignParentBottom="true"
+            android:background="@android:drawable/alert_light_frame"
+            android:singleLine="false"
+            android:layout_below="@+id/button" />
+
+    </RelativeLayout>
+</ScrollView>

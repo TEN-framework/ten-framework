@@ -1,0 +1,8 @@
+This example shows how to use the enumeration assumption. Note that calls to
+solve are only repeatable if this assumption is enabled. If it is disabled, an
+(implementation dependent) subset of the clauses learnt during enumeration of
+solutions is kept.
+
+Example calls:
+  clingo example-py.lp
+  clingo example-lua.lp

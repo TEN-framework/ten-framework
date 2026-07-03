@@ -1,0 +1,9 @@
+This example shows how to use the atoms method to inspect a model found by
+clasp.  You can inspect the answer set as well as the assignment that lead to
+the model.  Note that there are no guarantees regarding atoms not part of an
+answer set because due to simplifications some of them might be removed from
+the assignment altogether.
+
+Example calls:
+    clingo onmodel-py.lp
+    clingo onmodel-lua.lp

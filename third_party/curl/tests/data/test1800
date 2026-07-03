@@ -1,0 +1,56 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP/2
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 Ignored!
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Last-Modified: Tue, 13 Jun 2000 12:10:00 GMT
+Content-Length: 6
+Connection: close
+Content-Type: text/html
+
+-foo-
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+h2c
+</features>
+<server>
+http
+</server>
+<features>
+http/2
+</features>
+ <name>
+HTTP/2 upgrade refused
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER --http2
+</command>
+
+</client>
+
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Connection: Upgrade, HTTP2-Settings
+Upgrade: %H2CVER
+HTTP2-Settings: AAMAAABkAAQAoAAAAAIAAAAA
+
+</protocol>
+</verify>
+</testcase>

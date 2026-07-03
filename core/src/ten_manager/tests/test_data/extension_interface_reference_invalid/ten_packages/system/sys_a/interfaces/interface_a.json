@@ -1,0 +1,69 @@
+{
+  "property": {
+    "a": {
+      "type": "string"
+    }
+  },
+  "cmd_in": [
+    {
+      "name": "cmd_in_a",
+      "property": {
+        "collection_name": {
+          "type": "string"
+        },
+        "top_k": {
+          "type": "int64"
+        },
+        "embedding": {
+          "type": "array",
+          "items": {
+            "type": "float64"
+          }
+        }
+      },
+      "result": {
+        "property": {
+          "response": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "float64"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "cmd_out": [
+    {
+      "name": "cmd_out_a",
+      "property": {
+        "message": {
+          "type": "buf"
+        }
+      }
+    }
+  ],
+  "data_in": [
+    {
+      "name": "data"
+    }
+  ],
+  "audio_frame_in": [
+    {
+      "name": "audio_frame_in_a"
+    }
+  ],
+  "audio_frame_out": [
+    {
+      "name": "audio_frame_out_a"
+    }
+  ]
+}

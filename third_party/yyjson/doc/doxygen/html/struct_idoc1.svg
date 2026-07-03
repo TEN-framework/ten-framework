@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="411px" height="201px" viewBox="0 0 411 201" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>yyjson</title>
+    <defs>
+        <rect id="path-1" x="145" y="60" width="260" height="27"></rect>
+        <filter x="-3.7%" y="-31.5%" width="107.3%" height="170.4%" filterUnits="objectBoundingBox" id="filter-2">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.05 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <rect id="path-3" x="0" y="0" width="88" height="27"></rect>
+        <filter x="-10.8%" y="-31.5%" width="121.6%" height="170.4%" filterUnits="objectBoundingBox" id="filter-4">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.072770979 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <rect id="path-5" x="0" y="0" width="88" height="27"></rect>
+        <filter x="-10.8%" y="-31.5%" width="121.6%" height="170.4%" filterUnits="objectBoundingBox" id="filter-6">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.072770979 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <rect id="path-7" x="0" y="0" width="88" height="27"></rect>
+        <filter x="-10.8%" y="-31.5%" width="121.6%" height="170.4%" filterUnits="objectBoundingBox" id="filter-8">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.072770979 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+        <rect id="path-9" x="0" y="0" width="88" height="27"></rect>
+        <filter x="-10.8%" y="-31.5%" width="121.6%" height="170.4%" filterUnits="objectBoundingBox" id="filter-10">
+            <feMorphology radius="1" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="1" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feGaussianBlur stdDeviation="2" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
+            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.072770979 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="yyjson_doc1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="str-path">
+            <use fill="black" fill-opacity="1" filter="url(#filter-2)" xlink:href="#path-1"></use>
+            <rect stroke="#979797" stroke-width="1" stroke-linejoin="square" fill-opacity="0.0505354021" fill="#000000" fill-rule="evenodd" x="145.5" y="60.5" width="259" height="26"></rect>
+        </g>
+        <text id="str-buf" font-family="Menlo-Bold, Menlo" font-size="12" font-weight="bold" fill="#000000">
+            <tspan x="145" y="78">["a ,"résumé sum\u00E9","page ]</tspan>
+        </text>
+        <rect id="json-box" stroke="#979797" fill-opacity="0.0505354021" fill="#000000" x="145.5" y="0.5" width="225" height="26"></rect>
+        <text id="json-orig" font-family="Menlo-Bold, Menlo" font-size="12" font-weight="bold" fill="#000000">
+            <tspan x="147" y="18">["a","r\u00E9sum\u00E9","page"]</tspan>
+        </text>
+        <g id="ival" transform="translate(6.000000, 151.000000)">
+            <rect id="1bit" fill-opacity="0.5" fill="#FFC700" x="0" y="0" width="7" height="27"></rect>
+            <polygon id="7bit" fill-opacity="0.5" fill="#8BFF00" points="7 0 44 0 44 27 7 27"></polygon>
+            <polygon id="8bit" fill-opacity="0.5" fill="#00C6FF" points="44 0 88 0 88 27 44 27"></polygon>
+            <g id="16bit">
+                <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-3"></use>
+                <rect stroke-opacity="0.5" stroke="#000000" stroke-width="1" stroke-linejoin="square" fill-opacity="0" fill="#D8D8D8" fill-rule="evenodd" x="0.5" y="0.5" width="87" height="26"></rect>
+            </g>
+            <text id="len" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="21.3876953" y="17">3</tspan>
+            </text>
+            <text id="uni" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="58.7753906" y="17">64</tspan>
+            </text>
+        </g>
+        <g id="ival" transform="translate(93.000000, 151.000000)">
+            <rect id="1bit" fill-opacity="0.5" fill="#FFC700" x="0" y="0" width="7" height="27"></rect>
+            <polygon id="7bit" fill-opacity="0.5" fill="#8BFF00" points="7 0 44 0 44 27 7 27"></polygon>
+            <polygon id="8bit" fill-opacity="0.5" fill="#00C6FF" points="44 0 88 0 88 27 44 27"></polygon>
+            <g id="16bit">
+                <use fill="black" fill-opacity="1" filter="url(#filter-6)" xlink:href="#path-5"></use>
+                <rect stroke-opacity="0.5" stroke="#000000" stroke-width="1" stroke-linejoin="square" fill-opacity="0" fill="#D8D8D8" fill-rule="evenodd" x="0.5" y="0.5" width="87" height="26"></rect>
+            </g>
+            <text id="len" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="21.3876953" y="17">1</tspan>
+            </text>
+            <text id="uni" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="55.1630859" y="17">ptr</tspan>
+            </text>
+        </g>
+        <g id="ival" transform="translate(180.000000, 151.000000)">
+            <rect id="1bit" fill-opacity="0.5" fill="#FFC700" x="0" y="0" width="7" height="27"></rect>
+            <polygon id="7bit" fill-opacity="0.5" fill="#8BFF00" points="7 0 44 0 44 27 7 27"></polygon>
+            <polygon id="8bit" fill-opacity="0.5" fill="#00C6FF" points="44 0 88 0 88 27 44 27"></polygon>
+            <g id="16bit">
+                <use fill="black" fill-opacity="1" filter="url(#filter-8)" xlink:href="#path-7"></use>
+                <rect stroke-opacity="0.5" stroke="#000000" stroke-width="1" stroke-linejoin="square" fill-opacity="0" fill="#D8D8D8" fill-rule="evenodd" x="0.5" y="0.5" width="87" height="26"></rect>
+            </g>
+            <text id="len" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="21.3876953" y="17">6</tspan>
+            </text>
+            <text id="uni" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="55.1630859" y="17">ptr</tspan>
+            </text>
+        </g>
+        <g id="ival" transform="translate(267.000000, 151.000000)">
+            <rect id="1bit" fill-opacity="0.5" fill="#FFC700" x="0" y="0" width="7" height="27"></rect>
+            <polygon id="7bit" fill-opacity="0.5" fill="#8BFF00" points="7 0 44 0 44 27 7 27"></polygon>
+            <polygon id="8bit" fill-opacity="0.5" fill="#00C6FF" points="44 0 88 0 88 27 44 27"></polygon>
+            <g id="16bit">
+                <use fill="black" fill-opacity="1" filter="url(#filter-10)" xlink:href="#path-9"></use>
+                <rect stroke-opacity="0.5" stroke="#000000" stroke-width="1" stroke-linejoin="square" fill-opacity="0" fill="#D8D8D8" fill-rule="evenodd" x="0.5" y="0.5" width="87" height="26"></rect>
+            </g>
+            <text id="len" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="21.3876953" y="17">4</tspan>
+            </text>
+            <text id="uni" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+                <tspan x="55.1630859" y="17">ptr</tspan>
+            </text>
+        </g>
+        <path id="直线" d="M158.5,86 L163,95 L159,95 L159,151 L158,151 L158,95 L154,95 L158.5,86 Z" fill="#979797" fill-rule="nonzero"></path>
+        <path id="直线" d="M190.177029,86.1183069 L199.425747,90.0820433 L196.372,92.666 L245.881693,151.177029 L246.204664,151.558722 L245.441278,152.204664 L245.118307,151.822971 L195.609,93.311 L192.555271,95.8955235 L190.177029,86.1183069 Z" fill="#979797" fill-rule="nonzero"></path>
+        <path id="直线" d="M326.5,86 L331,95 L327,95 L327,151 L326,151 L326,95 L322,95 L326.5,86 Z" fill="#979797" fill-rule="nonzero"></path>
+        <text id="array" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="31" y="198">array</tspan>
+        </text>
+        <text id="string" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="117" y="198">string</tspan>
+        </text>
+        <text id="original-data" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="6" y="18">original data</tspan>
+        </text>
+        <text id="copied-data" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="6" y="78">copied data</tspan>
+        </text>
+        <text id="string" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="202" y="198">string</tspan>
+        </text>
+        <text id="string" font-family="Menlo-Regular, Menlo" font-size="12" font-weight="normal" fill="#000000">
+            <tspan x="289" y="198">string</tspan>
+        </text>
+    </g>
+</svg>

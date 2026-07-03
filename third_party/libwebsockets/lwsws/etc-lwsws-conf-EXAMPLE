@@ -1,0 +1,16 @@
+# these are the server global settings
+# stuff related to vhosts should go in one
+# file per vhost in ../conf.d/
+
+{
+  "global": {
+   "uid": "48",
+   "gid": "48",
+   "interface": "eth0",
+   "count-threads": "1",
+   "server-string": "lwsws",
+   "ws-pingpong-secs": "200",
+   "init-ssl": "yes"
+ }
+}
+

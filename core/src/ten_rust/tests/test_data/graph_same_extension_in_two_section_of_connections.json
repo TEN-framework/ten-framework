@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "some_extension",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "another_ext",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "some_extension",
+      "cmd": [
+        {
+          "name": "hello",
+          "dest": [
+            {
+              "extension": "another_ext"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "some_extension",
+      "cmd": [
+        {
+          "name": "hello_2",
+          "dest": [
+            {
+              "extension": "another_ext"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

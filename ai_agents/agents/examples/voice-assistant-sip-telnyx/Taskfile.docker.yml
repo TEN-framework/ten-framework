@@ -1,0 +1,31 @@
+version: "3"
+
+vars:
+  AGENT_DIR: "{{.ROOT}}/../../.."
+  TENAPP_DIR: "{{.ROOT}}/tenapp"
+  FRONTEND_DIR: "{{.ROOT}}/frontend"
+  SERVER_DIR: "{{.ROOT}}/server"
+
+tasks:
+  build:
+    desc: Build Docker image
+    cmds:
+      - docker build -f Dockerfile -t voice-assistant-sip-telnyx-app .
+
+  run:
+    desc: Run Docker container
+    deps: [build]
+    cmds:
+      - |
+        echo "Running Docker container..."
+        docker run --rm -it --env-file .env -p 9000:9000 -p 3000:3000 voice-assistant-sip-telnyx-app
+
+  push:
+    desc: Push Docker image to registry
+    deps: [build]
+    cmds:
+      - |
+        echo "Pushing Docker image..."
+        docker tag voice-assistant-sip-telnyx-app:latest
+        docker push
+        echo "Image pushed."

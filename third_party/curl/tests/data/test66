@@ -1,0 +1,43 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP/0.9
+</keywords>
+</info>
+# Server-side
+<reply>
+<data>
+no headers swsclose
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+!hyper
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP GET without headers in the response
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER --http0.9
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

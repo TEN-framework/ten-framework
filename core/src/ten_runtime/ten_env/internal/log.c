@@ -1,0 +1,208 @@
+//
+// Copyright © 2025 Agora
+// This file is part of TEN Framework, an open source project.
+// Licensed under the Apache License, Version 2.0, with certain conditions.
+// Refer to the "LICENSE" file in the root directory for more information.
+//
+#include "ten_runtime/ten_env/internal/log.h"
+
+#include "include_internal/ten_runtime/common/loc.h"
+#include "include_internal/ten_runtime/ten_env/ten_env.h"
+#include "include_internal/ten_utils/log/log.h"
+#include "ten_runtime/ten_env/ten_env.h"
+#include "ten_utils/lib/alloc.h"
+#include "ten_utils/lib/string.h"
+#include "ten_utils/value/value_buffer.h"
+
+#if !defined(OS_WINDOWS)
+#include <unistd.h>
+#endif
+
+static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
+                                 const char *func_name, const char *file_name,
+                                 size_t line_no, const char *msg,
+                                 const char *category,
+                                 const uint8_t *fields_buf,
+                                 size_t fields_buf_size, bool check_thread) {
+  TEN_ASSERT(self && ten_env_check_integrity(self, check_thread),
+             "Should not happen.");
+
+  // Get location information from attached target.
+  ten_loc_t loc;
+  ten_loc_init_empty(&loc);
+  ten_env_get_attached_target_loc(self, &loc, check_thread);
+
+  // Convert ten_loc_t to ten_log_loc_info_t.
+  ten_log_loc_info_t loc_info;
+  ten_log_loc_info_init_from_loc(&loc_info, &loc);
+
+  ten_string_t final_msg;
+  ten_string_init_formatted(
+      &final_msg, "[%s] %s",
+      ten_env_get_attached_instance_name(self, check_thread), msg);
+
+  ten_log_log_with_size(
+      &ten_global_log, level, func_name, func_name ? strlen(func_name) : 0,
+      file_name, file_name ? strlen(file_name) : 0, line_no,
+      ten_string_get_raw_str(&final_msg), ten_string_len(&final_msg), category,
+      category ? strlen(category) : 0, fields_buf, fields_buf_size, &loc_info);
+
+  ten_string_deinit(&final_msg);
+  ten_loc_deinit(&loc);
+}
+
+// TODO(Wei): This function is currently specifically designed for the addon
+// because the addon currently does not have a main thread, so it's unable to
+// check thread safety. Once the main thread for the addon is determined in the
+// future, these hacks made specifically for the addon can be completely
+// removed, and comprehensive thread safety checking can be implemented.
+TEN_RUNTIME_API void ten_env_log_without_check_thread(
+    ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    const char *file_name, size_t line_no, const char *msg,
+    const char *category, const uint8_t *fields_buf, size_t fields_buf_size) {
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, fields_buf, fields_buf_size, false);
+}
+
+void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+                 const char *file_name, size_t line_no, const char *msg,
+                 const char *category, ten_value_t *fields) {
+  if (ten_env_is_closed(self)) {
+#if !defined(OS_WINDOWS)
+    (void)dprintf(STDERR_FILENO, "ten_env_log failed due to closed: %s\n", msg);
+#endif
+    return;
+  }
+
+  uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+  if (fields != NULL) {
+    fields_buf =
+        ten_value_serialize_to_buffer_c(fields, &fields_buf_size, NULL);
+  }
+
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, fields_buf, fields_buf_size, true);
+
+  if (fields_buf != NULL) {
+    TEN_FREE(fields_buf);
+  }
+}
+
+void ten_env_log_with_fields_buf(ten_env_t *self, TEN_LOG_LEVEL level,
+                                 const char *func_name, const char *file_name,
+                                 size_t line_no, const char *msg,
+                                 const char *category,
+                                 const uint8_t *fields_buf,
+                                 size_t fields_buf_size) {
+  if (ten_env_is_closed(self)) {
+#if !defined(OS_WINDOWS)
+    (void)dprintf(STDERR_FILENO,
+                  "ten_env_log_with_fields_buf failed due to closed: %s\n",
+                  msg);
+#endif
+    return;
+  }
+
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, fields_buf, fields_buf_size, true);
+}
+
+static void ten_env_log_with_size_formatted_internal(
+    ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, bool check_thread, const char *category,
+    size_t category_len, const uint8_t *fields_buf, size_t fields_buf_size,
+    const char *fmt, va_list ap) {
+  TEN_ASSERT(self && ten_env_check_integrity(self, check_thread),
+             "Should not happen.");
+
+  // Get location information from attached target.
+  ten_loc_t loc;
+  ten_loc_init_empty(&loc);
+  ten_env_get_attached_target_loc(self, &loc, check_thread);
+
+  // Convert ten_loc_t to ten_log_loc_info_t.
+  ten_log_loc_info_t loc_info;
+  ten_log_loc_info_init_from_loc(&loc_info, &loc);
+
+  ten_string_t final_msg;
+  ten_string_init_formatted(
+      &final_msg, "[%s] ",
+      ten_env_get_attached_instance_name(self, check_thread));
+
+  ten_string_append_from_va_list(&final_msg, fmt, ap);
+
+  ten_log_log_with_size(&ten_global_log, level, func_name, func_name_len,
+                        file_name, file_name_len, line_no,
+                        ten_string_get_raw_str(&final_msg),
+                        ten_string_len(&final_msg), category, category_len,
+                        fields_buf, fields_buf_size, &loc_info);
+
+  ten_string_deinit(&final_msg);
+  ten_loc_deinit(&loc);
+}
+
+// TODO(Wei): This function is currently specifically designed for the addon
+// because the addon currently does not have a main thread, so it's unable to
+// check thread safety. Once the main thread for the addon is determined in the
+// future, these hacks made specifically for the addon can be completely
+// removed, and comprehensive thread safety checking can be implemented.
+void ten_env_log_with_size_formatted_without_check_thread(
+    ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *category, size_t category_len,
+    const uint8_t *fields_buf, size_t fields_buf_size, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  ten_env_log_with_size_formatted_internal(
+      self, level, func_name, func_name_len, file_name, file_name_len, line_no,
+      false, category, category_len, fields_buf, fields_buf_size, fmt, ap);
+
+  va_end(ap);
+}
+
+void ten_env_log_with_size_formatted(
+    ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *category, size_t category_len,
+    const uint8_t *fields_buf, size_t fields_buf_size, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  ten_env_log_with_size_formatted_internal(
+      self, level, func_name, func_name_len, file_name, file_name_len, line_no,
+      true, category, category_len, fields_buf, fields_buf_size, fmt, ap);
+
+  va_end(ap);
+}
+
+void ten_env_log_formatted(ten_env_t *self, TEN_LOG_LEVEL level,
+                           const char *func_name, const char *file_name,
+                           size_t line_no, const char *category,
+                           ten_value_t *fields, const char *fmt, ...) {
+  // Serialize fields to buffer if provided.
+  uint8_t *fields_buf = NULL;
+  size_t fields_buf_size = 0;
+
+  if (fields != NULL) {
+    fields_buf =
+        ten_value_serialize_to_buffer_c(fields, &fields_buf_size, NULL);
+  }
+
+  va_list ap;
+  va_start(ap, fmt);
+
+  ten_env_log_with_size_formatted_internal(
+      self, level, func_name, strlen(func_name), file_name, strlen(file_name),
+      line_no, true, category, category ? strlen(category) : 0, fields_buf,
+      fields_buf_size, fmt, ap);
+
+  va_end(ap);
+
+  // Free serialized buffer.
+  if (fields_buf != NULL) {
+    TEN_FREE(fields_buf);
+  }
+}

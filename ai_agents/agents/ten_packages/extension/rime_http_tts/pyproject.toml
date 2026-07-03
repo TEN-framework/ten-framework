@@ -1,0 +1,8 @@
+[project]
+name = "rime-http-tts"
+version = "0.5.2"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.0.0",
+]

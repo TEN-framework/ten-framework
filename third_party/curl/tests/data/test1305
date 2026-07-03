@@ -1,0 +1,26 @@
+<testcase>
+<!-- This replaces test 558 -->
+<info>
+<keywords>
+unittest
+hash
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+</features>
+ <name>
+internal hash create/destroy testing
+ </name>
+<command>
+%TESTNUMBER
+</command>
+</client>
+</testcase>

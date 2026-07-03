@@ -1,0 +1,26 @@
+API selftest: full-text search
+AC be: 472 agg hits
+AC but: 401 agg hits
+AC by: 242 agg hits
+AC been: 236 agg hits
+AC basil: 158 agg hits
+AC before: 75 agg hits
+AC beauty: 55 agg hits
+AC better: 54 agg hits
+AC believe: 49 agg hits
+AC began: 44 agg hits
+AC because: 40 agg hits
+AC boy: 36 agg hits
+AC book: 31 agg hits
+AC body: 28 agg hits
+AC both: 26 agg hits
+AC broke: 22 agg hits
+AC beg: 5 agg hits
+AC bore: 5 agg hits
+AC b: 3 agg hits
+AC bee: 3 agg hits
+AC beaut: 1 agg hits
+no filepath results
+
+
+

@@ -1,0 +1,10 @@
+{
+  "params": {
+    "api_key": "${env:SARVAM_ASR_KEY}",
+    "language": "en-IN",
+    "hotwords": [
+      "aaa",
+      "bbb"
+    ]
+  }
+}

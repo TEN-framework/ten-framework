@@ -1,0 +1,8 @@
+{
+    "params": {
+        "appid": "invalid",
+        "token": "invalid",
+        "api_key": "invalid",
+        "auth_method": "api_key"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "params": {
+        "api_key": "${env:ALIYUN_ASR_BIGMODEL_API_KEY|}",
+        "language_hints": [
+            "en"
+        ],
+        "model": "paraformer-realtime-v2"
+    }
+}

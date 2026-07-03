@@ -1,0 +1,12 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:RIME_TTS_API_KEY}",
+        "speaker": "cove",
+        "modelId": "mistv2",
+        "lang": "eng",
+        "samplingRate": 24000,
+        "speedAlpha": 1.0
+    }
+}

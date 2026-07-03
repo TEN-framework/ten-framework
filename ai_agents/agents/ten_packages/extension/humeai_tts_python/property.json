@@ -1,0 +1,9 @@
+{
+    "params": {
+        "key": "${env:HUMEAI_TTS_KEY|}",
+        "voice_name": "Male English Actor",
+        "provider": "HUME_AI",
+        "speed": 1.0,
+        "trailing_silence": 0.0
+    }
+}

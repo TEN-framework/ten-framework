@@ -1,0 +1,17 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "appid": "${env:BYTEDANCE_ASR_APP_ID|}",
+        "token": "${env:BYTEDANCE_ASR_TOKEN|}",
+        "cluster": "${env:BYTEDANCE_ASR_CLUSTER|}",
+        "language": "en-US",
+        "request": {
+            "show_utterances": true,
+            "result_type": "single"
+        },
+        "audio": {
+            "format": "raw"
+        }
+    }
+}

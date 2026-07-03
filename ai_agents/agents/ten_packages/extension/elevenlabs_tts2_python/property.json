@@ -1,0 +1,12 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "base_url": "wss://api.elevenlabs.io/v1",
+        "auto_mode": true,
+        "key": "${env:ELEVENLABS_TTS_KEY}",
+        "model_id": "eleven_multilingual_v2",
+        "voice_id": "pNInz6obpgDQGcFmaJgB",
+        "output_format": "pcm_16000"
+    }
+}

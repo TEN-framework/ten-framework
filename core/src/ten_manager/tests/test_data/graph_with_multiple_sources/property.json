@@ -1,0 +1,50 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "destination_ext",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "source_ext_1",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "source_ext_2",
+              "addon": "default_extension_go",
+              "extension_group": "some_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "destination_ext",
+              "cmd": [
+                {
+                  "name": "multi_source_cmd",
+                  "source": [
+                    {
+                      "extension": "source_ext_1"
+                    },
+                    {
+                      "extension": "source_ext_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

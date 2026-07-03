@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start python AI agent",
+      "type": "shell",
+      "command": "export TEN_ENABLE_PYTHON_DEBUG=true; export TEN_PYTHON_DEBUG_PORT=5678; ./ai_agents/agents/bin/start",
+      "group": "none",
+      "isBackground": true
+    },
+  ]
+}

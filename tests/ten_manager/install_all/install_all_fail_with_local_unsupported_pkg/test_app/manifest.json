@@ -1,0 +1,22 @@
+{
+  "type": "app",
+  "name": "test_app",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "heiheihei_1",
+      "version": "1.0.0"
+    },
+    {
+      "type": "extension",
+      "name": "heiheihei_2",
+      "version": "1.0.0"
+    },
+    {
+      "type": "extension",
+      "name": "ext_1",
+      "version": "3.0.0"
+    }
+  ]
+}

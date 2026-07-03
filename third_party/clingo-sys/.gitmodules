@@ -1,0 +1,4 @@
+[submodule "clingo"]
+	path = clingo
+	url = https://github.com/potassco/clingo.git
+	tag = v5.6.2

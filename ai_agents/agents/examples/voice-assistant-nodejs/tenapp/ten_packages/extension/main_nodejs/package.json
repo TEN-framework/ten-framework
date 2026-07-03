@@ -1,0 +1,19 @@
+{
+  "name": "main_nodejs",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./build/index.js",
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "main_nodejs": "file:",
+    "ten-runtime-nodejs": "file:../../system/ten_runtime_nodejs",
+    "zod": "^4.0.17",
+    "uuid": "^11.1.0"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles",
+    "standalone-install": "npm install .ten/app/ten_packages/system/ten_runtime_nodejs"
+  }
+}

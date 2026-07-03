@@ -1,0 +1,43 @@
+name: Build Node.js Shared Library
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ".github/workflows/build_node_shared.yml"
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: build-node-shared-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - name: Checkout Node.js
+        uses: actions/checkout@v4
+        with:
+          repository: nodejs/node
+          ref: v22.12.0
+
+      - name: Configure and Build
+        run: |
+          if [ "$compiler" == "gcc" ]; then
+            export CC=gcc
+            export CXX=g++
+          else
+            export CC=clang
+            export CXX=clang++
+          fi
+
+          ./configure --shared
+          make -j$(nproc)

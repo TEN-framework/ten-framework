@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+find_package(Potassco 1.0 REQUIRED)
+
+if(@CLASP_BUILD_WITH_THREADS@)
+    find_package(Threads REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/ClaspTargets.cmake")
+
+check_required_components(Clasp)
+

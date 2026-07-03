@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "version": "1.0.0",
+      "hash": "e6d7ff0aefd1a0618c9f7d8c154b1b90c917390bd00d2a107eae616a36a99391",
+      "dependencies": [
+        {
+          "type": "extension",
+          "name": "ext_a"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "ext_1",
+      "version": "2.0.0",
+      "hash": "e64b5c3c66a3014f2c58299d663533eb984ac9e71aa50067f6f3c3b9d409ccdf",
+      "dependencies": [
+        {
+          "type": "extension",
+          "name": "ext_3"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "ext_3",
+      "version": "1.0.0",
+      "hash": "2c61c0fc8b3cd2da7457a779b2db423ae93c3b6cae7347cb979453f1ac17ccc0"
+    },
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "version": "1.2.2",
+      "hash": "6fee978cd201b108211b52323a078c5222fd0bc545468b5989d7e42d0f5b7395"
+    }
+  ]
+}

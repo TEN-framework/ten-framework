@@ -1,0 +1,13 @@
+The input files used to solve expansible blocksworld problems with clingo are:
+
+- world.lp: clingo encoding consisting of several program parts
+
+- blocks_01.lp: base facts providing initial and goal conditions for six blocks
+
+- lua.lp: routines for incremental grounding and solving w.r.t. blocks and time
+
+- lua_interpret.lp: main procedure for reading and executing code
+
+- control_01.lua: lua instructions for successive solving based on blocks_01.lp
+
+See control_01.out for an example invocation and corresponding output.

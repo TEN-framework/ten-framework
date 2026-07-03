@@ -1,0 +1,41 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "http_service",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "test_extension",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "hello_world",
+                  "dest": [
+                    {
+                      "extension": "test_extension"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

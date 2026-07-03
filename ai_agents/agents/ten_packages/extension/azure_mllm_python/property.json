@@ -1,0 +1,9 @@
+{
+    "base_url": "${env:AZURE_AI_FOUNDRY_BASE_URI}",
+    "api_key": "${env:AZURE_AI_FOUNDRY_API_KEY}",
+    "temperature": 0.9,
+    "model": "gpt-4o",
+    "max_tokens": 2048,
+    "language": "en-US",
+    "server_vad": true
+}

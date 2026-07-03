@@ -1,0 +1,23 @@
+<testcase>
+<info>
+<keywords>
+unittest
+curl_msnprintf
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+</features>
+ <name>
+curl_msnprintf unit tests
+ </name>
+</client>
+
+</testcase>

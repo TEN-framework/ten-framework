@@ -1,0 +1,58 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+group("cpp") {
+  deps = [
+    "check_start_graph",
+    "graph_env_var_1",
+    "graph_env_var_2",
+    "graph_env_var_3",
+    "graph_env_var_4",
+    "hello_world",
+    "import_graph",
+    "interface_schema_check",
+    "interface_schema_check_2",
+    "large_result",
+    "long_running",
+    "restful",
+  ]
+
+  if (ten_enable_ten_manager) {
+    # The standalone testing for the C++ extension depends on the Googletest
+    # system package.
+    deps += [
+      "standalone_test_cpp",
+      "standalone_test_tmpl_cpp",
+    ]
+
+    if (target_os == "linux" && target_cpu == "x64") {
+      deps += [ "standalone_vosk_asr_cpp" ]
+    }
+
+    # Note: These standalone tests are disabled on Windows due to Windows
+    # MAX_PATH (260 characters) limitation. The deeply nested directory
+    # structure (e.g., extension/.ten/app/ten_packages/system/googletest/...)
+    # exceeds the path length limit.
+    if (target_os != "win") {
+      deps += [ "standalone_webrtc_vad_cpp" ]
+    }
+  }
+
+  if (ten_enable_ffmpeg_extensions) {
+    deps += [
+      "ffmpeg_basic",
+      "ffmpeg_bypass",
+    ]
+  }
+
+  if (ten_enable_ten_rust) {
+    # This case will start an invalid graph, and it will be failed without
+    # graph checking.
+    deps += [ "multi_apps" ]
+  }
+}

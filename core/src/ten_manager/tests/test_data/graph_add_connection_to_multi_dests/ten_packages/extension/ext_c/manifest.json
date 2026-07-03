@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "ext_c",
+  "version": "1.2.3",
+  "api": {
+    "data_in": [
+      {
+        "name": "data"
+      }
+    ]
+  }
+}

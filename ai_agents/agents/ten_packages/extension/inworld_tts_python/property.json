@@ -1,0 +1,11 @@
+{
+    "params": {
+        "api_key": "${env:INWORLD_API_KEY|}",
+        "model": "inworld-tts-1.5-max",
+        "voice": "Ashley",
+        "sample_rate": 24000,
+        "temperature": 1.1,
+        "speaking_rate": 1.0,
+        "text_normalization": "ON"
+    }
+}

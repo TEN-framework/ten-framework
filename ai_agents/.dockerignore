@@ -1,0 +1,71 @@
+# Git and version control
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Next.js
+.next
+out
+build
+
+# Logs
+*.log
+*.pcm
+*.db
+*.dat
+azure.log
+azure_tts_log.txt
+test.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Temporary files
+*.tmp
+*.temp
+crash_context_v1
+xdump_config
+compile_commands.json
+BUILD.gn
+
+# Large directories not needed for demo
+esp32-client
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+agents/bin/
+agents/.gn
+agents/.gnfiles
+
+# Cache directories
+.cache
+.parcel-cache

@@ -1,0 +1,101 @@
+from typing import Any
+from enum import Enum
+
+from pydantic import BaseModel, Field
+from ten_ai_base.utils import encrypt
+
+
+class FinalizeMode(str, Enum):
+    DEFAULT = "default"
+    IGNORE = "ignore"
+    MUTE_PKG = "mute_pkg"
+    CLOSE = "close"
+
+
+class FinalizeReconnectMode(str, Enum):
+    IMMEDIATE = "immediate"
+    ON_AUDIO = "on_audio"
+
+
+class HoldingMode(str, Enum):
+    FALSE = "false"
+    SENTENCE_TERMINATOR = "sentence_terminator"
+    FINALIZE = "finalize"
+    ENDPOINTING_ONLY = "endpointing_only"
+
+
+class SonioxASRConfig(BaseModel):
+    url: str = "wss://stt-rt.soniox.com/transcribe-websocket"
+    sample_rate: int = 16000
+    params: dict[str, Any] = Field(default_factory=dict)
+    dump: bool = False
+    dump_path: str = "."
+    dump_rotate_on_finalize: bool = False
+    finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
+    holding_mode: HoldingMode = HoldingMode.FALSE
+    mute_pkg_duration_ms: int = 800
+    default_finalize_send_silence: bool = False
+    default_finalize_silence_duration_ms: int = 800
+    enable_keepalive: bool = True
+    finalize_reconnect_mode: FinalizeReconnectMode = (
+        FinalizeReconnectMode.IMMEDIATE
+    )
+
+    def update(self, params: dict[str, Any]):
+        special_params = [
+            "url",
+            "sample_rate",
+            "dump",
+            "dump_path",
+            "dump_rotate_on_finalize",
+            "finalize_mode",
+            "holding_mode",
+            "mute_pkg_duration_ms",
+            "default_finalize_send_silence",
+            "default_finalize_silence_duration_ms",
+            "enable_keepalive",
+            "finalize_reconnect_mode",
+        ]
+        for key in special_params:
+            if key in params:
+                value = params[key]
+                if key == "holding_mode" and isinstance(value, str):
+                    try:
+                        value = HoldingMode(value)
+                    except ValueError:
+                        value = HoldingMode.FALSE
+                setattr(self, key, value)
+                del params[key]
+
+        # Set default parameters if not provided
+        default_params = {
+            "max_non_final_tokens_duration_ms": 360,
+            "model": "stt-rt-preview",
+            "enable_language_identification": True,
+            "audio_format": "pcm_s16le",
+            "num_channels": 1,
+            "sample_rate": self.sample_rate,
+        }
+
+        params_map: dict[str, Any] = self.params
+
+        for param_key, value in default_params.items():
+            if param_key not in params_map:
+                params_map[param_key] = value
+
+    def to_json(self, sensitive_handling: bool = False) -> str:
+        if not sensitive_handling:
+            return self.model_dump_json()
+
+        config = self.model_copy(deep=True)
+
+        if config.params:
+            params_map: dict[str, Any] = dict(config.params)
+            if "api_key" in params_map:
+                params_map["api_key"] = encrypt(params_map["api_key"])
+            config.params = params_map
+
+        return config.model_dump_json()
+
+    def to_str(self, sensitive_handling: bool = False) -> str:
+        return self.to_json(sensitive_handling)

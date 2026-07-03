@@ -1,0 +1,107 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "test_extension_1",
+      "extension_group": "ext_group_1",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_1"
+    },
+    {
+      "type": "extension",
+      "name": "test_extension_2",
+      "extension_group": "ext_group_2",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_2"
+    },
+    {
+      "type": "extension",
+      "name": "test_extension_3",
+      "extension_group": "ext_group_3",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_1__extension_3"
+    },
+    {
+      "type": "extension",
+      "name": "test_extension_4",
+      "extension_group": "ext_group_4",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "ext_group_4__extension_4"
+    },
+    {
+      "type": "selector",
+      "name": "selector_for_ext_1_and_2",
+      "filter": {
+        "and": [
+          {
+            "field": "name",
+            "operator": "regex",
+            "value": "test_extension_[1-2]"
+          },
+          {
+            "field": "app",
+            "operator": "exact",
+            "value": "msgpack://127.0.0.1:8001/"
+          }
+        ]
+      }
+    },
+    {
+      "type": "selector",
+      "name": "selector_for_ext_1_and_2_and_3",
+      "filter": {
+        "field": "name",
+        "operator": "regex",
+        "value": "test_extension_[1-3]"
+      }
+    },
+    {
+      "type": "selector",
+      "name": "selector_for_ext_1_or_3",
+      "filter": {
+        "or": [
+          {
+            "field": "name",
+            "operator": "regex",
+            "value": "test_extension_1"
+          },
+          {
+            "field": "name",
+            "operator": "regex",
+            "value": "test_extension_3"
+          }
+        ]
+      }
+    }
+  ],
+  "connections": [
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "test_extension_3",
+      "cmd": [
+        {
+          "name": "hello_world",
+          "dest": [
+            {
+              "selector": "selector_for_ext_1_and_2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "test_extension_4",
+      "data": [
+        {
+          "name": "hi",
+          "source": [
+            {
+              "selector": "selector_for_ext_1_and_2_and_3"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

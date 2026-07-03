@@ -1,0 +1,12 @@
+{
+  "type": "app",
+  "name": "test_app",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "999999999999999999.0.0"
+    }
+  ]
+}

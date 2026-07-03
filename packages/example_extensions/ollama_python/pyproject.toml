@@ -1,0 +1,8 @@
+[project]
+name = "ollama-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["ollama==0.4.7", "pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

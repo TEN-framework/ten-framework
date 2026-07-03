@@ -1,0 +1,23 @@
+{
+  "ten": {
+    "long_running_mode": true,
+    "uri": "msgpack://127.0.0.1:8002/",
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "test_extension",
+              "addon": "ext_c",
+              "app": "msgpack://127.0.0.1:8002/",
+              "extension_group": "test_extension_group"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

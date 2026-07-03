@@ -1,0 +1,518 @@
+name: Update Winget Package
+
+# This workflow automatically updates the winget package manifest
+# and submits a PR to microsoft/winget-pkgs repository when:
+# - A new tman Windows binary is released
+# - Manually triggered for testing or emergency updates
+
+on:
+  # Triggered when Windows build workflow completes
+  workflow_run:
+    workflows:
+      - "Tman Windows x64 (Including Designer UI)"
+    types:
+      - completed
+    # Note: We don't filter by branches here because release events run on tags, not branches
+
+  # Manual trigger for testing or emergency updates
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to update (e.g., 0.11.35)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write # Needed to create PR to winget-pkgs
+
+jobs:
+  update-winget:
+    # Only run on successful workflow completion or manual trigger
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'release')
+    runs-on: windows-latest
+    steps:
+      - name: Debug workflow_run event
+        if: github.event_name == 'workflow_run'
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          Write-Host "🔍 Debugging workflow_run event:"
+          Write-Host "  Event name: ${{ github.event_name }}"
+          Write-Host "  Workflow name: $env:WORKFLOW_NAME"
+          Write-Host "  Workflow event: $env:WORKFLOW_EVENT"
+          Write-Host "  Workflow conclusion: $env:WORKFLOW_CONCLUSION"
+          Write-Host "  Head branch: $env:HEAD_BRANCH"
+          Write-Host "  Head sha: $env:HEAD_SHA"
+          Write-Host ""
+          if ($env:WORKFLOW_EVENT -ne "release") {
+            Write-Host "⏭️ This workflow was triggered by '$env:WORKFLOW_EVENT' event, not 'release'."
+            Write-Host "   Job will be skipped (only release events trigger Winget updates)."
+          } elseif ($env:WORKFLOW_CONCLUSION -ne "success") {
+            Write-Host "⏭️ Triggering workflow conclusion was '$env:WORKFLOW_CONCLUSION', not 'success'."
+            Write-Host "   Job will be skipped (only successful workflows trigger Winget updates)."
+          } else {
+            Write-Host "✅ All conditions met. Proceeding with Winget update..."
+          }
+        shell: pwsh
+
+      - name: Get version from workflow or input
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          try {
+            if ($env:EVENT_NAME -eq "workflow_dispatch") {
+              # Manual trigger - use input version
+              $VERSION = $env:INPUT_VERSION
+              Write-Host "📋 Manual trigger: using version $VERSION"
+            } else {
+              # Workflow completion - fetch latest release
+              Write-Host "📡 Fetching latest release from GitHub API..."
+
+              # Use authenticated request to avoid rate limiting
+              $headers = @{
+                Authorization = "Bearer $env:GITHUB_TOKEN"
+                Accept = "application/vnd.github+json"
+              }
+              $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest" -Headers $headers
+              $VERSION = $response.tag_name
+              Write-Host "📦 Workflow trigger: using latest release version $VERSION"
+            }
+
+            # Validate version
+            if ([string]::IsNullOrEmpty($VERSION)) {
+              Write-Host "❌ Failed to get version"
+              exit 1
+            }
+
+            # Output version for next steps
+            echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+            Write-Host "📦 Version to update: $VERSION"
+          } catch {
+            Write-Host "❌ Error getting version: $_"
+            Write-Host "Response: $($_.Exception.Response)"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Wait and verify Windows release asset is uploaded
+        # Only run if version was successfully retrieved
+        if: success() && steps.version.outputs.version != ''
+        id: verify_assets
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const version = process.env.VERSION;
+
+            // Expected file for Winget (only Windows x64)
+            const expectedFile = 'tman-win-release-x64.zip';
+
+            console.log(`🔍 Checking for Windows asset in version: ${version}`);
+            console.log(`📋 Expected file: ${expectedFile}`);
+
+            // Try to get the release
+            let release;
+            try {
+              release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: version
+              });
+            } catch (error) {
+              console.error(`❌ Failed to get release for tag ${version}:`, error.message);
+              throw error;
+            }
+
+            // Wait up to 15 minutes for the Windows zip file
+            const maxAttempts = 30; // 30 attempts
+            const waitSeconds = 30; // 30 seconds between attempts
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              // Get current assets
+              const currentRelease = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: version
+              });
+
+              const assetNames = currentRelease.data.assets.map(a => a.name);
+              const found = assetNames.includes(expectedFile);
+
+              console.log(`⏳ Attempt ${attempt}/${maxAttempts}:`);
+
+              if (found) {
+                // Get asset details
+                const asset = currentRelease.data.assets.find(a => a.name === expectedFile);
+                const fileSize = asset.size;
+                const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+
+                console.log(`   ✅ Found: ${expectedFile}`);
+                console.log(`   📊 File size: ${fileSize} bytes (${fileSizeMB} MB)`);
+
+                // Check if digest (SHA256) is available and matches file
+                if (!asset.digest) {
+                  console.log(`   ⚠️  Digest not available yet - upload may still be in progress`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds for upload to complete...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                // Extract SHA256 from digest
+                // digest format: "sha256:abc123..."
+                const match = asset.digest.match(/sha256:([a-f0-9]+)/i);
+                if (!match) {
+                  console.log(`   ❌ Unable to extract SHA256 from digest: ${asset.digest}`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                const sha256FromGitHub = match[1];
+                console.log(`   🔐 SHA256 from GitHub: ${sha256FromGitHub}`);
+
+                // Download file and verify SHA256 matches
+                console.log(`   ⬇️  Downloading file to verify integrity...`);
+                let sha256Verified = false;
+                try {
+                  const https = require('https');
+                  const crypto = require('crypto');
+                  const fs = require('fs');
+                  const url = require('url');
+                  const os = require('os');
+                  const path = require('path');
+
+                  const downloadUrl = asset.browser_download_url;
+                  // Use OS-specific temp directory
+                  const tempDir = os.tmpdir();
+                  const tempFile = path.join(tempDir, `tman-verify-${Date.now()}.zip`);
+
+                  // Download file
+                  const downloadFile = () => {
+                    return new Promise((resolve, reject) => {
+                      const file = fs.createWriteStream(tempFile);
+                      const parsedUrl = url.parse(downloadUrl);
+
+                      https.get({
+                        hostname: parsedUrl.hostname,
+                        path: parsedUrl.path,
+                        headers: {
+                          'User-Agent': 'GitHub-Actions'
+                        }
+                      }, (response) => {
+                        // Handle redirects
+                        if (response.statusCode === 302 || response.statusCode === 301) {
+                          https.get(response.headers.location, (redirectResponse) => {
+                            redirectResponse.pipe(file);
+                            file.on('finish', () => {
+                              file.close();
+                              resolve();
+                            });
+                          }).on('error', (err) => {
+                            fs.unlink(tempFile, () => {});
+                            reject(err);
+                          });
+                        } else {
+                          response.pipe(file);
+                          file.on('finish', () => {
+                            file.close();
+                            resolve();
+                          });
+                        }
+                      }).on('error', (err) => {
+                        fs.unlink(tempFile, () => {});
+                        reject(err);
+                      });
+                    });
+                  };
+
+                  // Calculate SHA256
+                  const calculateSHA256 = (filePath) => {
+                    return new Promise((resolve, reject) => {
+                      const hash = crypto.createHash('sha256');
+                      const stream = fs.createReadStream(filePath);
+                      stream.on('data', (data) => hash.update(data));
+                      stream.on('end', () => resolve(hash.digest('hex')));
+                      stream.on('error', reject);
+                    });
+                  };
+
+                  // Download and verify
+                  await downloadFile();
+                  const downloadedFileSize = fs.statSync(tempFile).size;
+                  console.log(`   📦 Downloaded: ${(downloadedFileSize / (1024 * 1024)).toFixed(2)} MB`);
+
+                  console.log(`   🔐 Calculating SHA256...`);
+                  const sha256FromFile = await calculateSHA256(tempFile);
+                  console.log(`   📊 SHA256 calculated: ${sha256FromFile}`);
+
+                  // Clean up temp file
+                  fs.unlinkSync(tempFile);
+
+                  // Compare SHA256 values
+                  if (sha256FromFile !== sha256FromGitHub) {
+                    console.log(`   ❌ SHA256 mismatch!`);
+                    console.log(`      GitHub:     ${sha256FromGitHub}`);
+                    console.log(`      Downloaded: ${sha256FromFile}`);
+                    console.log(`   ⚠️  File may be corrupted!`);
+                    console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                    console.log('');
+                    await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                    continue;
+                  }
+
+                  console.log(`   ✅ SHA256 verification passed!`);
+                  sha256Verified = true;
+                } catch (error) {
+                  console.log(`   ⚠️  Failed to download and verify file: ${error.message}`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                // Only proceed if SHA256 was verified
+                if (!sha256Verified) {
+                  console.log(`   ❌ SHA256 verification failed`);
+                  console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                  console.log('');
+                  await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+                  continue;
+                }
+
+                const sha256 = sha256FromGitHub;
+
+                // File is complete and digest is available
+                console.log('');
+                console.log('🎉 Windows tman release asset is complete and ready!');
+                console.log('📦 Asset details:');
+                console.log(`   - Name: ${asset.name}`);
+                console.log(`   - Size: ${fileSize} bytes (${fileSizeMB} MB)`);
+                console.log(`   - SHA256: ${sha256}`);
+                console.log(`   - URL: ${asset.browser_download_url}`);
+                console.log('✅ Ready to update Winget package');
+
+                core.setOutput('all_ready', 'true');
+                core.setOutput('asset_url', asset.browser_download_url);
+                core.setOutput('asset_size', fileSize.toString());
+                core.setOutput('asset_sha256', sha256);
+                return;
+              } else {
+                console.log(`   ❌ Missing: ${expectedFile}`);
+                console.log(`   📝 Available assets:`, assetNames);
+              }
+
+              // Not ready yet, wait and retry
+              if (attempt < maxAttempts) {
+                console.log(`   ⏰ Waiting ${waitSeconds} seconds before retry...`);
+                console.log('');
+                await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+              }
+            }
+
+            // Timeout - file not uploaded
+            console.log('');
+            console.log('❌ Timeout: Windows tman release asset was not uploaded within 15 minutes');
+            console.log('⚠️  Winget package will NOT be updated');
+            core.setFailed('Missing release asset after timeout');
+
+      - name: Checkout ten-framework repository
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: ten-framework
+
+      # Required by submit-to-winget.ps1 to fork microsoft/winget-pkgs and create PR
+      - name: Install GitHub CLI
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        run: |
+          Write-Host "📦 Installing GitHub CLI..."
+          winget install --id GitHub.cli --silent --accept-source-agreements --accept-package-agreements
+
+          # Refresh PATH
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+          # Verify installation
+          gh --version
+          Write-Host "✅ GitHub CLI installed"
+        shell: pwsh
+
+      # Run submit-to-winget.ps1 script
+      # This script handles:
+      # - Download Windows release asset
+      # - Verify/calculate SHA256 checksum
+      # - Generate manifest files
+      # - Fork and clone winget-pkgs
+      # - Create branch and commit
+      # - Submit PR to microsoft/winget-pkgs
+      - name: Submit to winget-pkgs using PowerShell script
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_SUBMIT_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          $VERSION = "${{ steps.version.outputs.version }}"
+          $SHA256_FROM_GITHUB = "${{ steps.verify_assets.outputs.asset_sha256 }}"
+
+          Write-Host "🚀 Submitting to microsoft/winget-pkgs..."
+          Write-Host "📦 Version: $VERSION"
+
+          if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
+            Write-Host "🔐 SHA256 from GitHub: $SHA256_FROM_GITHUB"
+          }
+          else{
+            Write-Host "❌ SHA256 from GitHub is missing!" -ForegroundColor Red
+            Write-Host "⚠️  This indicates the verify_assets step did not output the SHA256." -ForegroundColor Yellow
+            Write-Host "⚠️  Aborting to prevent submitting incorrect hash values." -ForegroundColor Yellow
+            exit 1
+          }
+          Write-Host ""
+
+          # Build command arguments using hashtable for proper splatting
+          # Note: GitHubToken is automatically read from $env:GITHUB_TOKEN by the script
+          # SHA256 is mandatory - we verified it exists above
+          $scriptParams = @{
+            Version = $VERSION
+            Repository = $env:REPO
+            Sha256 = $SHA256_FROM_GITHUB
+          }
+
+          # Run the submission script
+          & ten-framework\tools\winget\submit-to-winget.ps1 @scriptParams
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Script failed with exit code: $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
+          Write-Host ""
+          Write-Host "✅ Successfully submitted to winget-pkgs!"
+        shell: pwsh
+
+      - name: Create summary
+        if: steps.verify_assets.outputs.all_ready == 'true'
+        env:
+          REPO: ${{ github.repository }}
+          ASSET_URL: ${{ steps.verify_assets.outputs.asset_url }}
+        run: |
+          $VERSION = "${{ steps.version.outputs.version }}"
+          $VERSION_CLEAN = $VERSION -replace '^v', ''
+
+          $summary = @"
+          ## 🪟 Winget Package Update Submitted
+
+          **Version**: $VERSION_CLEAN
+
+          ### 📦 Submitted Files
+
+          The following manifest files were submitted to microsoft/winget-pkgs:
+          - ``ten-framework.tman.yaml`` (version manifest)
+          - ``ten-framework.tman.installer.yaml`` (installer manifest)
+          - ``ten-framework.tman.locale.en-US.yaml`` (English)
+          - ``ten-framework.tman.locale.zh-CN.yaml`` (简体中文)
+          - ``ten-framework.tman.locale.zh-TW.yaml`` (繁體中文)
+          - ``ten-framework.tman.locale.ja-JP.yaml`` (日本語)
+          - ``ten-framework.tman.locale.ko-KR.yaml`` (한국어)
+
+          ### 📦 What happens next?
+
+          1. **Automated Validation**: Microsoft's CI will validate the manifest files
+          2. **Manual Review**: Microsoft maintainers will review the PR
+          3. **Merge**: Once approved, PR will be merged to winget-pkgs
+          4. **Available to Users**: After merge, users can install via:
+
+          ````powershell
+          winget install ten-framework.tman
+          ````
+
+          Or upgrade existing installation:
+
+          ````powershell
+          winget upgrade ten-framework.tman
+          ````
+
+          ### 🔗 Links
+
+          - [Release $VERSION](https://github.com/$env:REPO/releases/tag/$VERSION)
+          - [Winget-pkgs Repository](https://github.com/microsoft/winget-pkgs)
+          - [Asset URL]($env:ASSET_URL)
+
+          ### ⏱️ Timeline
+
+          Typically, winget PRs are reviewed and merged within 1-3 business days.
+          "@
+
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+        shell: pwsh
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}' || 'unknown';
+            const workflow = '${{ github.workflow }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const repo = '${{ github.repository }}';
+            const actor = context.actor;  // Safe: using context object
+
+            // Build issue body with conditional version info
+            let versionInfo = '';
+            let manualStepsVersion = '';
+
+            if (version && version !== 'unknown') {
+              versionInfo = `The automatic Winget package update failed for release \`${version}\`.`;
+              manualStepsVersion = `1. Download release asset from: https://github.com/${repo}/releases/tag/${version}`;
+            } else {
+              versionInfo = `The automatic Winget package update failed (unable to determine version).`;
+              manualStepsVersion = `1. Check the latest release at: https://github.com/${repo}/releases/latest`;
+            }
+
+            const issue_body = `## ⚠️ Winget Package Update Failed
+
+            ${versionInfo}
+
+            **Workflow**: ${workflow}
+            **Run**: ${runUrl}
+
+            ### Possible Issues:
+
+            0. Failed to fetch version information from GitHub API
+            1. Windows release asset (tman-win-release-x64.zip) was not uploaded within the timeout period
+            2. Network issues downloading release asset
+            3. Permission issues with WINGET_SUBMIT_TOKEN
+            4. Fork of microsoft/winget-pkgs doesn't exist or is out of sync
+            5. Manifest validation errors
+
+            ### Manual Update Steps:
+
+            ${manualStepsVersion}
+            2. Calculate SHA256 checksum: \`Get-FileHash -Path tman-win-release-x64.zip -Algorithm SHA256\`
+            3. Fork microsoft/winget-pkgs repository
+            4. Create manifests in \`manifests/t/ten-framework/tman/<version>/\`
+            5. Submit PR to microsoft/winget-pkgs
+
+            ### Resources:
+
+            - [Winget Package Submission Guide](https://github.com/microsoft/winget-pkgs/blob/master/CONTRIBUTING.md)
+            - [Winget Manifest Documentation](https://learn.microsoft.com/en-us/windows/package-manager/package/manifest)
+            - [Winget-pkgs Repository](https://github.com/microsoft/winget-pkgs)
+
+            cc: @${actor}
+            `;
+
+            console.log(issue_body);

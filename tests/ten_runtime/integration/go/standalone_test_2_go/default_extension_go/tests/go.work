@@ -1,0 +1,4 @@
+go 1.20
+
+use ../.ten/app/ten_packages/system/ten_runtime_go/interface
+use ../

@@ -1,0 +1,72 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "subgraph",
+              "name": "function_graph",
+              "graph": {
+                "import_uri": "graphs/function_graph.json"
+              },
+              "property": {
+                "base": 10,
+                "power": 2,
+                "multi": 3,
+                "substract": 1
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "function_call",
+                  "dest": [
+                    {
+                      "subgraph": "function_graph"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77", "setuptools-scm[toml]>=6.2"]
+
+[project]
+name = "pytest-ten"
+description = "Pytest support for ten-framework"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["pytest>=8.2,<10"]
+
+[tool.setuptools]
+packages = ["pytest_ten"]
+include-package-data = true

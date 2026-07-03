@@ -1,0 +1,22 @@
+{
+  "extension": [
+    {
+      "name": "heiheihei_1",
+      "version": "1.0.0"
+    },
+    {
+      "name": "ext_1",
+      "version": "3.0.0"
+    }
+  ],
+  "system": [
+    {
+      "name": "sys_1",
+      "version": "2.0.0"
+    },
+    {
+      "name": "sys_2",
+      "version": "1.0.0"
+    }
+  ]
+}

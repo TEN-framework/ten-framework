@@ -1,0 +1,408 @@
+{
+  "tenFramework": "TEN framework",
+  "ten": "TEN",
+  "header": {
+    "title": "Ten 管理器",
+    "menuApp": {
+      "title": "应用",
+      "loadApp": "加载应用",
+      "loadAppSuccess": "应用加载成功",
+      "loadAppFailed": "应用加载失败",
+      "reloadApp": "重新加载应用",
+      "reloadAppDescription": "重新加载应用将关闭当前工作区。所有未保存的更改将会丢失。",
+      "reloadAppConfirmation": "确定要重新加载应用 {{name}} 吗？",
+      "reloadAppSuccess": "应用重新加载成功",
+      "reloadAppFailed": "应用重新加载失败",
+      "reloadAllApps": "重新加载所有应用",
+      "reloadAllAppsSuccess": "所有应用重新加载成功",
+      "reloadAllAppsFailed": "重新加载所有应用失败",
+      "reloadAllAppsConfirmation": "确定要重新加载所有应用吗？",
+      "unloadApp": "卸载应用",
+      "unloadAppSuccess": "应用卸载成功",
+      "unloadAppFailed": "应用卸载失败",
+      "installAll": "安装所有",
+      "manageLoadedApps": "管理已加载应用",
+      "runApp": "运行应用",
+      "openAppFolder": "打开应用文件夹",
+      "createApp": "创建应用",
+      "about": "关于应用"
+    },
+    "menuGraph": {
+      "title": "图谱",
+      "loadGraph": "加载图谱",
+      "autoLayout": "自动布局",
+      "selectLoadedApp": "选择已加载应用",
+      "addNode": "添加节点",
+      "addConnection": "添加连接",
+      "addConnectionFromNode": "从 {{node}} 添加连接",
+      "addConnectionToNode": "添加连接到 {{node}}",
+      "about": "关于图谱"
+    },
+    "menuHelp": {
+      "title": "帮助",
+      "about": "关于 TEN Manager Designer"
+    },
+    "menuDesigner": {
+      "title": "设计器",
+      "about": "关于设计器",
+      "preferences": "偏好设置"
+    },
+    "menuExtension": {
+      "title": "扩展",
+      "openExtensionStore": "打开扩展商店",
+      "startRTCInteraction": "与 TEN AI Agent 对话",
+      "configTrulienceAvatar": "配置 Trulience 虚拟人",
+      "about": "关于扩展"
+    },
+    "menuTenAgentTools": {
+      "title": "TEN Agent 工具"
+    },
+    "language": {
+      "title": "语言",
+      "enUS": "English",
+      "zhCN": "中文(简体)",
+      "zhTW": "中文(繁體)",
+      "jaJP": "日本語"
+    },
+    "theme": {
+      "title": "主题",
+      "light": "明亮",
+      "dark": "暗黑",
+      "system": "系统"
+    },
+    "officialSite": "官方网站",
+    "poweredBy": "技术支持",
+    "poweredByTenFramework": "由 <0></0> 提供支持",
+    "github": "GitHub",
+    "tryTENAgent": "尝试 TEN Agent",
+    "currentVersion": "当前版本",
+    "latestVersion": "最新版本",
+    "currentIsLatest": "当前已是最新版本",
+    "currentIsLatestDescription": "您正在使用最新版本的 TEN Framework。\n更多关于最新版本的信息可以在 <0>TEN Framework GitHub 发布页面</0> 查看。",
+    "newVersionAvailable": "有新版本可用",
+    "newVersionAvailableDescription": "TEN Framework 有新版本可用。\n更多关于新版本的信息可以在 <0>TEN Framework GitHub 发布页面</0> 查看。"
+  },
+  "action": {
+    "edit": "编辑",
+    "delete": "删除",
+    "pinToDock": "固定到 Dock",
+    "save": "保存",
+    "discard": "丢弃",
+    "launchTerminal": "启动终端",
+    "ok": "确定",
+    "cancel": "取消",
+    "selected": "已选择",
+    "autoStart": "自动启动",
+    "confirm": "确认",
+    "upstream": "上游",
+    "downstream": "下游",
+    "popout": "弹出",
+    "close": "关闭",
+    "closeAllTabs": "关闭所有标签页",
+    "unsaved": "未保存",
+    "launchLogViewer": "查看日志",
+    "stop": "停止",
+    "search": "搜索",
+    "current": "当前",
+    "run": "运行",
+    "viewDetails": "查看详情",
+    "reset": "重置",
+    "chooseBaseDir": "选择基础目录",
+    "deleteNodeConfirmationWithName": "确定要删除{{type}}: {{name}} 吗？",
+    "update": "更新",
+    "create": "创建",
+    "deleteConnectionConfirmation": "确定要删除此连接吗？",
+    "deleteConnectionSuccess": "连接删除成功",
+    "deleteConnectionFailed": "连接删除失败",
+    "replaceNode": "替换节点...",
+    "manageApps": "管理应用",
+    "runApp": "运行",
+    "selectAll": "全选"
+  },
+  "toast": {
+    "saveFileSuccess": "文件保存成功",
+    "saveFileFailed": "文件保存失败",
+    "fetchFileContentFailed": "文件内容获取失败"
+  },
+  "popup": {
+    "editor": {
+      "confirmSaveFile": "确定要保存文件吗？",
+      "confirmSaveChanges": "确定要保存更改吗？",
+      "confirmCloseAllTabs": "确定要关闭所有标签页吗？所有未保存的更改将会丢失。",
+      "confirmChangePosition": "确定要更改 Dock 位置吗？所有未保存的更改将会丢失。"
+    },
+    "selectGraph": {
+      "title": "选择应用/图谱",
+      "app": "应用",
+      "graph": "图谱",
+      "select": "选择",
+      "selected": "已选择",
+      "unspecified": "<未指定>",
+      "current": "当前",
+      "updateSuccess": "应用/图谱更新成功"
+    },
+    "customNodeConn": {
+      "srcTitle": "节点[{{source}}]连接",
+      "connectTitle": "连接详情",
+      "title": "连接",
+      "filters": "过滤器"
+    },
+    "node": {
+      "properties": "属性"
+    },
+    "logViewer": {
+      "title": "日志查看器",
+      "appInstall": "应用安装",
+      "filteredByAddon": "按插件筛选日志",
+      "noAddons": "无可用插件",
+      "noMatchedAddons": "无匹配插件",
+      "noLogs": "暂无日志",
+      "cleanLogs": "清除日志"
+    },
+    "default": {
+      "defaultLabelForAppRun": "默认应用运行标签",
+      "errorFolderPathEmpty": "文件夹路径不能为空。",
+      "errorGetBaseDir": "获取基础目录失败",
+      "errorOpenAppFolder": "打开应用文件夹失败",
+      "errorUnknown": "发生未知错误。"
+    },
+    "apps": {
+      "manager": "应用管理器",
+      "tableCaption": "已加载应用列表。",
+      "emptyPlaceholder": "未加载任何应用。",
+      "baseDir": "基础目录",
+      "run": "运行应用",
+      "runScript": "运行脚本",
+      "runScriptPlaceholder": "输入要运行的脚本",
+      "create": "创建应用",
+      "createAppSuccess": "应用创建成功",
+      "createAppFailed": "应用创建失败",
+      "templateType": "模板类型",
+      "templateTypeDescription": "选择应用的模板类型。",
+      "templateLanguage": "模板语言",
+      "templateLanguageDescription": "选择应用的模板语言。",
+      "templateName": "模板名称",
+      "templateNameDescription": "选择应用的模板名称。",
+      "templateVersion": "模板版本",
+      "templateVersionDescription": "选择应用的模板版本。",
+      "appName": "应用名称",
+      "appNameDescription": "输入应用的名称。",
+      "baseDirDescription": "选择应用的基础目录。",
+      "run_opts": "选项",
+      "run_with_agent": "使用 TEN Agent 运行",
+      "status": "状态",
+      "noRunningScripts": "无运行中的脚本",
+      "runningScriptsCaption": "运行中脚本列表。",
+      "loadedApps": "已加载应用",
+      "runningScripts": "运行中脚本",
+      "runningScriptsWithCount": "正在运行 {{count}} 个脚本"
+    },
+    "graph": {
+      "title": "节点",
+      "titleAddNode": "添加节点",
+      "graphId": "图谱 ID",
+      "nodeName": "节点名称",
+      "addonName": "插件名称",
+      "searchAddon": "搜索插件",
+      "noAddonFound": "未找到插件",
+      "useInputAddon": "使用 '{{addonName}}'",
+      "property": "属性",
+      "addNode": "添加节点",
+      "addNodeSuccess": "节点添加成功",
+      "addNodeError": "节点添加失败",
+      "graphError": "图谱加载失败",
+      "addonError": "插件加载失败",
+      "deleteNodeSuccess": "节点删除成功",
+      "deleteNodeFailed": "节点删除失败",
+      "titleAddConnection": "添加连接",
+      "sameNodeError": "源节点和目标节点不能相同",
+      "srcLocation": "源节点",
+      "destLocation": "目标节点",
+      "messageType": "消息类型",
+      "messageName": "消息名称",
+      "addConnection": "添加连接",
+      "titleUpdateNodePropertyByName": "更新节点 [{{name}}] 属性",
+      "updateNodeProperty": "更新属性",
+      "graphName": "图谱名称",
+      "updateNodePropertySuccess": "节点属性更新成功",
+      "updateNodePropertyFailed": "节点属性更新失败",
+      "noPropertySchema": "未找到属性模式",
+      "titleReplaceNode": "替换节点[{{name}}]...",
+      "replaceNode": "替换节点",
+      "replaceNodeSuccess": "节点替换成功",
+      "replaceNodeFailed": "节点替换失败",
+      "messagesFrom": "来自: {{source}}"
+    },
+    "doc": {
+      "title": "{{name}}"
+    }
+  },
+  "dock": {
+    "notSelected": "未选择标签页",
+    "dockSide": "停靠位置",
+    "left": "左侧",
+    "right": "右侧",
+    "bottom": "底部"
+  },
+  "dataTable": {
+    "no": "序号",
+    "name": "名称",
+    "upstream": "上游",
+    "downstream": "下游",
+    "type": "类型",
+    "source": "源",
+    "target": "目标",
+    "actions": "操作",
+    "viewDetails": "查看详情",
+    "delete": "删除",
+    "openMenu": "打开菜单",
+    "noResults": "无结果"
+  },
+  "extensionStore": {
+    "extension": "扩展",
+    "title": "扩展商店",
+    "readOnly": "只读",
+    "compatible": "兼容性",
+    "dependencies": "依赖项",
+    "searchPlaceholder": "搜索扩展...",
+    "installedWithSum": "已安装 {{count}}/{{total}} 个",
+    "openAGraphToInstall": "打开图谱以安装扩展",
+    "noMatchResult": "无匹配结果",
+    "matchResult": "找到 {{count}} 个匹配结果",
+    "noExtensions": "未找到扩展",
+    "tryAdjusting": "尝试调整您的搜索或筛选条件",
+    "install": "安装",
+    "installed": "已安装",
+    "filter": {
+      "showUninstalled": "未安装",
+      "showInstalled": "已安装",
+      "sort": "排序",
+      "sort-default": "默认",
+      "sort-name": "名称",
+      "sort-name-desc": "名称（降序）",
+      "type": "类型"
+    },
+    "extensionTitle": "{{type}}: {{name}}",
+    "os-arch": "操作系统/架构",
+    "selectOsArch": "选择操作系统/架构",
+    "os-arch-default": "默认",
+    "version": "版本",
+    "hash": "哈希值",
+    "versionHistory": "版本历史",
+    "selectVersion": "选择版本",
+    "versionLatest": "最新",
+    "localAddonTip": "(本地)",
+    "tags": "标签",
+    "identifier": "标识符",
+    "packageType": {
+      "all": "全部",
+      "invalid": "无效",
+      "system": "系统",
+      "app": "应用",
+      "extension": "扩展",
+      "protocol": "协议",
+      "addonLoader": "插件加载器"
+    }
+  },
+  "rtcInteraction": {
+    "title": "实时对话式 AI Agent"
+  },
+  "trulienceConfig": {
+    "title": "Trulience 虚拟人配置",
+    "enabled": "启用",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "摄像头",
+      "screen": "屏幕",
+      "cameraPlaceholder": "选择摄像头"
+    }
+  },
+  "statusBar": {
+    "appsLoadedWithCount": "已加载 {{count}} 个应用",
+    "scriptsRunningWithCount": "正在运行 {{count}} 个脚本",
+    "appsError": "获取应用失败",
+    "workspace": {
+      "title": "当前工作区",
+      "baseDir": "基础目录",
+      "graphName": "图谱名称"
+    },
+    "feedback": {
+      "title": "反馈"
+    }
+  },
+  "preferences": {
+    "general": {
+      "title": "常规",
+      "language": "语言",
+      "theme": "主题"
+    },
+    "log": {
+      "title": "日志",
+      "maxLines": "最大行数",
+      "maxLinesDescription": "日志查看器中显示的最大行数。"
+    },
+    "save": "保存",
+    "cancel": "取消",
+    "saved": "已保存",
+    "savedSuccess": "设置 {{key}} 保存成功"
+  },
+  "components": {
+    "combobox": {
+      "create": "创建 {{query}}",
+      "placeholder": "搜索或创建新项目",
+      "noItems": "无项目",
+      "enterValueToCreate": "输入值以创建新项目"
+    },
+    "messageList": {
+      "noMessages": "暂无对话"
+    },
+    "node": {
+      "uninstalled": "未安装",
+      "installed": "已安装",
+      "extension": {
+        "title": "扩展节点",
+        "tag": "扩展"
+      }
+    },
+    "graph": {
+      "title": "图谱",
+      "selected-sum-count": "已选择 {{count}}/{{sum}} 个",
+      "select-all": "全选",
+      "select-only": "仅选择",
+      "auto-start": "自动启动",
+      "auto-start-enabled": "自动启动已启用",
+      "auto-start-disabled": "自动启动已禁用",
+      "enable-auto-start": "启用自动启动",
+      "disable-auto-start": "禁用自动启动",
+      "change-auto-start-success": "自动启动设置更新成功",
+      "change-auto-start-failed": "自动启动设置更新失败"
+    }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "根级别",
+      "addDynamicField": "添加动态字段",
+      "location": "位置",
+      "selectLocation": "选择位置",
+      "fieldName": "字段名称",
+      "enterFieldName": "输入字段名称（例如：dump_size、model_name）",
+      "fieldType": "字段类型",
+      "string": "字符串",
+      "number": "数字",
+      "object": "对象 (JSON)",
+      "defaultValue": "默认值",
+      "enterDefaultValue": "输入默认值",
+      "addField": "添加字段",
+      "dynamicFields": "动态字段",
+      "path": "路径",
+      "root": "根",
+      "type": "类型",
+      "noDynamicFields": "尚未定义动态字段。请在上方添加您的第一个字段。"
+    }
+  }
+}

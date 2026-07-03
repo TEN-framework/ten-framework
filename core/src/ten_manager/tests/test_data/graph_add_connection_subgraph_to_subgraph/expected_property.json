@@ -1,0 +1,49 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "subgraph",
+              "name": "subgraph_1",
+              "graph": {
+                "import_uri": "graphs/test_graph_1.json"
+              },
+              "property": {
+                "key": "value"
+              }
+            },
+            {
+              "type": "subgraph",
+              "name": "subgraph_2",
+              "graph": {
+                "import_uri": "graphs/test_graph_2.json"
+              },
+              "property": {
+                "key": "value"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "subgraph": "subgraph_1",
+              "cmd": [
+                {
+                  "name": "C",
+                  "dest": [
+                    {
+                      "subgraph": "subgraph_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

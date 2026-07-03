@@ -1,0 +1,65 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP PUT
+HTTP/1.0
+</keywords>
+</info>
+
+<reply>
+<data>
+HTTP/1.0 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+
+blablabla
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP 1.0 PUT
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/we/want/%TESTNUMBER -T %LOGDIR/test%TESTNUMBER.txt --http1.0
+</command>
+<file name="%LOGDIR/test%TESTNUMBER.txt">
+Weird
+     file
+         to
+   upload
+for
+   testing
+the
+   PUT
+      feature
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+PUT /we/want/%TESTNUMBER HTTP/1.0
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 78
+
+Weird
+     file
+         to
+   upload
+for
+   testing
+the
+   PUT
+      feature
+</protocol>
+</verify>
+</testcase>

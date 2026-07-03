@@ -1,0 +1,2 @@
+alibabacloud_nls_python_sdk
+pydantic

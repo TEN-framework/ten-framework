@@ -1,0 +1,25 @@
+<html>
+ <head>
+  <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+ </head>
+	<body>
+		<img src="libwebsockets.org-logo.svg">
+		<img src="strict-csp.svg"><br>
+
+		Hello from the <b>minimal http server basic auth example</b>.
+		<p>
+		This is a static page served from ./mount-origin/index.html.
+		<p>
+		Stuff down /secret in the URL space is protected by Basic Auth.<br>
+		Your browser will ask for a username / password combination, and<br>
+		lws will check it against ./ba-passwords, which contains a list of<br>
+		"username:password" one per line.<br>
+		<br>
+		The example content for ba-passwords is literally "user:password".<br>
+		Click on the link into the protected area of the URL space below<br>
+		and give your browser the credentials "user" and "password".
+		<p>
+		<a href="/secret/" target=_blank>/secret</a>
+	</body>
+</html>
+

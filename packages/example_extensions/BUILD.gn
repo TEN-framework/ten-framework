@@ -1,0 +1,44 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+group("example_extensions") {
+  deps = []
+
+  if (ten_enable_example_packages) {
+    deps += [
+      "vosk_asr_cpp",
+      "webrtc_vad_cpp",
+    ]
+
+    if (ten_enable_ffmpeg_extensions) {
+      deps += [
+        "ffmpeg_client",
+        "ffmpeg_demuxer",
+        "ffmpeg_muxer",
+      ]
+    }
+
+    if (ten_enable_python_binding) {
+      deps += [
+        "aio_http_server_python",
+        "ollama_python",
+        "pil_demo_python",
+      ]
+    }
+
+    if (ten_enable_nodejs_binding) {
+      deps += [
+        "http_server_extension_nodejs",
+        "websocket_server_nodejs",
+      ]
+    }
+
+    if (ten_enable_go_binding) {
+      deps += [ "event_bus_go" ]
+    }
+  }
+}

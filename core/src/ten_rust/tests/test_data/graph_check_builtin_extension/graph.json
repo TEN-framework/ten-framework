@@ -1,0 +1,104 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "addon": "addon_a",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ten:test_extension",
+      "addon": "ten:test_extension",
+      "extension_group": "test_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext_a",
+      "cmd": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ten:test_extension"
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ten:test_extension"
+            }
+          ]
+        }
+      ],
+      "video_frame": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ten:test_extension"
+            }
+          ]
+        }
+      ],
+      "audio_frame": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ten:test_extension"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "ten:test_extension",
+      "cmd": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ext_a"
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ext_a"
+            }
+          ]
+        }
+      ],
+      "video_frame": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ext_a"
+            }
+          ]
+        }
+      ],
+      "audio_frame": [
+        {
+          "name": "*",
+          "dest": [
+            {
+              "extension": "ext_a"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

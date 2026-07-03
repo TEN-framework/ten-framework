@@ -1,0 +1,8 @@
+{
+    "params": {
+        "token": "${env:EZAI_TOKEN}",
+        "url": "wss://rt2.ezai-k8s.freeddns.org",
+        "language": "zh-CN",
+        "sample_rate": 16000
+    }
+}

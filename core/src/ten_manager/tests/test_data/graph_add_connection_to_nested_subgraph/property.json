@@ -1,0 +1,30 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext_a",
+              "addon": "ext_a",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "subgraph",
+              "name": "subgraph_1",
+              "graph": {
+                "import_uri": "graphs/test_graph_1.json"
+              },
+              "property": {
+                "key": "value"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

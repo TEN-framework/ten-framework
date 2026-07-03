@@ -1,0 +1,408 @@
+{
+  "tenFramework": "TEN framework",
+  "ten": "TEN",
+  "header": {
+    "title": "Ten 管理器",
+    "menuApp": {
+      "title": "應用程式",
+      "loadApp": "載入應用程式",
+      "loadAppSuccess": "應用程式載入成功",
+      "loadAppFailed": "應用程式載入失敗",
+      "reloadApp": "重新載入應用程式",
+      "reloadAppDescription": "重新載入應用程式將關閉目前工作區。所有未儲存的變更將會遺失。",
+      "reloadAppConfirmation": "確定要重新載入應用程式 {{name}} 嗎？",
+      "reloadAppSuccess": "應用程式重新載入成功",
+      "reloadAppFailed": "應用程式重新載入失敗",
+      "reloadAllApps": "重新載入所有應用程式",
+      "reloadAllAppsSuccess": "所有應用程式重新載入成功",
+      "reloadAllAppsFailed": "所有應用程式重新載入失敗",
+      "reloadAllAppsConfirmation": "確定要重新載入所有應用程式嗎？",
+      "unloadApp": "卸載應用程式",
+      "unloadAppSuccess": "應用程式卸載成功",
+      "unloadAppFailed": "應用程式卸載失敗",
+      "installAll": "安裝所有",
+      "manageLoadedApps": "管理已載入的應用程式",
+      "runApp": "執行應用程式",
+      "openAppFolder": "開啟應用程式資料夾",
+      "createApp": "建立應用程式",
+      "about": "關於應用程式"
+    },
+    "menuGraph": {
+      "title": "圖譜",
+      "loadGraph": "載入圖譜",
+      "autoLayout": "自動佈局",
+      "selectLoadedApp": "選擇已載入的應用程式",
+      "addNode": "新增節點",
+      "addConnection": "新增連線",
+      "addConnectionFromNode": "從 {{node}} 新增連線",
+      "addConnectionToNode": "新增連線到 {{node}}",
+      "about": "關於圖譜"
+    },
+    "menuHelp": {
+      "title": "說明",
+      "about": "關於 TEN Manager Designer"
+    },
+    "menuDesigner": {
+      "title": "設計器",
+      "about": "關於設計器",
+      "preferences": "偏好設定"
+    },
+    "menuExtension": {
+      "title": "擴充功能",
+      "openExtensionStore": "開啟擴充功能商店",
+      "startRTCInteraction": "與 TEN AI Agent 對話",
+      "configTrulienceAvatar": "配置 Trulience 虛擬人",
+      "about": "關於擴充功能"
+    },
+    "menuTenAgentTools": {
+      "title": "TEN Agent 工具"
+    },
+    "language": {
+      "title": "語言",
+      "enUS": "English",
+      "zhCN": "中文(简体)",
+      "zhTW": "中文(繁體)",
+      "jaJP": "日本語"
+    },
+    "theme": {
+      "title": "主題",
+      "light": "明亮",
+      "dark": "暗黑",
+      "system": "系統"
+    },
+    "officialSite": "官方網站",
+    "poweredBy": "技術支援",
+    "poweredByTenFramework": "由 <0></0> 提供支援",
+    "github": "GitHub",
+    "tryTENAgent": "嘗試 TEN Agent",
+    "currentVersion": "目前版本",
+    "latestVersion": "最新版本",
+    "currentIsLatest": "目前已是最新版本",
+    "currentIsLatestDescription": "您正在使用最新版本的 TEN Framework。\n更多關於最新版本的資訊可以在 <0>TEN Framework GitHub 發布頁面</0> 查看。",
+    "newVersionAvailable": "有新版本可用",
+    "newVersionAvailableDescription": "TEN Framework 有新版本可用。\n更多關於新版本的資訊可以在 <0>TEN Framework GitHub 發布頁面</0> 查看。"
+  },
+  "action": {
+    "edit": "編輯",
+    "delete": "刪除",
+    "pinToDock": "固定在 Dock",
+    "save": "儲存",
+    "discard": "丟棄",
+    "launchTerminal": "啟動終端機",
+    "ok": "確定",
+    "cancel": "取消",
+    "selected": "已選擇",
+    "autoStart": "自動啟動",
+    "confirm": "確認",
+    "upstream": "上游",
+    "downstream": "下游",
+    "popout": "彈出",
+    "close": "關閉",
+    "closeAllTabs": "關閉所有標籤頁",
+    "unsaved": "未儲存",
+    "launchLogViewer": "查看日誌",
+    "stop": "停止",
+    "search": "搜尋",
+    "current": "目前",
+    "run": "執行",
+    "viewDetails": "查看詳情",
+    "reset": "重置",
+    "chooseBaseDir": "選擇基礎目錄",
+    "deleteNodeConfirmationWithName": "確定要刪除{{type}}: {{name}} 嗎？",
+    "update": "更新",
+    "create": "建立",
+    "deleteConnectionConfirmation": "確定要刪除此連線嗎？",
+    "deleteConnectionSuccess": "連線刪除成功",
+    "deleteConnectionFailed": "連線刪除失敗",
+    "replaceNode": "替換節點...",
+    "manageApps": "管理應用程式",
+    "runApp": "執行",
+    "selectAll": "全選"
+  },
+  "toast": {
+    "saveFileSuccess": "檔案儲存成功",
+    "saveFileFailed": "檔案儲存失敗",
+    "fetchFileContentFailed": "文件內容取得失敗"
+  },
+  "popup": {
+    "editor": {
+      "confirmSaveFile": "確定要儲存檔案嗎？",
+      "confirmSaveChanges": "確定要儲存變更嗎？",
+      "confirmCloseAllTabs": "確定要關閉所有標籤頁嗎？所有未儲存的變更將會遺失。",
+      "confirmChangePosition": "確定要更改 Dock 位置嗎？所有未儲存的變更將會遺失。"
+    },
+    "selectGraph": {
+      "title": "選擇應用/圖譜",
+      "app": "應用",
+      "graph": "圖譜",
+      "select": "選擇",
+      "selected": "已選擇",
+      "unspecified": "<未指定>",
+      "current": "目前",
+      "updateSuccess": "應用/圖譜更新成功"
+    },
+    "customNodeConn": {
+      "srcTitle": "節點[{{source}}]連接",
+      "connectTitle": "連線詳情",
+      "title": "連線",
+      "filters": "篩選器"
+    },
+    "node": {
+      "properties": "屬性"
+    },
+    "logViewer": {
+      "title": "日誌檢視器",
+      "appInstall": "應用安裝",
+      "filteredByAddon": "依附加元件篩選日誌",
+      "noAddons": "無可用附加元件",
+      "noMatchedAddons": "無符合的附加元件",
+      "noLogs": "無日誌顯示",
+      "cleanLogs": "清空日誌"
+    },
+    "default": {
+      "defaultLabelForAppRun": "預設應用程式運行標籤",
+      "errorFolderPathEmpty": "文件夾路徑不能為空。",
+      "errorGetBaseDir": "獲取基礎目錄失敗",
+      "errorOpenAppFolder": "打開應用程式資料夾失敗",
+      "errorUnknown": "發生未知錯誤。"
+    },
+    "apps": {
+      "manager": "應用程式管理器",
+      "tableCaption": "已載入的應用程式列表。",
+      "emptyPlaceholder": "未載入應用程式。",
+      "baseDir": "基礎目錄",
+      "run": "執行應用程式",
+      "runScript": "執行腳本",
+      "runScriptPlaceholder": "輸入要執行的腳本",
+      "create": "建立應用程式",
+      "createAppSuccess": "應用程式建立成功",
+      "createAppFailed": "應用程式建立失敗",
+      "templateType": "模板類型",
+      "templateTypeDescription": "選擇應用程式的模板類型。",
+      "templateLanguage": "模板語言",
+      "templateLanguageDescription": "選擇應用程式的模板語言。",
+      "templateName": "模板名稱",
+      "templateNameDescription": "選擇應用程式的模板名稱。",
+      "templateVersion": "模板版本",
+      "templateVersionDescription": "選擇應用程式的模板版本。",
+      "appName": "應用程式名稱",
+      "appNameDescription": "輸入應用程式的名稱。",
+      "baseDirDescription": "選擇應用程式的基礎目錄。",
+      "run_opts": "選項",
+      "run_with_agent": "使用 TEN Agent 執行",
+      "status": "狀態",
+      "noRunningScripts": "無運行中的腳本",
+      "runningScriptsCaption": "運行中腳本的列表。",
+      "loadedApps": "已載入應用程式",
+      "runningScripts": "運行中腳本",
+      "runningScriptsWithCount": "{{count}} 個運行中腳本"
+    },
+    "graph": {
+      "title": "節點",
+      "titleAddNode": "新增節點",
+      "graphId": "圖譜 ID",
+      "nodeName": "節點名稱",
+      "addonName": "附加元件名稱",
+      "searchAddon": "搜尋附加元件",
+      "noAddonFound": "未找到附加元件",
+      "useInputAddon": "使用 '{{addonName}}'",
+      "property": "屬性",
+      "addNode": "新增節點",
+      "addNodeSuccess": "節點新增成功",
+      "addNodeError": "節點新增失敗",
+      "graphError": "圖譜載入失敗",
+      "addonError": "附加元件載入失敗",
+      "deleteNodeSuccess": "節點刪除成功",
+      "deleteNodeFailed": "節點刪除失敗",
+      "titleAddConnection": "新增連線",
+      "sameNodeError": "來源節點和目標節點不能相同",
+      "srcLocation": "來源節點",
+      "destLocation": "目標節點",
+      "messageType": "訊息類型",
+      "messageName": "訊息名稱",
+      "addConnection": "新增連線",
+      "titleUpdateNodePropertyByName": "更新節點 [{{name}}] 屬性",
+      "updateNodeProperty": "更新屬性",
+      "graphName": "圖譜名稱",
+      "updateNodePropertySuccess": "節點屬性更新成功",
+      "updateNodePropertyFailed": "節點屬性更新失敗",
+      "noPropertySchema": "未找到屬性結構描述",
+      "titleReplaceNode": "替換節點[{{name}}]...",
+      "replaceNode": "替換節點",
+      "replaceNodeSuccess": "節點替換成功",
+      "replaceNodeFailed": "節點替換失敗",
+      "messagesFrom": "來自: {{source}}"
+    },
+    "doc": {
+      "title": "{{name}}"
+    }
+  },
+  "dock": {
+    "notSelected": "未選擇標籤頁",
+    "dockSide": "停靠位置",
+    "left": "左側",
+    "right": "右側",
+    "bottom": "底部"
+  },
+  "dataTable": {
+    "no": "序號",
+    "name": "名稱",
+    "upstream": "上游",
+    "downstream": "下游",
+    "type": "型別",
+    "source": "來源",
+    "target": "目標",
+    "actions": "操作",
+    "viewDetails": "查看詳情",
+    "delete": "刪除",
+    "openMenu": "開啟選單",
+    "noResults": "無結果"
+  },
+  "extensionStore": {
+    "extension": "擴充功能",
+    "title": "擴充套件商店",
+    "readOnly": "唯讀",
+    "compatible": "相容性",
+    "dependencies": "相依性",
+    "searchPlaceholder": "搜尋擴充套件...",
+    "installedWithSum": "已安裝 {{count}}/{{total}} 個",
+    "openAGraphToInstall": "開啟圖譜以安裝擴充套件",
+    "noMatchResult": "無符合結果",
+    "matchResult": "找到 {{count}} 個符合結果",
+    "noExtensions": "未找到擴充套件",
+    "tryAdjusting": "嘗試調整您的搜尋或篩選條件",
+    "install": "安裝",
+    "installed": "已安裝",
+    "filter": {
+      "showUninstalled": "未安裝",
+      "showInstalled": "已安裝",
+      "sort": "排序",
+      "sort-default": "預設",
+      "sort-name": "名稱",
+      "sort-name-desc": "名稱（降序）",
+      "type": "類型"
+    },
+    "extensionTitle": "{{type}}: {{name}}",
+    "os-arch": "作業系統/架構",
+    "selectOsArch": "選擇作業系統/架構",
+    "os-arch-default": "預設",
+    "version": "版本",
+    "hash": "雜湊值",
+    "versionHistory": "版本歷史",
+    "selectVersion": "選擇版本",
+    "versionLatest": "最新",
+    "localAddonTip": "(本地)",
+    "tags": "標籤",
+    "identifier": "識別碼",
+    "packageType": {
+      "all": "全部",
+      "invalid": "無效",
+      "system": "系統",
+      "app": "應用程式",
+      "extension": "擴充功能",
+      "protocol": "協定",
+      "addonLoader": "附加元件載入器"
+    }
+  },
+  "rtcInteraction": {
+    "title": "實時語音 AI 代理"
+  },
+  "trulienceConfig": {
+    "title": "Trulience 虛擬人配置",
+    "enabled": "啟用",
+    "trulienceAvatarId": "Trulience Avatar ID",
+    "trulienceAvatarToken": "Trulience Avatar Token",
+    "trulienceSdkUrl": "Trulience SDK URL",
+    "trulienceAnimationURL": "Trulience Animation URL"
+  },
+  "rtc": {
+    "videoSource": {
+      "camera": "攝像頭",
+      "screen": "螢幕",
+      "cameraPlaceholder": "選擇攝像頭"
+    }
+  },
+  "statusBar": {
+    "appsLoadedWithCount": "已載入 {{count}} 個應用程式",
+    "scriptsRunningWithCount": "正在運行 {{count}} 個腳本",
+    "appsError": "獲取應用程式失敗",
+    "workspace": {
+      "title": "目前工作區",
+      "baseDir": "基礎目錄",
+      "graphName": "圖譜名稱"
+    },
+    "feedback": {
+      "title": "回饋"
+    }
+  },
+  "preferences": {
+    "general": {
+      "title": "一般",
+      "language": "語言",
+      "theme": "主題"
+    },
+    "log": {
+      "title": "日誌",
+      "maxLines": "最大行數",
+      "maxLinesDescription": "日誌檢視器中顯示的最大行數。"
+    },
+    "save": "儲存",
+    "cancel": "取消",
+    "saved": "已儲存",
+    "savedSuccess": "設定 {{key}} 儲存成功"
+  },
+  "components": {
+    "combobox": {
+      "create": "建立 {{query}}",
+      "placeholder": "搜尋或建立新項目",
+      "noItems": "無項目",
+      "enterValueToCreate": "輸入值以建立新項目"
+    },
+    "messageList": {
+      "noMessages": "無訊息"
+    },
+    "node": {
+      "uninstalled": "未安裝",
+      "installed": "已安裝",
+      "extension": {
+        "title": "擴充功能節點",
+        "tag": "擴充功能"
+      }
+    },
+    "graph": {
+      "title": "圖譜",
+      "selected-sum-count": "已選擇 {{count}} / {{sum}} 個",
+      "select-all": "全選",
+      "select-only": "僅選擇",
+      "auto-start": "自動啟動",
+      "auto-start-enabled": "自動啟動已啟用",
+      "auto-start-disabled": "自動啟動已停用",
+      "enable-auto-start": "啟用自動啟動",
+      "disable-auto-start": "停用自動啟動",
+      "change-auto-start-success": "自動啟動設定更新成功",
+      "change-auto-start-failed": "自動啟動設定更新失敗"
+    }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "根層級",
+      "addDynamicField": "新增動態欄位",
+      "location": "位置",
+      "selectLocation": "選擇位置",
+      "fieldName": "欄位名稱",
+      "enterFieldName": "輸入欄位名稱（例如：dump_size、model_name）",
+      "fieldType": "欄位類型",
+      "string": "字串",
+      "number": "數字",
+      "object": "物件（JSON）",
+      "defaultValue": "預設值",
+      "enterDefaultValue": "輸入預設值",
+      "addField": "新增欄位",
+      "dynamicFields": "動態欄位",
+      "path": "路徑",
+      "root": "根",
+      "type": "類型",
+      "noDynamicFields": "尚未定義動態欄位。請在上方新增您的第一個欄位。"
+    }
+  }
+}

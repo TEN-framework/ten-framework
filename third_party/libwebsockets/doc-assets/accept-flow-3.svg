@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="171.61mm" height="209.9mm" version="1.1" viewBox="0 0 171.61372 209.89664" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<filter id="a" x="-.068968" y="-.055005" width="1.1379" height="1.11" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="15.814675"/>
+		</filter>
+	</defs>
+	<g transform="translate(884.06 595.62)">
+		<rect transform="matrix(.27404 0 0 .27404 -1727.7 -789.44)" x="3116.4" y="745.24" width="550.33" height="690.03" fill-opacity=".99606" filter="url(#a)"/>
+		<rect x="-876.94" y="-588.5" width="150.81" height="189.09" fill="#fff" fill-opacity=".99606"/>
+		<path d="m-811.77-547.46h23.075c3.36 0.0747 5.5258 3.5038 5.4558 5.6978s-1.697 5.9145-5.3019 6.0545c-5.0352-0.0508-18.547 0.0709-23.582 0.0206-2.2582-0.0882-4.5671-3.0397-4.5533-6.2647 0.014-3.225 2.6009-5.4327 4.9065-5.5082z" fill="#fff" stroke="#000" stroke-width="1.2058"/>
+		<g>
+			<rect x="-800.18" y="-535.73" width="1.4355" height="100.28"/>
+			<text x="-800.92352" y="-540.10565" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.8637px" letter-spacing="0px" stroke-width=".30398" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-800.92352" y="-540.10565" stroke-width=".30398">Connection</tspan></text>
+			<text x="-800.69403" y="-422.8768" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.7928px" letter-spacing="0px" stroke-width=".11233" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-800.69403" y="-422.8768">Specified</tspan><tspan x="-800.69403" y="-416.88583">role +</tspan><tspan x="-800.69403" y="-410.89487">protocol</tspan></text>
+		</g>
+		<g>
+			<path d="m-793.82-436.33h-11.894l6.2548 6.2549z" stroke="#000" stroke-width=".072506px"/>
+			<text x="-776.86151" y="-525.82227" dominant-baseline="auto" fill="#0000ff" font-family="'Open Sans'" font-size="2.3761px" letter-spacing="0px" stroke-width=".012375" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-776.86151" y="-525.82227">LWS_SERVER_OPTION_ADOPT_</tspan><tspan x="-776.86151" y="-522.85217">APPLY_LISTEN_ACCEPT_CONFIG</tspan></text>
+			<text x="-803.2453" y="-567.64862" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="13.921px" letter-spacing="0px" stroke-width=".072506" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-803.2453" y="-567.64862" stroke-width=".072506">raw-only port</tspan></text>
+		</g>
+	</g>
+</svg>

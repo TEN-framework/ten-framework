@@ -1,0 +1,134 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_nodejs",
+              "addon": "default_extension_nodejs",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_ts2",
+              "addon": "default_extension_nodejs",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "default_extension_nodejs"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "default_extension_nodejs",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "data2",
+                  "dest": [
+                    {
+                      "extension": "default_extension_ts2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "simple_echo_cpp",
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "default_extension_nodejs"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "default_extension_ts2",
+              "data": [
+                {
+                  "name": "data2_return",
+                  "dest": [
+                    {
+                      "extension": "default_extension_nodejs"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

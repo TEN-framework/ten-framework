@@ -1,0 +1,25 @@
+# ==============================================================================
+# Winget Version Manifest Template
+# ==============================================================================
+# This template is used by .github/workflows/update_winget.yml to generate
+# the version manifest. This is the main manifest file that ties all other
+# manifest files together.
+#
+# Placeholders:
+#   __VERSION__ - Will be replaced with release version (e.g., 0.11.35)
+#
+# NOTE: Although this file is simple (6 lines), keeping it as a template
+# ensures consistency and makes the structure explicit.
+#
+# Documentation: https://learn.microsoft.com/en-us/windows/package-manager/package/manifest
+# ==============================================================================
+
+PackageIdentifier: ten-framework.tman
+
+PackageVersion: __VERSION__
+
+DefaultLocale: en-US
+
+ManifestType: version
+
+ManifestVersion: 1.6.0

@@ -1,0 +1,7 @@
+[project]
+name = "mcp-client-python"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.2.1",
+]

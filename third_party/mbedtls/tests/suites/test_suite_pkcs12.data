@@ -1,0 +1,35 @@
+PKCS#12 derive key : MD5: Zero length password and hash
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"":USE_GIVEN_INPUT:"":USE_GIVEN_INPUT:3:"6afdcbd5ebf943272134f1c3de2dc11b6afdcbd5ebf943272134f1c3de2dc11b6afdcbd5ebf943272134f1c3de2dc11b":0
+
+PKCS#12 derive key: MD5: NULL password and hash
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"":USE_NULL_INPUT:"":USE_NULL_INPUT:3:"6afdcbd5ebf943272134f1c3de2dc11b6afdcbd5ebf943272134f1c3de2dc11b6afdcbd5ebf943272134f1c3de2dc11b":0
+
+PKCS#12 derive key: MD5: Zero length password
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"":USE_GIVEN_INPUT:"0123456789abcdef":USE_GIVEN_INPUT:3:"832d8502114fcccfd3de0c2b2863b1c45fb92a8db2ed1e704727b324adc267bdd66ae4918a81fa2d1ba15febfb9e6c4e":0
+
+PKCS#12 derive key: MD5: NULL password
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"":USE_NULL_INPUT:"0123456789abcdef":USE_GIVEN_INPUT:3:"832d8502114fcccfd3de0c2b2863b1c45fb92a8db2ed1e704727b324adc267bdd66ae4918a81fa2d1ba15febfb9e6c4e":0
+
+PKCS#12 derive key: MD5: Invalid length NULL password
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"0123456789abcdef":USE_NULL_INPUT:"0123456789abcdef":USE_GIVEN_INPUT:3:"":MBEDTLS_ERR_PKCS12_BAD_INPUT_DATA
+
+PKCS#12 derive key: MD5: Zero length salt
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"0123456789abcdef":USE_GIVEN_INPUT:"":USE_GIVEN_INPUT:3:"832d8502114fcccfd3de0c2b2863b1c45fb92a8db2ed1e704727b324adc267bdd66ae4918a81fa2d1ba15febfb9e6c4e":0
+
+PKCS#12 derive key: MD5: NULL salt
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"0123456789abcdef":USE_GIVEN_INPUT:"":USE_NULL_INPUT:3:"832d8502114fcccfd3de0c2b2863b1c45fb92a8db2ed1e704727b324adc267bdd66ae4918a81fa2d1ba15febfb9e6c4e":0
+
+PKCS#12 derive key: MD5: Invalid length NULL salt
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"0123456789abcdef":USE_GIVEN_INPUT:"0123456789abcdef":USE_NULL_INPUT:3:"":MBEDTLS_ERR_PKCS12_BAD_INPUT_DATA
+
+PKCS#12 derive key: MD5: Valid password and salt
+depends_on:MBEDTLS_MD5_C
+pkcs12_derive_key:MBEDTLS_MD_MD5:48:"0123456789abcdef":USE_GIVEN_INPUT:"0123456789abcdef":USE_GIVEN_INPUT:3:"46559deeee036836ab1b633ec620178d4c70eacf42f72a2ad7360c812efa09ca3d7567b489a109050345c2dc6a262995":0

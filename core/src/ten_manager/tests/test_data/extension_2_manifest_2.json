@@ -1,0 +1,35 @@
+{
+  "type": "extension",
+  "name": "extension_addon_2",
+  "version": "0.1.0",
+  "api": {
+    "cmd_in": [
+      {
+        "name": "test_cmd_for_update",
+        "property": {
+          "properties": {
+            "initial_property": {
+              "type": "string"
+            },
+            "updated_property": {
+              "type": "string"
+            },
+            "original_source": {
+              "type": "uint32"
+            }
+          }
+        }
+      },
+      {
+        "name": "change_name",
+        "property": {
+          "properties": {
+            "aaa": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

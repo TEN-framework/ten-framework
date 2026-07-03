@@ -1,0 +1,19 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+group("example_apps") {
+  deps = []
+
+  if (ten_enable_example_packages) {
+    if (ten_enable_go_binding) {
+      deps += [
+        "pprof_app_go",
+        "transcriber_demo",
+      ]
+    }
+  }
+}

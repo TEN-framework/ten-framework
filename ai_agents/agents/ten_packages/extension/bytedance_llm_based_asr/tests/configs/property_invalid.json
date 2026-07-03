@@ -1,0 +1,11 @@
+{
+    "params": {
+        "app_key": "invalid",
+        "access_key": "invalid",
+        "api_key": "invalid",
+        "auth_method": "api_key",
+        "resource_id": "invalid",
+        "language": "en-US",
+        "model_version": "400"
+    }
+}
