@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_llm2_python",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "dependencies": [
     {
       "type": "system",
@@ -20,6 +20,7 @@
       "property.json",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

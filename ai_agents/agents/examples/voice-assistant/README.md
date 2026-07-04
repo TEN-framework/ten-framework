@@ -22,6 +22,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 
 4. **TTS Provider**: choose the graph you want to run
    - `ELEVENLABS_TTS_KEY` for the default `voice_assistant` graph or `voice_assistant_xai_asr`
+   - `GRADIUM_API_KEY` for `voice_assistant_gradium`
    - `XAI_API_KEY` for `voice_assistant_xai_tts` or `voice_assistant_xai_full`
 
 ### Provider-specific keys
@@ -30,6 +31,8 @@ A configurable voice assistant with real-time conversation capabilities using Ag
    - `DEEPGRAM_API_KEY` - Your Deepgram API key (required)
 - **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
    - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
+- **Gradium Account**: Get credentials from [Gradium](https://gradium.ai/)
+   - `GRADIUM_API_KEY` - Your Gradium API key (required for the Gradium TTS graph)
 - **xAI Account**: Get credentials from [xAI Console](https://console.x.ai/)
    - `XAI_API_KEY` - Your xAI Voice API key (required for xAI STT/TTS graphs)
 
@@ -61,6 +64,9 @@ OPENAI_PROXY_URL=your_proxy_url_here
 
 # ElevenLabs (required for text-to-speech)
 ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
+
+# Gradium (required for the Gradium TTS graph)
+GRADIUM_API_KEY=your_gradium_api_key_here
 
 # xAI (required for xAI speech-to-text and/or text-to-speech graphs)
 XAI_API_KEY=your_xai_api_key_here
@@ -101,6 +107,7 @@ The frontend reads the `graph` URL query parameter and matches it against
 Available graph names:
 
 - `voice_assistant` - Deepgram STT + OpenAI-compatible LLM + ElevenLabs TTS
+- `voice_assistant_gradium` - Deepgram STT + OpenAI-compatible LLM + Gradium TTS
 - `voice_assistant_xai_asr` - xAI STT + OpenAI-compatible LLM + ElevenLabs TTS
 - `voice_assistant_xai_tts` - Deepgram STT + OpenAI-compatible LLM + xAI TTS
 - `voice_assistant_xai_full` - xAI STT + OpenAI-compatible LLM + xAI TTS
@@ -185,6 +192,7 @@ The voice assistant is configured in `tenapp/property.json`:
 | `AGORA_APP_CERTIFICATE` | string | - | Your Agora App Certificate (optional) |
 | `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
 | `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
+| `GRADIUM_API_KEY` | string | - | Gradium API key (required for `voice_assistant_gradium`) |
 | `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
 | `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
 | `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |

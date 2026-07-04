@@ -1,0 +1,8 @@
+[project]
+name = "bytedance-tts-duplex"
+version = "0.4.1"
+requires-python = ">=3.10"
+dependencies = [
+    "fastrand>=3.1.0",
+    "websockets~=14.0",
+]

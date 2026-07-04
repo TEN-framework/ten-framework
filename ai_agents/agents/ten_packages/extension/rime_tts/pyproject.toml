@@ -1,0 +1,7 @@
+[project]
+name = "rime-tts"
+version = "0.4.6"
+requires-python = ">=3.10"
+dependencies = [
+    "websockets~=14.0",
+]

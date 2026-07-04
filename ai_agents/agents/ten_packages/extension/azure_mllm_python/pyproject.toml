@@ -1,0 +1,10 @@
+[project]
+name = "azure-mllm-python"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.14.1",
+    "numpy==1.26.4",
+    "pydantic>=2.13.4",
+    "pydub==0.25.1",
+]

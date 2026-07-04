@@ -1,0 +1,9 @@
+[project]
+name = "polly-tts"
+version = "0.5.5"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3>=1.26.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.15.0",
+]

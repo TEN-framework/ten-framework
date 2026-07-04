@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_tts_python",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "dependencies": [
     {
       "name": "ten_runtime_python",
@@ -23,6 +23,7 @@
       "**.py",
       "README.md",
       "src/**",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

@@ -1,0 +1,7 @@
+[project]
+name = "fashionai"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "websockets~=14.0",
+]

@@ -165,6 +165,40 @@ from ten import Addon
 > `agents/examples/` and before `git push`. `task lint` is strict — even
 > a single `W0611: unused-import` warning fails CI.
 
+## Commit Messages
+
+A separate CI job — **`Lint Commit Messages / commitlint`** — runs
+[`@commitlint/config-conventional`](https://github.com/conventional-changelog/commitlint)
+against every commit in the PR (config: `.github/configs/commitlint.config.mjs`).
+**There is no local commit-msg hook**, so a bad message is not caught until CI —
+get it right when you write the commit.
+
+Rules that actually fail CI (config-conventional defaults):
+
+- **Conventional header:** `type(scope): subject` — e.g. `fix(tts): stream segments immediately`.
+- **Type** must be one of: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`,
+  `perf`, `build`, `ci`, `style`, `revert`.
+- **Subject:** lowercase start, no trailing period.
+- **Header line ≤ 100 chars.**
+- **Body lines ≤ 100 chars each** — this is the one that bites: a long
+  paragraph written with `git commit -m "..."` is a single >100-char line and
+  fails `body-max-line-length`. **Hard-wrap the body** (≤72–80 cols is safe),
+  e.g. write it in a file and use `git commit -F msg.txt`.
+- **Blank line between subject and body** (`body-leading-blank`).
+
+Quick self-check before pushing (every commit added in the PR):
+
+```bash
+mb=$(git merge-base origin/main HEAD)
+for c in $(git rev-list $mb..HEAD); do
+  git log -1 --format='%b' $c | awk -v c=$c 'length>100{print c": body line >100"}'
+done
+```
+
+If you already pushed a long-body commit, reword/squash and force-push
+(`git push --force-with-lease`) — commitlint checks the whole PR, so a new
+commit on top will not clear the failure.
+
 ## Design Principles
 
 - **YAGNI**: Only implement what is needed now, not what might be needed later
