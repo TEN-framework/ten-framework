@@ -47,6 +47,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
+        self._utterance_start_ms: Optional[int] = None
         self.reconnect_manager: ReconnectManager | None = None
 
         self._message_task: Optional[asyncio.Task] = None
@@ -179,6 +180,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                 self.audio_timeline.get_total_user_audio_duration()
             )
             self.audio_timeline.reset()
+            self._utterance_start_ms = None
 
             # Start message processing task
             self._message_task = asyncio.create_task(self._process_messages())
@@ -317,6 +319,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             # requested over silence — the finalize handshake must still
             # complete even though there is no result to forward.
             if is_final:
+                self._utterance_start_ms = None
                 await self._finalize_end()
             self.ten_env.log_debug(
                 "Received empty transcript",
@@ -343,8 +346,15 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                     self.audio_timeline.get_total_user_audio_duration()
                     + session_offset_ms
                 )
-                start_ms = max(0, total_audio_sent_ms)
-                duration_ms = 0
+                if self._utterance_start_ms is None:
+                    # Without word timings the closest anchor to the
+                    # utterance start is the stream position when its
+                    # first transcript arrives; latching it keeps
+                    # interim timestamps monotonic and ahead of the
+                    # word-timed final.
+                    self._utterance_start_ms = max(0, total_audio_sent_ms)
+                start_ms = self._utterance_start_ms
+                duration_ms = max(0, total_audio_sent_ms - start_ms)
 
             asr_result = ASRResult(
                 text=transcript_text,
@@ -357,6 +367,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
 
             await self.send_asr_result(asr_result)
             if is_final:
+                self._utterance_start_ms = None
                 await self._finalize_end()
 
             self.ten_env.log_debug(

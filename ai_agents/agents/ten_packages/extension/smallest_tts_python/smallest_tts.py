@@ -269,21 +269,11 @@ class SmallestTTSClient(AsyncTTS2HttpClient):
                 category=LOG_CATEGORY_VENDOR,
             )
 
-            # Check if it's an authentication error
-            if (
-                "401" in error_message
-                or "403" in error_message
-                or "invalid_api_key" in error_message
-            ):
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
-            else:
-                # All other errors are treated as general errors
-                # (including network errors: ConnectionRefusedError, TimeoutError, etc.)
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.ERROR
+            # Auth failures surface as HTTP 401/403 and are classified in
+            # the status-code branch above; exceptions reaching here are
+            # transport-level (connection refused, timeout, ...), so they
+            # are never key errors.
+            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
         """Clean up resources."""
