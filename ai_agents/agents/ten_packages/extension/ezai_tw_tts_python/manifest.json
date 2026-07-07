@@ -48,6 +48,12 @@
             "voice": {
               "type": "string"
             },
+            "speed": {
+              "type": "float32"
+            },
+            "api_key": {
+              "type": "string"
+            },
             "denoise": {
               "type": "bool"
             },

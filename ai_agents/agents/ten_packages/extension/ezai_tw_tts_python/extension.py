@@ -178,7 +178,7 @@ class EZAITWTTSExtension(AsyncTTS2BaseExtension):
                 reason=TTSAudioEndReason.ERROR,
             )
             return
-
+        config = self.config
         async with self._request_lock:
             self.current_request_id = t.request_id
             self.current_request_finished = False
@@ -199,10 +199,10 @@ class EZAITWTTSExtension(AsyncTTS2BaseExtension):
                 "b64enc": True,
                 "tw_convert": True,
                 "autosplit": False,
-                "speed": getattr(self.config, "speed", 0.8),
-                "denoise": getattr(self.config, "denoise", False),
-                "speaker": self.config.voice if self.config.voice else "",
-                "zh_model": getattr(self.config, "zh_model", ""),
+                "speed": config.speed,
+                "denoise":  config.denoise,
+                "speaker": config.voice,
+                "zh_model": config.zh_model
                 # "zh_model": "nllb"
             }
 
@@ -222,15 +222,18 @@ class EZAITWTTSExtension(AsyncTTS2BaseExtension):
 
                     resp = await asyncio.to_thread(
                         requests.post,
-                        self.config.url,
-                        headers={"Content-Type": "application/json"},
+                        config.url,
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {config.api_key}",
+                        },
                         data=json.dumps(payload),
                         timeout=60,
                     )
 
                     if resp.status_code != 200:
                         raise RuntimeError(
-                            f"TTS HTTP error: {resp.status_code}"
+                            f"TTS HTTP error: {resp.status_code}, reason={resp.json()}"
                         )
 
                     j = resp.json()
