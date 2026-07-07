@@ -188,10 +188,6 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                 category=LOG_CATEGORY_VENDOR,
             )
 
-            # Notify reconnect manager that connection is successful
-            if self.reconnect_manager:
-                self.reconnect_manager.mark_connection_successful()
-
         except Exception as e:
             self.ten_env.log_error(
                 f"KEYPOINT start_connection failed: invalid vendor config: {e}"
@@ -306,6 +302,12 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         """Handle transcription result messages."""
         assert self.config is not None
 
+        # Reset the retry budget only once the vendor delivers results —
+        # resetting right after the handshake lets an accept-then-close
+        # failure reconnect forever without ever going fatal.
+        if self.reconnect_manager:
+            self.reconnect_manager.mark_connection_successful()
+
         transcript_text = data.get("transcript", "")
         is_final = bool(data.get("is_final", False))
         language = self.config.report_language(data.get("language"))
@@ -372,9 +374,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
     async def _handle_error_message(self, data: dict) -> None:
         """Handle error messages from the API."""
         error_info = data.get("message") or data.get("error", "Unknown error")
-        error_code = (
-            data.get("code") or data.get("error_code") or "unknown"
-        )
+        error_code = data.get("code") or data.get("error_code") or "unknown"
 
         self.ten_env.log_error(
             f"API error received: {error_info} (code: {error_code})",
@@ -481,12 +481,24 @@ class SmallestASRExtension(AsyncASRBaseExtension):
 
     async def _send_finalize(self) -> None:
         """Ask Pulse to finalize pending audio; the session stays open."""
+        if not self.is_connected() or self.ws is None:
+            # No vendor session to flush (buffered audio is retained
+            # client-side and re-sent after reconnect), so complete the
+            # finalize handshake locally — otherwise asr_finalize_end is
+            # never emitted and the turn stalls.
+            self.ten_env.log_warn(
+                "smallest finalize requested while disconnected",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._finalize_end()
+            return
         try:
             finalize_message = {"type": "finalize"}
             await self.ws.send_str(json.dumps(finalize_message))
             self.ten_env.log_debug("smallest finalize sent")
         except Exception as e:
             self.ten_env.log_error(f"Error sending smallest finalize: {e}")
+            await self._finalize_end()
             if not self.stopped:
                 await self._handle_reconnect()
 
