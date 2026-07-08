@@ -6,7 +6,7 @@ Bytedance ASR WebSocket Client
 Requires Python 3.9 or later for modern typing features.
 
 Dependencies:
-    websockets~=14.0
+    websockets>=14.0
     pydantic
 """
 

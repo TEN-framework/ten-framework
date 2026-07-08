@@ -1,10 +1,10 @@
 [project]
 name = "gladia-asr-python"
-version = "0.2.1"
+version = "0.2.2"
 requires-python = ">=3.10"
 dependencies = [
     "deepgram-sdk==3.9.0",
     "pydantic>=2.13.4",
     "requests>=2.34.2",
-    "websockets~=14.0",
+    "websockets>=14.0",
 ]
