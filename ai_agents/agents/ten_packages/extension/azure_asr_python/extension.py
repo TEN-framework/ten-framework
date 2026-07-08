@@ -56,9 +56,6 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         # Reconnection manager with unlimited retries and backoff strategy
         self.reconnect_manager: ReconnectManager | None = None
-        self._pending_disconnect_vendor_info: ModuleErrorVendorInfo | None = (
-            None
-        )
 
     @override
     def vendor(self) -> str:
@@ -118,7 +115,6 @@ class AzureASRExtension(AsyncASRBaseExtension):
     async def start_connection(self) -> None:
         assert self.config is not None
         self.ten_env.log_info("start_connection")
-        self._pending_disconnect_vendor_info = None
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -437,11 +433,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
         self.connected = False
 
-        vendor_info = self._pending_disconnect_vendor_info
-        self._pending_disconnect_vendor_info = None
-        await self.on_disconnected(
-            code=0, message="closed", vendor_info=vendor_info
-        )
+        await self.on_disconnected(code=0, message="closed")
 
         if not self.stopped:
             self.ten_env.log_warn(
@@ -480,7 +472,6 @@ class AzureASRExtension(AsyncASRBaseExtension):
             code=str(cancellation_details.code),
             message=cancellation_details.error_details,
         )
-        self._pending_disconnect_vendor_info = vendor_info
 
         await self.send_asr_error(
             ModuleError(
@@ -553,11 +544,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             f"vendor_status_changed: on_disconnected, session_id: {evt.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
-        vendor_info = self._pending_disconnect_vendor_info
-        self._pending_disconnect_vendor_info = None
-        await self.on_disconnected(
-            code=0, message="closed", vendor_info=vendor_info
-        )
+        await self.on_disconnected(code=0, message="closed")
 
     async def _handle_finalize_disconnect(self):
         assert self.config is not None

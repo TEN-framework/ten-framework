@@ -415,7 +415,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 "Not connected to ASR service, attempting to reconnect..."
             )
             try:
-                await self._ensure_connection()
+                await self.start_connection()
                 if not self.is_connected():
                     self.ten_env.log_error("Failed to reconnect to ASR service")
                     return False
