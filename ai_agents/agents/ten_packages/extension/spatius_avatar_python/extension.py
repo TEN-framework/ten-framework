@@ -12,9 +12,17 @@ from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 from ten_ai_base.utils import encrypt
-from spatius import new_avatar_session, AgoraEgressConfig
+from spatius import (
+    AgoraEgressConfig,
+    AudioFormat,
+    OggOpusEncoderConfig,
+    new_avatar_session,
+)
 
 from .avatar_base import AsyncAvatarBaseExtension
+
+DEFAULT_AUDIO_FORMAT = AudioFormat.OGG_OPUS.value
+SUPPORTED_OPUS_SAMPLE_RATES = {8000, 12000, 16000, 24000, 48000}
 
 
 class SpatiusParams(TypedDict, total=False):
@@ -31,6 +39,7 @@ class SpatiusParams(TypedDict, total=False):
     region: str
     sample_rate: int | str
     session_expire_minutes: int | str
+    audio_format: str
 
 
 @dataclass
@@ -50,6 +59,7 @@ class SpatiusConfig(BaseConfig):
     region: str = ""
     sample_rate: int = 24000
     session_expire_minutes: int = 30
+    audio_format: str = DEFAULT_AUDIO_FORMAT
 
     channel: str = ""
     params: SpatiusParams = field(default_factory=dict)
@@ -97,6 +107,9 @@ class SpatiusConfig(BaseConfig):
                 self.params["session_expire_minutes"]
             )
 
+        if "audio_format" in self.params:
+            self.audio_format = self.params["audio_format"]
+
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
         required_fields = {
@@ -128,6 +141,28 @@ class SpatiusConfig(BaseConfig):
 
         if self.sample_rate <= 0:
             raise ValueError("sample_rate must be greater than 0")
+
+        try:
+            self.audio_format = AudioFormat(self.audio_format).value
+        except ValueError as exc:
+            allowed = ", ".join(
+                audio_format.value for audio_format in AudioFormat
+            )
+            raise ValueError(
+                f"params.audio_format must be one of: {allowed}"
+            ) from exc
+
+        if (
+            self.audio_format == AudioFormat.OGG_OPUS.value
+            and self.sample_rate not in SUPPORTED_OPUS_SAMPLE_RATES
+        ):
+            supported_rates = ", ".join(
+                str(rate) for rate in sorted(SUPPORTED_OPUS_SAMPLE_RATES)
+            )
+            raise ValueError(
+                "Ogg Opus encoding supports sample rates: "
+                f"{supported_rates} Hz; got {self.sample_rate} Hz"
+            )
 
         if self.session_expire_minutes <= 0:
             raise ValueError("session_expire_minutes must be greater than 0")
@@ -215,6 +250,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
                 f"agora_appcert={self._masked_agora_appcert()}, "
                 f"agora_channel={self.config.agora_channel}, "
                 f"sample_rate={self.config.sample_rate}, "
+                f"audio_format={self.config.audio_format}, "
                 "session_expire_minutes="
                 f"{self.config.session_expire_minutes}"
             )
@@ -275,6 +311,8 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             "expire_at": datetime.now(timezone.utc)
             + timedelta(minutes=self.config.session_expire_minutes),
             "sample_rate": self.config.sample_rate,
+            "audio_format": AudioFormat(self.config.audio_format),
+            "ogg_opus_encoder": self._ogg_opus_encoder_config(),
             "agora_egress": agora_egress,
             "transport_frames": self._on_frame_received,
             "on_error": self._on_error,
@@ -294,6 +332,12 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
         ten_env.log_info(
             f"[Spatius] Connected successfully (connection_id={connection_id})"
         )
+
+    def _ogg_opus_encoder_config(self) -> OggOpusEncoderConfig | None:
+        """Return encoder config when Opus audio is enabled."""
+        if self.config.audio_format != AudioFormat.OGG_OPUS.value:
+            return None
+        return OggOpusEncoderConfig()
 
     async def disconnect_from_avatar(self, ten_env: AsyncTenEnv) -> None:
         """Disconnect from Spatius avatar service."""

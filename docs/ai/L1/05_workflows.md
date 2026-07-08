@@ -155,8 +155,46 @@ symlink verification, and restart steps.
 
 ## Pre-Commit / Pre-Push Checks
 
-See [Conventions → Formatting](04_conventions.md#formatting) — `task format && task check && task lint`
-must all pass before pushing; CI runs both `task check` and `task lint`.
+Run **all** of these before pushing — each maps to a CI job that blocks merge,
+and there are no local hooks for most of them, so CI is the first thing that
+catches a miss. For an extension change under
+`agents/ten_packages/extension/<ext>/`:
+
+```bash
+# 1. Format + static checks (CI: task check, task lint)
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task format && task check && task lint"
+
+# 2. Standalone tests for the extension
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task test-extension EXTENSION=agents/ten_packages/extension/<ext>"
+
+# 3. Guarder tests against the real vendor API (TTS shown; ASR uses asr-guarder-test)
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app && task tts-guarder-test EXTENSION=<ext> CONFIG_DIR=tests/configs"
+```
+
+Then verify **commit messages** — a separate CI job
+(`Lint Commit Messages / commitlint`) runs `@commitlint/config-conventional`
+on every commit in the PR, with **no local hook**. The usual trip-up is
+`body-max-line-length` (≤100 chars per body line) — hard-wrap the body and use
+`git commit -F msg.txt`. Full rules and a self-check script:
+[Conventions → Commit Messages](04_conventions.md#commit-messages).
+
+Checklist (all must be green before `git push`):
+
+| Gate | Command / rule | CI job |
+| ---- | -------------- | ------ |
+| Black format | `task check` (`--line-length 80`) | format check |
+| Pylint | `task lint` (any warning is fatal) | lint |
+| Standalone tests | `task test-extension EXTENSION=...` | per-extension tests |
+| Guarder tests | `task tts-guarder-test` / `task asr-guarder-test` | guarder |
+| Commit messages | conventional + body lines ≤100 | commitlint |
+
+> Note: a stale `.ten/` left in an extension dir (e.g. from a prior
+> `tman install --standalone`) makes `task check` report spurious reformatting
+> and breaks the next standalone install with a symlink error. Remove it
+> (`rm -rf <ext>/.ten`) before re-running.
 
 ## Related Deep Dives
 

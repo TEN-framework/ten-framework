@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "groq_tts_python",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "dependencies": [
     {
       "type": "system",
@@ -22,6 +22,7 @@
       "**.tent",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },

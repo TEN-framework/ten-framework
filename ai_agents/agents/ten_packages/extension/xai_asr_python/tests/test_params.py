@@ -51,7 +51,7 @@ def test_language_normalization():
 def test_start_connection_missing_api_key_emits_fatal_error():
     async def _run():
         extension = XAIASRExtension("xai_asr_python")
-        extension.ten_env = MagicMock()
+        extension.ten_env = AsyncMock()
         extension.config = XAIASRConfig(params={"api_key": ""})
         extension.send_asr_error = AsyncMock()
 

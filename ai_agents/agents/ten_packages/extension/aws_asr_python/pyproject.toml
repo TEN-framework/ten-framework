@@ -1,0 +1,9 @@
+[project]
+name = "aws-asr-python"
+version = "0.2.3"
+requires-python = ">=3.10"
+dependencies = [
+    "amazon-transcribe==0.6.4",
+    "pydantic>=2.13.4",
+    "typing-extensions>=4.15.0",
+]

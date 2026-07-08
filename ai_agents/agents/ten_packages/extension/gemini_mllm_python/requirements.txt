@@ -1,2 +1,1 @@
-asyncio
 google-genai==1.51.0
