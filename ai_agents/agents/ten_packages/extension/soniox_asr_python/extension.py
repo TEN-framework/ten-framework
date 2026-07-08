@@ -595,6 +595,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             await self.send_asr_finalize_end()
 
     async def _handle_reconnect(self) -> None:
+        """Schedule one reconnect attempt; further retries come from _handle_close."""
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
             return
@@ -667,6 +668,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self._needs_reconnect = True
             return
 
+        # Intentional close-finalize reconnects call start_connection() directly.
         if not self.stopped:
             self.ten_env.log_warn(
                 "Soniox connection closed unexpectedly. Reconnecting..."

@@ -52,6 +52,16 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
         self.reconnect_manager: ReconnectManager | None = None
+        self._skip_close_reconnect: bool = False
+
+    # 9998: WebSocket transport errors (connect/send/recv). Session is dead.
+    # 9999: TencentAsrClient message parse errors. Connection stays open.
+    _WEBSOCKET_ERROR_CODE = 9998
+    _CLIENT_PARSE_ERROR_CODE = 9999
+
+    @classmethod
+    def _is_reconnectable_asr_error(cls, error_code: int) -> bool:
+        return error_code == cls._WEBSOCKET_ERROR_CODE
 
     @override
     def vendor(self) -> str:
@@ -125,9 +135,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 listener=self,
                 log_level=self.config.params.log_level,
                 log_path=log_path,
-                reconnect_max_retries=0,  # 0 means infinite reconnection
-                reconnect_delay=0.5,  # Initial reconnection delay in seconds (exponential backoff: 0.5s, 1s, 2s, 4s, 4s...)
-                reconnect_max_delay=4,  # Maximum reconnection delay in seconds
+                auto_reconnect=False,
             )
             self.ten_env.log_info(
                 "vendor_status_changed: Tencent ASR client started",
@@ -151,6 +159,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
     @override
     async def start_connection(self) -> None:
+        if self.stopped:
+            return
         if self.client is None:
             error = ModuleError(
                 module="asr",
@@ -160,7 +170,15 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             await self.send_asr_error(error)
             await self.on_disconnected(code=error.code, message=error.message)
             return
-        asyncio.create_task(self.client.start())
+        asyncio.create_task(self._restart_client())
+
+    async def _restart_client(self) -> None:
+        if self.stopped or self.client is None:
+            return
+        if self.client.is_running():
+            await self.client.stop()
+        if not self.stopped:
+            asyncio.create_task(self.client.start())
 
     @override
     def is_connected(self) -> bool:
@@ -277,11 +295,30 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         await self.on_disconnected(
             code=0, message="closed", vendor_info=vendor_info
         )
+        if self._skip_close_reconnect:
+            # on_asr_fail may have already scheduled reconnect for the same drop.
+            self._skip_close_reconnect = False
+            return
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Tencent ASR connection closed. Reconnecting...",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._handle_reconnect()
+
+    async def _refresh_connection_params(self) -> None:
+        if self.config is None or self.client is None:
+            return
+        self.request_params = self.config.params.to_request_params()
+        self.client.update_params(self.request_params)
+        await self.client.on_reconnect()
 
     async def _handle_reconnect(self) -> None:
+        """Schedule one reconnect attempt; further retries come from vendor callbacks."""
         if self.stopped or self.client is None or not self.reconnect_manager:
             return
 
+        await self._refresh_connection_params()
         await self.reconnect_manager.handle_reconnect(
             connection_func=self.start_connection,
             error_handler=self.send_asr_error,
@@ -309,17 +346,20 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 vendor_info=vendor_info,
             ),
         )
-        await self.on_disconnected(
-            code=ModuleErrorCode.NON_FATAL_ERROR.value,
-            message=response.message,
-            vendor_info=vendor_info,
-        )
-        if not self.stopped:
-            self.ten_env.log_warn(
-                "Tencent ASR server error. Reconnecting...",
-                category=LOG_CATEGORY_VENDOR,
+        if response.code in (4001, 4002, 4003, 4004, 4005):
+            await self.on_disconnected(
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                message=response.message,
+                vendor_info=vendor_info,
             )
-            await self._handle_reconnect()
+            if not self.stopped:
+                # Server may also close the socket; skip the duplicate close path.
+                self._skip_close_reconnect = True
+                self.ten_env.log_warn(
+                    "Tencent ASR server error. Reconnecting...",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+                await self._handle_reconnect()
 
     @override
     async def on_asr_error(
@@ -331,18 +371,43 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.voice_id is the voice_id of the request.
         response.result is the str of the Exception instance.
         error is the Exception instance.
+
+        Only 9998 (transport/session loss) reports disconnected and reconnects.
+        9999 (e.g. malformed server JSON) keeps the live session — same as main,
+        where ws_client auto_reconnect retried 9998 only at the socket layer.
         """
         self.ten_env.log_error(
             f"vendor_error: on_asr_error {response.model_dump_json()}",
             category=LOG_CATEGORY_VENDOR,
         )
+        error_message = response.result or "unknown error"
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(response.code),
+            message=error_message,
+        )
         await self.send_asr_error(
             ModuleError(
                 module="asr",
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=response.result or "unknown error",
+                message=error_message,
+                vendor_info=vendor_info,
             ),
         )
+        if not self._is_reconnectable_asr_error(response.code):
+            return
+
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=error_message,
+            vendor_info=vendor_info,
+        )
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Tencent ASR connection error. Reconnecting...",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._handle_reconnect()
 
     def _get_language(self) -> str:
         assert self.request_params is not None

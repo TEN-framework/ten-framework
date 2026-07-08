@@ -7,7 +7,7 @@
 import pytest
 import asyncio
 import uuid
-from typing import Callable
+from typing import Awaitable, Callable
 from unittest.mock import MagicMock, patch, AsyncMock
 from tencent_asr_client import (
     ResponseData,
@@ -17,12 +17,17 @@ from tencent_asr_client import (
 
 
 class MockClient(object):
+    # Optional hook set by tests to customize client.start() behavior.
+    start_hook: Callable[["MockClient"], Awaitable[None]] | None = None
+
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.listener: AsyncTencentAsrListener = kwargs["listener"]
         self.kwargs = kwargs
         self._is_connected = False
+        self._is_running = False
         self.mock_response_callback: Callable = self._mock_response
+        self.connect_count = 0
         # self.send_pcm_data = AsyncMock()
         assert self.listener is not None, "listener is required"
 
@@ -103,6 +108,14 @@ class MockClient(object):
         pass
 
     async def start(self):
+        self._is_running = True
+        hook = type(self).start_hook
+        if hook is not None:
+            # Read from the class to avoid descriptor binding (which would
+            # pass MockClient twice: once bound, once explicitly).
+            await hook(self)
+            return
+
         self._is_connected = True
         voice_id = str(uuid.uuid4())
         await self.listener.on_asr_start(
@@ -113,12 +126,22 @@ class MockClient(object):
 
     async def stop(self):
         self._is_connected = False
+        self._is_running = False
 
     async def send(self, data: bytes):
         pass
 
     def is_connected(self):
         return self._is_connected
+
+    def is_running(self) -> bool:
+        return self._is_running
+
+    def update_params(self, _params) -> None:
+        pass
+
+    async def on_reconnect(self) -> None:
+        pass
 
 
 @pytest.fixture(scope="function")

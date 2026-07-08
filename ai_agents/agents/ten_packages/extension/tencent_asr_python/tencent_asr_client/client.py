@@ -150,12 +150,6 @@ class TencentAsrClient(WebSocketClient):
         if response.code != 0:
             self.logger.error(f"💥 An error occurred: {response.message}")
             await self._call_listener(self._listener.on_asr_fail, response)
-
-            if response.code in (4001, 4002, 4003, 4004, 4005):
-                # fatal error, stop the client
-                await self.stop()
-                raise RuntimeError(response.message)
-
             return
 
         # code, message, voice_id, message_id, result, final
@@ -217,6 +211,10 @@ class TencentAsrClient(WebSocketClient):
     async def on_reconnect(self):
         self.logger.info("🔄 Reconnected to the server.")
         self._uri = self._params.uri()
+
+    def update_params(self, params: RequestParams) -> None:
+        """Update request parameters for the next connection."""
+        self._params = params
 
     async def send_pcm_data(self, data: bytes):
         assert (
