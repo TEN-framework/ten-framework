@@ -1,4 +1,4 @@
-# Deepgram Nova ASR Extension
+# EZAI ASR Extension
 
 ## Configuration
 
