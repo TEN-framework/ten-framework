@@ -1,5 +1,6 @@
 import asyncio
 import json
+from ten_ai_base.utils import encrypt
 from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
@@ -62,13 +63,15 @@ class ConnectionDelayMetricsExtensionTester(AsyncExtensionTester):
         ten_env_tester: AsyncTenEnvTester,
         success: bool,
         error_message: str,
-    ) -> None:
+    ) -> bool:
         if not success:
             err = TenError.create(
                 error_code=TenErrorCode.ErrorCodeGeneric,
                 error_message=error_message,
             )
             ten_env_tester.stop_test(err)
+            return False
+        return True
 
     @override
     async def on_data(
@@ -84,34 +87,68 @@ class ConnectionDelayMetricsExtensionTester(AsyncExtensionTester):
             )
 
             # Validate basic metrics structure
-            self.stop_test_if_checking_failed(
+            if not self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "id" in data_dict,
                 f"id is not in data_dict: {data_dict}",
-            )
-            self.stop_test_if_checking_failed(
+            ):
+                return
+            if not self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "module" in data_dict and data_dict["module"] == "asr",
                 f"module is not in data_dict or not 'asr': {data_dict}",
-            )
+            ):
+                return
 
-            self.stop_test_if_checking_failed(
+            if not self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "vendor" in data_dict and data_dict["vendor"] == "soniox",
                 f"vendor is not in data_dict or not 'soniox': {data_dict}",
-            )
+            ):
+                return
 
-            self.stop_test_if_checking_failed(
+            if not self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "metrics" in data_dict,
                 f"metrics is not in data_dict: {data_dict}",
-            )
+            ):
+                return
 
-            self.stop_test_if_checking_failed(
+            if not self.stop_test_if_checking_failed(
                 ten_env_tester,
                 "metadata" in data_dict,
                 f"metadata is not in data_dict: {data_dict}",
-            )
+            ):
+                return
+
+            metadata = data_dict["metadata"]
+            if not self.stop_test_if_checking_failed(
+                ten_env_tester,
+                "vendor_metadata" in metadata,
+                f"vendor_metadata is not in metadata: {metadata}",
+            ):
+                return
+
+            vendor_metadata = metadata["vendor_metadata"]
+            if not self.stop_test_if_checking_failed(
+                ten_env_tester,
+                vendor_metadata.get("url")
+                == "wss://stt-rt.soniox.com/transcribe-websocket",
+                f"unexpected vendor url: {vendor_metadata}",
+            ):
+                return
+            if not self.stop_test_if_checking_failed(
+                ten_env_tester,
+                vendor_metadata.get("model") == "stt-rt-preview",
+                f"unexpected vendor model: {vendor_metadata}",
+            ):
+                return
+            if not self.stop_test_if_checking_failed(
+                ten_env_tester,
+                vendor_metadata.get("api_key") == encrypt("fake_key"),
+                f"unexpected encrypted api_key: {vendor_metadata.get('api_key')}",
+            ):
+                return
 
             metrics = data_dict["metrics"]
 
@@ -125,25 +162,27 @@ class ConnectionDelayMetricsExtensionTester(AsyncExtensionTester):
                 )
 
                 # Validate that connect_delay is a positive integer
-                self.stop_test_if_checking_failed(
+                if not self.stop_test_if_checking_failed(
                     ten_env_tester,
                     isinstance(self.connection_delay_ms, int),
                     f"connect_delay is not an integer: {self.connection_delay_ms}",
-                )
+                ):
+                    return
 
                 if isinstance(self.connection_delay_ms, int):
-                    self.stop_test_if_checking_failed(
+                    if not self.stop_test_if_checking_failed(
                         ten_env_tester,
                         self.connection_delay_ms >= 0,
                         f"connect_delay is negative: {self.connection_delay_ms}",
-                    )
+                    ):
+                        return
 
-                    # For the simulated connection, delay should be reasonable (< 2000ms)
-                    self.stop_test_if_checking_failed(
+                    if not self.stop_test_if_checking_failed(
                         ten_env_tester,
                         self.connection_delay_ms < 2000,
                         f"connect_delay is too large (should be < 2000ms for test): {self.connection_delay_ms}",
-                    )
+                    ):
+                        return
 
                 ten_env_tester.log_info(
                     f"✓ Connection delay metrics validation passed: {self.connection_delay_ms}ms"
@@ -178,6 +217,7 @@ def test_connection_delay_metrics(patch_soniox_ws):
     2. The connection delay is reported via send_connect_delay_metrics
     3. The metrics data contains connect_delay field
     4. The connect_delay value is reasonable
+    5. metadata includes vendor_metadata with url, model, and encrypted api_key
     """
     import time
     from .conftest import create_fake_websocket_mocks, inject_websocket_mocks

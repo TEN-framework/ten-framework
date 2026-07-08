@@ -395,7 +395,9 @@ class VolcengineASRClient:
             Callable[[ASRResponse], Awaitable[None]]
         ] = None
         self.connected_callback: Optional[Callable[[], None]] = None
-        self.disconnected_callback: Optional[Callable[[], None]] = None
+        self.disconnected_callback: Optional[
+            Callable[[int, str, str, str], None]
+        ] = None
 
         # Track first response for connection state management (callback-driven pattern)
         self._first_response_received = False
@@ -495,9 +497,21 @@ class VolcengineASRClient:
                 self.websocket = None
 
         # Call disconnected callback
+        self._notify_disconnected(0, "closed")
+
+    def _notify_disconnected(
+        self,
+        code: int,
+        message: str,
+        *,
+        vendor_code: str = "",
+        vendor_message: str = "",
+    ) -> None:
         if self.disconnected_callback:
             try:
-                self.disconnected_callback()
+                self.disconnected_callback(
+                    code, message, vendor_code, vendor_message
+                )
             except Exception as e:
                 logging.error(f"Error in disconnected callback: {e}")
 
@@ -633,6 +647,10 @@ class VolcengineASRClient:
         if not self.websocket:
             return
 
+        close_code = 0
+        close_message = "closed"
+        vendor_code = ""
+        vendor_message = ""
         try:
             async for msg in self.websocket:
                 # websockets directly returns data, no need to check type
@@ -648,6 +666,8 @@ class VolcengineASRClient:
 
                     # Handle error responses from server
                     if response.code != 0:
+                        vendor_code = str(response.code)
+                        vendor_message = f"server error code={response.code}"
                         # Trigger ASR error callback for server error responses
                         if self.asr_error_callback:
                             try:
@@ -670,6 +690,17 @@ class VolcengineASRClient:
                     elif response.is_last_package:
                         # Don't break - continue listening for more responses in streaming mode
                         pass
+        except websockets.exceptions.ConnectionClosed as e:
+            close_code = e.code
+            close_message = e.reason or "closed"
+            if self.ten_env:
+                self.ten_env.log_error(
+                    f"WebSocket connection closed: code={close_code}, message={close_message}"
+                )
+            else:
+                logging.error(
+                    f"WebSocket connection closed: code={close_code}, message={close_message}"
+                )
         except BaseException as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Error listening for responses: {e}")
@@ -693,16 +724,12 @@ class VolcengineASRClient:
             self.connected = False
             # Reset first response tracking for reconnection
             self._first_response_received = False
-            if self.disconnected_callback:
-                try:
-                    self.disconnected_callback()
-                except Exception as e:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in disconnected callback: {e}"
-                        )
-                    else:
-                        logging.error(f"Error in disconnected callback: {e}")
+            self._notify_disconnected(
+                close_code,
+                close_message,
+                vendor_code=vendor_code,
+                vendor_message=vendor_message,
+            )
 
     async def _handle_response(self, response: ASRResponse) -> None:
         """Handle ASR response."""
@@ -743,7 +770,7 @@ class VolcengineASRClient:
         self.connected_callback = callback
 
     def set_on_disconnected_callback(
-        self, callback: Callable[[], None]
+        self, callback: Callable[[int, str, str, str], None]
     ) -> None:
         """Set callback for disconnection events."""
         self.disconnected_callback = callback

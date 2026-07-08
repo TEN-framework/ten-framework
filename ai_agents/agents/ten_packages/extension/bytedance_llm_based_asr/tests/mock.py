@@ -243,7 +243,7 @@ def patch_volcengine_ws():
                         print("[mock] _emit_task cancelled successfully")
 
                 if self.on_disconnected_callback:
-                    self.on_disconnected_callback()
+                    self.on_disconnected_callback(0, "closed", "", "")
                 return None
 
             async def send_audio(self, audio_data):
@@ -429,7 +429,7 @@ def patch_volcengine_ws_grouping():
                         pass
 
                 if self.on_disconnected_callback:
-                    self.on_disconnected_callback()
+                    self.on_disconnected_callback(0, "closed", "", "")
                 return None
 
             async def send_audio(self, audio_data):

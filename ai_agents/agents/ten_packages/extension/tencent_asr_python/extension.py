@@ -5,6 +5,7 @@
 #
 import asyncio
 import time
+from typing import Any
 from typing_extensions import override
 from pathlib import Path
 
@@ -36,6 +37,7 @@ from .tencent_asr_client import (
     RecoginizeResult,
 )
 from .config import TencentASRConfig, RequestParams
+from .reconnect_manager import ReconnectManager
 from ten_ai_base.dumper import Dumper
 
 
@@ -49,16 +51,32 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
+        self.reconnect_manager: ReconnectManager | None = None
 
     @override
     def vendor(self) -> str:
         return "tencent"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None or self.request_params is None:
+            return {}
+        metadata: dict[str, Any] = {}
+        if self.request_params.secretid:
+            metadata["key"] = self.request_params.secretid
+        url = self.request_params.uri()
+        if url:
+            metadata["url"] = url
+        if self.request_params.engine_model_type:
+            metadata["model"] = self.request_params.engine_model_type
+        return metadata
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_init")
 
         await super().on_init(ten_env)
+        self.reconnect_manager = ReconnectManager(logger=ten_env)
         config_json, _ = await ten_env.get_property_to_json()
         dump_file_path = None
         try:
@@ -134,6 +152,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
     @override
     async def start_connection(self) -> None:
         if self.client is None:
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Tencent ASR client not initialized",
+            )
             return
         asyncio.create_task(self.client.start())
 
@@ -225,13 +247,42 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
     @override
     async def on_asr_start(self, response: ResponseData):
         self.ten_env.log_info(
-            f"vendor_status_changed: on_asr_start {response.model_dump_json()}",
+            f"vendor connection opened: {response.model_dump_json()}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
         )
         self.audio_timeline.reset()
+        await self.on_connected()
+        if self.reconnect_manager:
+            self.reconnect_manager.mark_connection_successful()
+
+    @override
+    async def on_asr_close(self, code: int, reason: str):
+        self.ten_env.log_info(
+            f"vendor connection closed: code={code}, reason={reason}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+        vendor_info = None
+        if code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(code),
+                message=reason or "closed",
+            )
+        await self.on_disconnected(
+            code=0, message="closed", vendor_info=vendor_info
+        )
+
+    async def _handle_reconnect(self) -> None:
+        if self.stopped or self.client is None or not self.reconnect_manager:
+            return
+
+        await self.reconnect_manager.handle_reconnect(
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
+        )
 
     @override
     async def on_asr_fail(self, response: ResponseData):
@@ -242,18 +293,30 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             f"vendor_error: on_asr_fail {response.model_dump_json()}",
             category=LOG_CATEGORY_VENDOR,
         )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(response.code),
+            message=response.message,
+        )
         await self.send_asr_error(
             ModuleError(
                 module="asr",
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=response.model_dump_json(),
-                vendor_info=ModuleErrorVendorInfo(
-                    vendor=self.vendor(),
-                    code=str(response.code),
-                    message=response.message,
-                ),
+                vendor_info=vendor_info,
             ),
         )
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=response.message,
+            vendor_info=vendor_info,
+        )
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Tencent ASR server error. Reconnecting...",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._handle_reconnect()
 
     @override
     async def on_asr_error(
