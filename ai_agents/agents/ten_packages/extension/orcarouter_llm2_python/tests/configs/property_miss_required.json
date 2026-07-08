@@ -1,0 +1,5 @@
+{
+    "base_url": "https://api.orcarouter.ai/v1",
+    "api_key": "",
+    "model": "orcarouter/auto"
+}
