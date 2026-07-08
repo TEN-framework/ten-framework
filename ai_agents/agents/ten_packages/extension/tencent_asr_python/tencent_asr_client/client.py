@@ -56,6 +56,9 @@ class AsyncTencentAsrListener:
         response.final is True.
         """
 
+    async def on_asr_close(self, code: int, reason: str):
+        """Called when the websocket connection is closed."""
+
 
 class TencentAsrListener:
     def on_asr_start(self, response: ResponseData):
@@ -79,6 +82,9 @@ class TencentAsrListener:
         pass
 
     def on_asr_complete(self, response: ResponseData[RecoginizeResult]):
+        pass
+
+    def on_asr_close(self, code: int, reason: str):
         pass
 
 
@@ -194,6 +200,7 @@ class TencentAsrClient(WebSocketClient):
         self.logger.warning(
             f"🔴 Connection closed. Code: {code}, Reason: {reason}"
         )
+        await self._call_listener(self._listener.on_asr_close, code, reason)
 
     @override
     async def on_error(self, error: Exception):

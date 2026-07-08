@@ -319,6 +319,10 @@ class RequestParams(BaseModel):
 
         return urllib.parse.urlencode(query_dict)
 
+    def base_uri(self) -> str:
+        endpoint = str(self.endpoint).removeprefix("wss://").removesuffix("/")
+        return f"wss://{endpoint}"
+
     def uri(self) -> str:
         endpoint = str(self.endpoint).removeprefix("wss://").removesuffix("/")
         full_url = f"wss://{endpoint}/{self.appid}?{self.query_params()}"
