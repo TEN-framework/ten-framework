@@ -4,59 +4,37 @@
 # See the LICENSE file for more information.
 #
 
-from types import SimpleNamespace
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 
 @pytest.fixture(scope="function")
-def patch_ezai_ws():
-    patch_target = (
-        "ten_packages.extension.ezai_asr.extension.CustomWebSocketClient"
-    )
+def patch_deepgram_ws():
+    """
+    Automatically patch Recognition globally before any test runs.
+    """
+    patch_target = "ten_packages.extension.deepgram_asr_python.extension.DeepgramWSRecognition"
 
-    with patch(patch_target) as MockClient:
-        client_instance = MagicMock()
-        event_handlers = {}
-        patch_ezai_ws.event_handlers = event_handlers
+    with patch(patch_target) as MockWSClient:
+        print(f"✅ Patching {patch_target} before test session.")
 
-        # Define mock event registration function
-        def on_mock(event_type, callback):
-            print(f"register_event_handler: {event_type} -> {callback}")
-            event_handlers[event_type] = callback
-            return True
+        mock_ws = AsyncMock()
+        mock_ws.start.return_value = True
+        mock_ws.send.return_value = None
+        mock_ws.finish.return_value = None
 
-        # Define mock start function
-        async def start_mock():
-            print(f"start_mock called")
-            return True
+        mock_ws._handlers = {}
 
-        # Define mock send function
-        async def send_mock(data):
-            print(f"send_mock data length: {len(data)}")
-            return True
+        def mock_on(event_name, callback):
+            event_str = (
+                str(event_name)
+                if not isinstance(event_name, str)
+                else event_name
+            )
+            mock_ws._handlers[event_str] = callback
 
-        # Define mock finish/finalize functions
-        async def finish_mock():
-            print("finish_mock called")
-            return True
+        mock_ws.on = mock_on
 
-        async def finalize_mock():
-            print("finalize_mock called")
-            return True
-
-        # Assign mock methods to client instance
-        client_instance.on.side_effect = on_mock
-        client_instance.start.side_effect = start_mock
-        client_instance.send.side_effect = send_mock
-        client_instance.finish.side_effect = finish_mock
-        client_instance.finalize.side_effect = finalize_mock
-
-        MockClient.return_value = client_instance
-
-        fixture_obj = SimpleNamespace(
-            client_instance=client_instance,
-            event_handlers=event_handlers,
-        )
-
-        yield fixture_obj
+        MockWSClient.return_value = mock_ws
+        yield mock_ws
+        # patch stays active through the whole session

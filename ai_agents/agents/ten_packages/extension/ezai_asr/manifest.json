@@ -1,7 +1,7 @@
 {
   "type": "extension",
-  "name": "ezai_asr",
-  "version": "0.1.1",
+  "name": "ezai_asr_python",
+  "version": "0.4.1",
   "dependencies": [
     {
       "type": "system",
@@ -25,16 +25,22 @@
         "params": {
           "type": "object",
           "properties": {
-            "token": {
-              "type": "string"
-            },
             "url": {
               "type": "string"
             },
-            "sample_rate": {
-              "type": "int32"
+            "key": {
+              "type": "string"
+            },
+            "api_key": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
             },
             "language": {
+              "type": "string"
+            },
+            "result_language_default": {
               "type": "string"
             }
           }

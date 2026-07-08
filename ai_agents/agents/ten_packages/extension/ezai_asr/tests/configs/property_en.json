@@ -1,8 +1,13 @@
 {
-    "params": {
-        "token": "${env:EZAI_TOKEN}",
-        "url": "wss://rt2.ezai-k8s.freeddns.org",
-        "language": "en-US",
-        "sample_rate": 16000
-    }
+  "params": {
+    "key": "${env:DEEPGRAM_API_KEY}",
+    "url": "wss://api.deepgram.com/v2/listen",
+    "model": "flux-general-en",
+    "finalize_mode": "mute_pkg",
+    "sample_rate": 16000,
+    "encoding": "linear16",
+    "eager_eot_threshold": 0.6,
+    "eot_threshold": 0.8,
+    "eot_timeout_ms": 700
+  }
 }
