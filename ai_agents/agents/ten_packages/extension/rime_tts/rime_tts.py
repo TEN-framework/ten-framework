@@ -9,6 +9,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK
 
 from ten_ai_base.message import (
+    ModuleErrorCode,
     ModuleErrorVendorInfo,
     ModuleVendorException,
 )
@@ -152,8 +153,13 @@ class RimeTTSynthesizer:
                     )
                     if self.on_connection_disconnected:
                         await self.on_connection_disconnected(
-                            code=str(e.code),
+                            code=0,
                             message=str(e),
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor,
+                                code=str(e.code),
+                                message=str(e),
+                            ),
                         )
                     if not self._session_closing:
                         self.ten_env.log_warn(
@@ -193,7 +199,13 @@ class RimeTTSynthesizer:
                 await self.ws.close()
             if self.on_connection_disconnected:
                 await self.on_connection_disconnected(
-                    code="0", message="closed"
+                    code=int(ModuleErrorCode.FATAL_ERROR),
+                    message="closed",
+                    vendor_info=ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code="0",
+                        message="closed",
+                    ),
                 )
             self.ten_env.log_debug(
                 "RIME TTS websocket connection process ended."
