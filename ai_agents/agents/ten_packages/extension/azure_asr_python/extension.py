@@ -468,7 +468,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.stopped = True
 
         vendor_info = ModuleErrorVendorInfo(
-            vendor="microsoft",
+            vendor=self.vendor(),
             code=str(cancellation_details.code),
             message=cancellation_details.error_details,
         )
