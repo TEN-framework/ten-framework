@@ -141,8 +141,6 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             "key": self.config.api_key,
             "url": self.config.base_url,
             "model": self.config.params.get("modelId", ""),
-            "region": "",
-            "mode": "",
             "api_key": self.config.api_key,
         }
 
