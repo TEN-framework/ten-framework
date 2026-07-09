@@ -138,7 +138,8 @@ def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
     client = SmallestTTSClient(cfg, mock_ten_env)
     assert client.headers["Authorization"] == "Bearer test_api_key_123"
     assert client.headers["Content-Type"] == "application/json"
-    assert len(client.headers) == 2
+    assert client.headers["X-Source"] == "ten-framework"
+    assert len(client.headers) == 3
 
     # Merge custom header.
     cfg = SmallestTTSConfig(
@@ -148,7 +149,7 @@ def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
     client = SmallestTTSClient(cfg, mock_ten_env)
     assert client.headers["Authorization"] == "Bearer test_api_key_123"
     assert client.headers["X-Custom-Header"] == "custom-value"
-    assert len(client.headers) == 3
+    assert len(client.headers) == 4
 
     # User override of Authorization.
     cfg = SmallestTTSConfig(
