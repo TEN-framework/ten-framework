@@ -27,7 +27,7 @@
 [![README in francese][lang-fr-badge]][lang-fr-readme]
 [![README in italiano][lang-it-badge]][lang-it-readme]
 
-[![TEN-framework%2Ften_framework | Trendshift][trendshift-badge]][trendshift]
+<a href="https://trendshift.io/repositories/13772?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-13772" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/13772" alt="TEN-framework%2Ften-framework | Trendshift" width="250" height="55"/></a>
 
 </div>
 
@@ -632,7 +632,7 @@ Le contribuzioni sono benvenute! Leggi prima le [linee guida per contribuire][co
 
 <!-- TEN ecosystem -->
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten-framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-framework-banner]: https://github.com/user-attachments/assets/799584b2-61ff-4255-bdd1-2548d0fdba52
+[ten-framework-banner]: https://github.com/user-attachments/assets/a99e13c5-aca4-4b28-bedf-10c89eedcd86
 [ten-framework-link]: https://github.com/ten-framework/ten-framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad
