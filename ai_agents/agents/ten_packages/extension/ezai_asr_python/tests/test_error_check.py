@@ -10,7 +10,7 @@ from ten_runtime import (
 import json
 
 
-class DeepgramAsrExtensionTester(AsyncExtensionTester):
+class EZAIAsrExtensionTester(AsyncExtensionTester):
 
     def __init__(self):
         super().__init__()
@@ -53,11 +53,13 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
 
 def test_error_check():
     property_json = {
-        "key": "invalid_key",
+        "params": {
+            "key": "invalid_key"
+        },
     }
-    tester = DeepgramAsrExtensionTester()
+    tester = EZAIAsrExtensionTester()
     tester.set_test_mode_single(
-        "deepgram_asr_python", json.dumps(property_json)
+        "ezai_asr_python", json.dumps(property_json)
     )
     err = tester.run()
     assert err is None

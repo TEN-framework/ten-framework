@@ -33,7 +33,7 @@ from ten_ai_base.const import (
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .recognition import DeepgramASRRecognition, DeepgramASRRecognitionCallback
-from .config import DeepgramASRConfig
+from .config import EZAIASRConfig
 
 
 class EZAIASRExtension(
@@ -44,7 +44,7 @@ class EZAIASRExtension(
     def __init__(self, name: str):
         super().__init__(name)
         self.recognition: DeepgramASRRecognition | None = None
-        self.config: DeepgramASRConfig | None = None
+        self.config: EZAIASRConfig | None = None
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
@@ -61,7 +61,7 @@ class EZAIASRExtension(
     @override
     def vendor(self) -> str:
         """Get ASR vendor name"""
-        return "deepgram"
+        return "ezai"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -73,7 +73,7 @@ class EZAIASRExtension(
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = DeepgramASRConfig.model_validate_json(config_json)
+            self.config = EZAIASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
 
             # Apply default params based on model type (nova or flux)
@@ -90,8 +90,8 @@ class EZAIASRExtension(
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"Invalid Deepgram config: {e}")
-            self.config = DeepgramASRConfig.model_validate_json("{}")
+            ten_env.log_error(f"Invalid EZAI config: {e}")
+            self.config = EZAIASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -123,7 +123,7 @@ class EZAIASRExtension(
             if not final_api_key or (
                 isinstance(final_api_key, str) and final_api_key.strip() == ""
             ):
-                error_msg = "Deepgram API key is required but missing or empty"
+                error_msg = "EZAI API key is required but missing or empty"
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
@@ -150,7 +150,7 @@ class EZAIASRExtension(
             asyncio.create_task(self.recognition.start(timeout=10))
 
         except Exception as e:
-            self.ten_env.log_error(f"Failed to start Deepgram connection: {e}")
+            self.ten_env.log_error(f"Failed to start EZAI connection: {e}")
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,

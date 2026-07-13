@@ -2,7 +2,7 @@
   "params": {
     "key": "invalid",
     "url": "wss://invalid/listen",
-    "model": "flux-general-en",
+    "model": "nova-3",
     "sample_rate": 16000,
     "finalize_mode": "mute_pkg",
     "encoding": "linear16",

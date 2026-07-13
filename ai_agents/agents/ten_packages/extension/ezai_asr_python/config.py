@@ -14,8 +14,8 @@ DEFAULT_PARAMS = {
 }
 
 
-class DeepgramASRConfig(BaseModel):
-    """Deepgram ASR Configuration"""
+class EZAIASRConfig(BaseModel):
+    """EZAI ASR Configuration"""
 
     # Debugging and dumping
     dump: bool = False
@@ -25,7 +25,7 @@ class DeepgramASRConfig(BaseModel):
     # Additional parameters
     params: dict[str, Any] = Field(default_factory=dict)
 
-    def _get_default_params(self, model: str) -> Dict[str, Any]:
+    def _get_default_params(self) -> Dict[str, Any]:
         """Get default params based on model type."""
         return DEFAULT_PARAMS.copy()
 
@@ -44,7 +44,7 @@ class DeepgramASRConfig(BaseModel):
         current_model = params_dict.get("model", "") or "nova-3"
 
         # Get defaults for this model type
-        defaults = self._get_default_params(current_model)
+        defaults = self._get_default_params()
 
         # Ensure model is set
         if not params_dict.get("model"):
