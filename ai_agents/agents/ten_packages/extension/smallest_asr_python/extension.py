@@ -51,6 +51,11 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         self.reconnect_manager: ReconnectManager | None = None
 
         self._message_task: Optional[asyncio.Task] = None
+        # In-flight reconnection tasks. Reconnection is always run on its own
+        # task (never awaited inline) so it cannot cancel the caller; see
+        # `_schedule_reconnect`. Tracked here so tasks are not garbage
+        # collected mid-flight and can be cancelled on shutdown.
+        self._reconnect_tasks: set[asyncio.Task] = set()
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -58,7 +63,22 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         if self.audio_dumper:
             await self.audio_dumper.stop()
             self.audio_dumper = None
+        # Cancel any in-flight reconnection before tearing down the connection
+        # so a pending reconnect cannot re-open the socket during shutdown.
+        await self._cancel_reconnect_tasks()
         await self.stop_connection()
+
+    async def _cancel_reconnect_tasks(self) -> None:
+        """Cancel and drain any outstanding reconnection tasks."""
+        tasks = list(self._reconnect_tasks)
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        self._reconnect_tasks.clear()
 
     @override
     def vendor(self) -> str:
@@ -202,7 +222,25 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                     message=str(e),
                 ),
             )
-            asyncio.create_task(self._handle_reconnect())
+            self._schedule_reconnect()
+
+    def _schedule_reconnect(self) -> None:
+        """Trigger a reconnection attempt on an independent task.
+
+        Reconnection must never be awaited from within `_message_task`. The
+        reconnect path runs `start_connection()` -> `stop_connection()`, and
+        `stop_connection()` cancels `_message_task`. Awaiting the reconnect
+        inline would therefore cancel the very task executing it, tearing the
+        flow down before `start_connection()` can spawn a fresh message task.
+
+        Running it as a standalone task lets the message loop return cleanly
+        while the reconnect proceeds. Tasks are retained in a set (and removed
+        on completion) so they are not garbage collected mid-flight and can be
+        cancelled on shutdown.
+        """
+        task = asyncio.create_task(self._handle_reconnect())
+        self._reconnect_tasks.add(task)
+        task.add_done_callback(self._reconnect_tasks.discard)
 
     async def _process_messages(self) -> None:
         """Process incoming messages from the WebSocket."""
@@ -253,7 +291,9 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                                 message=f"WebSocket closed unexpectedly: {msg.type}",
                             ),
                         )
-                        await self._handle_reconnect()
+                        # Schedule (do not await) so this task can exit before
+                        # the reconnect path cancels it via stop_connection.
+                        self._schedule_reconnect()
                     break
 
         except Exception as e:
@@ -270,7 +310,9 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                         message=f"WebSocket error, attempting reconnection: {str(e)}",
                     ),
                 )
-                await self._handle_reconnect()
+                # Schedule (do not await): this runs inside `_message_task`,
+                # which the reconnect path cancels via stop_connection.
+                self._schedule_reconnect()
 
     async def _handle_message(self, data: dict) -> None:
         """Handle different types of messages from the Pulse streaming API."""
@@ -511,7 +553,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_error(f"Error sending smallest finalize: {e}")
             await self._finalize_end()
             if not self.stopped:
-                await self._handle_reconnect()
+                self._schedule_reconnect()
 
     @override
     def is_connected(self) -> bool:
@@ -555,7 +597,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio: {e}")
             if not self.stopped:
-                await self._handle_reconnect()
+                self._schedule_reconnect()
             return False
         finally:
             frame.unlock_buf(buf)
