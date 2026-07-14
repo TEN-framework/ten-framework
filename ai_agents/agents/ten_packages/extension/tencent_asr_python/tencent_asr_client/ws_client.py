@@ -211,9 +211,11 @@ class WebSocketClient(ABC):
 
             if not self._shutdown_event.is_set():
                 if not self._auto_reconnect:
-                    msg = "Reconnect is disabled."
-                    self._logger.warning(msg)
-                    raise RuntimeError(msg)
+                    self._logger.info(
+                        "Connection ended and auto_reconnect is disabled; "
+                        "exiting run loop."
+                    )
+                    break
                 if (
                     self._reconnect_max_retries > 0
                     and self._reconnect_retries > self._reconnect_max_retries
@@ -308,3 +310,7 @@ class WebSocketClient(ABC):
             and self._websocket.state == websockets.State.OPEN
             and self._is_connected
         )
+
+    def is_running(self) -> bool:
+        """Check if the client main task is active."""
+        return self._main_task is not None and not self._main_task.done()

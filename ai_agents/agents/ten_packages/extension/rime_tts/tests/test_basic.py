@@ -126,7 +126,7 @@ def test_dump_functionality(MockRimeTTSClient):
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
 
@@ -278,7 +278,7 @@ def test_text_input_end_logic(MockRimeTTSClient):
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to handle the response queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         mock_instance.response_msgs = response_msgs
 
         # Store the original send_text method to add our logic
@@ -448,7 +448,7 @@ def test_flush_logic(MockRimeTTSClient):
     mock_instance.cancel = mock_cancel
 
     # Mock the client constructor
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():

@@ -354,7 +354,7 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
     streamer = StateMachineStreamer()
 
     # Mock the client constructor to capture response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         streamer.response_msgs = response_msgs
         mock_instance.response_msgs = response_msgs
         mock_instance.send_text = AsyncMock(side_effect=streamer.send_text)
@@ -448,7 +448,7 @@ def test_request_state_transitions(MockRimeTTSClient):
 
     streamer = SimpleStreamer()
 
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         streamer.response_msgs = response_msgs
         mock_instance.response_msgs = response_msgs
         mock_instance.send_text = AsyncMock(side_effect=streamer.send_text)

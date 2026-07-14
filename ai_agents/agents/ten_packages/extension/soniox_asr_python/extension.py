@@ -35,6 +35,7 @@ from .config import (
     SonioxASRConfig,
 )
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .reconnect_manager import ReconnectManager
 from .dumper import Dumper
 from .text_utils import SentenceBoundaryDetector
 from .websocket import (
@@ -104,10 +105,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self._pending_close_finalize = False
         self._needs_reconnect = False
+        self._suppress_close_status = False
         self._last_final_time_ms: int = 0
         self._last_final_wall_ms: int = 0
         self._deferred_vendor_final_tokens: list[SonioxTranscriptToken] = []
         self._sentence_boundary_detector = SentenceBoundaryDetector()
+        self.reconnect_manager: ReconnectManager | None = None
 
     def _clear_deferred_vendor_final_tokens(self) -> None:
         self._deferred_vendor_final_tokens = []
@@ -199,8 +202,25 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         return "soniox"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        params = self.config.params or {}
+        metadata: dict[str, Any] = {}
+        api_key = params.get("api_key")
+        if api_key:
+            metadata["api_key"] = api_key
+        if self.config.url:
+            metadata["url"] = self.config.url
+        model = params.get("model")
+        if model:
+            metadata["model"] = model
+        return metadata
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
+        self.reconnect_manager = ReconnectManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -248,7 +268,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self._needs_reconnect = False
             self.uuid = self._get_uuid()
             self._clear_deferred_vendor_final_tokens()
-            await self._start_websocket()
+            await self.start_connection()
 
         await super().on_audio_frame(ten_env, audio_frame)
 
@@ -260,8 +280,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.config.url,
             start_request,
             enable_keepalive=self.config.enable_keepalive,
-            base_delay=0.5,
-            max_delay=4,
         )
         ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
         ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
@@ -272,11 +290,28 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.websocket = ws
         self.ws_task = asyncio.create_task(ws.connect())
 
-    async def _stop_websocket(self) -> None:
-        """Stop websocket connection only (without audio dumper)."""
+    async def _stop_websocket(self, *, suppress_status: bool = False) -> None:
+        """Stop websocket connection only (without audio dumper).
+
+        When suppress_status is True, the resulting CLOSE callback skips
+        connection_status reporting and reconnect handling. Used when
+        start_connection replaces an existing client after disconnect was
+        already reported.
+        """
         self.connected = False
-        if self.websocket:
-            await self.websocket.stop()
+        ws = self.websocket
+        task = self.ws_task
+        self.websocket = None
+        self.ws_task = None
+        if ws:
+            if suppress_status:
+                self._suppress_close_status = True
+            await ws.stop()
+        if task and not task.done():
+            try:
+                await task
+            except Exception:
+                pass
 
     @override
     async def start_connection(self) -> None:
@@ -285,26 +320,28 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         if not self.config.params.get("api_key"):
             self.ten_env.log_error("Missing required api_key")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="Missing required api_key",
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Missing required api_key",
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             return
 
         try:
+            if self.websocket is not None:
+                await self._stop_websocket(suppress_status=True)
             await self._start_websocket()
         except Exception as e:
             self.ten_env.log_error(f"start_connection failed: {e}")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(e),
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             return
 
         try:
@@ -557,6 +594,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
 
+    async def _handle_reconnect(self) -> None:
+        """Schedule one reconnect attempt; further retries come from _handle_close."""
+        if not self.reconnect_manager:
+            self.ten_env.log_error("ReconnectManager not initialized")
+            return
+
+        await self.reconnect_manager.handle_reconnect(
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
+        )
+
     # WebSocket event handlers
     async def _handle_open(self, connection_start_timestamp: int):
         connection_delay_ms = (
@@ -576,13 +624,34 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.audio_timeline.reset()
         self.connected = True
         self._clear_deferred_vendor_final_tokens()
+        if self.reconnect_manager:
+            self.reconnect_manager.mark_connection_successful()
+        await self.on_connected()
 
-    async def _handle_close(self):
+    async def _handle_close(
+        self, vendor_code: int = 0, vendor_message: str = "closed"
+    ):
+        if self._suppress_close_status:
+            self._suppress_close_status = False
+            self.connected = False
+            return
+
         self.ten_env.log_info(
-            "vendor_status_changed: connection closed",
+            f"vendor connection closed: code={vendor_code}, message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
+
+        vendor_info = None
+        if vendor_code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_code),
+                message=vendor_message,
+            )
+        await self.on_disconnected(
+            code=0, message="closed", vendor_info=vendor_info
+        )
 
         if self._pending_close_finalize:
             self._pending_close_finalize = False
@@ -592,11 +661,19 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.config.finalize_reconnect_mode
                 == FinalizeReconnectMode.IMMEDIATE
             ):
-                await self._start_websocket()
+                await self.start_connection()
             elif self.buffered_frames.qsize() > 0:
-                await self._start_websocket()
+                await self.start_connection()
             else:
                 self._needs_reconnect = True
+            return
+
+        # Intentional close-finalize reconnects call start_connection() directly.
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Soniox connection closed unexpectedly. Reconnecting..."
+            )
+            await self._handle_reconnect()
 
     async def _handle_exception(self, e: Exception):
         self.ten_env.log_error(
@@ -605,6 +682,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await self._handle_error(-1, str(e))
 
     async def _handle_error(self, error_code: int, error_message: str):
+        # Vendor ERROR events are reported here; on_disconnected is emitted from
+        # _handle_close when the websocket actually closes.
         self.ten_env.log_error(
             f"vendor_error: code: {error_code}, message: {error_message}",
             category=LOG_CATEGORY_VENDOR,

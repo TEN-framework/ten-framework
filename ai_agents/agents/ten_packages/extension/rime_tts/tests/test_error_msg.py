@@ -159,7 +159,7 @@ def test_invalid_params_fatal_error(MockRimeTTSClient):
     mock_instance.send_text.side_effect = mock_send_text_with_error
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
         return mock_instance

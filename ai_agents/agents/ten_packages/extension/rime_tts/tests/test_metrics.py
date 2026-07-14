@@ -97,7 +97,7 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to handle the response queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():
