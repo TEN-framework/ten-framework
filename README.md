@@ -20,7 +20,7 @@
 [![README en Français][lang-fr-badge]][lang-fr-readme]
 [![README in Italiano][lang-it-badge]][lang-it-readme]
 
-[![TEN-framework%2Ften_framework | Trendshift][trendshift-badge]][trendshift]
+<a href="https://trendshift.io/repositories/13772?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-13772" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/13772" alt="TEN-framework%2Ften-framework | Trendshift" width="250" height="55"/></a>
 
 [Official Site][official-site] •
 [Documentation][documentation] •
@@ -69,7 +69,6 @@ TEN is an open-source framework for real-time multimodal conversational AI.
 | [![Discord TEN Community][discord-badge]][discord-invite] | Join our Discord community to connect with developers |
 | [![Follow on LinkedIn][linkedin-badge]][linkedin] | Follow TEN Framework on LinkedIn for updates and announcements |
 | [![Hugging Face Space][hugging-face-badge]][hugging-face] | Join our Hugging Face community to explore our spaces and models |
-| [![WeChat][wechat-badge]][wechat-discussion] | Join our WeChat group for Chinese community discussions |
 
 <br>
 
@@ -592,7 +591,7 @@ Contributions are welcome! Please read the [contribution guidelines][contributio
 
 <!-- TEN ecosystem -->
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten-framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-framework-banner]: https://github.com/user-attachments/assets/799584b2-61ff-4255-bdd1-2548d0fdba52
+[ten-framework-banner]: https://github.com/user-attachments/assets/a99e13c5-aca4-4b28-bedf-10c89eedcd86
 [ten-framework-link]: https://github.com/ten-framework/ten-framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad

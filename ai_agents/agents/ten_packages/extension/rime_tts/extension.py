@@ -346,7 +346,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 if not self.last_completed_has_reset_synthesizer:
-                    self.client.reset_synthesizer()
+                    await self.client.reset_synthesizer()
                 self.last_completed_has_reset_synthesizer = False
 
                 self.current_request_id = t.request_id
@@ -419,7 +419,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     await self.stop_event.wait()
                     # session finished, connection will be re-established for next request
                     if not self.last_completed_has_reset_synthesizer:
-                        self.client.reset_synthesizer()
+                        await self.client.reset_synthesizer()
                         self.last_completed_has_reset_synthesizer = True
                 else:
                     self.ten_env.log_debug("Skipping stop_event")
