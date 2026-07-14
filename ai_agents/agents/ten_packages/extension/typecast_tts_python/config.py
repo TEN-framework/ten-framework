@@ -38,23 +38,27 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
 
     def update_params(self) -> None:
         if "host" in self.params:
-            self.host = str(self.params.pop("host")).rstrip("/")
+            self.host = str(
+                self.params.pop("host")  # pylint: disable=no-member
+            ).rstrip("/")
         else:
             self.host = self.host.rstrip("/")
 
         if "model" not in self.params:
             self.params["model"] = "ssfm-v30"
 
-        output = dict(self.params.get("output") or {})
+        output = dict(
+            self.params.get("output") or {}  # pylint: disable=no-member
+        )
         output["audio_format"] = "wav"
         self.params["output"] = output
 
     def validate(self) -> None:
-        if not self.params.get("api_key"):
+        if not self.params.get("api_key"):  # pylint: disable=no-member
             raise ValueError("api_key is required for Typecast TTS")
-        if not self.params.get("voice_id"):
+        if not self.params.get("voice_id"):  # pylint: disable=no-member
             raise ValueError("voice_id is required for Typecast TTS")
-        if not self.params.get("model"):
+        if not self.params.get("model"):  # pylint: disable=no-member
             raise ValueError("model is required for Typecast TTS")
 
     def to_str(self, sensitive_handling: bool = True) -> str:

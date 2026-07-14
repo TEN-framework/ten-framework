@@ -9,13 +9,7 @@ from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 from ten_runtime import AsyncTenEnv
-from typecast import (
-    AsyncTypecast,
-    PaymentRequiredError,
-    RateLimitError,
-    TypecastError,
-    UnauthorizedError,
-)
+from typecast import AsyncTypecast, TypecastError
 from typecast.models import TTSRequestStream
 
 from .config import TypecastTTSConfig
@@ -32,20 +26,19 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self.config = config
         self.ten_env = ten_env
         self._is_cancelled = False
-        self._client = AsyncTypecast(
-            host=self.config.host,
-            api_key=self.config.params["api_key"],
-        )
-        self._client_entered = False
+        self._client: AsyncTypecast | None = None
 
         ten_env.log_info(
             f"TypecastTTS initialized with host: {self.config.host}"
         )
 
     async def _ensure_client(self) -> AsyncTypecast:
-        if not self._client_entered:
+        if self._client is None:
+            self._client = AsyncTypecast(
+                host=self.config.host,
+                api_key=self.config.params["api_key"],
+            )
             await self._client.__aenter__()
-            self._client_entered = True
         return self._client
 
     async def cancel(self):
@@ -90,7 +83,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                         f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
                     )
                     yield None, TTS2HttpResponseEventType.FLUSH
-                    break
+                    return
 
                 pcm = converter.feed(chunk)
                 if pcm:
@@ -102,47 +95,25 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 )
                 yield None, TTS2HttpResponseEventType.END
 
-        except UnauthorizedError as e:
-            yield self._error_bytes(e, request_id), (
-                TTS2HttpResponseEventType.INVALID_KEY_ERROR
-            )
-        except (
-            PaymentRequiredError,
-            RateLimitError,
-            TypecastError,
-            ValueError,
-        ) as e:
-            yield self._error_bytes(
-                e, request_id
-            ), TTS2HttpResponseEventType.ERROR
         except Exception as e:
             error_message = str(e)
             self.ten_env.log_error(
                 f"vendor_error: {error_message} for request_id: {request_id}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            if "401" in error_message or "403" in error_message:
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
-            else:
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.ERROR
-
-    def _error_bytes(self, error: Exception, request_id: str) -> bytes:
-        error_message = str(error)
-        self.ten_env.log_error(
-            f"vendor_error: {error_message} for request_id: {request_id}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-        return error_message.encode("utf-8")
+            event = (
+                TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                if isinstance(e, TypecastError)
+                and getattr(e, "status_code", None) in (401, 403)
+                else TTS2HttpResponseEventType.ERROR
+            )
+            yield error_message.encode("utf-8"), event
 
     async def clean(self):
         self.ten_env.log_debug("TypecastTTS: clean() called.")
-        if self._client_entered:
+        if self._client is not None:
             await self._client.__aexit__(None, None, None)
-            self._client_entered = False
+            self._client = None
 
     def get_extra_metadata(self) -> dict[str, Any]:
         return {
