@@ -1,3 +1,5 @@
+import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -42,6 +44,68 @@ def test_response_format_is_forced_to_pcm():
     config.update_params()
     assert config.params["response_format"] == "pcm"
     print("✅ response_format override test passed.")
+
+
+def test_frontend_sample_rate_is_removed():
+    """The generic frontend sample rate is not sent to Mistral."""
+    from mistral_tts_python.config import MistralTTSConfig
+
+    config = MistralTTSConfig(params={"api_key": "k", "sample_rate": 16000})
+    config.update_params()
+
+    assert "sample_rate" not in config.params
+    print("✅ frontend sample_rate removal test passed.")
+
+
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+def test_structured_vendor_error_is_encoded(MockAsyncClient):
+    """Structured validation errors are returned without masking failures."""
+    from mistral_tts_python.config import MistralTTSConfig
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from ten_ai_base.struct import TTS2HttpResponseEventType
+    from ten_runtime import AsyncTenEnv
+
+    error_response = {
+        "error": {
+            "message": {
+                "detail": [
+                    {
+                        "loc": ["body", "sample_rate"],
+                        "msg": "Extra inputs are not permitted",
+                    }
+                ]
+            }
+        }
+    }
+    mock_response = AsyncMock()
+    mock_response.status_code = 422
+    mock_response.aread = AsyncMock(
+        return_value=json.dumps(error_response).encode()
+    )
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_http_client = AsyncMock()
+    mock_http_client.stream = MagicMock(return_value=mock_response)
+    mock_http_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_http_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    config = MistralTTSConfig(params={"api_key": "k"})
+    config.update_params()
+    client = MistralTTSClient(config, mock_ten_env)
+
+    async def collect_events():
+        return [event async for event in client.get("hello", "request-id")]
+
+    events = asyncio.run(collect_events())
+
+    assert events[0][1] == TTS2HttpResponseEventType.ERROR
+    assert isinstance(events[0][0], bytes)
+    assert b"Extra inputs are not permitted" in events[0][0]
 
 
 # ================ test endpoint URL resolution ================
