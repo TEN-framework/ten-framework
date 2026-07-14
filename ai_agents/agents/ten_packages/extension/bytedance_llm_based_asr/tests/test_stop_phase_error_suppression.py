@@ -22,6 +22,18 @@ from bytedance_llm_based_asr import extension as extension_module
 sys.modules["bytedance_llm_based_asr.extension"] = extension_module
 
 from bytedance_llm_based_asr.extension import BytedanceASRLLMExtension
+from bytedance_llm_based_asr.config import BytedanceASRLLMConfig
+
+
+def _minimal_config() -> BytedanceASRLLMConfig:
+    return BytedanceASRLLMConfig.model_validate(
+        {
+            "params": {
+                "audio": {"rate": 16000},
+                "request": {"model_name": "bigmodel"},
+            }
+        }
+    )
 
 
 @pytest.fixture
@@ -46,9 +58,13 @@ def mock_frame():
 def extension(mock_ten_env):
     ext = BytedanceASRLLMExtension("test_extension")
     ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
     ext.connected = True
     ext.client = MagicMock()
+    ext.client.connected = True
     ext.client.send_audio = AsyncMock()
+    ext.start_connection = AsyncMock()
+    ext.stop_connection = AsyncMock()
     ext.send_asr_error = AsyncMock()
     return ext
 

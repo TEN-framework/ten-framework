@@ -394,8 +394,12 @@ class VolcengineASRClient:
         self.result_callback: Optional[
             Callable[[ASRResponse], Awaitable[None]]
         ] = None
-        self.connected_callback: Optional[Callable[[], None]] = None
-        self.disconnected_callback: Optional[Callable[[], None]] = None
+        self.connected_callback: Optional[
+            Callable[[], None | Awaitable[None]]
+        ] = None
+        self.disconnected_callback: Optional[
+            Callable[[int, str, str, str], None | Awaitable[None]]
+        ] = None
 
         # Track first response for connection state management (callback-driven pattern)
         self._first_response_received = False
@@ -495,11 +499,37 @@ class VolcengineASRClient:
                 self.websocket = None
 
         # Call disconnected callback
+        await self._notify_disconnected(0, "closed")
+
+    async def _invoke_callback(
+        self, callback: Callable[..., Any], *args: Any
+    ) -> None:
+        try:
+            result = callback(*args)
+            if asyncio.iscoroutine(result):
+                await result
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error in callback: {e}")
+            else:
+                logging.error(f"Error in callback: {e}")
+
+    async def _notify_disconnected(
+        self,
+        code: int,
+        message: str,
+        *,
+        vendor_code: str = "",
+        vendor_message: str = "",
+    ) -> None:
         if self.disconnected_callback:
-            try:
-                self.disconnected_callback()
-            except Exception as e:
-                logging.error(f"Error in disconnected callback: {e}")
+            await self._invoke_callback(
+                self.disconnected_callback,
+                code,
+                message,
+                vendor_code,
+                vendor_message,
+            )
 
     async def _send_full_client_request(self) -> None:
         """Send full client request."""
@@ -577,7 +607,9 @@ class VolcengineASRClient:
             return 0
         return msg[1] >> 4
 
-    def _check_first_response(self, msg: bytes, response: ASRResponse) -> None:
+    async def _check_first_response(
+        self, msg: bytes, response: ASRResponse
+    ) -> None:
         """Handle first response from server (callback-driven connection state).
 
         Called when receiving the first response after sending FULL_REQUEST.
@@ -600,17 +632,7 @@ class VolcengineASRClient:
             # Set client's connected state (required for send_audio checks)
             self.connected = True
             if self.connected_callback:
-                try:
-                    self.connected_callback()
-                except Exception as callback_error:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in connected callback: {callback_error}"
-                        )
-                    else:
-                        logging.error(
-                            f"Error in connected callback: {callback_error}"
-                        )
+                await self._invoke_callback(self.connected_callback)
         # Error responses (ERROR_RESPONSE or FULL_RESPONSE with code!=0)
         # are handled by the general error handling flow below
 
@@ -633,6 +655,10 @@ class VolcengineASRClient:
         if not self.websocket:
             return
 
+        close_code = 0
+        close_message = "closed"
+        vendor_code = ""
+        vendor_message = ""
         try:
             async for msg in self.websocket:
                 # websockets directly returns data, no need to check type
@@ -642,12 +668,14 @@ class VolcengineASRClient:
                     # Handle first response (callback-driven connection state)
                     if not self._first_response_received:
                         self._first_response_received = True
-                        self._check_first_response(msg, response)
+                        await self._check_first_response(msg, response)
 
                     await self._handle_response(response)
 
                     # Handle error responses from server
                     if response.code != 0:
+                        vendor_code = str(response.code)
+                        vendor_message = f"server error code={response.code}"
                         # Trigger ASR error callback for server error responses
                         if self.asr_error_callback:
                             try:
@@ -670,6 +698,17 @@ class VolcengineASRClient:
                     elif response.is_last_package:
                         # Don't break - continue listening for more responses in streaming mode
                         pass
+        except websockets.exceptions.ConnectionClosed as e:
+            close_code = e.code
+            close_message = e.reason or "closed"
+            if self.ten_env:
+                self.ten_env.log_error(
+                    f"WebSocket connection closed: code={close_code}, message={close_message}"
+                )
+            else:
+                logging.error(
+                    f"WebSocket connection closed: code={close_code}, message={close_message}"
+                )
         except BaseException as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Error listening for responses: {e}")
@@ -693,16 +732,12 @@ class VolcengineASRClient:
             self.connected = False
             # Reset first response tracking for reconnection
             self._first_response_received = False
-            if self.disconnected_callback:
-                try:
-                    self.disconnected_callback()
-                except Exception as e:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in disconnected callback: {e}"
-                        )
-                    else:
-                        logging.error(f"Error in disconnected callback: {e}")
+            await self._notify_disconnected(
+                close_code,
+                close_message,
+                vendor_code=vendor_code,
+                vendor_message=vendor_message,
+            )
 
     async def _handle_response(self, response: ASRResponse) -> None:
         """Handle ASR response."""
@@ -738,12 +773,14 @@ class VolcengineASRClient:
         """Set callback for ASR results (alias for set_result_callback)."""
         self.result_callback = callback
 
-    def set_on_connected_callback(self, callback: Callable[[], None]) -> None:
+    def set_on_connected_callback(
+        self, callback: Callable[[], None | Awaitable[None]]
+    ) -> None:
         """Set callback for connection events."""
         self.connected_callback = callback
 
     def set_on_disconnected_callback(
-        self, callback: Callable[[], None]
+        self, callback: Callable[[int, str, str, str], None | Awaitable[None]]
     ) -> None:
         """Set callback for disconnection events."""
         self.disconnected_callback = callback

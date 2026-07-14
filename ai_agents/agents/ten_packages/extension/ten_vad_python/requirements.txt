@@ -1,1 +1,2 @@
+numpy>=1.24.0
 git+https://github.com/TEN-framework/ten-vad.git

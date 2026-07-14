@@ -33,7 +33,9 @@ class DeepgramASRRecognitionCallback:
         """Error callback"""
 
     @abstractmethod
-    async def on_close(self):
+    async def on_close(
+        self, vendor_code: int = 0, vendor_message: str = "closed"
+    ):
         """Called when connection is closed"""
 
 
@@ -125,21 +127,27 @@ class DeepgramASRRecognition:
 
     async def _message_handler(self):
         """Handle incoming WebSocket messages"""
+        close_code = 0
+        close_message = "closed"
         try:
             if self.websocket is None:
                 return
             ws = self.websocket
             async for message in ws:
                 await self._handle_message(message)
-        except websockets.exceptions.ConnectionClosed:
-            self.ten_env.log_info("WebSocket connection closed")
+        except websockets.exceptions.ConnectionClosed as e:
+            close_code = e.code
+            close_message = e.reason or "closed"
+            self.ten_env.log_info(
+                f"WebSocket connection closed: code={close_code}, message={close_message}"
+            )
         except Exception as e:
             error_msg = f"WebSocket message handler error: {e}"
             self.ten_env.log_info(f"### {error_msg} ###")
             await self.callback.on_error(error_msg)
         finally:
             self.is_started = False
-            await self.callback.on_close()
+            await self.callback.on_close(close_code, close_message)
 
     # This function appends query parameters to a URL
     def append_query_params(self, url: str):

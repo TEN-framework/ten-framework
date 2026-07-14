@@ -44,13 +44,13 @@ class SameSessionFinalizeReconnectTester(AsyncExtensionTester):
         print("🧪 TEST CASE: Same Session Finalize Reconnect Test")
         print("=" * 80)
         print(
-            "📋 Test Description: Validate that ASR keeps working after finalize in the same session"
+            "📋 Test Description: Validate that ASR keeps working across multiple turns in the same session"
         )
         print("🎯 Test Objectives:")
-        print("   - Send audio in one session")
-        print("   - Finalize and receive final result + finalize_end")
-        print("   - Send audio again in the same session")
-        print("   - Finalize again and require another non-empty final result")
+        print("   - Send audio in one session and receive a non-empty final result")
+        print("   - Allow vendor auto-finalization before asr_finalize is sent")
+        print("   - Send asr_finalize and require finalize_end when final follows finalize")
+        print("   - Repeat in the same session and require another non-empty final result")
         print("=" * 80)
 
         self.audio_file_path = audio_file_path
@@ -60,6 +60,8 @@ class SameSessionFinalizeReconnectTester(AsyncExtensionTester):
         self.current_cycle = 0
         self.current_finalize_id: str | None = None
         self.current_cycle_final_text: str | None = None
+        self.final_before_finalize_in_cycle = False
+        self.require_finalize_end_in_cycle = True
 
         self.result_event = asyncio.Event()
         self.finalize_end_event = asyncio.Event()
@@ -113,39 +115,85 @@ class SameSessionFinalizeReconnectTester(AsyncExtensionTester):
             f"✅ asr_finalize sent for cycle {self.current_cycle}: {self.current_finalize_id}"
         )
 
-    async def _run_cycle(self, ten_env: AsyncTenEnvTester, cycle: int) -> None:
-        self.current_cycle = cycle
-        self.current_cycle_final_text = None
-        self.current_finalize_id = None
-        self.result_event.clear()
-        self.finalize_end_event.clear()
-
-        ten_env.log_info(f"=== Starting cycle {cycle} in session {self.session_id} ===")
-        await self._send_audio_file(ten_env)
-        await asyncio.sleep(1.5)
-        await self._send_finalize_signal(ten_env)
-
+    async def _wait_for_final_result(
+        self, ten_env: AsyncTenEnvTester, cycle: int
+    ) -> bool:
         try:
             await asyncio.wait_for(
                 self.result_event.wait(), timeout=RESULT_WAIT_TIMEOUT_SECS
             )
+            return True
         except asyncio.TimeoutError:
             self._stop_test_with_error(
                 ten_env,
                 f"Timed out waiting for final ASR result in cycle {cycle}",
             )
-            return
+            return False
+
+    async def _wait_for_finalize_end(
+        self, ten_env: AsyncTenEnvTester, cycle: int
+    ) -> bool:
+        if not self.require_finalize_end_in_cycle:
+            ten_env.log_info(
+                f"Cycle {cycle}: final arrived before asr_finalize; "
+                "asr_finalize_end is optional"
+            )
+            try:
+                await asyncio.wait_for(
+                    self.finalize_end_event.wait(),
+                    timeout=FINALIZE_WAIT_TIMEOUT_SECS,
+                )
+                ten_env.log_info(
+                    f"Cycle {cycle}: optional asr_finalize_end received"
+                )
+            except asyncio.TimeoutError:
+                ten_env.log_info(
+                    f"Cycle {cycle}: no asr_finalize_end after auto-final; continuing"
+                )
+            return True
 
         try:
             await asyncio.wait_for(
                 self.finalize_end_event.wait(),
                 timeout=FINALIZE_WAIT_TIMEOUT_SECS,
             )
+            return True
         except asyncio.TimeoutError:
             self._stop_test_with_error(
                 ten_env,
                 f"Timed out waiting for asr_finalize_end in cycle {cycle}",
             )
+            return False
+
+    async def _run_cycle(self, ten_env: AsyncTenEnvTester, cycle: int) -> None:
+        self.current_cycle = cycle
+        self.current_cycle_final_text = None
+        self.current_finalize_id = None
+        self.final_before_finalize_in_cycle = False
+        self.require_finalize_end_in_cycle = True
+        self.result_event.clear()
+        self.finalize_end_event.clear()
+
+        ten_env.log_info(f"=== Starting cycle {cycle} in session {self.session_id} ===")
+        await self._send_audio_file(ten_env)
+
+        # Vendors may auto-finalize on trailing silence before asr_finalize is sent.
+        await asyncio.sleep(1.5)
+        self.final_before_finalize_in_cycle = self.result_event.is_set()
+        if self.final_before_finalize_in_cycle:
+            ten_env.log_info(
+                f"Cycle {cycle}: vendor auto-final received before asr_finalize"
+            )
+
+        if not self.result_event.is_set():
+            await self._send_finalize_signal(ten_env)
+            if not await self._wait_for_final_result(ten_env, cycle):
+                return
+        else:
+            await self._send_finalize_signal(ten_env)
+            self.require_finalize_end_in_cycle = False
+
+        if not await self._wait_for_finalize_end(ten_env, cycle):
             return
 
     def _validate_required_fields(
@@ -225,6 +273,12 @@ class SameSessionFinalizeReconnectTester(AsyncExtensionTester):
         name = data.get_name()
 
         if name == "asr_finalize_end":
+            if self.current_finalize_id is None:
+                ten_env.log_info(
+                    "Ignoring asr_finalize_end before asr_finalize was sent in this cycle"
+                )
+                return
+
             json_str, _ = data.get_property_to_json(None)
             finalize_end_data: dict[str, Any] = json.loads(json_str)
             finalize_id = finalize_end_data.get("finalize_id")

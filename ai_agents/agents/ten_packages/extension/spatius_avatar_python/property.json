@@ -18,6 +18,7 @@
         "agora_channel": "",
         "region": "",
         "sample_rate": 24000,
-        "session_expire_minutes": 30
+        "session_expire_minutes": 30,
+        "audio_format": "ogg_opus"
     }
 }

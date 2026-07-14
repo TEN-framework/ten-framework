@@ -1,6 +1,5 @@
 import asyncio
 import json
-import random
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -81,9 +80,6 @@ class SonioxWebsocketClient:
         self,
         url: str,
         start_request: str,
-        base_delay: float = 0.1,
-        max_delay: float = 10.0,
-        max_attempts: int = 10,
         enable_keepalive: bool = False,
         keepalive_interval: float = 15.0,
     ):
@@ -93,12 +89,6 @@ class SonioxWebsocketClient:
         self._send_queue = asyncio.Queue()
         self._stop_event = asyncio.Event()
         self._event_callbacks = {}
-
-        # Exponential backoff parameters
-        self.base_delay = base_delay
-        self.max_delay = max_delay
-        self.max_attempts = max_attempts
-        self._attempt_count = 0
 
         # Keepalive parameters
         self.enable_keepalive = enable_keepalive
@@ -110,52 +100,58 @@ class SonioxWebsocketClient:
         self._connection_attempt_start_time = 0
 
     async def connect(self):
+        """Run one websocket session. Reconnection is handled by the extension."""
         self._reset_client_state()
-        while (
-            self.state != self.State.STOPPED
-            and self.state != self.State.STOPPING
-        ):
-            try:
-                self._reset_session_state()
-                self.state = self.State.CONNECTING
-                # Record timestamp before each connection attempt
-                self._connection_attempt_start_time = int(time.time() * 1000)
-                async with websockets.connect(self.url) as ws:
-                    if self.state == self.State.STOPPING:
-                        break
-                    await ws.send(self.start_request)
-                    self.state = self.State.CONNECTED
-                    await self._call(
-                        SonioxWebsocketEvents.OPEN,
-                        self._connection_attempt_start_time,
-                    )
-                    # Start keepalive task when connection is established and keepalive is enabled
-                    if self.enable_keepalive:
-                        self._start_keepalive_task(ws)
-                    await self._work(ws)
-            except Exception as e:
-                if not (
-                    self.state == self.State.STOPPING
-                    and isinstance(e, websockets.exceptions.ConnectionClosedOK)
-                ):
-                    await self._call(SonioxWebsocketEvents.EXCEPTION, e)
-                await self._call(SonioxWebsocketEvents.CLOSE)
-                await self._exponential_backoff()
-            else:
-                await self._call(SonioxWebsocketEvents.CLOSE)
+        if self.state in (self.State.STOPPING, self.State.STOPPED):
+            return
 
-        if self.state == self.State.STOPPING:
-            self._stop_event.set()
+        try:
+            self._reset_session_state()
+            self.state = self.State.CONNECTING
+            self._connection_attempt_start_time = int(time.time() * 1000)
+            async with websockets.connect(self.url) as ws:
+                if self.state == self.State.STOPPING:
+                    return
+                await ws.send(self.start_request)
+                self.state = self.State.CONNECTED
+                await self._call(
+                    SonioxWebsocketEvents.OPEN,
+                    self._connection_attempt_start_time,
+                )
+                if self.enable_keepalive:
+                    self._start_keepalive_task(ws)
+                await self._work(ws)
+            if self.state != self.State.STOPPING:
+                await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
+        except Exception as e:
+            if not (
+                self.state == self.State.STOPPING
+                and isinstance(e, websockets.exceptions.ConnectionClosedOK)
+            ):
+                await self._call(SonioxWebsocketEvents.EXCEPTION, e)
+            close_code, close_message = self._extract_close_info(e)
+            if self.state != self.State.STOPPING:
+                await self._call(
+                    SonioxWebsocketEvents.CLOSE, close_code, close_message
+                )
+        finally:
+            if self.state == self.State.STOPPING:
+                self._stop_event.set()
 
     def _reset_client_state(self):
         self.state = self.State.INIT
-        self._attempt_count = 0
 
     def _reset_session_state(self):
         self._stop_event.clear()
         if self.enable_keepalive:
             self._last_audio_time = 0.0
             self._stop_keepalive_task()
+
+    @staticmethod
+    def _extract_close_info(e: Exception | None) -> tuple[int, str]:
+        if isinstance(e, websockets.exceptions.ConnectionClosed):
+            return e.code, e.reason or "closed"
+        return 0, "closed"
 
     def _start_keepalive_task(self, ws):
         """Start the keepalive background task"""
@@ -192,22 +188,6 @@ class SonioxWebsocketClient:
         except Exception as e:
             # Log any unexpected errors in keepalive loop
             await self._call(SonioxWebsocketEvents.EXCEPTION, e)
-
-    async def _exponential_backoff(self):
-        if self._attempt_count >= self.max_attempts:
-            await asyncio.sleep(self.max_delay)
-            return
-
-        self._attempt_count += 1
-
-        delay = min(
-            self.base_delay * (2 ** (self._attempt_count - 1)), self.max_delay
-        )
-
-        jitter = random.uniform(0, 0.1 * delay)
-        final_delay = delay + jitter
-
-        await asyncio.sleep(final_delay)
 
     async def _work(self, ws):
         while self.state != self.State.STOPPED:
@@ -348,7 +328,8 @@ class SonioxWebsocketClient:
         OPEN:
             - connection_start_timestamp: int (milliseconds)
         CLOSE:
-            - None
+            - vendor_code: int (vendor close code, 0 if unavailable)
+            - vendor_message: str (vendor close reason)
         ERROR:
             - error_code: int
             - error_message: str

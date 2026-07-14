@@ -75,7 +75,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
             # Create client (connection management will be handled automatically)
             self.client = RimeTTSClient(
-                self.config, self.ten_env, self.vendor(), self.response_msgs
+                self.config,
+                self.ten_env,
+                self.vendor(),
+                self.response_msgs,
+                self.on_connecting,
+                self.on_connected,
+                self.on_disconnected,
             )
             self.msg_polling_task = asyncio.create_task(self._loop())
         except Exception as e:
@@ -126,6 +132,17 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
     def vendor(self) -> str:
         return "rime"
+
+    def vendor_metadata(self) -> dict:
+        if self.config is None:
+            return {}
+
+        return {
+            "key": self.config.api_key,
+            "url": self.config.base_url,
+            "model": self.config.params.get("modelId", ""),
+            "api_key": self.config.api_key,
+        }
 
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sampling_rate
