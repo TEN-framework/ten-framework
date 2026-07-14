@@ -40,6 +40,12 @@ class MistralTTSConfig(AsyncTTS2HttpConfig):
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
+        # The playground adds sample_rate to every TTS configuration, but the
+        # Mistral speech endpoint rejects it as an unknown request field.  The
+        # output rate is fixed at 24 kHz and is declared by the extension, so
+        # this generic frontend setting must not be forwarded to the vendor.
+        self.params.pop("sample_rate", None)  # pylint: disable=no-member
+
         # Set default values if not specified
         if "model" not in self.params:
             self.params["model"] = DEFAULT_MODEL

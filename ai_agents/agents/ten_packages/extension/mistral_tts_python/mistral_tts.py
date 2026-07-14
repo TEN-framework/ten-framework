@@ -208,6 +208,13 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                         error_msg = error_body.decode("utf-8", errors="replace")
                         error_code = None
 
+                    # Validation responses can contain a structured `detail`
+                    # value instead of a string message.  Normalize it before
+                    # logging and encoding so the original vendor error is not
+                    # hidden by an AttributeError.
+                    if not isinstance(error_msg, str):
+                        error_msg = json.dumps(error_msg, ensure_ascii=False)
+
                     self.ten_env.log_error(
                         f"vendor_error: HTTP {response.status_code}: {error_msg} for request_id: {request_id}",
                         category=LOG_CATEGORY_VENDOR,
