@@ -55,7 +55,7 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         ten_env_tester.on_start_done()
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_params_passthrough(MockEZAITWTTSClient):
     """
     Tests that custom parameters passed in the configuration are correctly
@@ -94,14 +94,14 @@ def test_params_passthrough(MockEZAITWTTSClient):
     }
 
     tester = ExtensionTesterForPassthrough()
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(real_config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(real_config))
 
     print("Running passthrough test...")
     tester.run()
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the RimeTTSClient client was instantiated exactly once.
+    # Check that the EZAITWTTSClient client was instantiated exactly once.
     MockEZAITWTTSClient.assert_called_once()
 
     # Get the arguments that the mock was called with.

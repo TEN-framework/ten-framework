@@ -182,7 +182,7 @@ async def mock_get_generator(request_id: str, chunks: int = 3):
     yield (None, TTS2HttpResponseEventType.END)
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_sequential_requests_state_machine(MockEZAITWTTSClient):
     """
     Test that two sequential requests with different IDs are processed correctly.
@@ -236,7 +236,7 @@ def test_sequential_requests_state_machine(MockEZAITWTTSClient):
 
     # Set test mode and run
     print("  → Starting extension test...")
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(config))
     tester.run()
 
     # Verify results
@@ -253,7 +253,7 @@ def test_sequential_requests_state_machine(MockEZAITWTTSClient):
     print("\n✓ Sequential requests state machine test PASSED!")
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_request_state_transitions(MockEZAITWTTSClient):
     """
     Test detailed state transitions: QUEUED -> PROCESSING -> FINALIZING -> COMPLETED.
@@ -318,7 +318,7 @@ def test_request_state_transitions(MockEZAITWTTSClient):
 
     # Set test mode and run
     print("  → Running state transition test...")
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(config))
     tester.run()
 
     # Verify

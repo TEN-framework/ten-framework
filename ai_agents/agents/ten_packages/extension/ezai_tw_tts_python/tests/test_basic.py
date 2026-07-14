@@ -98,7 +98,7 @@ class ExtensionTesterDump(ExtensionTester):
         return None
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_dump_functionality(MockEZAITWTTSClient):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
     print("Starting test_dump_functionality with mock...")
@@ -141,7 +141,7 @@ def test_dump_functionality(MockEZAITWTTSClient):
         },
     }
 
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(dump_config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(dump_config))
 
     print("Running dump test...")
     tester.run()
@@ -278,7 +278,7 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_flush_logic(MockEZAITWTTSClient):
     """
     Tests that sending a flush command during TTS streaming correctly stops
@@ -314,7 +314,7 @@ def test_flush_logic(MockEZAITWTTSClient):
         },
     }
     tester = ExtensionTesterFlush()
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(config))
 
     print("Running flush logic test...")
     tester.run()

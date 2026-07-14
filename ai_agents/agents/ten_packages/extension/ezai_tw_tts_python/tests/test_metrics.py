@@ -80,7 +80,7 @@ class ExtensionTesterMetrics(ExtensionTester):
             ten_env.log_info("First audio frame received.")
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_ttfb_metric_is_sent(MockEZAITWTTSClient):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
@@ -109,7 +109,7 @@ def test_ttfb_metric_is_sent(MockEZAITWTTSClient):
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {"params": {"api_key": "test_api_key"}}
     tester = ExtensionTesterMetrics()
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(metrics_config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(metrics_config))
 
     print("Running TTFB metrics test...")
     tester.run()

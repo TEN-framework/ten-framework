@@ -71,7 +71,7 @@ def test_empty_params_fatal_error():
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
-        "rime_http_tts_ezai", json.dumps(empty_params_config)
+        "ezai_tw_tts_python", json.dumps(empty_params_config)
     )
 
     print("Running test...")
@@ -142,7 +142,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
 from unittest.mock import AsyncMock
 
 
-@patch("rime_http_tts_ezai.ezai_tts.AsyncClient")
+@patch("ezai_tw_tts_python.ezai_tts.AsyncClient")
 def test_invalid_api_key_error(MockAsyncClient):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
@@ -163,7 +163,7 @@ def test_invalid_api_key_error(MockAsyncClient):
     }
 
     tester = ExtensionTesterInvalidApiKey()
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(invalid_key_config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(invalid_key_config))
 
     print("Running test with mock...")
     tester.run()

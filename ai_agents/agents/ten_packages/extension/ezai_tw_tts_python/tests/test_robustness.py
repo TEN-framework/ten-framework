@@ -110,7 +110,7 @@ class ExtensionTesterRobustness(ExtensionTester):
                 ten_env.stop_test()
 
 
-@patch("rime_http_tts_ezai.extension.EZAITWTTSClient")
+@patch("ezai_tw_tts_python.extension.EZAITWTTSClient")
 def test_reconnect_after_connection_drop(MockEZAITWTTSClient):
     """
     Tests that the extension can recover from a connection drop, report a
@@ -148,7 +148,7 @@ def test_reconnect_after_connection_drop(MockEZAITWTTSClient):
         },
     }
     tester = ExtensionTesterRobustness()
-    tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(config))
+    tester.set_test_mode_single("ezai_tw_tts_python", json.dumps(config))
 
     print("Running robustness test...")
     tester.run()
