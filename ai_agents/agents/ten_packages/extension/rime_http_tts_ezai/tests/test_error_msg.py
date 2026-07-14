@@ -177,7 +177,7 @@ def test_invalid_api_key_error(MockAsyncClient):
     assert tester.error_message is not None, "Error message should not be None"
     assert (
         "401 Unauthorized" in tester.error_message
-    ), "Error message should mention 401 Unauthorized"
+    ), f"Error message should mention 401 Unauthorized {tester.error_message=}"
 
     vendor_info = tester.vendor_info
     assert vendor_info is not None, "Expected vendor_info to be present"

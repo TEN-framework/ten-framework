@@ -42,10 +42,8 @@ class EZAITWTTSConfig(AsyncTTS2HttpConfig):
                 if key == 'speed' and float(val) < 0.1:
                     val = 0.8
                 setattr(self, key, val)
-            except:
+            except Exception:
                 pass
-            finally:
-                del self.params[key]
 
 
     def update_params(self) -> None:
@@ -77,5 +75,5 @@ class EZAITWTTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate EZAI-specific configuration."""
-        if not getattr(self, "url", None) and not self.params.get("url"):
-            raise ValueError("url is required for EZAI TW TTS")
+        if "api_key" not in self.params or not self.params["api_key"]:
+            raise ValueError("API key is required for Rime TTS")

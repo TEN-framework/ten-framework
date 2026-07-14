@@ -81,7 +81,17 @@ def test_params_passthrough(MockEZAITWTTSClient):
         "params": real_params,
     }
 
-    passthrough_params = {}
+    passthrough_params = {
+        'url': 'https://matcha.ezai-k8s.freeddns.org/tts', 
+        'speed': 0.800000011920929, 
+        'voice': 'IU_IUF1003', 
+        'denoise': False, 
+        'zh_model': 'nllb', 
+        'sample_rate': 24000, 
+        'channels': 1, 
+        'sample_width': 2, 
+        'api_key': 'test_api_key'
+    }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single("rime_http_tts_ezai", json.dumps(real_config))

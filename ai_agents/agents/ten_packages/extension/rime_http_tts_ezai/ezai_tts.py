@@ -1,6 +1,5 @@
 import base64
 import io
-import json
 import wave
 from typing import Any, AsyncIterator, Tuple
 
@@ -117,7 +116,7 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
 
                 if response.status_code != 200:
                     raise RuntimeError(
-                        f"401 " if response.status_code in (401, 403)
+                        "401 " if response.status_code in (401, 403)
                         else f"HTTP {response.status_code}: {response.text}"
                     )
 
@@ -127,14 +126,14 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
 
                 # Decode WAV (PCM24) → PCM16 raw frames
                 audio_bytes = base64.b64decode(j["audio"])
-                chunk = self.pcm24topcm16(audio_bytes)
+                pcm16_bytes = self.pcm24topcm16(audio_bytes)
                 self.ten_env.log_info(
                     f"EZAITWTTSClient: tts input:|{sent}| output:{j.get('text', '')}",
                     category=LOG_CATEGORY_VENDOR,
                 )
 
-                if len(chunk) > 0:
-                    yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
+                if len(pcm16_bytes) > 0:
+                    yield bytes(pcm16_bytes), TTS2HttpResponseEventType.RESPONSE
                 else:
                     yield None, TTS2HttpResponseEventType.END
 
