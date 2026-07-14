@@ -398,6 +398,145 @@ Get instant notifications for new releases and updates. Your support helps us gr
 
 <br>
 
+## ❓ FAQ
+
+<details>
+<summary><strong>What is TEN Framework?</strong></summary>
+
+TEN is an open-source framework for **real-time multimodal conversational AI**. It provides:
+
+- **Real-time Processing**: Low-latency voice, video, and text interactions
+- **Multimodal Support**: Combine voice, video, and text in single conversations
+- **Extensible Architecture**: Add extensions for Memory, VAD, Turn Detection, etc.
+- **RTC + WebSocket**: Multiple connection protocols for different use cases
+- **Multi-language**: English, Chinese, Japanese, Korean, Spanish, French, Italian docs
+
+</details>
+
+<details>
+<summary><strong>How does TEN compare to other voice AI frameworks?</strong></summary>
+
+| Feature | TEN Framework | VAPI | LiveKit | ElevenLabs |
+|---------|---------------|------|---------|------------|
+| Open Source | ✅ Apache 2.0 | ❌ Proprietary | ✅ Apache 2.0 | ❌ Proprietary |
+| Real-time Voice | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+| Multimodal | ✅ Voice+Video+Text | ❌ Voice only | ✅ Voice+Video | ❌ Voice only |
+| VAD Built-in | ✅ Yes | ✅ Yes | ❌ External | ❌ External |
+| Turn Detection | ✅ Built-in | ✅ Yes | ❌ External | ❌ External |
+| Memory Extension | ✅ Yes | ❌ No | ❅ Limited | ❅ Limited |
+| Self-hosting | ✅ Full control | ❅ Cloud only | ✅ Yes | ❅ Cloud only |
+
+</details>
+
+<details>
+<summary><strong>What are Key Features?</strong></summary>
+
+| Feature | Description |
+|---------|-------------|
+| **Real-time Processing** | Sub-100ms latency for voice interactions |
+| **Multimodal Conversations** | Voice, video, and text in single session |
+| **VAD (Voice Activity Detection)** | Detect when user is speaking |
+| **Turn Detection** | Know when to respond vs listen |
+| **Memory Extension** | Remember context across conversations |
+| **Agent Examples** | Voice Assistant, Doodler, and more |
+| **Self-hosting** | Deploy with Docker or cloud services |
+| **Multi-language Docs** | 8 languages supported |
+
+</details>
+
+<details>
+<summary><strong>How to Get Started?</strong></summary>
+
+**Quick Start with Agent Examples**:
+
+```bash
+# Clone agent examples
+git clone https://github.com/TEN-framework/agent-examples.git
+cd agent-examples
+
+# Local development
+docker-compose up
+
+# Or use Codespaces
+# Click "Open in Codespaces" on GitHub
+```
+
+**Deploy with Docker**:
+
+```bash
+docker build -t ten-agent .
+docker run -p 8080:8080 ten-agent
+```
+
+**Deploy to Cloud**:
+
+- Vercel: `vercel deploy`
+- Railway: `railway up`
+- Fly.io: `fly deploy`
+
+</details>
+
+<details>
+<summary><strong>Available Agent Examples?</strong></summary>
+
+| Example | Description |
+|---------|-------------|
+| **Voice Assistant** | Low-latency, high-quality real-time assistant. RTC + WebSocket. Memory, VAD, Turn Detection extensions |
+| **Doodler** | Turn spoken/typed prompts into hand-drawn sketches. Crayon palette, real-time drawing |
+| **More Coming** | Join Discord to request new examples |
+
+</details>
+
+<details>
+<summary><strong>TEN Ecosystem Components?</strong></summary>
+
+| Component | Description |
+|-----------|-------------|
+| **TEN Framework** | Core framework for real-time multimodal AI |
+| **Agent Examples** | Pre-built agent templates (Voice Assistant, Doodler) |
+| **TEN VAD** | Voice Activity Detection module |
+| **Turn Detection** | Detect speaker turn changes |
+| **TEN Portal** | Web interface for agents |
+
+</details>
+
+<details>
+<summary><strong>Community Channels?</strong></summary>
+
+| Channel | Purpose |
+|---------|---------|
+| [Discord](https://discord.gg/AH9Q7kK8) | Connect with developers, get help |
+| [X/Twitter](https://x.com/TenFramework) | Updates and announcements |
+| [LinkedIn](https://linkedin.com/company/ten-framework) | Professional updates |
+| [Hugging Face](https://huggingface.co/TEN-framework) | Explore spaces and models |
+| [WeChat](https://wechat.com) | Chinese community discussions |
+
+</details>
+
+<details>
+<summary><strong>License & Contributing?</strong></summary>
+
+- **License**: Apache 2.0
+- **Contributing**: See [Contributing Guidelines](#contributing)
+- **Code Contributors**: See [Contributors Graph](https://github.com/TEN-framework/ten-framework/graphs/contributors)
+
+</details>
+
+<details>
+<summary><strong>Help & Resources?</strong></summary>
+
+| Resource | Link |
+|----------|------|
+| Official Site | [ten-framework.ai](https://ten-framework.ai) |
+| Documentation | [ten-framework.ai/docs](https://ten-framework.ai/docs) |
+| Blog | [ten-framework.ai/blog](https://ten-framework.ai/blog) |
+| Agent Examples | [github.com/TEN-framework/agent-examples](https://github.com/TEN-framework/agent-examples) |
+| GitHub Issues | [Issues](https://github.com/TEN-framework/ten-framework/issues) |
+
+</details>
+
+---
+
 ## Questions
 
 TEN Framework is available on these AI-powered Q&A platforms. They can help you find answers quickly and accurately in multiple languages, covering everything from basic setup to advanced implementation details.
