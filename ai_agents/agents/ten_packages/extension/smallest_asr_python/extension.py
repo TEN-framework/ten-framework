@@ -573,9 +573,13 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         assert self.config is not None
-        assert self.ws is not None
 
-        if not self.is_connected():
+        # Guard the send instead of asserting the socket exists: after a failed
+        # reconnect `self.ws` can be None, and an assert would raise (or be
+        # stripped under -O) instead of failing gracefully. Mirrors the
+        # is_connected()/ws check in `_send_finalize` and pipecat's
+        # `state is State.OPEN` send guard.
+        if not self.is_connected() or self.ws is None:
             self.ten_env.log_error("Smallest AI connection is not established")
             return False
 
