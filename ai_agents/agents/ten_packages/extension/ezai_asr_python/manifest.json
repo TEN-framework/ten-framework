@@ -53,6 +53,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

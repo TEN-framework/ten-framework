@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "blaze_tts_python",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "display_name": {
     "locales": {
       "en-US": {
@@ -42,6 +42,7 @@
       "**.tent",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },
@@ -83,4 +84,3 @@
     }
   }
 }
-

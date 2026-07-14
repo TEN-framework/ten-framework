@@ -1,0 +1,11 @@
+[project]
+name = "heygen-avatar-python"
+version = "0.1.1"
+requires-python = ">=3.10"
+dependencies = [
+    "agora-token-builder>=1.0.0",
+    "numpy>=2.2.6",
+    "requests>=2.32.3",
+    "scipy>=1.15.3",
+    "websockets>=15.0.1",
+]

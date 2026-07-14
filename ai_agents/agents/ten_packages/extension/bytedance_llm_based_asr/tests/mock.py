@@ -7,6 +7,13 @@
 import pytest
 from unittest.mock import patch
 import asyncio
+from typing import Any, Callable
+
+
+async def _invoke_callback(callback: Callable[..., Any], *args: Any) -> None:
+    result = callback(*args)
+    if asyncio.iscoroutine(result):
+        await result
 
 
 @pytest.fixture(scope="function")
@@ -78,7 +85,7 @@ def patch_volcengine_ws():
 
                 # Trigger connected callback
                 if self.on_connected_callback:
-                    self.on_connected_callback()
+                    await _invoke_callback(self.on_connected_callback)
 
                 # Schedule result emission
                 async def _emit_results():
@@ -243,7 +250,9 @@ def patch_volcengine_ws():
                         print("[mock] _emit_task cancelled successfully")
 
                 if self.on_disconnected_callback:
-                    self.on_disconnected_callback()
+                    await _invoke_callback(
+                        self.on_disconnected_callback, 0, "closed", "", ""
+                    )
                 return None
 
             async def send_audio(self, audio_data):
@@ -338,7 +347,7 @@ def patch_volcengine_ws_grouping():
                 self.connected = True
 
                 if self.on_connected_callback:
-                    self.on_connected_callback()
+                    await _invoke_callback(self.on_connected_callback)
 
                 async def _emit_results():
                     await asyncio.sleep(0.5)
@@ -429,7 +438,9 @@ def patch_volcengine_ws_grouping():
                         pass
 
                 if self.on_disconnected_callback:
-                    self.on_disconnected_callback()
+                    await _invoke_callback(
+                        self.on_disconnected_callback, 0, "closed", "", ""
+                    )
                 return None
 
             async def send_audio(self, audio_data):

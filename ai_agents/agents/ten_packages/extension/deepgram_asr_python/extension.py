@@ -64,6 +64,24 @@ class DeepgramASRExtension(
         return "deepgram"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        params = self.config.params or {}
+        key = None
+        for name in ("api_key", "key"):
+            value = params.get(name)
+            if isinstance(value, str) and value.strip():
+                key = value
+                break
+        fields = {
+            "key": key,
+            "url": params.get("url"),
+            "model": params.get("model"),
+        }
+        return {k: v for k, v in fields.items() if v}
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
 
@@ -125,12 +143,14 @@ class DeepgramASRExtension(
             ):
                 error_msg = "Deepgram API key is required but missing or empty"
                 self.ten_env.log_error(error_msg)
-                await self.send_asr_error(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=error_msg,
-                    ),
+                error = ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=error_msg,
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
                 )
                 return
 
@@ -151,13 +171,13 @@ class DeepgramASRExtension(
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to start Deepgram connection: {e}")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(e),
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
@@ -387,7 +407,7 @@ class DeepgramASRExtension(
     async def on_open(self) -> None:
         """Handle callback when connection is established"""
         self.ten_env.log_info(
-            "vendor_status_changed: on_open",
+            "vendor connection opened",
             category=LOG_CATEGORY_VENDOR,
         )
         # Notify reconnect manager of successful connection
@@ -398,6 +418,7 @@ class DeepgramASRExtension(
             self.audio_timeline.get_total_user_audio_duration()
         )
         self.audio_timeline.reset()
+        await self.on_connected()
 
     @override
     async def on_result(self, message_data: Dict[str, Any]) -> None:
@@ -500,48 +521,55 @@ class DeepgramASRExtension(
             category=LOG_CATEGORY_VENDOR,
         )
 
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(error_code) if error_code else "unknown",
+            message=error_msg,
+        )
         error_criteria = ["400", "401", "402", "403", "404"]
-        if any(code in error_msg for code in error_criteria):
-            # Send error information
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=error_msg,
-                ),
-                ModuleErrorVendorInfo(
-                    vendor=self.vendor(),
-                    code=str(error_code) if error_code else "unknown",
-                    message=error_msg,
-                ),
-            )
-        else:
-            # Send error information
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=error_msg,
-                ),
-                ModuleErrorVendorInfo(
-                    vendor=self.vendor(),
-                    code=str(error_code) if error_code else "unknown",
-                    message=error_msg,
-                ),
+        is_fatal = any(code in error_msg for code in error_criteria)
+        module_error = ModuleError(
+            module=MODULE_NAME_ASR,
+            code=(
+                ModuleErrorCode.FATAL_ERROR.value
+                if is_fatal
+                else ModuleErrorCode.NON_FATAL_ERROR.value
+            ),
+            message=error_msg,
+        )
+        await self.send_asr_error(module_error, vendor_info)
+
+        if not self.is_connected():
+            await self.on_disconnected(
+                code=module_error.code,
+                message=error_msg,
+                vendor_info=vendor_info,
             )
 
-            if not self.stopped and not self.is_connected():
-                self.ten_env.log_warn(
-                    "Deepgram connection error unexpectedly. Reconnecting..."
-                )
-                await self._handle_reconnect()
+        if not is_fatal and not self.stopped and not self.is_connected():
+            self.ten_env.log_warn(
+                "Deepgram connection error unexpectedly. Reconnecting..."
+            )
+            await self._handle_reconnect()
 
     @override
-    async def on_close(self) -> None:
+    async def on_close(
+        self, vendor_code: int = 0, vendor_message: str = "closed"
+    ) -> None:
         """Handle callback when connection is closed"""
         self.ten_env.log_info(
-            "vendor_status_changed: on_close",
+            f"vendor connection closed: code={vendor_code}, message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
+        )
+        vendor_info = None
+        if vendor_code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_code),
+                message=vendor_message,
+            )
+        await self.on_disconnected(
+            code=0, message="closed", vendor_info=vendor_info
         )
 
         if not self.stopped:

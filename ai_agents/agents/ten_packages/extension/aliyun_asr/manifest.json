@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "aliyun_asr",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "dependencies": [
     {
       "type": "system",
@@ -42,6 +42,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

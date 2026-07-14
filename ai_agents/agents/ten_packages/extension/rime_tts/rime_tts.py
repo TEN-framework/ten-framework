@@ -2,12 +2,14 @@ import asyncio
 import json
 import base64
 from datetime import datetime
+from collections.abc import Awaitable, Callable
 
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
 from websockets.exceptions import ConnectionClosedOK
 
 from ten_ai_base.message import (
+    ModuleErrorCode,
     ModuleErrorVendorInfo,
     ModuleVendorException,
 )
@@ -36,6 +38,11 @@ class RimeTTSynthesizer:
         ten_env: AsyncTenEnv,
         vendor: str,
         response_msgs: asyncio.Queue[tuple[int, bytes | int]],
+        on_connection_connecting: Callable[[], Awaitable[None]] | None = None,
+        on_connection_connected: Callable[[], Awaitable[None]] | None = None,
+        on_connection_disconnected: (
+            Callable[..., Awaitable[None]] | None
+        ) = None,
     ):
         self.config = config
         self.api_key = config.api_key
@@ -46,6 +53,9 @@ class RimeTTSynthesizer:
         self.response_msgs: asyncio.Queue[tuple[int, bytes | int]] | None = (
             response_msgs
         )
+        self.on_connection_connecting = on_connection_connecting
+        self.on_connection_connected = on_connection_connected
+        self.on_connection_disconnected = on_connection_disconnected
 
         # Connection management
         self._session_closing = False
@@ -101,6 +111,8 @@ class RimeTTSynthesizer:
             self.ten_env.log_debug(
                 "Starting RIME TTS websocket connection process"
             )
+            if self.on_connection_connecting:
+                await self.on_connection_connecting()
 
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
@@ -129,6 +141,8 @@ class RimeTTSynthesizer:
                     # Wait for receive loop to be ready
                     await self._receive_ready_event.wait()
                     self._connection_ready.set()
+                    if self.on_connection_connected:
+                        await self.on_connection_connected()
 
                     await self._await_channel_tasks()
 
@@ -137,6 +151,16 @@ class RimeTTSynthesizer:
                         f"websocket_closed: error={e}",
                         category=LOG_CATEGORY_VENDOR,
                     )
+                    if self.on_connection_disconnected:
+                        await self.on_connection_disconnected(
+                            code=0,
+                            message=str(e),
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor,
+                                code=str(e.code),
+                                message=str(e),
+                            ),
+                        )
                     if not self._session_closing:
                         self.ten_env.log_warn(
                             "RIME TTS websocket connection closed, will reconnect."
@@ -173,6 +197,16 @@ class RimeTTSynthesizer:
         finally:
             if self.ws:
                 await self.ws.close()
+            if self.on_connection_disconnected:
+                await self.on_connection_disconnected(
+                    code=int(ModuleErrorCode.FATAL_ERROR),
+                    message="closed",
+                    vendor_info=ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code="0",
+                        message="closed",
+                    ),
+                )
             self.ten_env.log_debug(
                 "RIME TTS websocket connection process ended."
             )
@@ -432,11 +466,19 @@ class RimeTTSClient:
         ten_env: AsyncTenEnv,
         vendor: str,
         response_msgs: asyncio.Queue[tuple[int, bytes | int]],
+        on_connection_connecting: Callable[[], Awaitable[None]] | None = None,
+        on_connection_connected: Callable[[], Awaitable[None]] | None = None,
+        on_connection_disconnected: (
+            Callable[..., Awaitable[None]] | None
+        ) = None,
     ):
         self.config = config
         self.ten_env = ten_env
         self.vendor = vendor
         self.response_msgs = response_msgs
+        self.on_connection_connecting = on_connection_connecting
+        self.on_connection_connected = on_connection_connected
+        self.on_connection_disconnected = on_connection_disconnected
 
         # Current active synthesizer
         self.synthesizer: RimeTTSynthesizer = self._create_synthesizer()
@@ -452,7 +494,13 @@ class RimeTTSClient:
     def _create_synthesizer(self) -> RimeTTSynthesizer:
         """Create new RIME TTS synthesizer instance"""
         return RimeTTSynthesizer(
-            self.config, self.ten_env, self.vendor, self.response_msgs
+            self.config,
+            self.ten_env,
+            self.vendor,
+            self.response_msgs,
+            self.on_connection_connecting,
+            self.on_connection_connected,
+            self.on_connection_disconnected,
         )
 
     async def _cleanup_cancelled_synthesizers(self) -> None:

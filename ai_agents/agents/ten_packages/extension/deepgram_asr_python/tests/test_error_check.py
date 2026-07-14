@@ -53,7 +53,10 @@ class DeepgramAsrExtensionTester(AsyncExtensionTester):
 
 def test_error_check():
     property_json = {
-        "key": "invalid_key",
+        "params": {
+            "key": "invalid_key",
+            "url": "wss://invalid/listen",
+        }
     }
     tester = DeepgramAsrExtensionTester()
     tester.set_test_mode_single(

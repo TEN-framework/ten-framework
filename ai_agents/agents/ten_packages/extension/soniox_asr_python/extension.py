@@ -19,6 +19,7 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
+from ten_ai_base.struct import ASRResults
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
@@ -34,7 +35,9 @@ from .config import (
     SonioxASRConfig,
 )
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .reconnect_manager import ReconnectManager
 from .dumper import Dumper
+from .text_utils import SentenceBoundaryDetector
 from .websocket import (
     SonioxFinToken,
     SonioxEndToken,
@@ -102,25 +105,122 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self._pending_close_finalize = False
         self._needs_reconnect = False
+        self._suppress_close_status = False
         self._last_final_time_ms: int = 0
         self._last_final_wall_ms: int = 0
+        self._deferred_vendor_final_tokens: list[SonioxTranscriptToken] = []
+        self._sentence_boundary_detector = SentenceBoundaryDetector()
+        self.reconnect_manager: ReconnectManager | None = None
+
+    def _clear_deferred_vendor_final_tokens(self) -> None:
+        self._deferred_vendor_final_tokens = []
+
+    async def _flush_deferred_vendor_final_tokens(self) -> None:
+        """Force-emit deferred vendor-final tokens as final on session boundary.
+
+        Used when the session ends (<fin>) before a complete sentence was
+        detected. Translation is not passed here: sentence_terminator mode does
+        not use translation in current deployments.
+        """
+        if not self._deferred_vendor_final_tokens:
+            return
+        if (
+            self.config is None
+            or self.config.holding_mode != HoldingMode.SENTENCE_TERMINATOR
+        ):
+            self._clear_deferred_vendor_final_tokens()
+            return
+
+        tokens = self._deferred_vendor_final_tokens
+        self._clear_deferred_vendor_final_tokens()
+        asr_results = self._create_asr_results(tokens, True)
+        await self._publish_asr_results(asr_results, [])
+
+    def _adjust_tokens_for_sentence_end_finality(
+        self,
+        transcript_tokens: List[SonioxTranscriptToken],
+        is_final: bool,
+    ) -> tuple[List[SonioxTranscriptToken], bool]:
+        """Emit vendor-final tokens through the first complete sentence; defer the rest."""
+        if (
+            self.config is None
+            or self.config.holding_mode != HoldingMode.SENTENCE_TERMINATOR
+        ):
+            if not is_final and self._deferred_vendor_final_tokens:
+                return (
+                    [*self._deferred_vendor_final_tokens, *transcript_tokens],
+                    False,
+                )
+            return transcript_tokens, is_final
+
+        if not is_final:
+            if self._deferred_vendor_final_tokens:
+                return (
+                    [*self._deferred_vendor_final_tokens, *transcript_tokens],
+                    False,
+                )
+            return transcript_tokens, False
+
+        merged_tokens = [
+            *self._deferred_vendor_final_tokens,
+            *transcript_tokens,
+        ]
+        if not merged_tokens:
+            return transcript_tokens, False
+
+        language = map_language_code(merged_tokens[0].language or "en")
+        if not self._sentence_boundary_detector.supports_language(language):
+            self._clear_deferred_vendor_final_tokens()
+            return transcript_tokens, is_final
+
+        emit_len, defer_start = (
+            self._sentence_boundary_detector.split_at_last_complete_sentence(
+                [token.text for token in merged_tokens],
+                language,
+            )
+        )
+        if emit_len <= 0:
+            self._deferred_vendor_final_tokens = merged_tokens
+            return merged_tokens, False
+
+        emit_tokens = merged_tokens[:emit_len]
+        self._deferred_vendor_final_tokens = merged_tokens[defer_start:]
+        return emit_tokens, True
 
     def _effective_holding_mode(self) -> HoldingMode:
         if self.config is None:
             return HoldingMode.FALSE
-        if self.config.holding_mode == HoldingMode.ENDPOINTING_ONLY and not (
+        configured = self.config.holding_mode
+        if configured == HoldingMode.ENDPOINTING_ONLY and not (
             self.config.params.get("enable_endpoint_detection", False)
         ):
             return HoldingMode.FALSE
-        return self.config.holding_mode
+        return configured
 
     @override
     def vendor(self) -> str:
         return "soniox"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        params = self.config.params or {}
+        metadata: dict[str, Any] = {}
+        api_key = params.get("api_key")
+        if api_key:
+            metadata["api_key"] = api_key
+        if self.config.url:
+            metadata["url"] = self.config.url
+        model = params.get("model")
+        if model:
+            metadata["model"] = model
+        return metadata
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
+        self.reconnect_manager = ReconnectManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -166,7 +266,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     ) -> None:
         if self._needs_reconnect:
             self._needs_reconnect = False
-            await self._start_websocket()
+            self.uuid = self._get_uuid()
+            self._clear_deferred_vendor_final_tokens()
+            await self.start_connection()
 
         await super().on_audio_frame(ten_env, audio_frame)
 
@@ -178,8 +280,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.config.url,
             start_request,
             enable_keepalive=self.config.enable_keepalive,
-            base_delay=0.5,
-            max_delay=4,
         )
         ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
         ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
@@ -190,11 +290,28 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.websocket = ws
         self.ws_task = asyncio.create_task(ws.connect())
 
-    async def _stop_websocket(self) -> None:
-        """Stop websocket connection only (without audio dumper)."""
+    async def _stop_websocket(self, *, suppress_status: bool = False) -> None:
+        """Stop websocket connection only (without audio dumper).
+
+        When suppress_status is True, the resulting CLOSE callback skips
+        connection_status reporting and reconnect handling. Used when
+        start_connection replaces an existing client after disconnect was
+        already reported.
+        """
         self.connected = False
-        if self.websocket:
-            await self.websocket.stop()
+        ws = self.websocket
+        task = self.ws_task
+        self.websocket = None
+        self.ws_task = None
+        if ws:
+            if suppress_status:
+                self._suppress_close_status = True
+            await ws.stop()
+        if task and not task.done():
+            try:
+                await task
+            except Exception:
+                pass
 
     @override
     async def start_connection(self) -> None:
@@ -203,26 +320,28 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         if not self.config.params.get("api_key"):
             self.ten_env.log_error("Missing required api_key")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message="Missing required api_key",
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Missing required api_key",
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             return
 
         try:
+            if self.websocket is not None:
+                await self._stop_websocket(suppress_status=True)
             await self._start_websocket()
         except Exception as e:
             self.ten_env.log_error(f"start_connection failed: {e}")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(e),
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             return
 
         try:
@@ -440,6 +559,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self, flush_reason: str = "session finalize"
     ) -> None:
         self.ten_env.log_info("finalize end")
+        # Emit any transcript held back for sentence-end detection.
+        await self._flush_deferred_vendor_final_tokens()
         if self._effective_holding_mode() == HoldingMode.ENDPOINTING_ONLY:
             # Only flush on disconnect; <end> is handled in _handle_transcript.
             # Do not flush on <fin> (session finalize) so segment boundary and TTLW
@@ -473,6 +594,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
 
+    async def _handle_reconnect(self) -> None:
+        """Schedule one reconnect attempt; further retries come from _handle_close."""
+        if not self.reconnect_manager:
+            self.ten_env.log_error("ReconnectManager not initialized")
+            return
+
+        await self.reconnect_manager.handle_reconnect(
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
+        )
+
     # WebSocket event handlers
     async def _handle_open(self, connection_start_timestamp: int):
         connection_delay_ms = (
@@ -491,13 +623,35 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         )
         self.audio_timeline.reset()
         self.connected = True
+        self._clear_deferred_vendor_final_tokens()
+        if self.reconnect_manager:
+            self.reconnect_manager.mark_connection_successful()
+        await self.on_connected()
 
-    async def _handle_close(self):
+    async def _handle_close(
+        self, vendor_code: int = 0, vendor_message: str = "closed"
+    ):
+        if self._suppress_close_status:
+            self._suppress_close_status = False
+            self.connected = False
+            return
+
         self.ten_env.log_info(
-            "vendor_status_changed: connection closed",
+            f"vendor connection closed: code={vendor_code}, message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
+
+        vendor_info = None
+        if vendor_code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_code),
+                message=vendor_message,
+            )
+        await self.on_disconnected(
+            code=0, message="closed", vendor_info=vendor_info
+        )
 
         if self._pending_close_finalize:
             self._pending_close_finalize = False
@@ -507,11 +661,19 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.config.finalize_reconnect_mode
                 == FinalizeReconnectMode.IMMEDIATE
             ):
-                await self._start_websocket()
+                await self.start_connection()
             elif self.buffered_frames.qsize() > 0:
-                await self._start_websocket()
+                await self.start_connection()
             else:
                 self._needs_reconnect = True
+            return
+
+        # Intentional close-finalize reconnects call start_connection() directly.
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Soniox connection closed unexpectedly. Reconnecting..."
+            )
+            await self._handle_reconnect()
 
     async def _handle_exception(self, e: Exception):
         self.ten_env.log_error(
@@ -520,6 +682,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await self._handle_error(-1, str(e))
 
     async def _handle_error(self, error_code: int, error_message: str):
+        # Vendor ERROR events are reported here; on_disconnected is emitted from
+        # _handle_close when the websocket actually closes.
         self.ten_env.log_error(
             f"vendor_error: code: {error_code}, message: {error_message}",
             category=LOG_CATEGORY_VENDOR,
@@ -646,6 +810,14 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             effective == HoldingMode.ENDPOINTING_ONLY
         )
 
+        if not use_holding and final_transcripts and non_final_transcripts:
+            await self._send_mixed_transcript_and_translation(
+                final_transcripts,
+                non_final_transcripts,
+                translation_tokens,
+            )
+            return
+
         # Process final transcripts first (they come before non-final)
         if final_transcripts:
             if use_holding:
@@ -673,6 +845,117 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 is_final=False,
             )
 
+    async def _send_mixed_transcript_and_translation(
+        self,
+        final_transcripts: List[SonioxTranscriptToken],
+        non_final_transcripts: List[SonioxTranscriptToken],
+        translation_tokens: List[SonioxTranslationToken],
+    ) -> None:
+        """Send one batch with both final and non-final segments."""
+        adjusted_final_tokens, adjusted_final = (
+            self._adjust_tokens_for_sentence_end_finality(
+                final_transcripts,
+                True,
+            )
+        )
+        adjusted_non_final_tokens, _ = (
+            self._adjust_tokens_for_sentence_end_finality(
+                non_final_transcripts,
+                False,
+            )
+        )
+
+        asr_results: List[ASRResult] = []
+        if adjusted_final and adjusted_final_tokens:
+            asr_results.extend(
+                self._create_asr_results(adjusted_final_tokens, True)
+            )
+            if adjusted_non_final_tokens:
+                asr_results.extend(
+                    self._create_asr_results(adjusted_non_final_tokens, False)
+                )
+        elif adjusted_non_final_tokens:
+            asr_results.extend(
+                self._create_asr_results(adjusted_non_final_tokens, False)
+            )
+        elif adjusted_final_tokens:
+            asr_results.extend(
+                self._create_asr_results(adjusted_final_tokens, False)
+            )
+        if not asr_results:
+            return
+
+        await self._publish_asr_results(asr_results, translation_tokens)
+
+    async def _publish_asr_results(
+        self,
+        asr_results: List[ASRResult],
+        translation_tokens: List[SonioxTranslationToken],
+    ) -> None:
+        """Publish one asr_result per segment, then one asr_results batch.
+
+        Per-segment asr_result is kept for backward compatibility. In a mixed
+        final/non-final batch, translation is sent only for final segments:
+        Soniox emits translation tokens with is_final=true, and partial ASR
+        segments must not trigger a translation event.
+        """
+
+        for index, result in enumerate(asr_results):
+            if index > 0 and not result.id:
+                result.id = self._get_uuid()
+            await self.send_asr_result(result)
+            result_id: str = result.id or self.uuid
+
+            self.last_transcript_text = result.text
+            self.last_transcript_start_ms = result.start_ms
+            self.last_transcript_duration_ms = result.duration_ms
+            self.last_transcript_is_final = result.final
+            self.last_transcript_id = result_id
+
+            # Gate on runtime ASR finality, not translation_token.is_final.
+            if translation_tokens:
+                if (
+                    self.config is None
+                    or self.config.holding_mode
+                    == HoldingMode.SENTENCE_TERMINATOR
+                ):
+                    # In SENTENCE_TERMINATOR mode, asr_results are sent in segments, so it is necessary to determine whether it is the final segment
+                    if result.final:
+                        await self._send_translation_results(
+                            translation_tokens,
+                            result.final,
+                            result.text,
+                            result.start_ms,
+                            result.duration_ms,
+                            result_id,
+                        )
+                else:
+                    # other modes, send translation for each segment (per language)
+                    await self._send_translation_results(
+                        translation_tokens,
+                        result.final,
+                        result.text,
+                        result.start_ms,
+                        result.duration_ms,
+                        result_id,
+                    )
+
+        await self._send_asr_results_data(asr_results)
+
+    async def _send_asr_results_data(self, results: List[ASRResult]) -> None:
+        """Send asr_results using payloads already populated by send_asr_result."""
+        if not results:
+            return
+
+        payload = ASRResults(results=results).model_dump()
+        data = Data.create("asr_results")
+        data.set_property_from_json(None, json.dumps(payload))
+        await self.ten_env.send_data(data)
+        self.ten_env.log_info(
+            f"send asr_results: {payload}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+
     async def _send_transcript_and_translation(
         self,
         transcript_tokens: List[SonioxTranscriptToken],
@@ -680,36 +963,18 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         is_final: bool,
     ) -> None:
         """Send ASR results and their translations."""
+        adjusted_tokens, adjusted_final = (
+            self._adjust_tokens_for_sentence_end_finality(
+                transcript_tokens,
+                is_final,
+            )
+        )
+        if not adjusted_tokens:
+            return
+
         # Create and send ASR results
-        asr_results = self._create_asr_results(transcript_tokens, is_final)
-
-        for result in asr_results:
-            await self.send_asr_result(result)
-            # After send_asr_result, result.id is set to the correct uuid
-            # (self.uuid may have been reset if result.final is True)
-            # result.id is guaranteed to be set by send_asr_result (it's set to self.uuid)
-            result_id: str = (
-                result.id or self.uuid
-            )  # Fallback to self.uuid if None
-
-            # Store last transcript info for potential standalone translations
-            self.last_transcript_text = result.text
-            self.last_transcript_start_ms = result.start_ms
-            self.last_transcript_duration_ms = result.duration_ms
-            self.last_transcript_is_final = is_final
-            self.last_transcript_id = result_id
-
-            # NOTE: it seems weird to send translation multiple times, but this complexity come from
-            # the need to seperate multi-language tokens into multiple asr_result.
-            if translation_tokens:
-                await self._send_translation_results(
-                    translation_tokens,
-                    is_final,
-                    result.text,
-                    result.start_ms,
-                    result.duration_ms,
-                    result_id,
-                )
+        asr_results = self._create_asr_results(adjusted_tokens, adjusted_final)
+        await self._publish_asr_results(asr_results, translation_tokens)
 
     async def _send_translation_results(
         self,
@@ -748,7 +1013,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         # Send as Data message with name 'asr_translation_result'
         data = Data.create("asr_translation_result")
-        data.set_property_from_json("", translation_result.model_dump_json())
+        data.set_property_from_json(None, translation_result.model_dump_json())
 
         self.ten_env.log_info(
             f"send_asr_translation_result: {translation_result.model_dump_json()}",
@@ -762,31 +1027,38 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         """
         Create ASRResult objects from a list of SonioxTranscriptToken, grouped by language.
         """
+        return self._create_asr_results_for_group(tokens, is_final)
+
+    def _create_asr_results_for_group(
+        self, tokens: List[SonioxTranscriptToken], is_final: bool
+    ) -> List[ASRResult]:
         if not tokens:
             return []
 
-        results = []
+        results: List[ASRResult] = []
         current_language = map_language_code(tokens[0].language or "en")
-        current_tokens = []
+        current_tokens: List[SonioxTranscriptToken] = []
 
         for token in tokens:
             token_language = map_language_code(token.language or "en")
 
             if token_language != current_language and current_tokens:
-                result = self._create_single_asr_result(
-                    current_tokens, current_language, is_final
+                results.append(
+                    self._create_single_asr_result(
+                        current_tokens, current_language, is_final
+                    )
                 )
-                results.append(result)
                 current_tokens = []
                 current_language = token_language
 
             current_tokens.append(token)
 
         if current_tokens:
-            result = self._create_single_asr_result(
-                current_tokens, current_language, is_final
+            results.append(
+                self._create_single_asr_result(
+                    current_tokens, current_language, is_final
+                )
             )
-            results.append(result)
 
         return results
 
@@ -813,7 +1085,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 "word": token.text,
                 "start_ms": self._adjust_timestamp(token.start_ms),
                 "duration_ms": token.end_ms - token.start_ms,
-                "stable": token.is_final,
+                "stable": is_final,
             }
             words.append(word)
             text += token.text

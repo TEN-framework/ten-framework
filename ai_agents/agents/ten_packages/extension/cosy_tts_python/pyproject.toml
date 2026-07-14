@@ -1,0 +1,8 @@
+[project]
+name = "cosy-tts-python"
+version = "0.4.1"
+requires-python = ">=3.10"
+dependencies = [
+    "dashscope>=1.26.0",
+    "pydantic>=2.13.4",
+]

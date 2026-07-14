@@ -46,5 +46,22 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
         """Return vendor name."""
         return "openai"
 
+    def vendor_metadata(self) -> dict:
+        if self.config is None:
+            return {}
+
+        authorization = self.config.headers.get(
+            "Authorization",
+            "",
+        ) or self.config.headers.get("authorization", "")
+        return {
+            "key": self.config.params.get("api_key", "") or authorization,
+            "url": self.config.url or "",
+            "model": self.config.params.get("model", ""),
+            "api_key": self.config.params.get("api_key", ""),
+            "authorization": authorization,
+            "voice": self.config.params.get("voice", ""),
+        }
+
     def synthesize_audio_sample_rate(self) -> int:
         return 24000

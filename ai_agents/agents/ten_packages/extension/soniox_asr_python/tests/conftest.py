@@ -202,9 +202,11 @@ def patch_soniox_ws():
                     connection_start_timestamp
                 )
 
-        async def trigger_close():
+        async def trigger_close(code: int = 0, message: str = "closed"):
             if "close" in websocket_client_instance._callbacks:
-                await websocket_client_instance._callbacks["close"]()
+                await websocket_client_instance._callbacks["close"](
+                    code, message
+                )
 
         async def trigger_transcript(
             tokens, final_audio_proc_ms, total_audio_proc_ms

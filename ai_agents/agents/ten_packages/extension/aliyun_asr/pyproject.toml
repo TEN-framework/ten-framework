@@ -1,0 +1,8 @@
+[project]
+name = "aliyun-asr"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "alibabacloud-nls-python-sdk>=1.0.2",
+    "pydantic>=2.13.4",
+]

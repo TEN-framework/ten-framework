@@ -76,7 +76,7 @@ def test_params_passthrough(MockRimeTTSClient):
     mock_instance.close = AsyncMock()
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
         return mock_instance

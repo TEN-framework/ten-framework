@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "gradium_tts_python",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "dependencies": [
     {
       "type": "system",
@@ -20,6 +20,7 @@
       "property.json",
       "**.py",
       "README.md",
+      "pyproject.toml",
       "requirements.txt"
     ]
   },
@@ -31,16 +32,19 @@
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
             "api_key": {
               "type": "string"
             },
-            "region": {
-              "type": "string"
-            },
-            "base_url": {
+            "url": {
               "type": "string"
             },
             "model_name": {
@@ -49,7 +53,22 @@
             "voice_id": {
               "type": "string"
             },
-            "output_format": {
+            "voice": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "json_config": {
+              "type": "string"
+            },
+            "close_ws_on_eos": {
+              "type": "bool"
+            },
+            "retry_for_s": {
+              "type": "float64"
+            },
+            "pronunciation_id": {
               "type": "string"
             }
           }

@@ -66,8 +66,10 @@ task asr-guarder-test EXTENSION=oracle_asr_python -- -k test_connection_timing
 | Test | Description |
 |------|-------------|
 | `test_connection_timing` | Verifies ASR extension establishes connection and processes audio |
+| `test_connection_status` | Validates `connection_status_changed` events (`connecting` and `connected` and `disconnected`) and payload structure |
 | `test_asr_result` | Validates ASR result fields, language detection, and ID consistency across multiple sends |
 | `test_asr_finalize` | Tests `asr_finalize` signal handling and `asr_finalize_end` response |
+| `test_same_session_finalize_reconnect` | Repeats audio -> finalize twice in one session and requires a second non-empty result |
 | `test_reconnection` | Tests reconnection mechanism with invalid credentials |
 | `test_vendor_error` | Validates vendor error detection and error message format |
 | `test_multi_language` | Tests English and Chinese language processing |

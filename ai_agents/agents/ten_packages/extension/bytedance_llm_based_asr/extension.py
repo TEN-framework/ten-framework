@@ -182,6 +182,19 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         return "bytedance_bigmodel"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        fields = {
+            "url": self.config.get_api_url(),
+            "app_key": self.config.get_app_key(),
+            "access_key": self.config.get_access_key(),
+            "api_key": self.config.get_api_key(),
+            "auth_method": self.config.get_auth_method(),
+        }
+        return {k: v for k, v in fields.items() if v}
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
         self.ten_env = ten_env
@@ -238,16 +251,50 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def start_connection(self) -> None:
         """Start connection to Volcengine ASR service."""
         if not self.config:
-            raise ValueError("Configuration not loaded")
+            error = ModuleError(
+                module=ModuleType.ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Configuration not loaded",
+            )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
+            return
 
         if self.config.get_auth_method() == "api_key":
             if not self.config.get_api_key():
-                raise ValueError("api_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="api_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
         else:
             if not self.config.get_app_key():
-                raise ValueError("app_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="app_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
             if not self.config.get_access_key():
-                raise ValueError("access_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="access_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
 
         try:
             self.client = VolcengineASRClient(
@@ -270,21 +317,31 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to create ASR client: {e}")
+            self.connected = False
+            error = ModuleError(
+                module=ModuleType.ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
+            )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
+            return
 
-            # Create dumper for new connection with UUID filename
-            if self.log_id_dumper_manager:
-                await self.log_id_dumper_manager.create_dumper()
+        # Create dumper for new connection with UUID filename
+        if self.log_id_dumper_manager:
+            await self.log_id_dumper_manager.create_dumper()
 
+        try:
             await self.client.connect()
             # Do NOT set self.connected = True here (callback-driven pattern)
             # Connection state will be set in _on_connected() callback when server confirms
             # This matches azure_asr_python pattern where state is set in event handler
-
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
             self.connected = False
-            # Don't raise the exception, let the extension continue
-            # The connection will be retried later
+            # connect() reports via connection_error_callback and _on_disconnected
 
     @override
     async def stop_connection(self) -> None:
@@ -1070,7 +1127,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             "Successfully connected to Volcengine ASR service"
         )
 
-    def _on_connected(self) -> None:
+    async def _on_connected(self) -> None:
         """Handle connection established (callback-driven state change).
 
         Called by client when server sends MESSAGE_TYPE_SERVER_FULL_RESPONSE with code=0.
@@ -1085,16 +1142,41 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Set connected=True here (callback-driven pattern)
         self.connected = True
 
-        # Perform initialization that was previously in start_connection()
         self._initialize_connection_state()
+        await self.on_connected()
 
-    def _on_disconnected(self) -> None:
+    async def _on_disconnected(
+        self,
+        vendor_close_code: int = 0,
+        vendor_close_message: str = "closed",
+        vendor_code: str = "",
+        vendor_message: str = "",
+    ) -> None:
         """Handle connection lost."""
         self.ten_env.log_info(
-            f"vendor_status_changed: session_id: {self.session_id}",
+            f"vendor connection closed, session_id: {self.session_id}, "
+            f"vendor_close_code={vendor_close_code}, "
+            f"vendor_close_message={vendor_close_message}, "
+            f"vendor_code={vendor_code}, vendor_message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
+        vendor_info = None
+        if vendor_code or vendor_message:
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=vendor_code,
+                message=vendor_message,
+            )
+        elif vendor_close_code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_close_code),
+                message=vendor_close_message,
+            )
+        await self.on_disconnected(
+            code=0, message="closed", vendor_info=vendor_info
+        )
 
     @staticmethod
     def _set_update_configs_cmd_result(

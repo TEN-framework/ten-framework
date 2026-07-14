@@ -1,2 +1,2 @@
-dashscope==1.24.1
+dashscope>=1.26.0
 pydantic

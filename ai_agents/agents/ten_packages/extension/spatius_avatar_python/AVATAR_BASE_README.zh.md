@@ -9,7 +9,7 @@
 - ✅ 内置音频队列和处理循环
 - ✅ 采样率验证
 - ✅ 错误处理和日志记录
-- ✅ 命令处理（flush、drain）
+- ✅ 消息处理（flush、finalize）
 - ✅ 可选的音频转储功能用于调试
 
 ---
@@ -85,7 +85,7 @@ async def send_audio_to_avatar(self, audio_data: bytes) -> None:
 ### 6. `send_eof_to_avatar() -> None`
 **用途：** 发送音频流结束信号。
 **调用时机：** 自动调用，当：
-- 收到 `drain` 命令
+- 收到 `finalize` data
 
 ```python
 async def send_eof_to_avatar(self) -> None:
@@ -216,9 +216,9 @@ class MyAvatarExtension(AsyncAvatarBaseExtension):
    └─> 音频入队
    └─> 从循环中调用 send_audio_to_avatar()
 
-4. 命令处理（自动）
+4. 消息处理（自动）
    └─> flush 命令 → interrupt_avatar()
-   └─> drain 命令 → send_eof_to_avatar()
+   └─> finalize data → send_eof_to_avatar()
 
 5. on_stop()
    └─> 停止音频处理循环
@@ -275,7 +275,7 @@ class MyAvatarExtension(AsyncAvatarBaseExtension):
 
 ---
 
-## 命令处理
+## 消息处理
 
 ### Flush 命令
 收到 `flush` 命令时：
@@ -283,10 +283,10 @@ class MyAvatarExtension(AsyncAvatarBaseExtension):
 2. 调用 `interrupt_avatar()`
 3. 转发 `flush` 命令
 
-### Drain 命令
-收到 `drain` 命令时：
+### Finalize Data
+收到 `finalize` data 时：
 1. 将 `send_eof_to_avatar()` 排到待处理音频之后执行
-2. 表示 TTS 播放音频已经 drain 完成
+2. 表示 TTS 播放音频已经 finalize
 
 ---
 
