@@ -266,7 +266,7 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                         # Accept both the wire event and the OpenAPI envelope.
                         data = event.get("data", event)
                         if data.get("type") == "speech.audio.done":
-                            continue
+                            break
                         audio_data = data.get("audio_data")
                         if not audio_data:
                             continue

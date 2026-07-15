@@ -40,12 +40,19 @@ def test_update_params_defaults():
 
 
 def test_response_format_is_forced_to_pcm():
-    """Even if the caller asks for wav/mp3, we override to pcm."""
+    """Force PCM while preserving an explicit non-streaming request."""
     from mistral_tts_python.config import MistralTTSConfig
 
-    config = MistralTTSConfig(params={"api_key": "k", "response_format": "wav"})
+    config = MistralTTSConfig(
+        params={
+            "api_key": "k",
+            "response_format": "wav",
+            "stream": False,
+        }
+    )
     config.update_params()
     assert config.params["response_format"] == "pcm"
+    assert config.params["stream"] is False
     print("✅ response_format override test passed.")
 
 
@@ -132,6 +139,8 @@ def test_sse_audio_is_base64_decoded(MockAsyncClient):
         yield f"data: {delta}"
         yield ""
         yield 'data: {"type":"speech.audio.done","usage":{}}'
+        # The client must stop consuming as soon as the done event arrives.
+        yield "data: this line must not be parsed"
 
     mock_response.aiter_lines = mock_aiter_lines
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
