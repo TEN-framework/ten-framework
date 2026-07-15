@@ -1038,7 +1038,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
 
-    def _on_connection_error(self, exception: Exception) -> None:
+    def _on_connection_error(self, exception: Exception) -> tuple[int, str]:
         """Handle connection-level errors (HTTP stage)."""
         # Connection error handling logic
         error_message = str(exception)
@@ -1056,8 +1056,11 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Create task to report error to TEN framework
         asyncio.create_task(self._on_asr_error(error_code, error_message))
+        return error_code, error_message
 
-    def _on_asr_communication_error(self, exception: Exception) -> None:
+    def _on_asr_communication_error(
+        self, exception: Exception
+    ) -> tuple[int, str]:
         """Handle ASR communication errors (WebSocket stage)."""
         # Check if this is a server error response with a specific error code
         if hasattr(exception, "code"):
@@ -1085,6 +1088,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             error_message = str(exception)
 
         asyncio.create_task(self._on_asr_error(error_code, error_message))
+        return int(error_code), error_message
 
     def _on_asr_exception(self, exception: Exception) -> None:
         """Handle connection-level exceptions from client (adapter for error_callback)."""
@@ -1175,7 +1179,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 message=vendor_close_message,
             )
         await self.on_disconnected(
-            code=0, message="closed", vendor_info=vendor_info
+            code=vendor_close_code,
+            message=vendor_close_message,
+            vendor_info=vendor_info,
         )
 
     @staticmethod

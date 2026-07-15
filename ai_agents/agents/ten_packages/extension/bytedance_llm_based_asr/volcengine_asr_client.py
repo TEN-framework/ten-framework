@@ -388,9 +388,11 @@ class VolcengineASRClient:
         self.seq = 1
         # Separate callbacks for different error types
         self.connection_error_callback: Optional[
-            Callable[[Exception], None]
+            Callable[[Exception], Optional[tuple[int, str]]]
         ] = None
-        self.asr_error_callback: Optional[Callable[[Exception], None]] = None
+        self.asr_error_callback: Optional[
+            Callable[[Exception], Optional[tuple[int, str]]]
+        ] = None
         self.result_callback: Optional[
             Callable[[ASRResponse], Awaitable[None]]
         ] = None
@@ -463,28 +465,29 @@ class VolcengineASRClient:
                 self.ten_env.log_error(f"Connection failed: {e}")
             else:
                 logging.error(f"Connection failed: {e}")
-            if self.connection_error_callback:
-                try:
-                    self.connection_error_callback(e)
-                except Exception as callback_error:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in connection error callback: {callback_error}"
-                        )
-                    else:
-                        logging.error(
-                            f"Error in connection error callback: {callback_error}"
-                        )
-            elif self.ten_env:
+
+            callback_close = self._handle_connection_error_callback(e)
+            vendor_code, vendor_message = (
+                callback_close if callback_close is not None else (0, "closed")
+            )
+            if not self.connection_error_callback and self.ten_env:
                 # Fallback logging if no connection error callback is set
                 self.ten_env.log_error(f"Connection failed: {e}")
-            else:
+            elif not self.connection_error_callback:
                 logging.error(f"Connection failed: {e}")
 
-            await self.disconnect()
+            await self.disconnect(
+                1000, "closed", str(vendor_code), vendor_message
+            )
             raise
 
-    async def disconnect(self) -> None:
+    async def disconnect(
+        self,
+        close_code: int = 1000,
+        close_message: str = "closed",
+        vendor_code: str = "",
+        vendor_message: str = "",
+    ) -> None:
         """Disconnect from ASR service."""
         self.connected = False
         # Reset first response tracking for reconnection
@@ -499,7 +502,12 @@ class VolcengineASRClient:
                 self.websocket = None
 
         # Call disconnected callback
-        await self._notify_disconnected(0, "closed")
+        await self._notify_disconnected(
+            close_code,
+            close_message,
+            vendor_code=vendor_code,
+            vendor_message=vendor_message,
+        )
 
     async def _invoke_callback(
         self, callback: Callable[..., Any], *args: Any
@@ -530,6 +538,61 @@ class VolcengineASRClient:
                 vendor_code,
                 vendor_message,
             )
+
+    def _handle_asr_error_callback(
+        self, exception: Exception
+    ) -> Optional[tuple[int, str]]:
+        return self._handle_error_callback(
+            self.asr_error_callback, exception, "ASR error"
+        )
+
+    def _handle_connection_error_callback(
+        self, exception: Exception
+    ) -> Optional[tuple[int, str]]:
+        return self._handle_error_callback(
+            self.connection_error_callback, exception, "connection error"
+        )
+
+    def _handle_error_callback(
+        self,
+        callback: Optional[Callable[[Exception], Optional[tuple[int, str]]]],
+        exception: Exception,
+        callback_name: str,
+    ) -> Optional[tuple[int, str]]:
+        if not callback:
+            return None
+
+        try:
+            callback_result = callback(exception)
+        except Exception as callback_error:
+            if self.ten_env:
+                self.ten_env.log_error(
+                    f"Error in {callback_name} callback: {callback_error}"
+                )
+            else:
+                logging.error(
+                    f"Error in {callback_name} callback: {callback_error}"
+                )
+            return None
+
+        if callback_result is None:
+            return None
+
+        try:
+            error_code, error_message = callback_result
+            return int(error_code), str(error_message)
+        except (TypeError, ValueError):
+            if self.ten_env:
+                self.ten_env.log_error(
+                    f"Invalid {callback_name} callback result: "
+                    f"{callback_result}"
+                )
+            else:
+                logging.error(
+                    f"Invalid {callback_name} callback result: "
+                    f"{callback_result}"
+                )
+            return None
 
     async def _send_full_client_request(self) -> None:
         """Send full client request."""
@@ -655,7 +718,7 @@ class VolcengineASRClient:
         if not self.websocket:
             return
 
-        close_code = 0
+        close_code = 1000
         close_message = "closed"
         vendor_code = ""
         vendor_message = ""
@@ -674,41 +737,19 @@ class VolcengineASRClient:
 
                     # Handle error responses from server
                     if response.code != 0:
-                        vendor_code = str(response.code)
-                        vendor_message = f"server error code={response.code}"
                         # Trigger ASR error callback for server error responses
-                        if self.asr_error_callback:
-                            try:
-                                error = ServerErrorResponse(
-                                    f"Server error response: code={response.code}",
-                                    response.code,
-                                )
-                                self.asr_error_callback(error)
-                            except Exception as callback_error:
-                                if self.ten_env:
-                                    self.ten_env.log_error(
-                                        f"Error in ASR error callback: {callback_error}"
-                                    )
-                                else:
-                                    logging.error(
-                                        f"Error in ASR error callback: {callback_error}"
-                                    )
+                        error = ServerErrorResponse(
+                            f"Server error response: code={response.code}",
+                            response.code,
+                        )
+                        callback_close = self._handle_asr_error_callback(error)
+                        if callback_close is not None:
+                            vendor_code, vendor_message = callback_close
 
                         # Don't break - continue listening for more responses in streaming mode
                     elif response.is_last_package:
                         # Don't break - continue listening for more responses in streaming mode
                         pass
-        except websockets.exceptions.ConnectionClosed as e:
-            close_code = e.code
-            close_message = e.reason or "closed"
-            if self.ten_env:
-                self.ten_env.log_error(
-                    f"WebSocket connection closed: code={close_code}, message={close_message}"
-                )
-            else:
-                logging.error(
-                    f"WebSocket connection closed: code={close_code}, message={close_message}"
-                )
         except BaseException as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Error listening for responses: {e}")
@@ -716,18 +757,9 @@ class VolcengineASRClient:
                 logging.error(f"Error listening for responses: {e}")
 
             # ASR communication error - use dedicated ASR error callback
-            if self.asr_error_callback:
-                try:
-                    self.asr_error_callback(e)
-                except Exception as callback_error:
-                    if self.ten_env:
-                        self.ten_env.log_error(
-                            f"Error in ASR error callback: {callback_error}"
-                        )
-                    else:
-                        logging.error(
-                            f"Error in ASR error callback: {callback_error}"
-                        )
+            callback_close = self._handle_asr_error_callback(e)
+            if callback_close is not None:
+                vendor_code, vendor_message = callback_close
         finally:
             self.connected = False
             # Reset first response tracking for reconnection
@@ -756,13 +788,13 @@ class VolcengineASRClient:
             logging.warning("result_callback is not set")
 
     def set_on_connection_error_callback(
-        self, callback: Callable[[Exception], None]
+        self, callback: Callable[[Exception], Optional[tuple[int, str]]]
     ) -> None:
         """Set callback for connection errors (HTTP stage)."""
         self.connection_error_callback = callback
 
     def set_on_asr_error_callback(
-        self, callback: Callable[[Exception], None]
+        self, callback: Callable[[Exception], Optional[tuple[int, str]]]
     ) -> None:
         """Set callback for ASR business errors (WebSocket stage)."""
         self.asr_error_callback = callback
