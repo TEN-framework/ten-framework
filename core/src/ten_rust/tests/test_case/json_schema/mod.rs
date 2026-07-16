@@ -7,8 +7,9 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::json_schema::{
-        ten_validate_interface_json_string, ten_validate_manifest_json_string,
-        ten_validate_property_json_string, validate_manifest_lock_json_string,
+        ten_validate_graph_json_string, ten_validate_interface_json_string,
+        ten_validate_manifest_json_string, ten_validate_property_json_string,
+        validate_manifest_lock_json_string,
     };
 
     #[test]
@@ -210,6 +211,35 @@ mod tests {
 
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains("Additional properties are not allowed"));
+    }
+
+    #[test]
+    fn test_validate_graph_rejects_null_in_node_property() {
+        let graph = r#"
+        {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "glue_python_async",
+              "property": {
+                "system_messages": [
+                  {
+                    "role": "system",
+                    "content": null
+                  }
+                ]
+              }
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_graph_json_string(graph);
+        assert!(result.is_err());
+
+        let msg = result.unwrap_err().to_string();
+        assert!(msg.contains("null"));
     }
 
     #[test]
