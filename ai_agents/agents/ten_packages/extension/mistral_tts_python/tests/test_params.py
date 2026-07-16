@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -29,6 +31,7 @@ def test_update_params_defaults():
     assert config.params["model"] == "voxtral-mini-tts-2603"
     # Always raw float32 `pcm` regardless of what the caller passed.
     assert config.params["response_format"] == "pcm"
+    assert config.params["stream"] is True
     # We do not inject a voice default — voice is optional for Voxtral.
     assert "voice" not in config.params
     # Default endpoint is the Mistral OpenAI-compatible speech endpoint.
@@ -37,12 +40,19 @@ def test_update_params_defaults():
 
 
 def test_response_format_is_forced_to_pcm():
-    """Even if the caller asks for wav/mp3, we override to pcm."""
+    """Force PCM while preserving an explicit non-streaming request."""
     from mistral_tts_python.config import MistralTTSConfig
 
-    config = MistralTTSConfig(params={"api_key": "k", "response_format": "wav"})
+    config = MistralTTSConfig(
+        params={
+            "api_key": "k",
+            "response_format": "wav",
+            "stream": False,
+        }
+    )
     config.update_params()
     assert config.params["response_format"] == "pcm"
+    assert config.params["stream"] is False
     print("✅ response_format override test passed.")
 
 
@@ -106,6 +116,60 @@ def test_structured_vendor_error_is_encoded(MockAsyncClient):
     assert events[0][1] == TTS2HttpResponseEventType.ERROR
     assert isinstance(events[0][0], bytes)
     assert b"Extra inputs are not permitted" in events[0][0]
+
+
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+def test_sse_audio_is_base64_decoded(MockAsyncClient):
+    """SSE audio deltas are decoded before float32-to-PCM16 conversion."""
+    from mistral_tts_python.config import MistralTTSConfig
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from ten_ai_base.struct import TTS2HttpResponseEventType
+    from ten_runtime import AsyncTenEnv
+
+    float32_audio = struct.pack("<3f", -1.0, 0.0, 1.0)
+    audio_data = base64.b64encode(float32_audio).decode()
+    delta = json.dumps({"type": "speech.audio.delta", "audio_data": audio_data})
+
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
+    mock_response.headers = {"content-type": "text/event-stream"}
+
+    async def mock_aiter_lines():
+        yield "event: speech.audio.delta"
+        yield f"data: {delta}"
+        yield ""
+        yield 'data: {"type":"speech.audio.done","usage":{}}'
+        # The client must stop consuming as soon as the done event arrives.
+        yield "data: this line must not be parsed"
+
+    mock_response.aiter_lines = mock_aiter_lines
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_http_client = AsyncMock()
+    mock_http_client.stream = MagicMock(return_value=mock_response)
+    MockAsyncClient.return_value = mock_http_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    config = MistralTTSConfig(params={"api_key": "k"})
+    config.update_params()
+    client = MistralTTSClient(config, mock_ten_env)
+
+    async def collect_events():
+        return [event async for event in client.get("hello", "request-id")]
+
+    events = asyncio.run(collect_events())
+
+    assert events[0] == (
+        struct.pack("<3h", -32767, 0, 32767),
+        TTS2HttpResponseEventType.RESPONSE,
+    )
+    assert events[-1] == (None, TTS2HttpResponseEventType.END)
+    request_payload = mock_http_client.stream.call_args.kwargs["json"]
+    assert request_payload["stream"] is True
 
 
 # ================ test endpoint URL resolution ================

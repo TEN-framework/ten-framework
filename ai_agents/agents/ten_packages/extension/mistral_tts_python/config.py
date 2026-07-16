@@ -57,6 +57,9 @@ class MistralTTSConfig(AsyncTTS2HttpConfig):
         # Always request the raw float32 `pcm` stream; the client rescales it
         # to PCM16 mono (the format Voxtral's `pcm` actually emits).
         self.params["response_format"] = DEFAULT_RESPONSE_FORMAT
+        # Default to SSE streaming, but preserve an explicit false value so
+        # callers can request Mistral's complete base64 JSON response instead.
+        self.params.setdefault("stream", True)  # pylint: disable=no-member
 
         # Set endpoint URL from base_url if url is not provided
         if not self.url:

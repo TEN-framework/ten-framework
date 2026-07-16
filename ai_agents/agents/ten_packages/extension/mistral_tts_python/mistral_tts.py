@@ -13,7 +13,9 @@ sample to signed 16-bit on the fly (see Float32ToPcm16). Requesting raw `pcm`
 header to buffer before the first samples arrive.
 """
 
+from collections.abc import Mapping
 from typing import Any, AsyncIterator, Tuple
+import base64
 import json
 import ssl
 import struct
@@ -92,7 +94,8 @@ class MistralTTSClient(AsyncTTS2HttpClient):
     Features:
     - OpenAI-compatible `/v1/audio/speech` request shape
     - Parameter passthrough (all params except api_key and base_url)
-    - float32 PCM -> PCM16 mono conversion (Voxtral's raw `pcm` format)
+    - Base64 decoding of Mistral JSON/SSE audio payloads
+    - float32 PCM -> PCM16 mono conversion (Voxtral's `pcm` format)
     - Comprehensive error handling and cancellation support
     """
 
@@ -235,18 +238,70 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                         ), TTS2HttpResponseEventType.ERROR
                     return
 
-                # Stream audio, converting float32 PCM -> PCM16 mono on the fly.
-                async for chunk in response.aiter_bytes():
-                    if self._is_cancelled:
-                        self.ten_env.log_debug(
-                            f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
-                        )
-                        yield None, TTS2HttpResponseEventType.FLUSH
-                        break
+                content_type = ""
+                if isinstance(response.headers, Mapping):
+                    content_type = response.headers.get(
+                        "content-type", ""
+                    ).lower()
 
-                    pcm = converter.feed(chunk)
+                if "text/event-stream" in content_type:
+                    # Mistral SSE events carry base64-encoded float32 PCM in
+                    # `data: {"type":"speech.audio.delta", "audio_data":...}`.
+                    async for line in response.aiter_lines():
+                        if self._is_cancelled:
+                            self.ten_env.log_debug(
+                                f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
+                            )
+                            yield None, TTS2HttpResponseEventType.FLUSH
+                            break
+
+                        line = line.strip()
+                        if not line.startswith("data:"):
+                            continue
+                        event_data = line.removeprefix("data:").strip()
+                        if not event_data or event_data == "[DONE]":
+                            continue
+
+                        event = json.loads(event_data)
+                        # Accept both the wire event and the OpenAPI envelope.
+                        data = event.get("data", event)
+                        if data.get("type") == "speech.audio.done":
+                            break
+                        audio_data = data.get("audio_data")
+                        if not audio_data:
+                            continue
+
+                        pcm = converter.feed(
+                            base64.b64decode(audio_data, validate=True)
+                        )
+                        if pcm:
+                            yield pcm, TTS2HttpResponseEventType.RESPONSE
+                elif "application/json" in content_type:
+                    # Compatibility path for proxies that ignore stream=true.
+                    body = json.loads(await response.aread())
+                    audio_data = body.get("audio_data")
+                    if not audio_data:
+                        raise ValueError(
+                            "Mistral response did not contain audio_data"
+                        )
+                    pcm = converter.feed(
+                        base64.b64decode(audio_data, validate=True)
+                    )
                     if pcm:
                         yield pcm, TTS2HttpResponseEventType.RESPONSE
+                else:
+                    # Some OpenAI-compatible proxies return raw PCM bytes.
+                    async for chunk in response.aiter_bytes():
+                        if self._is_cancelled:
+                            self.ten_env.log_debug(
+                                f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
+                            )
+                            yield None, TTS2HttpResponseEventType.FLUSH
+                            break
+
+                        pcm = converter.feed(chunk)
+                        if pcm:
+                            yield pcm, TTS2HttpResponseEventType.RESPONSE
 
                 # Send END event
                 if not self._is_cancelled:

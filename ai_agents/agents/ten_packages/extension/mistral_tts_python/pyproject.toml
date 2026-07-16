@@ -8,7 +8,7 @@
 [project]
 name = "mistral-tts-python"
 description = "TEN Framework TTS extension for Mistral Voxtral written in Python"
-version = "0.1.1"
+version = "0.1.2"
 requires-python = ">=3.10"
 dependencies = ["httpx[http2]", "certifi", "pydantic>=2.0.0", "typing-extensions"]
 
