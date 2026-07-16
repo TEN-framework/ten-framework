@@ -3,12 +3,7 @@
     "key": "${env:EZAI_API_KEY}",
     "url": "wss://qwlk.ezai-k8s.freeddns.org/v1/listen",
     "model": "nova-3",
-    "finalize_mode": "mute_pkg",
     "sample_rate": 16000,
-    "encoding": "linear16",
-    "eager_eot_threshold": 0.6,
-    "eot_threshold": 0.8,
-    "eot_timeout_ms": 700,
     "keyterm": "term1%20term2"
   }
 }

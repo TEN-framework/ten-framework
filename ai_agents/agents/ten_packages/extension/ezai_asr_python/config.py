@@ -21,7 +21,7 @@ class EZAIASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "/tmp"
     finalize_mode: str = "mute_pkg"  # "flush_api" or "mute_pkg" or "ignore"
-    mute_pkg_duration_ms: int = 1000
+    mute_pkg_duration_ms: int = 3000
     # Additional parameters
     params: dict[str, Any] = Field(default_factory=dict)
 

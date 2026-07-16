@@ -53,13 +53,9 @@ class EZAIAsrExtensionTester(AsyncExtensionTester):
 
 def test_error_check():
     property_json = {
-        "params": {
-            "key": "invalid_key"
-        },
+        "params": {"key": "invalid_key"},
     }
     tester = EZAIAsrExtensionTester()
-    tester.set_test_mode_single(
-        "ezai_asr_python", json.dumps(property_json)
-    )
+    tester.set_test_mode_single("ezai_asr_python", json.dumps(property_json))
     err = tester.run()
     assert err is None

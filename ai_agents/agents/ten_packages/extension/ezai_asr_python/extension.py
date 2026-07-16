@@ -36,9 +36,7 @@ from .recognition import DeepgramASRRecognition, DeepgramASRRecognitionCallback
 from .config import EZAIASRConfig
 
 
-class EZAIASRExtension(
-    AsyncASRBaseExtension, DeepgramASRRecognitionCallback
-):
+class EZAIASRExtension(AsyncASRBaseExtension, DeepgramASRRecognitionCallback):
     """EZAIASR based on Deepgram ASR Extension"""
 
     def __init__(self, name: str):
@@ -176,12 +174,7 @@ class EZAIASRExtension(
             else:
                 await self._handle_finalize_mute_pkg()
         else:
-            if finalize_mode == "flush_api":
-                await self._handle_finalize_flush_api()
-            elif finalize_mode == "mute_pkg":
-                await self._handle_finalize_mute_pkg()
-            else:
-                raise ValueError(f"invalid finalize mode: {finalize_mode}")
+            await self._handle_finalize_mute_pkg()
 
     async def _handle_event_result(self, event: str) -> None:
         """Handle ASR event result"""
