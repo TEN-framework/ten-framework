@@ -416,6 +416,27 @@ class RimeTTSynthesizer:
 
         self._clear_queues()
 
+    async def suppress_connection_callbacks_for_replacement(self) -> None:
+        on_connection_disconnected = self.on_connection_disconnected
+        self.on_connection_connecting = None
+        self.on_connection_connected = None
+        self.on_connection_disconnected = None
+        if on_connection_disconnected and self.ws:
+            try:
+                await on_connection_disconnected(
+                    code=0,
+                    message="closed",
+                    vendor_info=ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code="0",
+                        message="closed",
+                    ),
+                )
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Failed to report RIME TTS replacement disconnect: {e}"
+                )
+
     def _clear_queues(self) -> None:
         """Clear all queues to prevent old data from being processed"""
         # Clear text queue
@@ -552,11 +573,15 @@ class RimeTTSClient:
         """Send text to RIME TTS"""
         await self.synthesizer.send_text(t)
 
-    def reset_synthesizer(self):
+    async def reset_synthesizer(self):
         """Reset synthesizer"""
-        if self.synthesizer:
-            self.cancelled_synthesizers.append(self.synthesizer)
-            self.synthesizer.cancel()
+        synthesizer = self.synthesizer
+        if synthesizer:
+            await synthesizer.suppress_connection_callbacks_for_replacement()
+            if self.synthesizer is not synthesizer:
+                return
+            self.cancelled_synthesizers.append(synthesizer)
+            synthesizer.cancel()
 
         self.synthesizer = self._create_synthesizer()
         self.ten_env.log_debug("Synthesizer reset successfully")
