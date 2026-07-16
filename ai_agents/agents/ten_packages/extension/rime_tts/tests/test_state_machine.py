@@ -339,7 +339,7 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
                     f"  → Mock: Received text_input_end=True for request {request_id}, sending END event"
                 )
 
-        def reset_synthesizer(self):
+        async def reset_synthesizer(self):
             """Mock reset."""
             print("  → Mock: Resetting synthesizer")
             # Reset TTFB tracking for next request
@@ -358,7 +358,7 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
         streamer.response_msgs = response_msgs
         mock_instance.response_msgs = response_msgs
         mock_instance.send_text = AsyncMock(side_effect=streamer.send_text)
-        mock_instance.reset_synthesizer = MagicMock(
+        mock_instance.reset_synthesizer = AsyncMock(
             side_effect=streamer.reset_synthesizer
         )
         mock_instance.cancel = MagicMock(side_effect=streamer.cancel)
@@ -452,7 +452,7 @@ def test_request_state_transitions(MockRimeTTSClient):
         streamer.response_msgs = response_msgs
         mock_instance.response_msgs = response_msgs
         mock_instance.send_text = AsyncMock(side_effect=streamer.send_text)
-        mock_instance.reset_synthesizer = MagicMock()
+        mock_instance.reset_synthesizer = AsyncMock()
         mock_instance.cancel = MagicMock()
         mock_instance.close = AsyncMock()
         return mock_instance
