@@ -128,6 +128,8 @@ class FunASRExtension(AsyncASRBaseExtension):
             if self.reconnect_manager:
                 self.reconnect_manager.mark_connection_successful()
 
+            await self.on_connected()
+
             # Reset timeline
             self.sent_user_audio_duration_ms_before_last_reset += (
                 self.audio_timeline.get_total_user_audio_duration()
@@ -141,10 +143,20 @@ class FunASRExtension(AsyncASRBaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to start FunASR connection: {e}")
+            self.client = None
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                ),
+            )
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code="model_load_failed",
                     message=str(e),
                 ),
             )
@@ -157,6 +169,7 @@ class FunASRExtension(AsyncASRBaseExtension):
             if self.client:
                 await self.client.disconnect()
                 self.client = None
+            await self.on_disconnected(code=0, message="stopped")
             self.ten_env.log_info("FunASR connection stopped")
         except Exception as e:
             self.ten_env.log_error(f"Error stopping FunASR connection: {e}")
@@ -185,6 +198,7 @@ class FunASRExtension(AsyncASRBaseExtension):
         if not self.is_connected() or not self.client:
             return False
 
+        buf = None
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
@@ -196,13 +210,14 @@ class FunASRExtension(AsyncASRBaseExtension):
             # Send to client
             await self.client.send_audio(audio_data)
 
-            frame.unlock_buf(buf)
             return True
 
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio to FunASR: {e}")
-            frame.unlock_buf(buf)
             return False
+        finally:
+            if buf is not None:
+                frame.unlock_buf(buf)
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
@@ -214,13 +229,16 @@ class FunASRExtension(AsyncASRBaseExtension):
             f"FunASR finalize start at {self.last_finalize_timestamp}"
         )
 
-        finalize_mode = self.config.finalize_mode
-        if finalize_mode == "disconnect":
-            await self._handle_finalize_disconnect()
-        elif finalize_mode == "silence":
-            await self._handle_finalize_silence()
-        else:
-            raise ValueError(f"invalid finalize mode: {finalize_mode}")
+        try:
+            finalize_mode = self.config.finalize_mode
+            if finalize_mode == "disconnect":
+                await self._handle_finalize_disconnect()
+            elif finalize_mode == "silence":
+                await self._handle_finalize_silence()
+            else:
+                raise ValueError(f"invalid finalize mode: {finalize_mode}")
+        finally:
+            await self._finalize_end()
 
     async def _handle_finalize_disconnect(self) -> None:
         """Handle disconnect mode finalization"""
@@ -295,7 +313,9 @@ class FunASRExtension(AsyncASRBaseExtension):
                 start_ms=actual_start_ms,
                 duration_ms=duration_ms,
                 language=(
-                    self.config.normalized_language if self.config else language
+                    self.config.normalize_language(language)
+                    if self.config
+                    else language
                 ),
                 words=[],
             )

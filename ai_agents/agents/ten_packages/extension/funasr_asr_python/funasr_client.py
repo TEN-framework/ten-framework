@@ -4,8 +4,10 @@
 #
 
 import asyncio
-import numpy as np
+import re
 from typing import Optional, Callable
+
+import numpy as np
 from funasr import AutoModel
 from funasr.utils.postprocess_utils import rich_transcription_postprocess
 
@@ -35,6 +37,7 @@ class FunASRClient:
 
         self.model: Optional[AutoModel] = None
         self.audio_buffer = bytearray()
+        self.processed_audio_duration_ms = 0
         self.is_connected_flag = False
         self.processing_lock = asyncio.Lock()
 
@@ -68,8 +71,6 @@ class FunASRClient:
             self.is_connected_flag = False
             if self.logger:
                 self.logger.log_error(f"Failed to load FunASR model: {e}")
-            if self.on_error_callback:
-                await self.on_error_callback(str(e))
             raise
 
     async def disconnect(self) -> None:
@@ -77,6 +78,7 @@ class FunASRClient:
         self.is_connected_flag = False
         self.model = None
         self.audio_buffer.clear()
+        self.processed_audio_duration_ms = 0
         if self.logger:
             self.logger.log_info("FunASR client disconnected")
 
@@ -106,22 +108,28 @@ class FunASRClient:
                 return
 
             try:
+                max_samples = max(
+                    1,
+                    int(self.max_audio_length_ms / 1000 * self.sample_rate),
+                )
+                sample_count = min(len(self.audio_buffer) // 2, max_samples)
+                if sample_count == 0:
+                    return
+                byte_count = sample_count * 2
+                audio_bytes = bytes(self.audio_buffer[:byte_count])
+                del self.audio_buffer[:byte_count]
+
                 # 16-bit PCM bytes -> float32 in [-1, 1]
                 audio_np = (
-                    np.frombuffer(self.audio_buffer, dtype=np.int16).astype(
+                    np.frombuffer(audio_bytes, dtype=np.int16).astype(
                         np.float32
                     )
                     / 32768.0
                 )
 
-                # Limit to max length
-                max_samples = int(
-                    self.max_audio_length_ms / 1000 * self.sample_rate
-                )
-                if len(audio_np) > max_samples:
-                    audio_np = audio_np[:max_samples]
-
                 duration_ms = int(len(audio_np) / self.sample_rate * 1000)
+                start_ms = self.processed_audio_duration_ms
+                self.processed_audio_duration_ms += duration_ms
 
                 # Run inference in a thread pool to avoid blocking the loop
                 loop = asyncio.get_event_loop()
@@ -135,31 +143,34 @@ class FunASRClient:
                 )
 
                 # SenseVoice output carries tags like <|zh|><|NEUTRAL|>...; strip them.
-                text = (
-                    rich_transcription_postprocess(res[0]["text"]).strip()
-                    if res
-                    else ""
-                )
+                result = res[0] if res else {}
+                raw_text = result.get("text", "")
+                text = rich_transcription_postprocess(raw_text).strip()
+                detected_language = self._extract_language(raw_text, result)
 
                 if text and self.on_result_callback:
                     await self.on_result_callback(
                         text=text,
-                        start_ms=0,
+                        start_ms=start_ms,
                         duration_ms=duration_ms,
-                        language=self.language,
+                        language=detected_language or self.language,
                         final=True,
                     )
 
-                # Clear processed audio
-                self.audio_buffer.clear()
-
             except Exception as e:
-                # Clear buffer on error to prevent accumulation
-                self.audio_buffer.clear()
                 if self.logger:
                     self.logger.log_error(f"Error processing audio: {e}")
                 if self.on_error_callback:
                     await self.on_error_callback(str(e))
+
+    @staticmethod
+    def _extract_language(raw_text: str, result: dict) -> str:
+        language = result.get("language") or result.get("lang")
+        if language:
+            return str(language)
+
+        match = re.match(r"^<\|([a-z]{2,3})\|>", raw_text)
+        return match.group(1) if match else ""
 
     async def finalize(self) -> None:
         """Process any remaining audio in buffer"""

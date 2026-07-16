@@ -50,6 +50,7 @@
             "manifest.json",
             "property.json",
             "**.py",
+            "pyproject.toml",
             "requirements.txt",
             "README.md"
         ]

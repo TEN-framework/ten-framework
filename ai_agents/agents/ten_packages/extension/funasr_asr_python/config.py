@@ -40,9 +40,8 @@ class FunASRConfig(BaseModel):
                     )
         return str(config_dict)
 
-    @property
-    def normalized_language(self) -> str:
-        """Convert language code to normalized format"""
+    def normalize_language(self, detected_language: str = "") -> str:
+        """Convert configured or detected language to a BCP-47-ish tag."""
         language_map = {
             "zh": "zh-CN",
             "en": "en-US",
@@ -59,5 +58,15 @@ class FunASRConfig(BaseModel):
             "ar": "ar-AE",
         }
         params_dict = self.params or {}
-        language_code = params_dict.get("language", "") or ""
+        configured_language = params_dict.get("language", "") or ""
+        language_code = (
+            detected_language
+            if configured_language in {"", "auto"} and detected_language
+            else configured_language
+        )
         return language_map.get(language_code, language_code)
+
+    @property
+    def normalized_language(self) -> str:
+        """Convert the configured language code to a BCP-47-ish tag."""
+        return self.normalize_language()
