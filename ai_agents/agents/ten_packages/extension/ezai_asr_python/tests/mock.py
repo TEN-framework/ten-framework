@@ -4,37 +4,60 @@
 # See the LICENSE file for more information.
 #
 
+import asyncio
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
+
+
+class _FakeRecognition:
+    """Fake DeepgramASRRecognition for nova model path."""
+
+    def __init__(self, api_key, audio_timeline, ten_env, config, callback):
+        self.callback = callback
+        self.ten_env = ten_env
+
+    async def start(self, timeout=10):
+        # Emit connection open, then final result (nova format)
+        async def _emit():
+            await asyncio.sleep(0.5)
+            await self.callback.on_open()
+            final_msg = {
+                "type": "Results",
+                "channel": {"alternatives": [{"transcript": "hello world"}]},
+                "is_final": True,
+                "start": 0.0,
+                "duration": 2.0,
+            }
+            await self.callback.on_result(final_msg)
+
+        asyncio.create_task(_emit())
+        return None
+
+    async def send_audio_frame(self, audio_data):
+        return None
+
+    async def stop(self):
+        return None
+
+    async def close(self):
+        return None
+
+    def is_connected(self):
+        return True
 
 
 @pytest.fixture(scope="function")
-def patch_deepgram_ws():
+def patch_ezai_ws():
     """
-    Automatically patch Recognition globally before any test runs.
+    Patch DeepgramASRRecognition used by ezai_asr_python extension.
     """
-    patch_target = "ten_packages.extension.deepgram_asr_python.extension.DeepgramWSRecognition"
+    patch_target = "ten_packages.extension.ezai_asr_python.extension.DeepgramASRRecognition"
 
-    with patch(patch_target) as MockWSClient:
-        print(f"✅ Patching {patch_target} before test session.")
+    with patch(patch_target) as MockRecognition:
+        print(f"✅ Patching {patch_target}")
 
-        mock_ws = AsyncMock()
-        mock_ws.start.return_value = True
-        mock_ws.send.return_value = None
-        mock_ws.finish.return_value = None
+        def _factory(api_key, audio_timeline, ten_env, config, callback):
+            return _FakeRecognition(api_key, audio_timeline, ten_env, config, callback)
 
-        mock_ws._handlers = {}
-
-        def mock_on(event_name, callback):
-            event_str = (
-                str(event_name)
-                if not isinstance(event_name, str)
-                else event_name
-            )
-            mock_ws._handlers[event_str] = callback
-
-        mock_ws.on = mock_on
-
-        MockWSClient.return_value = mock_ws
-        yield mock_ws
-        # patch stays active through the whole session
+        MockRecognition.side_effect = _factory
+        yield MockRecognition
