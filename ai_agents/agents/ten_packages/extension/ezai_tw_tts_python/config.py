@@ -13,10 +13,14 @@ class EZAITWTTSConfig(AsyncTTS2HttpConfig):
     # EZAI-specific audio settings
     sample_rate: int = Field(default=24000, description="PCM sample rate")
     channels: int = Field(default=1, description="PCM channel count")
-    sample_width: int = Field(default=2, description="Bytes per sample (PCM_16)")
+    sample_width: int = Field(
+        default=2, description="Bytes per sample (PCM_16)"
+    )
 
     # Debug and logging
-    dump: bool = Field(default=False, description="Dump PCM to disk for debugging")
+    dump: bool = Field(
+        default=False, description="Dump PCM to disk for debugging"
+    )
     dump_path: str = Field(
         default_factory=lambda: str(Path(__file__).parent / "ezai_tts_in.pcm"),
         description="Path for dump file",
@@ -37,26 +41,25 @@ class EZAITWTTSConfig(AsyncTTS2HttpConfig):
         if key in self.params:
             try:
                 val = dtype(self.params[key]) if dtype else self.params[key]
-                if key == 'voice' and not val.strip():
+                if key == "voice" and not val.strip():
                     val = "IU_IUF1003"
-                if key == 'speed' and float(val) < 0.1:
+                if key == "speed" and float(val) < 0.1:
                     val = 0.8
                 setattr(self, key, val)
             except Exception:
                 pass
 
-
     def update_params(self) -> None:
         for k, d in [
-            ('url', str),
-            ('voice', str),
-            ('zh_model', str),
-            ('speed', float),
-            ('channels', int),
-            ('sample_rate', int),
-            ('sample_width', int),
-            ('denoise', bool),
-            ('api_key', str),
+            ("url", str),
+            ("voice", str),
+            ("zh_model", str),
+            ("speed", float),
+            ("channels", int),
+            ("sample_rate", int),
+            ("sample_width", int),
+            ("denoise", bool),
+            ("api_key", str),
         ]:
             self.update_param(k, d)
 

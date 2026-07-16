@@ -46,9 +46,9 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
             "tw_convert": True,
             "autosplit": False,
             "speed": config.speed,
-            "denoise":  config.denoise,
+            "denoise": config.denoise,
             "speaker": config.voice,
-            "zh_model": config.zh_model
+            "zh_model": config.zh_model,
         }
         self.client = AsyncClient(
             timeout=Timeout(timeout=60.0),
@@ -90,9 +90,9 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
             # Pre-process text: normalize → Simplified-to-Traditional → segment sentences
             normalized = zh_tn_model.normalize(text)
             normalized = converter.convert(normalized)
-            sentences = [
-                st for line in normalized.split("\n") for st in segmenter.segment(line)
-            ]
+            sentences = []
+            for line in normalized.splitlines():
+                sentences.extend(segmenter.segment(line))
 
             for sent in sentences:
                 if self._is_cancelled:
@@ -116,13 +116,16 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
 
                 if response.status_code != 200:
                     raise RuntimeError(
-                        "401 " if response.status_code in (401, 403)
+                        "401 "
+                        if response.status_code in (401, 403)
                         else f"HTTP {response.status_code}: {response.text}"
                     )
 
                 j = response.json()
                 if "audio" not in j:
-                    raise RuntimeError("No audio returned from EZAI TTS service")
+                    raise RuntimeError(
+                        "No audio returned from EZAI TTS service"
+                    )
 
                 # Decode WAV (PCM24) → PCM16 raw frames
                 audio_bytes = base64.b64decode(j["audio"])
