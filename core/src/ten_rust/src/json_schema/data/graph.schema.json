@@ -57,7 +57,7 @@
                 "$ref": "#/$defs/alphanumericCharacters"
               },
               "extension": {
-                "$ref": "#/$defs/alphanumericCharacters"
+                "$ref": "#/$defs/extensionIdentifier"
               },
               "subgraph": {
                 "$ref": "#/$defs/alphanumericCharacters"
@@ -97,7 +97,7 @@
             ],
             "properties": {
               "extension": {
-                "$ref": "#/$defs/alphanumericCharacters"
+                "$ref": "#/$defs/extensionIdentifier"
               },
               "subgraph": {
                 "$ref": "#/$defs/alphanumericCharacters"
@@ -179,6 +179,11 @@
       "minLength": 1,
       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
     },
+    "extensionIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(ten:)?[A-Za-z_][A-Za-z0-9_]*$"
+    },
     "path_in_msg_conversion": {
       "type": "string",
       "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[\\d+\\])*(\\.[A-Za-z_][A-Za-z0-9_]*(\\[\\d+\\])*)*$"
@@ -191,7 +196,7 @@
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
-          "$ref": "#/$defs/alphanumericCharacters"
+          "$ref": "#/$defs/extensionIdentifier"
         },
         "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
@@ -244,7 +249,7 @@
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
-          "$ref": "#/$defs/alphanumericCharacters"
+          "$ref": "#/$defs/extensionIdentifier"
         },
         "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
@@ -301,10 +306,10 @@
           ]
         },
         "name": {
-          "$ref": "#/$defs/alphanumericCharacters"
+          "$ref": "#/$defs/notEmptyString"
         },
         "addon": {
-          "$ref": "#/$defs/alphanumericCharacters"
+          "$ref": "#/$defs/notEmptyString"
         },
         "app": {
           "$ref": "#/$defs/notEmptyString"
@@ -377,8 +382,12 @@
                 "type": {
                   "const": "extension"
                 },
-                "name": {},
-                "addon": {},
+                "name": {
+                  "$ref": "#/$defs/extensionIdentifier"
+                },
+                "addon": {
+                  "$ref": "#/$defs/extensionIdentifier"
+                },
                 "extension_group": {},
                 "app": {},
                 "property": {}
@@ -395,7 +404,9 @@
                 "type": {
                   "const": "subgraph"
                 },
-                "name": {},
+                "name": {
+                  "$ref": "#/$defs/alphanumericCharacters"
+                },
                 "graph": {},
                 "property": {}
               },
@@ -411,7 +422,9 @@
                 "type": {
                   "const": "selector"
                 },
-                "name": {},
+                "name": {
+                  "$ref": "#/$defs/alphanumericCharacters"
+                },
                 "filter": {}
               },
               "required": [
@@ -433,7 +446,7 @@
           "$ref": "#/$defs/notEmptyString"
         },
         "extension": {
-          "$ref": "#/$defs/alphanumericCharacters"
+          "$ref": "#/$defs/extensionIdentifier"
         },
         "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"

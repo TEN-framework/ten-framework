@@ -27,6 +27,44 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_graph_allows_builtin_test_extension() {
+        let graph = r#"
+        {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ten:test_extension",
+              "addon": "ten:test_extension"
+            },
+            {
+              "type": "extension",
+              "name": "ext_a",
+              "addon": "addon_a"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ten:test_extension",
+              "cmd": [
+                {
+                  "name": "test_cmd",
+                  "dest": [
+                    {
+                      "extension": "ext_a"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+        "#;
+
+        let result = ten_validate_graph_json_string(graph);
+        assert!(result.is_ok(), "{result:?}");
+    }
+
+    #[test]
     fn test_validate_dependencies_normal() {
         let manifest = r#"
         {
