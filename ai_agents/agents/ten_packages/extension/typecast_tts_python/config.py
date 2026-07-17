@@ -22,9 +22,9 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
         ),
         description="Typecast TTS dump path",
     )
-    host: str = Field(
+    url: str = Field(
         default="https://api.typecast.ai",
-        description="Typecast API host",
+        description="Typecast API URL",
     )
     params: dict[str, Any] = Field(
         default_factory=dict,
@@ -37,12 +37,12 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
     )
 
     def update_params(self) -> None:
-        if "host" in self.params:
-            self.host = str(
-                self.params.pop("host")  # pylint: disable=no-member
+        if "url" in self.params:
+            self.url = str(
+                self.params.pop("url")  # pylint: disable=no-member
             ).rstrip("/")
         else:
-            self.host = self.host.rstrip("/")
+            self.url = self.url.rstrip("/")
 
         if "model" not in self.params:
             self.params["model"] = "ssfm-v30"

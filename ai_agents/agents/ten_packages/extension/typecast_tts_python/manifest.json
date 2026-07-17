@@ -40,7 +40,7 @@
             "api_key": {
               "type": "string"
             },
-            "host": {
+            "url": {
               "type": "string"
             },
             "voice_id": {

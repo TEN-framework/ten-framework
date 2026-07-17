@@ -28,14 +28,12 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self._is_cancelled = False
         self._client: AsyncTypecast | None = None
 
-        ten_env.log_info(
-            f"TypecastTTS initialized with host: {self.config.host}"
-        )
+        ten_env.log_info(f"TypecastTTS initialized with URL: {self.config.url}")
 
     async def _ensure_client(self) -> AsyncTypecast:
         if self._client is None:
             self._client = AsyncTypecast(
-                host=self.config.host,
+                host=self.config.url,
                 api_key=self.config.params["api_key"],
             )
             await self._client.__aenter__()

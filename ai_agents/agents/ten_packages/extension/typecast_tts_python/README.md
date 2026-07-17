@@ -13,6 +13,7 @@ mono audio to TEN.
 {
   "params": {
     "api_key": "<typecast-api-key>",
+    "url": "https://api.typecast.ai",
     "voice_id": "tc_60e5426de8b95f1d3000d7b5",
     "model": "ssfm-v30",
     "output": {
