@@ -71,16 +71,25 @@ class EZAIAsrExtensionTester(AsyncExtensionTester):
 
             # Verify all required fields
             required_fields = [
-                "text", "final", "start_ms", "duration_ms", "language", "metadata"
+                "text",
+                "final",
+                "start_ms",
+                "duration_ms",
+                "language",
+                "metadata",
             ]
             for field in required_fields:
                 self.stop_test_if_checking_failed(
-                    ten_env_tester, field in data_dict, f"{field} missing: {data_dict}"
+                    ten_env_tester,
+                    field in data_dict,
+                    f"{field} missing: {data_dict}",
                 )
 
             session_id = data_dict.get("metadata", {}).get("session_id", "")
             self.stop_test_if_checking_failed(
-                ten_env_tester, session_id == "123", f"session_id incorrect: {session_id}"
+                ten_env_tester,
+                session_id == "123",
+                f"session_id incorrect: {session_id}",
             )
 
             if data_dict.get("final") is True:

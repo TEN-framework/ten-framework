@@ -119,20 +119,20 @@ class DeepgramASRRecognition:
                     self.prev_result = message_data
 
                 elif message_type == "UtteranceEnd":
-                    message_data_end = self.prev_result
-                    if not message_data_end["is_final"]:
-                        message_data_end["is_final"] = True
-                        message_data_end["speech_final"] = True
+                    msg_data_end = self.prev_result
+                    if not msg_data_end["is_final"]:
+                        msg_data_end["is_final"] = True
+                        msg_data_end["speech_final"] = True
                     else:
-                        message_data_end["start"] += (
-                            message_data_end["duration"] + 0.002
+                        msg_data_end["start"] += (
+                            msg_data_end["duration"] + 0.002
                         )
-                        message_data_end["duration"] = 0.001
-                        msg_trans = message_data_end["channel"]["alternatives"][0]
+                        msg_data_end["duration"] = 0.001
+                        msg_trans = msg_data_end["channel"]["alternatives"][0]
                         msg_trans["transcript"] = ""
                         self.segment_start_offset += 0.003
 
-                    await self.callback.on_result(message_data_end)
+                    await self.callback.on_result(msg_data_end)
             else:
                 if message_type == "TurnInfo":
                     await self.callback.on_result(message_data)

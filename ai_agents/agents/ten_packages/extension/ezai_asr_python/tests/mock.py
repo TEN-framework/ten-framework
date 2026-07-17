@@ -57,7 +57,9 @@ def patch_ezai_ws():
         print(f"✅ Patching {patch_target}")
 
         def _factory(api_key, audio_timeline, ten_env, config, callback):
-            return _FakeRecognition(api_key, audio_timeline, ten_env, config, callback)
+            return _FakeRecognition(
+                api_key, audio_timeline, ten_env, config, callback
+            )
 
         MockRecognition.side_effect = _factory
         yield MockRecognition
