@@ -1,0 +1,14 @@
+{
+  "params": {
+    "url": "https://matcha.ezai-k8s.freeddns.org/tts",
+    "speed": 0.8,
+    "voice": "IU_IUF1003",
+    "denoise": false,
+    "zh_model": "twllama",
+    "sample_rate": 24000,
+    "channels": 1,
+    "sample_width": 2
+  },
+  "dump": false,
+  "dump_path": ""
+}

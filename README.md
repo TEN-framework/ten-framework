@@ -69,7 +69,6 @@ TEN is an open-source framework for real-time multimodal conversational AI.
 | [![Discord TEN Community][discord-badge]][discord-invite] | Join our Discord community to connect with developers |
 | [![Follow on LinkedIn][linkedin-badge]][linkedin] | Follow TEN Framework on LinkedIn for updates and announcements |
 | [![Hugging Face Space][hugging-face-badge]][hugging-face] | Join our Hugging Face community to explore our spaces and models |
-| [![WeChat][wechat-badge]][wechat-discussion] | Join our WeChat group for Chinese community discussions |
 
 <br>
 
