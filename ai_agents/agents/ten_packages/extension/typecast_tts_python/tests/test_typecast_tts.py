@@ -4,13 +4,52 @@ import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, TenError
 from ten_runtime import TenErrorCode
-from ten_ai_base.struct import TTSTextInput
+from ten_ai_base.struct import TTS2HttpResponseEventType, TTSTextInput
 
 from pcm import StreamingWavToPcm16
+from typecast_tts_python.config import TypecastTTSConfig
+from typecast_tts_python.typecast_tts import TypecastTTSClient
+from typecast import TypecastError, UnauthorizedError
+
+
+def test_config_defaults_and_forces_wav():
+    config = TypecastTTSConfig(
+        params={
+            "api_key": "key",
+            "voice_id": "voice",
+            "url": "https://example.com/",
+            "output": {"audio_format": "mp3", "audio_tempo": 1.1},
+        }
+    )
+
+    config.update_params()
+    config.validate()
+
+    assert config.url == "https://example.com"
+    assert "url" not in config.params
+    assert config.params["model"] == "ssfm-v30"
+    assert config.params["output"] == {
+        "audio_format": "wav",
+        "audio_tempo": 1.1,
+    }
+
+
+@pytest.mark.parametrize("missing", ["api_key", "voice_id"])
+def test_config_requires_credentials_and_voice(missing):
+    params = {"api_key": "key", "voice_id": "voice"}
+    params[missing] = ""
+    config = TypecastTTSConfig(params=params)
+    config.update_params()
+
+    with pytest.raises(ValueError, match=missing):
+        config.validate()
 
 
 def test_streaming_wav_to_pcm16_strips_header_across_chunks():
@@ -28,6 +67,52 @@ def test_streaming_wav_to_pcm16_strips_header_in_single_chunk():
     header = b"h" * 44
 
     assert converter.feed(header + b"\x01\x02\x03\x04") == b"\x01\x02\x03\x04"
+
+
+def test_client_empty_text_ends_without_request():
+    config = TypecastTTSConfig(params={"api_key": "key", "voice_id": "voice"})
+    config.update_params()
+    client = TypecastTTSClient(config, MagicMock())
+
+    async def collect():
+        return [event async for event in client.get("  ", "request-id")]
+
+    assert asyncio.run(collect()) == [(None, TTS2HttpResponseEventType.END)]
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_event"),
+    [
+        (
+            UnauthorizedError("invalid key"),
+            TTS2HttpResponseEventType.INVALID_KEY_ERROR,
+        ),
+        (TypecastError("rate limited", 429), TTS2HttpResponseEventType.ERROR),
+    ],
+)
+def test_client_maps_vendor_errors(error, expected_event):
+    config = TypecastTTSConfig(params={"api_key": "key", "voice_id": "voice"})
+    config.update_params()
+    client = TypecastTTSClient(config, MagicMock())
+
+    async def failing_stream(request, chunk_size):
+        raise error
+        yield b""  # pragma: no cover
+
+    mock_sdk = MagicMock()
+    mock_sdk.__aenter__ = AsyncMock(return_value=mock_sdk)
+    mock_sdk.__aexit__ = AsyncMock(return_value=None)
+    mock_sdk.text_to_speech_stream = failing_stream
+
+    async def collect():
+        with patch(
+            "typecast_tts_python.typecast_tts.AsyncTypecast",
+            return_value=mock_sdk,
+        ):
+            return [event async for event in client.get("hello", "request-id")]
+
+    events = asyncio.run(collect())
+    assert events == [(str(error).encode(), expected_event)]
 
 
 class TypecastTTSExtensionTester(AsyncExtensionTester):
@@ -119,6 +204,7 @@ def test_typecast_tts_extension_success():
         host="https://api.typecast.ai",
         api_key="test_api_key",
     )
+    mock_client.__aexit__.assert_awaited_once_with(None, None, None)
 
 
 if __name__ == "__main__":
