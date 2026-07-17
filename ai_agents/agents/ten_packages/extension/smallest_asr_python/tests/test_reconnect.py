@@ -211,9 +211,7 @@ def test_reconnect_after_ws_close(patch_smallest_ws):
 
     def push(msg_type, data=None):
         patch_smallest_ws.add_message(
-            patch_smallest_ws.MockWebSocketMessage(
-                msg_type=msg_type, data=data
-            )
+            patch_smallest_ws.MockWebSocketMessage(msg_type=msg_type, data=data)
         )
 
     def push_after(delay, msg_type, data=None):
