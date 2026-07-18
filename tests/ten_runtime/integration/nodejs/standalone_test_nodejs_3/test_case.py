@@ -68,6 +68,7 @@ def test_standalone_test_nodejs_3():
         stderr=subprocess.STDOUT,
         env=my_env,
         cwd=extension_in_app_folder,
+        shell=sys.platform == "win32",
     )
     standalone_install_process.wait()
 
@@ -86,6 +87,7 @@ def test_standalone_test_nodejs_3():
         stderr=subprocess.STDOUT,
         env=my_env,
         cwd=extension_in_app_folder,
+        shell=sys.platform == "win32",
     )
     build_extension_process.wait()
 
@@ -96,12 +98,18 @@ def test_standalone_test_nodejs_3():
     # Step 3:
     #
     # Run the test.
-    test_cmd = [
-        "tests/bin/start",
-    ]
+    if sys.platform == "win32":
+        test_cmd = [
+            sys.executable,
+            "tests/bin/start.py",
+        ]
+    else:
+        test_cmd = [
+            "tests/bin/start",
+        ]
 
-    if sys.platform == "linux" and build_config_args.enable_sanitizer:
-        test_cmd.append("-asan")
+        if build_config_args.enable_sanitizer:
+            test_cmd.append("-asan")
 
     tester_process = subprocess.Popen(
         test_cmd,

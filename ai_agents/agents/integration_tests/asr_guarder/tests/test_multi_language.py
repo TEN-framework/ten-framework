@@ -28,10 +28,18 @@ FRAME_INTERVAL_MS = 10
 # Constants for test configuration
 MULTI_LANGUAGE_CONFIG_FILE_EN = "property_en.json"
 MULTI_LANGUAGE_CONFIG_FILE_ZH = "property_zh.json"
+MULTI_LANGUAGE_CONFIG_FILE_ES = "property_es.json"
 MULTI_LANGUAGE_EXPECTED_TEXT_EN = "hello world"
 MULTI_LANGUAGE_SESSION_ID = "test_multi_language_session_123"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN = "en-US"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
+MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES = "es-ES"
+
+# Extensions that do not support Chinese and use Spanish as the second language
+_EXTENSIONS_USE_SPANISH = {"oracle_asr_python"}
+
+
+RESULT_WAIT_TIMEOUT_SECS = 30
 
 
 class MultiLanguageAsrTester(AsyncExtensionTester):
@@ -66,6 +74,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         self.expected_text: str = expected_text
         self.session_id: str = session_id
         self.expected_language: str = expected_language
+        self._result_received: asyncio.Event = asyncio.Event()
 
     def _create_audio_frame(self, data: bytes, session_id: str) -> AudioFrame:
         """Create an audio frame with the given data and session ID."""
@@ -149,10 +158,22 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         ten_env.log_info("Starting multi-language ASR integration test")
         await self.audio_sender(ten_env)
 
+        # Wait for a final ASR result; stop with error if none arrives in time.
+        try:
+            await asyncio.wait_for(
+                self._result_received.wait(), timeout=RESULT_WAIT_TIMEOUT_SECS
+            )
+        except asyncio.TimeoutError:
+            self._stop_test_with_error(
+                ten_env,
+                f"Test timeout: no final ASR result received within {RESULT_WAIT_TIMEOUT_SECS}s after finalize",
+            )
+
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
         """Stop test with error message."""
+        self._result_received.set()
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
         )
@@ -283,6 +304,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
                 "✅ Multi-language ASR integration test passed with final result"
             )
             ten_env.stop_test()
+            self._result_received.set()
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -293,7 +315,7 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
 def test_multi_language(extension_name: str, config_dir: str) -> None:
     """Verify multi-language ASR extension functionality."""
 
-    # Test configurations for different languages
+    # Build test configurations based on extension capabilities
     test_configs = [
         {
             "name": "English",
@@ -301,13 +323,28 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
         },
-        {
-            "name": "Chinese",
-            "audio_file": "16k_zh_cn.pcm",
-            "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
-            "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
-        },
     ]
+
+    # Some extensions (e.g. Oracle ASR) do not support Chinese;
+    # use Spanish as the second language instead.
+    if extension_name in _EXTENSIONS_USE_SPANISH:
+        test_configs.append(
+            {
+                "name": "Spanish",
+                "audio_file": "16k_es_es.pcm",
+                "config_file": MULTI_LANGUAGE_CONFIG_FILE_ES,
+                "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES,
+            }
+        )
+    else:
+        test_configs.append(
+            {
+                "name": "Chinese",
+                "audio_file": "16k_zh_cn.pcm",
+                "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
+                "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
+            }
+        )
 
     for test_config in test_configs:
         print(f"\n{'='*60}")

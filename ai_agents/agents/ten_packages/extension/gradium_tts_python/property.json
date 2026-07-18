@@ -1,9 +1,11 @@
 {
+    "dump": false,
+    "dump_path": "/tmp",
     "params": {
         "api_key": "${env:GRADIUM_API_KEY}",
-        "region": "us",
+        "url": "wss://api.gradium.ai/api/speech/tts",
         "model_name": "default",
-        "voice_id": "YTpq7expH9539ERJ",
-        "output_format": "pcm"
+        "voice_id": "cLONiZ4hQ8VpQ4Sz",
+        "sample_rate": 24000
     }
 }

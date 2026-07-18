@@ -243,6 +243,15 @@ impl Graph {
     /// not allow 'localhost' as an explicit app field value. Instead,
     /// 'localhost' is used as the internal default value when no app field is
     /// specified.
+    /// Returns true if all nodes in the graph belong to the same app, i.e., the
+    /// graph is not a multi-app graph.
+    ///
+    /// This is a convenience wrapper around `analyze_app_uri_declaration_state`
+    /// for callers that only need the single-vs-multi distinction.
+    pub fn is_single_app_graph(&self) -> Result<bool> {
+        Ok(self.analyze_app_uri_declaration_state()?.is_single_app_graph())
+    }
+
     fn analyze_app_uri_declaration_state(&self) -> Result<AppUriDeclarationState> {
         let mut nodes_have_declared_app = 0;
         let mut app_uris = std::collections::HashSet::new();

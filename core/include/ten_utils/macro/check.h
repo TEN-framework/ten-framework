@@ -13,6 +13,10 @@
 #include <stdio.h>   // IWYU pragma: keep
 #include <stdlib.h>  // IWYU pragma: keep
 
+#if !defined(OS_WINDOWS)
+#include <unistd.h>
+#endif
+
 #include "ten_utils/backtrace/backtrace.h"  // IWYU pragma: keep
 #include "ten_utils/lib/pid.h"              // IWYU pragma: keep
 #include "ten_utils/lib/time.h"             // IWYU pragma: keep
@@ -87,6 +91,40 @@
 
 // Enable minimal protection if the optimization is enabled.
 
+// The dprintf function is not available on Windows, so we use fprintf instead.
+#if !defined(OS_WINDOWS)
+#define TEN_ASSERT(expr, fmt, ...)                                     \
+  do {                                                                 \
+    /* NOLINTNEXTLINE */                                               \
+    if (!(expr)) {                                                     \
+      /* NOLINTNEXTLINE */                                             \
+      char *____err_msg =                                              \
+          (char *)calloc(ASSERT_ERR_MSG_MAX_LENGTH, sizeof(char));     \
+      if (!____err_msg) {                                              \
+        abort();                                                       \
+      }                                                                \
+      int64_t pid = 0;                                                 \
+      int64_t tid = 0;                                                 \
+      ten_get_pid_tid(&pid, &tid);                                     \
+      int written =                                                    \
+          snprintf(____err_msg, ASSERT_ERR_MSG_MAX_LENGTH,             \
+                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
+                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
+      if (written < 0) {                                               \
+        free(____err_msg);                                             \
+        abort();                                                       \
+      }                                                                \
+      (void)dprintf(STDERR_FILENO, "%s\n", ____err_msg);              \
+      ten_backtrace_dump_global(0);                                    \
+      /* Wait for a short period to allow backtrace to be written. */  \
+      ten_sleep_ms(200);                                               \
+      free(____err_msg);                                               \
+      /* NOLINTNEXTLINE */                                             \
+      abort();                                                         \
+    }                                                                  \
+  } while (0)
+#else
+
 #define TEN_ASSERT(expr, fmt, ...)                                     \
   do {                                                                 \
     /* NOLINTNEXTLINE */                                               \
@@ -121,6 +159,7 @@
       abort();                                                         \
     }                                                                  \
   } while (0)
+#endif
 
 #endif  // NDEBUG
 

@@ -21,6 +21,7 @@ type StartGraphCmd interface {
 	SetPredefinedGraphName(predefinedGraphName string) error
 	SetGraphFromJSONBytes(graphJSONBytes []byte) error
 	SetLongRunningMode(longRunningMode bool) error
+	SetSyncStopBeforeDeinit(syncStopBeforeDeinit bool) error
 }
 
 // NewStartGraphCmd creates a new start graph command.
@@ -90,6 +91,20 @@ func (p *startGraphCmd) SetLongRunningMode(longRunningMode bool) error {
 		apiStatus := C.ten_go_cmd_start_graph_set_long_running_mode(
 			p.getCPtr(),
 			C.bool(longRunningMode),
+		)
+		return withCGoError(&apiStatus)
+	})
+
+	return err
+}
+
+func (p *startGraphCmd) SetSyncStopBeforeDeinit(syncStopBeforeDeinit bool) error {
+	defer p.keepAlive()
+
+	err := withCGOLimiter(func() error {
+		apiStatus := C.ten_go_cmd_start_graph_set_sync_stop_before_deinit(
+			p.getCPtr(),
+			C.bool(syncStopBeforeDeinit),
 		)
 		return withCGoError(&apiStatus)
 	})

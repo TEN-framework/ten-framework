@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "ten_runtime_go": "0.11.0",
+    "agora_rtc": "0.23.9-t1",
+    "ten_ai_base": "0.7"
+  },
+  "locked_version": "0.10.0",
+  "lock_time": "2024-01-01T00:00:00Z"
+}

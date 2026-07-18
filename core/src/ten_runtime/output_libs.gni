@@ -58,5 +58,28 @@ if (is_linux) {
 # Note: ten_runtime_go_output_libs is no longer used since it's
 # a static library now.
 
-ten_runtime_nodejs_output_libs =
-    [ "${root_out_dir}/libten_runtime_nodejs.node" ]
+if (is_win) {
+  if (is_mingw) {
+    # MinGW: .node extension with lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/libten_runtime_nodejs.node",
+    ]
+  } else if (is_clang) {
+    # clang-cl build: nodejs is compiled under msvc_force toolchain
+    _msvc_toolchain = "//.gnfiles/build/toolchain/msvc_force:msvc_force"
+    _msvc_target_out_dir = get_label_info(
+        "//core/src/ten_runtime/binding/nodejs/native:ten_runtime_nodejs_msvc(${_msvc_toolchain})",
+        "root_out_dir")
+    ten_runtime_nodejs_output_libs = [
+      "${_msvc_target_out_dir}/ten_runtime_nodejs.node",
+    ]
+  } else {
+    # MSVC: .node extension without lib prefix
+    ten_runtime_nodejs_output_libs = [
+      "${root_out_dir}/ten_runtime_nodejs.node",
+    ]
+  }
+} else {
+  ten_runtime_nodejs_output_libs =
+      [ "${root_out_dir}/libten_runtime_nodejs.node" ]
+}

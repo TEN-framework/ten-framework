@@ -13,7 +13,8 @@
 typedef struct ten_cmd_start_graph_t {
   ten_cmd_t cmd_hdr;
 
-  ten_value_t long_running_mode;  // bool
+  ten_value_t long_running_mode;       // bool
+  ten_value_t sync_stop_before_deinit; // bool
 
   // There are two methods to start a graph:
   // 1) one is by explicitly specifying the graph's content through
@@ -60,6 +61,13 @@ TEN_RUNTIME_PRIVATE_API bool ten_raw_cmd_start_graph_get_long_running_mode(
     ten_cmd_start_graph_t *self);
 
 TEN_RUNTIME_PRIVATE_API bool ten_cmd_start_graph_get_long_running_mode(
+    ten_shared_ptr_t *self);
+
+TEN_RUNTIME_PRIVATE_API bool
+ten_raw_cmd_start_graph_get_sync_stop_before_deinit(
+    ten_cmd_start_graph_t *self);
+
+TEN_RUNTIME_PRIVATE_API bool ten_cmd_start_graph_get_sync_stop_before_deinit(
     ten_shared_ptr_t *self);
 
 TEN_RUNTIME_PRIVATE_API ten_string_t *

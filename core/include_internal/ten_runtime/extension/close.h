@@ -25,3 +25,9 @@ TEN_RUNTIME_PRIVATE_API void ten_extension_on_path_timer_closed(
 
 TEN_RUNTIME_PRIVATE_API void ten_extension_flush_remaining_paths(
     ten_extension_t *extension);
+
+// Checks whether the extension is ready to proceed to on_deinit and closes it
+// if so. Used in sync_stop_before_deinit mode after the global "all extensions
+// stopped" signal arrives on the extension thread.
+TEN_RUNTIME_PRIVATE_API void ten_extension_close_if_ready(
+    ten_extension_t *self);

@@ -82,7 +82,19 @@ git pull
 git submodule update --init --recursive
 ```
 
-This example supports ADF v2.7 tag (commit id: 9cf556de500019bb79f3bb84c821fda37668c052).
+本例程支持 ADF v2.7 tag (commit id: 9cf556de500019bb79f3bb84c821fda37668c052)
+```bash
+cd $ADF_PATH
+git checkout 9cf556de500019bb79f3bb84c821fda37668c052
+git pull
+git submodule update --init --recursive
+cd components/esp-adf-libs/
+git checkout 5bf018a92a9fba7e0df240f4b83bbcfef8df9d3e
+cd ../esp-sr
+git checkout 394aae67b578cf45ed13dad9c2e0c428f5d599f0
+cd 
+```
+
 
 #### Applying the IDF Patch
 

@@ -9,8 +9,10 @@
 #include <stdbool.h>
 
 #include "include_internal/ten_runtime/common/constant_str.h"
+#include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/extension/extension.h"
 #include "include_internal/ten_runtime/extension/msg_handling.h"
+#include "include_internal/ten_runtime/extension_context/extension_context.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/path/path.h"
@@ -23,8 +25,28 @@ static bool ten_extension_could_be_closed(ten_extension_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
-  // Check if all the path timers are closed.
-  return ten_list_is_empty(&self->path_timers);
+  if (!ten_list_is_empty(&self->path_timers)) {
+    return false;
+  }
+
+  // In sync_stop_before_deinit mode, also wait until all local extensions in
+  // the graph have completed on_stop_done before proceeding to on_deinit.
+  ten_extension_thread_t *extension_thread = self->extension_thread;
+  TEN_ASSERT(extension_thread, "Should not happen.");
+
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: extension_context and engine are read-only after graph
+  // startup; sync_stop_before_deinit is set once at engine creation and never
+  // changed afterwards, so cross-thread read is safe here.
+  ten_engine_t *engine = extension_thread->extension_context->engine;
+  TEN_ASSERT(engine, "Should not happen.");
+
+  if (engine->sync_stop_before_deinit &&
+      !extension_thread->all_graph_extensions_stop_done) {
+    return false;
+  }
+
+  return true;
 }
 
 void ten_extension_flush_remaining_paths(ten_extension_t *extension) {
@@ -130,6 +152,15 @@ void ten_extension_do_pre_close_action(ten_extension_t *self) {
     ten_timer_stop_async(timer);
     ten_timer_close_async(timer);
   }
+
+  if (ten_extension_could_be_closed(self)) {
+    ten_extension_do_close(self);
+  }
+}
+
+void ten_extension_close_if_ready(ten_extension_t *self) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
   if (ten_extension_could_be_closed(self)) {
     ten_extension_do_close(self);

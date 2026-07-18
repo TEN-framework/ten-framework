@@ -180,6 +180,46 @@ static napi_value ten_nodejs_cmd_start_graph_set_graph_from_json_str(
   return js_error ? js_error : js_undefined(env);
 }
 
+static napi_value ten_nodejs_cmd_start_graph_set_sync_stop_before_deinit(
+    napi_env env, napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, sync_stop_before_deinit
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  ten_nodejs_cmd_t *cmd_bridge = NULL;
+  napi_status status = napi_unwrap(env, args[0], (void **)&cmd_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && cmd_bridge != NULL,
+                                "Failed to get cmd bridge: %d", status);
+  TEN_ASSERT(cmd_bridge, "Should not happen.");
+
+  bool sync_stop_before_deinit = false;
+  status = napi_get_value_bool(env, args[1], &sync_stop_before_deinit);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to get bool value: %d", status);
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool result = ten_cmd_start_graph_set_sync_stop_before_deinit(
+      cmd_bridge->msg.msg, sync_stop_before_deinit, &err);
+
+  napi_value js_error = NULL;
+  if (!result) {
+    js_error = ten_nodejs_error_wrap(env, &err);
+    ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
+  }
+
+  ten_error_deinit(&err);
+
+  return js_error ? js_error : js_undefined(env);
+}
+
 napi_value ten_nodejs_cmd_start_graph_module_init(napi_env env,
                                                   napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_start_graph_register_class);
@@ -187,6 +227,8 @@ napi_value ten_nodejs_cmd_start_graph_module_init(napi_env env,
   EXPORT_FUNC(env, exports,
               ten_nodejs_cmd_start_graph_set_predefined_graph_name);
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_start_graph_set_graph_from_json_str);
+  EXPORT_FUNC(env, exports,
+              ten_nodejs_cmd_start_graph_set_sync_stop_before_deinit);
 
   return exports;
 }

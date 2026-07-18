@@ -217,6 +217,8 @@ ten_engine_t *ten_engine_create(ten_app_t *app, ten_shared_ptr_t *cmd) {
   self->ten_env = NULL;
 
   self->long_running_mode = ten_cmd_start_graph_get_long_running_mode(cmd);
+  self->sync_stop_before_deinit =
+      ten_cmd_start_graph_get_sync_stop_before_deinit(cmd);
 
   ten_string_init(&self->graph_name);
   ten_engine_set_graph_id(self, cmd);

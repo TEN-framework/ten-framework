@@ -1,0 +1,10 @@
+{
+  "greeting": "Hello, I am your AI assistant.",
+  "telnyx_api_key": "",
+  "telnyx_connection_id": "",
+  "telnyx_from_number": "",
+  "telnyx_server_port": 8000,
+  "telnyx_public_server_url": "",
+  "telnyx_use_https": true,
+  "telnyx_use_wss": true
+}

@@ -164,6 +164,7 @@
 #define TEN_STR_NONCE "nonce"
 #define TEN_STR_PROPERTIES "properties"
 #define TEN_STR_LONG_RUNNING_MODE "long_running_mode"
+#define TEN_STR_SYNC_STOP_BEFORE_DEINIT "sync_stop_before_deinit"
 #define TEN_STR_PRELOAD_ALL "preload_all"
 #define TEN_STR_TYPE "type"
 #define TEN_STR_APP "app"

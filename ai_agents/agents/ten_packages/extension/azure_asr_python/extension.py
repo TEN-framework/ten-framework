@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import os
+from typing import Any
 
 from typing_extensions import override
 
@@ -15,6 +16,7 @@ from .const import (
     DUMP_FILE_NAME,
     MODULE_NAME_ASR,
     FATAL_ERROR_CODES,
+    AZURE_LANGUAGE_ID_MODE_KEY,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -58,6 +60,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
     @override
     def vendor(self) -> str:
         return "microsoft"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        fields = {"key": self.config.key, "region": self.config.region}
+        return {k: v for k, v in fields.items() if v}
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -116,14 +125,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 f"vendor_error: start_connection failed: invalid vendor config: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(e),
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
             )
-
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             return
 
         stream_format = speechsdk.audio.AudioStreamFormat(
@@ -152,11 +160,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 speechsdk.PropertyId.Speech_LogFilename, azure_log_file_path
             )
 
+        language_id_mode_set_in_advanced = False
         if self.config.advanced_params_json:
             try:
                 params: dict[str, str] = json.loads(
                     self.config.advanced_params_json
                 )
+                if AZURE_LANGUAGE_ID_MODE_KEY in params:
+                    language_id_mode_set_in_advanced = True
                 for key, value in params.items():
                     self.ten_env.log_debug(
                         f"set azure param: {key} = {value}",
@@ -170,6 +181,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 )
 
         if len(self.config.language_list) > 1:
+            if not language_id_mode_set_in_advanced:
+                speech_config.set_property(
+                    speechsdk.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                    "Continuous",
+                )
+            # Continuous mode is used to recognize the language of the audio in real time.
+            # https://learn.microsoft.com/zh-cn/azure/ai-services/speech-service/language-identification?pivots=programming-language-python&tabs=once#recognize-once-or-continuous
             self.client = speechsdk.SpeechRecognizer(
                 speech_config=speech_config,
                 audio_config=audio_config,
@@ -415,6 +433,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
         self.connected = False
 
+        await self.on_disconnected(code=0, message="closed")
+
         if not self.stopped:
             self.ten_env.log_warn(
                 "vendor_error: azure session stopped unexpectedly. Reconnecting...",
@@ -428,6 +448,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
         """Handle the canceled event from Azure ASR."""
 
         cancellation_details = evt.cancellation_details
+
+        if cancellation_details.reason != speechsdk.CancellationReason.Error:
+            self.ten_env.log_info(
+                f"vendor_status_changed: canceled, reason: {cancellation_details.reason}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return
+
         self.ten_env.log_error(
             f"vendor_error: code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}",
             category=LOG_CATEGORY_VENDOR,
@@ -439,6 +467,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
             # Stop retrying for fatal errors
             self.stopped = True
 
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(),
+            code=str(cancellation_details.code),
+            message=cancellation_details.error_details,
+        )
+
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
@@ -449,11 +483,17 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 ),
                 message=cancellation_details.error_details,
             ),
-            ModuleErrorVendorInfo(
-                vendor="microsoft",
-                code=str(cancellation_details.code),
-                message=cancellation_details.error_details,
+            vendor_info,
+        )
+
+        await self.on_disconnected(
+            code=(
+                ModuleErrorCode.FATAL_ERROR.value
+                if is_fatal
+                else ModuleErrorCode.NON_FATAL_ERROR.value
             ),
+            message=cancellation_details.error_details,
+            vendor_info=vendor_info,
         )
 
     async def _azure_event_handler_on_speech_start_detected(
@@ -494,6 +534,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
         if self.reconnect_manager:
             self.reconnect_manager.mark_connection_successful()
 
+        await self.on_connected()
+
     async def _azure_event_handler_on_disconnected(
         self, evt: speechsdk.ConnectionEventArgs
     ):
@@ -502,6 +544,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             f"vendor_status_changed: on_disconnected, session_id: {evt.session_id}",
             category=LOG_CATEGORY_VENDOR,
         )
+        await self.on_disconnected(code=0, message="closed")
 
     async def _handle_finalize_disconnect(self):
         assert self.config is not None
@@ -511,6 +554,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 "finalize disconnect: client is not connected"
             )
             return
+
+        self.connected = False
+
+        # Close the stream first so the SDK pump thread exits cleanly
+        # before calling stop_continuous_recognition.
+        if self.stream is not None:
+            self.stream.close()
+            self.stream = None
 
         self.client.stop_continuous_recognition()
         _ = self.ten_env.log_debug("finalize disconnect completed")
@@ -573,12 +624,19 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
 
+    @override
     async def stop_connection(self) -> None:
+        self.connected = False
+
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+
         if self.client:
             self.client.stop_continuous_recognition()
             self.client = None
-            self.connected = False
-            self.ten_env.log_info("azure connection stopped")
+
+        self.ten_env.log_info("azure connection stopped")
 
     @override
     def is_connected(self) -> bool:
@@ -599,7 +657,10 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         assert self.config is not None
-        assert self.stream is not None
+
+        if self.stream is None:
+            self.ten_env.log_warn("stream is not initialized")
+            return False
 
         buf = frame.get_buf()
         if self.audio_dumper:

@@ -39,12 +39,24 @@ pub fn check() -> Result<GoCheckResult> {
                         // Check if version >= 1.20
                         if major > 1 || (major == 1 && minor >= 20) {
                             // Find go path
-                            let which_output =
-                                std::process::Command::new("which").arg("go").output().ok();
-                            let path = if let Some(output) = which_output {
-                                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                            let path = if cfg!(windows) {
+                                std::process::Command::new("where.exe").arg("go").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             } else {
-                                None
+                                std::process::Command::new("which").arg("go").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             };
 
                             go_info = Some(ToolInfo {
@@ -85,12 +97,24 @@ pub fn check() -> Result<GoCheckResult> {
                                 }
                             }
                         } else {
-                            let which_output =
-                                std::process::Command::new("which").arg("go").output().ok();
-                            let path = if let Some(output) = which_output {
-                                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                            let path = if cfg!(windows) {
+                                std::process::Command::new("where.exe").arg("go").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             } else {
-                                None
+                                std::process::Command::new("which").arg("go").output().ok()
+                                    .and_then(|output| {
+                                        if output.status.success() {
+                                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                                        } else {
+                                            None
+                                        }
+                                    })
                             };
 
                             go_info = Some(ToolInfo {

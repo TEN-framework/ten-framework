@@ -22,6 +22,11 @@ ten_package_test_prepare_app("mix_python_ext_nodejs_app") {
     "mix_python_ext_nodejs_app/bin/bootstrap",
   ]
 
+  if (is_win) {
+    replace_paths_after_install_all +=
+        [ "mix_python_ext_nodejs_app/bin/bootstrap.py" ]
+  }
+
   if (ten_enable_ten_manager) {
     deps = [
       "//core/src/ten_manager",

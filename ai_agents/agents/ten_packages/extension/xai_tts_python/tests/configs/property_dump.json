@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./dump/",
+  "params": {
+    "api_key": "${env:XAI_API_KEY}",
+    "voice_id": "eve",
+    "language": "en",
+    "codec": "pcm",
+    "sample_rate": 24000
+  }
+}

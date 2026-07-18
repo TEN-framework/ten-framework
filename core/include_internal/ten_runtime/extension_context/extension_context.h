@@ -44,6 +44,11 @@ struct ten_extension_context_t {
   size_t extension_threads_cnt_of_ready;
   size_t extension_threads_cnt_of_closed;
 
+  // Used only when engine->sync_stop_before_deinit is true.
+  // Counts how many local extensions have completed on_stop_done.
+  size_t extensions_total_cnt;
+  size_t extensions_cnt_of_stop_done;
+
   ten_list_t extension_groups_info_from_graph;
   ten_list_t extensions_info_from_graph;  // ten_extension_info_t*
 

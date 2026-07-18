@@ -1,4 +1,3 @@
 openai
-numpy
 requests[socks]
 pillow

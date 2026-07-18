@@ -188,6 +188,13 @@ pub struct GraphInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub singleton: Option<bool>,
 
+    /// When true, every extension in this graph must call on_stop_done before
+    /// any extension is allowed to proceed to on_deinit.  Because the barrier
+    /// is maintained inside a single engine, cross-app graphs (MixedDeclared)
+    /// are not supported with this mode.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sync_stop_before_deinit: Option<bool>,
+
     pub graph: GraphContent,
 
     #[serde(skip)]
@@ -208,7 +215,28 @@ impl GraphInfo {
     }
 
     pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
-        self.graph.validate_and_complete_and_flatten(self.app_base_dir.as_deref()).await
+        self.graph.validate_and_complete_and_flatten(self.app_base_dir.as_deref()).await?;
+
+        // sync_stop_before_deinit relies on an in-engine global barrier that
+        // only covers extensions within one app process.  A multi-app graph
+        // (MixedDeclared) would have extensions in different processes that
+        // cannot participate in that barrier, so we reject the combination.
+        if self.sync_stop_before_deinit.unwrap_or(false) {
+            let effective_graph = self
+                .graph
+                .flattened_graph
+                .as_ref()
+                .unwrap_or(&self.graph.graph);
+
+            if !effective_graph.is_single_app_graph()? {
+                return Err(anyhow!(
+                    "sync_stop_before_deinit=true requires all nodes in the graph to belong to \
+                     the same app, but nodes from multiple apps were found"
+                ));
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn to_json_with_flattened_graph(&mut self) -> Result<String> {

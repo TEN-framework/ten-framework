@@ -23,13 +23,15 @@ static void test_app_on_configure(TEN_UNUSED ten_app_t *app,
   TEN_ASSERT(ten_extension_tester_check_integrity(tester, false),
              "Should not happen.");
 
-  bool rc = false;
-
-  if (!ten_string_is_empty(&tester->test_app_property_json)) {
-    rc = ten_env_init_property_from_json(
-        ten_env, ten_string_get_raw_str(&tester->test_app_property_json), NULL);
-    TEN_ASSERT(rc, "Should not happen.");
-  }
+  // Always init property explicitly: use tester's JSON when non-empty,
+  // otherwise use "{}" to force empty property and avoid default loading from
+  // property.json which could cause unstable behavior.
+  const char *property_json = ten_string_is_empty(&tester->test_app_property_json)
+                                  ? "{}"
+                                  : ten_string_get_raw_str(
+                                        &tester->test_app_property_json);
+  bool rc = ten_env_init_property_from_json(ten_env, property_json, NULL);
+  TEN_ASSERT(rc, "Should not happen.");
 
   rc = ten_env_on_configure_done(ten_env, NULL);
   TEN_ASSERT(rc, "Should not happen.");

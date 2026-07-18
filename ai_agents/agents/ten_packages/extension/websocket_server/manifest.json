@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "websocket_server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "display_name": {
     "locales": {
       "en-US": {
@@ -79,6 +79,7 @@
       "property.json",
       "tests/**.py",
       "tests/bin/*",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**",
       ".vscode/**"

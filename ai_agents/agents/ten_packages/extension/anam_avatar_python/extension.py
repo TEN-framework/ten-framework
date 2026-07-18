@@ -42,6 +42,7 @@ class AnamAvatarConfig(BaseConfig):
     enable_string_uid: bool = False
     activity_idle_timeout: int = 120
     input_audio_sample_rate: int = 48000
+    anam_vercel_bypass_token: str = ""
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
@@ -123,6 +124,7 @@ class AnamAvatarExtension(AsyncExtension):
                 quality=self.config.quality,
                 video_encoding=self.config.video_encoding,
                 enable_string_uid=self.config.enable_string_uid,
+                vercel_bypass_token=self.config.anam_vercel_bypass_token,
             )
 
             self.recorder = recorder

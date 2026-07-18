@@ -1,4 +1,2 @@
 boto3
-numpy
 python-dotenv
-asyncio

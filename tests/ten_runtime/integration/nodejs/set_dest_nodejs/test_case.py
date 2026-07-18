@@ -69,11 +69,19 @@ def test_set_dest_nodejs():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(base_path, "set_dest_nodejs_app/bin/start")
-
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+    if sys.platform == "win32":
+        server_cmd = [
+            sys.executable,
+            os.path.join(base_path, "set_dest_nodejs_app/bin/start.py"),
+        ]
+        if not os.path.isfile(server_cmd[1]):
+            print(f"Server command '{server_cmd[1]}' does not exist.")
+            assert False
+    else:
+        server_cmd = os.path.join(base_path, "set_dest_nodejs_app/bin/start")
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,

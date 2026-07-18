@@ -1,0 +1,116 @@
+{
+  "type": "extension",
+  "name": "spatius_avatar_python",
+  "version": "0.2.1",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7.40"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "agora_uid": {
+          "type": "string"
+        },
+        "agora_token": {
+          "type": "string"
+        },
+        "agora_appid": {
+          "type": "string"
+        },
+        "agora_appcert": {
+          "type": "string"
+        },
+        "agora_channel": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "spatius_api_key": {
+              "type": "string"
+            },
+            "spatius_app_id": {
+              "type": "string"
+            },
+            "spatius_avatar_id": {
+              "type": "string"
+            },
+            "agora_uid": {
+              "type": "string"
+            },
+            "agora_token": {
+              "type": "string"
+            },
+            "agora_appid": {
+              "type": "string"
+            },
+            "agora_appcert": {
+              "type": "string"
+            },
+            "agora_channel": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "session_expire_minutes": {
+              "type": "int32"
+            },
+            "audio_format": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "finalize"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

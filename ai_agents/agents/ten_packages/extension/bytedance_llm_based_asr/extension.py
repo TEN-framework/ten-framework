@@ -11,7 +11,7 @@ import os
 import websockets
 from dataclasses import asdict, dataclass
 from ten_ai_base.message import ModuleMetrics
-from typing import Any
+from typing import Any, cast
 from typing_extensions import override
 
 from ten_ai_base.asr import (
@@ -50,6 +50,43 @@ from .const import (
     DUMP_FILE_NAME,
     is_reconnectable_error,
 )
+
+
+def _deep_merge_dict(target: dict[str, Any], patch: dict[str, Any]) -> None:
+    """Merge ``patch`` into ``target`` in place; dict values recurse."""
+    for key, patch_val in patch.items():
+        if (
+            key in target
+            and isinstance(target[key], dict)
+            and isinstance(patch_val, dict)
+        ):
+            _deep_merge_dict(target[key], patch_val)
+        else:
+            target[key] = patch_val
+
+
+def _strip_empty_request_corpus_context(params: dict[str, Any]) -> None:
+    """Normalize ``request.corpus.context`` after ``update_configs`` merges JSON into ``params``.
+
+    Contract for runtime config patches (``update_configs`` payload → merged into
+    ``config.params``):
+
+    - If ``request`` or ``corpus`` is missing or not a ``dict``, this function is a no-op.
+    - If ``corpus.context`` is the empty string ``""``, the ``context`` key is **removed**
+      from ``corpus``. That is interpreted as "clear dialog / hot context" for the next
+      connection, not as "send an explicit empty string field" to the service.
+
+    Limitation: callers cannot use this path to force the wire request to include
+    ``context: ""`` while keeping the key; only omission vs non-empty string is supported.
+    """
+    request = params.get("request")
+    if not isinstance(request, dict):
+        return
+    corpus = request.get("corpus")
+    if not isinstance(corpus, dict):
+        return
+    if corpus.get("context") == "":
+        corpus.pop("context", None)
 
 
 @dataclass
@@ -137,10 +174,25 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Enable utterance grouping
         self.enable_utterance_grouping: bool = True
 
+        self._update_configs_lock: asyncio.Lock = asyncio.Lock()
+
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
         return "bytedance_bigmodel"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        fields = {
+            "url": self.config.get_api_url(),
+            "app_key": self.config.get_app_key(),
+            "access_key": self.config.get_access_key(),
+            "api_key": self.config.get_api_key(),
+            "auth_method": self.config.get_auth_method(),
+        }
+        return {k: v for k, v in fields.items() if v}
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -199,16 +251,50 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def start_connection(self) -> None:
         """Start connection to Volcengine ASR service."""
         if not self.config:
-            raise ValueError("Configuration not loaded")
+            error = ModuleError(
+                module=ModuleType.ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="Configuration not loaded",
+            )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
+            return
 
         if self.config.get_auth_method() == "api_key":
             if not self.config.get_api_key():
-                raise ValueError("api_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="api_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
         else:
             if not self.config.get_app_key():
-                raise ValueError("app_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="app_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
             if not self.config.get_access_key():
-                raise ValueError("access_key is required")
+                error = ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message="access_key is required",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
+                )
+                return
 
         try:
             self.client = VolcengineASRClient(
@@ -231,21 +317,31 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
             self.client.set_on_connected_callback(self._on_connected)
             self.client.set_on_disconnected_callback(self._on_disconnected)
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to create ASR client: {e}")
+            self.connected = False
+            error = ModuleError(
+                module=ModuleType.ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=str(e),
+            )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
+            return
 
-            # Create dumper for new connection with UUID filename
-            if self.log_id_dumper_manager:
-                await self.log_id_dumper_manager.create_dumper()
+        # Create dumper for new connection with UUID filename
+        if self.log_id_dumper_manager:
+            await self.log_id_dumper_manager.create_dumper()
 
+        try:
             await self.client.connect()
             # Do NOT set self.connected = True here (callback-driven pattern)
             # Connection state will be set in _on_connected() callback when server confirms
             # This matches azure_asr_python pattern where state is set in event handler
-
         except Exception as e:
             self.ten_env.log_error(f"Failed to connect: {e}")
             self.connected = False
-            # Don't raise the exception, let the extension continue
-            # The connection will be retried later
+            # connect() reports via connection_error_callback and _on_disconnected
 
     @override
     async def stop_connection(self) -> None:
@@ -305,7 +401,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         #     ):
         #         return True  # Still consider connected during finalize grace period
 
-        return self.connected and self.client is not None
+        return (
+            self.connected and self.client is not None and self.client.connected
+        )
 
     @override
     async def send_audio(
@@ -351,6 +449,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             return True
 
         except Exception as e:
+            if self.stopped:
+                return False
             self.ten_env.log(LogLevel.ERROR, f"Error sending audio: {e}")
             await self._handle_error(e)
             return False
@@ -466,16 +566,32 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         finally:
             self._reconnecting = False
 
+    def _result_level_asr_info_fields(
+        self, result: ASRResponse
+    ) -> dict[str, Any]:
+        """Fields from vendor `result` object that belong in metadata.asr_info.
+
+        Only includes keys when present on the vendor payload (e.g. prefetch).
+        """
+        rd = result.result
+        if not rd or not isinstance(rd, dict):
+            return {}
+        if "prefetch" not in rd:
+            return {}
+        return {"prefetch": rd["prefetch"]}
+
     def _build_metadata_with_asr_info(
         self,
         base_metadata: dict[str, Any] | None = None,
         additional_fields: dict[str, Any] | None = None,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Build metadata according to protocol: session_id at root, others in asr_info.
 
         Args:
             base_metadata: Base metadata dict (defaults to self.metadata if None)
             additional_fields: Additional fields to add to asr_info
+            result_level_fields: Vendor result-level fields (e.g. prefetch) for asr_info
 
         Returns:
             Metadata dict with structure: {"session_id": "...", "asr_info": {...}}
@@ -501,6 +617,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if additional_fields:
             asr_info.update(additional_fields)
 
+        # Vendor result-level fields (e.g. prefetch under result.{prefetch})
+        if result_level_fields:
+            asr_info.update(result_level_fields)
+
         # Build final metadata structure
         metadata: dict[str, Any] = {}
         if session_id is not None:
@@ -510,7 +630,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         return metadata
 
     def _extract_final_result_metadata(
-        self, utterance: Utterance
+        self,
+        utterance: Utterance,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions.
 
@@ -524,11 +646,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             additional_fields = utterance.additions
 
         return self._build_metadata_with_asr_info(
-            additional_fields=additional_fields
+            additional_fields=additional_fields,
+            result_level_fields=result_level_fields,
         )
 
     def _extract_non_final_result_metadata(
-        self, utterance: Utterance
+        self,
+        utterance: Utterance,
+        result_level_fields: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Extract metadata from utterance additions for non-final results.
 
@@ -550,7 +675,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 additional_fields["source"] = additions["source"]
 
         return self._build_metadata_with_asr_info(
-            additional_fields=additional_fields
+            additional_fields=additional_fields,
+            result_level_fields=result_level_fields,
         )
 
     def _calculate_utterance_start_ms(
@@ -608,8 +734,18 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         duration_ms: int,
         language: str,
         metadata: dict[str, Any],
-    ) -> None:
-        """Send ASR result with given text and metadata."""
+    ) -> bool:
+        """Send ASR result with given text and metadata.
+
+        Returns False when the result is not sent (e.g. empty text with omit enabled).
+        """
+        if (
+            self.config
+            and self.config.get_omit_empty_text_results()
+            and not text.strip()
+        ):
+            return False
+
         asr_result = ASRResult(
             text=text,
             final=is_final,
@@ -620,6 +756,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             metadata=metadata,
         )
         await self.send_asr_result(asr_result)
+        return True
 
     async def _track_utterance_timestamps(self, result: ASRResponse) -> None:
         """Track utterance timestamps and send two-pass delay metrics."""
@@ -719,6 +856,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 category=LOG_CATEGORY_VENDOR,
             )
 
+            result_level_asr_info = self._result_level_asr_info_fields(result)
+
             # Process utterances: send definite=true individually,
             # and concatenate adjacent definite=false utterances together
             if not result.utterances:
@@ -728,8 +867,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     result.start_ms
                 )
                 # Build metadata according to protocol: session_id at root, others in asr_info
-                metadata = self._build_metadata_with_asr_info()
-                await self._send_asr_result_from_text(
+                metadata = self._build_metadata_with_asr_info(
+                    result_level_fields=result_level_asr_info
+                )
+                sent = await self._send_asr_result_from_text(
                     text=result.text,
                     is_final=False,
                     start_ms=actual_start_ms,
@@ -765,16 +906,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
                     # Extract metadata (always include invoke_type and source for all results)
                     if is_final:
-                        has_final_result = True
                         metadata = self._extract_final_result_metadata(
-                            utterance
+                            utterance,
+                            result_level_fields=result_level_asr_info,
                         )
                     else:
                         metadata = self._extract_non_final_result_metadata(
-                            utterance
+                            utterance,
+                            result_level_fields=result_level_asr_info,
                         )
 
-                    await self._send_asr_result_from_text(
+                    sent = await self._send_asr_result_from_text(
                         text=utterance.text,
                         is_final=is_final,
                         start_ms=actual_start_ms,
@@ -782,6 +924,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         language=result.language,
                         metadata=metadata,
                     )
+                    if is_final and sent:
+                        has_final_result = True
             else:
                 # Filter out invalid utterances first
                 valid_utterances = [
@@ -816,10 +960,14 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                             "start_time": first.start_time,
                             "duration_ms": last.end_time - first.start_time,
                             "metadata": (
-                                self._extract_final_result_metadata(last)
+                                self._extract_final_result_metadata(
+                                    last,
+                                    result_level_fields=result_level_asr_info,
+                                )
                                 if is_final
                                 else self._extract_non_final_result_metadata(
-                                    last
+                                    last,
+                                    result_level_fields=result_level_asr_info,
                                 )
                             ),
                             "utterance": last,  # Keep reference for timestamp tracking
@@ -835,10 +983,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         merged["start_time"]
                     )
 
-                    if is_final:
-                        has_final_result = True
-
-                    await self._send_asr_result_from_text(
+                    sent = await self._send_asr_result_from_text(
                         text=merged["text"],
                         is_final=is_final,
                         start_ms=actual_start_ms,
@@ -846,6 +991,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         language=result.language,
                         metadata=merged["metadata"],
                     )
+                    if is_final and sent:
+                        has_final_result = True
 
             # finalize end signal if there was any final result
             if has_final_result:
@@ -891,7 +1038,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
 
-    def _on_connection_error(self, exception: Exception) -> None:
+    def _on_connection_error(self, exception: Exception) -> tuple[int, str]:
         """Handle connection-level errors (HTTP stage)."""
         # Connection error handling logic
         error_message = str(exception)
@@ -909,8 +1056,11 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # Create task to report error to TEN framework
         asyncio.create_task(self._on_asr_error(error_code, error_message))
+        return error_code, error_message
 
-    def _on_asr_communication_error(self, exception: Exception) -> None:
+    def _on_asr_communication_error(
+        self, exception: Exception
+    ) -> tuple[int, str]:
         """Handle ASR communication errors (WebSocket stage)."""
         # Check if this is a server error response with a specific error code
         if hasattr(exception, "code"):
@@ -938,6 +1088,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             error_message = str(exception)
 
         asyncio.create_task(self._on_asr_error(error_code, error_message))
+        return int(error_code), error_message
 
     def _on_asr_exception(self, exception: Exception) -> None:
         """Handle connection-level exceptions from client (adapter for error_callback)."""
@@ -980,7 +1131,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             "Successfully connected to Volcengine ASR service"
         )
 
-    def _on_connected(self) -> None:
+    async def _on_connected(self) -> None:
         """Handle connection established (callback-driven state change).
 
         Called by client when server sends MESSAGE_TYPE_SERVER_FULL_RESPONSE with code=0.
@@ -995,18 +1146,176 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Set connected=True here (callback-driven pattern)
         self.connected = True
 
-        # Perform initialization that was previously in start_connection()
         self._initialize_connection_state()
+        await self.on_connected()
 
-    def _on_disconnected(self) -> None:
+    async def _on_disconnected(
+        self,
+        vendor_close_code: int = 0,
+        vendor_close_message: str = "closed",
+        vendor_code: str = "",
+        vendor_message: str = "",
+    ) -> None:
         """Handle connection lost."""
         self.ten_env.log_info(
-            f"vendor_status_changed: session_id: {self.session_id}",
+            f"vendor connection closed, session_id: {self.session_id}, "
+            f"vendor_close_code={vendor_close_code}, "
+            f"vendor_close_message={vendor_close_message}, "
+            f"vendor_code={vendor_code}, vendor_message={vendor_message}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
+        vendor_info = None
+        if vendor_code or vendor_message:
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=vendor_code,
+                message=vendor_message,
+            )
+        elif vendor_close_code not in (0, 1000):
+            vendor_info = ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_close_code),
+                message=vendor_close_message,
+            )
+        await self.on_disconnected(
+            code=vendor_close_code,
+            message=vendor_close_message,
+            vendor_info=vendor_info,
+        )
+
+    @staticmethod
+    def _set_update_configs_cmd_result(
+        cmd_result: CmdResult, *, code: int, message: str
+    ) -> None:
+        """Match ten_ai_base cmd_in convention: result.code + result.message."""
+        cmd_result.set_property_int("code", code)
+        cmd_result.set_property_string("message", message)
+
+    async def _run_update_configs(
+        self, payload: dict[str, Any]
+    ) -> tuple[bool, str]:
+        if not self.config:
+            return False, "config not loaded"
+
+        params_patch = payload.get("params")
+        url_val = payload.get("url")
+        dump_present = "dump" in payload
+
+        has_params = isinstance(params_patch, dict) and bool(params_patch)
+        has_url = isinstance(url_val, str) and bool(url_val.strip())
+
+        params = self.config.params
+        if not isinstance(params, dict):
+            return False, "params_not_dict"
+
+        if has_url:
+            params["api_url"] = cast(str, url_val).strip()
+
+        if dump_present:
+            self.config.dump = bool(payload["dump"])
+
+        keys_for_log: list[str] = []
+        if has_params:
+            patch = cast(dict[str, Any], params_patch)
+            keys_for_log = list(patch.keys())
+            _deep_merge_dict(params, patch)
+            _strip_empty_request_corpus_context(params)
+
+        self.ten_env.log_info(
+            "update_configs: merged payload keys into config, reconnecting "
+            f"(params_keys={keys_for_log})",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
+
+        await self.stop_connection()
+        await self.start_connection()
+
+        return True, ""
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         """Handle commands."""
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        await ten_env.return_result(cmd_result)
+        if cmd.get_name() != "update_configs":
+            await super().on_cmd(ten_env, cmd)
+            return
+
+        try:
+            prop_json, jerr = cmd.get_property_to_json(None)
+            if jerr or not prop_json:
+                ten_env.log_error(
+                    f"update_configs: missing_or_invalid_cmd_json err={jerr!r}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message="missing_or_invalid_cmd_json",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            try:
+                payload = json.loads(prop_json)
+            except json.JSONDecodeError as e:
+                ten_env.log_error(
+                    f"update_configs: invalid_json {e}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message=f"invalid_json:{e}",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            if not isinstance(payload, dict):
+                ten_env.log_error(
+                    "update_configs: payload_not_object",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                bad = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    bad,
+                    code=-1,
+                    message="payload_not_object",
+                )
+                await ten_env.return_result(bad)
+                return
+
+            async with self._update_configs_lock:
+                ok, err_msg = await self._run_update_configs(payload)
+
+            if ok:
+                cmd_result = CmdResult.create(StatusCode.OK, cmd)
+                self._set_update_configs_cmd_result(
+                    cmd_result,
+                    code=0,
+                    message="",
+                )
+            else:
+                ten_env.log_error(
+                    f"update_configs: {err_msg}",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+                self._set_update_configs_cmd_result(
+                    cmd_result,
+                    code=-1,
+                    message=err_msg,
+                )
+            await ten_env.return_result(cmd_result)
+        except Exception as e:
+            ten_env.log_error(
+                f"update_configs: unexpected error: {e}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            self._set_update_configs_cmd_result(
+                cmd_result,
+                code=-1,
+                message=str(e),
+            )
+            await ten_env.return_result(cmd_result)

@@ -15,5 +15,4 @@ class GradiumTTSExtensionAddon(Addon):
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
         from .extension import GradiumTTSExtension
 
-        ten_env.log_info("gradium tts on_create_instance")
         ten_env.on_create_instance_done(GradiumTTSExtension(name), context)

@@ -264,3 +264,51 @@ void ten_engine_find_extension_info_for_all_extensions_of_extension_thread_task(
     }
   }
 }
+
+// Runs on the engine thread. Posted from an extension thread each time one
+// local extension completes on_stop_done in sync_stop_before_deinit mode.
+// When the count reaches the total, notifies all extension threads to proceed
+// to on_deinit.
+void ten_engine_on_extension_stop_done_task(void *self_, TEN_UNUSED void *arg) {
+  ten_engine_t *self = self_;
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_engine_check_integrity(self, true), "Should not happen.");
+
+  ten_extension_context_t *extension_context = self->extension_context;
+  TEN_ASSERT(extension_context &&
+                 ten_extension_context_check_integrity(extension_context, true),
+             "Should not happen.");
+
+  extension_context->extensions_cnt_of_stop_done++;
+
+  TEN_LOGD("[%s] Extension stop_done count: %zu / %zu",
+           ten_engine_get_id(self, true),
+           extension_context->extensions_cnt_of_stop_done,
+           extension_context->extensions_total_cnt);
+
+  if (extension_context->extensions_cnt_of_stop_done <
+      extension_context->extensions_total_cnt) {
+    return;
+  }
+
+  // All local extensions have completed on_stop_done. Notify every extension
+  // thread so that extensions whose path_timers are already closed can
+  // immediately proceed to on_deinit.
+  TEN_LOGD("[%s] All extensions stop_done, notifying extension threads",
+           ten_engine_get_id(self, true));
+
+  ten_list_foreach (&extension_context->extension_threads, iter) {
+    ten_extension_thread_t *extension_thread =
+        ten_ptr_listnode_get(iter.node);
+    TEN_ASSERT(extension_thread, "Should not happen.");
+
+    int rc = ten_runloop_post_task_tail(
+        ten_extension_thread_get_attached_runloop(extension_thread),
+        ten_extension_thread_on_all_extensions_stop_done_task,
+        extension_thread, NULL);
+    if (rc) {
+      TEN_LOGW("Failed to post task to extension thread's runloop: %d", rc);
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  }
+}

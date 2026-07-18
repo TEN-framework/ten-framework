@@ -139,7 +139,7 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
     mock_instance.send_text = AsyncMock()
-    mock_instance.finish_connection = AsyncMock()
+    mock_instance.reset_synthesizer = AsyncMock()
     mock_instance.close = AsyncMock()
 
     # This async method simulates different behaviors on subsequent calls
@@ -174,7 +174,7 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
     mock_instance.send_text = AsyncMock(side_effect=mock_send_text_stateful)
 
     # Mock the client constructor
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(config, ten_env, vendor, response_msgs, *_):
         mock_instance.response_msgs = response_msgs
         return mock_instance
 

@@ -27,11 +27,25 @@ pub fn check() -> Result<NodeJsCheckResult> {
             let version_num = version_str.strip_prefix('v').unwrap_or(version_str);
 
             // Find node path
-            let which_output = std::process::Command::new("which").arg("node").output().ok();
-            let path = if let Some(output) = which_output {
-                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            let path = if cfg!(windows) {
+                // On Windows, use 'where.exe' instead of 'which'
+                std::process::Command::new("where.exe").arg("node").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             } else {
-                None
+                std::process::Command::new("which").arg("node").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             };
 
             has_nodejs = true;
@@ -87,7 +101,18 @@ pub fn check() -> Result<NodeJsCheckResult> {
     };
 
     // Check npm
-    let npm_check = std::process::Command::new("npm").arg("--version").output();
+    // On Windows, npm is typically a .cmd file (not .exe), so we need to
+    // invoke it through cmd.exe. Otherwise Command::new("npm") will fail
+    // to find/execute it.
+    let npm_check = if cfg!(windows) {
+        std::process::Command::new("cmd")
+            .args(["/C", "npm", "--version"])
+            .output()
+    } else {
+        std::process::Command::new("npm")
+            .arg("--version")
+            .output()
+    };
 
     let npm_info = match npm_check {
         Ok(output) if output.status.success() => {
@@ -95,11 +120,25 @@ pub fn check() -> Result<NodeJsCheckResult> {
             let version_str = version_str.trim();
 
             // Find npm path
-            let which_output = std::process::Command::new("which").arg("npm").output().ok();
-            let path = if let Some(output) = which_output {
-                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            let path = if cfg!(windows) {
+                // On Windows, use 'where.exe' instead of 'which'
+                std::process::Command::new("where.exe").arg("npm").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             } else {
-                None
+                std::process::Command::new("which").arg("npm").output().ok()
+                    .and_then(|output| {
+                        if output.status.success() {
+                            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                        } else {
+                            None
+                        }
+                    })
             };
 
             has_npm = true;

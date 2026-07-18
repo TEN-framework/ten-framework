@@ -1,6 +1,8 @@
 {
+    "enable_words": false,
     "params": {
         "api_key": "${env:CARTESIA_API_KEY}",
+        "base_url": "wss://api.cartesia.ai",
         "model_id": "sonic-3",
         "voice": {
             "mode": "id",

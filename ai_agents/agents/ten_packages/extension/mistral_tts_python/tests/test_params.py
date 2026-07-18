@@ -1,0 +1,323 @@
+import asyncio
+import base64
+import json
+import struct
+import sys
+from pathlib import Path
+
+# Add project root to sys.path to allow running tests from this directory
+# The project root is 6 levels up from the parent directory of this file.
+project_root = str(Path(__file__).resolve().parents[6])
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+from unittest.mock import patch, MagicMock, AsyncMock
+
+
+# ================ test config defaults ================
+def test_update_params_defaults():
+    """update_params() sets the Mistral defaults and forces response_format=pcm."""
+    from mistral_tts_python.config import MistralTTSConfig
+
+    config = MistralTTSConfig(params={"api_key": "test_key"})
+    config.update_params()
+
+    assert config.params["model"] == "voxtral-mini-tts-2603"
+    # Always raw float32 `pcm` regardless of what the caller passed.
+    assert config.params["response_format"] == "pcm"
+    assert config.params["stream"] is True
+    # We do not inject a voice default — voice is optional for Voxtral.
+    assert "voice" not in config.params
+    # Default endpoint is the Mistral OpenAI-compatible speech endpoint.
+    assert config.url == "https://api.mistral.ai/v1/audio/speech"
+    print("✅ Defaults test passed.")
+
+
+def test_response_format_is_forced_to_pcm():
+    """Force PCM while preserving an explicit non-streaming request."""
+    from mistral_tts_python.config import MistralTTSConfig
+
+    config = MistralTTSConfig(
+        params={
+            "api_key": "k",
+            "response_format": "wav",
+            "stream": False,
+        }
+    )
+    config.update_params()
+    assert config.params["response_format"] == "pcm"
+    assert config.params["stream"] is False
+    print("✅ response_format override test passed.")
+
+
+def test_frontend_sample_rate_is_removed():
+    """The generic frontend sample rate is not sent to Mistral."""
+    from mistral_tts_python.config import MistralTTSConfig
+
+    config = MistralTTSConfig(params={"api_key": "k", "sample_rate": 16000})
+    config.update_params()
+
+    assert "sample_rate" not in config.params
+    print("✅ frontend sample_rate removal test passed.")
+
+
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+def test_structured_vendor_error_is_encoded(MockAsyncClient):
+    """Structured validation errors are returned without masking failures."""
+    from mistral_tts_python.config import MistralTTSConfig
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from ten_ai_base.struct import TTS2HttpResponseEventType
+    from ten_runtime import AsyncTenEnv
+
+    error_response = {
+        "error": {
+            "message": {
+                "detail": [
+                    {
+                        "loc": ["body", "sample_rate"],
+                        "msg": "Extra inputs are not permitted",
+                    }
+                ]
+            }
+        }
+    }
+    mock_response = AsyncMock()
+    mock_response.status_code = 422
+    mock_response.aread = AsyncMock(
+        return_value=json.dumps(error_response).encode()
+    )
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_http_client = AsyncMock()
+    mock_http_client.stream = MagicMock(return_value=mock_response)
+    mock_http_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_http_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    config = MistralTTSConfig(params={"api_key": "k"})
+    config.update_params()
+    client = MistralTTSClient(config, mock_ten_env)
+
+    async def collect_events():
+        return [event async for event in client.get("hello", "request-id")]
+
+    events = asyncio.run(collect_events())
+
+    assert events[0][1] == TTS2HttpResponseEventType.ERROR
+    assert isinstance(events[0][0], bytes)
+    assert b"Extra inputs are not permitted" in events[0][0]
+
+
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+def test_sse_audio_is_base64_decoded(MockAsyncClient):
+    """SSE audio deltas are decoded before float32-to-PCM16 conversion."""
+    from mistral_tts_python.config import MistralTTSConfig
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from ten_ai_base.struct import TTS2HttpResponseEventType
+    from ten_runtime import AsyncTenEnv
+
+    float32_audio = struct.pack("<3f", -1.0, 0.0, 1.0)
+    audio_data = base64.b64encode(float32_audio).decode()
+    delta = json.dumps({"type": "speech.audio.delta", "audio_data": audio_data})
+
+    mock_response = AsyncMock()
+    mock_response.status_code = 200
+    mock_response.headers = {"content-type": "text/event-stream"}
+
+    async def mock_aiter_lines():
+        yield "event: speech.audio.delta"
+        yield f"data: {delta}"
+        yield ""
+        yield 'data: {"type":"speech.audio.done","usage":{}}'
+        # The client must stop consuming as soon as the done event arrives.
+        yield "data: this line must not be parsed"
+
+    mock_response.aiter_lines = mock_aiter_lines
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_http_client = AsyncMock()
+    mock_http_client.stream = MagicMock(return_value=mock_response)
+    MockAsyncClient.return_value = mock_http_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    config = MistralTTSConfig(params={"api_key": "k"})
+    config.update_params()
+    client = MistralTTSClient(config, mock_ten_env)
+
+    async def collect_events():
+        return [event async for event in client.get("hello", "request-id")]
+
+    events = asyncio.run(collect_events())
+
+    assert events[0] == (
+        struct.pack("<3h", -32767, 0, 32767),
+        TTS2HttpResponseEventType.RESPONSE,
+    )
+    assert events[-1] == (None, TTS2HttpResponseEventType.END)
+    request_payload = mock_http_client.stream.call_args.kwargs["json"]
+    assert request_payload["stream"] is True
+
+
+# ================ test endpoint URL resolution ================
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+@patch("mistral_tts_python.mistral_tts.Timeout")
+@patch("mistral_tts_python.mistral_tts.Limits")
+def test_url_and_base_url_configuration(
+    MockLimits, MockTimeout, MockAsyncClient
+):
+    """The endpoint URL is resolved from `url` (top-level) or `base_url` (params)."""
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from mistral_tts_python.config import MistralTTSConfig
+    from ten_runtime import AsyncTenEnv
+
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    common_params = {"api_key": "test_key", "model": "voxtral-mini-tts-2603"}
+
+    # Case 1: explicit top-level url wins.
+    cfg = MistralTTSConfig(
+        url="https://custom-server.com/v1/tts", params=dict(common_params)
+    )
+    cfg.update_params()
+    client = MistralTTSClient(cfg, mock_ten_env)
+    assert client.config.url == "https://custom-server.com/v1/tts"
+
+    # Case 2: base_url (trailing slash) -> {base_url}/audio/speech.
+    cfg = MistralTTSConfig(
+        params={**common_params, "base_url": "https://api.custom.com/v1/"}
+    )
+    cfg.update_params()
+    assert cfg.url == "https://api.custom.com/v1/audio/speech"
+
+    # Case 3: base_url (no trailing slash).
+    cfg = MistralTTSConfig(
+        params={**common_params, "base_url": "https://api.custom.com/v1"}
+    )
+    cfg.update_params()
+    assert cfg.url == "https://api.custom.com/v1/audio/speech"
+
+    # Case 4: default Mistral endpoint.
+    cfg = MistralTTSConfig(params=dict(common_params))
+    cfg.update_params()
+    assert cfg.url == "https://api.mistral.ai/v1/audio/speech"
+
+    # Case 5: url in params is extracted and removed.
+    cfg = MistralTTSConfig(
+        params={**common_params, "url": "https://params-url.com/tts"}
+    )
+    cfg.update_params()
+    assert cfg.url == "https://params-url.com/tts"
+    assert "url" not in cfg.params
+    print("✅ URL/base_url configuration test passed.")
+
+
+# ================ test headers ================
+@patch("mistral_tts_python.mistral_tts.AsyncClient")
+@patch("mistral_tts_python.mistral_tts.Timeout")
+@patch("mistral_tts_python.mistral_tts.Limits")
+def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
+    """Default Authorization/Content-Type headers, with user override/merge."""
+    from mistral_tts_python.mistral_tts import MistralTTSClient
+    from mistral_tts_python.config import MistralTTSConfig
+    from ten_runtime import AsyncTenEnv
+
+    MockTimeout.return_value = MagicMock()
+    MockLimits.return_value = MagicMock()
+    mock_client = AsyncMock()
+    mock_client.aclose = AsyncMock()
+    MockAsyncClient.return_value = mock_client
+
+    mock_ten_env = MagicMock(spec=AsyncTenEnv)
+    for attr in ("log_info", "log_debug", "log_error", "log_warn"):
+        setattr(mock_ten_env, attr, MagicMock())
+
+    common_params = {
+        "api_key": "test_api_key_123",
+        "model": "voxtral-mini-tts-2603",
+    }
+
+    # Defaults.
+    cfg = MistralTTSConfig(params=dict(common_params))
+    cfg.update_params()
+    client = MistralTTSClient(cfg, mock_ten_env)
+    assert client.headers["Authorization"] == "Bearer test_api_key_123"
+    assert client.headers["Content-Type"] == "application/json"
+    assert len(client.headers) == 2
+
+    # Merge custom header.
+    cfg = MistralTTSConfig(
+        headers={"X-Custom-Header": "custom-value"}, params=dict(common_params)
+    )
+    cfg.update_params()
+    client = MistralTTSClient(cfg, mock_ten_env)
+    assert client.headers["Authorization"] == "Bearer test_api_key_123"
+    assert client.headers["X-Custom-Header"] == "custom-value"
+    assert len(client.headers) == 3
+
+    # User override of Authorization.
+    cfg = MistralTTSConfig(
+        headers={"Authorization": "Bearer custom_token"},
+        params=dict(common_params),
+    )
+    cfg.update_params()
+    client = MistralTTSClient(cfg, mock_ten_env)
+    assert client.headers["Authorization"] == "Bearer custom_token"
+    print("✅ Headers configuration test passed.")
+
+
+# ================ test validate ================
+def test_validate():
+    """validate() requires api_key (or Authorization header) and model; voice optional."""
+    from mistral_tts_python.config import MistralTTSConfig
+
+    # api_key in params -> ok.
+    cfg = MistralTTSConfig(
+        params={"api_key": "k", "model": "voxtral-mini-tts-2603"}
+    )
+    cfg.update_params()
+    cfg.validate()
+
+    # Authorization header instead of api_key -> ok.
+    cfg = MistralTTSConfig(
+        params={"model": "voxtral-mini-tts-2603"},
+        headers={"Authorization": "Bearer t"},
+    )
+    cfg.update_params()
+    cfg.validate()
+
+    # Neither -> error.
+    cfg = MistralTTSConfig(params={"model": "voxtral-mini-tts-2603"})
+    cfg.update_params()
+    try:
+        cfg.validate()
+        assert False, "expected ValueError when no auth provided"
+    except ValueError as e:
+        assert "API key or Authorization header is required" in str(e)
+
+    # Voice is NOT required.
+    cfg = MistralTTSConfig(params={"api_key": "k"})
+    cfg.update_params()
+    cfg.validate()  # should not raise
+    print("✅ Validate test passed.")

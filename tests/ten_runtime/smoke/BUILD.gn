@@ -71,6 +71,7 @@ ten_executable("ten_runtime_smoke_test") {
     "standalone_test",
     "start_graph",
     "suspend_resume",
+    "sync_stop_before_deinit",
     "telemetry",
     "ten_env_call_timing",
     "ten_proxy",

@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "gradium_asr_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -53,6 +53,7 @@
       "manifest.json",
       "property.json",
       "**.py",
+      "pyproject.toml",
       "requirements.txt",
       "docs/**"
     ]

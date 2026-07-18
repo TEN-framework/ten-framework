@@ -254,6 +254,10 @@ struct ten_extension_t {
 
   bool is_standalone_test_extension;
 
+  // true only after on_init_done() has completed; on_cmd/on_data/on_audio_frame/
+  // on_video_frame must not run extension logic until initted is true.
+  bool initted;
+
   // Manual trigger life cycle configuration
   ten_manual_trigger_life_cycle_t manual_trigger_life_cycle;
 

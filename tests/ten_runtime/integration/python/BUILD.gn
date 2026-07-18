@@ -63,6 +63,7 @@ group("python") {
         "standalone_test_async_tmpl_python",
         "standalone_test_tmpl_python",
         "start_graph_and_communicate_python",
+        "sync_stop_before_deinit_python",
         "start_graph_and_set_dests_python",
         "subgraph_python",
         "trigger_life_cycle_python",

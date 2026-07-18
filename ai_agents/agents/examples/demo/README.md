@@ -8,7 +8,7 @@ Comprehensive demo showcasing TEN Framework's AI agent capabilities with multipl
 
 - **Multiple AI Agent Types**: Support for different AI agent configurations
   - **Voice AI (STT + LLM + TTS)**: OpenAI GPT 5, Llama 4, Qwen 3 Reasoning
-  - **Speech to Speech Voice AI**: OpenAI GPT Realtime, Gemini 2.0/2.5 Flash, Azure Voice AI API
+  - **Speech to Speech Voice AI**: OpenAI GPT Realtime, OpenAI GPT Realtime 1.5, Gemini 2.0/2.5 Flash, Azure Voice AI API
   - **AI Platform Integrations**: OceanBase PowerRAG, Dify Agent, Coze Bot
 - **Multi-language Support**: English, Chinese, Korean, Japanese
 - **Real-time Voice Interaction**: Natural speech conversation with AI agents

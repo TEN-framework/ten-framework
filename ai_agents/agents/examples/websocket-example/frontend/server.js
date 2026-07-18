@@ -23,7 +23,7 @@ function getOrCreateProxy(wsPort, devMode) {
     proxyCache.set(
       wsPort,
       createProxyMiddleware({
-        target: `ws://localhost:${wsPort}`,
+        target: `ws://127.0.0.1:${wsPort}`,
         changeOrigin: true,
         ws: true,
         logLevel: devMode ? "debug" : "warn",
@@ -32,7 +32,7 @@ function getOrCreateProxy(wsPort, devMode) {
         },
         onProxyReqWs: (_proxyReq, req, _socket, _options, _head) => {
           console.log(
-            `WebSocket proxy request: ${req.url} -> ws://localhost:${wsPort}`
+            `WebSocket proxy request: ${req.url} -> ws://127.0.0.1:${wsPort}`
           );
         },
       })
@@ -138,7 +138,7 @@ app.prepare().then(() => {
     if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(
-      `> WebSocket proxy: /ws/{port} -> ws://localhost:{port} (8000-9000)`
+      `> WebSocket proxy: /ws/{port} -> ws://127.0.0.1:{port} (8000-9000)`
     );
     console.log(`> API proxy: /api/agents -> ${agentServerUrl}`);
   });

@@ -17,6 +17,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/graph_json.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/long_running_mode.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/predefined_graph_name.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/field/sync_stop_before_deinit.h"
 #include "include_internal/ten_runtime/msg/field/field_info.h"
 
 #if defined(__cplusplus)
@@ -36,6 +37,13 @@ static const ten_msg_field_info_t ten_cmd_start_graph_fields_info[] = {
             .field_name = TEN_STR_LONG_RUNNING_MODE,
             .copy_field = ten_cmd_start_graph_copy_long_running_mode,
             .process_field = ten_cmd_start_graph_process_long_running_mode,
+        },
+    [TEN_CMD_START_GRAPH_FIELD_SYNC_STOP_BEFORE_DEINIT] =
+        {
+            .field_name = TEN_STR_SYNC_STOP_BEFORE_DEINIT,
+            .copy_field = ten_cmd_start_graph_copy_sync_stop_before_deinit,
+            .process_field =
+                ten_cmd_start_graph_process_sync_stop_before_deinit,
         },
     [TEN_CMD_START_GRAPH_FIELD_PREDEFINED_GRAPH] =
         {

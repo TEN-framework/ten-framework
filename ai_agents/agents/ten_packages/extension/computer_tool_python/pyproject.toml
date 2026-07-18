@@ -1,0 +1,9 @@
+[project]
+name = "computer-tool-python"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=2.44.0",
+    "pydantic>=2.13.4",
+    "requests[socks]>=2.34.2",
+]

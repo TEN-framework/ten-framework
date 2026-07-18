@@ -42,26 +42,67 @@ tman check env
 
 #### Task（任务运行器）
 
+**Linux / macOS：**
+
 ```bash
 go install github.com/go-task/task/v3/cmd/task@latest
 task --version  # 验证安装
 ```
 
-**Bun（JavaScript 包管理器）**
+**Windows：**
+
+```powershell
+# 1. 使用winget安装（推荐）
+# 从以下地址安装winget
+# https://apps.microsoft.com/detail/9nblggh4nns1?hl=en-US&gl=US
+# 系统需要满足：Windows10 高于 1709 (Build 16299)，或者是Windows11
+winget --version # 验证安装
+winget install Task.Task
+task --version  # 验证安装
+
+# 2. 使用scoop安装
+irm get.scoop.sh | iex
+scoop --version # 验证安装
+scoop install task
+task --version # 验证安装
+```
+
+#### Bun（JavaScript 包管理器）
+
+**Linux / macOS：**
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
 bun --version  # 验证安装
 ```
 
-**uv（Python 包管理器）**
+**Windows：**
+
+```powershell
+powershell -c "irm bun.sh/install.ps1 | iex"
+bun --version  # 验证安装
+```
+
+#### uv（Python 包管理器）
+
+**Linux / macOS：**
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version  # 验证安装
 ```
 
-> 💡 安装后需要重新加载终端配置：`source ~/.zshrc`
+**Windows：**
+
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+uv --version  # 验证安装
+```
+
+> 💡 安装后需要重新加载终端配置：
+>
+> - Linux/macOS：`source ~/.zshrc`
+> - Windows：重新打开 PowerShell 终端
 
 ## 快速开始
 
@@ -90,12 +131,21 @@ task install
 
 在 `ai_agents/.env` 文件中配置服务商密钥：
 
+**Linux / macOS：**
+
 ```bash
 cd ../../../  # 回到 ai_agents 目录
 vim .env
 ```
 
-添加以下配置：
+**Windows：**
+
+```powershell
+cd ..\..\..   # 回到 ai_agents 目录
+notepad .env
+```
+
+从.env.example复制所有内容后，填写以下配置：
 
 ```bash
 # Deepgram - 语音识别
@@ -206,9 +256,19 @@ TEN Framework 支持灵活替换 ASR、LLM、TTS 等扩展。
 
 #### 1. 启动监控栈
 
+**Linux / macOS：**
+
 ```bash
 cd tools/grafana-monitoring
-docker-compose -f docker-compose.push.yml up -d
+docker compose -f docker-compose.push.yml up -d
+```
+
+**Windows：**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml up -d
+# 若docker未安装，请通过https://apps.microsoft.com/detail/xp8cbj40xlbwkx 安装，并重启电脑后，启动docker desktop
 ```
 
 启动的服务：
@@ -292,9 +352,18 @@ task run
 
 停止监控服务：
 
+**Linux / macOS：**
+
 ```bash
 cd tools/grafana-monitoring
-docker-compose -f docker-compose.push.yml down
+docker compose -f docker-compose.push.yml down
+```
+
+**Windows：**
+
+```powershell
+cd tools\grafana-monitoring
+docker compose -f docker-compose.push.yml down
 ```
 
 ## 常见问题
@@ -326,15 +395,60 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 </details>
 
 <details>
+<summary><strong>Windows Python 库加载失败</strong></summary>
+
+确保 Python 3.10 安装路径在系统 PATH 中：
+
+```powershell
+# 检查 Python 路径
+python -c "import sys; print(sys.prefix)"
+
+# 将 Python DLL 目录添加到 PATH（根据实际路径调整）
+$env:Path += ";C:\Python310;C:\Python310\DLLs"
+```
+
+如果安装 Python 时未勾选 "Add Python to PATH"，可以重新运行安装程序选择 "Modify" 来添加。
+
+</details>
+
+<details>
 <summary><strong>端口被占用</strong></summary>
 
 查找并终止占用端口的进程：
+
+**Linux / macOS：**
 
 ```bash
 lsof -i :3000  # 或 :8080
 kill -9 <PID>
 ```
 
+**Windows：**
+
+```powershell
+netstat -ano | findstr :3000   # 或 :8080
+taskkill /PID <PID> /F
+```
+
+</details>
+
+<details>
+<summary><strong>Go module相关错误</strong></summary>
+
+```bash
+# 设置代理
+# Linux/macOS
+export GOPROXY=https://goproxy.cn,direct
+# Windows PowerShell
+$env:GOPROXY = "https://goproxy.cn,direct"
+
+# 清理 Go module 缓存
+go clean -modcache
+
+# 重新安装依赖
+cd ai_agents/agents/examples/websocket-example
+task install
+```
 </details>
 
 ## 下一步

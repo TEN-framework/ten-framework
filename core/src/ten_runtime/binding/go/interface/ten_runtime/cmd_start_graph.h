@@ -22,3 +22,6 @@ ten_go_error_t ten_go_cmd_start_graph_set_graph_from_json_bytes(
 
 ten_go_error_t ten_go_cmd_start_graph_set_long_running_mode(
     uintptr_t bridge_addr, bool long_running_mode);
+
+ten_go_error_t ten_go_cmd_start_graph_set_sync_stop_before_deinit(
+    uintptr_t bridge_addr, bool sync_stop_before_deinit);

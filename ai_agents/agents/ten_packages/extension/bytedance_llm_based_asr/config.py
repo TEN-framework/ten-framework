@@ -44,6 +44,10 @@ class BytedanceASRLLMConfig(BaseModel):
         """Get enable utterance grouping from params."""
         return self.params.get("enable_utterance_grouping", True)
 
+    def get_omit_empty_text_results(self) -> bool:
+        """When True, do not emit ASR results whose text is empty or whitespace-only."""
+        return self.params.get("omit_empty_text_results", False)
+
     def get_request_config(self) -> dict[str, Any]:
         """Get request configuration for ASR.
 

@@ -46,10 +46,18 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     if (!this._joined) {
       const res = await apiGenAgoraData({ channel, userId });
       const { code, data } = res;
-      if (code !== 0) {
-        throw new Error("Failed to get Agora token");
+      const isSuccess = code === 0 || code === "0";
+      if (!isSuccess) {
+        throw new Error(
+          `Failed to get Agora token: code=${String(code)}, msg=${String(
+            res?.msg ?? "unknown"
+          )}`
+        );
       }
       const { appId, token } = data;
+      if (!appId || !token) {
+        throw new Error("Failed to get Agora token: missing appId/token");
+      }
       this.appId = appId;
       this.token = token;
       this.userId = userId;

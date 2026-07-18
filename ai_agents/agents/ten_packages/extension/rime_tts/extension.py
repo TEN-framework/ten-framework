@@ -44,7 +44,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.recorder: PCMWriter = None
         self.sent_tts: bool = False
         self.request_start_ts: datetime | None = None
-        self.request_total_audio_duration: int = 0
+        self.total_audio_bytes: int = 0
         self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_completed_request_id: str | None = None
@@ -75,7 +75,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
             # Create client (connection management will be handled automatically)
             self.client = RimeTTSClient(
-                self.config, self.ten_env, self.vendor(), self.response_msgs
+                self.config,
+                self.ten_env,
+                self.vendor(),
+                self.response_msgs,
+                self.on_connecting,
+                self.on_connected,
+                self.on_disconnected,
             )
             self.msg_polling_task = asyncio.create_task(self._loop())
         except Exception as e:
@@ -96,12 +102,21 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
         if self.msg_polling_task:
             self.msg_polling_task.cancel()
+            try:
+                await self.msg_polling_task
+            except asyncio.CancelledError:
+                ten_env.log_debug("Message polling task cancelled.")
 
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
                 ten_env.log_debug(
                     f"Flushed PCMWriter for request_id: {request_id}"
+                )
+            except asyncio.CancelledError:
+                # CancelledError is expected during shutdown, just log and continue
+                ten_env.log_debug(
+                    f"PCMWriter flush cancelled for request_id: {request_id} (normal during shutdown)"
                 )
             except Exception as e:
                 ten_env.log_error(
@@ -118,8 +133,27 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
     def vendor(self) -> str:
         return "rime"
 
+    def vendor_metadata(self) -> dict:
+        if self.config is None:
+            return {}
+
+        return {
+            "key": self.config.api_key,
+            "url": self.config.base_url,
+            "model": self.config.params.get("modelId", ""),
+            "api_key": self.config.api_key,
+        }
+
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sampling_rate
+
+    def synthesize_audio_channels(self) -> int:
+        """Return number of audio channels"""
+        return 1  # Mono
+
+    def synthesize_audio_sample_width(self) -> int:
+        """Return sample width in bytes"""
+        return 2  # 16-bit PCM
 
     async def _loop(self) -> None:
         while True:
@@ -142,14 +176,10 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                                     self.current_request_id
                                 ].write(data)
                             )
-                        self.request_total_audio_duration += (
-                            self.calculate_audio_duration(
-                                len(data),
-                                self.synthesize_audio_sample_rate(),
-                                self.synthesize_audio_channels(),
-                                self.synthesize_audio_sample_width(),
-                            )
-                        )
+                        # Accumulate audio bytes instead of duration to avoid precision loss
+                        self.total_audio_bytes += len(data)
+                        # Track audio metrics
+                        self.metrics_add_recv_audio_chunks(data)
                         await self.send_tts_audio_data(data)
                     else:
                         self.ten_env.log_debug(
@@ -244,19 +274,27 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
                     )
 
+            # Calculate audio duration from total bytes (like google_tts)
+            request_total_audio_duration_ms = (
+                self._calculate_audio_duration_ms()
+            )
+
             # Send TTS audio end event
             await self.send_tts_audio_end(
                 request_id=self.current_request_id,
                 request_event_interval_ms=request_event_interval,
-                request_total_audio_duration_ms=self.request_total_audio_duration,
+                request_total_audio_duration_ms=request_total_audio_duration_ms,
                 reason=reason,
             )
 
             self.ten_env.log_debug(
                 f"Sent TTS audio end for request ID: {self.current_request_id}, "
-                f"interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms, "
+                f"interval: {request_event_interval}ms, duration: {request_total_audio_duration_ms}ms, "
                 f"reason: {reason}"
             )
+
+            # Send usage metrics
+            await self.send_usage_metrics(self.current_request_id)
 
             # Finish request to complete state transition
             await self.finish_request(
@@ -308,16 +346,15 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 if not self.last_completed_has_reset_synthesizer:
-                    self.client.reset_synthesizer()
+                    await self.client.reset_synthesizer()
                 self.last_completed_has_reset_synthesizer = False
 
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 if t.metadata is not None:
-                    self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_start_ts = datetime.now()
-                self.request_total_audio_duration = 0
+                self.total_audio_bytes = 0
                 self.sent_tts = False
 
                 if self.config.dump:
@@ -351,9 +388,10 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-            if t.text.strip() != "":
-                self.sent_tts = True
-                await self.client.send_text(t)
+            self.sent_tts = True
+            # Track character metrics
+            self.metrics_add_output_characters(len(t.text))
+            await self.client.send_text(t)
             if t.text_input_end:
                 self.current_request_finished = True
                 self.ten_env.log_debug(
@@ -381,7 +419,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     await self.stop_event.wait()
                     # session finished, connection will be re-established for next request
                     if not self.last_completed_has_reset_synthesizer:
-                        self.client.reset_synthesizer()
+                        await self.client.reset_synthesizer()
                         self.last_completed_has_reset_synthesizer = True
                 else:
                     self.ten_env.log_debug("Skipping stop_event")
@@ -447,25 +485,18 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 "No current request found, skipping TTS cancellation."
             )
 
-    def calculate_audio_duration(
-        self,
-        bytes_length: int,
-        sample_rate: int,
-        channels: int = 1,
-        sample_width: int = 2,
-    ) -> int:
+    def _calculate_audio_duration_ms(self) -> int:
         """
-        Calculate audio duration in milliseconds.
-
-        Parameters:
-        - bytes_length: Length of the audio data in bytes
-        - sample_rate: Sample rate in Hz (e.g., 16000)
-        - channels: Number of audio channels (default: 1 for mono)
-        - sample_width: Number of bytes per sample (default: 2 for 16-bit PCM)
-
-        Returns:
-        - Duration in milliseconds (rounded down to nearest int)
+        Calculate audio duration in milliseconds from total_audio_bytes.
+        This method calculates duration once from total bytes to avoid precision loss
+        from multiple accumulations (like google_tts implementation).
         """
-        bytes_per_second = sample_rate * channels * sample_width
-        duration_seconds = bytes_length / bytes_per_second
-        return int(duration_seconds * 1000)
+        if self.config is None or self.total_audio_bytes == 0:
+            return 0
+
+        bytes_per_sample = self.synthesize_audio_sample_width()
+        channels = self.synthesize_audio_channels()
+        duration_sec = self.total_audio_bytes / (
+            self.synthesize_audio_sample_rate() * bytes_per_sample * channels
+        )
+        return int(duration_sec * 1000)

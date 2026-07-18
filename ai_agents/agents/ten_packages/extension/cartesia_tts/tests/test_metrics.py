@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 import asyncio
 
 from ten_runtime import (
@@ -24,11 +24,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from cartesia_tts.cartesia_tts import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_TTFB_METRIC,
-)
 
 
 # ================ test metrics ================
@@ -41,9 +36,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         self.audio_end_received = False
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends a TTS request."""
         ten_env_tester.log_info("Metrics test started, sending TTS request.")
-
         tts_input = TTSTextInput(
             request_id="tts_request_for_metrics",
             text="hello, this is a metrics test.",
@@ -61,8 +54,6 @@ class ExtensionTesterMetrics(ExtensionTester):
             json_str, _ = data.get_property_to_json(None)
             ten_env.log_info(f"Received metrics: {json_str}")
             metrics_data = json.loads(json_str)
-
-            # According to the new structure, 'ttfb' is nested inside a 'metrics' object.
             nested_metrics = metrics_data.get("metrics", {})
             if "ttfb" in nested_metrics:
                 self.ttfb_received = True
@@ -73,13 +64,11 @@ class ExtensionTesterMetrics(ExtensionTester):
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
-            # Stop the test only after both TTFB and audio end are received
             if self.ttfb_received:
                 ten_env.log_info("Received tts_audio_end, stopping test.")
                 ten_env.stop_test()
 
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
-        """Receives audio frames and confirms the stream is working."""
         if not self.audio_frame_received:
             self.audio_frame_received = True
             ten_env.log_info("First audio frame received.")
@@ -88,36 +77,60 @@ class ExtensionTesterMetrics(ExtensionTester):
 @patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
     """
-    Tests that a TTFB (Time To First Byte) metric is correctly sent after
-    receiving the first audio chunk from the TTS service.
+    Tests that a TTFB metric is correctly sent after receiving the first
+    audio chunk from the TTS service.
+
+    In the full-duplex architecture, TTFB is calculated inside the client's
+    _receive_loop and reported via ttfb_metrics_callback. The extension then
+    calls send_tts_ttfb_metrics. We mock the client to put audio into
+    pcm_queue and verify the metrics event is emitted.
     """
     print("Starting test_ttfb_metric_is_sent with mock...")
 
-    # --- Mock Configuration ---
-    mock_instance = MockCartesiaTTSClient.return_value
+    mock_instance = MagicMock()
+    pcm_queue = asyncio.Queue()
+    words_queue = asyncio.Queue()
+
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
     mock_instance.cancel = AsyncMock()
+    mock_instance.set_current_request_id = AsyncMock()
+    mock_instance.send_audio_end_signal = AsyncMock()
 
-    # This async generator simulates the TTS client's get() method with a delay
-    # to produce a measurable TTFB.
-    async def mock_get_audio_with_delay(text: str):
-        # Simulate network latency or processing time before the first byte
-        await asyncio.sleep(0.2)
-        yield (255, EVENT_TTS_TTFB_METRIC)
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
-        # Simulate the end of the stream
-        yield (None, EVENT_TTS_END)
+    async def mock_tts(t):
+        request_id = t.request_id
 
-    mock_instance.get.side_effect = mock_get_audio_with_delay
+        # Retrieve ttfb_metrics_callback passed to CartesiaTTSClient constructor
+        ttfb_cb = MockCartesiaTTSClient.call_args.kwargs.get(
+            "ttfb_metrics_callback"
+        )
 
-    # --- Test Setup ---
-    # A minimal config is needed for the extension to initialize correctly.
-    metrics_config = {
-        "params": {
-            "api_key": "test_api_key",
-        }
-    }
+        async def _stream():
+            await asyncio.sleep(0.01)
+            # Simulate TTFB callback as real client does in _receive_loop
+            if ttfb_cb:
+                await ttfb_cb(request_id, 42)
+            await pcm_queue.put((b"\x11\x22\x33", request_id, 0))
+            await asyncio.sleep(0.01)
+            await pcm_queue.put((None, request_id, 0))
+
+        asyncio.create_task(_stream())
+
+    mock_instance.text_to_speech = AsyncMock(side_effect=mock_tts)
+
+    async def mock_get_audio():
+        return await pcm_queue.get()
+
+    mock_instance.get_audio = AsyncMock(side_effect=mock_get_audio)
+
+    async def mock_get_words():
+        return await words_queue.get()
+
+    mock_instance.get_words = AsyncMock(side_effect=mock_get_words)
+
+    MockCartesiaTTSClient.return_value = mock_instance
+
+    metrics_config = {"params": {"api_key": "test_api_key"}}
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single("cartesia_tts", json.dumps(metrics_config))
 
@@ -125,15 +138,11 @@ def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
     tester.run()
     print("TTFB metrics test completed.")
 
-    # --- Assertions ---
     assert tester.audio_frame_received, "Did not receive any audio frame."
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
-    assert tester.ttfb_received, "TTFB metric was not received."
-
-    # Check if the TTFB value is reasonable. It should be slightly more than
-    # the 0.2s delay we introduced. We check for >= 200ms.
+    assert tester.ttfb_received, "Did not receive TTFB metric."
     assert (
-        tester.ttfb_value == 255
-    ), f"Expected TTFB to be 255ms, but got {tester.ttfb_value}ms."
+        tester.ttfb_value == 42
+    ), f"Expected TTFB value 42, got {tester.ttfb_value}"
 
-    print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")
+    print("✅ TTFB metric test passed.")

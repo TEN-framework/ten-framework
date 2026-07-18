@@ -1,12 +1,13 @@
 {
   "params": {
     "key": "invalid",
-    "url": "wss://invalid-url-api.deepgram.com/v1/listent",
-    "model": "nova-3",
-    "language": "en-US",
+    "url": "wss://invalid/listen",
+    "model": "flux-general-en",
     "sample_rate": 16000,
+    "finalize_mode": "mute_pkg",
     "encoding": "linear16",
-    "interim_results": true,
-    "punctuate": true
+    "eager_eot_threshold": 0.6,
+    "eot_threshold": 0.8,
+    "eot_timeout_ms": 700
   }
 }

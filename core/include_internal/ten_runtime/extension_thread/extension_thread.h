@@ -59,6 +59,11 @@ typedef struct ten_extension_thread_t {
   ten_list_t extensions;  // ten_extension_t*
   size_t extensions_cnt_of_deleted;
 
+  // Set to true by the engine thread (via a posted task) when all local
+  // extensions in the graph have completed on_stop_done. Only meaningful when
+  // engine->sync_stop_before_deinit is enabled.
+  bool all_graph_extensions_stop_done;
+
   // Store all extensions (ten_extension_t*) belong to this extension thread.
   ten_extension_store_t *extension_store;
 
@@ -128,3 +133,6 @@ ten_extension_thread_stop_life_cycle_of_all_extensions_task(void *self,
 TEN_RUNTIME_PRIVATE_API void
 ten_extension_thread_start_life_cycle_of_all_extensions_task(void *self_,
                                                              void *arg);
+
+TEN_RUNTIME_PRIVATE_API void
+ten_extension_thread_on_all_extensions_stop_done_task(void *self_, void *arg);

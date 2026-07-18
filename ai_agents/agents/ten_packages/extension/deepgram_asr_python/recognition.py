@@ -33,7 +33,9 @@ class DeepgramASRRecognitionCallback:
         """Error callback"""
 
     @abstractmethod
-    async def on_close(self):
+    async def on_close(
+        self, vendor_code: int = 0, vendor_message: str = "closed"
+    ):
         """Called when connection is closed"""
 
 
@@ -65,6 +67,10 @@ class DeepgramASRRecognition:
         self.keepalive_enabled = bool(self.config.get("keep_alive"))
         self._keepalive_task = None
 
+        self.is_flux_model = (
+            "flux" in (self.config.get("model", "") or "").lower()
+        )
+
         self.websocket = None
         self.is_started = False
         self._message_task = None
@@ -79,11 +85,14 @@ class DeepgramASRRecognition:
                 if not self.is_connected() or self.websocket is None:
                     break
                 try:
-                    await self.websocket.send(json.dumps({"type": "KeepAlive"}))
-                    self.ten_env.log_debug(
-                        "[KeepAlive] Heartbeat sent",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
+                    if self.is_flux_model == False:
+                        await self.websocket.send(
+                            json.dumps({"type": "KeepAlive"})
+                        )
+                        self.ten_env.log_debug(
+                            "[KeepAlive] Heartbeat sent",
+                            category=LOG_CATEGORY_VENDOR,
+                        )
                 except Exception as e:
                     self.ten_env.log_info(f"KeepAlive send failed: {e}")
                     break
@@ -103,9 +112,12 @@ class DeepgramASRRecognition:
             )
 
             message_type = message_data.get("type")
-            if message_type == "Results":
-                await self.callback.on_result(message_data)
-
+            if self.is_flux_model == False:
+                if message_type == "Results":
+                    await self.callback.on_result(message_data)
+            else:
+                if message_type == "TurnInfo":
+                    await self.callback.on_result(message_data)
         except Exception as e:
             error_msg = f"Error processing message: {e}"
             self.ten_env.log_info(
@@ -115,21 +127,27 @@ class DeepgramASRRecognition:
 
     async def _message_handler(self):
         """Handle incoming WebSocket messages"""
+        close_code = 0
+        close_message = "closed"
         try:
             if self.websocket is None:
                 return
             ws = self.websocket
             async for message in ws:
                 await self._handle_message(message)
-        except websockets.exceptions.ConnectionClosed:
-            self.ten_env.log_info("WebSocket connection closed")
+        except websockets.exceptions.ConnectionClosed as e:
+            close_code = e.code
+            close_message = e.reason or "closed"
+            self.ten_env.log_info(
+                f"WebSocket connection closed: code={close_code}, message={close_message}"
+            )
         except Exception as e:
             error_msg = f"WebSocket message handler error: {e}"
             self.ten_env.log_info(f"### {error_msg} ###")
             await self.callback.on_error(error_msg)
         finally:
             self.is_started = False
-            await self.callback.on_close()
+            await self.callback.on_close(close_code, close_message)
 
     # This function appends query parameters to a URL
     def append_query_params(self, url: str):
@@ -263,15 +281,16 @@ class DeepgramASRRecognition:
 
         try:
             # Send end identifier
-            d = {"type": "Finalize"}
-            ws = self.websocket
-            if ws is not None:
-                await ws.send(json.dumps(d))
-            if self.ten_env:
-                self.ten_env.log_info(
-                    f"vendor_cmd: {json.dumps(d)}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+            if self.is_flux_model == False:
+                d = {"type": "Finalize"}
+                ws = self.websocket
+                if ws is not None:
+                    await ws.send(json.dumps(d))
+                if self.ten_env:
+                    self.ten_env.log_info(
+                        f"vendor_cmd: {json.dumps(d)}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
 
         except websockets.exceptions.ConnectionClosed:
             self.ten_env.log_info("WebSocket connection already closed")

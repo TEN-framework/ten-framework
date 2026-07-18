@@ -1,0 +1,5 @@
+[project]
+name = "dubverse-tts"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = []

@@ -135,6 +135,6 @@
     }
   ],
   "scripts": {
-    "start": "scripts/start.sh"
+    "start": "python scripts/start.py"
   }
 }

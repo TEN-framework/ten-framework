@@ -1,0 +1,7 @@
+[project]
+name = "gemini-mllm-python"
+version = "0.2.1"
+requires-python = ">=3.10"
+dependencies = [
+    "google-genai==1.51.0",
+]

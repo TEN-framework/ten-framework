@@ -14,8 +14,9 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
+import asyncio
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_runtime import (
     ExtensionTester,
@@ -23,11 +24,6 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from cartesia_tts.cartesia_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_TTFB_METRIC,
-)
 
 
 # ================ test robustness ================
@@ -39,13 +35,11 @@ class ExtensionTesterRobustness(ExtensionTester):
         self.ten_env: TenEnvTester | None = None
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends the first TTS request."""
         self.ten_env = ten_env_tester
         ten_env_tester.log_info(
             "Robustness test started, sending first TTS request."
         )
 
-        # First request, expected to fail
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
@@ -56,9 +50,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         ten_env_tester.on_start_done()
 
     def send_second_request(self):
-        """Sends the second TTS request to verify reconnection."""
         if self.ten_env is None:
-            print("Error: ten_env is not initialized.")
             return
         self.ten_env.log_info(
             "Sending second TTS request to verify reconnection."
@@ -66,7 +58,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_2 = TTSTextInput(
             request_id="tts_request_to_succeed",
             text="This request should succeed after reconnection.",
-            text_input_end=True,  # Set to True to trigger session finish
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_2.model_dump_json())
@@ -77,7 +69,6 @@ class ExtensionTesterRobustness(ExtensionTester):
         json_str, _ = data.get_property_to_json(None)
         payload = json.loads(json_str) if json_str else {}
 
-        # Add debug logging for all events
         ten_env.log_info(
             f"DEBUG: Received event '{name}' with payload: {payload}"
         )
@@ -87,28 +78,18 @@ class ExtensionTesterRobustness(ExtensionTester):
                 f"Received expected error for the first request: {payload}"
             )
             self.first_request_error = payload
-            # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
 
         elif (
             name == "tts_audio_end"
             and payload.get("request_id") == "tts_request_to_succeed"
         ):
-            ten_env.log_info(
-                "Received tts_audio_end for the second request. Test successful."
-            )
+            ten_env.log_info("Received tts_audio_end for the second request.")
             self.second_request_successful = True
-            # We can now safely stop the test.
             ten_env.stop_test()
 
-        # Also check for tts_audio_end without specific request_id filtering
         elif name == "tts_audio_end":
-            ten_env.log_info(
-                f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'"
-            )
-            # If this is the second request, consider it successful anyway
             if payload.get("id") == "tts_request_to_succeed":
-                ten_env.log_info("Actually this matches! Stopping test.")
                 self.second_request_successful = True
                 ten_env.stop_test()
 
@@ -118,38 +99,57 @@ def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
     """
     Tests that the extension can recover from a connection drop, report a
     NON_FATAL_ERROR, and then successfully reconnect and process a new request.
+
+    In the full-duplex architecture, text_to_speech() puts text into a queue.
+    We simulate a failure on the first call and success on the second.
     """
     print("Starting test_reconnect_after_connection_drop with mock...")
 
-    # --- Mock State ---
-    # Use a simple counter to track how many times get() is called
-    get_call_count = 0
+    mock_instance = MagicMock()
+    pcm_queue = asyncio.Queue()
+    words_queue = asyncio.Queue()
 
-    # --- Mock Configuration ---
-    mock_instance = MockCartesiaTTSClient.return_value
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
+    mock_instance.cancel = AsyncMock()
+    mock_instance.set_current_request_id = AsyncMock()
+    mock_instance.send_audio_end_signal = AsyncMock()
 
-    # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str):
-        nonlocal get_call_count
-        get_call_count += 1
+    tts_call_count = 0
 
-        if get_call_count == 1:
-            # On the first call, simulate a connection drop
+    async def mock_tts(t):
+        nonlocal tts_call_count
+        tts_call_count += 1
+        request_id = t.request_id
+
+        if tts_call_count == 1:
+            # First call: simulate connection drop
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
-            # On the second call, simulate a successful audio stream
-            yield (255, EVENT_TTS_TTFB_METRIC)
-            yield (b"\x44\x55\x66", EVENT_TTS_RESPONSE)
-            yield (None, EVENT_TTS_END)
+            # Subsequent calls: stream audio normally
+            async def _stream():
+                await asyncio.sleep(0.01)
+                await pcm_queue.put((b"\x44\x55\x66", request_id, 0))
+                await asyncio.sleep(0.01)
+                await pcm_queue.put((None, request_id, 0))
 
-    mock_instance.get.side_effect = mock_get_stateful
+            asyncio.create_task(_stream())
 
-    # --- Test Setup ---
-    config = {
-        "params": {"api_key": "a_valid_key"},
-    }
+    mock_instance.text_to_speech = AsyncMock(side_effect=mock_tts)
+
+    async def mock_get_audio():
+        return await pcm_queue.get()
+
+    mock_instance.get_audio = AsyncMock(side_effect=mock_get_audio)
+
+    async def mock_get_words():
+        return await words_queue.get()
+
+    mock_instance.get_words = AsyncMock(side_effect=mock_get_words)
+
+    MockCartesiaTTSClient.return_value = mock_instance
+
+    config = {"params": {"api_key": "a_valid_key"}}
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single("cartesia_tts", json.dumps(config))
 
@@ -157,8 +157,6 @@ def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
     tester.run()
     print("Robustness test completed.")
 
-    # --- Assertions ---
-    # 1. Verify that the first request resulted in a NON_FATAL_ERROR
     assert (
         tester.first_request_error is not None
     ), "Did not receive any error message."
@@ -166,22 +164,16 @@ def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
         tester.first_request_error.get("code") == 1000
     ), f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
 
-    # 2. Verify that vendor_info was included in the error
     vendor_info = tester.first_request_error.get("vendor_info")
     assert vendor_info is not None, "Error message did not contain vendor_info."
     assert (
         vendor_info.get("vendor") == "cartesia"
     ), f"Expected vendor 'cartesia', got {vendor_info.get('vendor')}"
 
-    # 3. Verify that the client's start method was called twice (initial + reconnect)
-    # This assertion is tricky because the reconnection logic might be inside the client.
-    # A better assertion is to check if the second request succeeded.
-
-    # 4. Verify that the second TTS request was successful
     assert (
         tester.second_request_successful
-    ), "The second TTS request after the error did not succeed."
+    ), "The second TTS request did not succeed."
 
     print(
-        "✅ Robustness test passed: Correctly handled simulated connection drop and recovered."
+        "✅ Robustness test passed: Correctly handled connection drop and recovered."
     )

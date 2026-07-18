@@ -6,9 +6,9 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-logging.getLogger('websockets').setLevel(logging.WARNING)
+logging.getLogger("websockets").setLevel(logging.WARNING)
 
 from typing import Literal
 
@@ -75,10 +75,15 @@ class MainControlExtension(AsyncExtension):
         self.ten_env.log_info(f"[MainControlExtension] config={self.config}")
 
         # Initialize memory store
-        if self.config and self.config.enable_memorization and self.config.evermemos_config:
+        if (
+            self.config
+            and self.config.enable_memorization
+            and self.config.evermemos_config
+        ):
             try:
                 self.memory_store = EverMemosMemoryStore(
-                    config=self.config.evermemos_config, env=ten_env)
+                    config=self.config.evermemos_config, env=ten_env
+                )
                 ten_env.log_info(
                     "[MainControlExtension] EverMemOS memory store initialized successfully"
                 )
@@ -88,6 +93,7 @@ class MainControlExtension(AsyncExtension):
                     "The extension will continue without memory functionality."
                 )
                 import traceback
+
                 ten_env.log_error(
                     f"[MainControlExtension] EverMemOS initialization traceback: {traceback.format_exc()}"
                 )
@@ -109,11 +115,11 @@ class MainControlExtension(AsyncExtension):
         if self._rtc_user_count == 1 and self.config and self.config.greeting:
             # 使用配置文件中的问候语
             greeting = self.config.greeting
-            
+
             self.ten_env.log_info(
                 f"[MainControlExtension] Using greeting from config: {greeting}"
             )
-            
+
             await self._send_to_tts(greeting, True)
             await self._send_transcript("assistant", greeting, True, 100)
 
@@ -137,10 +143,10 @@ class MainControlExtension(AsyncExtension):
             self.turn_id += 1
             # Cancel memory idle timer since user started a new conversation
             self._cancel_memory_idle_timer()
-            
+
             # Use user's query to search for related memories and pass to LLM
             related_memory = await self._retrieve_related_memory(event.text)
-            
+
             if related_memory:
                 # ✅ 使用简洁格式注入记忆，无需模板包装
                 context_message = (
@@ -169,7 +175,8 @@ class MainControlExtension(AsyncExtension):
 
             # Memorize every N rounds if memorization is enabled
             if (
-                self.turn_id - self.last_memory_update_turn_id >= self.config.memory_save_interval_turns
+                self.turn_id - self.last_memory_update_turn_id
+                >= self.config.memory_save_interval_turns
                 and self.config.enable_memorization
             ):
                 # Update counter immediately to prevent race condition from concurrent saves
@@ -296,7 +303,10 @@ class MainControlExtension(AsyncExtension):
 
     def _cancel_memory_idle_timer(self):
         """Cancel the memory idle timer if it exists"""
-        if self._memory_idle_timer_task and not self._memory_idle_timer_task.done():
+        if (
+            self._memory_idle_timer_task
+            and not self._memory_idle_timer_task.done()
+        ):
             self._memory_idle_timer_task.cancel()
             self._memory_idle_timer_task = None
             self.ten_env.log_info(
@@ -345,7 +355,8 @@ class MainControlExtension(AsyncExtension):
 
         # Start new timer task
         self._memory_idle_timer_task = asyncio.create_task(
-            _memory_idle_timeout())
+            _memory_idle_timeout()
+        )
         self.ten_env.log_info(
             f"[MainControlExtension] Started {self.config.memory_idle_timeout_seconds}-second memory idle timer"
         )
@@ -373,7 +384,7 @@ class MainControlExtension(AsyncExtension):
 
             # Extract memory content from results using list comprehension
             results = resp.get("results", [])
-            
+
             # ✅ 限制只取前 3 条最相关的记忆（优化性能）
             memorise = [
                 result["memory"]
@@ -386,18 +397,20 @@ class MainControlExtension(AsyncExtension):
                 memory_parts = []
                 for i, memory in enumerate(memorise, 1):
                     # 提取分数和时间戳（如果有）
-                    result = results[i-1]
+                    result = results[i - 1]
                     score = result.get("score", "N/A")
                     timestamp = result.get("timestamp", "")
-                    
+
                     memory_parts.append(f"{i}. {memory}")
                     if score != "N/A" or timestamp:
-                        memory_parts.append(f"   (相关度: {score}, 时间: {timestamp})")
-                
+                        memory_parts.append(
+                            f"   (相关度: {score}, 时间: {timestamp})"
+                        )
+
                 memory_text = "\n".join(memory_parts)
             else:
                 memory_text = ""
-            
+
             self.ten_env.log_info(
                 f"[MainControlExtension] Retrieved {len(memorise)} related memories (total length: {len(memory_text)})"
             )

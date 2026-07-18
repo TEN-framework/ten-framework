@@ -25,6 +25,19 @@ class TencentTTSTaskFailedException(Exception):
         return f"TencentTTSTaskFailedException: {self.error_code}, {self.error_message}"
 
 
+class TencentTTSAuthenticationException(Exception):
+    """Exception raised when authentication error (code 10001) occurs."""
+
+    def __init__(
+        self, message: str = "Authentication error - reconnection not allowed"
+    ):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f"TencentTTSAuthenticationException: {self.message}"
+
+
 class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
     """Callback class for handling TTS synthesis results asynchronously."""
 
@@ -45,6 +58,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         self._queue = queue
         self.sent_ts: datetime | None = None
         self.ttfb_sent: bool = False
+        self.auth_error: bool = False  # Flag to track authentication errors
 
     def set_sent_ts(self):
         if self.sent_ts:
@@ -90,9 +104,19 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
 
         err_code = response["code"]
         message = response["message"]
-        self.ten_env.log_error(
-            f"TTS synthesis task failed: {err_code}, {message}"
-        )
+
+        # Error code 10001 is authentication/key error, no need to reconnect
+        if err_code == 10001:
+            self.auth_error = (
+                True  # Mark authentication error to prevent reconnection
+            )
+            self.ten_env.log_error(
+                f"Authentication error (code 10001): {message}. ",
+            )
+        else:
+            self.ten_env.log_error(
+                f"TTS synthesis task failed: {err_code}, {message}"
+            )
 
         # Send error signal
         asyncio.run_coroutine_threadsafe(
@@ -169,7 +193,25 @@ class TencentTTSClient:
 
         try:
             synthesizer.start()
-            synthesizer.wait_ready(5000)
+            # wait_ready uses threading.Event.wait() which blocks the current
+            # thread.  Running it on the event-loop thread would freeze the
+            # entire asyncio loop and prevent other extensions from
+            # initialising.  Offload to a worker thread so the loop stays
+            # responsive.
+            ready = await asyncio.get_event_loop().run_in_executor(
+                None, synthesizer.wait_ready, 5000
+            )
+            if not ready:
+                raise TimeoutError(
+                    "Tencent TTS synthesizer wait_ready timed out"
+                )
+            # ready_event is now also set on synthesis failure (e.g. invalid
+            # voice_type), so double-check the actual ready flag.
+            if not synthesizer.ready:
+                raise RuntimeError(
+                    "Tencent TTS synthesizer failed during startup "
+                    "(check voice_type and credentials)"
+                )
         except Exception as e:
             self.ten_env.log_error(f"Error starting TTS: {e}")
             raise e
@@ -181,7 +223,14 @@ class TencentTTSClient:
 
     async def stop(self) -> None:
         """Stop the TTS client and clean up resources."""
+        # Check for fatal conditions before restarting
+        has_auth_error = self._callback and self._callback.auth_error
         self.close()
+        if has_auth_error:
+            self.ten_env.log_warn(
+                "Not restarting TTS client due to authentication error"
+            )
+            return
         # restart the synthesizer
         asyncio.create_task(self.start())
 
@@ -230,6 +279,16 @@ class TencentTTSClient:
         )
 
         await self.conn_ready_event.wait()
+
+        # Check for authentication error - do not attempt to reconnect
+        if self._callback and self._callback.auth_error:
+            self.ten_env.log_error(
+                "Cannot synthesize audio: Authentication error (code 10001) occurred. ",
+            )
+            raise TencentTTSAuthenticationException(
+                "Authentication error (code 10001) - reconnection not allowed"
+            )
+
         if not self.synthesizer or not self.synthesizer.is_alive():
             self.ten_env.log_error("Synthesizer is not alive, reinitializing")
             await self.start()
