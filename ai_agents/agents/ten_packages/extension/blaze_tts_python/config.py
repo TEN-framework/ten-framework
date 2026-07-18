@@ -28,9 +28,7 @@ class BlazeTTSConfig(AsyncTTS2HttpConfig):
 
     dump: bool = Field(default=False, description="Dump synthesized audio")
     dump_path: str = Field(
-        default_factory=lambda: str(
-            Path(__file__).parent / "blaze_tts_in.pcm"
-        ),
+        default_factory=lambda: str(Path(__file__).parent / "blaze_tts_in.pcm"),
         description="Dump path for synthesized audio",
     )
     params: dict[str, Any] = Field(

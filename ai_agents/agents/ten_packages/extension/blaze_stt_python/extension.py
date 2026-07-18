@@ -186,9 +186,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message=text,
                 ),
-                ModuleErrorVendorInfo(
-                    vendor="blaze", code="", message=text
-                ),
+                ModuleErrorVendorInfo(vendor="blaze", code="", message=text),
             )
             return
 

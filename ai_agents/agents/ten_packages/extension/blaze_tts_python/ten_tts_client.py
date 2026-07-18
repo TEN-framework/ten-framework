@@ -216,9 +216,7 @@ class BlazeTTSHttpClient(AsyncTTS2HttpClient):
                         "internal-error",
                     ):
                         detail = (
-                            msg.get("details")
-                            or msg.get("message")
-                            or str(msg)
+                            msg.get("details") or msg.get("message") or str(msg)
                         )
                         self.ten_env.log_error(
                             f"vendor_error: {st} {detail} "

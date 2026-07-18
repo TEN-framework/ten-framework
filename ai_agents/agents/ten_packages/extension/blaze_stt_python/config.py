@@ -45,9 +45,7 @@ class BlazeASRConfig(BaseModel):
 
     dump: bool = Field(default=False, description="Dump input audio")
     dump_path: str = Field(
-        default_factory=lambda: str(
-            Path(__file__).parent / "blaze_stt_in.pcm"
-        ),
+        default_factory=lambda: str(Path(__file__).parent / "blaze_stt_in.pcm"),
         description="Dump path for input audio",
     )
     params: BlazeASRParams = Field(default_factory=BlazeASRParams)
