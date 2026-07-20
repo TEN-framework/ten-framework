@@ -36,7 +36,9 @@ MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH = "zh-CN"
 MULTI_LANGUAGE_EXPECTED_LANGUAGE_ES = "es-ES"
 
 # Extensions that do not support Chinese and use Spanish as the second language
-_EXTENSIONS_USE_SPANISH = {"oracle_asr_python"}
+# (smallest: Chinese is region-gated on the vendor side; Spanish is
+# universally enabled)
+_EXTENSIONS_USE_SPANISH = {"oracle_asr_python", "smallest_asr_python"}
 
 
 RESULT_WAIT_TIMEOUT_SECS = 30

@@ -1,0 +1,9 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:SMALLEST_API_KEY|}",
+        "model": "lightning_v3.1",
+        "voice_id": "magnus"
+    }
+}
