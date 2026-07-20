@@ -1,7 +1,9 @@
 import asyncio
 import threading
+import time
 from types import SimpleNamespace
 from typing_extensions import override
+from unittest.mock import AsyncMock, MagicMock
 from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
@@ -11,6 +13,8 @@ from ten_runtime import (
     TenErrorCode,
 )
 import json
+
+from ..extension import AzureASRExtension
 
 # We must import it, which means this test fixture will be automatically executed
 from .mock import patch_azure_ws  # noqa: F401
@@ -289,3 +293,53 @@ def test_metrics(patch_azure_ws):
     tester.set_test_mode_single("azure_asr_python", json.dumps(property_json))
     err = tester.run()
     assert err is None, f"test_asr_result err: {err}"
+
+
+def test_stop_connection_sends_stop_continuous_recognition_metrics():
+    async def _run():
+        extension = AzureASRExtension("azure_asr_python")
+        extension.ten_env = MagicMock()
+        extension.connected = True
+        stream = MagicMock()
+        client = MagicMock()
+        extension.stream = stream
+        extension.client = client
+        extension.send_vendor_metrics = AsyncMock()
+
+        def slow_stop():
+            time.sleep(0.1)
+
+        client.stop_continuous_recognition.side_effect = slow_stop
+
+        await extension.stop_connection()
+
+        stream.close.assert_called_once()
+        client.stop_continuous_recognition.assert_called_once()
+        assert extension.client is None
+        assert extension.stream is None
+        assert extension.connected is False
+
+        extension.send_vendor_metrics.assert_awaited_once()
+        vendor_metrics = extension.send_vendor_metrics.await_args.args[0]
+        assert "stop_continuous_recognition_ms" in vendor_metrics
+        assert isinstance(vendor_metrics["stop_continuous_recognition_ms"], int)
+        assert vendor_metrics["stop_continuous_recognition_ms"] >= 50
+
+    asyncio.run(_run())
+
+
+def test_stop_connection_skips_metrics_when_client_is_none():
+    async def _run():
+        extension = AzureASRExtension("azure_asr_python")
+        extension.ten_env = MagicMock()
+        extension.connected = True
+        extension.stream = None
+        extension.client = None
+        extension.send_vendor_metrics = AsyncMock()
+
+        await extension.stop_connection()
+
+        extension.send_vendor_metrics.assert_not_awaited()
+        assert extension.connected is False
+
+    asyncio.run(_run())
