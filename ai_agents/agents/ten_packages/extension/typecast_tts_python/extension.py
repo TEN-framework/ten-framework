@@ -8,6 +8,7 @@ from ten_ai_base.tts2_http import (
     AsyncTTS2HttpConfig,
     AsyncTTS2HttpExtension,
 )
+from ten_ai_base.message import TTSAudioEndReason
 from ten_runtime import AsyncTenEnv
 
 from .config import TypecastTTSConfig
@@ -35,3 +36,21 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
 
     def synthesize_audio_sample_rate(self) -> int:
         return TYPECAST_STREAM_SAMPLE_RATE
+
+    async def _send_audio_end_and_finish(
+        self,
+        request_id: str,
+        reason: TTSAudioEndReason,
+        log_message: str | None = None,
+    ) -> None:
+        # The base PCMWriter may retain tail bytes while a write is in flight.
+        # Its cleanup flush then writes those bytes on this second pass.
+        recorder = self.recorder_map.get(request_id)
+        if recorder:
+            await recorder.flush()
+
+        await super()._send_audio_end_and_finish(
+            request_id=request_id,
+            reason=reason,
+            log_message=log_message,
+        )

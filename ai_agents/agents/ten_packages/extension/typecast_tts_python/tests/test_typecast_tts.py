@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 import asyncio
 import json
+import threading
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,9 +13,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, TenError
 from ten_runtime import TenErrorCode
 from ten_ai_base.struct import TTS2HttpResponseEventType, TTSTextInput
+from ten_ai_base.helper import PCMWriter
+from ten_ai_base.helper import write_pcm_to_file
+from ten_ai_base.message import TTSAudioEndReason
+from ten_ai_base.tts2_http import AsyncTTS2HttpExtension
 
 from pcm import StreamingWavToPcm16
 from typecast_tts_python.config import TypecastTTSConfig
+from typecast_tts_python.extension import TypecastTTSExtension
 from typecast_tts_python.typecast_tts import TypecastTTSClient
 from typecast import TypecastError, UnauthorizedError
 
@@ -67,6 +73,55 @@ def test_streaming_wav_to_pcm16_strips_header_in_single_chunk():
     header = b"h" * 44
 
     assert converter.feed(header + b"\x01\x02\x03\x04") == b"\x01\x02\x03\x04"
+
+
+def test_extension_flushes_dump_tail_added_during_write(tmp_path):
+    output = tmp_path / "dump.pcm"
+    first_write_started = threading.Event()
+    release_first_write = threading.Event()
+    write_count = 0
+
+    def delayed_write(buffer, file_name):
+        nonlocal write_count
+        write_count += 1
+        if write_count == 1:
+            first_write_started.set()
+            release_first_write.wait()
+        write_pcm_to_file(buffer, file_name)
+
+    async def run():
+        writer = PCMWriter(str(output), buffer_size=4)
+        extension = TypecastTTSExtension("test")
+        extension.recorder_map = {"request-id": writer}
+
+        async def base_finish(self, request_id, reason, log_message=None):
+            await self.recorder_map[request_id].flush()
+
+        with patch(
+            "ten_ai_base.helper.write_pcm_to_file",
+            side_effect=delayed_write,
+        ), patch.object(
+            AsyncTTS2HttpExtension,
+            "_send_audio_end_and_finish",
+            base_finish,
+        ):
+            await writer.write(b"head")
+            while not first_write_started.is_set():
+                await asyncio.sleep(0)
+            await writer.write(b"tail")
+            flush_task = asyncio.create_task(
+                extension._send_audio_end_and_finish(
+                    request_id="request-id",
+                    reason=TTSAudioEndReason.REQUEST_END,
+                )
+            )
+            await asyncio.sleep(0)
+            release_first_write.set()
+            await flush_task
+
+    asyncio.run(run())
+
+    assert output.read_bytes() == b"headtail"
 
 
 def test_client_empty_text_ends_without_request():
