@@ -264,11 +264,28 @@ EOF
 
     log_info "Uploading file: $changes_file"
 
-    # Try using dput first
-    if dput "ppa:${LAUNCHPAD_ID}/${PPA_NAME}" "$changes_file" 2>&1; then
-        log_info "Upload successful ✓"
-    else
-        log_error "Upload failed"
+    # Launchpad uploads can intermittently fail with transient FTP-side 550
+    # errors after a previous distro upload has already succeeded. Retry the
+    # upload a few times before treating it as a hard failure.
+    upload_success=false
+    for attempt in 1 2 3; do
+        log_info "Upload attempt ${attempt}/3"
+
+        if dput "ppa:${LAUNCHPAD_ID}/${PPA_NAME}" "$changes_file" 2>&1; then
+            log_info "Upload successful"
+            upload_success=true
+            break
+        fi
+
+        if [ "$attempt" -lt 3 ]; then
+            sleep_seconds=$((attempt * 20))
+            log_error "Upload failed on attempt ${attempt}. Retrying in ${sleep_seconds}s..."
+            sleep "$sleep_seconds"
+        fi
+    done
+
+    if [ "$upload_success" != true ]; then
+        log_error "Upload failed after 3 attempts"
         exit 1
     fi
 done
