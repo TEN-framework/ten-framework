@@ -1,6 +1,6 @@
 [project]
 name = "azure-asr-python"
-version = "0.2.13"
+version = "0.3.1"
 requires-python = ">=3.10"
 dependencies = [
     "aiofiles>=25.1.0",
