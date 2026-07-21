@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/app/metadata.h"
 #include "include_internal/ten_runtime/app/msg_interface/common.h"
 #include "include_internal/ten_runtime/app/predefined_graph.h"
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/connection/connection.h"
 #include "include_internal/ten_runtime/connection/migration.h"
 #include "include_internal/ten_runtime/engine/engine.h"
@@ -28,6 +29,8 @@
 #include "include_internal/ten_rust/ten_rust.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/common/status_code.h"
+#include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/smart_ptr.h"
@@ -35,6 +38,7 @@
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/memory.h"
+#include "ten_utils/value/value.h"
 
 static bool ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
     ten_app_t *self, ten_shared_ptr_t *cmd, ten_error_t *err) {
@@ -62,6 +66,35 @@ static bool ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
   }
 
   return true;
+}
+
+static bool ten_app_return_error_for_start_graph_cmd(
+    ten_app_t *self, ten_connection_t *connection, ten_shared_ptr_t *cmd,
+    const char *detail, ten_error_t *err) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_app_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(cmd), "Invalid argument.");
+
+  ten_shared_ptr_t *cmd_result =
+      ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+  ten_msg_set_property(
+      cmd_result, TEN_STR_DETAIL,
+      ten_value_create_string(detail ? detail : "Failed to start graph."),
+      NULL);
+  ten_msg_clear_and_set_dest_from_msg_src(cmd_result, cmd);
+
+  bool result = true;
+  if (connection) {
+    ten_connection_migration_state_reset_when_engine_not_found(connection);
+    ten_string_clear(&connection->uri);
+    ten_connection_send_msg(connection, cmd_result);
+  } else {
+    result = ten_app_handle_in_msg(self, NULL, cmd_result, err);
+  }
+
+  ten_shared_ptr_destroy(cmd_result);
+  return result;
 }
 
 void ten_app_fill_start_graph_cmd_node_app_uri(ten_app_t *self,
@@ -114,7 +147,8 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
     if (!success) {
       TEN_LOGE("Failed to convert src loc to json.");
       ten_value_destroy(src_loc_value);
-      return false;
+      return ten_app_return_error_for_start_graph_cmd(
+          self, connection, cmd, "Failed to convert src loc to json.", err);
     }
 
     bool must_free = false;
@@ -125,7 +159,9 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
     if (!src_loc_json_str) {
       TEN_LOGE("Failed to convert src loc to json string.");
       ten_value_destroy(src_loc_value);
-      return false;
+      return ten_app_return_error_for_start_graph_cmd(
+          self, connection, cmd, "Failed to convert src loc to json string.",
+          err);
     }
 
     ten_value_destroy(src_loc_value);
@@ -143,8 +179,10 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
 
     if (!flattened_graph_json_str) {
       TEN_LOGE("Failed to flatten graph json string: %s", err_msg);
+      bool result = ten_app_return_error_for_start_graph_cmd(
+          self, connection, cmd, err_msg, err);
       ten_rust_free_cstring(err_msg);
-      return false;
+      return result;
     }
 
     bool rc = ten_cmd_start_graph_apply_graph_json_str(
@@ -154,7 +192,9 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
           "Failed to apply flattened graph json string to cmd, flattened "
           "graph json string: %s, error: %s",
           flattened_graph_json_str, ten_error_message(err));
-      return false;
+      ten_rust_free_cstring(flattened_graph_json_str);
+      return ten_app_return_error_for_start_graph_cmd(
+          self, connection, cmd, ten_error_message(err), err);
     }
 
     ten_rust_free_cstring(flattened_graph_json_str);
@@ -166,7 +206,8 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
           "Failed to apply graph json string to cmd, graph json string: "
           "%s, error: %s",
           ten_string_get_raw_str(graph_json_str), ten_error_message(err));
-      return false;
+      return ten_app_return_error_for_start_graph_cmd(
+          self, connection, cmd, ten_error_message(err), err);
     }
 #endif
   }
@@ -175,7 +216,8 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
   // should append the extension info list of the predefined graph to the cmd.
   if (!ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
           self, cmd, err)) {
-    return false;
+    return ten_app_return_error_for_start_graph_cmd(
+        self, connection, cmd, ten_error_message(err), err);
   }
 
   // Fill the app uri of the nodes in the start_graph cmd.
@@ -205,7 +247,8 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
             "belong to the same app, but found nodes from different apps: "
             "'%s' and '%s'",
             first_app_uri, app_uri);
-        return false;
+        return ten_app_return_error_for_start_graph_cmd(
+            self, connection, cmd, ten_error_message(err), err);
       }
     }
   }

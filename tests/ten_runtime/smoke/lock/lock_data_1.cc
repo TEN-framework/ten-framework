@@ -207,7 +207,6 @@ TEST(ExtensionTest, LockData1) {  // NOLINT
              }],
              "connections": [{
                "app": "msgpack://127.0.0.1:8001/",
-               "extension_group": "test_extension_group",
                "extension": "extension_1",
                "data": [{
                  "name": "data",

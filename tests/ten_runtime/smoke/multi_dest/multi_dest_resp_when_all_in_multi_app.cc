@@ -256,11 +256,9 @@ TEST(MultiDestTest, MultiDestRespWhenAllInMultiApp) {  // NOLINT
                    "name": "hello_world",
                    "dest": [{
                      "app": "msgpack://127.0.0.1:8002/",
-                     "extension_group": "test_extension_group",
                      "extension": "extension_2"
                    },{
                      "app": "msgpack://127.0.0.1:8003/",
-                     "extension_group": "test_extension_group",
                      "extension": "extension_3"
                    }]
                  }]

@@ -213,7 +213,6 @@ TEST(GraphTest, GroupNodeMissing2Apps) {  // NOLINT
                      "name": "hello_world",
                      "dest": [{
                        "app": "msgpack://127.0.0.1:8002/",
-                       "extension_group": "test_extension_group_2",
                        "extension": "test_extension_2"
                      }]
                    }]

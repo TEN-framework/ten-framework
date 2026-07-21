@@ -103,6 +103,7 @@ TEST(BasicTest, EmptyExtensionGroup) {  // NOLINT
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_ERROR);
 
+  client->close_app();
   delete client;
 
   ten_thread_join(app_thread, -1);
