@@ -13,7 +13,7 @@ from ten_runtime import (
     TenErrorCode,
     Data,
 )
-from ten_ai_base.message import ModuleError
+from ten_ai_base.message import ModuleError, ModuleErrorCode
 
 
 class ExtensionTesterBasic(AsyncExtensionTester):
@@ -60,10 +60,16 @@ class ExtensionTesterError(AsyncExtensionTester):
         payload = ModuleError.model_validate_json(payload_json)
         assert payload.id == "0"
         assert payload.module == "avatar"
-        assert payload.code == -1012
+        assert payload.code == int(ModuleErrorCode.FATAL_ERROR.value)
         assert payload.vendor_info.vendor == "spatius"
         assert payload.vendor_info.code == "ValueError"
-        assert payload.metadata["vendor_metadata"]["name"] == "spatius"
+        vendor_metadata = payload.metadata["vendor_metadata"]
+        assert vendor_metadata["name"] == "spatius"
+        assert all(
+            value not in ("", None) for value in vendor_metadata.values()
+        )
+        assert "url" not in vendor_metadata
+        assert "key" not in vendor_metadata
         ten_env.stop_test()
 
 

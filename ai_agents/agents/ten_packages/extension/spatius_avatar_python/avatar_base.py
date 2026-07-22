@@ -101,6 +101,7 @@ from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
 )
 from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleType
+from ten_ai_base.message import ModuleErrorCode
 
 # Avatar-specific constants
 MODULE_TYPE_AVATAR = "avatar"
@@ -111,7 +112,6 @@ VENDOR_METADATA_KEY = "vendor_metadata"
 @dataclass(frozen=True)
 class QueuedAudioFrame:
     audio: bytes
-    metadata: dict[str, Any]
 
 
 class AsyncAvatarBaseExtension(AsyncExtension, ABC):
@@ -135,7 +135,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self._in_audio_queue: asyncio.Queue[Any] = asyncio.Queue()
         self._audio_task: asyncio.Task | None = None
         self._sample_rate_error_sent = False
-        self._current_audio_metadata: dict[str, Any] | None = None
+        self._request_metadata: dict[str, Any] | None = None
 
     # ========================================================================
     # REQUIRED METHODS - Implement these 6 methods in your subclass
@@ -337,7 +337,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             await self._send_error(
                 ten_env,
                 f"Failed to connect to avatar: {e}",
-                code=-1,
+                code=ModuleErrorCode.FATAL_ERROR.value,
                 vendor_code=type(e).__name__,
                 vendor_message=str(e),
             )
@@ -379,6 +379,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_error(f"{self.LOG_PREFIX} Error disconnecting: {e}")
 
         await super().on_stop(ten_env)
+        self._clear_request_context()
         ten_env.log_info(f"{self.LOG_PREFIX} Stopped successfully")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -439,6 +440,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_warn(f"{self.LOG_PREFIX} Empty audio frame")
             return
 
+        if self._request_metadata is None:
+            self._request_metadata = self._audio_frame_metadata(audio_frame)
+
         ten_env.log_info(
             f"{self.LOG_PREFIX} on_audio_frame: {len(audio_data)} bytes, "
             f"sample_rate={source_rate}"
@@ -458,8 +462,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 await self._send_error(
                     ten_env,
                     error_msg,
-                    code=1001,
-                    metadata=self._audio_frame_metadata(audio_frame),
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 )
                 self._sample_rate_error_sent = True
             return
@@ -469,10 +472,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             self._dump_audio(audio_data, "in")
             queue_size = self._in_audio_queue.qsize()
             self._in_audio_queue.put_nowait(
-                QueuedAudioFrame(
-                    audio=bytes(audio_data),
-                    metadata=self._audio_frame_metadata(audio_frame),
-                )
+                QueuedAudioFrame(audio=bytes(audio_data))
             )
             ten_env.log_info(
                 f"{self.LOG_PREFIX} Queued audio: {len(audio_data)} bytes, "
@@ -493,13 +493,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                         "calling send_eof_to_avatar"
                     )
                     await self.send_eof_to_avatar()
+                    self._clear_request_context()
                     ten_env.log_info(
                         f"{self.LOG_PREFIX} send_eof_to_avatar completed"
                     )
                     continue
 
                 audio_data = item.audio
-                self._current_audio_metadata = item.metadata
                 ten_env.log_info(
                     f"{self.LOG_PREFIX} Processing audio from queue: "
                     f"{len(audio_data)} bytes, calling send_audio_to_avatar"
@@ -520,13 +520,10 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 await self._send_error(
                     ten_env,
                     f"Failed to send audio to avatar: {e}",
-                    code=-1,
-                    metadata=self._current_audio_metadata,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_code=type(e).__name__,
                     vendor_message=str(e),
                 )
-            finally:
-                self._current_audio_metadata = None
         ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop ended")
 
     # ========================================================================
@@ -549,6 +546,8 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_info(f"{self.LOG_PREFIX} Flush completed successfully")
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Error interrupting: {e}")
+        finally:
+            self._clear_request_context()
 
     async def _handle_finalize(self, ten_env: AsyncTenEnv) -> None:
         """Handle finalize data."""
@@ -564,6 +563,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         try:
             queue_size = self._in_audio_queue.qsize()
             self._in_audio_queue.put_nowait(None)
+            self._clear_request_context()
             ten_env.log_info(
                 f"{self.LOG_PREFIX} EOF queued after {queue_size} pending items"
             )
@@ -589,7 +589,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self,
         ten_env: AsyncTenEnv,
         message: str,
-        code: int = 0,
+        code: int,
         metadata: dict[str, Any] | None = None,
         vendor_code: str = "",
         vendor_message: str = "",
@@ -600,7 +600,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         )
 
         if metadata is None:
-            metadata = self._current_audio_metadata
+            metadata = self._request_metadata
         error_metadata = dict(metadata or {})
         error_metadata.pop(VENDOR_METADATA_KEY, None)
         session_id = self.get_reporting_session_id()
@@ -627,6 +627,10 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         )
         await ten_env.send_data(data)
         ten_env.log_info(f"{self.LOG_PREFIX} Error message sent")
+
+    def _clear_request_context(self) -> None:
+        self._request_metadata = None
+        self._sample_rate_error_sent = False
 
     @staticmethod
     def _audio_frame_metadata(audio_frame: AudioFrame) -> dict[str, Any]:

@@ -12,6 +12,7 @@ from typing import TypedDict
 from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
+from ten_ai_base.message import ModuleErrorCode
 from ten_ai_base.utils import encrypt
 from spatius import (
     AgoraEgressConfig,
@@ -235,7 +236,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             self._send_error(
                 self.ten_env,
                 f"Spatius session error: {error}",
-                code=-1,
+                code=ModuleErrorCode.FATAL_ERROR.value,
                 vendor_code=type(error).__name__,
                 vendor_message=str(error),
             )
@@ -283,7 +284,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             await self._send_error(
                 ten_env,
                 f"Spatius config validation failed: {e}",
-                code=-1012,
+                code=ModuleErrorCode.FATAL_ERROR.value,
                 vendor_code=type(e).__name__,
                 vendor_message=str(e),
             )
@@ -428,14 +429,22 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
     def get_vendor_metadata(self) -> dict:
         if not self.config:
             return {"name": "spatius"}
-        return {
+        vendor_metadata = {
             "name": "spatius",
-            "key": encrypt(self.config.spatius_api_key),
-            "url": "",
+            "key": (
+                encrypt(self.config.spatius_api_key)
+                if self.config.spatius_api_key
+                else ""
+            ),
             "model": self.config.spatius_avatar_id,
             "region": self._region(),
             "mode": self.config.audio_format,
             "avatar_id": self.config.spatius_avatar_id,
             "avatar_session_id": self.connection_id,
             "app_id": self.config.spatius_app_id,
+        }
+        return {
+            key: value
+            for key, value in vendor_metadata.items()
+            if value not in ("", None)
         }
