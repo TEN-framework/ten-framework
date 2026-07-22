@@ -11,7 +11,9 @@ from ten_runtime import (
     LogLevel,
     TenError,
     TenErrorCode,
+    Data,
 )
+from ten_ai_base.message import ModuleError
 
 
 class ExtensionTesterBasic(AsyncExtensionTester):
@@ -39,6 +41,34 @@ class ExtensionTesterBasic(AsyncExtensionTester):
 
 def test_basic():
     tester = ExtensionTesterBasic()
+    tester.set_test_mode_single("spatius_avatar_python")
+    err = tester.run()
+    if err is not None:
+        assert False, err.error_message()
+
+
+class ExtensionTesterError(AsyncExtensionTester):
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
+        ten_env.log_info("waiting for config error")
+
+    async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
+        if data.get_name() != "error":
+            return
+
+        payload_json, error = data.get_property_to_json("")
+        assert error is None
+        payload = ModuleError.model_validate_json(payload_json)
+        assert payload.id == "0"
+        assert payload.module == "avatar"
+        assert payload.code == -1012
+        assert payload.vendor_info.vendor == "spatius"
+        assert payload.vendor_info.code == "ValueError"
+        assert payload.metadata["vendor_metadata"]["name"] == "spatius"
+        ten_env.stop_test()
+
+
+def test_config_error_uses_module_error():
+    tester = ExtensionTesterError()
     tester.set_test_mode_single("spatius_avatar_python")
     err = tester.run()
     if err is not None:

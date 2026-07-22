@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "spatius_avatar_python",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "dependencies": [
     {
       "type": "system",
@@ -107,6 +107,11 @@
     "data_in": [
       {
         "name": "finalize"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "error"
       }
     ]
   },
