@@ -12,7 +12,6 @@ from typing import TypedDict
 from agora_token_builder import RtcTokenBuilder
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
-from ten_ai_base.message import ModuleErrorCode
 from ten_ai_base.utils import encrypt
 from spatius import (
     AgoraEgressConfig,
@@ -236,7 +235,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             self._send_error(
                 self.ten_env,
                 f"Spatius session error: {error}",
-                code=ModuleErrorCode.FATAL_ERROR.value,
+                code=-1,
                 vendor_code=type(error).__name__,
                 vendor_message=str(error),
             )
@@ -284,7 +283,7 @@ class SpatiusAvatarExtension(AsyncAvatarBaseExtension):
             await self._send_error(
                 ten_env,
                 f"Spatius config validation failed: {e}",
-                code=ModuleErrorCode.FATAL_ERROR.value,
+                code=-1012,
                 vendor_code=type(e).__name__,
                 vendor_message=str(e),
             )

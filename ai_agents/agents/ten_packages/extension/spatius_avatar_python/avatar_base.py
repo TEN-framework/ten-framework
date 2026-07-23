@@ -101,7 +101,6 @@ from ten_ai_base.const import (
     LOG_CATEGORY_KEY_POINT,
 )
 from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleType
-from ten_ai_base.message import ModuleErrorCode
 
 # Avatar-specific constants
 MODULE_TYPE_AVATAR = "avatar"
@@ -337,7 +336,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             await self._send_error(
                 ten_env,
                 f"Failed to connect to avatar: {e}",
-                code=ModuleErrorCode.FATAL_ERROR.value,
+                code=-1,
                 vendor_code=type(e).__name__,
                 vendor_message=str(e),
             )
@@ -462,7 +461,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 await self._send_error(
                     ten_env,
                     error_msg,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    code=1001,
                 )
                 self._sample_rate_error_sent = True
             return
@@ -520,7 +519,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                 await self._send_error(
                     ten_env,
                     f"Failed to send audio to avatar: {e}",
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    code=-1,
                     vendor_code=type(e).__name__,
                     vendor_message=str(e),
                 )
@@ -589,7 +588,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self,
         ten_env: AsyncTenEnv,
         message: str,
-        code: int,
+        code: int = 0,
         metadata: dict[str, Any] | None = None,
         vendor_code: str = "",
         vendor_message: str = "",
