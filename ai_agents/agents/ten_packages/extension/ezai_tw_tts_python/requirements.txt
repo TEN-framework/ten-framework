@@ -1,6 +1,6 @@
-pydantic>=2.0.0
-httpx[http2]
-soundfile
-git+https://github.com/samx81/text_utils.git
-WeTextProcessing
+httpx[http2]>=0.28.1
 opencc
+pydantic>=2.0.0
+soundfile
+text_utils @ git+https://github.com/samx81/text_utils.git@a1b49518a36b852705bbc6727ae0fdbf7a63b18b
+WeTextProcessing
