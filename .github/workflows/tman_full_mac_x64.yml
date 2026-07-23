@@ -26,6 +26,9 @@ jobs:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-15-intel
+    # Override crate-local nightly toolchains for reproducible macOS builds.
+    env:
+      RUSTUP_TOOLCHAIN: stable
     strategy:
       matrix:
         build_type: [release]
