@@ -382,18 +382,43 @@ jobs:
           cd "$WORK_DIR/transcriber_demo"
 
           # Install TEN package dependencies using tman
-          tman install
+          if ! tman install; then
+            if [[ "${{ runner.os }}" != "Windows" ]]; then
+              echo "❌ ERROR: tman install failed"
+              exit 1
+            fi
+
+            # A partially published latest release may not contain Windows
+            # artifacts. Fall back to the version shipped with tman, which is
+            # published as a complete, matching package set.
+            TMAN_VERSION="$(
+              tman --version 2>&1 |
+                sed -n 's/^TEN Framework version: //p' |
+                head -n 1 |
+                tr -d '\r'
+            )"
+
+            if [ -z "$TMAN_VERSION" ]; then
+              echo "❌ ERROR: failed to determine the installed tman version"
+              exit 1
+            fi
+
+            echo "⚠ Latest package set is unavailable for Windows"
+            echo "Falling back to transcriber_demo version $TMAN_VERSION"
+
+            cd "$WORK_DIR"
+            mv transcriber_demo transcriber_demo_latest
+            tman install app "transcriber_demo@=$TMAN_VERSION"
+
+            cd "$WORK_DIR/transcriber_demo"
+            tman install
+          fi
 
           if [[ "${{ runner.os }}" != "Windows" ]]; then
             tree -I .
           fi
 
-          if [ $? -eq 0 ]; then
-            echo "✓ tman install completed successfully"
-          else
-            echo "❌ ERROR: tman install failed"
-            exit 1
-          fi
+          echo "✓ tman install completed successfully"
 
       - name: Verify ten_runtime_python package from cloud
         shell: bash
