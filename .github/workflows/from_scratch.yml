@@ -54,6 +54,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       # This step is not necessary for the build, but it is useful for debugging.
       - name: Install tools and dependencies (macOS)
         if: runner.os == 'macOS'
@@ -416,6 +420,9 @@ jobs:
 
           if [[ "${{ runner.os }}" != "Windows" ]]; then
             tree -I .
+          else
+            # TODO: Remove this workaround after the cloud package uses VS 2026.
+            sed -i 's/vs_version=2022/vs_version=2026/g' scripts/build.py
           fi
 
           echo "✓ tman install completed successfully"
@@ -883,13 +890,12 @@ jobs:
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
 
-            # windows-2025 runner has VS 2022, not VS 2019
-            # Patch the downloaded run_script.py to pass vs_version=2022 to tgn
+            # Patch the downloaded run_script.py to pass vs_version=2026 to tgn
             #
             # TODO: Remove this sed workaround once the cloud template
             # includes TEN_EXTRA_GN_ARGS support. After that, replace this
-            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2022"
-            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2022/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
+            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2026"
+            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2026/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
             WORK_DIR="/tmp"
             TEST_BIN="bin/test_ext_cpp_test"
