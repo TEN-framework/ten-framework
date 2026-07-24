@@ -171,6 +171,11 @@ jobs:
 
             rustc --version
             cargo --version
+
+            # Linking the Rust/ASan ten_manager test artifacts in parallel can
+            # exhaust the GitHub runner disk. Keep Cargo sequential while GN
+            # still serializes the outer build actions.
+            export CARGO_BUILD_JOBS=1
           fi
 
           df -h .
