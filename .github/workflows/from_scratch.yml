@@ -54,9 +54,25 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup MSVC
+      - name: Locate Visual Studio 2026
         if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstallDir = & $vswhere `
+            -latest `
+            -products "*" `
+            -version "[18.0,19.0)" `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath |
+              Select-Object -First 1
+
+          if ([string]::IsNullOrWhiteSpace($vsInstallDir)) {
+            throw "Visual Studio 2026 with C++ tools was not found"
+          }
+
+          "VSINSTALLDIR=$($vsInstallDir.Trim())" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # This step is not necessary for the build, but it is useful for debugging.
       - name: Install tools and dependencies (macOS)
