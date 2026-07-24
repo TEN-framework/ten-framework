@@ -269,7 +269,7 @@ jobs:
           } else {
             $buildArgs += "is_mingw=false" # msvc
             $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
-            $buildArgs += "vs_version=2022"
+            $buildArgs += "vs_version=2026"
             $buildArgs += "ten_enable_nodejs_binding=true"
           }
           $buildArgs += "log_level=1"

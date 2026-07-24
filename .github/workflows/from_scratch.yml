@@ -248,6 +248,10 @@ jobs:
           echo "Installing tgn build system for C++ extensions"
           echo "================================================"
 
+          TGN_VERSION="$(git rev-parse HEAD:core/ten_gn)"
+          export TGN_VERSION
+          echo "Using tgn revision: $TGN_VERSION"
+
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # On Windows, install to a temporary directory
             # Use RUNNER_TEMP which is guaranteed to exist and be writable
@@ -382,18 +386,46 @@ jobs:
           cd "$WORK_DIR/transcriber_demo"
 
           # Install TEN package dependencies using tman
-          tman install
+          if ! tman install; then
+            if [[ "${{ runner.os }}" != "Windows" ]]; then
+              echo "❌ ERROR: tman install failed"
+              exit 1
+            fi
+
+            # A partially published latest release may not contain Windows
+            # artifacts. Fall back to the version shipped with tman, which is
+            # published as a complete, matching package set.
+            TMAN_VERSION="$(
+              tman --version 2>&1 |
+                sed -n 's/^TEN Framework version: //p' |
+                head -n 1 |
+                tr -d '\r'
+            )"
+
+            if [ -z "$TMAN_VERSION" ]; then
+              echo "❌ ERROR: failed to determine the installed tman version"
+              exit 1
+            fi
+
+            echo "⚠ Latest package set is unavailable for Windows"
+            echo "Falling back to transcriber_demo version $TMAN_VERSION"
+
+            cd "$WORK_DIR"
+            mv transcriber_demo transcriber_demo_latest
+            tman install app "transcriber_demo@=$TMAN_VERSION"
+
+            cd "$WORK_DIR/transcriber_demo"
+            tman install
+          fi
 
           if [[ "${{ runner.os }}" != "Windows" ]]; then
             tree -I .
+          else
+            # TODO: Remove this workaround after the cloud package uses VS 2026.
+            sed -i 's/vs_version=2022/vs_version=2026/g' scripts/build.py
           fi
 
-          if [ $? -eq 0 ]; then
-            echo "✓ tman install completed successfully"
-          else
-            echo "❌ ERROR: tman install failed"
-            exit 1
-          fi
+          echo "✓ tman install completed successfully"
 
       - name: Verify ten_runtime_python package from cloud
         shell: bash
@@ -858,13 +890,12 @@ jobs:
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
 
-            # windows-2025 runner has VS 2022, not VS 2019
-            # Patch the downloaded run_script.py to pass vs_version=2022 to tgn
+            # Patch the downloaded run_script.py to pass vs_version=2026 to tgn
             #
             # TODO: Remove this sed workaround once the cloud template
             # includes TEN_EXTRA_GN_ARGS support. After that, replace this
-            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2022"
-            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2022/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
+            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2026"
+            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2026/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
             WORK_DIR="/tmp"
             TEST_BIN="bin/test_ext_cpp_test"
