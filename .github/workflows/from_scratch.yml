@@ -230,6 +230,23 @@ jobs:
           echo "  Version: $(tman --version 2>&1 || tman -v 2>&1)"
           echo "  Location: $(which tman)"
 
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            TMAN_VERSION="$(
+              tman --version 2>&1 |
+                sed -n 's/^TEN Framework version: //p' |
+                head -n 1 |
+                tr -d '\r'
+            )"
+
+            if [ -z "$TMAN_VERSION" ]; then
+              echo "ERROR: failed to determine the installed tman version"
+              exit 1
+            fi
+
+            echo "TMAN_VERSION=$TMAN_VERSION" >> "$GITHUB_ENV"
+            echo "TMAN_TEMPLATE_SUFFIX=@=$TMAN_VERSION" >> "$GITHUB_ENV"
+          fi
+
           # Display Python version being used
           echo ""
           echo "Python configuration:"
@@ -395,18 +412,6 @@ jobs:
             # A partially published latest release may not contain Windows
             # artifacts. Fall back to the version shipped with tman, which is
             # published as a complete, matching package set.
-            TMAN_VERSION="$(
-              tman --version 2>&1 |
-                sed -n 's/^TEN Framework version: //p' |
-                head -n 1 |
-                tr -d '\r'
-            )"
-
-            if [ -z "$TMAN_VERSION" ]; then
-              echo "❌ ERROR: failed to determine the installed tman version"
-              exit 1
-            fi
-
             echo "⚠ Latest package set is unavailable for Windows"
             echo "Falling back to transcriber_demo version $TMAN_VERSION"
 
@@ -838,7 +843,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a C++ extension using the default template
-          tman create extension test_ext_cpp --template default_extension_cpp
+          tman create extension test_ext_cpp --template "default_extension_cpp${TMAN_TEMPLATE_SUFFIX}"
 
           if [ ! -d "test_ext_cpp" ]; then
             echo "❌ ERROR: test_ext_cpp extension was not created"
@@ -977,7 +982,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Go extension using the default template
-          tman create extension test_ext_go --template default_extension_go --template-data class_name_prefix=Test
+          tman create extension test_ext_go --template "default_extension_go${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_go" ]; then
             echo "❌ ERROR: test_ext_go extension was not created"
@@ -1064,7 +1069,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Python extension using the default async template
-          tman create extension test_ext_python --template default_async_extension_python --template-data class_name_prefix=Test
+          tman create extension test_ext_python --template "default_async_extension_python${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_python" ]; then
             echo "❌ ERROR: test_ext_python extension was not created"
@@ -1186,7 +1191,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Node.js extension using the default template
-          tman create extension test_ext_nodejs --template default_extension_nodejs --template-data class_name_prefix=Test
+          tman create extension test_ext_nodejs --template "default_extension_nodejs${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_nodejs" ]; then
             echo "❌ ERROR: test_ext_nodejs extension was not created"
