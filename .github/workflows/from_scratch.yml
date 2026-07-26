@@ -194,17 +194,15 @@ jobs:
             echo "Installing tman via winget..."
             winget install TEN-framework.tman --disable-interactivity --accept-source-agreements --accept-package-agreements
 
-            # winget modifies the system/user PATH, but GitHub Actions steps
-            # inherit the PATH snapshot from job start. Re-read the current
-            # Machine+User PATH and add any new entries to GITHUB_PATH so
-            # subsequent steps can find tman.
-            NEW_PATH=$(powershell.exe -NoProfile -Command \
-              "[System.Environment]::GetEnvironmentVariable('PATH','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH','User')")
-            echo "$NEW_PATH" | tr ';' '\n' | while IFS= read -r p; do
-              if [ -n "$p" ] && ! echo "$PATH" | tr ':' '\n' | grep -qxF "$p"; then
-                echo "$p" >> $GITHUB_PATH
-              fi
-            done
+            # Add only winget's link directory. Re-importing the complete
+            # Machine+User PATH can move the WindowsApps WSL shim ahead of
+            # Git Bash in later steps.
+            TMAN_DIR="$(
+              powershell.exe -NoProfile -Command \
+                "[System.IO.Path]::Combine([System.Environment]::GetFolderPath('LocalApplicationData'), 'Microsoft', 'WinGet', 'Links')" |
+                tr -d '\r'
+            )"
+            echo "$TMAN_DIR" >> "$GITHUB_PATH"
           else
             echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
             exit 1
