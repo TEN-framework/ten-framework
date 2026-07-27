@@ -76,9 +76,14 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
     # Allow extra GN args via environment variable (e.g. vs_version=2022)
-    extra_gn_args = shlex.split(os_module.environ.get("TEN_EXTRA_GN_ARGS", ""))
+    extra_gn_args = os_module.environ.get("TEN_EXTRA_GN_ARGS", "")
 
     tgn = "tgn.bat" if os == "win" else "tgn"
+
+    # Kept as a single string so extra args can be appended to it in place
+    # (CI does this to add vs_version=2022); shlex.split then turns it back
+    # into separate arguments.
+    gn_args = "ten_enable_standalone_test=true"
 
     command = [
         tgn,
@@ -87,8 +92,8 @@ def run_cmd_build(os: str, arch: str) -> int:
         arch,
         BUILD_TYPE,
         "--",
-        "ten_enable_standalone_test=true",
-        *extra_gn_args,
+        *shlex.split(gn_args),
+        *shlex.split(extra_gn_args),
     ]
 
     rc = run_cmd(command)

@@ -7,6 +7,7 @@
 
 import argparse
 import platform
+import shlex
 import subprocess
 import sys
 import os
@@ -77,16 +78,13 @@ def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
     tgn = "tgn.bat" if os == "win" else "tgn"
 
+    # Kept as a single string so extra args can be appended to it in place
+    # (CI does this to add vs_version=2022); shlex.split then turns it back
+    # into separate arguments.
+    gn_args = "ten_enable_standalone_test=true"
+
     rc = run_cmd(
-        [
-            tgn,
-            "gen",
-            os,
-            arch,
-            BUILD_TYPE,
-            "--",
-            "ten_enable_standalone_test=true",
-        ]
+        [tgn, "gen", os, arch, BUILD_TYPE, "--", *shlex.split(gn_args)]
     )
     if rc != 0:
         return rc
