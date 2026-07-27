@@ -126,7 +126,7 @@ jobs:
           bash nodesource_setup.sh
           sudo apt-get install -y nodejs
 
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           pip3 install --use-pep517 python-dotenv jinja2
 
