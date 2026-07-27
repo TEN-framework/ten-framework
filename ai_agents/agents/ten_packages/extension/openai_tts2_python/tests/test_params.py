@@ -373,6 +373,68 @@ def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
     print("✅ Headers configuration test passed successfully.")
 
 
+def test_vendor_metadata_does_not_convert_api_key_to_authorization():
+    from openai_tts2_python.config import OpenAITTSConfig
+    from openai_tts2_python.extension import OpenAITTSExtension
+
+    extension = OpenAITTSExtension("tts")
+    config = OpenAITTSConfig(
+        params={
+            "api_key": "test_api_key_123",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+        },
+    )
+    config.update_params()
+    extension.config = config
+
+    metadata = extension.vendor_metadata()
+
+    assert metadata["authorization"] == ""
+    assert metadata["api_key"]
+    assert metadata["api_key"] != "test_api_key_123"
+    assert "key" not in metadata
+
+
+def test_vendor_metadata_prefers_config_authorization_header():
+    from openai_tts2_python.config import OpenAITTSConfig
+    from openai_tts2_python.extension import OpenAITTSExtension
+
+    extension = OpenAITTSExtension("tts")
+    config = OpenAITTSConfig(
+        headers={"Authorization": "Bearer header_key"},
+        params={
+            "api_key": "test_api_key_123",
+            "model": "gpt-4o-mini-tts",
+            "voice": "coral",
+        },
+    )
+    config.update_params()
+    extension.config = config
+
+    metadata = extension.vendor_metadata()
+
+    assert metadata["authorization"]
+    assert metadata["authorization"] != "Bearer header_key"
+    assert metadata["api_key"]
+    assert metadata["api_key"] != "test_api_key_123"
+    assert "key" not in metadata
+
+
+def test_to_str_masks_authorization_header():
+    from openai_tts2_python.config import OpenAITTSConfig
+
+    config = OpenAITTSConfig(
+        headers={"Authorization": "Bearer header_key"},
+        params={"api_key": "test_api_key_123"},
+    )
+
+    rendered = config.to_str(sensitive_handling=True)
+
+    assert "Bearer header_key" not in rendered
+    assert "test_api_key_123" not in rendered
+
+
 @patch("openai_tts2_python.openai_tts.AsyncClient")
 @patch("openai_tts2_python.openai_tts.Timeout")
 @patch("openai_tts2_python.openai_tts.Limits")

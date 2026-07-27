@@ -71,6 +71,11 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         # Encrypt sensitive fields in params
         if config.params and "api_key" in config.params:
             config.params["api_key"] = utils.encrypt(config.params["api_key"])
+        for header_key in ("Authorization", "authorization"):
+            if header_key in config.headers:
+                config.headers[header_key] = utils.encrypt(
+                    config.headers[header_key]
+                )
 
         return f"{config}"
 
