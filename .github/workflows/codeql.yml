@@ -114,10 +114,7 @@ jobs:
             git submodule update --init --recursive --depth 1 "$sub"
           done
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

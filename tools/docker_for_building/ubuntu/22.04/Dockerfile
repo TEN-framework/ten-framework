@@ -101,20 +101,39 @@ RUN wget --no-check-certificate -O - https://apt.llvm.org/llvm-snapshot.gpg.key 
 ENV PATH="$PATH:/usr/local/go/bin:/root/go/bin"
 
 # TEN go binding needs to be compatible with GO 1.20, so we need to install GO
-# 1.20 to check the compatibility.
+# 1.20 to check the compatibility. Go 1.24.3 is also pre-installed so CI jobs
+# no longer need to run `go install golang.org/dl/go1.24.3@latest` on every
+# run (see issue #917).
 RUN export ARCH=$(dpkg --print-architecture) && curl -OL https://go.dev/dl/go1.22.3.linux-${ARCH}.tar.gz && \
   rm -rf /usr/local/go && tar -C /usr/local -xvf go1.22.3.linux-${ARCH}.tar.gz && rm go1.22.3.linux-${ARCH}.tar.gz && \
-  go install golang.org/dl/go1.20.12@latest && go1.20.12 download
+  go install golang.org/dl/go1.20.12@latest && go1.20.12 download && \
+  go install golang.org/dl/go1.24.3@latest && go1.24.3 download
 
 # =======================================
 # Install cargo for rust.
 
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-  /root/.cargo/bin/rustup install nightly-2025-09-18 && \
+# Install pinned nightly (default) plus `stable` and latest `nightly` so CI
+# jobs no longer need to run `rustup update nightly` / `rustup default stable`
+# to switch toolchains between debug/release matrix builds. See issue #917.
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly-2025-09-18 && \
+  /root/.cargo/bin/rustup toolchain install stable && \
+  /root/.cargo/bin/rustup toolchain install nightly && \
   /root/.cargo/bin/rustup default nightly-2025-09-18 && \
   /root/.cargo/bin/cargo install --force cbindgen
 
 ENV PATH="/root/.cargo/bin:$PATH"
+
+# =======================================
+# Install Node.js 20 (LTS)
+#
+# CI jobs that run inside this image previously invoked
+# `actions/setup-node@v4` on every job to install Node. Baking it into the
+# build-time image removes that redundant step from workflows such as
+# linux_ubuntu2204.yml and codeql.yml. See issue #917.
+
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+  apt-get install -y --no-install-recommends nodejs && \
+  npm install -g npm@latest
 
 # =======================================
 # Install extra tools, e.g., uv and task.

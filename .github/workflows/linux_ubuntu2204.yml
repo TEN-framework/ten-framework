@@ -126,9 +126,7 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update version
         run: |
@@ -151,18 +149,18 @@ jobs:
           export RUSTUP_HOME=/root/.rustup
 
           if [ "${{ matrix.arch }}" = "x64" ]; then
+            # Go 1.24.3 is pre-installed in ten_building_ubuntu2204 via
+            # `go install golang.org/dl/go1.24.3@latest` (see issue #917).
             go env -w GOFLAGS="-buildvcs=false"
-            go install golang.org/dl/go1.24.3@latest
             export PATH=$PATH:$(go env GOPATH)/bin
-            go1.24.3 download
             go1.24.3 version
 
-            # Set Rust toolchain based on build type
-            # Linux debug uses nightly (for ASAN support)
-            # Linux release, Mac, and Windows use stable
+            # Set Rust toolchain based on build type.
+            # Linux debug uses nightly (for ASAN support); linux release
+            # uses stable. Both toolchains are pre-installed in
+            # ten_building_ubuntu2204 (see issue #917).
             if [ "${{ matrix.build_type }}" = "debug" ]; then
-              echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
-              rustup update nightly
+              echo "Setting Rust toolchain to nightly for Linux debug build (ASAN support)"
               rustup default nightly
             else
               echo "Setting Rust toolchain to stable for Linux release build"
@@ -554,9 +552,7 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update tman config.json
         if: matrix.arch == 'x64'
@@ -806,9 +802,7 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update tman config.json
         if: matrix.arch == 'x64'
@@ -974,9 +968,7 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update tman config.json
         if: matrix.arch == 'x64'
@@ -1131,9 +1123,7 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update tman config.json
         if: matrix.arch == 'x64'
@@ -1402,7 +1392,11 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
+      # This job runs on a bare ubuntu-22.04 runner (no container), so it
+      # still needs setup-node. Container-based jobs get Node from the
+      # ten_building_ubuntu2204 image (see issue #917).
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -1579,9 +1573,7 @@ jobs:
           fi
         shell: bash
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      # Node.js is pre-installed in ten_building_ubuntu2204 (see issue #917).
 
       - name: Update tman config.json
         if: matrix.arch == 'x64'
