@@ -396,7 +396,7 @@ def test_vendor_metadata_does_not_convert_api_key_to_authorization():
     assert "key" not in metadata
 
 
-def test_vendor_metadata_prefers_config_authorization_header():
+def test_vendor_metadata_returns_raw_config_authorization_header():
     from openai_tts2_python.config import OpenAITTSConfig
     from openai_tts2_python.extension import OpenAITTSExtension
 
@@ -414,8 +414,7 @@ def test_vendor_metadata_prefers_config_authorization_header():
 
     metadata = extension.vendor_metadata()
 
-    assert metadata["authorization"]
-    assert metadata["authorization"] != "Bearer header_key"
+    assert metadata["authorization"] == "Bearer header_key"
     assert metadata["api_key"]
     assert metadata["api_key"] != "test_api_key_123"
     assert "key" not in metadata

@@ -65,7 +65,7 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
             "api_key": _mask_metadata_secret(
                 self.config.params.get("api_key", "")
             ),
-            "authorization": _mask_metadata_secret(authorization),
+            "authorization": authorization,
             "voice": self.config.params.get("voice", ""),
         }
 
