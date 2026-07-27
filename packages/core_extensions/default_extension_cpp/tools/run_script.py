@@ -74,7 +74,7 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
 
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
-    # Allow extra GN args via environment variable (e.g. vs_version=2022)
+    # Allow extra GN args via environment variable (e.g. vs_version=2026)
     extra_gn_args = os_module.environ.get("TEN_EXTRA_GN_ARGS", "")
 
     if os == "win":

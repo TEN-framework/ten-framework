@@ -1,0 +1,13 @@
+{
+  "params": {
+    "api_key": "",
+    "voice_id": "tc_60e5426de8b95f1d3000d7b5",
+    "model": "ssfm-v30",
+    "output": {
+      "audio_format": "wav"
+    }
+  },
+  "chunk_size": 8192,
+  "dump": false,
+  "dump_path": "/tmp/typecast_tts_audio_dump"
+}

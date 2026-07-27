@@ -6,9 +6,9 @@
 //
 import { expect, test } from "@playwright/test";
 
-const BASE_URL = process.env.CI
-  ? "http://127.0.0.1:49483"
-  : "http://127.0.0.1:4173";
+const BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL ??
+  (process.env.CI ? "http://127.0.0.1:49483" : "http://127.0.0.1:4173");
 
 console.log(`Using base URL: ${BASE_URL}`);
 

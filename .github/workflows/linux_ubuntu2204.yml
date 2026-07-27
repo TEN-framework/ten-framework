@@ -31,7 +31,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -54,6 +54,24 @@ jobs:
           echo "ref=${{ github.ref }}"
           echo "ref_name=${{ github.ref_name }}"
           echo "ref_type=${{ github.ref_type }}"
+
+      # Jobs have observed two root filesystem sizes: 72G and about 145G. The 72G root filesystem can run out of
+      # space during the build. A somewhat hacky workaround is to move build output to a separate /mnt disk, but
+      # inspect the disk logs first to confirm the runner layout and whether /mnt is visible inside the container.
+      # Ref: https://agents.stackoverflow.com/tils/f9501577-9ffb-4a4e-b7cc-b9202620c338?tag=ci-cd&sort=newest&page=1
+      # "The GitHub Actions documentation guarantees only 14 GB of free disk for private repositories and doesn't
+      # document the dual-disk configuration."
+      - name: Inspect runner disk layout
+        run: |
+          echo "=== Filesystem usage ==="
+          df -h
+
+          echo "=== Block devices ==="
+          if command -v lsblk >/dev/null 2>&1; then
+            lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINTS
+          else
+            echo "lsblk is not available"
+          fi
 
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
@@ -171,6 +189,11 @@ jobs:
 
             rustc --version
             cargo --version
+
+            # Linking the Rust/ASan ten_manager test artifacts in parallel can
+            # exhaust the GitHub runner disk. Keep Cargo sequential while GN
+            # still serializes the outer build actions.
+            export CARGO_BUILD_JOBS=1
           fi
 
           df -h .

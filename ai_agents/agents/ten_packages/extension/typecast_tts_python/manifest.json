@@ -1,7 +1,7 @@
 {
   "type": "extension",
-  "name": "ezai_tw_tts_python",
-  "version": "0.1.3",
+  "name": "typecast_tts_python",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
@@ -34,43 +34,48 @@
     ],
     "property": {
       "properties": {
-        "dump": {
-          "type": "bool"
-        },
-        "dump_path": {
-          "type": "string"
-        },
         "params": {
           "type": "object",
           "properties": {
-            "url": {
-              "type": "string"
-            },
-            "voice": {
-              "type": "string"
-            },
-            "speed": {
-              "type": "float32"
-            },
             "api_key": {
               "type": "string"
             },
-            "denoise": {
-              "type": "bool"
-            },
-            "zh_model": {
+            "url": {
               "type": "string"
             },
-            "sample_rate": {
-              "type": "int64"
+            "voice_id": {
+              "type": "string"
             },
-            "channels": {
-              "type": "int64"
+            "model": {
+              "type": "string"
             },
-            "sample_width": {
+            "language": {
+              "type": "string"
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "audio_pitch": {
+                  "type": "int64"
+                },
+                "audio_tempo": {
+                  "type": "float64"
+                },
+                "audio_format": {
+                  "type": "string"
+                },
+                "target_lufs": {
+                  "type": "float64"
+                }
+              }
+            },
+            "seed": {
               "type": "int64"
             }
           }
+        },
+        "chunk_size": {
+          "type": "int64"
         }
       }
     }

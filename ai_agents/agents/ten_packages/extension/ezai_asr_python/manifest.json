@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "ezai_asr_python",
-  "version": "0.4.1",
+  "version": "0.1.4",
   "dependencies": [
     {
       "type": "system",

@@ -1,9 +1,10 @@
 [project]
 name = "tencent-asr-python"
-version = "0.2.14"
+version = "0.3.1"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",
+    "pytest==8.3.4",
     "typing-extensions>=4.15.0",
     "websockets>=14.0",
 ]

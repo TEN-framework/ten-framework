@@ -3,6 +3,7 @@ import websockets
 from abc import ABC, abstractmethod
 from contextlib import suppress
 import logging
+from ten_ai_base.utils import redact_url
 from .log import get_logger
 import time
 
@@ -161,7 +162,9 @@ class WebSocketClient(ABC):
         """Main run loop, handles connection and automatic reconnection."""
         while not self._shutdown_event.is_set():
             try:
-                self._logger.info(f"Attempting to connect to {self._uri}...")
+                self._logger.info(
+                    f"Attempting to connect to {redact_url(self._uri)}..."
+                )
                 async with websockets.connect(
                     self._uri, logger=self._logger, **self._kwargs
                 ) as websocket:

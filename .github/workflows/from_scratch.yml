@@ -194,17 +194,15 @@ jobs:
             echo "Installing tman via winget..."
             winget install TEN-framework.tman --disable-interactivity --accept-source-agreements --accept-package-agreements
 
-            # winget modifies the system/user PATH, but GitHub Actions steps
-            # inherit the PATH snapshot from job start. Re-read the current
-            # Machine+User PATH and add any new entries to GITHUB_PATH so
-            # subsequent steps can find tman.
-            NEW_PATH=$(powershell.exe -NoProfile -Command \
-              "[System.Environment]::GetEnvironmentVariable('PATH','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('PATH','User')")
-            echo "$NEW_PATH" | tr ';' '\n' | while IFS= read -r p; do
-              if [ -n "$p" ] && ! echo "$PATH" | tr ':' '\n' | grep -qxF "$p"; then
-                echo "$p" >> $GITHUB_PATH
-              fi
-            done
+            # Add only winget's link directory. Re-importing the complete
+            # Machine+User PATH can move the WindowsApps WSL shim ahead of
+            # Git Bash in later steps.
+            TMAN_DIR="$(
+              powershell.exe -NoProfile -Command \
+                "[System.IO.Path]::Combine([System.Environment]::GetFolderPath('LocalApplicationData'), 'Microsoft', 'WinGet', 'Links')" |
+                tr -d '\r'
+            )"
+            echo "$TMAN_DIR" >> "$GITHUB_PATH"
           else
             echo "❌ ERROR: Unsupported OS: ${{ runner.os }}"
             exit 1
@@ -230,6 +228,23 @@ jobs:
           echo "  Version: $(tman --version 2>&1 || tman -v 2>&1)"
           echo "  Location: $(which tman)"
 
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            TMAN_VERSION="$(
+              tman --version 2>&1 |
+                sed -n 's/^TEN Framework version: //p' |
+                head -n 1 |
+                tr -d '\r'
+            )"
+
+            if [ -z "$TMAN_VERSION" ]; then
+              echo "ERROR: failed to determine the installed tman version"
+              exit 1
+            fi
+
+            echo "TMAN_VERSION=$TMAN_VERSION" >> "$GITHUB_ENV"
+            echo "TMAN_TEMPLATE_SUFFIX=@=$TMAN_VERSION" >> "$GITHUB_ENV"
+          fi
+
           # Display Python version being used
           echo ""
           echo "Python configuration:"
@@ -247,6 +262,10 @@ jobs:
           echo "================================================"
           echo "Installing tgn build system for C++ extensions"
           echo "================================================"
+
+          TGN_VERSION="$(git rev-parse HEAD:core/ten_gn)"
+          export TGN_VERSION
+          echo "Using tgn revision: $TGN_VERSION"
 
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             # On Windows, install to a temporary directory
@@ -382,18 +401,34 @@ jobs:
           cd "$WORK_DIR/transcriber_demo"
 
           # Install TEN package dependencies using tman
-          tman install
+          if ! tman install; then
+            if [[ "${{ runner.os }}" != "Windows" ]]; then
+              echo "❌ ERROR: tman install failed"
+              exit 1
+            fi
+
+            # A partially published latest release may not contain Windows
+            # artifacts. Fall back to the version shipped with tman, which is
+            # published as a complete, matching package set.
+            echo "⚠ Latest package set is unavailable for Windows"
+            echo "Falling back to transcriber_demo version $TMAN_VERSION"
+
+            cd "$WORK_DIR"
+            mv transcriber_demo transcriber_demo_latest
+            tman install app "transcriber_demo@=$TMAN_VERSION"
+
+            cd "$WORK_DIR/transcriber_demo"
+            tman install
+          fi
 
           if [[ "${{ runner.os }}" != "Windows" ]]; then
             tree -I .
+          else
+            # TODO: Remove this workaround after the cloud package uses VS 2026.
+            sed -i 's/vs_version=2022/vs_version=2026/g' scripts/build.py
           fi
 
-          if [ $? -eq 0 ]; then
-            echo "✓ tman install completed successfully"
-          else
-            echo "❌ ERROR: tman install failed"
-            exit 1
-          fi
+          echo "✓ tman install completed successfully"
 
       - name: Verify ten_runtime_python package from cloud
         shell: bash
@@ -806,7 +841,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a C++ extension using the default template
-          tman create extension test_ext_cpp --template default_extension_cpp
+          tman create extension test_ext_cpp --template "default_extension_cpp${TMAN_TEMPLATE_SUFFIX}"
 
           if [ ! -d "test_ext_cpp" ]; then
             echo "❌ ERROR: test_ext_cpp extension was not created"
@@ -858,13 +893,12 @@ jobs:
             PYTHON_PATH=$(cygpath -u "${pythonLocation}" 2>/dev/null || echo "${pythonLocation}" | sed 's|\\|/|g' | sed 's|^\([A-Za-z]\):|/\L\1|')
             export PATH="${PYTHON_PATH}:${PYTHON_PATH}/Scripts:$PATH"
 
-            # windows-2025 runner has VS 2022, not VS 2019
-            # Patch the downloaded run_script.py to pass vs_version=2022 to tgn
+            # Patch the downloaded run_script.py to pass vs_version=2026 to tgn
             #
             # TODO: Remove this sed workaround once the cloud template
             # includes TEN_EXTRA_GN_ARGS support. After that, replace this
-            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2022"
-            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2022/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
+            # sed line with: export TEN_EXTRA_GN_ARGS="vs_version=2026"
+            sed -i 's/ten_enable_standalone_test=true/ten_enable_standalone_test=true vs_version=2026/' "$WORK_DIR/test_ext_cpp/tools/run_script.py"
           else
             WORK_DIR="/tmp"
             TEST_BIN="bin/test_ext_cpp_test"
@@ -946,7 +980,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Go extension using the default template
-          tman create extension test_ext_go --template default_extension_go --template-data class_name_prefix=Test
+          tman create extension test_ext_go --template "default_extension_go${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_go" ]; then
             echo "❌ ERROR: test_ext_go extension was not created"
@@ -1033,7 +1067,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Python extension using the default async template
-          tman create extension test_ext_python --template default_async_extension_python --template-data class_name_prefix=Test
+          tman create extension test_ext_python --template "default_async_extension_python${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_python" ]; then
             echo "❌ ERROR: test_ext_python extension was not created"
@@ -1155,7 +1189,7 @@ jobs:
           cd "$WORK_DIR"
 
           # Create a Node.js extension using the default template
-          tman create extension test_ext_nodejs --template default_extension_nodejs --template-data class_name_prefix=Test
+          tman create extension test_ext_nodejs --template "default_extension_nodejs${TMAN_TEMPLATE_SUFFIX}" --template-data class_name_prefix=Test
 
           if [ ! -d "test_ext_nodejs" ]; then
             echo "❌ ERROR: test_ext_nodejs extension was not created"

@@ -546,7 +546,6 @@ def build_cxx_extensions(
                     "--",
                     "is_clang=false",
                     "enable_sanitizer=false",
-                    "vs_version=2022",
                 ]
             )
         elif os_type == "win":
@@ -556,7 +555,7 @@ def build_cxx_extensions(
                     "is_mingw=false",
                     "is_clang=true",
                     "enable_sanitizer=false",
-                    "vs_version=2022",
+                    "vs_version=2026",
                 ]
             )
 

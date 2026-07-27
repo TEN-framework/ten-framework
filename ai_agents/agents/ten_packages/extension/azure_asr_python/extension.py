@@ -633,8 +633,18 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.stream = None
 
         if self.client:
+            start_ms = int(datetime.now().timestamp() * 1000)
             self.client.stop_continuous_recognition()
+            stop_ms = int(datetime.now().timestamp() * 1000)
+            stop_duration_ms = stop_ms - start_ms
             self.client = None
+
+            self.ten_env.log_info(
+                f"stop_continuous_recognition took {stop_duration_ms}ms"
+            )
+            await self.send_vendor_metrics(
+                {"stop_continuous_recognition_ms": stop_duration_ms}
+            )
 
         self.ten_env.log_info("azure connection stopped")
 
