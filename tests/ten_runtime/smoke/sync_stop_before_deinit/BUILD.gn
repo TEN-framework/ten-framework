@@ -8,7 +8,15 @@ import("//build/ten_runtime/glob.gni")
 import("//build/ten_runtime/ten.gni")
 
 ten_runtime_glob("sync_stop_before_deinit") {
-  file_list = all_native_files
+  file_list = [ "basic.cc" ]
+
+  # This test relies on Rust graph processing to turn exposed_messages into a
+  # ten:graph_proxy node and routing connections. Without Rust, on_stop_notify
+  # has no destination ("Failed to find destination") and the test times out.
+  if (ten_enable_ten_rust) {
+    file_list += [ "msg_during_on_stop.cc" ]
+  }
+
   deps = [
     "//third_party/msgpack:msgpackc",
     "//third_party/nlohmann_json",
