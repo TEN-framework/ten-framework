@@ -35,7 +35,12 @@ TEN Framework version: <version>
 
 ---
 
-## C++ 扩展开发
+## 按语言浏览开发指南
+
+点击下方语言展开完整开发指南。默认全部收起，方便您专注于自己需要的语言。
+
+<details>
+<summary><strong>C++ 扩展开发</strong></summary>
 
 C++ 扩展适用于对性能要求极高的应用场景，如实时音视频处理、高频数据计算、底层系统操作等。
 
@@ -246,9 +251,10 @@ gdb ./bin/my_example_ext_cpp_test
 (gdb) bt  # 查看完整的函数调用栈
 ```
 
----
+</details>
 
-## Go 扩展开发
+<details>
+<summary><strong>Go 扩展开发</strong></summary>
 
 Go 扩展在高性能和开发效率之间提供了很好的平衡，特别适合构建网络服务、并发处理、微服务架构等应用场景。
 
@@ -418,9 +424,10 @@ use (
 }
 ```
 
----
+</details>
 
-## Python 扩展开发
+<details>
+<summary><strong>Python 扩展开发</strong></summary>
 
 Python 扩展具有最高的开发效率，特别适合快速原型开发、AI/ML 应用集成、复杂业务逻辑实现等场景。
 
@@ -593,9 +600,10 @@ def test_basic():
 }
 ```
 
----
+</details>
 
-## Node.js 扩展开发
+<details>
+<summary><strong>Node.js 扩展开发</strong></summary>
 
 Node.js 扩展提供了现代 JavaScript/TypeScript 开发体验，特别适合 Web 应用集成、快速原型开发、前端技术栈扩展等场景。得益于 Node.js 的异步特性和丰富的生态系统，开发者可以轻松构建高效的实时应用。
 
@@ -1037,6 +1045,8 @@ async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
   }
 }
 ```
+
+</details>
 
 ---
 

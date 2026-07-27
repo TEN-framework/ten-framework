@@ -35,7 +35,12 @@ Regardless of which programming language you use, TEN extension development foll
 
 ---
 
-## C++ Extension Development
+## Language-specific Development Guides
+
+Click a language below to expand its full guide. Sections default to collapsed so you can focus on the language you need.
+
+<details>
+<summary><strong>C++ Extension Development</strong></summary>
 
 C++ extensions are suitable for application scenarios with extremely high performance requirements, such as real-time audio and video processing, high-frequency data computation, low-level system operations, etc.
 
@@ -246,9 +251,10 @@ gdb ./bin/my_example_ext_cpp_test
 (gdb) bt  # View complete function call stack
 ```
 
----
+</details>
 
-## Go Extension Development
+<details>
+<summary><strong>Go Extension Development</strong></summary>
 
 Go extensions provide a good balance between high performance and development efficiency, particularly suitable for building network services, concurrent processing, microservice architecture and other application scenarios.
 
@@ -418,9 +424,10 @@ Make sure the official Go extension is installed, then use the following debug c
 }
 ```
 
----
+</details>
 
-## Python Extension Development
+<details>
+<summary><strong>Python Extension Development</strong></summary>
 
 Python extensions have the highest development efficiency, particularly suitable for rapid prototyping, AI/ML application integration, complex business logic implementation and other scenarios.
 
@@ -593,9 +600,10 @@ Make sure you have installed the Python extension and debugpy debugger, use the 
 }
 ```
 
----
+</details>
 
-## Node.js Extension Development
+<details>
+<summary><strong>Node.js Extension Development</strong></summary>
 
 Node.js extensions provide a modern JavaScript/TypeScript development experience, particularly suitable for Web application integration, rapid prototyping, frontend technology stack extensions and other scenarios. Thanks to Node.js's async characteristics and rich ecosystem, developers can easily build efficient real-time applications.
 
@@ -1037,6 +1045,8 @@ async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
   }
 }
 ```
+
+</details>
 
 ---
 
