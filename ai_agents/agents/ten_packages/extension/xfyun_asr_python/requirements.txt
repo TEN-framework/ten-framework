@@ -1,2 +1,2 @@
-websockets
+websockets>=16.0
 pydantic
