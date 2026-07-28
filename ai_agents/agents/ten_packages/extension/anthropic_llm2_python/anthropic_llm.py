@@ -36,9 +36,10 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 # Passed explicitly whenever `base_url` is unset. Leaving it to the SDK means
 # it falls back to the ANTHROPIC_BASE_URL environment variable, and a variable
-# that is set but empty -- which is what an untouched copy of `.env.example`
-# gives you -- becomes a base URL of "" and fails every request with a bare
-# "Connection error".
+# that is exported but empty is not absent -- it becomes a base URL of "" and
+# fails every request with a bare "Connection error". `property.json` maps the
+# property to `${env:ANTHROPIC_BASE_URL|}`, so any deployment that exports the
+# name without a value lands there.
 DEFAULT_BASE_URL = "https://api.anthropic.com"
 
 # data:image/png;base64,iVBOR...
@@ -53,14 +54,15 @@ DATA_URI_RE = re.compile(
 #
 # The list is intentionally a closed set of older served models rather than an
 # allow-list of new ones, so a model released after this extension was written
-# gets the current-generation path by default and stays correct.
+# gets the current-generation path by default and stays correct. Each entry is
+# also the prefix of that model's dated id, so `claude-haiku-4-5-20251001` and
+# the `claude-haiku-4-5` alias both match. Claude Opus 4 and Sonnet 4 are
+# absent: they reached end-of-life and now return not_found either way.
 LEGACY_MODEL_PREFIXES = (
     "claude-3-",
     "claude-haiku-4-5",
-    "claude-opus-4-0",
     "claude-opus-4-1",
     "claude-opus-4-5",
-    "claude-sonnet-4-0",
     "claude-sonnet-4-5",
 )
 
@@ -80,6 +82,9 @@ FALLBACK_MODEL_PREFIXES = (
 # reject it. Clamp rather than raise -- degrading one level keeps a
 # misconfigured graph talking, where an error would drop the whole turn.
 NO_XHIGH_MODEL_PREFIXES = ("claude-opus-4-6", "claude-sonnet-4-6")
+
+# Effort levels above `high`, in the order the API ranks them.
+ABOVE_HIGH_EFFORTS = ("xhigh", "max")
 
 # Sampling controls the current generation rejects once adaptive thinking is
 # on: `temperature` may only be 1, and top_p/top_k are not accepted at all.
@@ -164,6 +169,25 @@ class AnthropicLLM:
             default_headers=default_headers or None,
             http_client=self.http_client,
         )
+
+    async def aclose(self) -> None:
+        """Release the connection pools.
+
+        A worker starts and stops graphs repeatedly, so without this each
+        cycle leaks a pool -- and with a proxy configured, entries in the
+        proxy's connection table too.
+        """
+        try:
+            await self.client.close()
+        except Exception as err:
+            self.ten_env.log_warn(
+                f"Failed to close the Anthropic client: {err}"
+            )
+        if self.http_client is not None:
+            try:
+                await self.http_client.aclose()
+            except Exception as err:
+                self.ten_env.log_warn(f"Failed to close the HTTP client: {err}")
 
     # ------------------------------------------------------------------
     # Request translation
@@ -320,9 +344,13 @@ class AnthropicLLM:
     def _effort_for(self, model: str) -> str:
         """Effort level, narrowed to what `model` accepts."""
         effort = self.config.effort
-        if effort == "xhigh" and model.startswith(NO_XHIGH_MODEL_PREFIXES):
+        # `max` sits above `xhigh`, so a model that predates `xhigh` cannot
+        # accept it either. Clamp both to the highest level it does know.
+        if effort in ABOVE_HIGH_EFFORTS and model.startswith(
+            NO_XHIGH_MODEL_PREFIXES
+        ):
             self.ten_env.log_info(
-                f"{model} does not support effort 'xhigh'; using 'high'"
+                f"{model} does not support effort '{effort}'; using 'high'"
             )
             return "high"
         return effort
@@ -343,7 +371,17 @@ class AnthropicLLM:
                 f"got '{messages[0]['role']}'"
             )
 
-        model = request_input.model or self.config.model
+        # `request_input.model` is deliberately ignored, matching
+        # openai_llm2_python. Callers set it for whichever vendor they were
+        # written against -- vision_analyze_tool_python hardcodes "gpt-4o" --
+        # and honouring it would send that straight to Anthropic as a 404.
+        model = self.config.model
+        if request_input.model and request_input.model != model:
+            self.ten_env.log_debug(
+                f"ignoring caller-supplied model '{request_input.model}'; "
+                f"using the configured '{model}'"
+            )
+
         req: dict[str, Any] = {
             "model": model,
             "max_tokens": self.config.max_tokens,
@@ -404,6 +442,17 @@ class AnthropicLLM:
     # Response translation
     # ------------------------------------------------------------------
 
+    def _messages(self, req: dict[str, Any]) -> Any:
+        """The messages resource this request needs.
+
+        Only refusal fallback requires the beta surface, so a graph that
+        turns it off stays on /v1/messages -- which is what an operator
+        disabling it for a gateway or compliance reason is asking for.
+        """
+        if "betas" in req:
+            return self.client.beta.messages
+        return self.client.messages
+
     def _log_refusal(self, message: Any) -> None:
         details = getattr(message, "stop_details", None)
         category = getattr(details, "category", None) if details else None
@@ -439,7 +488,7 @@ class AnthropicLLM:
         tool_blocks: dict[int, dict[str, str]] = {}
 
         try:
-            async with self.client.beta.messages.stream(**req) as stream:
+            async with self._messages(req).stream(**req) as stream:
                 async for event in stream:
                     match event.type:
                         case "message_start":
@@ -534,7 +583,7 @@ class AnthropicLLM:
         created = int(time.time())
 
         try:
-            message = await self.client.beta.messages.create(**req)
+            message = await self._messages(req).create(**req)
         except Exception as err:
             raise RuntimeError(f"CreateMessage failed, err: {err}") from err
 

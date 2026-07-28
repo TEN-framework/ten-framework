@@ -92,9 +92,9 @@ one-line property change.
 | `claude-fable-5` | yes | `low`–`max` | yes |
 | `claude-sonnet-5` | yes | `low`–`max` | no |
 | `claude-opus-4-8`, `claude-opus-4-7` | yes | `low`–`max` | no |
-| `claude-opus-4-6`, `claude-sonnet-4-6` | yes | `xhigh` → `high` | no |
+| `claude-opus-4-6`, `claude-sonnet-4-6` | yes | `xhigh`, `max` → `high` | no |
 | `claude-haiku-4-5` | no | ignored | no |
-| `claude-sonnet-4-5`, `claude-opus-4-5` | no | ignored | no |
+| `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-opus-4-1` | no | ignored | no |
 
 Three separate capability gates are applied, because their support windows do
 not line up:
@@ -107,9 +107,14 @@ not line up:
   `fallbacks` parameter. Sonnet 5, Opus 4.8 and Opus 4.6 return
   `'<model>' does not support the 'fallbacks' parameter`, so it is withheld
   and refusals surface as `refusal_message` instead.
-- **`effort: "xhigh"`** arrived with Opus 4.7. On Opus 4.6 and Sonnet 4.6 it is
-  clamped to `high` rather than raising, so a misconfigured graph keeps
-  talking.
+- **`effort` above `high`** arrived with Opus 4.7. On Opus 4.6 and Sonnet 4.6
+  both `xhigh` and `max` are clamped to `high` rather than raising, so a
+  misconfigured graph keeps talking.
+
+The `model` property is the only thing consulted. A caller that sets
+`LLMRequest.model` — `vision_analyze_tool_python` hardcodes `gpt-4o` — is
+ignored rather than having that id forwarded to Anthropic, matching
+`openai_llm2_python`.
 
 A model newer than this extension gets the current-generation path by default,
 so new releases work without a code change. Fallback is the exception — it is

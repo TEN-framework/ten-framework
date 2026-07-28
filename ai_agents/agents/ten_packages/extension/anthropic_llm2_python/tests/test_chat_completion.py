@@ -112,9 +112,13 @@ class ChatCompletionTester(AsyncExtensionTester):
         self.responses: list[LLMResponse] = []
         self.final_status: StatusCode | None = None
         self.error: str | None = None
+        self._watchdog: asyncio.Task | None = None
 
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        asyncio.create_task(self._abort_on_timeout(ten_env))
+        # Held in an attribute: the loop keeps only a weak reference to
+        # pending tasks, so a bare create_task can be collected mid-sleep and
+        # a hung request would block instead of failing.
+        self._watchdog = asyncio.create_task(self._abort_on_timeout(ten_env))
 
         cmd = Cmd.create("chat_completion")
         cmd.set_property_from_json(None, self.request.model_dump_json())
@@ -135,6 +139,8 @@ class ChatCompletionTester(AsyncExtensionTester):
                 break
             self.responses.append(parse_llm_response(payload))
 
+        if self._watchdog is not None:
+            self._watchdog.cancel()
         ten_env.stop_test()
 
     async def _abort_on_timeout(self, ten_env: AsyncTenEnvTester) -> None:

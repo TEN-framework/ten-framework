@@ -39,8 +39,18 @@ class AnthropicLLM2Extension(AsyncLLM2BaseExtension):
         await super().on_start(async_ten_env)
 
         try:
-            config_json, _ = await self.ten_env.get_property_to_json("")
-            self.config = AnthropicLLM2Config.model_validate_json(config_json)
+            # An exception escaping on_start reaches the runtime's
+            # _exit_on_exception, which calls os._exit and takes the whole
+            # worker down. One bad property -- an effort level that is not in
+            # the Literal, say -- must fail this node, not the app.
+            try:
+                config_json, _ = await self.ten_env.get_property_to_json("")
+                self.config = AnthropicLLM2Config.model_validate_json(
+                    config_json
+                )
+            except Exception as err:
+                async_ten_env.log_error(f"Invalid configuration: {err}")
+                return
 
             if not self.config.api_key:
                 async_ten_env.log_error("API key is missing, exiting on_start")
@@ -65,7 +75,12 @@ class AnthropicLLM2Extension(AsyncLLM2BaseExtension):
 
     async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_stop")
+        # Base class first, so in-flight streams are cancelled before their
+        # connection pool goes away.
         await super().on_stop(async_ten_env)
+        if self.client is not None:
+            await self.client.aclose()
+            self.client = None
 
     async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_deinit")
