@@ -179,6 +179,7 @@ jobs:
           PPA_PPA_NAME: "ten-framework"
           PPA_MAINTAINER_NAME: "TEN Framework Team"
           PPA_MAINTAINER_EMAIL: "ten.framework@gmail.com"
+          # Launchpad rejects uploads for obsolete Ubuntu series.
           PPA_DISTRIBUTIONS: "jammy noble resolute"
         run: |
           # Install required tools

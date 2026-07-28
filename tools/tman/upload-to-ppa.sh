@@ -15,8 +15,9 @@ GPG_PASSPHRASE="${PPA_GPG_PASSPHRASE}"
 LAUNCHPAD_ID="${PPA_LAUNCHPAD_ID}"
 PPA_NAME="${PPA_PPA_NAME}"
 PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
-# Architecture workflows publish concurrently, so use distinct source package
-# names while keeping the user-facing binary package name unchanged.
+# Use per-architecture source names because Debian sorts the arm64 revision
+# above amd64. Otherwise dput may log "Successfully uploaded packages." while
+# Launchpad later rejects amd64. Both sources still publish binary package tman.
 SOURCE_PACKAGE_NAME="${PPA_SOURCE_PACKAGE_NAME:-$PACKAGE_NAME}"
 VERSION="${PPA_VERSION}"
 REVISION="${PPA_REVISION:-1}"
