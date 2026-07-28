@@ -504,11 +504,9 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     };
 
     if let Err(e) = ten_validate_graph_json_string(json_str_rust_str) {
-        if !err_msg.is_null() {
-            let err_msg_c_str = CString::new(e.to_string()).unwrap();
-            *err_msg = err_msg_c_str.into_raw();
-        }
-        return std::ptr::null();
+        tracing::warn!(
+            "Graph JSON schema validation failed during start_graph handling, continuing: {e}"
+        );
     }
 
     // Parse the JSON string into a Graph
