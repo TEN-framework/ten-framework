@@ -5,7 +5,6 @@
 #
 import asyncio
 import os
-import time
 import traceback
 from datetime import datetime
 from typing import Dict, Tuple, Union
@@ -469,12 +468,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
             if t.text.strip() != "":
                 # Billing: output characters
                 self.metrics_add_output_characters(len(t.text))
-                await self.send_tts_request_metrics(
-                    request_id=t.request_id,
-                    request_time_ms=int(time.time() * 1000),
-                    output_characters=len(t.text),
-                    request_final=t.text_input_end,
-                )
                 await self.client.send_text(t.text)
                 # after handling first non-empty message, mark flag false
                 self.is_first_message_of_request = False
