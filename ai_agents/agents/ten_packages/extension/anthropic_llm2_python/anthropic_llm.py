@@ -81,6 +81,13 @@ FALLBACK_MODEL_PREFIXES = (
 # misconfigured graph talking, where an error would drop the whole turn.
 NO_XHIGH_MODEL_PREFIXES = ("claude-opus-4-6", "claude-sonnet-4-6")
 
+# Sampling controls the current generation rejects once adaptive thinking is
+# on: `temperature` may only be 1, and top_p/top_k are not accepted at all.
+# Graphs set them for whichever vendor they were written against --
+# main_python sends `temperature: 0.7` on every turn -- so drop them on the
+# thinking path rather than fail the request. Older models still accept them.
+THINKING_INCOMPATIBLE_PARAMS = ("temperature", "top_p", "top_k")
+
 
 class AnthropicLLM2Config(BaseModel):
     api_key: str = ""
@@ -379,8 +386,14 @@ class AnthropicLLM:
                     "refusals will surface as refusal_message instead"
                 )
 
+        thinking_enabled = "thinking" in req
         for key, value in (request_input.parameters or {}).items():
             if self.config.is_black_list_params(key):
+                continue
+            if thinking_enabled and key in THINKING_INCOMPATIBLE_PARAMS:
+                self.ten_env.log_debug(
+                    f"dropping '{key}': adaptive thinking does not accept it"
+                )
                 continue
             self.ten_env.log_debug(f"set anthropic param: {key} = {value}")
             req[key] = value

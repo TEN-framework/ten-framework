@@ -219,6 +219,47 @@ def test_streaming_text():
 
 
 @requires_api_key
+def test_graph_supplied_sampling_parameters():
+    """`main_python` sends `parameters={"temperature": 0.7}` on every turn.
+
+    Forwarding it verbatim is a 400 -- adaptive thinking allows only
+    `temperature: 1` -- which would fail every turn of a real voice graph.
+    The adapter drops the conflicting keys on the thinking path.
+    """
+    tester = ChatCompletionTester(
+        LLMRequest(
+            request_id="graph-parameters",
+            messages=[user("Name one planet, in one short sentence.")],
+            parameters={"temperature": 0.7, "top_p": 0.9},
+        )
+    )
+    run_tester(tester)
+
+    assert tester.final_status == StatusCode.OK, (
+        "sampling parameters set by the graph were forwarded to a model that "
+        "rejects them"
+    )
+    done = tester.done()
+    assert done is not None and done.content
+
+
+@requires_api_key
+def test_legacy_model_keeps_sampling_parameters():
+    """The same keys are valid without thinking, so they must survive."""
+    tester = ChatCompletionTester(
+        LLMRequest(
+            request_id="legacy-parameters",
+            messages=[user("Name one planet, in one short sentence.")],
+            parameters={"temperature": 0.2},
+        )
+    )
+    run_tester(tester, model=LEGACY_MODEL)
+
+    assert tester.final_status == StatusCode.OK
+    assert tester.done() is not None
+
+
+@requires_api_key
 @pytest.mark.skipif(
     MODEL.startswith(LEGACY_MODEL_PREFIXES),
     reason=f"{MODEL} does not support adaptive thinking",
