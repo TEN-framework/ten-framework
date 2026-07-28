@@ -12,6 +12,7 @@ class CosyTTSConfig(BaseModel):
     model: str = ""  # Model name
     voice: str = ""  # Voice name
     sample_rate: int = 16000  # Audio sample rate
+    url: str = ""  # DashScope WebSocket URL
 
     # Debug and dump settings
     dump: bool = False
@@ -47,6 +48,7 @@ class CosyTTSConfig(BaseModel):
             "model",
             "sample_rate",
             "voice",
+            "url",
         ]
 
         for param_name in param_names:

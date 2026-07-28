@@ -63,14 +63,26 @@ fn create_cmd() -> clap::ArgMatches {
                 .help("Print version information and check for updates")
                 .action(clap::ArgAction::SetTrue),
         )
+        // The three options below configure how tman talks to a registry, so
+        // they are needed by subcommands such as `publish`. They are marked
+        // `global` so that they are accepted after the subcommand name too
+        // (`tman publish --user-token ...`) and are listed in the subcommand's
+        // own `--help` output.
         .arg(
             Arg::new("CONFIG_FILE")
                 .long("config-file")
                 .short('c')
                 .help("The location of config.json")
+                .global(true)
                 .default_value(None),
         )
-        .arg(Arg::new("USER_TOKEN").long("user-token").help("The user token").default_value(None))
+        .arg(
+            Arg::new("USER_TOKEN")
+                .long("user-token")
+                .help("The user token")
+                .global(true)
+                .default_value(None),
+        )
         .arg(
             Arg::new("VERBOSE")
                 .long("verbose")
@@ -97,6 +109,7 @@ fn create_cmd() -> clap::ArgMatches {
             Arg::new("ADMIN_TOKEN")
                 .long("admin-token")
                 .help("The administration token")
+                .global(true)
                 .default_value(None)
                 .hide(true),
         )

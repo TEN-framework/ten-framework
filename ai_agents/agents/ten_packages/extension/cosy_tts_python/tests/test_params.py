@@ -92,6 +92,7 @@ def test_params_passthrough(MockCosyTTSClient):
         "model": "cosyvoice-v1",
         "sample_rate": 16000,
         "voice": "longxiaochun",
+        "url": "wss://example.com/api-ws/v1/inference",
     }
     passthrough_config = {
         "params": passthrough_params,
@@ -124,3 +125,4 @@ def test_params_passthrough(MockCosyTTSClient):
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")
+    assert called_config.url == passthrough_params["url"]

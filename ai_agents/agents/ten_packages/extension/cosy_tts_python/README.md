@@ -9,6 +9,7 @@ This extension provides high-quality text-to-speech synthesis using the Cosy TTS
 ## Configuration
 Set the following environment variables:
 - `COSY_TTS_API_KEY`: Your Cosy API Key
+- `COSY_TTS_URL`: Optional DashScope WebSocket URL
 
 ## Properties
 
@@ -23,3 +24,5 @@ Set the following environment variables:
 - `model`: TTS model to use (default: "cosyvoice-v1")
 - `sample_rate`: Audio sample rate in Hz (default: 16000)
 - `voice`: Voice name for synthesis (default: "longxiaochun")
+- `url`: Optional full DashScope WebSocket URL. When omitted, the DashScope
+  SDK default is used.
