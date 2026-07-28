@@ -643,6 +643,10 @@ jobs:
           chmod +x unit_test
           chmod +x integration_test
 
+          if [ "${{ matrix.build_type }}" = "debug" ]; then
+            export TEN_RUST_ENABLE_ASAN_SMOKE=1
+          fi
+
           ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
           ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
 
