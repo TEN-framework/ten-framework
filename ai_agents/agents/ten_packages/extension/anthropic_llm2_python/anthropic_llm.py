@@ -34,6 +34,13 @@ from ten_runtime.async_ten_env import AsyncTenEnv
 # mixing the two returns a 400.
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
+# Passed explicitly whenever `base_url` is unset. Leaving it to the SDK means
+# it falls back to the ANTHROPIC_BASE_URL environment variable, and a variable
+# that is set but empty -- which is what an untouched copy of `.env.example`
+# gives you -- becomes a base URL of "" and fails every request with a bare
+# "Connection error".
+DEFAULT_BASE_URL = "https://api.anthropic.com"
+
 # data:image/png;base64,iVBOR...
 DATA_URI_RE = re.compile(
     r"^data:(?P<media_type>[^;,]+);base64,(?P<data>.*)$", re.DOTALL
@@ -146,7 +153,7 @@ class AnthropicLLM:
 
         self.client = AsyncAnthropic(
             api_key=config.api_key,
-            base_url=config.base_url or None,
+            base_url=config.base_url or DEFAULT_BASE_URL,
             default_headers=default_headers or None,
             http_client=self.http_client,
         )
