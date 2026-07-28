@@ -165,6 +165,27 @@ task check
 task lint-extension EXTENSION=anthropic_llm2_python
 ```
 
+## Tests
+
+`tests/` runs the extension inside the TEN runtime rather than calling the
+adapter directly, so it covers addon registration, the `llm-interface.json`
+import, property injection, and the `chat_completion` cmd dispatch:
+
+```bash
+task test-extension \
+  EXTENSION=agents/ten_packages/extension/anthropic_llm2_python
+```
+
+`test_extension_loads_and_dispatches` needs no credentials — it uses an
+invalid key and asserts the failure comes back from the API, which can only
+happen if the whole path worked. The remaining tests call Anthropic for
+real and are skipped unless `ANTHROPIC_API_KEY` is set; they cover
+streaming, reasoning events, the `thinking_display` toggle, a two-turn tool
+call round trip, and the legacy-model path.
+
+Set `ANTHROPIC_MODEL` to run them against a different model. The
+reasoning tests skip themselves on models that cannot think.
+
 Code style follows the framework conventions: 80-character lines, Black
 formatting, type hints on all parameters and return types, and explicit
 exception logging via `ten_env.log_*`.
