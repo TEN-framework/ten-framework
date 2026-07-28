@@ -79,9 +79,11 @@ You don't need to override on_init/on_start/on_stop!
 """
 
 import asyncio
-from abc import ABC, abstractmethod
-from typing import Any
+import json
 import os
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any
 
 from ten_runtime import (
     AsyncExtension,
@@ -98,11 +100,17 @@ from ten_ai_base.const import (
     CMD_OUT_FLUSH,
     LOG_CATEGORY_KEY_POINT,
 )
-from ten_ai_base.message import ErrorMessage, ModuleType
+from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleType
 
 # Avatar-specific constants
 MODULE_TYPE_AVATAR = "avatar"
 DATA_IN_FINALIZE = "finalize"
+VENDOR_METADATA_KEY = "vendor_metadata"
+
+
+@dataclass(frozen=True)
+class QueuedAudioFrame:
+    audio: bytes
 
 
 class AsyncAvatarBaseExtension(AsyncExtension, ABC):
@@ -126,6 +134,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         self._in_audio_queue: asyncio.Queue[Any] = asyncio.Queue()
         self._audio_task: asyncio.Task | None = None
         self._sample_rate_error_sent = False
+        self._request_metadata: dict[str, Any] | None = None
 
     # ========================================================================
     # REQUIRED METHODS - Implement these 6 methods in your subclass
@@ -270,6 +279,18 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         """
         return (False, "")
 
+    def get_vendor_name(self) -> str:
+        """Return the vendor name used in standard error payloads."""
+        return self.name
+
+    def get_vendor_metadata(self) -> dict[str, Any]:
+        """Return redacted vendor dimensions used for reporting."""
+        return {"name": self.get_vendor_name()}
+
+    def get_reporting_session_id(self) -> str:
+        """Return the session identifier used for reporting."""
+        return ""
+
     # ========================================================================
     # LIFECYCLE METHODS - Managed by base class, DO NOT override
     # ========================================================================
@@ -312,6 +333,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             await self.connect_to_avatar(ten_env)
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Failed to connect: {e}")
+            await self._send_error(
+                ten_env,
+                f"Failed to connect to avatar: {e}",
+                code=-1,
+                vendor_code=type(e).__name__,
+                vendor_message=str(e),
+            )
             raise
 
         # Start audio processing loop
@@ -350,6 +378,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_error(f"{self.LOG_PREFIX} Error disconnecting: {e}")
 
         await super().on_stop(ten_env)
+        self._clear_request_context()
         ten_env.log_info(f"{self.LOG_PREFIX} Stopped successfully")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -410,6 +439,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_warn(f"{self.LOG_PREFIX} Empty audio frame")
             return
 
+        if self._request_metadata is None:
+            self._request_metadata = self._audio_frame_metadata(audio_frame)
+
         ten_env.log_info(
             f"{self.LOG_PREFIX} on_audio_frame: {len(audio_data)} bytes, "
             f"sample_rate={source_rate}"
@@ -426,7 +458,11 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                     f"Supported rates: {supported_rates}"
                 )
                 ten_env.log_error(f"{self.LOG_PREFIX} {error_msg}")
-                await self._send_error(ten_env, error_msg, code=1001)
+                await self._send_error(
+                    ten_env,
+                    error_msg,
+                    code=1001,
+                )
                 self._sample_rate_error_sent = True
             return
 
@@ -434,7 +470,9 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         try:
             self._dump_audio(audio_data, "in")
             queue_size = self._in_audio_queue.qsize()
-            self._in_audio_queue.put_nowait(audio_data)
+            self._in_audio_queue.put_nowait(
+                QueuedAudioFrame(audio=bytes(audio_data))
+            )
             ten_env.log_info(
                 f"{self.LOG_PREFIX} Queued audio: {len(audio_data)} bytes, "
                 f"queue_size={queue_size + 1}"
@@ -454,12 +492,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
                         "calling send_eof_to_avatar"
                     )
                     await self.send_eof_to_avatar()
+                    self._clear_request_context()
                     ten_env.log_info(
                         f"{self.LOG_PREFIX} send_eof_to_avatar completed"
                     )
                     continue
 
-                audio_data = item
+                audio_data = item.audio
                 ten_env.log_info(
                     f"{self.LOG_PREFIX} Processing audio from queue: "
                     f"{len(audio_data)} bytes, calling send_audio_to_avatar"
@@ -476,6 +515,13 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             except Exception as e:
                 ten_env.log_error(
                     f"{self.LOG_PREFIX} Error in audio processing: {e}"
+                )
+                await self._send_error(
+                    ten_env,
+                    f"Failed to send audio to avatar: {e}",
+                    code=-1,
+                    vendor_code=type(e).__name__,
+                    vendor_message=str(e),
                 )
         ten_env.log_info(f"{self.LOG_PREFIX} Audio processing loop ended")
 
@@ -499,6 +545,8 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             ten_env.log_info(f"{self.LOG_PREFIX} Flush completed successfully")
         except Exception as e:
             ten_env.log_error(f"{self.LOG_PREFIX} Error interrupting: {e}")
+        finally:
+            self._clear_request_context()
 
     async def _handle_finalize(self, ten_env: AsyncTenEnv) -> None:
         """Handle finalize data."""
@@ -514,6 +562,7 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
         try:
             queue_size = self._in_audio_queue.qsize()
             self._in_audio_queue.put_nowait(None)
+            self._clear_request_context()
             ten_env.log_info(
                 f"{self.LOG_PREFIX} EOF queued after {queue_size} pending items"
             )
@@ -536,24 +585,62 @@ class AsyncAvatarBaseExtension(AsyncExtension, ABC):
             )
 
     async def _send_error(
-        self, ten_env: AsyncTenEnv, message: str, code: int = 0
+        self,
+        ten_env: AsyncTenEnv,
+        message: str,
+        code: int = 0,
+        metadata: dict[str, Any] | None = None,
+        vendor_code: str = "",
+        vendor_message: str = "",
     ) -> None:
         """Send error message."""
         ten_env.log_error(
             f"{self.LOG_PREFIX} Sending error: code={code}, message={message}"
         )
 
-        data = Data.create("message")
+        if metadata is None:
+            metadata = self._request_metadata
+        error_metadata = dict(metadata or {})
+        error_metadata.pop(VENDOR_METADATA_KEY, None)
+        session_id = self.get_reporting_session_id()
+        if session_id:
+            error_metadata.setdefault("session_id", session_id)
+        error_metadata[VENDOR_METADATA_KEY] = self.get_vendor_metadata()
+        turn_id = error_metadata.get("turn_id", 0)
+
+        data = Data.create("error")
         data.set_property_from_json(
             "",
-            ErrorMessage(
+            ModuleError(
+                id=str(turn_id or 0),
                 module=ModuleType.AVATAR.value,
                 message=message,
                 code=code,
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.get_vendor_name(),
+                    code=vendor_code,
+                    message=vendor_message or message,
+                ),
+                metadata=error_metadata,
             ).model_dump_json(),
         )
         await ten_env.send_data(data)
         ten_env.log_info(f"{self.LOG_PREFIX} Error message sent")
+
+    def _clear_request_context(self) -> None:
+        self._request_metadata = None
+        self._sample_rate_error_sent = False
+
+    @staticmethod
+    def _audio_frame_metadata(audio_frame: AudioFrame) -> dict[str, Any]:
+        metadata_json, error = audio_frame.get_property_to_json("metadata")
+        if error is not None or not metadata_json:
+            return {}
+        try:
+            metadata = json.loads(metadata_json)
+        except json.JSONDecodeError:
+            return {}
+        return metadata if isinstance(metadata, dict) else {}
 
     def _dump_audio(self, buf: bytes, suffix: str) -> None:
         """Dump audio data to file if enabled."""

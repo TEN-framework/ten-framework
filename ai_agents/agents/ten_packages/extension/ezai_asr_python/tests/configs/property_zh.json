@@ -1,0 +1,17 @@
+{
+    "params": {
+        "key": "${env:EZAI_API_KEY}",
+        "url": "wss://qwlk.ezai-k8s.freeddns.org/v1/listen",
+        "model": "nova-3",
+        "language": "zh-CN",
+        "sample_rate": 16000,
+        "encoding": "linear16",
+        "interim_results": true,
+        "punctuate": true,
+        "keywords": "人们",
+        "hotwords": [
+            "bbbb|5",
+            "aaaa|5"
+        ]
+    }
+}

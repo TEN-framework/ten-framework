@@ -1,0 +1,8 @@
+{
+  "params": {
+    "key": "invalid",
+    "url": "wss://invalid/listen",
+    "model": "nova-3",
+    "sample_rate": 16000
+  }
+}

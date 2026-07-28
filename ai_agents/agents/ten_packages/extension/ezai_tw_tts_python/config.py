@@ -73,6 +73,8 @@ class EZAITWTTSConfig(AsyncTTS2HttpConfig):
         # Encrypt sensitive fields in params
         if config.params and "api_key" in config.params:
             config.params["api_key"] = utils.encrypt(config.params["api_key"])
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
 
         return f"{config}"
 

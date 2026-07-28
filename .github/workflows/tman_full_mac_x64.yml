@@ -26,6 +26,9 @@ jobs:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-15-intel
+    # Override crate-local nightly toolchains for reproducible macOS builds.
+    env:
+      RUSTUP_TOOLCHAIN: stable
     strategy:
       matrix:
         build_type: [release]
@@ -185,11 +188,28 @@ jobs:
         env:
           PLAYWRIGHT_RUNTIME: "macos"
         run: |
+          log_port_usage() {
+            local port="$1"
+            echo "TCP socket usage for local port ${port}:"
+            lsof -nP -iTCP:"${port}" || true
+            netstat -anv -p tcp | grep -E "[.:]${port}[[:space:]]" || true
+          }
+
+          # Port 49483 may already be in use on the runner. Log its usage, then
+          # ask macOS for a currently unused port for this CI run.
+          log_port_usage 49483
+          TMAN_PORT=$(python3 -c \
+            'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+          TMAN_URL="http://127.0.0.1:${TMAN_PORT}"
+          echo "Selected local port ${TMAN_PORT} for tman designer"
+          log_port_usage "${TMAN_PORT}"
+
           # Start the tman designer backend
           cd ${GITHUB_WORKSPACE}/out/mac/x64/ten_manager/bin
-          ./tman --verbose designer &
+          ./tman --verbose designer --ip 127.0.0.1 --port "${TMAN_PORT}" &
           TMAN_PID=$!
-          echo "Started tman designer with PID $TMAN_PID"
+          trap 'kill "${TMAN_PID}" 2>/dev/null || true' EXIT
+          echo "Started tman designer with PID ${TMAN_PID} at ${TMAN_URL}"
 
           # Start the frontend preview server
           cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend
@@ -199,36 +219,38 @@ jobs:
 
           # Wait for the server to be available (max 30 seconds)
           echo "Waiting for server to be available..."
-          timeout=30
-          while [ $timeout -gt 0 ]; do
-            if curl -s http://127.0.0.1:49483/ > /dev/null; then
+          server_ready=false
+          for attempt in {1..30}; do
+            if ! kill -0 "${TMAN_PID}" 2>/dev/null; then
+              echo "tman designer exited before becoming ready"
+              log_port_usage "${TMAN_PORT}"
+              wait "${TMAN_PID}" || true
+              exit 1
+            fi
+
+            if curl --fail --silent "${TMAN_URL}/" > /dev/null; then
               echo "Server is up and running!"
+              server_ready=true
               break
             fi
-            echo "Server not ready yet, waiting... ($timeout seconds left)"
+
+            echo "Server not ready yet, waiting... (${attempt}/30)"
             sleep 1
-            timeout=$((timeout-1))
           done
 
-          if [ $timeout -eq 0 ]; then
+          if [ "${server_ready}" != true ]; then
             echo "Timed out waiting for server to start"
             echo "Checking if tman designer is running:"
-            ps -p $TMAN_PID || true
+            ps -p "${TMAN_PID}" || true
             # echo "Checking if preview server is running:"
             # ps -p $PREVIEW_PID || true
             exit 1
           fi
 
+          log_port_usage "${TMAN_PORT}"
+
           # Run the tests
-          npx playwright test
-          TEST_EXIT_CODE=$?
-
-          # Cleanup background processes
-          kill $TMAN_PID || true
-          # kill $PREVIEW_PID || true
-
-          # Return the test exit code
-          exit $TEST_EXIT_CODE
+          PLAYWRIGHT_BASE_URL="${TMAN_URL}" npx playwright test
 
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4

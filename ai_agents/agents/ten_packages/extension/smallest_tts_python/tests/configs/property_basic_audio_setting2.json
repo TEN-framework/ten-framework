@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:SMALLEST_API_KEY|}",
+        "base_url": "https://api.smallest.ai",
+        "model": "lightning_v3.1",
+        "voice_id": "magnus",
+        "sample_rate": 24000
+    }
+}
