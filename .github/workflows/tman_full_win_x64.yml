@@ -128,8 +128,9 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
-          cargo install --force cbindgen
+          rustup update stable
+          rustup toolchain install nightly-x86_64-pc-windows-msvc --profile minimal
+          cargo +stable install --force cbindgen
 
       - name: Update version
         run: |
@@ -153,6 +154,11 @@ jobs:
         shell: pwsh
 
       - name: Build
+        # ten_manager uses windows_by_handle to identify files during log rotation.
+        # This API is an unstable Rust feature and therefore requires a nightly
+        # toolchain on Windows.
+        env:
+          RUSTUP_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
           tgn gen win x64 ${{ matrix.build_type }} -- vs_version=2026 log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ten_rust=true ten_enable_ten_manager=true
