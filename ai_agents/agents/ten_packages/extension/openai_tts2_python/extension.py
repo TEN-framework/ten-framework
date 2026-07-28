@@ -3,12 +3,12 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+from ten_ai_base import utils
 from ten_ai_base.tts2_http import (
     AsyncTTS2HttpExtension,
     AsyncTTS2HttpConfig,
     AsyncTTS2HttpClient,
 )
-from ten_ai_base import utils
 from ten_runtime import AsyncTenEnv
 
 from .config import OpenAITTSConfig
