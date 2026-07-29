@@ -90,14 +90,23 @@ fn create_command_for_completion() -> Command {
                 .help("Print version information and check for updates")
                 .action(clap::ArgAction::SetTrue),
         )
+        // Keep `global` in sync with `cmd_line.rs` so the generated shell
+        // completions offer these options after a subcommand name as well.
         .arg(
             Arg::new("CONFIG_FILE")
                 .long("config-file")
                 .short('c')
                 .help("The location of config.json")
+                .global(true)
                 .default_value(None),
         )
-        .arg(Arg::new("USER_TOKEN").long("user-token").help("The user token").default_value(None))
+        .arg(
+            Arg::new("USER_TOKEN")
+                .long("user-token")
+                .help("The user token")
+                .global(true)
+                .default_value(None),
+        )
         .arg(
             Arg::new("VERBOSE")
                 .long("verbose")
@@ -116,6 +125,7 @@ fn create_command_for_completion() -> Command {
             Arg::new("ADMIN_TOKEN")
                 .long("admin-token")
                 .help("The administration token")
+                .global(true)
                 .default_value(None)
                 .hide(true),
         )

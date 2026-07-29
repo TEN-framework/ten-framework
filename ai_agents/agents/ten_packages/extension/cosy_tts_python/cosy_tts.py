@@ -193,6 +193,7 @@ class CosyTTSClient:
             format=self._get_audio_format(),
             model=self.config.model,
             voice=self.config.voice,
+            url=self.config.url or None,
         )
 
         self.ten_env.log_info("Cosy TTS client started successfully")
@@ -247,6 +248,12 @@ class CosyTTSClient:
 
         # Start streaming TTS synthesis
         self.synthesizer.streaming_call(text)
+
+        vendor_request_id = self.synthesizer.get_last_request_id()
+        self.ten_env.log_info(
+            "Cosy TTS request submitted, "
+            f"vendor_request_id: {vendor_request_id}"
+        )
 
     async def get_audio_data(self):
         """
