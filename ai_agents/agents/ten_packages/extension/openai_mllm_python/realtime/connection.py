@@ -72,17 +72,18 @@ class RealtimeApiConnection:
 
     async def connect(self):
         headers = {}
-        auth = None
         if self.vendor == VENDOR_AZURE:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
-            auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            # The GA interface requires the OpenAI-Beta: realtime=v1 header
-            # to be absent.
+            # GA authenticates with a Bearer token and requires the
+            # OpenAI-Beta: realtime=v1 header to be absent. aiohttp's
+            # BasicAuth sends "Authorization: Basic ...", which is not the
+            # documented scheme.
+            if self.api_key:
+                headers = {"Authorization": f"Bearer {self.api_key}"}
 
         self.websocket = await self.session.ws_connect(
             url=self.url,
-            auth=auth,
             headers=headers,
         )
 

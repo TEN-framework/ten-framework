@@ -166,25 +166,81 @@ def test_full_payload_matches_ga_shape() -> None:
     su.session.reasoning_effort = "low"
 
     payload = json.loads(to_json(su))
-    session = payload["session"]
+    payload.pop("event_id")
 
-    assert payload["type"] == "session.update"
-    assert session["type"] == "realtime"
-    assert session["model"] == "gpt-realtime-2.1"
-    assert session["instructions"] == "be nice"
-    assert session["reasoning"] == {"effort": "low"}
-    assert session["audio"]["output"]["voice"] == "alloy"
-    assert session["audio"]["input"]["turn_detection"]["type"] == "semantic_vad"
-    assert session["audio"]["input"]["transcription"]["language"] == "en"
-    # No beta-shaped keys survive anywhere in the session object.
-    for beta_key in (
-        "modalities",
-        "voice",
-        "turn_detection",
-        "input_audio_transcription",
-        "input_audio_format",
-        "output_audio_format",
-        "max_response_output_tokens",
-        "reasoning_effort",
-    ):
-        assert beta_key not in session
+    # Asserted whole rather than key by key: a per-key denylist passes
+    # vacuously for any field the fixture leaves unset, and stays silent about
+    # fields added to SessionUpdateParams later.
+    assert payload == {
+        "type": "session.update",
+        "session": {
+            "type": "realtime",
+            "model": "gpt-realtime-2.1",
+            "instructions": "be nice",
+            "tools": [],
+            "tool_choice": "none",
+            "reasoning": {"effort": "low"},
+            "audio": {
+                "input": {
+                    "turn_detection": {
+                        "type": "semantic_vad",
+                        "eagerness": "auto",
+                        "create_response": True,
+                        "interrupt_response": True,
+                    },
+                    "transcription": {
+                        "model": "gpt-4o-transcribe",
+                        "prompt": "",
+                        "language": "en",
+                    },
+                },
+                "output": {"voice": "alloy"},
+            },
+        },
+    }
+
+
+def test_unmapped_field_is_rejected() -> None:
+    """GA rejects the whole session.update on an unknown key.
+
+    `temperature` is declared on SessionUpdateParams, OpenAIRealtimeConfig and
+    every shipped graph, so passing it through under its beta name would take
+    instructions, tools, VAD and voice down with it. Failing here surfaces the
+    gap instead.
+    """
+    with pytest.raises(ValueError, match="temperature"):
+        _session(model="gpt-realtime-2.1", temperature=0.9)
+
+
+def test_empty_reasoning_effort_is_treated_as_unset() -> None:
+    """The config uses "" to mean "leave it to the model"."""
+    session = _session(model="gpt-realtime-2.1", reasoning_effort="")["session"]
+
+    assert "reasoning" not in session
+
+
+def test_modalities_string_is_rejected() -> None:
+    """A bare string would iterate into characters."""
+    with pytest.raises(ValueError, match="sequence"):
+        _session(modalities="audio")
+
+
+def test_modalities_order_is_preserved() -> None:
+    assert _session(modalities=["audio", "text"])["session"][
+        "output_modalities"
+    ] == ["audio", "text"]
+
+
+def test_unknown_audio_format_is_rejected() -> None:
+    with pytest.raises(ValueError, match="_GA_AUDIO_FORMATS"):
+        _session(input_audio_format="pcm24")
+
+
+def test_audio_format_result_is_not_shared_state() -> None:
+    """Callers must not be able to mutate the module-level format table."""
+    first = _session(input_audio_format=AudioFormats.PCM16)["session"]
+    first["audio"]["input"]["format"]["rate"] = 48000
+
+    second = _session(input_audio_format=AudioFormats.PCM16)["session"]
+
+    assert second["audio"]["input"]["format"]["rate"] == 24000

@@ -502,7 +502,10 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                     ItemCreate(
                         item=AssistantMessageItemParam(
                             content=[
-                                {"type": ContentType.Text, "text": item.content}
+                                {
+                                    "type": ContentType.OutputText,
+                                    "text": item.content,
+                                }
                             ]
                         )
                     )

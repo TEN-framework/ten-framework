@@ -43,10 +43,15 @@ class MessageRole(str, Enum):
 
 
 class ContentType(str, Enum):
+    # Input parts kept their beta names in GA.
     InputText = "input_text"
     InputAudio = "input_audio"
+    # GA renamed the assistant-side parts; "text"/"audio" are rejected on
+    # conversation.item.create and remain only for reading beta-era payloads.
     Text = "text"
     Audio = "audio"
+    OutputText = "output_text"
+    OutputAudio = "output_audio"
 
 
 @dataclass
@@ -927,9 +932,62 @@ _GA_AUDIO_FORMATS: Dict[str, Dict[str, Any]] = {
 
 
 def _ga_audio_format(fmt: Any) -> Dict[str, Any]:
-    """Map a beta audio format value onto its GA object form."""
+    """Map a beta audio format value onto its GA object form.
+
+    Returns a fresh dict: the table is module state, and handing out a
+    reference would let a caller mutating the result rewrite it for every
+    later session. An unmapped value raises rather than falling back to
+    `{"type": <value>}`, which is object-shaped enough to pass a local check
+    and still be rejected on the wire — the exact failure the table exists to
+    prevent.
+    """
+    if isinstance(fmt, dict):  # already GA-shaped, pass through
+        return dict(fmt)
     key = fmt.value if isinstance(fmt, Enum) else fmt
-    return _GA_AUDIO_FORMATS.get(key, {"type": key})
+    try:
+        return dict(_GA_AUDIO_FORMATS[key])
+    except (KeyError, TypeError) as exc:
+        raise ValueError(
+            f"no GA audio format mapping for {fmt!r}; "
+            f"add it to _GA_AUDIO_FORMATS"
+        ) from exc
+
+
+def _ga_output_modalities(modalities: Any) -> List[str]:
+    """Normalise `modalities` onto GA's `output_modalities` list.
+
+    A bare string is rejected rather than iterated: `sorted("audio")` yields
+    `["a", "d", "i", "o", "u"]`, which is silently wrong. Order is preserved
+    rather than sorted, since GA takes a single-element array and sorting
+    would reorder a caller's intent.
+    """
+    if isinstance(modalities, str):
+        raise ValueError(
+            f"modalities must be a sequence, not the string {modalities!r}"
+        )
+    return list(modalities)
+
+
+# Beta field -> GA location. Anything absent from these tables is an
+# unrecognised field and is rejected rather than passed through under its
+# beta name, which would make the whole session.update invalid.
+_GA_AUDIO_INPUT_FIELDS = {
+    "input_audio_format": "format",
+    "turn_detection": "turn_detection",
+    "input_audio_transcription": "transcription",
+}
+_GA_AUDIO_OUTPUT_FIELDS = {
+    "output_audio_format": "format",
+    "voice": "voice",
+}
+_GA_RENAMED_FIELDS = {
+    "modalities": "output_modalities",
+    "max_response_output_tokens": "max_output_tokens",
+}
+# Fields GA keeps at the top level of `session` under their existing names.
+_GA_PASSTHROUGH_FIELDS = frozenset(
+    {"instructions", "model", "tools", "tool_choice"}
+)
 
 
 def session_update_to_ga_dict(obj: "SessionUpdate") -> Dict[str, Any]:
@@ -940,42 +998,57 @@ def session_update_to_ga_dict(obj: "SessionUpdate") -> Dict[str, Any]:
     `output_modalities`, `max_response_output_tokens` becomes
     `max_output_tokens`, and the session itself is tagged `type: "realtime"`.
     Fields left unset are omitted so the service applies its own defaults.
+
+    Unrecognised fields raise. GA rejects the entire `session.update` when it
+    carries an unknown key, which would take instructions, tools, VAD,
+    transcription and voice down with it — so a field added to
+    `SessionUpdateParams` without a mapping here has to fail loudly.
     """
     flat = _drop_none(obj.session) if obj.session is not None else {}
 
-    audio_in: Dict[str, Any] = {}
-    audio_out: Dict[str, Any] = {}
-
-    if "input_audio_format" in flat:
-        audio_in["format"] = _ga_audio_format(flat.pop("input_audio_format"))
-    if "turn_detection" in flat:
-        audio_in["turn_detection"] = flat.pop("turn_detection")
-    if "input_audio_transcription" in flat:
-        audio_in["transcription"] = flat.pop("input_audio_transcription")
-
-    if "output_audio_format" in flat:
-        audio_out["format"] = _ga_audio_format(flat.pop("output_audio_format"))
-    if "voice" in flat:
-        audio_out["voice"] = flat.pop("voice")
-
     session: Dict[str, Any] = {"type": "realtime"}
+    audio: Dict[str, Dict[str, Any]] = {}
 
-    if "modalities" in flat:
-        modalities = flat.pop("modalities")
-        session["output_modalities"] = sorted(modalities)
-    if "max_response_output_tokens" in flat:
-        session["max_output_tokens"] = flat.pop("max_response_output_tokens")
-    if "reasoning_effort" in flat:
-        session["reasoning"] = {"effort": flat.pop("reasoning_effort")}
+    for beta_name, ga_name in _GA_AUDIO_INPUT_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            audio.setdefault("input", {})[ga_name] = (
+                _ga_audio_format(value) if ga_name == "format" else value
+            )
 
-    # instructions, model, tools and tool_choice keep their beta names and
-    # stay at the top level of the session object.
-    session.update(flat)
+    for beta_name, ga_name in _GA_AUDIO_OUTPUT_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            audio.setdefault("output", {})[ga_name] = (
+                _ga_audio_format(value) if ga_name == "format" else value
+            )
 
-    if audio_in:
-        session.setdefault("audio", {})["input"] = audio_in
-    if audio_out:
-        session.setdefault("audio", {})["output"] = audio_out
+    for beta_name, ga_name in _GA_RENAMED_FIELDS.items():
+        if beta_name in flat:
+            value = flat.pop(beta_name)
+            if beta_name == "modalities":
+                value = _ga_output_modalities(value)
+            session[ga_name] = value
+
+    # An empty string is the "leave it to the model" sentinel on the config
+    # side; GA only accepts the documented effort levels, so treat it as unset
+    # here too rather than relying on the caller to filter it.
+    reasoning_effort = flat.pop("reasoning_effort", None)
+    if reasoning_effort:
+        session["reasoning"] = {"effort": reasoning_effort}
+
+    for name in list(flat):
+        if name in _GA_PASSTHROUGH_FIELDS:
+            session[name] = flat.pop(name)
+
+    if flat:
+        raise ValueError(
+            f"no GA mapping for session field(s) {sorted(flat)}; "
+            f"extend the _GA_* tables in this module"
+        )
+
+    if audio:
+        session["audio"] = audio
 
     payload: Dict[str, Any] = {"type": obj.type, "session": session}
     if obj.event_id is not None:
