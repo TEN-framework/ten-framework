@@ -56,33 +56,6 @@ template("rust_target") {
       _rustflags = "${_rustflags} -C instrument-coverage --cfg=coverage --cfg=coverage_nightly -Z coverage-options=branch -Cllvm-args=--inline-threshold=0 -Clink-dead-code -Coverflow-checks=off -C debuginfo=2"
     }
 
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer &&
-        !(is_linux && target_cpu == "x64")) {
-      asan_args = [
-        "--action",
-        "print",
-        "--compiler",
-      ]
-      if (is_clang) {
-        asan_args += [ "clang" ]
-      } else {
-        asan_args += [ "gcc" ]
-      }
-
-      asan_args += [
-        "--target-os",
-        target_os,
-        "--target-arch",
-        target_cpu,
-      ]
-
-      flags = exec_script("//build/ten_common/rust/rust_gen_cargo_config.py",
-                          asan_args,
-                          "trim string")
-
-      _rustflags = "${_rustflags} ${flags}"
-    }
-
     # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
     if (is_win && is_mingw) {
       _rustflags = "${_rustflags} -C link-arg=-lntdll"
@@ -283,33 +256,6 @@ template("rust_test") {
              "Coverage instrumentation should only be enabled in Linux + x64")
 
       _rustflags = "${_rustflags} -C instrument-coverage --cfg=coverage --cfg=coverage_nightly -Z coverage-options=branch -Cllvm-args=--inline-threshold=0 -Clink-dead-code -Coverflow-checks=off -C debuginfo=2"
-    }
-
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer &&
-        !(is_linux && target_cpu == "x64")) {
-      asan_args = [
-        "--action",
-        "print",
-        "--compiler",
-      ]
-      if (is_clang) {
-        asan_args += [ "clang" ]
-      } else {
-        asan_args += [ "gcc" ]
-      }
-
-      asan_args += [
-        "--target-os",
-        target_os,
-        "--target-arch",
-        target_cpu,
-      ]
-
-      flags = exec_script("//build/ten_common/rust/rust_gen_cargo_config.py",
-                          asan_args,
-                          "trim string")
-
-      _rustflags = "${_rustflags} ${flags}"
     }
 
     # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
