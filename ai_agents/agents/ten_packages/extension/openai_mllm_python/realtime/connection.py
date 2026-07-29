@@ -15,7 +15,7 @@ from .struct import (
     to_json,
 )
 
-DEFAULT_VIRTUAL_MODEL = "gpt-realtime"
+DEFAULT_VIRTUAL_MODEL = "gpt-realtime-2.1"
 
 VENDOR_AZURE = "azure"
 
@@ -77,7 +77,8 @@ class RealtimeApiConnection:
             headers = {"api-key": self.api_key}
         elif not self.vendor:
             auth = aiohttp.BasicAuth("", self.api_key) if self.api_key else None
-            headers = {"OpenAI-Beta": "realtime=v1"}
+            # The GA interface requires the OpenAI-Beta: realtime=v1 header
+            # to be absent.
 
         self.websocket = await self.session.ws_connect(
             url=self.url,

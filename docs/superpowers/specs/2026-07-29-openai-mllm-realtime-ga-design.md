@@ -137,6 +137,26 @@ so the suite joins `task test` with no wiring change. `tests/bin/start` follows
 the existing convention: set `PYTHONPATH` to the standalone `.ten/app` tree,
 then `pytest -s tests/`.
 
+Two deliberate deviations from how other extensions lay out `tests/`:
+
+- **No `tests/__init__.py`, plus an empty `tests/pytest.ini`.** Other
+  extensions make `tests` a subpackage, which means pytest imports
+  `openai_mllm_python/__init__.py` — and that imports `addon`, which imports
+  the native `ten_runtime` module. Those suites therefore only run where a
+  runtime has been installed. Dropping `__init__.py` and anchoring pytest's
+  rootdir at `tests/` keeps the extension package out of the collection tree,
+  so this suite runs anywhere. That matters because the whole design puts the
+  wire format in a layer that depends on nothing.
+- **`tests/test_connection.py` reads `connection.py` via `ast` instead of
+  importing it.** `connection.py` needs `ten_runtime` for a type hint, and the
+  invariants worth asserting (no beta header, realtime default model) are
+  visible in the source. Inspecting string *constants* rather than raw text
+  means comments explaining the migration cannot affect the result.
+
+Formatting follows `black --line-length 80`, which is what the existing files
+in this extension already satisfy. The repository has no committed black
+config; 79 and 88 both report drift against unmodified files, 80 reports none.
+
 Tests target the wire boundary, which needs no credentials, no network and no
 TEN runtime:
 

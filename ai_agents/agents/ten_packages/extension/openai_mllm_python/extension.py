@@ -73,7 +73,7 @@ class OpenAIRealtimeConfig(BaseModel):
     base_url: str = "wss://api.openai.com"
     api_key: str = ""
     path: str = "/v1/realtime"
-    model: str = "gpt-4o"
+    model: str = "gpt-realtime-2.1"
     language: str = "en"
     prompt: str = ""
     temperature: float = 0.5
@@ -87,6 +87,11 @@ class OpenAIRealtimeConfig(BaseModel):
     vad_threshold: float = 0.5
     vad_prefix_padding_ms: int = 300
     vad_silence_duration_ms: int = 500
+    # Empty string means "omit reasoning from session.update" so existing
+    # deployments keep the model's own default.
+    reasoning_effort: Literal[
+        "", "minimal", "low", "medium", "high", "xhigh"
+    ] = ""
     vendor: str = ""
     dump: bool = False
     dump_path: str = ""
@@ -614,6 +619,10 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         su.session.input_audio_transcription = InputAudioTranscription(
             language=self.config.language,
         )
+
+        if self.config.reasoning_effort:
+            su.session.reasoning_effort = self.config.reasoning_effort
+
         self.ten_env.log_info(f"update session {su}")
 
         await self.conn.send_request(su)

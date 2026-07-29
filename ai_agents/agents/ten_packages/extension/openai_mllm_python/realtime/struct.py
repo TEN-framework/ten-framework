@@ -169,6 +169,9 @@ class SessionUpdateParams:
     max_response_output_tokens: Optional[Union[int, str]] = (
         None  # Max response tokens, "inf" for infinite
     )
+    reasoning_effort: Optional[
+        Literal["minimal", "low", "medium", "high", "xhigh"]
+    ] = None  # Reasoning budget, serialised as GA `session.reasoning.effort`
 
 
 # Define individual message item param types
@@ -270,12 +273,15 @@ class EventType(str, Enum):
     RESPONSE_OUTPUT_ITEM_DONE = "response.output_item.done"
     RESPONSE_CONTENT_PART_ADDED = "response.content_part.added"
     RESPONSE_CONTENT_PART_DONE = "response.content_part.done"
-    RESPONSE_TEXT_DELTA = "response.text.delta"
-    RESPONSE_TEXT_DONE = "response.text.done"
-    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.audio_transcript.delta"
-    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.audio_transcript.done"
-    RESPONSE_AUDIO_DELTA = "response.audio.delta"
-    RESPONSE_AUDIO_DONE = "response.audio.done"
+    # GA renamed the response output events; the beta spellings
+    # (response.text.delta, response.audio.delta,
+    # response.audio_transcript.delta) are no longer emitted.
+    RESPONSE_TEXT_DELTA = "response.output_text.delta"
+    RESPONSE_TEXT_DONE = "response.output_text.done"
+    RESPONSE_AUDIO_TRANSCRIPT_DELTA = "response.output_audio_transcript.delta"
+    RESPONSE_AUDIO_TRANSCRIPT_DONE = "response.output_audio_transcript.done"
+    RESPONSE_AUDIO_DELTA = "response.output_audio.delta"
+    RESPONSE_AUDIO_DONE = "response.output_audio.done"
     RESPONSE_FUNCTION_CALL_ARGUMENTS_DELTA = (
         "response.function_call_arguments.delta"
     )
@@ -903,10 +909,82 @@ def parse_server_message(unparsed_string: str) -> ServerToClientMessage:
     raise ValueError(f"Unknown message type: {data['type']} {data}")
 
 
-def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
-    # ignore none value
-    return json.dumps(
-        asdict(
-            obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
-        )
+def _drop_none(obj: Any) -> Dict[str, Any]:
+    return asdict(
+        obj, dict_factory=lambda x: {k: v for (k, v) in x if v is not None}
     )
+
+
+# GA expresses audio formats as objects rather than the beta's bare strings.
+# The published reference still documents a string, but the service rejects it
+# with "Invalid type for 'session.audio.input.format': expected an object, but
+# got a string instead".
+_GA_AUDIO_FORMATS: Dict[str, Dict[str, Any]] = {
+    AudioFormats.PCM16.value: {"type": "audio/pcm", "rate": 24000},
+    AudioFormats.G711_ULAW.value: {"type": "audio/pcmu"},
+    AudioFormats.G711_ALAW.value: {"type": "audio/pcma"},
+}
+
+
+def _ga_audio_format(fmt: Any) -> Dict[str, Any]:
+    """Map a beta audio format value onto its GA object form."""
+    key = fmt.value if isinstance(fmt, Enum) else fmt
+    return _GA_AUDIO_FORMATS.get(key, {"type": key})
+
+
+def session_update_to_ga_dict(obj: "SessionUpdate") -> Dict[str, Any]:
+    """Serialise a SessionUpdate into the GA `session.update` payload.
+
+    GA reorganised the session object: audio settings move under
+    `session.audio.input` / `session.audio.output`, `modalities` becomes
+    `output_modalities`, `max_response_output_tokens` becomes
+    `max_output_tokens`, and the session itself is tagged `type: "realtime"`.
+    Fields left unset are omitted so the service applies its own defaults.
+    """
+    flat = _drop_none(obj.session) if obj.session is not None else {}
+
+    audio_in: Dict[str, Any] = {}
+    audio_out: Dict[str, Any] = {}
+
+    if "input_audio_format" in flat:
+        audio_in["format"] = _ga_audio_format(flat.pop("input_audio_format"))
+    if "turn_detection" in flat:
+        audio_in["turn_detection"] = flat.pop("turn_detection")
+    if "input_audio_transcription" in flat:
+        audio_in["transcription"] = flat.pop("input_audio_transcription")
+
+    if "output_audio_format" in flat:
+        audio_out["format"] = _ga_audio_format(flat.pop("output_audio_format"))
+    if "voice" in flat:
+        audio_out["voice"] = flat.pop("voice")
+
+    session: Dict[str, Any] = {"type": "realtime"}
+
+    if "modalities" in flat:
+        modalities = flat.pop("modalities")
+        session["output_modalities"] = sorted(modalities)
+    if "max_response_output_tokens" in flat:
+        session["max_output_tokens"] = flat.pop("max_response_output_tokens")
+    if "reasoning_effort" in flat:
+        session["reasoning"] = {"effort": flat.pop("reasoning_effort")}
+
+    # instructions, model, tools and tool_choice keep their beta names and
+    # stay at the top level of the session object.
+    session.update(flat)
+
+    if audio_in:
+        session.setdefault("audio", {})["input"] = audio_in
+    if audio_out:
+        session.setdefault("audio", {})["output"] = audio_out
+
+    payload: Dict[str, Any] = {"type": obj.type, "session": session}
+    if obj.event_id is not None:
+        payload["event_id"] = obj.event_id
+    return payload
+
+
+def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
+    if isinstance(obj, SessionUpdate):
+        return json.dumps(session_update_to_ga_dict(obj))
+    # ignore none value
+    return json.dumps(_drop_none(obj))
