@@ -1059,5 +1059,16 @@ def session_update_to_ga_dict(obj: "SessionUpdate") -> Dict[str, Any]:
 def to_json(obj: Union[ClientToServerMessage, ServerToClientMessage]) -> str:
     if isinstance(obj, SessionUpdate):
         return json.dumps(session_update_to_ga_dict(obj))
+    if isinstance(obj, ResponseCreate) and obj.response is not None:
+        # ResponseCreateParams is still the flat beta struct: it carries
+        # modalities/voice/output_audio_format/max_response_output_tokens,
+        # where GA takes output_modalities, max_output_tokens and
+        # audio.output.{voice,format}. Nothing sets it today — callers send a
+        # bare ResponseCreate() — so it is unmigrated rather than wrong, and
+        # failing here beats emitting a beta payload GA would reject.
+        raise NotImplementedError(
+            "per-response overrides are not migrated to the GA shape; "
+            "extend this module before setting ResponseCreate.response"
+        )
     # ignore none value
     return json.dumps(_drop_none(obj))

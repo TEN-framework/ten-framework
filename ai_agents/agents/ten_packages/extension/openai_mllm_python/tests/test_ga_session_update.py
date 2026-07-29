@@ -6,6 +6,8 @@ import pytest
 
 from realtime.struct import (
     AudioFormats,
+    ResponseCreate,
+    ResponseCreateParams,
     InputAudioTranscription,
     SemanticVADUpdateParams,
     ServerVADUpdateParams,
@@ -198,6 +200,20 @@ def test_full_payload_matches_ga_shape() -> None:
             },
         },
     }
+
+
+def test_bare_response_create_still_serialises() -> None:
+    """This is what the extension actually sends."""
+    payload = json.loads(to_json(ResponseCreate()))
+
+    assert payload["type"] == "response.create"
+    assert "response" not in payload
+
+
+def test_response_create_overrides_are_rejected() -> None:
+    """ResponseCreateParams is still the flat beta struct."""
+    with pytest.raises(NotImplementedError, match="not migrated"):
+        to_json(ResponseCreate(response=ResponseCreateParams()))
 
 
 def test_unmapped_field_is_rejected() -> None:
