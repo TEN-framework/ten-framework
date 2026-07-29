@@ -13,6 +13,11 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
 from ten_ai_base.mllm import AsyncMLLMBaseExtension
 from ten_ai_base.struct import (
     MLLMClientFunctionCallOutput,
@@ -433,6 +438,21 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                         case ErrorMessage():
                             self.ten_env.log_error(
                                 f"Error message received: {message.error}"
+                            )
+                            # A rejected session.update leaves the socket open,
+                            # so nothing else surfaces the failure: the graph
+                            # would wait on mllm_server_session_ready forever
+                            # while the connection looks healthy.
+                            await self.send_mllm_error(
+                                ModuleError(
+                                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                                    message=message.error.message,
+                                ),
+                                ModuleErrorVendorInfo(
+                                    vendor=self.vendor(),
+                                    code=message.error.code or "",
+                                    message=message.error.message,
+                                ),
                             )
                         case _:
                             self.ten_env.log_debug(

@@ -111,6 +111,22 @@ def test_azure_vendor_still_uses_api_key_header() -> None:
     assert "api-key" in _string_literals(CONNECTION_PY)
 
 
+def test_vendor_errors_are_propagated_downstream() -> None:
+    """A rejected session.update must not be a silent hang.
+
+    The socket stays open when GA rejects an event, so logging alone leaves
+    the graph waiting on mllm_server_session_ready against a connection that
+    looks healthy.
+    """
+    called = {
+        node.func.attr
+        for node in ast.walk(_module(EXTENSION_PY))
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+    }
+
+    assert "send_mllm_error" in called
+
+
 def test_assistant_items_use_the_ga_content_type() -> None:
     """GA renamed assistant content parts to output_text/output_audio.
 
