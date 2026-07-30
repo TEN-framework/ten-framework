@@ -118,8 +118,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          rustup default stable
-
           brew install tree
           brew install gettext
 
