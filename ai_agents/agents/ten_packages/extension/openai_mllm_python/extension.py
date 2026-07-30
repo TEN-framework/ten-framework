@@ -587,36 +587,45 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
             tools = [tool_dict(t) for t in self.available_tools]
         prompt = self.config.prompt
 
+        # GA realtime session shape: type marker, output_modalities, and
+        # nested audio.input/audio.output blocks (the flat beta fields
+        # are rejected since the beta shape was retired).
         if self.config.vad_type == "server_vad":
-            vad_params = ServerVADUpdateParams(
-                threshold=self.config.vad_threshold,
-                prefix_padding_ms=self.config.vad_prefix_padding_ms,
-                silence_duration_ms=self.config.vad_silence_duration_ms,
-            )
+            vad: dict = {
+                "type": "server_vad",
+                "threshold": self.config.vad_threshold,
+                "prefix_padding_ms": self.config.vad_prefix_padding_ms,
+                "silence_duration_ms": self.config.vad_silence_duration_ms,
+            }
         else:  # semantic vad
-            vad_params = SemanticVADUpdateParams(
-                eagerness=self.config.vad_eagerness,
-            )
-        su = SessionUpdate(
-            session=SessionUpdateParams(
-                instructions=prompt,
-                model=self.config.model,
-                tool_choice="auto" if self.available_tools else "none",
-                tools=tools,
-                turn_detection=vad_params,
-            )
-        )
-        if self.config.audio_out:
-            su.session.voice = self.config.voice
-        else:
-            su.session.modalities = ["text"]
+            vad = {
+                "type": "semantic_vad",
+                "eagerness": self.config.vad_eagerness,
+            }
+        session: dict = {
+            "type": "realtime",
+            "instructions": prompt,
+            "tool_choice": "auto" if self.available_tools else "none",
+            "tools": tools,
+            "output_modalities": (
+                ["audio"] if self.config.audio_out else ["text"]
+            ),
+            "audio": {
+                "input": {
+                    "transcription": {
+                        "model": "gpt-4o-mini-transcribe",
+                        "language": self.config.language,
+                    },
+                    "turn_detection": vad,
+                },
+                "output": {"voice": self.config.voice},
+            },
+        }
+        self.ten_env.log_info(f"update session {session}")
 
-        su.session.input_audio_transcription = InputAudioTranscription(
-            language=self.config.language,
+        await self.conn.send_json(
+            {"type": "session.update", "session": session}
         )
-        self.ten_env.log_info(f"update session {su}")
-
-        await self.conn.send_request(su)
 
     async def _handle_tool_call(
         self, tool_call_id: str, name: str, arguments: str
