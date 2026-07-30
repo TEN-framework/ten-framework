@@ -50,6 +50,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         # Timestamp when TTS request was sent to service
         self.request_start_ts: datetime | None = None
+        # Timestamp when the first audio chunk was received
+        self.first_chunk_ts: datetime | None = None
         # Total audio duration for current request in milliseconds
         self.request_total_audio_duration_ms: int | None = None
         # Time to first byte for current request in milliseconds
@@ -196,6 +198,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.total_audio_bytes = 0  # Reset for new request
                 self.request_ttfb = None
                 self.first_chunk = True
+                self.first_chunk_ts = None
                 self.chunk_count = 0
                 self.request_start_ts = datetime.now()
                 self.is_first_message_of_request = True
@@ -534,6 +537,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         4. Logs the operation
         """
         if self.request_start_ts:
+            self.first_chunk_ts = datetime.now()
+
             await self.send_tts_audio_start(
                 self.current_request_id,
             )
@@ -573,9 +578,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     self.total_audio_bytes, self.config.sample_rate
                 )
             )
-            request_event_interval = int(
-                (datetime.now() - self.request_start_ts).total_seconds() * 1000
-            )
+            request_event_interval = 0
+            if self.first_chunk_ts is not None:
+                request_event_interval = int(
+                    (datetime.now() - self.first_chunk_ts).total_seconds()
+                    * 1000
+                )
 
             # Flush PCMWriter for current request to ensure dump file is written
             if (

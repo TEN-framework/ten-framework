@@ -23,6 +23,7 @@ class ExtensionTesterRobustness(ExtensionTester):
     def __init__(self):
         super().__init__()
         self.first_request_error: Optional[dict[str, Any]] = None
+        self.first_request_event_interval_ms: Optional[int] = None
         self.second_request_successful = False
         self.ten_env: Optional[TenEnvTester] = None
 
@@ -74,6 +75,14 @@ class ExtensionTesterRobustness(ExtensionTester):
             self.first_request_error = payload
             # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
+
+        elif (
+            name == "tts_audio_end"
+            and payload.get("request_id") == "tts_request_to_fail"
+        ):
+            self.first_request_event_interval_ms = payload.get(
+                "request_event_interval_ms"
+            )
 
         elif (
             name == "tts_audio_end"
@@ -181,6 +190,10 @@ def test_reconnect_after_connection_drop(MockCosyTTSClient):
     assert (
         tester.first_request_error.get("code") == 1000
     ), f"Expected error code 1000 (NON_FATAL_ERROR), got {tester.first_request_error.get('code')}"
+    assert tester.first_request_event_interval_ms == 0, (
+        "A request with no audio should report a zero event interval, got "
+        f"{tester.first_request_event_interval_ms}ms"
+    )
 
     # 2. Verify that vendor_info was included in the error
     vendor_info = tester.first_request_error.get("vendor_info")

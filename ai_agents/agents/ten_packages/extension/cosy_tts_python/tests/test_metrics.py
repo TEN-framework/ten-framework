@@ -28,6 +28,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         self.ttfb_value = -1
         self.audio_frame_received = False
         self.audio_end_received = False
+        self.request_event_interval_ms = -1
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
@@ -61,6 +62,11 @@ class ExtensionTesterMetrics(ExtensionTester):
 
         elif name == "tts_audio_end":
             self.audio_end_received = True
+            json_str, _ = data.get_property_to_json(None)
+            payload = json.loads(json_str)
+            self.request_event_interval_ms = payload.get(
+                "request_event_interval_ms", -1
+            )
             # Stop the test only after both TTFB and audio end are received
             if self.ttfb_received:
                 ten_env.log_info("Received tts_audio_end, stopping test.")
@@ -98,7 +104,7 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
                 """Simulate TTS service sending data asynchronously"""
                 queue = stream_state["queue"]
                 # Delay to simulate network latency and TTS processing time
-                await asyncio.sleep(0.25)  # 250ms TTFB
+                await asyncio.sleep(0.6)  # 600ms TTFB
 
                 # Send first audio chunk
                 await queue.put((False, MESSAGE_TYPE_PCM, b"\x11\x22\x33"))
@@ -139,11 +145,18 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
     assert tester.audio_frame_received, "Did not receive any audio frame."
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
-
-    # Check if the TTFB value is reasonable. It should be around 250ms with the delay
-    # we introduced. Allow 50ms margin for timing variations and system scheduling.
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.request_event_interval_ms >= 0
+    ), "tts_audio_end did not include request_event_interval_ms."
+
+    # Check if the TTFB value is reasonable. The larger delay keeps it well
+    # above the post-first-chunk interval despite scheduling variability.
+    assert (
+        tester.ttfb_value >= 500
+    ), f"Expected TTFB to be >= 500ms, but got {tester.ttfb_value}ms."
+    assert tester.request_event_interval_ms < tester.ttfb_value, (
+        "request_event_interval_ms should start at the first audio chunk and "
+        "exclude TTFB."
+    )
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")
