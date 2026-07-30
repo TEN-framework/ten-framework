@@ -63,6 +63,20 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         return "openai"
 
     @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        transcription = self.config.params.model_dump().get(
+            "input_audio_transcription", {}
+        )
+        model = (
+            transcription.get("model")
+            if isinstance(transcription, dict)
+            else None
+        )
+        return {"model": model} if model else {}
+
+    @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
         config_json, _ = await ten_env.get_property_to_json()
