@@ -138,7 +138,7 @@ jobs:
 
           cd ${{ github.workspace }}
 
-          rustup default nightly-2025-09-18
+          rustup default stable
 
           df -h .
 
@@ -179,7 +179,8 @@ jobs:
           PPA_PPA_NAME: "ten-framework"
           PPA_MAINTAINER_NAME: "TEN Framework Team"
           PPA_MAINTAINER_EMAIL: "ten.framework@gmail.com"
-          PPA_DISTRIBUTIONS: "jammy noble plucky questing"
+          # Launchpad rejects uploads for obsolete Ubuntu series.
+          PPA_DISTRIBUTIONS: "jammy noble resolute"
         run: |
           # Install required tools
           sudo apt-get update -qq
@@ -217,6 +218,7 @@ jobs:
           # Set environment variables
           export PPA_VERSION="$VERSION"
           export PPA_PACKAGE_NAME="tman"
+          export PPA_SOURCE_PACKAGE_NAME="tman-arm64"
           export PPA_SOURCE_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"
           export PPA_ARCH="arm64"
 

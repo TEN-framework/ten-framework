@@ -56,32 +56,6 @@ template("rust_target") {
       _rustflags = "${_rustflags} -C instrument-coverage --cfg=coverage --cfg=coverage_nightly -Z coverage-options=branch -Cllvm-args=--inline-threshold=0 -Clink-dead-code -Coverflow-checks=off -C debuginfo=2"
     }
 
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer) {
-      asan_args = [
-        "--action",
-        "print",
-        "--compiler",
-      ]
-      if (is_clang) {
-        asan_args += [ "clang" ]
-      } else {
-        asan_args += [ "gcc" ]
-      }
-
-      asan_args += [
-        "--target-os",
-        target_os,
-        "--target-arch",
-        target_cpu,
-      ]
-
-      flags = exec_script("//build/ten_common/rust/rust_gen_cargo_config.py",
-                          asan_args,
-                          "trim string")
-
-      _rustflags = "${_rustflags} ${flags}"
-    }
-
     # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
     if (is_win && is_mingw) {
       _rustflags = "${_rustflags} -C link-arg=-lntdll"
@@ -135,7 +109,11 @@ template("rust_target") {
       } else if (target_cpu == "x86") {
         target = "i686-unknown-linux-gnu"
       } else if (target_cpu == "x64") {
-        target = "x86_64-unknown-linux-gnu"
+        if (enable_sanitizer) {
+          target = "x86_64-unknown-linux-gnuasan"
+        } else {
+          target = "x86_64-unknown-linux-gnu"
+        }
       }
     } else if (is_mac) {
       if (target_cpu == "arm64") {
@@ -145,6 +123,13 @@ template("rust_target") {
       } else if (target_cpu == "x64") {
         target = "x86_64-apple-darwin"
       }
+    }
+
+    if (target == "x86_64-unknown-linux-gnuasan") {
+      args += [
+        "--env",
+        "RUSTUP_TOOLCHAIN=stable",
+      ]
     }
 
     args += [
@@ -273,32 +258,6 @@ template("rust_test") {
       _rustflags = "${_rustflags} -C instrument-coverage --cfg=coverage --cfg=coverage_nightly -Z coverage-options=branch -Cllvm-args=--inline-threshold=0 -Clink-dead-code -Coverflow-checks=off -C debuginfo=2"
     }
 
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer) {
-      asan_args = [
-        "--action",
-        "print",
-        "--compiler",
-      ]
-      if (is_clang) {
-        asan_args += [ "clang" ]
-      } else {
-        asan_args += [ "gcc" ]
-      }
-
-      asan_args += [
-        "--target-os",
-        target_os,
-        "--target-arch",
-        target_cpu,
-      ]
-
-      flags = exec_script("//build/ten_common/rust/rust_gen_cargo_config.py",
-                          asan_args,
-                          "trim string")
-
-      _rustflags = "${_rustflags} ${flags}"
-    }
-
     # Link ntdll for MinGW target to resolve Windows NT API symbols required by Rust stdlib
     if (is_win && is_mingw) {
       _rustflags = "${_rustflags} -C link-arg=-lntdll"
@@ -352,7 +311,11 @@ template("rust_test") {
       } else if (target_cpu == "x86") {
         target = "i686-unknown-linux-gnu"
       } else if (target_cpu == "x64") {
-        target = "x86_64-unknown-linux-gnu"
+        if (enable_sanitizer) {
+          target = "x86_64-unknown-linux-gnuasan"
+        } else {
+          target = "x86_64-unknown-linux-gnu"
+        }
       }
     } else if (is_mac) {
       if (target_cpu == "arm64") {
@@ -362,6 +325,13 @@ template("rust_test") {
       } else if (target_cpu == "x64") {
         target = "x86_64-apple-darwin"
       }
+    }
+
+    if (target == "x86_64-unknown-linux-gnuasan") {
+      args += [
+        "--env",
+        "RUSTUP_TOOLCHAIN=stable",
+      ]
     }
 
     args += [
@@ -516,7 +486,11 @@ template("rust_gen_cargo_config") {
       } else if (target_cpu == "x86") {
         target = "i686-unknown-linux-gnu"
       } else if (target_cpu == "x64") {
-        target = "x86_64-unknown-linux-gnu"
+        if (enable_sanitizer) {
+          target = "x86_64-unknown-linux-gnuasan"
+        } else {
+          target = "x86_64-unknown-linux-gnu"
+        }
       }
     } else if (is_mac) {
       if (target_cpu == "arm64") {
@@ -616,7 +590,11 @@ template("rust_clean") {
       } else if (target_cpu == "x86") {
         target = "i686-unknown-linux-gnu"
       } else if (target_cpu == "x64") {
-        target = "x86_64-unknown-linux-gnu"
+        if (enable_sanitizer) {
+          target = "x86_64-unknown-linux-gnuasan"
+        } else {
+          target = "x86_64-unknown-linux-gnu"
+        }
       }
     } else if (is_mac) {
       if (target_cpu == "arm64") {

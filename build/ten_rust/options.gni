@@ -7,21 +7,19 @@
 declare_args() {
   # The rust projects (i.e., ten_rust and ten_manager) depend on the C static
   # library (ex: ten_utils), thus the rust projects must be compiled with asan
-  # enabled if the C library is compiled with asan. There are two ways to
-  # enable asan in rust:
+  # enabled if the C library is compiled with asan. Linux x64 uses the stable
+  # `x86_64-unknown-linux-gnuasan` target, which includes an ASAN-instrumented
+  # standard library. There are two ways to select it:
   #
-  # 1. Using the RUSTFLAGS environment variable. Ex:
-  #    RUSTFLAGS="-Zsanitizer=address" cargo build.
+  # 1. Passing the target to cargo. Ex:
+  #    cargo build --target x86_64-unknown-linux-gnuasan.
   # 2. Using the cargo config file, i.e., create a `config.toml` file in the
   #    `.cargo` folder in the source tree of the rust project. Ex, we can
   #    create a `config.toml` file in `ten_framework/.cargo` folder, and add
   #    the following content:
   #
-  #    [target.x86_64-unknown-linux-gnu]
-  #    rustflags = ["-Z", "sanitizer=address"]
-  #
   #    [build]
-  #    target = "x86_64-unknown-linux-gnu"
+  #    target = "x86_64-unknown-linux-gnuasan"
   #
   # The second way has a limitation: the cargo config file only effects on the
   # builds in the subfolder of the location of the config file. Ex: we add the
@@ -48,12 +46,11 @@ declare_args() {
   # `main` function or a `test` function, there will be some trigger to run the
   # functions, ex: a `Run|Debug` button on the main function, or a `Run Test|
   # Debug` button on the test function. The trigger is a task in VSCode, we can
-  # not customize the task to add the RUSTFLAGS environment variable
+  # not customize the task to add the cargo target
   # automatically. In addition, if we want to manually run cargo commands in the
   # terminal to compile the source code or run some tests during development,
-  # it is not convenient to add the RUSTFLAGS environment variable every time.
-  # And the content of the RUSTFLAGS environment variable is different between
-  # different compilers and platforms.
+  # it is not convenient to add the target argument every time. The ASAN setup
+  # is also different between platforms.
   #
   # So we add a new option here, to control whether to auto generate the cargo
   # config file under ten_framework if asan is enabled by `enable_sanitizer`.
@@ -70,7 +67,7 @@ declare_args() {
   #
   #     => The asan is enabled, which means the C library is compiled with asan.
   #     => The cargo config is not generated. The rust projects will be compiled
-  #        with asan by setting the RUSTFLAGS environment variable if using tgn.
+  #        with asan by passing the GNU ASAN target if using tgn.
   #     => Running the trigger button in the VSCode or manually running `cargo
   #        build` in the terminal will be FAILED.
   #

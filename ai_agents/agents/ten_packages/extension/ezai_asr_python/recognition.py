@@ -72,7 +72,19 @@ class DeepgramASRRecognition:
         self.websocket = None
         self.is_started = False
         self._message_task = None
-        self.prev_result = {}
+        self.prev_result = {
+            "type": "EmptyResults",
+            "channel_index": [0],
+            "start": 0.01,
+            "duration": 0.01,
+            "is_final": False,
+            "speech_final": False,
+            "channel": {
+                "alternatives": [
+                    {"transcript": "", "confidence": 0, "words": []}
+                ]
+            },
+        }
         self.segment_start_offset = 0
 
     async def _keepalive_loop(self):
@@ -120,7 +132,9 @@ class DeepgramASRRecognition:
 
                 elif message_type == "UtteranceEnd":
                     msg_data_end = self.prev_result
-                    if not msg_data_end["is_final"]:
+                    if msg_data_end.get("type") == "EmptyResults":
+                        msg_data_end["type"] = "Results"
+                    elif not msg_data_end["is_final"]:
                         msg_data_end["is_final"] = True
                         msg_data_end["speech_final"] = True
                     else:

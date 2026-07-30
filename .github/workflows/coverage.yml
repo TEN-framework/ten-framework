@@ -229,6 +229,7 @@ jobs:
           CARGO_NET_GIT_FETCH_WITH_CLI: "true"
           CARGO_BUILD_JOBS: "2"
           MAKEFLAGS: "-j2"
+          RUSTUP_TOOLCHAIN: nightly
         run: |
           # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
           export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
@@ -251,9 +252,9 @@ jobs:
           echo "=== Disk space after Go installation ==="
           df -h
 
-          # Install Rust stable because we need to disable asan to avoid coverage instrumentation conflicts.
-          # Therefore, rust nightly is not needed.
-          rustup default stable
+          # Rust branch coverage uses -Z coverage-options=branch, which is
+          # only accepted by the nightly compiler.
+          rustup update nightly
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
           rustc -vV | grep LLVM

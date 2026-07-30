@@ -139,13 +139,13 @@ jobs:
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
-          # Set Rust toolchain based on build type
-          # Linux debug uses nightly (for ASAN support)
-          # Linux release, Mac, and Windows use stable
+          # Linux x64 debug builds use the stable ASAN target, whose standard
+          # library is instrumented with AddressSanitizer.
+          rustup update stable
           if [ "${{ matrix.build_type }}" = "debug" ]; then
-            echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
-            rustup update nightly
-            rustup default nightly
+            echo "Setting Rust toolchain to stable with the GNU ASAN target"
+            rustup default stable
+            rustup target add --toolchain stable x86_64-unknown-linux-gnuasan
           else
             echo "Setting Rust toolchain to stable for Linux release build"
             rustup default stable
@@ -193,7 +193,8 @@ jobs:
           PPA_PPA_NAME: "ten-framework"
           PPA_MAINTAINER_NAME: "TEN Framework Team"
           PPA_MAINTAINER_EMAIL: "ten.framework@gmail.com"
-          PPA_DISTRIBUTIONS: "jammy noble plucky questing"
+          # Launchpad rejects uploads for obsolete Ubuntu series.
+          PPA_DISTRIBUTIONS: "jammy noble resolute"
         run: |
           # Install required tools
           sudo apt-get update -qq
@@ -213,6 +214,7 @@ jobs:
           # Set environment variables
           export PPA_VERSION="$VERSION"
           export PPA_PACKAGE_NAME="tman"
+          export PPA_SOURCE_PACKAGE_NAME="tman-amd64"
           export PPA_SOURCE_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"
           export PPA_ARCH="amd64"
 

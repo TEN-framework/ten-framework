@@ -17,26 +17,25 @@ from scripts import package_asan_lib
 
 # The content of the auto generated .cargo/config.toml file is as follows.
 #
-# - For gcc compiler:
+# - For the stable Linux x64 GNU ASAN target:
 #
 # ```toml
-# [target.x86_64-unknown-linux-gnu]
-# rustflags = ["-C", "linker=gcc", "-Z", "external-clangrt", "-Z",
-#              "sanitizer=address", "-l", "asan"]
+# [target.x86_64-unknown-linux-gnuasan]
+# rustflags = []
 #
 # [build]
-# target = "x86_64-unknown-linux-gnu"
+# target = "x86_64-unknown-linux-gnuasan"
 # ```
 #
-# - For clang compiler:
+# - For targets without an ASAN-instrumented standard library, such as macOS:
 #
 # ```toml
-# [target.x86_64-unknown-linux-gnu]
+# [target.x86_64-apple-darwin]
 # rustflags = ["-C", "linker=clang", "-Z", "external-clangrt", "-Z",
 #              "sanitizer=address", "-C", "link-args=-fsanitize=address"]
 #
 # [build]
-# target = "x86_64-unknown-linux-gnu"
+# target = "x86_64-apple-darwin"
 # ```
 
 GCC_ASAN_FLAGS = [
@@ -116,11 +115,12 @@ def gen_cargo_config(args: ArgumentInfo):
     if os.path.exists(cargo_config):
         os.remove(cargo_config)
 
-    flags = []
-    if args.compiler == "gcc":
-        flags = GCC_ASAN_FLAGS
+    if args.target == "x86_64-unknown-linux-gnuasan":
+        flags = []
+    elif args.compiler == "gcc":
+        flags = GCC_ASAN_FLAGS.copy()
     else:
-        flags = CLANG_ASAN_FLAGS
+        flags = CLANG_ASAN_FLAGS.copy()
 
     if args.target_os == "mac":
         flags.extend(["-C", special_link_args_on_mac(args.target_arch)])

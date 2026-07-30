@@ -175,13 +175,13 @@ jobs:
             go1.24.3 download
             go1.24.3 version
 
-            # Set Rust toolchain based on build type
-            # Linux debug uses nightly (for ASAN support)
-            # Linux release, Mac, and Windows use stable
+            # Linux x64 debug builds use the stable ASAN target, whose standard
+            # library is instrumented with AddressSanitizer.
+            rustup update stable
             if [ "${{ matrix.build_type }}" = "debug" ]; then
-              echo "Setting Rust toolchain to latest nightly for Linux debug build (ASAN support)"
-              rustup update nightly
-              rustup default nightly
+              echo "Setting Rust toolchain to stable with the GNU ASAN target"
+              rustup default stable
+              rustup target add --toolchain stable x86_64-unknown-linux-gnuasan
             else
               echo "Setting Rust toolchain to stable for Linux release build"
               rustup default stable
@@ -642,6 +642,10 @@ jobs:
 
           chmod +x unit_test
           chmod +x integration_test
+
+          if [ "${{ matrix.build_type }}" = "debug" ]; then
+            export TEN_RUST_ENABLE_ASAN_SMOKE=1
+          fi
 
           ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
           ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
