@@ -396,7 +396,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 await self.send_tts_request_metrics(
                     request_id=t.request_id,
                     request_time_ms=int(time.time() * 1000),
-                    output_characters=len(t.text),
+                    request_text=t.text,
                 )
             await self.client.send_text(t)
             if t.text_input_end:
