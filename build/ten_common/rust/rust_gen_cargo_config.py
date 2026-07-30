@@ -5,19 +5,12 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import argparse
-import json
 import shutil
 import sys
 import os
 from build.scripts import timestamp_proxy
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from scripts import package_asan_lib
-
-
 # The content of the auto generated .cargo/config.toml file is as follows.
-#
-# - For the stable Linux x64 GNU ASAN target:
 #
 # ```toml
 # [target.x86_64-unknown-linux-gnuasan]
@@ -26,46 +19,9 @@ from scripts import package_asan_lib
 # [build]
 # target = "x86_64-unknown-linux-gnuasan"
 # ```
-#
-# - For targets without an ASAN-instrumented standard library, such as macOS:
-#
-# ```toml
-# [target.x86_64-apple-darwin]
-# rustflags = ["-C", "linker=clang", "-Z", "external-clangrt", "-Z",
-#              "sanitizer=address", "-C", "link-args=-fsanitize=address"]
-#
-# [build]
-# target = "x86_64-apple-darwin"
-# ```
-
-GCC_ASAN_FLAGS = [
-    "-C",
-    "linker=gcc",
-    "-Z",
-    "external-clangrt",
-    "-Z",
-    "sanitizer=address",
-    "-l",
-    "asan",
-]
-
-
-# It is better to use lld as the linker in clang. In Rust, you can specify it
-# using ["-C", "link-arg=-fuse-ld=lld"]. However, lld needs to be in the PATH.
-# On some CI machines, lld is not in the PATH, so we won't use lld here.
-CLANG_ASAN_FLAGS = [
-    "-C",
-    "linker=clang",
-    "-Z",
-    "external-clangrt",
-    "-Z",
-    "sanitizer=address",
-    "-C",
-    "link-args=-fsanitize=address",
-]
 
 CONFIG_TEMPLATE = """[target.{build_target}]
-rustflags = {asan_flags}
+rustflags = []
 
 [build]
 target = "{build_target}"
@@ -77,26 +33,10 @@ class ArgumentInfo(argparse.Namespace):
     def __init__(self):
         super().__init__()
         self.project_root: str
-        self.build_type: str
-        self.compiler: str
         self.target: str
-        self.target_os: str
-        self.target_arch: str
         self.tg_timestamp_proxy_file: str | None = None
-        self.enable_asan: bool
         self.action: str
         self.disable_incremental: bool = False
-
-
-# On macOS, only the Clang compiler is available, and Clang's ASan runtime
-# is provided only as a dynamic library. However, the linker flag
-# '-shared-libasan' is not supported in Cargo with Clang on macOS. Cargo will
-# issue a warning and ignore the flag, e.g., 'clang: warning: argument unused
-# during compilation: '-shared-libasan''. This could be a bug in Cargo. To
-# resolve this, use the following flag instead.
-def special_link_args_on_mac(arch: str) -> str:
-    asan_lib = package_asan_lib.detect_mac_asan_lib(arch)
-    return f"link-arg=-Wl,{asan_lib}"
 
 
 def gen_cargo_config(args: ArgumentInfo):
@@ -115,23 +55,12 @@ def gen_cargo_config(args: ArgumentInfo):
     if os.path.exists(cargo_config):
         os.remove(cargo_config)
 
-    if args.target == "x86_64-unknown-linux-gnuasan":
-        flags = []
-    elif args.compiler == "gcc":
-        flags = GCC_ASAN_FLAGS.copy()
-    else:
-        flags = CLANG_ASAN_FLAGS.copy()
-
-    if args.target_os == "mac":
-        flags.extend(["-C", special_link_args_on_mac(args.target_arch)])
-
     incremental_setting = (
         "incremental = false" if args.disable_incremental else ""
     )
 
     config_content = CONFIG_TEMPLATE.format(
         build_target=args.target,
-        asan_flags=json.dumps(flags),
         incremental_setting=incremental_setting,
     )
 
@@ -148,19 +77,11 @@ def delete_cargo_config(root: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--action", type=str, required=True, help="gen|delete|print"
-    )
-    parser.add_argument("--project-root", type=str, required=False)
-    parser.add_argument("--compiler", type=str, required=True)
-    parser.add_argument("--target", type=str, required=False)
-    parser.add_argument("--target-os", type=str, required=True)
-    parser.add_argument("--target-arch", type=str, required=True)
+    parser.add_argument("--action", choices=("gen", "delete"), required=True)
+    parser.add_argument("--project-root", type=str, required=True)
+    parser.add_argument("--target", type=str, required=True)
     parser.add_argument(
         "--tg-timestamp-proxy-file", type=str, default="", required=False
-    )
-    parser.add_argument(
-        "--enable-asan", action=argparse.BooleanOptionalAction, default=True
     )
     parser.add_argument(
         "--disable-incremental",
@@ -190,7 +111,6 @@ if __name__ == "__main__":
 
         finally:
             sys.exit(-1 if returncode != 0 else 0)
-
     elif args.action == "delete":
         try:
             delete_cargo_config(args.project_root)
@@ -210,19 +130,3 @@ if __name__ == "__main__":
         finally:
             sys.exit(-1 if returncode != 0 else 0)
 
-    else:
-        # action = print
-        #
-        # Constructs and prints a space-separated string of the necessary ASan
-        # flags for Clang, taking into account any macOS-specific handling.
-        flags = [
-            CLANG_ASAN_FLAGS[i] + CLANG_ASAN_FLAGS[i + 1]
-            for i in range(0, len(CLANG_ASAN_FLAGS) - 1, 2)
-        ]
-
-        if args.target_os == "mac":
-            asan_flag = special_link_args_on_mac(args.target_arch)
-            flags.append(f"-C{asan_flag}")
-
-        print(" ".join(flags))
-        sys.exit(0)
