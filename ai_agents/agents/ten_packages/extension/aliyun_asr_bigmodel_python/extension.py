@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import asyncio
+from typing import Any
 
 from typing_extensions import override
 from .const import (
@@ -128,6 +129,13 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     def vendor(self) -> str:
         """Get ASR vendor name"""
         return "aliyun_bigmodel"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        model = self.config.params.get("model")
+        return {"model": model} if model else {}
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
