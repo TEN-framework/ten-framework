@@ -1,12 +1,12 @@
 {
   "type": "system",
   "name": "ten_runtime_nodejs",
-  "version": "0.11.69",
+  "version": "0.11.70",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.69"
+      "version": "0.11.70"
     }
   ],
   "package": {
