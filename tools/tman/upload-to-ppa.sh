@@ -269,11 +269,12 @@ EOF
     log_info "Uploading file: $changes_file"
 
     # Launchpad uploads can intermittently fail with transient FTP-side 550
-    # errors after a previous distro upload has already succeeded. Retry the
-    # upload a few times before treating it as a hard failure.
+    # errors in the middle of a multi-file source upload. Retry with a capped
+    # exponential backoff before treating it as a hard failure.
     upload_success=false
-    for attempt in 1 2 3; do
-        log_info "Upload attempt ${attempt}/3"
+    attempt=1
+    while [ "$attempt" -le 6 ]; do
+        log_info "Upload attempt ${attempt}/6"
 
         if dput "ppa:${LAUNCHPAD_ID}/${PPA_NAME}" "$changes_file" 2>&1; then
             log_info "Upload successful"
@@ -281,15 +282,21 @@ EOF
             break
         fi
 
-        if [ "$attempt" -lt 3 ]; then
-            sleep_seconds=$((attempt * 20))
+        if [ "$attempt" -lt 6 ]; then
+            sleep_seconds=$((20 * (2 ** (attempt - 1))))
+            if [ "$sleep_seconds" -gt 180 ]; then
+                sleep_seconds=180
+            fi
+
             log_error "Upload failed for ${SOURCE_PACKAGE_NAME}/${dist} on attempt ${attempt}. Retrying in ${sleep_seconds}s..."
             sleep "$sleep_seconds"
         fi
+
+        attempt=$((attempt + 1))
     done
 
     if [ "$upload_success" != true ]; then
-        log_error "Upload failed after 3 attempts: ${SOURCE_PACKAGE_NAME} ${VERSION} (${ARCH}, ${dist})"
+        log_error "Upload failed after 6 attempts: ${SOURCE_PACKAGE_NAME} ${VERSION} (${ARCH}, ${dist})"
         exit 1
     fi
 done
