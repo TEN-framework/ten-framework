@@ -4,7 +4,7 @@ import os
 import base64
 import asyncio
 from urllib.parse import urlencode
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp
 import numpy as np
@@ -68,6 +68,13 @@ class SarvamASRExtension(AsyncASRBaseExtension):
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
         return "sarvam"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        model = self.config.params.get("model")
+        return {"model": model} if model else {}
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:

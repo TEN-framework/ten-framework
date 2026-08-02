@@ -1,0 +1,11 @@
+{
+    "api_key": "${env:ANTHROPIC_API_KEY}",
+    "base_url": "${env:ANTHROPIC_BASE_URL|}",
+    "model": "${env:ANTHROPIC_MODEL|claude-opus-5}",
+    "proxy_url": "${env:ANTHROPIC_PROXY_URL|}",
+    "max_tokens": 2048,
+    "prompt": "",
+    "effort": "low",
+    "thinking_display": "summarized",
+    "refusal_fallback": true
+}

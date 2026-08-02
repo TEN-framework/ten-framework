@@ -26,8 +26,12 @@ jobs:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: windows-latest
+    # ten_manager uses windows_by_handle to identify files during log rotation.
+    # This API is an unstable Rust feature and therefore requires a nightly
+    # toolchain on Windows.
     env:
       PYTHONIOENCODING: utf-8
+      RUSTUP_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
     strategy:
       matrix:
         build_type: [release]
@@ -128,7 +132,7 @@ jobs:
           go1.24.3 download
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
-          rustup default stable
+          rustup update nightly-x86_64-pc-windows-msvc
           cargo install --force cbindgen
 
       - name: Update version

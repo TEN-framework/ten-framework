@@ -138,8 +138,6 @@ jobs:
 
           cd ${{ github.workspace }}
 
-          rustup default nightly-2025-09-18
-
           df -h .
 
           EXTRA_ARGS="is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true"
@@ -179,7 +177,8 @@ jobs:
           PPA_PPA_NAME: "ten-framework"
           PPA_MAINTAINER_NAME: "TEN Framework Team"
           PPA_MAINTAINER_EMAIL: "ten.framework@gmail.com"
-          PPA_DISTRIBUTIONS: "jammy noble plucky questing"
+          # Launchpad rejects uploads for obsolete Ubuntu series.
+          PPA_DISTRIBUTIONS: "jammy noble resolute"
         run: |
           # Install required tools
           sudo apt-get update -qq
@@ -217,6 +216,7 @@ jobs:
           # Set environment variables
           export PPA_VERSION="$VERSION"
           export PPA_PACKAGE_NAME="tman"
+          export PPA_SOURCE_PACKAGE_NAME="tman-arm64"
           export PPA_SOURCE_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"
           export PPA_ARCH="arm64"
 

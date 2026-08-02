@@ -15,9 +15,13 @@ GPG_PASSPHRASE="${PPA_GPG_PASSPHRASE}"
 LAUNCHPAD_ID="${PPA_LAUNCHPAD_ID}"
 PPA_NAME="${PPA_PPA_NAME}"
 PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
+# Use per-architecture source names because Debian sorts the arm64 revision
+# above amd64. Otherwise dput may log "Successfully uploaded packages." while
+# Launchpad later rejects amd64. Both sources still publish binary package tman.
+SOURCE_PACKAGE_NAME="${PPA_SOURCE_PACKAGE_NAME:-$PACKAGE_NAME}"
 VERSION="${PPA_VERSION}"
 REVISION="${PPA_REVISION:-1}"
-DISTRIBUTIONS="${PPA_DISTRIBUTIONS:-jammy noble oracular plucky questing}"
+DISTRIBUTIONS="${PPA_DISTRIBUTIONS:-jammy noble resolute}"
 SOURCE_BINARY="${PPA_SOURCE_BINARY}"
 ARCH="${PPA_ARCH:-amd64}"
 
@@ -53,7 +57,8 @@ log_error() {
 log_info "=========================================="
 log_info "   PPA Build and Upload"
 log_info "=========================================="
-log_info "Package: $PACKAGE_NAME"
+log_info "Source package: $SOURCE_PACKAGE_NAME"
+log_info "Binary package: $PACKAGE_NAME"
 log_info "Version: $VERSION"
 log_info "Architecture: $ARCH"
 log_info "Distributions: $DISTRIBUTIONS"
@@ -74,12 +79,11 @@ for dist in $DISTRIBUTIONS; do
     log_info "Processing distribution: $dist"
     log_info "=========================================="
 
-    # Use architecture-specific revision to avoid version conflicts
-    # This allows uploading different architectures of the same version
+    # Keep the architecture visible in the generated package version.
     ARCH_REVISION="${REVISION}${ARCH}"
 
-    WORK_DIR="/tmp/ppa-build-${PACKAGE_NAME}-${dist}"
-    PACKAGE_DIR="${WORK_DIR}/${PACKAGE_NAME}-${VERSION}"
+    WORK_DIR="/tmp/ppa-build-${SOURCE_PACKAGE_NAME}-${dist}"
+    PACKAGE_DIR="${WORK_DIR}/${SOURCE_PACKAGE_NAME}-${VERSION}"
 
     log_info "Creating work directory: $WORK_DIR"
     rm -rf "$WORK_DIR"
@@ -112,7 +116,7 @@ EOF
     # Create debian/changelog
     log_info "Creating debian/changelog..."
     cat > "$PACKAGE_DIR/debian/changelog" << EOF
-${PACKAGE_NAME} (${VERSION}ubuntu${ARCH_REVISION}~${dist}) ${dist}; urgency=medium
+${SOURCE_PACKAGE_NAME} (${VERSION}ubuntu${ARCH_REVISION}~${dist}) ${dist}; urgency=medium
 
   * Release version ${VERSION} for ${ARCH}
   * TEN Framework Package Manager
@@ -123,7 +127,7 @@ EOF
     # Create debian/control
     log_info "Creating debian/control..."
     cat > "$PACKAGE_DIR/debian/control" << EOF
-Source: ${PACKAGE_NAME}
+Source: ${SOURCE_PACKAGE_NAME}
 Section: utils
 Priority: optional
 Maintainer: ${MAINTAINER_NAME} <${MAINTAINER_EMAIL}>
@@ -222,7 +226,7 @@ EOF
         cd "$WORK_DIR"
         log_info "Signing packages..."
 
-        changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
+        changes_file="${SOURCE_PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
         debsign --no-re-sign -k"$GPG_KEY_ID" \
                 -p"gpg --batch --passphrase-file $PASSPHRASE_FILE --pinentry-mode loopback" \
                 "$changes_file" 2>&1 | tee -a "$WORK_DIR/debuild.log"
@@ -255,7 +259,7 @@ EOF
     log_info "Uploading to PPA: ppa:${LAUNCHPAD_ID}/${PPA_NAME} for $dist..."
     cd "$WORK_DIR"
 
-    changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
+    changes_file="${SOURCE_PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
 
     if [ ! -f "$changes_file" ]; then
         log_error "Changes file not found: $changes_file"
@@ -265,11 +269,12 @@ EOF
     log_info "Uploading file: $changes_file"
 
     # Launchpad uploads can intermittently fail with transient FTP-side 550
-    # errors after a previous distro upload has already succeeded. Retry the
-    # upload a few times before treating it as a hard failure.
+    # errors in the middle of a multi-file source upload. Retry with a capped
+    # exponential backoff before treating it as a hard failure.
     upload_success=false
-    for attempt in 1 2 3; do
-        log_info "Upload attempt ${attempt}/3"
+    attempt=1
+    while [ "$attempt" -le 6 ]; do
+        log_info "Upload attempt ${attempt}/6"
 
         if dput "ppa:${LAUNCHPAD_ID}/${PPA_NAME}" "$changes_file" 2>&1; then
             log_info "Upload successful"
@@ -277,15 +282,21 @@ EOF
             break
         fi
 
-        if [ "$attempt" -lt 3 ]; then
-            sleep_seconds=$((attempt * 20))
-            log_error "Upload failed on attempt ${attempt}. Retrying in ${sleep_seconds}s..."
+        if [ "$attempt" -lt 6 ]; then
+            sleep_seconds=$((20 * (2 ** (attempt - 1))))
+            if [ "$sleep_seconds" -gt 180 ]; then
+                sleep_seconds=180
+            fi
+
+            log_error "Upload failed for ${SOURCE_PACKAGE_NAME}/${dist} on attempt ${attempt}. Retrying in ${sleep_seconds}s..."
             sleep "$sleep_seconds"
         fi
+
+        attempt=$((attempt + 1))
     done
 
     if [ "$upload_success" != true ]; then
-        log_error "Upload failed after 3 attempts"
+        log_error "Upload failed after 6 attempts: ${SOURCE_PACKAGE_NAME} ${VERSION} (${ARCH}, ${dist})"
         exit 1
     fi
 done

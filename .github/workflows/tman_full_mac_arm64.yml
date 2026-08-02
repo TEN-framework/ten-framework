@@ -26,9 +26,6 @@ jobs:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-latest
-    # Override crate-local nightly toolchains for reproducible macOS builds.
-    env:
-      RUSTUP_TOOLCHAIN: stable
     strategy:
       matrix:
         build_type: [release]
@@ -121,8 +118,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          rustup default stable
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest

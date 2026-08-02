@@ -6,6 +6,7 @@
 import asyncio
 from datetime import datetime
 import os
+import time
 import traceback
 
 from ten_ai_base.helper import PCMWriter
@@ -391,6 +392,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             self.sent_tts = True
             # Track character metrics
             self.metrics_add_output_characters(len(t.text))
+            if t.text:
+                await self.send_tts_request_metrics(
+                    request_id=t.request_id,
+                    request_time_ms=int(time.time() * 1000),
+                    request_text=t.text,
+                )
             await self.client.send_text(t)
             if t.text_input_end:
                 self.current_request_finished = True

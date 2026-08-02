@@ -7,6 +7,7 @@
 from datetime import datetime
 import asyncio
 import os
+from typing import Any
 from ten_runtime import (
     AudioFrame,
     AsyncTenEnv,
@@ -55,6 +56,13 @@ class GoogleASRExtension(AsyncASRBaseExtension):
     def vendor(self) -> str:
         """Returns the name of the ASR service provider."""
         return "google"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        model = self.config.params.get("model")
+        return {"model": model} if model else {}
 
     async def _on_asr_result(self, result: ASRResult):
         """Callback for handling ASR results from the client."""
