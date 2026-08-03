@@ -29,10 +29,6 @@ Set the following environment variables:
 - `voice`: Voice name for synthesis (default: "longanyang")
 - `url`: Optional full DashScope WebSocket URL. When omitted, the DashScope
   SDK default is used.
-- `pool_size`: Number of preconnected synthesizers shared by all Cosy
-  extension instances in one worker process (default: 2, valid range: 1-100).
-  For production, size the pool to roughly 1.5-2 times peak concurrency without
-  exceeding the account QPS limit.
 - `headers`: Optional custom WebSocket handshake headers.
 - Other keys under `params` are passed unchanged to DashScope task parameters.
   Extension-owned keys and `format` are excluded. This extension always emits
@@ -41,6 +37,10 @@ Set the following environment variables:
 `enable_ssml=true` is rejected because CosyVoice SSML only permits one text
 chunk, while this extension intentionally preserves streaming multi-chunk input.
 Word-level timestamp output is not currently supported.
+
+The extension internally maintains two preconnected synthesizers: one for the
+current serial task and one warm spare for recovery after a broken connection.
+The pool size is intentionally not configurable.
 
 ## Connection reuse constraints
 

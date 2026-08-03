@@ -1,6 +1,8 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 # pylint: disable=protected-access
 
 from ..config import CosyTTSConfig
@@ -19,8 +21,19 @@ def _reset_shared_pool() -> None:
     SharedPool._clients = 0
 
 
-def test_default_pool_keeps_two_preconnected_synthesizers():
-    assert CosyTTSConfig().pool_size == 2
+def test_pool_size_cannot_be_configured():
+    config = CosyTTSConfig(
+        params={
+            "api_key": "test-key",
+            "model": "cosyvoice-v3-flash",
+            "voice": "longanyang",
+            "pool_size": 4,
+        }
+    )
+    config.update_params()
+
+    with pytest.raises(ValueError, match="pool_size is managed internally"):
+        config.validate_params()
 
 
 def test_provider_error_is_queued_for_immediate_reporting():
@@ -63,7 +76,6 @@ def test_pool_uses_custom_url_workspace_and_headers():
         url="wss://example.com/api-ws/v1/inference",
         workspace_id="workspace-id",
         headers={"X-Test": "value"},
-        pool_size=2,
     )
 
     with patch(

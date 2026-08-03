@@ -47,9 +47,6 @@
             "model": {
               "type": "string"
             },
-            "pool_size": {
-              "type": "int64"
-            },
             "sample_rate": {
               "type": "int64"
             },

@@ -20,6 +20,7 @@ from .config import CosyTTSConfig
 MESSAGE_TYPE_PCM = 1
 MESSAGE_TYPE_CMD_COMPLETE = 2
 MESSAGE_TYPE_CMD_ERROR = 3
+COSY_TTS_POOL_SIZE = 2
 
 AUDIO_FORMAT_MAPPING = {
     8000: AudioFormat.PCM_8000HZ_MONO_16BIT,
@@ -82,7 +83,6 @@ class SharedPool:
             config.url,
             config.workspace_id,
             tuple(sorted(config.headers.items())),
-            config.pool_size,
         )
 
     @classmethod
@@ -103,7 +103,7 @@ class SharedPool:
         if cls._pool is None:
             dashscope.api_key = config.api_key
             cls._pool = SpeechSynthesizerObjectPool(
-                max_size=config.pool_size,
+                max_size=COSY_TTS_POOL_SIZE,
                 url=config.url or None,
                 headers=cls._headers(config),
                 workspace=config.workspace_id or None,
@@ -112,7 +112,7 @@ class SharedPool:
         elif cls._signature != signature:
             raise ValueError(
                 "Cosy TTS pool is already initialized with different credentials, "
-                "URL, workspace, headers, or pool_size",
+                "URL, workspace, or headers",
             )
 
         return cls._pool
@@ -348,7 +348,7 @@ class CosyTTSClient:
         )
         self.ten_env.log_info(
             "Cosy TTS connection pool ready, "
-            f"size: {self.config.pool_size}, connect_delay_ms: {connect_delay_ms}",
+            f"size: {COSY_TTS_POOL_SIZE}, connect_delay_ms: {connect_delay_ms}",
         )
         return connect_delay_ms
 

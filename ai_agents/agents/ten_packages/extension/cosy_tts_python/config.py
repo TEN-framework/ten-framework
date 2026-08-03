@@ -22,7 +22,6 @@ class CosyTTSConfig(BaseModel):
     url: str = ""  # DashScope WebSocket URL
     workspace_id: str = ""
     headers: dict[str, str] = Field(default_factory=dict)
-    pool_size: int = 2  # Preconnected synthesizers shared by this worker
 
     # Debug and dump settings
     dump: bool = False
@@ -70,6 +69,9 @@ class CosyTTSConfig(BaseModel):
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
+        if "pool_size" in self.params:
+            raise ValueError("params.pool_size is managed internally")
+
         required_fields = [
             "api_key",
             "model",
@@ -89,9 +91,6 @@ class CosyTTSConfig(BaseModel):
                 raise ValueError(
                     f"required fields are missing or empty: params.{field_name}",
                 )
-
-        if not 1 <= self.pool_size <= 100:
-            raise ValueError("params.pool_size must be between 1 and 100")
 
         if self.sample_rate not in SUPPORTED_PCM_SAMPLE_RATES:
             supported = ", ".join(
