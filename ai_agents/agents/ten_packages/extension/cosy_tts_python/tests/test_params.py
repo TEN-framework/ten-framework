@@ -4,8 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
-import asyncio
+from unittest.mock import patch
 import json
 
 from ten_runtime import (
@@ -16,7 +15,7 @@ from ten_runtime import (
     TenEnvTester,
     TenError,
 )
-from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE
+from .mock_client import MockClientStream
 
 
 # ================ test params passthrough ================
@@ -56,33 +55,8 @@ def test_params_passthrough(MockCosyTTSClient):
     print("Starting test_params_passthrough with mock...")
 
     # --- Mock Setup ---
-    # Create a mock instance with properly configured async methods
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.synthesize_audio = AsyncMock()
-
-    # Create state to hold the queue and task
-    stream_state = {"queue": None, "task": None}
-
-    async def get_audio_data():
-        """Simulate async streaming data from queue"""
-        # Lazy initialization: create queue and start producer on first call
-        if stream_state["queue"] is None:
-            stream_state["queue"] = asyncio.Queue()
-
-            async def simulate_audio_stream():
-                """Simulate TTS service completing immediately"""
-                queue = stream_state["queue"]
-                await asyncio.sleep(
-                    0.01
-                )  # Small delay to ensure proper initialization
-                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
-
-            # Start producer task in background
-            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
-
-        return await stream_state["queue"].get()
-
-    mock_instance.get_audio_data.side_effect = get_audio_data
+    MockClientStream().configure(mock_instance)
 
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
@@ -93,6 +67,8 @@ def test_params_passthrough(MockCosyTTSClient):
         "sample_rate": 16000,
         "voice": "longxiaochun",
         "url": "wss://example.com/api-ws/v1/inference",
+        "instruction": "speak happily",
+        "future_protocol_parameter": "future-value",
     }
     passthrough_config = {
         "params": passthrough_params,
@@ -117,12 +93,17 @@ def test_params_passthrough(MockCosyTTSClient):
     call_args, call_kwargs = MockCosyTTSClient.call_args
     called_config = call_args[0]
 
-    # Verify that the 'params' dictionary in the config object passed to the
-    # client constructor is identical to the one we defined in our test config.
-    assert (
-        called_config.params == passthrough_params
-    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
+    # The property schema supplies defaults for extension-owned parameters.
+    # Verify that every explicitly supplied value survives that merge.
+    assert all(
+        called_config.params[key] == value
+        for key, value in passthrough_params.items()
+    )
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")
     assert called_config.url == passthrough_params["url"]
+    assert called_config.provider_params() == {
+        "instruction": "speak happily",
+        "future_protocol_parameter": "future-value",
+    }

@@ -4,8 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
-import asyncio
+from unittest.mock import patch
 import json
 
 from ten_ai_base.struct import TTSTextInput
@@ -18,6 +17,7 @@ from ..cosy_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
 )
+from .mock_client import MockClientStream
 
 
 # ================ test metrics ================
@@ -37,6 +37,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="tts_request_for_metrics",
             text="hello, this is a metrics test.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -89,43 +90,15 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.synthesize_audio = AsyncMock()
-
-    # Create state to hold the queue and task
-    stream_state = {"queue": None, "task": None}
-
-    async def get_audio_data():
-        """Simulate async streaming data from queue"""
-        # Lazy initialization: create queue and start producer on first call
-        if stream_state["queue"] is None:
-            stream_state["queue"] = asyncio.Queue()
-
-            async def simulate_audio_stream():
-                """Simulate TTS service sending data asynchronously"""
-                queue = stream_state["queue"]
-                # Delay to simulate network latency and TTS processing time
-                await asyncio.sleep(0.6)  # 600ms TTFB
-
-                # Send first audio chunk
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x11\x22\x33"))
-
-                # Simulate more chunks arriving
-                await asyncio.sleep(0.05)
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x44\x55\x66"))
-
-                await asyncio.sleep(0.05)
-                await queue.put((False, MESSAGE_TYPE_PCM, b"\x77\x88\x99"))
-
-                # Send completion signal
-                await asyncio.sleep(0.05)
-                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
-
-            # Start producer task in background
-            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
-
-        return await stream_state["queue"].get()
-
-    mock_instance.get_audio_data.side_effect = get_audio_data
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"\x11\x22\x33", 0.6),
+            (MESSAGE_TYPE_PCM, b"\x44\x55\x66", 0.05),
+            (MESSAGE_TYPE_PCM, b"\x77\x88\x99", 0.05),
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0.05),
+        ]
+    )
+    stream.configure(mock_instance)
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
