@@ -93,12 +93,12 @@ def test_params_passthrough(MockCosyTTSClient):
     call_args, call_kwargs = MockCosyTTSClient.call_args
     called_config = call_args[0]
 
-    # The property schema supplies defaults for extension-owned parameters.
-    # Verify that every explicitly supplied value survives that merge.
-    assert all(
-        called_config.params[key] == value
-        for key, value in passthrough_params.items()
-    )
+    # Extension-owned and dedicated SDK arguments are extracted from params.
+    # Everything left is forwarded to DashScope unchanged.
+    assert called_config.params == {
+        "instruction": "speak happily",
+        "future_protocol_parameter": "future-value",
+    }
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")

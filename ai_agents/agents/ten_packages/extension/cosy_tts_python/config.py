@@ -9,28 +9,6 @@ SUPPORTED_PCM_SAMPLE_RATES = frozenset(
     {8000, 16000, 22050, 24000, 44100, 48000}
 )
 
-_EXTENSION_PARAM_NAMES = frozenset(
-    {
-        "api_key",
-        "cancel_timeout_ms",
-        "dump",
-        "dump_path",
-        "first_audio_timeout_ms",
-        "format",
-        "headers",
-        "input_idle_timeout_ms",
-        "model",
-        "pool_size",
-        "pool_wait_timeout_ms",
-        "sample_rate",
-        "task_timeout_ms",
-        "url",
-        "voice",
-        "workspace_id",
-        "black_list_params",
-    },
-)
-
 
 class CosyTTSConfig(BaseModel):
     # Cosy TTS credentials
@@ -39,6 +17,7 @@ class CosyTTSConfig(BaseModel):
     # TTS specific configs
     model: str = ""  # Model name
     voice: str = ""  # Voice name
+    format: str = "pcm"
     sample_rate: int = 16000  # Audio sample rate
     url: str = ""  # DashScope WebSocket URL
     workspace_id: str = ""
@@ -86,28 +65,15 @@ class CosyTTSConfig(BaseModel):
         return f"{config}"
 
     def update_params(self) -> None:
-        """Update config attributes from params dictionary."""
-        param_names = [
-            "api_key",
-            "model",
-            "sample_rate",
-            "voice",
-            "url",
-            "workspace_id",
-            "headers",
-            "pool_size",
-            "pool_wait_timeout_ms",
-            "first_audio_timeout_ms",
-            "task_timeout_ms",
-            "input_idle_timeout_ms",
-            "cancel_timeout_ms",
-        ]
+        """Extract dedicated config fields, leaving provider params behind."""
+        # pylint: disable-next=not-an-iterable
+        for param_name in self.__class__.model_fields:
+            if param_name == "params" or param_name not in self.params:
+                continue
 
-        for param_name in param_names:
-            if param_name in self.params and not self.is_black_list_params(
-                param_name
-            ):
-                setattr(self, param_name, self.params[param_name])
+            value = self.params.pop(param_name)  # pylint: disable=no-member
+            if not self.is_black_list_params(param_name):
+                setattr(self, param_name, value)
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
@@ -142,6 +108,9 @@ class CosyTTSConfig(BaseModel):
                 f"params.sample_rate must be one of: {supported}",
             )
 
+        if self.format != "pcm":
+            raise ValueError("params.format must be pcm")
+
         for field_name in (
             "pool_wait_timeout_ms",
             "first_audio_timeout_ms",
@@ -165,8 +134,4 @@ class CosyTTSConfig(BaseModel):
 
     def provider_params(self) -> dict[str, Any]:
         """Return task parameters that should be forwarded to DashScope."""
-        return {
-            key: copy.deepcopy(value)
-            for key, value in self.params.items()  # pylint: disable=no-member
-            if key not in _EXTENSION_PARAM_NAMES
-        }
+        return copy.deepcopy(self.params)

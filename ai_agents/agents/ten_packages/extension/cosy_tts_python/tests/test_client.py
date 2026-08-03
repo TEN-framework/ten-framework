@@ -66,6 +66,7 @@ def test_borrow_forwards_provider_params_and_pcm_sample_rate():
             "future_protocol_parameter": "future-value",
         },
     )
+    config.update_params()
 
     with patch(
         "cosy_tts_python.cosy_tts.SpeechSynthesizerObjectPool",
