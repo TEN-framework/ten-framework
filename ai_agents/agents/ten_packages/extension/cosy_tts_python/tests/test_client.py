@@ -1,16 +1,56 @@
+import json
 from unittest.mock import MagicMock, patch
 
 # pylint: disable=protected-access
 
 from ..config import CosyTTSConfig
-from ..cosy_tts import AUDIO_FORMAT_MAPPING, SharedPool
+from ..cosy_tts import (
+    AUDIO_FORMAT_MAPPING,
+    MESSAGE_TYPE_CMD_ERROR,
+    AsyncIteratorCallback,
+    ProviderError,
+    SharedPool,
+)
 
 
 def _reset_shared_pool() -> None:
     SharedPool._pool = None
-    SharedPool._semaphore = None
     SharedPool._signature = None
     SharedPool._clients = 0
+
+
+def test_default_pool_keeps_two_preconnected_synthesizers():
+    assert CosyTTSConfig().pool_size == 2
+
+
+def test_provider_error_is_queued_for_immediate_reporting():
+    queue = MagicMock()
+    loop = MagicMock()
+    callback = AsyncIteratorCallback(MagicMock(), queue, loop, "request-id")
+    callback.bind_task("task-id")
+    message = json.dumps(
+        {
+            "header": {
+                "task_id": "task-id",
+                "error_code": "RequestTimeout",
+                "error_message": "request timeout after 23 seconds",
+            }
+        }
+    )
+
+    with patch("asyncio.run_coroutine_threadsafe") as submit:
+        callback.on_error(message)
+
+    queued_item = queue.put.call_args.args[0]
+    assert queued_item.message_type == MESSAGE_TYPE_CMD_ERROR
+    assert queued_item.request_id == "request-id"
+    assert queued_item.task_id == "task-id"
+    assert queued_item.payload == ProviderError(
+        code="RequestTimeout",
+        message="request timeout after 23 seconds",
+        task_id="task-id",
+    )
+    submit.assert_called_once_with(queue.put.return_value, loop)
 
 
 def test_pool_uses_custom_url_workspace_and_headers():

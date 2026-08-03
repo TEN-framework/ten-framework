@@ -30,16 +30,10 @@ Set the following environment variables:
 - `url`: Optional full DashScope WebSocket URL. When omitted, the DashScope
   SDK default is used.
 - `pool_size`: Number of preconnected synthesizers shared by all Cosy
-  extension instances in one worker process (default: 1, valid range: 1-100).
+  extension instances in one worker process (default: 2, valid range: 1-100).
   For production, size the pool to roughly 1.5-2 times peak concurrency without
   exceeding the account QPS limit.
 - `headers`: Optional custom WebSocket handshake headers.
-- `pool_wait_timeout_ms`: Maximum wait for a pooled synthesizer (default: 1000).
-- `first_audio_timeout_ms`: Maximum wait for first audio (default: 5000).
-- `task_timeout_ms`: Maximum lifetime of one synthesis task (default: 30000).
-- `input_idle_timeout_ms`: Maximum interval between streaming text chunks
-  (default: 20000; must be below the provider's 23-second limit).
-- `cancel_timeout_ms`: Maximum wait for cancellation completion (default: 1000).
 - Other keys under `params` are passed unchanged to DashScope task parameters.
   Extension-owned keys and `format` are excluded. This extension always emits
   mono 16-bit PCM.
@@ -82,7 +76,7 @@ Measure the pooled SDK path used by this extension:
 ```bash
 uv run --no-project --with 'dashscope==1.26.4' \
   python scripts/benchmark_sdk_ttfb.py \
-  --mode pooled --pool-size 1 --warmup 3 --iterations 20
+  --mode pooled --pool-size 2 --warmup 3 --iterations 20
 ```
 
 For a cold-connection comparison, add `--fresh-connection-per-task` to the

@@ -3,14 +3,9 @@
     "dump_path": "./",
     "params": {
         "api_key": "${env:COSY_TTS_API_KEY|}",
-        "cancel_timeout_ms": 1000,
-        "first_audio_timeout_ms": 5000,
-        "input_idle_timeout_ms": 20000,
         "model": "cosyvoice-v3-flash",
-        "pool_size": 1,
-        "pool_wait_timeout_ms": 1000,
+        "pool_size": 2,
         "sample_rate": 16000,
-        "task_timeout_ms": 30000,
         "voice": "longanyang",
         "url": "${env:COSY_TTS_URL|}",
         "workspace_id": "${env:COSY_TTS_WORKSPACE_ID|}"

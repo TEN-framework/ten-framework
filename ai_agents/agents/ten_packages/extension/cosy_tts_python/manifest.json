@@ -40,18 +40,9 @@
             "api_key": {
               "type": "string"
             },
-            "cancel_timeout_ms": {
-              "type": "int64"
-            },
-            "first_audio_timeout_ms": {
-              "type": "int64"
-            },
             "headers": {
               "type": "object",
               "properties": {}
-            },
-            "input_idle_timeout_ms": {
-              "type": "int64"
             },
             "model": {
               "type": "string"
@@ -59,13 +50,7 @@
             "pool_size": {
               "type": "int64"
             },
-            "pool_wait_timeout_ms": {
-              "type": "int64"
-            },
             "sample_rate": {
-              "type": "int64"
-            },
-            "task_timeout_ms": {
               "type": "int64"
             },
             "voice": {

@@ -326,6 +326,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         request_id: str,
         provider_error: ProviderError,
     ) -> None:
+        if self.client is not None:
+            await self.client.cancel()
         error_code = (
             ModuleErrorCode.FATAL_ERROR
             if provider_error.code in _FATAL_VENDOR_ERROR_CODES

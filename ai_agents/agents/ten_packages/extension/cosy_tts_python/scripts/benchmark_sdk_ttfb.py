@@ -268,7 +268,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=os.getenv("DASHSCOPE_WORKSPACE_ID", ""),
     )
     parser.add_argument("--mode", choices=("pooled", "fresh"), default="pooled")
-    parser.add_argument("--pool-size", type=int, default=1)
+    parser.add_argument("--pool-size", type=int, default=2)
     parser.add_argument("--model", default="cosyvoice-v3-flash")
     parser.add_argument("--voice", default="longanyang")
     parser.add_argument("--text", default=DEFAULT_TEXT)

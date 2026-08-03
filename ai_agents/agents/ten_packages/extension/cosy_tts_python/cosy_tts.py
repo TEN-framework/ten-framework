@@ -64,9 +64,7 @@ class CosyTTSProviderError(RuntimeError):
 @dataclass(frozen=True)
 class _PoolLease:
     pool: SpeechSynthesizerObjectPool
-    semaphore: threading.BoundedSemaphore
     synthesizer: SpeechSynthesizer
-    wait_ms: int
 
 
 class SharedPool:
@@ -74,7 +72,6 @@ class SharedPool:
 
     _lock = threading.Lock()
     _pool: SpeechSynthesizerObjectPool | None = None
-    _semaphore: threading.BoundedSemaphore | None = None
     _signature: tuple[Any, ...] | None = None
     _clients = 0
 
@@ -101,7 +98,7 @@ class SharedPool:
     def _ensure_pool_locked(
         cls,
         config: CosyTTSConfig,
-    ) -> tuple[SpeechSynthesizerObjectPool, threading.BoundedSemaphore]:
+    ) -> SpeechSynthesizerObjectPool:
         signature = cls._signature_for(config)
         if cls._pool is None:
             dashscope.api_key = config.api_key
@@ -111,7 +108,6 @@ class SharedPool:
                 headers=cls._headers(config),
                 workspace=config.workspace_id or None,
             )
-            cls._semaphore = threading.BoundedSemaphore(config.pool_size)
             cls._signature = signature
         elif cls._signature != signature:
             raise ValueError(
@@ -119,9 +115,7 @@ class SharedPool:
                 "URL, workspace, headers, or pool_size",
             )
 
-        if cls._semaphore is None:
-            raise RuntimeError("Cosy TTS pool semaphore is not initialized")
-        return cls._pool, cls._semaphore
+        return cls._pool
 
     @classmethod
     def register(cls, config: CosyTTSConfig) -> None:
@@ -136,62 +130,44 @@ class SharedPool:
         callback: ResultCallback,
     ) -> _PoolLease:
         with cls._lock:
-            pool, semaphore = cls._ensure_pool_locked(config)
+            pool = cls._ensure_pool_locked(config)
 
-        wait_started_ns = time.perf_counter_ns()
-        acquired = semaphore.acquire(timeout=config.pool_wait_timeout_ms / 1000)
-        wait_ms = int((time.perf_counter_ns() - wait_started_ns) / 1_000_000)
-        if not acquired:
-            raise TimeoutError(
-                f"Cosy TTS pool wait exceeded {config.pool_wait_timeout_ms}ms",
-            )
+        synthesizer = pool.borrow_synthesizer(
+            callback=callback,
+            format=AUDIO_FORMAT_MAPPING[config.sample_rate],
+            model=config.model,
+            voice=config.voice,
+            additional_params=config.provider_params(),
+        )
 
-        try:
-            synthesizer = pool.borrow_synthesizer(
-                callback=callback,
-                format=AUDIO_FORMAT_MAPPING[config.sample_rate],
-                model=config.model,
-                voice=config.voice,
-                additional_params=config.provider_params(),
-            )
-        except Exception:
-            semaphore.release()
-            raise
-
-        return _PoolLease(pool, semaphore, synthesizer, wait_ms)
+        return _PoolLease(pool, synthesizer)
 
     @classmethod
     def return_lease(cls, lease: _PoolLease) -> None:
-        try:
-            with cls._lock:
-                current_pool = cls._pool
-            if lease.pool is current_pool:
-                returned = lease.pool.return_synthesizer(lease.synthesizer)
-                if returned is False:
-                    # The SDK can create an unpooled cold object while a closed
-                    # pooled object is reconnecting. Such an object doesn't
-                    # affect the SDK's borrowed count and must be closed here.
-                    lease.synthesizer.close()
-            else:
+        with cls._lock:
+            current_pool = cls._pool
+        if lease.pool is current_pool:
+            returned = lease.pool.return_synthesizer(lease.synthesizer)
+            if returned is False:
+                # The SDK can create an unpooled cold object while a closed
+                # pooled object is reconnecting. Such an object doesn't
+                # affect the SDK's borrowed count and must be closed here.
                 lease.synthesizer.close()
-        finally:
-            lease.semaphore.release()
+        else:
+            lease.synthesizer.close()
 
     @classmethod
     def discard_lease(cls, lease: _PoolLease) -> None:
         """Return a closed lease so the SDK pool can replace its connection."""
-        try:
-            lease.synthesizer.close()
-            with cls._lock:
-                current_pool = cls._pool
-            if lease.pool is current_pool:
-                # The SDK pool's maintenance thread replaces disconnected
-                # objects. Returning the closed object also balances the SDK's
-                # internal borrowed-object count without disrupting other
-                # requests which may be using the same singleton pool.
-                lease.pool.return_synthesizer(lease.synthesizer)
-        finally:
-            lease.semaphore.release()
+        lease.synthesizer.close()
+        with cls._lock:
+            current_pool = cls._pool
+        if lease.pool is current_pool:
+            # The SDK pool's maintenance thread replaces disconnected
+            # objects. Returning the closed object also balances the SDK's
+            # internal borrowed-object count without disrupting other
+            # requests which may be using the same singleton pool.
+            lease.pool.return_synthesizer(lease.synthesizer)
 
     @classmethod
     def release_client(cls) -> None:
@@ -203,7 +179,6 @@ class SharedPool:
             if cls._clients == 0:
                 pool_to_shutdown = cls._pool
                 cls._pool = None
-                cls._semaphore = None
                 cls._signature = None
         if pool_to_shutdown is not None:
             pool_to_shutdown.shutdown()
@@ -249,6 +224,15 @@ class AsyncIteratorCallback(ResultCallback):
 
     def on_error(self, message: str) -> None:
         self.error = self._parse_error(message)
+        self._put(
+            QueueItem(
+                done=True,
+                message_type=MESSAGE_TYPE_CMD_ERROR,
+                payload=self.error,
+                request_id=self.request_id,
+                task_id=self.error.task_id,
+            ),
+        )
 
     def on_close(self) -> None:
         self.closed = True
@@ -333,9 +317,6 @@ class _ActiveTask:
     request_id: str
     lease: _PoolLease
     callback: AsyncIteratorCallback
-    first_audio_watchdog: asyncio.Task[None] | None = None
-    task_watchdog: asyncio.Task[None] | None = None
-    input_idle_watchdog: asyncio.Task[None] | None = None
 
 
 class CosyTTSClient:
@@ -392,8 +373,6 @@ class CosyTTSClient:
             await self._abort_active(active, error, emit_error=False)
             raise CosyTTSProviderError(error) from exc
 
-        self._reset_input_idle_watchdog(active)
-
     async def complete(self, request_id: str) -> None:
         async with self._active_lock:
             active = self._active
@@ -405,20 +384,11 @@ class CosyTTSClient:
                 f"active: {active.request_id}, completing: {request_id}",
             )
 
-        self._cancel_watchdog(active.input_idle_watchdog)
-        active.input_idle_watchdog = None
         try:
-            await asyncio.to_thread(
-                active.lease.synthesizer.streaming_complete,
-                self.config.task_timeout_ms,
-            )
+            await asyncio.to_thread(active.lease.synthesizer.streaming_complete)
         except Exception as exc:
             error = active.callback.error or ProviderError(
-                code=(
-                    "TaskTimeout"
-                    if isinstance(exc, TimeoutError)
-                    else type(exc).__name__
-                ),
+                code=type(exc).__name__,
                 message=str(exc),
                 task_id=active.callback.task_id,
             )
@@ -434,7 +404,6 @@ class CosyTTSClient:
         if not await self._clear_if_active(active):
             return
 
-        self._cancel_watchdogs(active)
         response = active.lease.synthesizer.get_response() or {}
         completion = self._completion_from_response(active, response)
         await asyncio.to_thread(SharedPool.return_lease, active.lease)
@@ -456,12 +425,8 @@ class CosyTTSClient:
             return
 
         active.callback.cancel()
-        self._cancel_watchdogs(active)
         try:
-            await asyncio.to_thread(
-                active.lease.synthesizer.streaming_cancel,
-                self.config.cancel_timeout_ms,
-            )
+            await asyncio.to_thread(active.lease.synthesizer.streaming_cancel)
             if active.callback.error is not None:
                 raise CosyTTSProviderError(active.callback.error)
         except Exception as exc:
@@ -500,66 +465,11 @@ class CosyTTSClient:
             callback.bind_task(lease.synthesizer.get_last_request_id())
             active = _ActiveTask(request_id, lease, callback)
             self._active = active
-            active.first_audio_watchdog = asyncio.create_task(
-                self._watch_first_audio(active),
-            )
-            active.task_watchdog = asyncio.create_task(self._watch_task(active))
             self.ten_env.log_info(
                 "Cosy TTS task lease acquired, "
-                f"request_id: {request_id}, task_id: {callback.task_id}, "
-                f"pool_wait_ms: {lease.wait_ms}",
+                f"request_id: {request_id}, task_id: {callback.task_id}",
             )
             return active
-
-    async def _watch_first_audio(self, active: _ActiveTask) -> None:
-        await asyncio.sleep(self.config.first_audio_timeout_ms / 1000)
-        if active.callback.first_audio_received.is_set():
-            return
-        await self._abort_active(
-            active,
-            ProviderError(
-                code="FirstAudioTimeout",
-                message=(
-                    "Cosy TTS first audio exceeded "
-                    f"{self.config.first_audio_timeout_ms}ms"
-                ),
-                task_id=active.callback.task_id,
-            ),
-            emit_error=True,
-        )
-
-    async def _watch_task(self, active: _ActiveTask) -> None:
-        await asyncio.sleep(self.config.task_timeout_ms / 1000)
-        await self._abort_active(
-            active,
-            ProviderError(
-                code="TaskTimeout",
-                message=f"Cosy TTS task exceeded {self.config.task_timeout_ms}ms",
-                task_id=active.callback.task_id,
-            ),
-            emit_error=True,
-        )
-
-    def _reset_input_idle_watchdog(self, active: _ActiveTask) -> None:
-        self._cancel_watchdog(active.input_idle_watchdog)
-        active.input_idle_watchdog = asyncio.create_task(
-            self._watch_input_idle(active)
-        )
-
-    async def _watch_input_idle(self, active: _ActiveTask) -> None:
-        await asyncio.sleep(self.config.input_idle_timeout_ms / 1000)
-        await self._abort_active(
-            active,
-            ProviderError(
-                code="InputIdleTimeout",
-                message=(
-                    "Cosy TTS input interval exceeded "
-                    f"{self.config.input_idle_timeout_ms}ms"
-                ),
-                task_id=active.callback.task_id,
-            ),
-            emit_error=True,
-        )
 
     async def _abort_active(
         self,
@@ -570,7 +480,6 @@ class CosyTTSClient:
         if not await self._clear_if_active(active):
             return
         active.callback.cancel()
-        self._cancel_watchdogs(active)
         await asyncio.to_thread(SharedPool.discard_lease, active.lease)
         if emit_error:
             await self._receive_queue.put(
@@ -589,16 +498,6 @@ class CosyTTSClient:
                 return False
             self._active = None
             return True
-
-    def _cancel_watchdogs(self, active: _ActiveTask) -> None:
-        self._cancel_watchdog(active.first_audio_watchdog)
-        self._cancel_watchdog(active.task_watchdog)
-        self._cancel_watchdog(active.input_idle_watchdog)
-
-    @staticmethod
-    def _cancel_watchdog(task: asyncio.Task[None] | None) -> None:
-        if task is not None and task is not asyncio.current_task():
-            task.cancel()
 
     @staticmethod
     def _completion_from_response(

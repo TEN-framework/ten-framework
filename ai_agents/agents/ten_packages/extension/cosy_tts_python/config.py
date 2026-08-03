@@ -22,14 +22,7 @@ class CosyTTSConfig(BaseModel):
     url: str = ""  # DashScope WebSocket URL
     workspace_id: str = ""
     headers: dict[str, str] = Field(default_factory=dict)
-    pool_size: int = 1  # Preconnected synthesizers shared by this worker
-    pool_wait_timeout_ms: int = 1000
-
-    # Request lifecycle timeouts.
-    first_audio_timeout_ms: int = 5000
-    task_timeout_ms: int = 30000
-    input_idle_timeout_ms: int = 20000
-    cancel_timeout_ms: int = 1000
+    pool_size: int = 2  # Preconnected synthesizers shared by this worker
 
     # Debug and dump settings
     dump: bool = False
@@ -110,21 +103,6 @@ class CosyTTSConfig(BaseModel):
 
         if self.format != "pcm":
             raise ValueError("params.format must be pcm")
-
-        for field_name in (
-            "pool_wait_timeout_ms",
-            "first_audio_timeout_ms",
-            "task_timeout_ms",
-            "input_idle_timeout_ms",
-            "cancel_timeout_ms",
-        ):
-            if getattr(self, field_name) <= 0:
-                raise ValueError(f"params.{field_name} must be greater than 0")
-
-        if self.input_idle_timeout_ms >= 23000:
-            raise ValueError(
-                "params.input_idle_timeout_ms must be less than 23000"
-            )
 
         if self.provider_params().get("enable_ssml") is True:
             raise ValueError(
