@@ -46,7 +46,6 @@ In `agents/examples/voice-assistant`:
 
 | Graph name | STT | TTS |
 | ---------- | --- | --- |
-| `voice_assistant_blaze_stt` | Blaze | ElevenLabs |
 | `voice_assistant_blaze_full` | Blaze | Blaze |
 
 **Note:** Blaze STT is batch HTTP (`/v1/stt/execute`). The TEN extension buffers

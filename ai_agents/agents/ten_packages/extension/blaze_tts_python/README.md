@@ -53,7 +53,6 @@ In `agents/examples/voice-assistant`:
 
 | Graph name | STT | TTS |
 | ---------- | --- | --- |
-| `voice_assistant_blaze_tts` | Deepgram | Blaze |
 | `voice_assistant_blaze_full` | Blaze | Blaze |
 
 ### Live smoke test
