@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "cosy_tts_python",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "dependencies": [
     {
       "type": "system",
@@ -40,16 +40,41 @@
             "api_key": {
               "type": "string"
             },
+            "cancel_timeout_ms": {
+              "type": "int64"
+            },
+            "first_audio_timeout_ms": {
+              "type": "int64"
+            },
+            "headers": {
+              "type": "object",
+              "properties": {}
+            },
+            "input_idle_timeout_ms": {
+              "type": "int64"
+            },
             "model": {
               "type": "string"
             },
+            "pool_size": {
+              "type": "int64"
+            },
+            "pool_wait_timeout_ms": {
+              "type": "int64"
+            },
             "sample_rate": {
+              "type": "int64"
+            },
+            "task_timeout_ms": {
               "type": "int64"
             },
             "voice": {
               "type": "string"
             },
             "url": {
+              "type": "string"
+            },
+            "workspace_id": {
               "type": "string"
             }
           }
