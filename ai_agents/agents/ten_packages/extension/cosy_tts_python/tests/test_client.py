@@ -36,6 +36,40 @@ def test_pool_size_cannot_be_configured():
         config.validate_params()
 
 
+def test_to_str_redacts_nested_provider_secrets():
+    secret = "nested-provider-secret"
+    config = CosyTTSConfig(
+        params={"provider": {"token": secret}},
+    )
+
+    assert secret not in config.to_str()
+
+
+def test_config_has_no_legacy_blacklist():
+    assert "black_list_params" not in CosyTTSConfig.model_fields
+
+
+def test_update_params_extracts_only_typed_fields():
+    config = CosyTTSConfig(
+        params={
+            "api_key": "test-key",
+            "model": "cosyvoice-v3-flash",
+            "voice": "longanyang",
+            "dump": True,
+            "future_protocol_parameter": "future-value",
+        }
+    )
+
+    config.update_params()
+
+    assert config.api_key == "test-key"
+    assert config.dump is False
+    assert config.provider_params() == {
+        "dump": True,
+        "future_protocol_parameter": "future-value",
+    }
+
+
 def test_provider_error_is_queued_for_immediate_reporting():
     queue = MagicMock()
     loop = MagicMock()

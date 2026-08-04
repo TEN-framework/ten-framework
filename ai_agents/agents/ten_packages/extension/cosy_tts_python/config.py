@@ -9,6 +9,17 @@ SUPPORTED_PCM_SAMPLE_RATES = frozenset(
     {8000, 16000, 22050, 24000, 44100, 48000}
 )
 
+_TYPED_PARAM_KEYS = (
+    "api_key",
+    "model",
+    "voice",
+    "format",
+    "sample_rate",
+    "url",
+    "workspace_id",
+    "headers",
+)
+
 
 class CosyTTSConfig(BaseModel):
     # Cosy TTS credentials
@@ -27,44 +38,20 @@ class CosyTTSConfig(BaseModel):
     dump: bool = False
     dump_path: str = "./"
 
-    # Parameters
-    # Function reserved, currently empty, may need to add content later
-    black_list_params: list[str] = Field(default_factory=list)
     params: dict[str, Any] = Field(default_factory=dict)
-
-    def is_black_list_params(self, key: str) -> bool:
-        return key in self.black_list_params
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
         if not sensitive_handling:
             return f"{self}"
 
-        config = copy.deepcopy(self)
-
-        # Encrypt sensitive fields
-        if config.api_key:
-            config.api_key = utils.encrypt(config.api_key)
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
-        for headers in (config.headers, config.params.get("headers", {})):
-            if not isinstance(headers, dict):
-                continue
-            for key in ("Authorization", "authorization", "x-api-key"):
-                if key in headers:
-                    headers[key] = utils.encrypt(str(headers[key]))
-
-        return f"{config}"
+        return f"{utils.redact_json(self.model_dump())}"
 
     def update_params(self) -> None:
         """Extract dedicated config fields, leaving provider params behind."""
-        # pylint: disable-next=not-an-iterable
-        for param_name in self.__class__.model_fields:
-            if param_name == "params" or param_name not in self.params:
-                continue
-
-            value = self.params.pop(param_name)  # pylint: disable=no-member
-            if not self.is_black_list_params(param_name):
+        for param_name in _TYPED_PARAM_KEYS:
+            if param_name in self.params:
+                value = self.params.pop(param_name)  # pylint: disable=no-member
                 setattr(self, param_name, value)
 
     def validate_params(self) -> None:
