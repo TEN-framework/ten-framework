@@ -1,8 +1,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # pylint: disable=protected-access
 
 from ..config import CosyTTSConfig
@@ -21,19 +19,25 @@ def _reset_shared_pool() -> None:
     SharedPool._clients = 0
 
 
-def test_pool_size_cannot_be_configured():
+def test_unsupported_control_params_are_ignored():
     config = CosyTTSConfig(
         params={
             "api_key": "test-key",
             "model": "cosyvoice-v3-flash",
             "voice": "longanyang",
             "pool_size": 4,
+            "format": "mp3",
+            "enable_ssml": True,
+            "future_protocol_parameter": "future-value",
         }
     )
     config.update_params()
+    config.validate_params()
 
-    with pytest.raises(ValueError, match="pool_size is managed internally"):
-        config.validate_params()
+    assert config.format == "pcm"
+    assert config.provider_params() == {
+        "future_protocol_parameter": "future-value",
+    }
 
 
 def test_to_str_redacts_nested_provider_secrets():

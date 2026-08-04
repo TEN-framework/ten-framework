@@ -31,16 +31,17 @@ Set the following environment variables:
   SDK default is used.
 - `headers`: Optional custom WebSocket handshake headers.
 - Other keys under `params` are passed unchanged to DashScope task parameters.
-  Extension-owned keys and `format` are excluded. This extension always emits
-  mono 16-bit PCM.
+  Extension-owned keys are excluded. `format` is ignored because this extension
+  always emits mono 16-bit PCM.
 
-`enable_ssml=true` is rejected because CosyVoice SSML only permits one text
-chunk, while this extension intentionally preserves streaming multi-chunk input.
+`enable_ssml` is ignored because CosyVoice SSML only permits one text chunk,
+while this extension intentionally preserves streaming multi-chunk input.
 Word-level timestamp output is not currently supported.
 
 The extension internally maintains two preconnected synthesizers: one for the
 current serial task and one warm spare for recovery after a broken connection.
-The pool size is intentionally not configurable.
+The pool size is intentionally not configurable; any supplied `pool_size` is
+ignored.
 
 ## Connection reuse constraints
 

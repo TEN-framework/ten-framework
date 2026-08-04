@@ -13,11 +13,16 @@ _TYPED_PARAM_KEYS = (
     "api_key",
     "model",
     "voice",
-    "format",
     "sample_rate",
     "url",
     "workspace_id",
     "headers",
+)
+
+_IGNORED_PARAM_KEYS = (
+    "pool_size",
+    "format",
+    "enable_ssml",
 )
 
 
@@ -49,16 +54,20 @@ class CosyTTSConfig(BaseModel):
 
     def update_params(self) -> None:
         """Extract dedicated config fields, leaving provider params behind."""
+        for param_name in _IGNORED_PARAM_KEYS:
+            self.params.pop(param_name, None)  # pylint: disable=no-member
+
         for param_name in _TYPED_PARAM_KEYS:
             if param_name in self.params:
                 value = self.params.pop(param_name)  # pylint: disable=no-member
                 setattr(self, param_name, value)
 
+        # The extension only emits streaming mono 16-bit PCM. Ignore any
+        # externally supplied format instead of rejecting the request.
+        self.format = "pcm"
+
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
-        if "pool_size" in self.params:
-            raise ValueError("params.pool_size is managed internally")
-
         required_fields = [
             "api_key",
             "model",
@@ -85,15 +94,6 @@ class CosyTTSConfig(BaseModel):
             )
             raise ValueError(
                 f"params.sample_rate must be one of: {supported}",
-            )
-
-        if self.format != "pcm":
-            raise ValueError("params.format must be pcm")
-
-        if self.provider_params().get("enable_ssml") is True:
-            raise ValueError(
-                "params.enable_ssml=true is incompatible with multi-chunk "
-                "streaming input",
             )
 
     def provider_params(self) -> dict[str, Any]:
