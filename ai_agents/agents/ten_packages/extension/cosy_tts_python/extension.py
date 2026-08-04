@@ -33,7 +33,6 @@ from .cosy_tts import (
     ProviderError,
 )
 
-
 _FATAL_VENDOR_ERROR_CODES = {
     "Arrearage",
     "Forbidden",
@@ -52,7 +51,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.client: CosyTTSClient | None = None
         self.config: CosyTTSConfig | None = None
         self.current_request_id: str | None = None
-        self.request_start_ts: datetime | None = None
         self.first_chunk_ts: datetime | None = None
         self.total_audio_bytes = 0
         self.request_text_characters = 0
@@ -228,7 +226,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 if item.message_type == MESSAGE_TYPE_PCM:
                     if isinstance(item.payload, bytes) and item.payload:
                         await self._handle_audio_chunk(
-                            item.payload, item.task_id
+                            item.payload, item.task_id, item.ttfb_ms
                         )
                     continue
 
@@ -267,7 +265,10 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 return
 
     async def _handle_audio_chunk(
-        self, audio_chunk: bytes, task_id: str
+        self,
+        audio_chunk: bytes,
+        task_id: str,
+        ttfb_ms: int | None,
     ) -> None:
         request_id = self.current_request_id
         config = self.config
@@ -281,13 +282,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             self.first_chunk_ts = datetime.now()
             self._provider_task_id = task_id
             await self.send_tts_audio_start(request_id)
-            if self.request_start_ts is not None:
-                ttfb_ms = int(
-                    (
-                        self.first_chunk_ts - self.request_start_ts
-                    ).total_seconds()
-                    * 1000,
-                )
+            if ttfb_ms is not None:
                 await self.send_tts_ttfb_metrics(
                     request_id=request_id,
                     ttfb_ms=ttfb_ms,
@@ -305,7 +300,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
     async def _begin_request(self, request_id: str) -> None:
         self.current_request_id = request_id
-        self.request_start_ts = datetime.now()
         self.first_chunk_ts = None
         self.total_audio_bytes = 0
         self.request_text_characters = 0
@@ -384,7 +378,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 )
 
             self.current_request_id = None
-            self.request_start_ts = None
             self.first_chunk_ts = None
             self.total_audio_bytes = 0
             self.request_text_characters = 0

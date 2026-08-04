@@ -16,7 +16,6 @@ from ten_runtime.async_ten_env import AsyncTenEnv
 
 from .config import CosyTTSConfig
 
-
 MESSAGE_TYPE_PCM = 1
 MESSAGE_TYPE_CMD_COMPLETE = 2
 MESSAGE_TYPE_CMD_ERROR = 3
@@ -54,6 +53,7 @@ class QueueItem:
     payload: bytes | ProviderError | ProviderCompletion | None
     request_id: str
     task_id: str
+    ttfb_ms: int | None = None
 
 
 class CosyTTSProviderError(RuntimeError):
@@ -204,6 +204,7 @@ class AsyncIteratorCallback(ResultCallback):
         self.request_uuid = ""
         self.first_audio_received = threading.Event()
         self.task_started_ns: int | None = None
+        self.first_request_sent_ns: int | None = None
         self.first_audio_ns: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -265,9 +266,15 @@ class AsyncIteratorCallback(ResultCallback):
     def on_data(self, data: bytes) -> None:
         if self.cancelled or self.closed:
             return
+        ttfb_ms: int | None = None
         if not self.first_audio_received.is_set():
             self.first_audio_ns = time.perf_counter_ns()
             self.first_audio_received.set()
+            if self.first_request_sent_ns is not None:
+                ttfb_ms = int(
+                    (self.first_audio_ns - self.first_request_sent_ns)
+                    / 1_000_000
+                )
         self._put(
             QueueItem(
                 done=False,
@@ -275,6 +282,7 @@ class AsyncIteratorCallback(ResultCallback):
                 payload=bytes(data),
                 request_id=self.request_id,
                 task_id=self.task_id,
+                ttfb_ms=ttfb_ms,
             ),
         )
 
@@ -359,9 +367,7 @@ class CosyTTSClient:
     async def synthesize_audio(self, text: str, request_id: str) -> None:
         active = await self._get_or_create_active(request_id)
         try:
-            await asyncio.to_thread(
-                active.lease.synthesizer.streaming_call, text
-            )
+            await asyncio.to_thread(self._send_text, active, text)
         except Exception as exc:
             error = active.callback.error or ProviderError(
                 code=type(exc).__name__,
@@ -370,6 +376,12 @@ class CosyTTSClient:
             )
             await self._abort_active(active, error, emit_error=False)
             raise CosyTTSProviderError(error) from exc
+
+    @staticmethod
+    def _send_text(active: _ActiveTask, text: str) -> None:
+        if active.callback.first_request_sent_ns is None:
+            active.callback.first_request_sent_ns = time.perf_counter_ns()
+        active.lease.synthesizer.streaming_call(text)
 
     async def complete(self, request_id: str) -> None:
         async with self._active_lock:

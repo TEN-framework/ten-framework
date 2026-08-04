@@ -4,7 +4,8 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 import json
 
 from ten_ai_base.struct import TTSTextInput
@@ -14,10 +15,40 @@ from ten_runtime import (
     TenEnvTester,
 )
 from ..cosy_tts import (
+    AsyncIteratorCallback,
+    CosyTTSClient,
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
 )
 from .mock_client import MockClientStream
+
+
+def test_ttfb_uses_first_text_send_and_first_audio_callback() -> None:
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request-id",
+    )
+    callback._put = MagicMock()
+    synthesizer = MagicMock()
+    active = SimpleNamespace(
+        callback=callback,
+        lease=SimpleNamespace(synthesizer=synthesizer),
+    )
+
+    with patch(
+        "cosy_tts_python.cosy_tts.time.perf_counter_ns",
+        side_effect=[1_000_000_000, 1_607_000_000],
+    ):
+        CosyTTSClient._send_text(active, "first")
+        CosyTTSClient._send_text(active, "second")
+        callback.on_data(b"audio")
+
+    assert synthesizer.streaming_call.call_count == 2
+    assert callback.first_request_sent_ns == 1_000_000_000
+    assert callback.first_audio_ns == 1_607_000_000
+    assert callback._put.call_args.args[0].ttfb_ms == 607
 
 
 # ================ test metrics ================

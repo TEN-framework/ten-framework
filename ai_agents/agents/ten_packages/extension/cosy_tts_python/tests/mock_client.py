@@ -1,14 +1,16 @@
 import asyncio
 from collections.abc import Callable
+from dataclasses import replace
+import time
 from typing import Any
 from unittest.mock import AsyncMock
 
 from ..cosy_tts import (
     MESSAGE_TYPE_CMD_COMPLETE,
+    MESSAGE_TYPE_PCM,
     ProviderCompletion,
     QueueItem,
 )
-
 
 EventSpec = tuple[int, Any, float]
 
@@ -22,6 +24,9 @@ class MockClientStream:
         self._queue: asyncio.Queue[QueueItem | Exception] = asyncio.Queue()
         self._ready = asyncio.Event()
         self._cancelled = False
+        self._active_request_id: str | None = None
+        self._first_request_sent_ns: int | None = None
+        self._first_audio_received = False
 
     def configure(self, mock_instance: Any) -> None:
         mock_instance.start = AsyncMock(side_effect=self.start)
@@ -43,6 +48,12 @@ class MockClientStream:
 
     async def synthesize_audio(self, text: str, request_id: str) -> None:
         self._cancelled = False
+        if self._active_request_id != request_id:
+            self._active_request_id = request_id
+            self._first_request_sent_ns = None
+            self._first_audio_received = False
+        if self._first_request_sent_ns is None:
+            self._first_request_sent_ns = time.perf_counter_ns()
         for message_type, payload, delay in self._event_factory(
             text, request_id
         ):
@@ -89,4 +100,20 @@ class MockClientStream:
             if item.message_type == -1:
                 await asyncio.sleep(float(bytes(item.payload).decode()))
                 continue
+            if (
+                item.message_type == MESSAGE_TYPE_PCM
+                and not self._first_audio_received
+            ):
+                self._first_audio_received = True
+                if self._first_request_sent_ns is not None:
+                    item = replace(
+                        item,
+                        ttfb_ms=int(
+                            (
+                                time.perf_counter_ns()
+                                - self._first_request_sent_ns
+                            )
+                            / 1_000_000
+                        ),
+                    )
             return item
