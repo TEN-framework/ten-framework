@@ -28,6 +28,9 @@ def test_unsupported_control_params_are_ignored():
             "pool_size": 4,
             "format": "mp3",
             "enable_ssml": True,
+            "headers": {"X-Nested": "ignored"},
+            "base_url": "wss://ignored.example.com",
+            "workspace_id": "ignored-workspace",
             "future_protocol_parameter": "future-value",
         }
     )
@@ -38,6 +41,33 @@ def test_unsupported_control_params_are_ignored():
     assert config.provider_params() == {
         "future_protocol_parameter": "future-value",
     }
+
+
+def test_top_level_url_takes_precedence_over_params_url():
+    config = CosyTTSConfig(
+        url="wss://top-level.example.com/api-ws/v1/inference",
+        params={
+            "url": "wss://params.example.com/api-ws/v1/inference",
+        },
+    )
+
+    config.update_params()
+
+    assert config.url == "wss://top-level.example.com/api-ws/v1/inference"
+    assert config.provider_params() == {}
+
+
+def test_params_url_is_fallback_when_top_level_url_is_empty():
+    config = CosyTTSConfig(
+        params={
+            "url": "wss://params.example.com/api-ws/v1/inference",
+        },
+    )
+
+    config.update_params()
+
+    assert config.url == "wss://params.example.com/api-ws/v1/inference"
+    assert config.provider_params() == {}
 
 
 def test_to_str_redacts_nested_provider_secrets():
@@ -104,7 +134,7 @@ def test_provider_error_is_queued_for_immediate_reporting():
     submit.assert_called_once_with(queue.put.return_value, loop)
 
 
-def test_pool_uses_custom_url_workspace_and_headers():
+def test_pool_uses_custom_url_and_headers():
     _reset_shared_pool()
     pool = MagicMock()
     config = CosyTTSConfig(
@@ -112,7 +142,6 @@ def test_pool_uses_custom_url_workspace_and_headers():
         model="cosyvoice-v3-flash",
         voice="longanyang",
         url="wss://example.com/api-ws/v1/inference",
-        workspace_id="workspace-id",
         headers={"X-Test": "value"},
     )
 
@@ -131,7 +160,6 @@ def test_pool_uses_custom_url_workspace_and_headers():
             "User-Agent": "ten-cosy-tts/0.4.4",
             "X-Test": "value",
         },
-        workspace="workspace-id",
     )
     pool.shutdown.assert_called_once()
     _reset_shared_pool()

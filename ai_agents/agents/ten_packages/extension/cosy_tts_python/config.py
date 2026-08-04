@@ -14,15 +14,15 @@ _TYPED_PARAM_KEYS = (
     "model",
     "voice",
     "sample_rate",
-    "url",
-    "workspace_id",
-    "headers",
 )
 
 _IGNORED_PARAM_KEYS = (
     "pool_size",
     "format",
     "enable_ssml",
+    "headers",
+    "base_url",
+    "workspace_id",
 )
 
 
@@ -36,7 +36,6 @@ class CosyTTSConfig(BaseModel):
     format: str = "pcm"
     sample_rate: int = 16000  # Audio sample rate
     url: str = ""  # DashScope WebSocket URL
-    workspace_id: str = ""
     headers: dict[str, str] = Field(default_factory=dict)
 
     # Debug and dump settings
@@ -54,6 +53,12 @@ class CosyTTSConfig(BaseModel):
 
     def update_params(self) -> None:
         """Extract dedicated config fields, leaving provider params behind."""
+        params_url = self.params.pop("url", None)  # pylint: disable=no-member
+        if not self.url:
+            match params_url:
+                case str() if params_url.strip():
+                    self.url = params_url
+
         for param_name in _IGNORED_PARAM_KEYS:
             self.params.pop(param_name, None)  # pylint: disable=no-member
 

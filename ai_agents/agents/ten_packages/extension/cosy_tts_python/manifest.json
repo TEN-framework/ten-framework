@@ -34,15 +34,15 @@
     ],
     "property": {
       "properties": {
+        "headers": {
+          "type": "object",
+          "properties": {}
+        },
         "params": {
           "type": "object",
           "properties": {
             "api_key": {
               "type": "string"
-            },
-            "headers": {
-              "type": "object",
-              "properties": {}
             },
             "model": {
               "type": "string"
@@ -55,11 +55,11 @@
             },
             "url": {
               "type": "string"
-            },
-            "workspace_id": {
-              "type": "string"
             }
           }
+        },
+        "url": {
+          "type": "string"
         }
       }
     }

@@ -149,13 +149,10 @@ def _borrow_or_create(
 
 
 def _headers(args: argparse.Namespace) -> dict[str, str]:
-    headers = {
+    return {
         "Authorization": f"Bearer {args.api_key}",
         "User-Agent": "cosy-ttfb-dashscope-sdk/1.0",
     }
-    if args.workspace_id:
-        headers["X-DashScope-WorkSpace"] = args.workspace_id
-    return headers
 
 
 def _run_task(
@@ -262,10 +259,6 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-key",
         default=_first_env("COSY_TTS_API_KEY", "DASHSCOPE_API_KEY"),
-    )
-    parser.add_argument(
-        "--workspace-id",
-        default=os.getenv("DASHSCOPE_WORKSPACE_ID", ""),
     )
     parser.add_argument("--mode", choices=("pooled", "fresh"), default="pooled")
     parser.add_argument("--pool-size", type=int, default=2)

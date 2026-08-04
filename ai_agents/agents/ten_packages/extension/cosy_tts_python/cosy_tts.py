@@ -81,7 +81,6 @@ class SharedPool:
         return (
             config.api_key,
             config.url,
-            config.workspace_id,
             tuple(sorted(config.headers.items())),
         )
 
@@ -106,13 +105,12 @@ class SharedPool:
                 max_size=COSY_TTS_POOL_SIZE,
                 url=config.url or None,
                 headers=cls._headers(config),
-                workspace=config.workspace_id or None,
             )
             cls._signature = signature
         elif cls._signature != signature:
             raise ValueError(
                 "Cosy TTS pool is already initialized with different credentials, "
-                "URL, workspace, or headers",
+                "URL or headers",
             )
 
         return cls._pool

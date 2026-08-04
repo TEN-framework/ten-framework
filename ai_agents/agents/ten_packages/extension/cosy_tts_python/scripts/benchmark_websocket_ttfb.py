@@ -96,8 +96,6 @@ def _connect(args: argparse.Namespace) -> tuple[websocket.WebSocket, float]:
         "Authorization": f"Bearer {args.api_key}",
         "User-Agent": "cosy-ttfb-direct-websocket/1.0",
     }
-    if args.workspace_id:
-        headers["X-DashScope-WorkSpace"] = args.workspace_id
 
     started_ns = time.perf_counter_ns()
     connection = websocket.create_connection(
@@ -240,10 +238,6 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-key",
         default=_first_env("COSY_TTS_API_KEY", "DASHSCOPE_API_KEY"),
-    )
-    parser.add_argument(
-        "--workspace-id",
-        default=os.getenv("DASHSCOPE_WORKSPACE_ID", ""),
     )
     parser.add_argument("--model", default="cosyvoice-v3-flash")
     parser.add_argument("--voice", default="longanyang")

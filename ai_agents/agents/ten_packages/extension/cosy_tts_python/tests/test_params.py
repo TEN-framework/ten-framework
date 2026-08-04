@@ -71,6 +71,8 @@ def test_params_passthrough(MockCosyTTSClient):
         "future_protocol_parameter": "future-value",
     }
     passthrough_config = {
+        "url": "wss://top-level.example.com/api-ws/v1/inference",
+        "headers": {"X-Custom-Header": "custom-value"},
         "params": passthrough_params,
     }
 
@@ -102,7 +104,8 @@ def test_params_passthrough(MockCosyTTSClient):
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")
-    assert called_config.url == passthrough_params["url"]
+    assert called_config.url == passthrough_config["url"]
+    assert called_config.headers == passthrough_config["headers"]
     assert called_config.provider_params() == {
         "instruction": "speak happily",
         "future_protocol_parameter": "future-value",

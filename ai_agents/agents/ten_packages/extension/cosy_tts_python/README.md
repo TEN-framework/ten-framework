@@ -12,13 +12,14 @@ preconnect WebSockets and reuse them across successful or cancelled tasks.
 Set the following environment variables:
 - `COSY_TTS_API_KEY`: Your Cosy API Key
 - `COSY_TTS_URL`: Optional DashScope WebSocket URL
-- `COSY_TTS_WORKSPACE_ID`: Optional DashScope workspace ID
 
 ## Properties
 
 ### Top-level Properties
 - `dump`: Enable audio dump for debugging (type: bool)
 - `dump_path`: Path for audio dump files (type: string)
+- `url`: Optional full DashScope WebSocket URL.
+- `headers`: Optional custom WebSocket handshake headers.
 
 ### TTS Parameters (nested under `params`)
 
@@ -27,9 +28,8 @@ Set the following environment variables:
 - `model`: TTS model to use (default: "cosyvoice-v3-flash")
 - `sample_rate`: Audio sample rate in Hz (default: 16000)
 - `voice`: Voice name for synthesis (default: "longanyang")
-- `url`: Optional full DashScope WebSocket URL. When omitted, the DashScope
-  SDK default is used.
-- `headers`: Optional custom WebSocket handshake headers.
+- `url`: Optional fallback full DashScope WebSocket URL. The top-level `url`
+  takes precedence. When both are omitted, the DashScope SDK default is used.
 - Other keys under `params` are passed unchanged to DashScope task parameters.
   Extension-owned keys are excluded. `format` is ignored because this extension
   always emits mono 16-bit PCM.
