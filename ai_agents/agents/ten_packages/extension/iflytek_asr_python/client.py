@@ -139,8 +139,6 @@ class IFlytekAsrClient:
                 if response.terminal:
                     terminal_received = True
                     break
-        except asyncio.CancelledError:
-            raise
         except Exception as error:
             await self.listener.on_error(error)
         finally:
