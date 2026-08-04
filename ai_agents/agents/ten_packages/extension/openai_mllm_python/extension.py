@@ -78,6 +78,10 @@ class OpenAIRealtimeConfig(BaseModel):
     prompt: str = ""
     temperature: float = 0.5
     max_tokens: int = 1024
+    # Spoken opening line, sent once per join as a user message plus a
+    # response request. Empty (default) disables it; typically supplied
+    # per join by the platform rather than hardcoded in the graph.
+    greeting: str = ""
     voice: str = "alloy"
     server_vad: bool = True
     audio_out: bool = True
@@ -106,6 +110,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         self.connected: bool = False
 
         self.request_transcript: str = ""
+        self._greeting_sent: bool = False
         self.response_transcript: str = ""
         self.available_tools: list[LLMToolMetadata] = []
         self.loop: asyncio.AbstractEventLoop = None
@@ -169,6 +174,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             self.connected = True
                             self.openai_session_id = message.session.id
                             self.openai_session = message.session
+                            self._greeting_sent = False
                             await self._update_session()
                             await self._resume_context(self.message_context)
                         case SessionUpdated():
@@ -178,6 +184,17 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             await self.send_server_session_ready(
                                 MLLMServerSessionReady()
                             )
+                            if self.config.greeting and not self._greeting_sent:
+                                # Session config is applied; speak the
+                                # configured opening line once per join.
+                                self._greeting_sent = True
+                                await self.send_client_message_item(
+                                    MLLMClientMessageItem(
+                                        role="user",
+                                        content=self.config.greeting,
+                                    )
+                                )
+                                await self.send_client_create_response()
                         case ItemInputAudioTranscriptionDelta():
                             self.ten_env.log_debug(
                                 f"On request transcript delta {message.item_id} {message.content_index}"
