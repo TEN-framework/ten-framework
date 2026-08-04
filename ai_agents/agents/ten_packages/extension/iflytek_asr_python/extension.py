@@ -443,19 +443,14 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         )
 
     async def _wait_for_finalize_timeout(self, timeout: float) -> None:
-        try:
-            await asyncio.sleep(timeout)
-            claimed = await self._claim_finalize_completion(
-                cancel_timeout=False
-            )
-            if not claimed:
-                return
-            error = IFlytekFinalizeTimeoutError(timeout)
-            self.ten_env.log_error(str(error), category=LOG_CATEGORY_VENDOR)
-            await self._send_framework_error(error, fatal=False)
-            await self.send_asr_finalize_end()
-        except asyncio.CancelledError:
-            raise
+        await asyncio.sleep(timeout)
+        claimed = await self._claim_finalize_completion(cancel_timeout=False)
+        if not claimed:
+            return
+        error = IFlytekFinalizeTimeoutError(timeout)
+        self.ten_env.log_error(str(error), category=LOG_CATEGORY_VENDOR)
+        await self._send_framework_error(error, fatal=False)
+        await self.send_asr_finalize_end()
 
     async def _complete_finalize(self) -> bool:
         claimed = await self._claim_finalize_completion()

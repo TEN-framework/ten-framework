@@ -96,9 +96,10 @@ class IFlytekAsrConfig(BaseModel):
         return self
 
     def vendor_language(self) -> str:
+        languages = self.language.split("|")  # pylint: disable=no-member
         return "|".join(
             VENDOR_LANGUAGE_ALIASES.get(language, language)
-            for language in self.language.split("|")
+            for language in languages
         )
 
     def output_language(self) -> str:
@@ -141,6 +142,8 @@ class IFlytekAsrConfig(BaseModel):
     def sanitize_message(self, message: object) -> str:
         sanitized = str(message).replace(self.url, self.sanitized_url())
         parsed_url = urlsplit(self.url)
+        # Pylint infers Pydantic field descriptors as FieldInfo instances.
+        # pylint: disable=no-member
         sensitive_values = [
             parsed_url.username or "",
             parsed_url.password or "",
@@ -153,6 +156,7 @@ class IFlytekAsrConfig(BaseModel):
             *self.voiceprints.values(),
             *(value for _, value in parse_qsl(parsed_url.query)),
         ]
+        # pylint: enable=no-member
         for sensitive_value in sorted(
             {value for value in sensitive_values if len(value) >= 4},
             key=len,
