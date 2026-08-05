@@ -57,14 +57,9 @@ from .realtime.struct import (
     InputAudioBufferSpeechStopped,
     ResponseFunctionCallArgumentsDone,
     ErrorMessage,
-    SessionUpdate,
-    SessionUpdateParams,
-    InputAudioTranscription,
     ContentType,
     FunctionCallOutputItemParam,
     ResponseCreate,
-    ServerVADUpdateParams,
-    SemanticVADUpdateParams,
 )
 
 
