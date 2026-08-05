@@ -1,3 +1,8 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 import tempfile
 from typing import Any
 from urllib.parse import parse_qsl, urlsplit, urlunsplit

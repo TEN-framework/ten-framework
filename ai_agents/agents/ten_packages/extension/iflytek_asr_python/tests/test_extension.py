@@ -221,6 +221,7 @@ def test_extension_logs_only_redacted_configuration() -> None:
         if category == LOG_CATEGORY_KEY_POINT
     ]
     assert len(config_logs) == 1
+    assert config_logs[0].startswith("config: ")
     assert "sensitive" not in config_logs[0]
 
 

@@ -69,12 +69,12 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.71"
+      "version": "0.11"
     },
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "0.7"
     }
   ],
   "api": {
@@ -161,7 +161,6 @@
       "pyproject.toml",
       "requirements.txt",
       "docs/**",
-      ".vscode/**",
       "tests/bin/bootstrap",
       "tests/bin/bootstrap_and_start",
       "tests/bin/start",

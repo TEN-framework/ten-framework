@@ -36,9 +36,13 @@ def test_initial_connection_reports_complete_status_payloads() -> None:
         for payload in payloads:
             assert payload["id"]
             assert payload["module"] == "asr"
-            assert payload["vendor_info"] == {"vendor": "iflytek"}
+            assert payload["vendor_info"] == {
+                "vendor": "iflytek",
+                "code": "",
+                "message": "",
+            }
             assert isinstance(payload["code"], int)
-            assert payload["message"]
+            assert isinstance(payload["message"], str)
             assert payload["metadata"] == {
                 "vendor_metadata": {"language": "en-US"}
             }

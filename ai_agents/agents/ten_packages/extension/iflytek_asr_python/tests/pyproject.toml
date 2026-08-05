@@ -6,7 +6,7 @@
 #
 
 [project]
-name = "-tests"
+name = "iflytek-asr-python-tests"
 description = "iflytek_asr_python tests"
 version = "0.1.0"
 requires-python = ">=3.10"

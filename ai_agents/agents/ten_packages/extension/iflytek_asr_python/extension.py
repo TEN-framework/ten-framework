@@ -1,3 +1,8 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
 import asyncio
 import copy
 import json
@@ -15,7 +20,7 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base import const as ten_ai_base_const
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleError,
@@ -24,26 +29,14 @@ from ten_ai_base.message import (
     ModuleType,
 )
 from ten_ai_base.struct import ASRWord
-from ten_runtime import AsyncTenEnv, AudioFrame, Data
+from ten_runtime import AsyncTenEnv, AudioFrame
 
 from .client import IFlytekAsrClient, IFlytekAsrClientListener
 from .config import IFlytekAsrConfig
 from .protocol import IFlytekProtocolError, IFlytekResponse
 from .reconnect_manager import ReconnectLimitReached, ReconnectManager
 
-# ten_ai_base 0.6 accepts categories but doesn't export their constants.
-LOG_CATEGORY_KEY_POINT = getattr(
-    ten_ai_base_const, "LOG_CATEGORY_KEY_POINT", "key_point"
-)
-LOG_CATEGORY_VENDOR = getattr(
-    ten_ai_base_const, "LOG_CATEGORY_VENDOR", "vendor"
-)
-
-
 DUMP_FILE_NAME = "iflytek_asr_in.pcm"
-CONNECTION_STATUS_CONNECTING = "connecting"
-CONNECTION_STATUS_CONNECTED = "connected"
-CONNECTION_STATUS_DISCONNECTED = "disconnected"
 
 
 class IFlytekConfigurationError(ValueError):
@@ -79,8 +72,6 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         self._finalize_pending = False
         self._finalize_lock = asyncio.Lock()
         self._finalize_timeout_task: asyncio.Task[None] | None = None
-        self._connection_status = CONNECTION_STATUS_DISCONNECTED
-        self._connection_status_lock = asyncio.Lock()
 
     @override
     def vendor(self) -> str:
@@ -131,23 +122,22 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
     @override
     async def start_connection(self) -> None:
         if self.client is None:
+            await self.on_disconnected(message="client not initialized")
             return
         self._should_reconnect = True
+        reconnecting = asyncio.current_task() is self._reconnect_task
         started_at = asyncio.get_running_loop().time()
-        await self._send_connection_status(
-            CONNECTION_STATUS_CONNECTING,
-            message="connecting",
-        )
         try:
             await self.client.start()
         except Exception as error:
+            if reconnecting:
+                raise
             message = self._error_message(error)
             self.ten_env.log_error(
                 f"Failed to connect to iFLYTEK ASR: {message}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            await self._send_connection_status(
-                CONNECTION_STATUS_DISCONNECTED,
+            await self.on_disconnected(
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=message,
             )
@@ -158,10 +148,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         self.reconnect_manager.reset()
         await self._report_connect_delay(started_at)
         if self.client.is_connected():
-            await self._send_connection_status(
-                CONNECTION_STATUS_CONNECTED,
-                message="connected",
-            )
+            await self.on_connected()
         self.ten_env.log_info(
             "iFLYTEK ASR WebSocket connected",
             category=LOG_CATEGORY_VENDOR,
@@ -179,10 +166,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
             self._reconnect_task = None
         if self.client is not None:
             await self.client.stop()
-        await self._send_connection_status(
-            CONNECTION_STATUS_DISCONNECTED,
-            message="stopped",
-        )
+        await self.on_disconnected(message="stopped")
         self.ten_env.log_info(
             "iFLYTEK ASR WebSocket stopped",
             category=LOG_CATEGORY_VENDOR,
@@ -231,8 +215,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
             )
             await self._send_framework_error(error, fatal=False)
             if not self.client.is_connected():
-                await self._send_connection_status(
-                    CONNECTION_STATUS_DISCONNECTED,
+                await self.on_disconnected(
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message=message,
                 )
@@ -329,8 +312,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
             category=LOG_CATEGORY_VENDOR,
         )
         await self._send_framework_error(error, fatal=False)
-        await self._send_connection_status(
-            CONNECTION_STATUS_DISCONNECTED,
+        await self.on_disconnected(
             code=ModuleErrorCode.NON_FATAL_ERROR.value,
             message=message,
         )
@@ -343,8 +325,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
             category=LOG_CATEGORY_VENDOR,
         )
         reconnecting = self._should_reconnect and not self.stopped
-        await self._send_connection_status(
-            CONNECTION_STATUS_DISCONNECTED,
+        await self.on_disconnected(
             code=(ModuleErrorCode.NON_FATAL_ERROR.value if reconnecting else 0),
             message="closed",
         )
@@ -368,67 +349,65 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         if client is None:
             return
 
-        while self._should_reconnect and not self.stopped:
-            attempt = self.reconnect_manager.current_attempts + 1
-            self.ten_env.log_info(
-                "Attempting iFLYTEK ASR reconnection "
-                f"{attempt}/{self.reconnect_manager.max_attempts}",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            started_at = asyncio.get_running_loop().time()
+        current_task = asyncio.current_task()
+        assert current_task is not None
+        owns_reconnect_task = self._reconnect_task is None
+        if owns_reconnect_task:
+            self._reconnect_task = current_task
 
-            async def connect() -> None:
-                nonlocal started_at
-                started_at = asyncio.get_running_loop().time()
-                await self._send_connection_status(
-                    CONNECTION_STATUS_CONNECTING,
-                    message="reconnecting",
-                )
-                await client.start()
-
-            try:
-                await self.reconnect_manager.attempt(connect)
-            except ReconnectLimitReached as error:
-                self._should_reconnect = False
-                await self._send_framework_error(error, fatal=True)
-                return
-            except Exception as error:
-                exhausted = not self.reconnect_manager.can_retry()
-                message = self._error_message(error)
-                self.ten_env.log_error(
-                    f"iFLYTEK ASR reconnection failed: {message}",
+        try:
+            while self._should_reconnect and not self.stopped:
+                attempt = self.reconnect_manager.current_attempts + 1
+                self.ten_env.log_info(
+                    "Attempting iFLYTEK ASR reconnection "
+                    f"{attempt}/{self.reconnect_manager.max_attempts}",
                     category=LOG_CATEGORY_VENDOR,
                 )
-                await self._send_connection_status(
-                    CONNECTION_STATUS_DISCONNECTED,
-                    code=(
-                        ModuleErrorCode.FATAL_ERROR.value
-                        if exhausted
-                        else ModuleErrorCode.NON_FATAL_ERROR.value
-                    ),
-                    message=message,
-                )
-                if exhausted:
-                    self._should_reconnect = False
-                    limit_error = ReconnectLimitReached(
-                        "maximum reconnection attempts reached"
-                    )
-                    await self._send_framework_error(limit_error, fatal=True)
-                    return
-                await self._send_framework_error(error, fatal=False)
-                continue
 
-            await self._report_connect_delay(started_at)
-            if client.is_connected():
-                await self._send_connection_status(
-                    CONNECTION_STATUS_CONNECTED,
-                    message="connected",
+                async def connect() -> None:
+                    await self.start_connection()
+
+                try:
+                    await self.reconnect_manager.attempt(connect)
+                except ReconnectLimitReached as error:
+                    self._should_reconnect = False
+                    await self._send_framework_error(error, fatal=True)
+                    return
+                except Exception as error:
+                    exhausted = not self.reconnect_manager.can_retry()
+                    message = self._error_message(error)
+                    self.ten_env.log_error(
+                        f"iFLYTEK ASR reconnection failed: {message}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
+                    await self.on_disconnected(
+                        code=(
+                            ModuleErrorCode.FATAL_ERROR.value
+                            if exhausted
+                            else ModuleErrorCode.NON_FATAL_ERROR.value
+                        ),
+                        message=message,
+                    )
+                    if exhausted:
+                        self._should_reconnect = False
+                        limit_error = ReconnectLimitReached(
+                            "maximum reconnection attempts reached"
+                        )
+                        await self._send_framework_error(
+                            limit_error, fatal=True
+                        )
+                        return
+                    await self._send_framework_error(error, fatal=False)
+                    continue
+
+                self.ten_env.log_info(
+                    "iFLYTEK ASR reconnection successful",
+                    category=LOG_CATEGORY_VENDOR,
                 )
-            self.ten_env.log_info(
-                "iFLYTEK ASR reconnection successful",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            return
+                return
+        finally:
+            if owns_reconnect_task and self._reconnect_task is current_task:
+                self._reconnect_task = None
 
     def _start_finalize_timeout(self) -> None:
         if self.config is None or not self._finalize_pending:
@@ -451,6 +430,30 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         self.ten_env.log_error(str(error), category=LOG_CATEGORY_VENDOR)
         await self._send_framework_error(error, fatal=False)
         await self.send_asr_finalize_end()
+        await self._recover_from_finalize_timeout()
+
+    async def _recover_from_finalize_timeout(self) -> None:
+        client = self.client
+        if client is None:
+            return
+
+        try:
+            await client.stop()
+        except Exception as error:
+            message = self._error_message(error)
+            self.ten_env.log_error(
+                "Failed to close iFLYTEK ASR after finalize timeout: "
+                f"{message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._send_framework_error(error, fatal=False)
+
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message="finalize timeout",
+        )
+        if self._should_reconnect and not self.stopped:
+            self._schedule_reconnect()
 
     async def _complete_finalize(self) -> bool:
         claimed = await self._claim_finalize_completion()
@@ -529,7 +532,7 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         if self.config is None:
             return
         self.ten_env.log_info(
-            "iFLYTEK ASR config: "
+            "config: "
             f"{json.dumps(self.config.log_summary(), ensure_ascii=False)}",
             category=LOG_CATEGORY_KEY_POINT,
         )
@@ -554,64 +557,6 @@ class IFlytekAsrExtension(AsyncASRBaseExtension, IFlytekAsrClientListener):
         finally:
             if self.metadata is result_metadata:
                 self.metadata = original_metadata
-
-    async def _send_connection_status(
-        self,
-        current: str,
-        *,
-        code: int = 0,
-        message: str,
-    ) -> bool:
-        async with self._connection_status_lock:
-            last = self._connection_status
-            if last == current:
-                return False
-
-            valid_transition = (
-                current == CONNECTION_STATUS_DISCONNECTED
-                or (
-                    current == CONNECTION_STATUS_CONNECTING
-                    and last
-                    in (
-                        CONNECTION_STATUS_DISCONNECTED,
-                        CONNECTION_STATUS_CONNECTED,
-                    )
-                )
-                or (
-                    current == CONNECTION_STATUS_CONNECTED
-                    and last == CONNECTION_STATUS_CONNECTING
-                )
-            )
-            if not valid_transition:
-                self.ten_env.log_warn(
-                    "Ignoring invalid iFLYTEK ASR connection status "
-                    f"transition: {last} -> {current}",
-                    category=LOG_CATEGORY_KEY_POINT,
-                )
-                return False
-
-            metadata = copy.deepcopy(self.metadata) if self.metadata else {}
-            metadata["vendor_metadata"] = self.vendor_metadata()
-            status_data = Data.create("connection_status_changed")
-            status_data.set_property_from_json(
-                None,
-                json.dumps(
-                    {
-                        "id": self.uuid,
-                        "module": "asr",
-                        "vendor_info": {"vendor": self.vendor()},
-                        "current": current,
-                        "last": last,
-                        "code": int(code),
-                        "message": message,
-                        "metadata": metadata,
-                    },
-                    ensure_ascii=False,
-                ),
-            )
-            await self.ten_env.send_data(status_data)
-            self._connection_status = current
-            return True
 
     async def _send_framework_error(
         self, error: Exception, *, fatal: bool

@@ -37,6 +37,13 @@ class FakeTenEnv:
     ) -> tuple[str, object | None]:
         return json.dumps(self.property_value or {}), self.property_error
 
+    async def get_property_bool(self, path: str) -> tuple[bool, object | None]:
+        properties = self.property_value or {}
+        value = properties.get(path)
+        if not isinstance(value, bool):
+            return False, FakePropertyError(f"property not found: {path}")
+        return value, None
+
     async def send_data(self, data: Data) -> None:
         self.data.append(data)
 
@@ -70,8 +77,10 @@ class FakeClient:
         self.audio: list[bytes] = []
         self.connected = True
         self.finalized = False
+        self.finalizing = False
         self.start_errors = list(start_errors or [])
         self.start_calls = 0
+        self.stop_calls = 0
         self.finalize_result = finalize_result
         self.on_finalize = on_finalize
 
@@ -81,19 +90,26 @@ class FakeClient:
             self.connected = False
             raise self.start_errors.pop(0)
         self.connected = True
+        self.finalizing = False
 
     async def stop(self) -> None:
+        self.stop_calls += 1
         self.connected = False
 
     def is_connected(self) -> bool:
         return self.connected
 
     async def send_audio(self, audio: bytes) -> bool:
+        if not self.connected or self.finalizing:
+            return False
         self.audio.append(audio)
-        return self.connected
+        return True
 
     async def finalize(self) -> bool:
+        if not self.connected or self.finalizing:
+            return False
         self.finalized = True
+        self.finalizing = True
         if self.on_finalize is not None:
             callback_result = self.on_finalize()
             if inspect.isawaitable(callback_result):
