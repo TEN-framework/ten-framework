@@ -769,6 +769,12 @@ class MyBridge(AsyncExtension):
 
 ## Pre-Submission Checklist
 
+- [ ] Version bumped in BOTH `manifest.json` and `pyproject.toml` — any
+      change to an existing extension needs at least a patch bump;
+      reviewers request this on every PR that misses it
+- [ ] Guarder test result attached to the PR as a comment (screenshot
+      or pasted terminal output of the final pytest summary) —
+      reviewers ask for this on every ASR/TTS extension PR
 - [ ] `addon.py` decorator name matches `manifest.json` `name` field
 - [ ] All abstract methods implemented (vendor, request_tts/send_audio, etc.)
 - [ ] Config validation raises ValueError for missing required params
