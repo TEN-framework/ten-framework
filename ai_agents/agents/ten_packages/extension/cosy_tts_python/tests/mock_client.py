@@ -19,8 +19,12 @@ class MockClientStream:
     def __init__(
         self,
         event_factory: Callable[[str, str], list[EventSpec]] | None = None,
+        completion_event_factory: (
+            Callable[[str], list[EventSpec]] | None
+        ) = None,
     ) -> None:
         self._event_factory = event_factory or (lambda _text, _request_id: [])
+        self._completion_event_factory = completion_event_factory
         self._queue: asyncio.Queue[QueueItem | Exception] = asyncio.Queue()
         self._ready = asyncio.Event()
         self._cancelled = False
@@ -54,9 +58,18 @@ class MockClientStream:
             self._first_audio_received = False
         if self._first_request_sent_ns is None:
             self._first_request_sent_ns = time.perf_counter_ns()
-        for message_type, payload, delay in self._event_factory(
-            text, request_id
-        ):
+        await self._enqueue_events(
+            request_id,
+            self._event_factory(text, request_id),
+        )
+        self._ready.set()
+
+    async def _enqueue_events(
+        self,
+        request_id: str,
+        events: list[EventSpec],
+    ) -> None:
+        for message_type, payload, delay in events:
             if delay:
                 await self._queue.put(
                     QueueItem(
@@ -81,10 +94,14 @@ class MockClientStream:
                         task_id=f"task-{request_id}",
                     )
                 )
-        self._ready.set()
 
-    async def complete(self, _request_id: str) -> None:
-        return None
+    async def complete(self, request_id: str) -> None:
+        if self._completion_event_factory is not None:
+            await self._enqueue_events(
+                request_id,
+                self._completion_event_factory(request_id),
+            )
+            self._ready.set()
 
     async def cancel(self) -> None:
         self._cancelled = True

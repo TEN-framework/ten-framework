@@ -49,6 +49,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         super().__init__(name)
         self.name = name
         self.client: CosyTTSClient | None = None
+        self.client_start_task: asyncio.Task[int] | None = None
         self.config: CosyTTSConfig | None = None
         self.current_request_id: str | None = None
         self.first_chunk_ts: datetime | None = None
@@ -78,7 +79,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
 
             self.client = CosyTTSClient(self.config, ten_env, self.vendor())
-            self._connect_delay_ms = await self.client.start()
+            self.client_start_task = asyncio.create_task(self.client.start())
             self.audio_processor_task = asyncio.create_task(
                 self._process_audio_data()
             )
@@ -103,6 +104,13 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             with suppress(asyncio.CancelledError):
                 await self.audio_processor_task
             self.audio_processor_task = None
+
+        if self.client_start_task is not None:
+            try:
+                self._connect_delay_ms = await self.client_start_task
+            except Exception as exc:
+                ten_env.log_error(f"Cosy TTS client startup failed: {exc}")
+            self.client_start_task = None
 
         if self.client is not None:
             await self.client.stop()
@@ -168,6 +176,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             text = t.text.strip()
             if text:
+                await self._ensure_client_ready(t.request_id)
                 if len(text) > 20000:
                     raise ValueError(
                         "Cosy TTS text chunk exceeds 20000 characters"
@@ -183,7 +192,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 )
 
             if t.text_input_end:
-                if not text and self.first_chunk:
+                if self.request_text_characters == 0:
                     await self._finish_request_once(
                         t.request_id,
                         TTSAudioEndReason.REQUEST_END,
@@ -306,6 +315,33 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.first_chunk = True
         self._provider_task_id = ""
         self._provider_request_uuid = ""
+
+        await self._create_pcm_writer(request_id)
+
+    async def _ensure_client_ready(self, request_id: str) -> None:
+        if self.client_start_task is not None:
+            if self.client_start_task.done():
+                self._connect_delay_ms = await self.client_start_task
+                self.ten_env.log_debug(
+                    "Cosy TTS connection pool already ready, "
+                    f"request_id: {request_id}, "
+                    f"connect_delay_ms: {self._connect_delay_ms}",
+                )
+            else:
+                wait_started = asyncio.get_running_loop().time()
+                self.ten_env.log_info(
+                    "Waiting for Cosy TTS connection pool, "
+                    f"request_id: {request_id}",
+                )
+                self._connect_delay_ms = await self.client_start_task
+                wait_ms = int(
+                    (asyncio.get_running_loop().time() - wait_started) * 1000
+                )
+                self.ten_env.log_info(
+                    "Cosy TTS connection pool ready for request, "
+                    f"request_id: {request_id}, wait_ms: {wait_ms}, "
+                    f"connect_delay_ms: {self._connect_delay_ms}",
+                )
         if not self._connect_delay_reported:
             await self.metrics_connect_delay(
                 self._connect_delay_ms,
@@ -313,7 +349,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 extra_metadata=self._base_metadata(),
             )
             self._connect_delay_reported = True
-        await self._create_pcm_writer(request_id)
 
     async def _finish_provider_error(
         self,

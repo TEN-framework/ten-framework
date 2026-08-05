@@ -2,6 +2,7 @@ import asyncio
 import json
 import threading
 import time
+from collections.abc import Coroutine
 from dataclasses import dataclass
 from typing import Any
 
@@ -323,6 +324,7 @@ class _ActiveTask:
     request_id: str
     lease: _PoolLease
     callback: AsyncIteratorCallback
+    completion_started: bool = False
 
 
 class CosyTTSClient:
@@ -341,6 +343,7 @@ class CosyTTSClient:
         self._active: _ActiveTask | None = None
         self._active_lock = asyncio.Lock()
         self._receive_queue: asyncio.Queue[QueueItem] = asyncio.Queue()
+        self._background_tasks: set[asyncio.Task[None]] = set()
         self._registered = False
 
     async def start(self) -> int:
@@ -360,6 +363,11 @@ class CosyTTSClient:
 
     async def stop(self) -> None:
         await self.cancel()
+        if self._background_tasks:
+            await asyncio.gather(
+                *tuple(self._background_tasks),
+                return_exceptions=True,
+            )
         if self._registered:
             await asyncio.to_thread(SharedPool.release_client)
             self._registered = False
@@ -386,13 +394,21 @@ class CosyTTSClient:
     async def complete(self, request_id: str) -> None:
         async with self._active_lock:
             active = self._active
-        if active is None:
-            return
-        if active.request_id != request_id:
-            raise RuntimeError(
-                "Cosy TTS active request mismatch, "
-                f"active: {active.request_id}, completing: {request_id}",
-            )
+            if active is None:
+                return
+            if active.request_id != request_id:
+                raise RuntimeError(
+                    "Cosy TTS active request mismatch, "
+                    f"active: {active.request_id}, completing: {request_id}",
+                )
+            if active.completion_started:
+                return
+            active.completion_started = True
+
+        self._start_background_task(self._complete_active(active))
+
+    async def _complete_active(self, active: _ActiveTask) -> None:
+        """Wait for provider completion without blocking the input queue."""
 
         try:
             await asyncio.to_thread(active.lease.synthesizer.streaming_complete)
@@ -435,6 +451,10 @@ class CosyTTSClient:
             return
 
         active.callback.cancel()
+        self._start_background_task(self._cancel_active(active))
+
+    async def _cancel_active(self, active: _ActiveTask) -> None:
+        """Clean up an interrupted provider task without blocking a new turn."""
         try:
             await asyncio.to_thread(active.lease.synthesizer.streaming_cancel)
             if active.callback.error is not None:
@@ -443,9 +463,27 @@ class CosyTTSClient:
             self.ten_env.log_warn(
                 f"Cosy TTS cancel discarded connection: {exc}"
             )
+        finally:
             await asyncio.to_thread(SharedPool.discard_lease, active.lease)
-        else:
-            await asyncio.to_thread(SharedPool.return_lease, active.lease)
+
+    def _start_background_task(
+        self,
+        coroutine: Coroutine[Any, Any, None],
+    ) -> None:
+        task = asyncio.create_task(coroutine)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._on_background_task_done)
+
+    def _on_background_task_done(self, task: asyncio.Task[None]) -> None:
+        self._background_tasks.discard(task)
+        if task.cancelled():
+            return
+        error = task.exception()
+        if error is not None:
+            self.ten_env.log_error(
+                "Cosy TTS background task failed: "
+                f"{type(error).__name__}: {error}",
+            )
 
     async def get_audio_data(self) -> QueueItem:
         return await self._receive_queue.get()

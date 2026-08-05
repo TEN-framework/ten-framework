@@ -297,6 +297,71 @@ def test_request_state_transitions(MockCosyTTSClient):
     print("✓ Request state transitions test PASSED!")
 
 
+@patch("cosy_tts_python.extension.CosyTTSClient")
+def test_empty_final_chunk_waits_for_delayed_audio(MockCosyTTSClient):
+    """Input completion must not be confused with provider audio completion."""
+
+    request_id = "delayed_audio_after_input_end"
+    mock_instance = MockCosyTTSClient.return_value
+    stream = MockClientStream(
+        lambda _text, _request_id: [
+            (MESSAGE_TYPE_PCM, b"delayed_audio", 0.05),
+        ],
+        completion_event_factory=lambda _request_id: [
+            (MESSAGE_TYPE_CMD_COMPLETE, None, 0),
+        ],
+    )
+    stream.configure(mock_instance)
+
+    class DelayedAudioTester(ExtensionTester):
+        def __init__(self):
+            super().__init__()
+            self.events: list[str] = []
+
+        def on_start(self, ten_env_tester: TenEnvTester) -> None:
+            for tts_input in (
+                TTSTextInput(
+                    request_id=request_id,
+                    text="Text submitted before audio is available.",
+                    text_input_end=False,
+                ),
+                TTSTextInput(
+                    request_id=request_id,
+                    text="",
+                    text_input_end=True,
+                ),
+            ):
+                data = Data.create("tts_text_input")
+                data.set_property_from_json(None, tts_input.model_dump_json())
+                ten_env_tester.send_data(data)
+            ten_env_tester.on_start_done()
+
+        def on_data(self, ten_env: TenEnvTester, data: Data) -> None:
+            if data.get_name() == "tts_audio_start":
+                self.events.append("audio_start")
+            elif data.get_name() == "tts_audio_end":
+                self.events.append("audio_end")
+                ten_env.stop_test()
+
+        def on_audio_frame(self, _ten_env: TenEnvTester, _audio_frame) -> None:
+            self.events.append("audio_frame")
+
+    tester = DelayedAudioTester()
+    config = {
+        "params": {
+            "api_key": "test_api_key_for_delayed_audio",
+            "model": "cosyvoice-v1",
+            "sample_rate": 16000,
+            "voice": "longxiaochun",
+        },
+    }
+    tester.set_test_mode_single("cosy_tts_python", json.dumps(config))
+    tester.run()
+
+    mock_instance.complete.assert_awaited_once_with(request_id)
+    assert tester.events == ["audio_start", "audio_frame", "audio_end"]
+
+
 if __name__ == "__main__":
     # Run tests
     test_sequential_requests_state_machine()
