@@ -60,7 +60,7 @@ flowchart LR
 | tman / TEN Framework | 当前验证版本为 `0.11.71` |
 | `ten_runtime_python` | `0.11.71` |
 | `ten_ai_base` | `0.6` |
-| `websockets` | `>=14.2,<15.0`，当前验证版本为 `14.2` |
+| `websockets` | `>=14.0`，当前验证版本为 `14.2` |
 | Pydantic | `>=2.13.4,<3.0`，当前验证版本为 `2.13.4` |
 | pytest | 用于离线测试 |
 
