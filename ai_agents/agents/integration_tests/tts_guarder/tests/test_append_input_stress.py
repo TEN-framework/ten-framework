@@ -22,6 +22,7 @@ import time
 import random
 import uuid
 import string
+import asyncio
 
 TTS_DUMP_CONFIG_FILE = "property_dump.json"
 AUDIO_DURATION_TOLERANCE_MS = 50
@@ -137,7 +138,7 @@ class AppendInputStressTester(AsyncExtensionTester):
             ten_env.log_info(f"Sending request {request_idx + 1}/{self.expected_group_count}: {text} (request_id: {request_id})")
             
             # Each request has only one text, so text_input_end is always True
-            time.sleep(5)
+            await asyncio.sleep(5)
             await self._send_tts_text_input(
                 ten_env, text, request_id, metadata, text_input_end=True
             )
@@ -351,6 +352,7 @@ class AppendInputStressTester(AsyncExtensionTester):
                 
                 # Get request_total_audio_duration_ms
                 received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                received_event_interval_ms, _ = data.get_property_int("request_event_interval_ms")
                 
                 # Calculate PCM duration based on current request audio bytes
                 # Use current_request_audio_bytes which is already updated by audio frames
@@ -370,6 +372,22 @@ class AppendInputStressTester(AsyncExtensionTester):
                 else:
                     ten_env.log_info(
                         f"Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms"
+                    )
+
+                if received_event_interval_ms > 0:
+                    event_interval_diff = abs(received_event_interval_ms - actual_duration_ms)
+                    if event_interval_diff > AUDIO_DURATION_TOLERANCE_MS:
+                        self._stop_test_with_error(
+                            ten_env,
+                            f"Event interval mismatch. Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms, Diff: {event_interval_diff:.2f}ms",
+                        )
+                        return
+                    ten_env.log_info(
+                        f"✅ Event interval validation passed. Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms, Diff: {event_interval_diff:.2f}ms"
+                    )
+                else:
+                    ten_env.log_info(
+                        f"Skipping event interval validation - Actual: {actual_duration_ms:.2f}ms, Reported: {received_event_interval_ms}ms"
                     )
                 
                 ten_env.log_info(f"Actual event duration: {actual_duration_ms:.2f}ms")
@@ -554,4 +572,3 @@ def test_append_input_stress(
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
-
