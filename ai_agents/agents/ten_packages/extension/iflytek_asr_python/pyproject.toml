@@ -1,0 +1,25 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+[project]
+name = "iflytek-asr-python"
+description = "TEN Framework ASR extension for iFLYTEK realtime transcription"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "websockets>=14.0",
+    "pydantic>=2.13.4,<3.0",
+    "typing-extensions>=4.12,<5.0",
+]
+
+[tool.black]
+line-length = 80
+target-version = ["py310"]
+extend-exclude = "/(\\.ten|\\.python_venv)/"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
