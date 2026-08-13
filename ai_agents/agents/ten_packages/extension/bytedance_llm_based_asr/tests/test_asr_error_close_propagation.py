@@ -51,7 +51,7 @@ async def test_asr_error_callback_forwards_vendor_close_fields():
     disconnected.assert_awaited_once_with(
         1000,
         "closed",
-        1000,
+        "1000",
         "mapped non-fatal error",
     )
 
@@ -72,6 +72,29 @@ async def test_extension_disconnected_forwards_vendor_close_fields():
         message="mapped non-fatal error",
         vendor_info=None,
     )
+
+
+@pytest.mark.asyncio
+async def test_extension_disconnected_accepts_int_vendor_code():
+    extension = BytedanceASRLLMExtension("test_extension")
+    extension.ten_env = MagicMock()
+    extension.on_disconnected = AsyncMock()
+    extension.vendor = MagicMock(return_value="bytedance_bigmodel")
+
+    await extension._on_disconnected(
+        vendor_close_code=1000,
+        vendor_close_message="closed",
+        vendor_code=45000081,
+        vendor_message="Server error response: code=45000081",
+    )
+
+    extension.on_disconnected.assert_awaited_once()
+    _, kwargs = extension.on_disconnected.await_args
+    vendor_info = kwargs["vendor_info"]
+    assert vendor_info is not None
+    assert vendor_info.code == "45000081"
+    assert vendor_info.message == "Server error response: code=45000081"
+    assert vendor_info.vendor == "bytedance_bigmodel"
 
 
 @pytest.mark.asyncio

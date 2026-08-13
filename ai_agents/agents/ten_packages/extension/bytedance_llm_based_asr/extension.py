@@ -1173,7 +1173,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if vendor_code or vendor_message:
             vendor_info = ModuleErrorVendorInfo(
                 vendor=self.vendor(),
-                code=vendor_code,
+                code=str(vendor_code),
                 message=vendor_message,
             )
         elif vendor_close_code not in (0, 1000):
