@@ -34,6 +34,15 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      # Must use nightly for MinGW, otherwise error[E0554] will be triggered
+      # when rustc is building tman.exe, because sysinfo 0.32 uses
+      # "#![cfg_attr(target_os = "windows", feature(windows_by_handle))]"
+      # to use windows file handle API, which "may not be used on the stable
+      # release channel"
+      # For msvc, we also need to use nightly when ten_enable_go_binding=true
+      # because Go always uses MinGW toolchain on Windows (CGO requires
+      # GCC-compatible compiler) and the above issues will also happen.
+      RUSTUP_TOOLCHAIN: ${{ matrix.compiler == 'mingw' && 'nightly-x86_64-pc-windows-gnu' || 'nightly-x86_64-pc-windows-msvc' }}
     strategy:
       fail-fast: false
       matrix:
@@ -216,19 +225,7 @@ jobs:
           go1.24.3 version
           go env -w GOFLAGS="-buildvcs=false"
 
-          if ("${{ matrix.compiler }}" -eq "mingw") {
-            # Must use nightly for MinGW, otherwise error[E0554] will be triggered
-            # when rustc is building tman.exe, because sysinfo 0.32 uses
-            # "#![cfg_attr(target_os = "windows", feature(windows_by_handle))]"
-            # to use windows file handle API, which "may not be used on the stable
-            # release channel"
-            rustup default nightly-x86_64-pc-windows-gnu
-          } else {
-            # For msvc, we also need to use nightly when ten_enable_go_binding=true
-            # because Go always uses MinGW toolchain on Windows (CGO requires
-            # GCC-compatible compiler) and the above issues will also happen.
-            rustup default nightly-x86_64-pc-windows-msvc
-          }
+          rustup update $env:RUSTUP_TOOLCHAIN
           cargo install --force cbindgen
 
           Write-Output "Verifying Rust toolchain..."
@@ -282,15 +279,6 @@ jobs:
           $buildArgs += "ten_manager_enable_frontend=false"
           $argsString = $buildArgs -join " "
           Write-Host "Build arguments: $argsString"
-
-          # Set toolchain or else toolchain may be switched during build
-          if ("${{ matrix.compiler }}" -eq "mingw") {
-            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
-          }
-          else {
-            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-msvc"
-          }
-          echo $env:RUSTUP_TOOLCHAIN
 
           tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
@@ -1108,13 +1096,6 @@ jobs:
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
 
-          if ("${{ matrix.compiler }}" -eq "mingw") {
-            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
-            # Or else toolchain may be switched to msvc during build
-            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
-            echo $env:RUSTUP_TOOLCHAIN
-          }
-
           cd out/win/x64/
           pytest -s tests/ten_runtime/integration/python/
 
@@ -1286,13 +1267,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
-
-          if ("${{ matrix.compiler }}" -eq "mingw") {
-            # Set toolchain to force use of the nightly-x86_64-pc-windows-gnu
-            # Or else toolchain may be switched to msvc during build
-            $env:RUSTUP_TOOLCHAIN = "nightly-x86_64-pc-windows-gnu"
-            echo $env:RUSTUP_TOOLCHAIN
-          }
 
           cd out/win/x64/
           pytest -s tests/ten_runtime/integration/cpp/

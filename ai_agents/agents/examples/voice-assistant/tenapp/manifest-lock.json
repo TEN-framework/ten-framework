@@ -442,6 +442,23 @@
     },
     {
       "type": "extension",
+      "name": "anthropic_llm2_python",
+      "version": "0.1.0",
+      "hash": "06de4fc1b5e65f521fa5e0211c2d38f012f22bb3278e475c3ad5098ab3211e0d",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/anthropic_llm2_python"
+    },
+    {
+      "type": "extension",
       "name": "azure_tts_python",
       "version": "0.3.0",
       "hash": "2cb8ff4f0927e283c9e9a78cef7f241792f058fbbc7ac5e83e2bf679e9192c07",

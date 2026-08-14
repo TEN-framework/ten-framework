@@ -123,8 +123,6 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default stable
-
           brew install tree
           brew install gettext
 
@@ -482,8 +480,6 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default stable
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest

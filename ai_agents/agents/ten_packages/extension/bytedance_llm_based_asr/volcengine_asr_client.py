@@ -535,7 +535,7 @@ class VolcengineASRClient:
                 self.disconnected_callback,
                 code,
                 message,
-                vendor_code,
+                str(vendor_code) if vendor_code else "",
                 vendor_message,
             )
 

@@ -19,6 +19,7 @@ def test_vendor_metadata_api_key_auth():
         "url": "wss://example.com/asr",
         "api_key": "secret-key",
         "auth_method": "api_key",
+        "model": "bigmodel",
     }
 
 

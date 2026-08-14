@@ -125,13 +125,6 @@ template("rust_target") {
       }
     }
 
-    if (target == "x86_64-unknown-linux-gnuasan") {
-      args += [
-        "--env",
-        "RUSTUP_TOOLCHAIN=stable",
-      ]
-    }
-
     args += [
       "--target",
       target,
@@ -327,13 +320,6 @@ template("rust_test") {
       }
     }
 
-    if (target == "x86_64-unknown-linux-gnuasan") {
-      args += [
-        "--env",
-        "RUSTUP_TOOLCHAIN=stable",
-      ]
-    }
-
     args += [
       "--target",
       target,
@@ -451,13 +437,6 @@ template("rust_gen_cargo_config") {
       rebase_path(_output),
     ]
 
-    args += [ "--compiler" ]
-    if (is_clang) {
-      args += [ "clang" ]
-    } else {
-      args += [ "gcc" ]
-    }
-
     if (is_win) {
       if (is_mingw) {
         # MinGW target for Windows
@@ -505,10 +484,6 @@ template("rust_gen_cargo_config") {
     args += [
       "--target",
       target,
-      "--target-os",
-      target_os,
-      "--target-arch",
-      target_cpu,
     ]
 
     if (enable_sanitizer && ten_rust_enable_gen_cargo_config) {

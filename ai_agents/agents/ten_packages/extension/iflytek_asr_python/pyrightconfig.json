@@ -1,0 +1,19 @@
+{
+  "pythonVersion": "3.10",
+  "venvPath": ".",
+  "venv": ".python_venv",
+  "typeCheckingMode": "basic",
+  "include": [
+    "addon.py",
+    "config.py",
+    "protocol.py",
+    "client.py",
+    "reconnect_manager.py",
+    "extension.py"
+  ],
+  "extraPaths": [
+    ".ten/app/ten_packages/system/ten_runtime_python/lib",
+    ".ten/app/ten_packages/system/ten_runtime_python/interface",
+    ".ten/app/ten_packages/system/ten_ai_base/interface"
+  ]
+}

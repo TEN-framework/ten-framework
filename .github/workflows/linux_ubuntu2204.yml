@@ -179,12 +179,7 @@ jobs:
             # library is instrumented with AddressSanitizer.
             rustup update stable
             if [ "${{ matrix.build_type }}" = "debug" ]; then
-              echo "Setting Rust toolchain to stable with the GNU ASAN target"
-              rustup default stable
               rustup target add --toolchain stable x86_64-unknown-linux-gnuasan
-            else
-              echo "Setting Rust toolchain to stable for Linux release build"
-              rustup default stable
             fi
 
             rustc --version

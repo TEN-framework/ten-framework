@@ -407,15 +407,15 @@ jobs:
               exit 1
             fi
 
-            # A partially published latest release may not contain Windows
-            # artifacts. Fall back to the version shipped with tman, which is
-            # published as a complete, matching package set.
+            # The tman release itself may also be only partially published for
+            # Windows. Use the latest app from before that release so the
+            # fallback does not select the same incomplete package set again.
             echo "⚠ Latest package set is unavailable for Windows"
-            echo "Falling back to transcriber_demo version $TMAN_VERSION"
+            echo "Falling back to the latest transcriber_demo before $TMAN_VERSION"
 
             cd "$WORK_DIR"
             mv transcriber_demo transcriber_demo_latest
-            tman install app "transcriber_demo@=$TMAN_VERSION"
+            tman install app "transcriber_demo@<$TMAN_VERSION"
 
             cd "$WORK_DIR/transcriber_demo"
             tman install

@@ -185,12 +185,16 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     def vendor_metadata(self) -> dict[str, Any]:
         if self.config is None:
             return {}
+        request = self.config.params.get("request", {})
         fields = {
             "url": self.config.get_api_url(),
             "app_key": self.config.get_app_key(),
             "access_key": self.config.get_access_key(),
             "api_key": self.config.get_api_key(),
             "auth_method": self.config.get_auth_method(),
+            "model": (
+                request.get("model_name") if isinstance(request, dict) else None
+            ),
         }
         return {k: v for k, v in fields.items() if v}
 
@@ -1169,7 +1173,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if vendor_code or vendor_message:
             vendor_info = ModuleErrorVendorInfo(
                 vendor=self.vendor(),
-                code=vendor_code,
+                code=str(vendor_code),
                 message=vendor_message,
             )
         elif vendor_close_code not in (0, 1000):
