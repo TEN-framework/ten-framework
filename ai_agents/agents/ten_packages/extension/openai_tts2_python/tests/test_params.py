@@ -14,6 +14,7 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from pathlib import Path
+import asyncio
 import json
 from unittest.mock import patch, MagicMock, AsyncMock
 
@@ -25,6 +26,42 @@ from ten_runtime import (
     StatusCode,
     TenError,
 )
+from ten_ai_base.struct import TTSTextInput
+
+
+def test_request_tts_reports_request_metrics_once():
+    """OpenAI inherits request reporting from the HTTP TTS base class."""
+    from openai_tts2_python.extension import OpenAITTSExtension
+
+    extension = OpenAITTSExtension("tts")
+    extension.ten_env = MagicMock()
+    extension.config = MagicMock()
+    extension.config.dump = False
+    extension.send_tts_request_metrics = AsyncMock()
+
+    class StubClient:
+        async def get(self, text, request_id):
+            if False:
+                yield None, None
+
+    extension.client = StubClient()
+    request_text = "hello, OpenAI"
+
+    asyncio.run(
+        extension.request_tts(
+            TTSTextInput(
+                request_id="req-100",
+                text=request_text,
+                text_input_end=False,
+            )
+        )
+    )
+
+    extension.send_tts_request_metrics.assert_awaited_once()
+    metrics = extension.send_tts_request_metrics.await_args.kwargs
+    assert metrics["request_id"] == "req-100"
+    assert metrics["request_text"] == request_text
+    assert metrics["request_time_ms"] > 0
 
 
 # ================ test params passthrough ================
