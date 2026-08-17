@@ -595,8 +595,8 @@ class AppendInterruptTester(AsyncExtensionTester):
             self.flush_end_received = True
             self.flush_end_timestamp = time.time()
             
-            # Check dump files after flush_end
-            self._check_dump_file_number(ten_env)
+            # PCMWriter may still buffer the interrupted request here. Its dump
+            # is validated after later requests cause the writer to flush.
             
             # Send third and fourth groups after receiving flush_end
             asyncio.create_task(self._send_remaining_groups(ten_env))
