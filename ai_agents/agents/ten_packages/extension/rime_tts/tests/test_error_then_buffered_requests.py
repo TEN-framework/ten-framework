@@ -28,6 +28,14 @@ class _TenEnvStub:
     def log_error(_message: str) -> None:
         pass
 
+    @staticmethod
+    def log_debug(_message: str, **_kwargs) -> None:
+        pass
+
+    @staticmethod
+    def log_warn(_message: str, **_kwargs) -> None:
+        pass
+
 
 def test_server_error_remains_vendor_exception() -> None:
     synthesizer = RimeTTSynthesizer.__new__(RimeTTSynthesizer)
@@ -42,12 +50,32 @@ def test_server_error_remains_vendor_exception() -> None:
         )
 
 
+def test_session_end_event_preserves_error_reason() -> None:
+    synthesizer = RimeTTSynthesizer.__new__(RimeTTSynthesizer)
+    synthesizer.ten_env = _TenEnvStub()
+    synthesizer.response_msgs = asyncio.Queue()
+    synthesizer.send_end_text = True
+    synthesizer.latest_context_id = "request-3"
+
+    asyncio.run(synthesizer._send_session_end(TTSAudioEndReason.ERROR))
+
+    assert synthesizer.response_msgs.get_nowait() == (
+        EVENT_TTS_END,
+        TTSAudioEndReason.ERROR,
+    )
+    assert synthesizer.send_end_text is False
+    assert synthesizer.latest_context_id is None
+
+
 class _ErrorThenBufferedRequestTester(ExtensionTester):
     def __init__(self) -> None:
         super().__init__()
         self.request4_started = False
+        self.request3_end_reasons: list[int] = []
         self.request4_end_reasons: list[int] = []
+        self.error_request_ids: list[str] = []
         self.current_audio_request_id: str | None = None
+        self.request3_audio_bytes = 0
         self.request4_audio_bytes = 0
 
     def on_start(self, ten_env: TenEnvTester) -> None:
@@ -71,25 +99,30 @@ class _ErrorThenBufferedRequestTester(ExtensionTester):
             json.loads(payload_json) if payload_json else {}
         )
 
-        if (
-            data.get_name() == "tts_audio_start"
-            and payload.get("request_id") == "request-4"
-        ):
-            self.request4_started = True
-            self.current_audio_request_id = "request-4"
-        elif (
-            data.get_name() == "tts_audio_end"
-            and payload.get("request_id") == "request-4"
-        ):
-            self.request4_end_reasons.append(payload.get("reason", 0))
-            ten_env.stop_test()
+        if data.get_name() == "error":
+            self.error_request_ids.append(payload.get("id", ""))
+        elif data.get_name() == "tts_audio_start":
+            request_id = payload.get("request_id")
+            self.current_audio_request_id = request_id
+            if request_id == "request-4":
+                self.request4_started = True
+        elif data.get_name() == "tts_audio_end":
+            request_id = payload.get("request_id")
+            reason = payload.get("reason", 0)
+            if request_id == "request-3":
+                self.request3_end_reasons.append(reason)
+            elif request_id == "request-4":
+                self.request4_end_reasons.append(reason)
+                ten_env.stop_test()
 
     def on_audio_frame(
         self, _ten_env: TenEnvTester, audio_frame: AudioFrame
     ) -> None:
         buf = audio_frame.lock_buf()
         try:
-            if self.current_audio_request_id == "request-4":
+            if self.current_audio_request_id == "request-3":
+                self.request3_audio_bytes += len(buf)
+            elif self.current_audio_request_id == "request-4":
                 self.request4_audio_bytes += len(buf)
         finally:
             audio_frame.unlock_buf(buf)
@@ -155,7 +188,9 @@ def test_vendor_error_does_not_end_next_buffered_request(
             await mock_client.response_msgs.put(
                 (EVENT_TTS_RESPONSE, b"\x01\x02\x03\x04")
             )
-            await mock_client.response_msgs.put((EVENT_TTS_END, b""))
+            await mock_client.response_msgs.put(
+                (EVENT_TTS_END, TTSAudioEndReason.REQUEST_END)
+            )
 
         asyncio.create_task(emit_request4_audio())
 
@@ -174,6 +209,9 @@ def test_vendor_error_does_not_end_next_buffered_request(
     )
     tester.run()
 
+    assert tester.error_request_ids == ["request-3"]
+    assert tester.request3_end_reasons == [TTSAudioEndReason.REQUEST_END]
+    assert tester.request3_audio_bytes == 2
     assert tester.request4_started
     assert tester.request4_end_reasons == [TTSAudioEndReason.REQUEST_END]
     assert tester.request4_audio_bytes == 4

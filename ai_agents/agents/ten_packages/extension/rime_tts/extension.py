@@ -210,7 +210,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         f"Session finished for request ID: {self.current_request_id}"
                     )
-                    await self._handle_tts_audio_end()
+                    reason = (
+                        data
+                        if isinstance(data, TTSAudioEndReason)
+                        else TTSAudioEndReason.REQUEST_END
+                    )
+                    await self._handle_tts_audio_end(reason=reason)
                     if self.stop_event:
                         self.stop_event.set()
                         self.stop_event = None
@@ -227,18 +232,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     )
-                    if self.current_request_finished:
-                        await self._handle_tts_audio_end(
-                            reason=TTSAudioEndReason.ERROR, error=error
-                        )
-                    else:
-                        await self.send_tts_error(
-                            request_id=self.current_request_id or "",
-                            error=error,
-                        )
-                    if self.stop_event:
-                        self.stop_event.set()
-                        self.stop_event = None
+                    # Vendor error messages may be advisory while the server
+                    # continues returning audio. Only EVENT_TTS_END owns the
+                    # request terminal transition and releases buffered input.
+                    await self.send_tts_error(
+                        request_id=self.current_request_id or "",
+                        error=error,
+                    )
 
             except Exception:
                 self.ten_env.log_error(
