@@ -260,6 +260,8 @@ class RimeTTSynthesizer:
     async def _receive_loop(self, ws: WebSocketClientProtocol) -> None:
         """Message receiving loop for RIME TTS"""
         try:
+            pending_vendor_error: bytes | None = None
+
             # Mark receive loop as ready
             self._receive_ready_event.set()
 
@@ -280,10 +282,11 @@ class RimeTTSynthesizer:
                         self.ten_env.log_error(
                             f"Vendor error handling RIME TTS server message: {e}"
                         )
-                        if self.response_msgs:
-                            await self.response_msgs.put(
-                                (EVENT_TTS_ERROR, str(e.error.message).encode())
-                            )
+                        # Rime can still stream audio generated from earlier
+                        # appended text after rejecting a later input. Defer
+                        # the terminal error until the websocket is drained.
+                        if pending_vendor_error is None:
+                            pending_vendor_error = str(e.error.message).encode()
                     except Exception as e:
                         self.ten_env.log_error(
                             f"Error handling RIME TTS server message: {e}"
@@ -292,8 +295,16 @@ class RimeTTSynthesizer:
                     # Connection closed normally, send end event
                     self.ten_env.log_debug("RIME TTS connection closed")
                     if self.response_msgs and self.send_end_text:
-                        self.ten_env.log_debug("Sending end event")
-                        await self.response_msgs.put((EVENT_TTS_END, b""))
+                        if pending_vendor_error is not None:
+                            self.ten_env.log_debug(
+                                "Sending deferred vendor error event"
+                            )
+                            await self.response_msgs.put(
+                                (EVENT_TTS_ERROR, pending_vendor_error)
+                            )
+                        else:
+                            self.ten_env.log_debug("Sending end event")
+                            await self.response_msgs.put((EVENT_TTS_END, b""))
                         self.latest_context_id = None
                         self.send_end_text = False
                     break
@@ -366,6 +377,8 @@ class RimeTTSynthesizer:
                     f"Unknown RIME TTS message type: {message_type}"
                 )
 
+        except ModuleVendorException:
+            raise
         except Exception as e:
             self.ten_env.log_error(f"Failed to parse RIME TTS message: {e}")
             raise RuntimeError(f"Failed to parse RIME TTS message: {e}") from e
