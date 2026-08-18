@@ -46,7 +46,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.sent_tts: bool = False
         self.request_start_ts: datetime | None = None
         self.total_audio_bytes: int = 0
-        self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
+        self.response_msgs = asyncio.Queue[
+            tuple[int, bytes | int | ModuleError]
+        ]()
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_completed_request_id: str | None = None
         self.last_completed_has_reset_synthesizer = True
@@ -210,12 +212,17 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         f"Session finished for request ID: {self.current_request_id}"
                     )
-                    reason = (
-                        data
-                        if isinstance(data, TTSAudioEndReason)
-                        else TTSAudioEndReason.REQUEST_END
-                    )
-                    await self._handle_tts_audio_end(reason=reason)
+                    if isinstance(data, ModuleError):
+                        reason = TTSAudioEndReason.ERROR
+                        error = data
+                    else:
+                        reason = (
+                            data
+                            if isinstance(data, TTSAudioEndReason)
+                            else TTSAudioEndReason.REQUEST_END
+                        )
+                        error = None
+                    await self._handle_tts_audio_end(reason=reason, error=error)
                     if self.stop_event:
                         self.stop_event.set()
                         self.stop_event = None
@@ -312,6 +319,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         Override this method to handle TTS requests.
         This is called when the TTS request is made.
         """
+        completion_event: asyncio.Event | None = None
         try:
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
@@ -398,6 +406,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     request_time_ms=int(time.time() * 1000),
                     request_text=t.text,
                 )
+            if t.text_input_end:
+                # Establish the waiter before enqueueing terminal input. The
+                # transport can fail and publish END before send_text returns.
+                completion_event = asyncio.Event()
+                self.stop_event = completion_event
+
             await self.client.send_text(t)
             if t.text_input_end:
                 self.current_request_finished = True
@@ -422,8 +436,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 )
 
                 if self.sent_tts:
-                    self.stop_event = asyncio.Event()
-                    await self.stop_event.wait()
+                    if completion_event is not None:
+                        await completion_event.wait()
                     # session finished, connection will be re-established for next request
                     if not self.last_completed_has_reset_synthesizer:
                         await self.client.reset_synthesizer()
@@ -470,6 +484,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     request_id=self.current_request_id or "",
                     error=error,
                 )
+        finally:
+            if self.stop_event is completion_event:
+                self.stop_event = None
 
     async def cancel_tts(self) -> None:
         if self.current_request_id:

@@ -7,13 +7,17 @@ import pytest
 from websockets.exceptions import ConnectionClosedOK
 
 from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
     ModuleErrorVendorInfo,
+    ModuleType,
     ModuleVendorException,
     TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_runtime import AudioFrame, Data, ExtensionTester, TenEnvTester
 
+from rime_tts.extension import RimeTTSExtension
 from rime_tts.rime_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
@@ -36,6 +40,10 @@ class _TenEnvStub:
     def log_warn(_message: str, **_kwargs) -> None:
         pass
 
+    @staticmethod
+    def log_info(_message: str, **_kwargs) -> None:
+        pass
+
 
 def test_server_error_remains_vendor_exception() -> None:
     synthesizer = RimeTTSynthesizer.__new__(RimeTTSynthesizer)
@@ -54,17 +62,64 @@ def test_session_end_event_preserves_error_reason() -> None:
     synthesizer = RimeTTSynthesizer.__new__(RimeTTSynthesizer)
     synthesizer.ten_env = _TenEnvStub()
     synthesizer.response_msgs = asyncio.Queue()
-    synthesizer.send_end_text = True
+    synthesizer.send_end_text = False
+    synthesizer._terminal_input_pending = True
     synthesizer.latest_context_id = "request-3"
-
-    asyncio.run(synthesizer._send_session_end(TTSAudioEndReason.ERROR))
-
-    assert synthesizer.response_msgs.get_nowait() == (
-        EVENT_TTS_END,
-        TTSAudioEndReason.ERROR,
+    error = ModuleError(
+        message="connection lost",
+        module=ModuleType.TTS,
+        code=ModuleErrorCode.NON_FATAL_ERROR,
+        vendor_info=ModuleErrorVendorInfo(
+            vendor="rime", code="1006", message="connection lost"
+        ),
     )
+
+    asyncio.run(synthesizer._send_session_end(error))
+
+    event, payload = synthesizer.response_msgs.get_nowait()
+    assert event == EVENT_TTS_END
+    assert payload is error
+    assert synthesizer._terminal_input_pending is False
     assert synthesizer.send_end_text is False
     assert synthesizer.latest_context_id is None
+
+
+def test_request_waiter_exists_before_terminal_input_is_enqueued() -> None:
+    async def run_test() -> None:
+        extension = RimeTTSExtension("rime_tts")
+        extension.ten_env = _TenEnvStub()
+        extension.config = type("Config", (), {"dump": False, "params": {}})()
+        extension.last_completed_has_reset_synthesizer = True
+        extension.metrics_add_output_characters = lambda _count: None
+        extension.send_tts_request_metrics = AsyncMock()
+
+        async def send_text(_tts_input: TTSTextInput) -> None:
+            completion_event = extension.stop_event
+            assert completion_event is not None
+            completion_event.set()
+            extension.stop_event = None
+
+        client = type(
+            "Client",
+            (),
+            {
+                "send_text": AsyncMock(side_effect=send_text),
+                "reset_synthesizer": AsyncMock(),
+            },
+        )()
+        extension.client = client
+
+        await extension.request_tts(
+            TTSTextInput(
+                request_id="request-before-return",
+                text="hello",
+                text_input_end=True,
+            )
+        )
+
+        client.send_text.assert_awaited_once()
+
+    asyncio.run(run_test())
 
 
 class _ErrorThenBufferedRequestTester(ExtensionTester):
@@ -160,6 +215,7 @@ def test_vendor_error_does_not_end_next_buffered_request(
             synthesizer._receive_ready_event = asyncio.Event()
             synthesizer._session_closing = False
             synthesizer.send_end_text = True
+            synthesizer._terminal_input_pending = True
             synthesizer.latest_context_id = tts_input.request_id
 
             async def handle_server_message(message: str) -> None:
