@@ -62,6 +62,7 @@ class RimeTTSynthesizer:
 
         # Connection management
         self._session_closing = False
+        self._disconnect_handled = False
         self._connect_exp_cnt = 0
         self.websocket_task = None
         self.channel_tasks = []
@@ -127,6 +128,7 @@ class RimeTTSynthesizer:
                 process_exception=self._process_ws_exception,
             ):
                 self.ws = ws
+                self._disconnect_handled = False
                 try:
                     self.ten_env.log_debug(
                         "websocket_connected",
@@ -165,6 +167,7 @@ class RimeTTSynthesizer:
                                 message=str(e),
                             ),
                         )
+                        self._disconnect_handled = True
                     if not self._session_closing:
                         self.ten_env.log_warn(
                             "RIME TTS websocket connection closed, will reconnect."
@@ -214,7 +217,7 @@ class RimeTTSynthesizer:
         finally:
             if self.ws:
                 await self.ws.close()
-            if self.on_connection_disconnected:
+            if not getattr(self, '_disconnect_handled', False) and self.on_connection_disconnected:
                 await self.on_connection_disconnected(
                     code=int(ModuleErrorCode.FATAL_ERROR),
                     message="closed",
@@ -224,6 +227,7 @@ class RimeTTSynthesizer:
                         message="closed",
                     ),
                 )
+                self._disconnect_handled = True
             self.ten_env.log_debug(
                 "RIME TTS websocket connection process ended."
             )

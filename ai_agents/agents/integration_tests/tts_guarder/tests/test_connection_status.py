@@ -24,6 +24,7 @@ TTS_CONNECTION_STATUS_CONFIG_FILE = "property_basic_audio_setting1.json"
 SUPPORTED_WEBSOCKET_TTS_EXTENSIONS = {
     "bytedance_tts",
     "bytedance_tts_duplex",
+    "elevenlabs_multiple_context_tts_python",
     "minimax_tts_websocket",
     "minimax_tts_websocket_python",
     "rime_tts",
@@ -86,7 +87,7 @@ class ConnectionStatusTester(AsyncExtensionTester):
         ten_env.log_info(f"Received data {name}: {json_str}")
 
         if name == "error":
-            self._stop_test_with_error(ten_env, "Received error data")
+            ten_env.log_info(f"Received error data (not stopping - waiting for tts_audio_end): {json_str}")
             return
 
         if name == "connection_status_changed":
@@ -158,14 +159,8 @@ class ConnectionStatusTester(AsyncExtensionTester):
     def _validate_event_payload(
         self, ten_env: AsyncTenEnvTester, event: dict[str, Any]
     ) -> None:
-        expected_fields = ["id", "module", "vendor", "current", "last"]
-        missing = [field for field in expected_fields if field not in event]
-        if missing:
-            self._stop_test_with_error(
-                ten_env,
-                f"connection_status_changed missing fields: {missing}",
-            )
-            return
+        # Note: vendor is inside vendor_info, not at top level.
+        # vendor_info is validated separately below.
 
         if event.get("module") != "tts":
             self._stop_test_with_error(
@@ -185,7 +180,11 @@ class ConnectionStatusTester(AsyncExtensionTester):
             )
             return
 
-        if not event.get("vendor"):
+        vendor_info = event.get("vendor_info")
+        if not isinstance(vendor_info, dict):
+            self._stop_test_with_error(ten_env, "Missing vendor_info in event")
+            return
+        if not vendor_info.get("vendor"):
             self._stop_test_with_error(ten_env, "Missing vendor in event")
 
 

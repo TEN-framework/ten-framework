@@ -239,13 +239,21 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     )
-                    # Vendor error messages may be advisory while the server
-                    # continues returning audio. Only EVENT_TTS_END owns the
-                    # request terminal transition and releases buffered input.
-                    await self.send_tts_error(
-                        request_id=self.current_request_id or "",
-                        error=error,
-                    )
+                    if self.current_request_finished:
+                        await self._handle_tts_audio_end(
+                            reason=TTSAudioEndReason.ERROR, error=error
+                        )
+                    else:
+                        # Vendor error messages may be advisory while the server
+                        # continues returning audio. Only EVENT_TTS_END owns the
+                        # request terminal transition and releases buffered input.
+                        await self.send_tts_error(
+                            request_id=self.current_request_id or "",
+                            error=error,
+                        )
+                    if self.stop_event:
+                        self.stop_event.set()
+                        self.stop_event = None
 
             except Exception:
                 self.ten_env.log_error(

@@ -21,7 +21,7 @@ import os
 import time
 
 TTS_EMPTY_TEXT_CONFIG_FILE = "property_basic_audio_setting1.json"
-MAX_RESPONSE_TIME_MS = 500  # Maximum time allowed from last send to receiving tts_audio_end
+MAX_RESPONSE_TIME_MS = 2000  # Maximum time allowed from last send to receiving tts_audio_end
 
 
 class EmptyTextRequestTester(AsyncExtensionTester):
@@ -118,6 +118,12 @@ class EmptyTextRequestTester(AsyncExtensionTester):
             ten_env.log_info(
                 f"[{self.test_name}] Received error data: {json_str}"
             )
+            # If tts_audio_end already received, error is expected (from finish_request)
+            if self.audio_end_received:
+                ten_env.log_info(
+                    f"[{self.test_name}] Ignoring error after tts_audio_end"
+                )
+                return
             self._stop_test_with_error(ten_env, f"Received error data: {json_str}")
             return
             

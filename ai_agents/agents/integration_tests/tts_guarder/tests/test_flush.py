@@ -209,6 +209,10 @@ class FlushTester(AsyncExtensionTester):
                 if name == "metrics":
                     ten_env.log_info(f"ℹ️ Received expected metrics data after flush_end")
                     return
+                # connection_status_changed after flush is expected (new synthesizer may connect)
+                if name == "connection_status_changed":
+                    ten_env.log_info(f"ℹ️ Received expected connection_status_changed data after flush_end")
+                    return
                 self.post_flush_end_data_count += 1
                 ten_env.log_info(f"⚠️ Received data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
                 return
