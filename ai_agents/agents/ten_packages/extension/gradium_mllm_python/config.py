@@ -2,19 +2,26 @@
 Configuration for the Gradium real-time speech-to-speech translation
 (MLLM) extension.
 
-Field names and the region/base_url resolution logic intentionally mirror
+Field names and the region/base_url resolution logic mirror
 gradium_asr_python/config.py and gradium_tts_python/config.py -- those two
 extensions are already wired up against Gradium's real ASR and TTS
-websocket APIs (wss://<region>.api.gradium.ai/api/speech/{asr,tts}), so this
-reuses everything confirmed there (auth header, region hosts, message
-shapes).
+websocket APIs (wss://<region>.api.gradium.ai/api/speech/{asr,tts}).
 
-The one field that is NOT confirmed against real docs is `path`: Gradium's
-combined speech-to-speech Translation API endpoint hasn't been documented to
-us yet. "/api/speech/s2s" below is a best guess extrapolated from the
-asr/tts pattern (and the "s2s-websocket" label referenced on
-gradium.ai/translate). Update it, and this docstring, once Gradium confirms
-the real path.
+The combined speech-to-speech endpoint's protocol was confirmed directly by
+Gradium (Pratim, 2026-08-20):
+  - path: /api/speech/s2s
+  - the existing GRADIUM_API_KEY covers this endpoint too
+  - setup payload: model_name="s2s-translate", stt_model_name="stt-translate",
+    tts_model_name="default", input_format/output_format="pcm" (24kHz in,
+    48kHz out), voice_id, and json_config={"target_language": ...} --
+    target_language is NOT a top-level field, it nests inside json_config.
+  - "text" messages carry translated output only (no separate
+    source-language transcript).
+  - "vad" is not part of this protocol; only ready/audio/text/end_of_stream/
+    error are ever sent.
+  - voice_id MUST be a voice belonging to target_language, or Gradium will
+    reject/mis-synthesize -- there's no validation for this below, since it
+    depends on Gradium's voice catalog per language.
 """
 
 from typing import Any, Literal
@@ -33,25 +40,22 @@ class GradiumMLLMConfig(BaseModel):
     """Optional explicit override of the websocket host (skips region-based lookup)."""
 
     path: str = "/api/speech/s2s"
-    """Websocket path for the speech-to-speech endpoint. UNCONFIRMED -- see module docstring."""
+    """Websocket path for the speech-to-speech endpoint."""
 
-    model_name: str = "default"
+    model_name: str = "s2s-translate"
     """Name of the Gradium speech-to-speech model to use."""
 
-    stt_model_name: str = ""
-    """Optional override for the ASR leg of the pipeline, if Gradium exposes one."""
+    stt_model_name: str = "stt-translate"
+    """Model used for the ASR leg of the pipeline."""
 
-    tts_model_name: str = ""
-    """Optional override for the TTS leg of the pipeline, if Gradium exposes one."""
+    tts_model_name: str = "default"
+    """Model used for the TTS leg of the pipeline."""
 
     voice_id: str = ""
-    """Voice used for the synthesized (translated) speech output."""
+    """Voice used for the synthesized (translated) speech output. Must belong to target_language."""
 
-    language: str = ""
-    """Source language hint (if supported); leave empty for auto-detect."""
-
-    target_language: str = "pt"
-    """Language to translate into."""
+    target_language: str = "en"
+    """Language to translate into (en, fr, de, es, pt confirmed supported). Sent nested in json_config."""
 
     input_format: str = "pcm"
     """Audio input format, matching gradium_asr_python's convention."""
@@ -86,28 +90,17 @@ class GradiumMLLMConfig(BaseModel):
 
     def setup_message(self) -> dict[str, Any]:
         """
-        Combined ASR+TTS 'setup' payload for the speech-to-speech session.
-
-        Merges gradium_asr_python's setup fields (model_name, input_format,
-        language) with gradium_tts_python's (model_name, voice_id,
-        output_format), plus translation-specific fields. Optional fields
-        are omitted when unset, matching gradium_asr_python's handling of
-        `language`.
+        'setup' payload for the speech-to-speech session, per Gradium's
+        confirmed shape. target_language nests inside json_config -- it is
+        NOT a top-level field.
         """
-        message: dict[str, Any] = {
+        return {
             "type": "setup",
             "model_name": self.model_name,
+            "stt_model_name": self.stt_model_name,
+            "tts_model_name": self.tts_model_name,
             "input_format": self.input_format,
             "output_format": self.output_format,
+            "voice_id": self.voice_id,
+            "json_config": {"target_language": self.target_language},
         }
-        if self.stt_model_name:
-            message["stt_model_name"] = self.stt_model_name
-        if self.tts_model_name:
-            message["tts_model_name"] = self.tts_model_name
-        if self.voice_id:
-            message["voice_id"] = self.voice_id
-        if self.language:
-            message["language"] = self.language
-        if self.target_language:
-            message["target_language"] = self.target_language
-        return message

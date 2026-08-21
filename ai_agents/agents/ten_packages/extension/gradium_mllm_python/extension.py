@@ -34,7 +34,6 @@ from .const import (
     WS_MSG_TYPE_AUDIO,
     WS_MSG_TYPE_ERROR,
     WS_MSG_TYPE_TEXT,
-    WS_MSG_TYPE_VAD,
 )
 
 
@@ -68,6 +67,16 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
         if not self.config.api_key:
             ten_env.log_error("api_key is required")
             raise ValueError("api_key is required")
+        if not self.config.voice_id:
+            # No default is safe to assume here: Gradium requires voice_id
+            # to belong to target_language, and we don't have a voice
+            # catalog to validate against. Fail loudly instead of silently
+            # pairing a possibly-wrong-language voice.
+            ten_env.log_error(
+                "voice_id is required and must be a voice belonging to "
+                f"target_language={self.config.target_language!r}"
+            )
+            raise ValueError("voice_id is required")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Set before super().on_stop() (which triggers stop_connection())
@@ -152,10 +161,6 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
                 await self.send_server_output_audio_data(
                     base64.b64decode(audio_b64)
                 )
-
-        elif msg_type == WS_MSG_TYPE_VAD:
-            # Mirrors gradium_asr_python: received but not wired to anything.
-            self.ten_env.log_debug(f"[gradium] vad event: {message}")
 
         elif msg_type == WS_MSG_TYPE_ERROR:
             err_msg = message.get("message", "Gradium error")

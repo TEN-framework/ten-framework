@@ -6,44 +6,36 @@ Real-time speech-to-speech (S2S) translation extension for TEN, using
 `gemini_mllm_python`, `glm_mllm_python`, and `stepfun_mllm_python`, so it can
 be dropped into any graph node expecting an "mllm" addon.
 
-## Status: scaffolded, not yet verified against a live Gradium endpoint
+## Status: protocol confirmed by Gradium, not yet run against a live endpoint
 
-This repo already has `gradium_asr_python` and `gradium_tts_python`, which
-talk to Gradium's real ASR and TTS websocket APIs. This extension reuses
-everything confirmed by those two:
+The full `/api/speech/s2s` protocol below was confirmed directly by Gradium
+(Pratim, 2026-08-20), building on top of `gradium_asr_python` and
+`gradium_tts_python`, which already talk to Gradium's real ASR/TTS websocket
+APIs in this repo.
 
-| Confirmed (via gradium_asr_python / gradium_tts_python) | Value |
+| | Value |
 |---|---|
 | Auth | header `x-api-key: <api_key>` |
-| Host pattern | `wss://<region>.api.gradium.ai/api/speech/<service>`, region `us` or `eu` |
-| Handshake | client sends `{"type": "setup", ...}`, waits for `{"type": "ready"}` before streaming audio |
+| Host + path | `wss://<region>.api.gradium.ai/api/speech/s2s`, region `us` or `eu` |
+| Handshake | client sends `{"type": "setup", ...}` (see below), waits for `{"type": "ready"}` before streaming audio |
+| Setup payload | `model_name: "s2s-translate"`, `stt_model_name: "stt-translate"`, `tts_model_name: "default"`, `input_format`/`output_format: "pcm"` (24kHz in, 48kHz out), `voice_id`, and `json_config: {"target_language": ...}` -- **`target_language` nests inside `json_config`, it is not a top-level field** |
 | Audio frames (both directions) | `{"type": "audio", "audio": "<base64 pcm16le>"}` |
-| Text/transcript frames | `{"type": "text", "text": ..., "final": bool, ...}` |
+| Text frames | `{"type": "text", "text": ..., "final": bool, ...}` -- **translated output only**, there is no separate source-language transcript event |
 | End of turn | `{"type": "end_of_stream"}` |
 | Errors | `{"type": "error", "message": ..., "code": ...}` |
-| VAD events | `{"type": "vad", ...}` (received, not currently acted on -- matches gradium_asr_python) |
-| Sample rates | 24kHz PCM in, 48kHz PCM out by default (`output_format: "pcm"`) |
+| VAD | **not part of this protocol** -- only `ready`/`audio`/`text`/`end_of_stream`/`error` are ever sent |
 
-**Not confirmed** -- this is the one real gap, isolated in `config.py`'s
-`path` field:
+Supported `target_language` values (confirmed): `en`, `fr`, `de`, `es`, `pt`.
 
-- The exact websocket path for the *combined* speech-to-speech endpoint.
-  `/api/speech/s2s` (in `property.json`) is extrapolated from the `asr`/`tts`
-  pattern plus the "s2s-websocket" label referenced on gradium.ai/translate
-  -- not from real docs. If it's wrong, connecting will fail cleanly at
-  `start_connection()` with a clear error; fix it in one place
-  (`property.json`'s `path`, or `GradiumMLLMConfig.path`'s default).
-- Whether Gradium's "text" messages on this combined endpoint carry only the
-  translated output, or also a separate source-language transcript. Right
-  now only the translated/output side is wired to
-  `mllm_server_output_transcript`; there's no `mllm_server_input_transcript`
-  emission. Revisit once real behavior is observed.
-- Whether `stt_model_name`/`tts_model_name`/`target_language` are the right
-  field names for the combined setup payload (they're carried over from the
-  gradium.ai/translate marketing page example, not from API docs).
+**Still requires manual setup, not a protocol gap**: `voice_id` must be a
+voice belonging to `target_language`, or Gradium will reject/mis-synthesize.
+There's no voice catalog available to validate against or default from, so
+`on_init` raises if `voice_id` is unset -- fill in a real one (via
+`GRADIUM_S2S_VOICE_ID` in `ai_agents/.env` for the demo graph) before
+running.
 
-Update this table (and the code) once Gradium shares real docs, then verify
-against a live connection -- see the parent repo's implementation plan.
+This has not yet been run against Gradium's live endpoint -- next step is
+testing on Ben's TEN dev server.
 
 ## Properties
 
@@ -55,13 +47,12 @@ values in [property.json](property.json).
 | `api_key` | `string` | Gradium API key (sent as the `x-api-key` header) |
 | `region` | `string` | `us` or `eu` -- selects the websocket host |
 | `base_url` | `string` | Optional explicit host override, skips region lookup |
-| `path` | `string` | Websocket path -- see "Not confirmed" above |
-| `model_name` | `string` | Gradium speech-to-speech model name |
-| `stt_model_name` | `string` | Optional ASR-leg model override |
-| `tts_model_name` | `string` | Optional TTS-leg model override |
-| `voice_id` | `string` | Voice for the synthesized translated speech |
-| `language` | `string` | Source language hint (empty = auto-detect) |
-| `target_language` | `string` | Language to translate into |
+| `path` | `string` | Websocket path (`/api/speech/s2s`) |
+| `model_name` | `string` | Speech-to-speech model name (`s2s-translate`) |
+| `stt_model_name` | `string` | ASR-leg model (`stt-translate`) |
+| `tts_model_name` | `string` | TTS-leg model (`default`) |
+| `voice_id` | `string` | Voice for the synthesized translated speech -- **required**, must belong to `target_language` |
+| `target_language` | `string` | Language to translate into (`en`/`fr`/`de`/`es`/`pt` confirmed); sent nested in `json_config`, not top-level, on the wire |
 | `input_format` | `string` | Input audio format (`pcm`) |
 | `output_format` | `string` | Output audio format (`pcm`, `pcm_16000`, `pcm_24000`) |
 | `input_sample_rate` | `int32` | Input PCM sample rate, Hz |

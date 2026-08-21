@@ -1,9 +1,10 @@
 """
 Constants for the Gradium real-time speech-to-speech translation extension.
 
-Message-type strings and sample-rate/frame constants mirror
-gradium_asr_python/const.py, which is already wired up against Gradium's
-real ASR websocket API.
+Message-type strings confirmed directly by Gradium (2026-08-20) for the
+/api/speech/s2s endpoint: setup/ready/audio/text/end_of_stream/error. Note
+this differs from gradium_asr_python's protocol -- there is no "vad" event
+on this endpoint.
 """
 
 MODULE_NAME_MLLM = "mllm"
@@ -12,7 +13,6 @@ WS_MSG_TYPE_SETUP = "setup"
 WS_MSG_TYPE_READY = "ready"
 WS_MSG_TYPE_AUDIO = "audio"
 WS_MSG_TYPE_TEXT = "text"
-WS_MSG_TYPE_VAD = "vad"
 WS_MSG_TYPE_END = "end_of_stream"
 WS_MSG_TYPE_ERROR = "error"
 

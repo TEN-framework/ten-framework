@@ -1,18 +1,12 @@
 """
 Websocket client for Gradium's real-time speech-to-speech translation API.
 
-Protocol (confirmed against gradium_asr_python / gradium_tts_python, which
-already talk to Gradium's real ASR and TTS endpoints):
+Protocol, confirmed directly by Gradium (2026-08-20) for /api/speech/s2s:
   connect -> send {"type": "setup", ...} -> wait for {"type": "ready"} ->
   stream {"type": "audio", "audio": <base64 pcm16>} both ways ->
-  {"type": "text", ...} carries transcript/translation text ->
-  {"type": "end_of_stream"} closes the turn -> {"type": "error", ...} on
-  failure.
-
-NOT confirmed for the combined speech-to-speech endpoint specifically: the
-exact `path` (see config.py), and whether "text" messages here represent
-only the translated output or also carry a separate source-language
-transcript. Update this docstring once Gradium confirms.
+  {"type": "text", ...} carries translated output text (no separate
+  source-language transcript) -> {"type": "end_of_stream"} closes the turn
+  -> {"type": "error", ...} on failure. No "vad" event on this endpoint.
 """
 
 import asyncio

@@ -56,9 +56,6 @@
         "voice_id": {
           "type": "string"
         },
-        "language": {
-          "type": "string"
-        },
         "target_language": {
           "type": "string"
         },
