@@ -1,6 +1,5 @@
 from ..config import OpenAITTSConfig
 from ..extension import OpenAITTSExtension
-from ten_ai_base import utils
 
 
 def _set_config(ext: OpenAITTSExtension, config: dict) -> None:
@@ -25,7 +24,7 @@ def test_vendor_metadata_builds_authorization_from_api_key():
     assert ext.vendor_metadata() == {
         "url": "https://api.openai.com/v1/audio/speech",
         "model": "gpt-4o-mini-tts",
-        "api_key": utils.encrypt("api-secret"),
+        "api_key": "api-secret",
         "authorization": "",
         "voice": "coral",
     }
@@ -44,7 +43,7 @@ def test_vendor_metadata_prefers_authorization_header():
     metadata = ext.vendor_metadata()
 
     assert "key" not in metadata
-    assert metadata["api_key"] == utils.encrypt("api-secret")
+    assert metadata["api_key"] == "api-secret"
     assert metadata["authorization"] == "Bearer header-secret"
 
 

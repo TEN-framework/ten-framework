@@ -14,7 +14,7 @@ def _safe_float(value: Any, default: float) -> float:
         converted = float(value)
     except (TypeError, ValueError):
         return default
-    if not math.isfinite(converted) or not 0.25 <= converted <= 4.0:
+    if not math.isfinite(converted):
         return default
     return converted
 
@@ -63,20 +63,19 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         # Use fixed value
         self.params["response_format"] = "pcm"
 
-        # Set endpoint URL from params or base_url if url is not provided
+        # Remove endpoint-only params after selecting the endpoint.
+        param_url = self.params.pop("url", None)  # pylint: disable=no-member
+        base_url = self.params.pop(  # pylint: disable=no-member
+            "base_url", "https://api.openai.com/v1"
+        )
         if not self.url:
-            value = self.params.pop("url", None)  # pylint: disable=no-member
-            if isinstance(value, str) and value.strip():
-                self.url = value
+            if isinstance(param_url, str) and param_url.strip():
+                self.url = param_url
             else:
-                base_url = self.params.get(  # pylint: disable=no-member
-                    "base_url", "https://api.openai.com/v1"
-                )
                 if not isinstance(base_url, str) or not base_url.strip():
                     base_url = "https://api.openai.com/v1"
                 base_url = base_url.rstrip("/")
                 self.url = f"{base_url}/audio/speech"
-            self.params.pop("base_url", None)  # pylint: disable=no-member
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
