@@ -1,0 +1,13 @@
+{
+  "params": {
+    "api_key": "${env:AIVIS_API_KEY|}",
+    "model_uuid": "a59cb814-0083-4369-8542-f51a29e72af7",
+    "base_url": "https://api.aivis-project.com",
+    "output_sampling_rate": 16000,
+    "output_audio_channels": "mono",
+    "language": "ja",
+    "use_ssml": false,
+    "leading_silence_seconds": 0.0,
+    "trailing_silence_seconds": 0.1
+  }
+}

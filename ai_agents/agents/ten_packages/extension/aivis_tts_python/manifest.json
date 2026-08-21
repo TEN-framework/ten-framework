@@ -1,0 +1,69 @@
+{
+  "type": "extension",
+  "name": "aivis_tts_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "model_uuid": {
+              "type": "string"
+            },
+            "base_url": {
+              "type": "string"
+            },
+            "output_sampling_rate": {
+              "type": "int64"
+            },
+            "language": {
+              "type": "string"
+            },
+            "speaker_uuid": {
+              "type": "string"
+            },
+            "style_id": {
+              "type": "int64"
+            },
+            "speaking_rate": {
+              "type": "float64"
+            }
+          }
+        }
+      }
+    }
+  }
+}

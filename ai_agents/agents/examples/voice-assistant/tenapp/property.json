@@ -1779,6 +1779,204 @@
             }
           ]
         }
+      },
+      {
+        "name": "voice_assistant_aivis",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "ja",
+                  "model": "nova-3"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "api_key": "${env:OPENAI_API_KEY}",
+                "base_url": "${env:OPENAI_BASE_URL|}",
+                "model": "${env:OPENAI_MODEL}",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "max_tokens": 512,
+                "prompt": "",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "aivis_tts_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "/tmp",
+                "params": {
+                  "api_key": "${env:AIVIS_API_KEY}",
+                  "model_uuid": "${env:AIVIS_MODEL_UUID|a59cb814-0083-4369-8542-f51a29e72af7}",
+                  "base_url": "${env:AIVIS_BASE_URL|https://api.aivis-project.com}",
+                  "output_sampling_rate": 16000,
+                  "output_audio_channels": "mono",
+                  "language": "ja",
+                  "use_ssml": false,
+                  "leading_silence_seconds": 0.0,
+                  "trailing_silence_seconds": 0.1
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "TEN Agent connected. How can I help you today?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "name": "on_user_joined",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "name": "on_user_left",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ],
+                  "destination": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ],
+                  "destination": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "llm",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ],
+                  "destination": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ],
+                  "destination": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
+                  "destination": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {
