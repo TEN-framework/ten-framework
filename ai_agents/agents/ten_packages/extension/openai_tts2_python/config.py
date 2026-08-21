@@ -6,6 +6,13 @@ from ten_ai_base import utils
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
 
+def _safe_float(value: Any, default: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 class OpenAITTSConfig(AsyncTTS2HttpConfig):
     """OpenAI TTS Config"""
 
@@ -34,8 +41,12 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
             self.params["model"] = "gpt-4o-mini-tts"
         if "voice" not in self.params:
             self.params["voice"] = "coral"
-        if "speed" not in self.params:
-            self.params["speed"] = 1.0
+        speed = self.params["speed"] if "speed" in self.params else 1.0
+        self.params["speed"] = _safe_float(speed, 1.0)
+        if "api_key" in self.params and not isinstance(
+            self.params["api_key"], str
+        ):
+            self.params["api_key"] = ""
         if "instructions" not in self.params:
             self.params["instructions"] = ""
 
@@ -49,12 +60,15 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         # Set endpoint URL from base_url if url is not provided
         if not self.url:
             if "url" in self.params:
-                self.url = self.params["url"]
+                value = self.params["url"]
+                self.url = value if isinstance(value, str) else None
                 self.params.pop("url", None)  # pylint: disable=no-member
             else:
                 base_url = self.params.get(  # pylint: disable=no-member
                     "base_url", "https://api.openai.com/v1"
                 )
+                if not isinstance(base_url, str):
+                    base_url = "https://api.openai.com/v1"
                 # Remove trailing slash from base_url
                 base_url = base_url.rstrip("/")
                 self.url = f"{base_url}/audio/speech"
