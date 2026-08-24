@@ -58,25 +58,38 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
         await super().on_init(ten_env)
         self.ten_env = ten_env
 
-        properties, _ = await ten_env.get_property_to_json(None)
-        self.config = GradiumMLLMConfig.model_validate_json(properties)
-        ten_env.log_info(
-            f"[gradium] config: {self.config.model_dump(exclude={'api_key'})}"
-        )
-
-        if not self.config.api_key:
-            ten_env.log_error("api_key is required")
-            raise ValueError("api_key is required")
-        if not self.config.voice_id:
-            # No default is safe to assume here: Gradium requires voice_id
-            # to belong to target_language, and we don't have a voice
-            # catalog to validate against. Fail loudly instead of silently
-            # pairing a possibly-wrong-language voice.
-            ten_env.log_error(
-                "voice_id is required and must be a voice belonging to "
-                f"target_language={self.config.target_language!r}"
+        try:
+            properties, _ = await ten_env.get_property_to_json(None)
+            self.config = GradiumMLLMConfig.model_validate_json(properties)
+            ten_env.log_info(
+                f"[gradium] config: {self.config.model_dump(exclude={'api_key'})}"
             )
-            raise ValueError("voice_id is required")
+
+            if not self.config.api_key:
+                raise ValueError("api_key is required")
+            if not self.config.voice_id:
+                # No default is safe to assume here: Gradium requires
+                # voice_id to belong to target_language, and we don't have a
+                # voice catalog to validate against. Fail loudly instead of
+                # silently pairing a possibly-wrong-language voice.
+                raise ValueError(
+                    "voice_id is required and must be a voice belonging to "
+                    f"target_language={self.config.target_language!r}"
+                )
+        except Exception as e:
+            # Report via TEN's error channel rather than letting on_init
+            # raise -- mirrors gradium_tts_python's on_init, and keeps a
+            # fixable config mistake from crashing the whole extension
+            # process instead of surfacing as a normal `error` Data event.
+            ten_env.log_error(f"[gradium] on_init failed: {e}")
+            await self.send_mllm_error(
+                ModuleError(
+                    module=MODULE_NAME_MLLM,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                ),
+                ModuleErrorVendorInfo(vendor=self.vendor(), message=str(e)),
+            )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Set before super().on_stop() (which triggers stop_connection())
@@ -102,6 +115,10 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
 
     async def start_connection(self) -> None:
         assert self.config is not None
+        if not self.config.api_key or not self.config.voice_id:
+            # on_init already reported this as a fatal error; don't also
+            # attempt (and fail) a connection with known-invalid config.
+            return
         try:
             self.client = GradiumS2SClient(self.config, self.ten_env)
             await self.client.connect()

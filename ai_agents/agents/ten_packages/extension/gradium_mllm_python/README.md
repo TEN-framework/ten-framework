@@ -37,6 +37,24 @@ running.
 This has not yet been run against Gradium's live endpoint -- next step is
 testing on Ben's TEN dev server.
 
+## Tests
+
+`tests/` mirrors `gradium_tts_python`'s pattern: a real TEN runtime
+(`tests/conftest.py`'s `FakeApp`) drives the actual extension lifecycle via
+`AsyncExtensionTester`, with only `GradiumS2SClient` mocked (`tests/gradium_mocks.py`)
+-- no live Gradium connection or real `voice_id` needed. Covers: session-ready
++ translated text/audio routing (`test_basic.py::test_session_ready_and_translated_output`),
+server-side error propagation, connect failures, and missing
+`api_key`/`voice_id` being reported cleanly instead of crashing the
+extension. `tests/test_config.py` separately unit-tests `GradiumMLLMConfig`
+(no TEN runtime needed) -- in particular the `json_config` nesting for
+`target_language`, which was wrong in the initial scaffold.
+
+Run from `ai_agents/` inside the dev container:
+```bash
+task test-extension EXTENSION=agents/ten_packages/extension/gradium_mllm_python
+```
+
 ## Properties
 
 Refer to `api` definition in [manifest.json](manifest.json) and default
