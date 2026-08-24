@@ -17,10 +17,14 @@ def make_streaming_mock_client(
       immediately (mirrors the real client's connect() only returning after
       Gradium's "ready" has already been received and validated).
     - ``messages()`` yields the canned ``messages`` list in order, then
-      blocks forever -- keeps the extension's receive loop "connected" for
-      the rest of the test instead of exiting and triggering a reconnect.
+      blocks until ``close()`` is called -- keeps the extension's receive
+      loop "connected" for the rest of the test, but still lets
+      start_connection()'s `async for` loop return (and the test process
+      shut down cleanly) once the extension tears the connection down.
+      This mirrors the real websockets-backed client, where closing the
+      underlying websocket is what makes `async for raw in self.ws:` end.
     - ``send_audio()`` records bytes into ``sent_audio`` if provided.
-    - ``close()`` / ``send_end_of_stream()`` are no-op AsyncMocks.
+    - ``send_end_of_stream()`` is a no-op AsyncMock.
     """
     mock = MagicMock()
 
@@ -29,7 +33,12 @@ def make_streaming_mock_client(
     else:
         mock.connect = AsyncMock()
 
-    mock.close = AsyncMock()
+    closed_event = asyncio.Event()
+
+    async def _close() -> None:
+        closed_event.set()
+
+    mock.close = AsyncMock(side_effect=_close)
     mock.send_end_of_stream = AsyncMock()
 
     async def _send_audio(pcm_bytes: bytes) -> None:
@@ -41,7 +50,7 @@ def make_streaming_mock_client(
     async def _messages():
         for m in messages or []:
             yield m
-        await asyncio.Event().wait()
+        await closed_event.wait()
 
     mock.messages.side_effect = _messages
     return mock

@@ -51,6 +51,7 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
         self._max_reconnect_attempts = 5
 
         self._response_transcript = ""
+        self._receive_task: asyncio.Task | None = None
 
     # ---------- lifecycle ----------
 
@@ -114,6 +115,13 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
     # ---------- connection ----------
 
     async def start_connection(self) -> None:
+        # AsyncMLLMBaseExtension.on_start() does `await self.start_connection()`
+        # directly -- if this coroutine blocked here for the life of the
+        # connection (as openai_mllm_python/glm_mllm_python's do), on_start()
+        # would never complete, and the framework would never advance this
+        # extension to on_stop(), deadlocking clean shutdown. Match
+        # gradium_asr_python's pattern instead: connect, then hand the
+        # message loop off to a background task and return promptly.
         assert self.config is not None
         if not self.config.api_key or not self.config.voice_id:
             # on_init already reported this as a fatal error; don't also
@@ -127,16 +135,7 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
             self.ten_env.log_info("[gradium] session ready")
             await self.send_server_session_ready(MLLMServerSessionReady())
 
-            async for message in self.client.messages():
-                try:
-                    await self._handle_server_message(message)
-                except Exception as e:
-                    traceback.print_exc()
-                    self.ten_env.log_error(
-                        f"[gradium] error processing message {message}: {e}"
-                    )
-
-            self.ten_env.log_info("[gradium] receive loop finished")
+            self._receive_task = asyncio.create_task(self._receive_loop())
         except Exception as e:
             traceback.print_exc()
             self.ten_env.log_error(f"[gradium] start_connection failed: {e}")
@@ -148,6 +147,26 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
                 ),
                 ModuleErrorVendorInfo(vendor=self.vendor(), message=str(e)),
             )
+            self.connected = False
+            await self._maybe_reconnect()
+
+    async def _receive_loop(self) -> None:
+        try:
+            async for message in self.client.messages():
+                try:
+                    await self._handle_server_message(message)
+                except Exception as e:
+                    traceback.print_exc()
+                    self.ten_env.log_error(
+                        f"[gradium] error processing message {message}: {e}"
+                    )
+
+            self.ten_env.log_info("[gradium] receive loop finished")
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            traceback.print_exc()
+            self.ten_env.log_error(f"[gradium] receive loop failed: {e}")
 
         self.connected = False
         await self._maybe_reconnect()
@@ -200,6 +219,13 @@ class GradiumMLLMExtension(AsyncMLLMBaseExtension):
 
     async def stop_connection(self) -> None:
         self.connected = False
+        if self._receive_task:
+            self._receive_task.cancel()
+            try:
+                await self._receive_task
+            except asyncio.CancelledError:
+                pass
+            self._receive_task = None
         if self.client:
             await self.client.close()
             self.client = None
