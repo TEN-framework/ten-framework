@@ -5,7 +5,7 @@
   "model_name": "s2s-translate",
   "stt_model_name": "stt-translate",
   "tts_model_name": "default",
-  "voice_id": "",
+  "voice_id": "YTpq7expH9539ERJ",
   "target_language": "en",
   "input_format": "pcm",
   "output_format": "pcm",

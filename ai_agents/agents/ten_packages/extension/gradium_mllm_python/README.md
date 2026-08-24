@@ -27,15 +27,19 @@ APIs in this repo.
 
 Supported `target_language` values (confirmed): `en`, `fr`, `de`, `es`, `pt`.
 
-**Still requires manual setup, not a protocol gap**: `voice_id` must be a
-voice belonging to `target_language`, or Gradium will reject/mis-synthesize.
-There's no voice catalog available to validate against or default from, so
-`on_init` raises if `voice_id` is unset -- fill in a real one (via
-`GRADIUM_S2S_VOICE_ID` in `ai_agents/.env` for the demo graph) before
-running.
+`voice_id` must be a voice belonging to `target_language`, or Gradium will
+reject/mis-synthesize -- `on_init` raises if it's unset rather than guessing.
+Default is `YTpq7expH9539ERJ` ("Emma", English -- confirmed by Gradium,
+2026-08-24), matching the default `target_language: "en"`. For other
+languages, override both `voice_id` and `target_language` together (e.g. via
+`GRADIUM_S2S_VOICE_ID` for the demo graph). Per Pratim, Gradium's voice
+catalog is also queryable through their API -- not yet wired up here, so
+picking a voice for a new language is still a manual lookup for now.
 
-This has not yet been run against Gradium's live endpoint -- next step is
-testing on Ben's TEN dev server.
+This has been run and passes end-to-end against a mocked Gradium client (see
+Tests below), including a real shutdown-deadlock bug caught and fixed by
+actually running it. It has **not** yet been run against Gradium's live
+endpoint -- that's still the next step, on Ben's TEN dev server.
 
 ## Tests
 
