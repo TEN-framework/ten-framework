@@ -11,12 +11,10 @@ ref:
 
 https://platform.openai.com/docs/guides/speech-to-text#streaming-the-transcription-of-an-ongoing-audio-recording
 
-https://platform.openai.com/docs/guides/realtime?use-case=transcription#connect-with-websockets
-
-!!! this is a beta api, the schemas are not stable !!!
+https://platform.openai.com/docs/guides/realtime-transcription
 """
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Literal
 
@@ -52,10 +50,54 @@ class TranscriptionSessionUpdateParam(BaseModel):
     client_secret: str | None = None
 
 
-# for openai beta realtime api(wss), we must connect with the server first,
-# then send the transcription session update param to the server.
-# so we need to define a schema for the transcription session update param.
+# User-facing config schema. The extension keeps the flat property.json shape
+# for backward compatibility and converts it to GA session.update payloads.
 TranscriptionParam = TranscriptionSessionUpdateParam
+
+# pcm16 only describes 16-bit PCM encoding; GA Realtime requires rate=24000
+# for audio/pcm (see RealtimeAudioFormatsParam). The extension resamples
+# input audio to 24 kHz before sending, so this must match actual payload.
+_AUDIO_FORMAT_TO_GA = {
+    "pcm16": {"type": "audio/pcm", "rate": 24000},
+    "g711_ulaw": {"type": "audio/pcmu"},
+    "g711_alaw": {"type": "audio/pcma"},
+}
+
+
+def _to_plain_dict(value: Any) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return value
+    if hasattr(value, "model_dump"):
+        return value.model_dump(exclude_none=True)
+    return dict(value)
+
+
+def build_ga_session_update(params: TranscriptionParam) -> dict[str, Any]:
+    audio_input: dict[str, Any] = {
+        "format": _AUDIO_FORMAT_TO_GA[params.input_audio_format],
+    }
+
+    transcription = _to_plain_dict(params.input_audio_transcription)
+    if transcription:
+        audio_input["transcription"] = transcription
+
+    if params.turn_detection is not None:
+        audio_input["turn_detection"] = _to_plain_dict(params.turn_detection)
+
+    noise_reduction = _to_plain_dict(params.input_audio_noise_reduction)
+    if noise_reduction is not None:
+        audio_input["noise_reduction"] = noise_reduction
+
+    session: dict[str, Any] = {
+        "type": "transcription",
+        "audio": {"input": audio_input},
+    }
+    if params.include:
+        session["include"] = params.include
+
+    return {"type": "session.update", "session": session}
 
 
 class TranscriptionResultDelta(BaseModel):
