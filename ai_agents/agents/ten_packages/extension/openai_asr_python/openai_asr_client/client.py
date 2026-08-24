@@ -174,11 +174,13 @@ class OpenAIAsrClient(WebSocketClient):
             async with self._pending_lock:
                 await self._flush_pending_audio_locked()
                 self.params_ready_event.set()
+            session_update = build_ga_session_update(self._params)
+            self.logger.debug("Session updated: %s", json.dumps(session_update))
             await self._call_listener(
                 self._listener.on_asr_start,
                 Session[TranscriptionParam](
-                    type="session.update",
-                    event_id=None,
+                    type="session.updated",
+                    event_id=message.get("event_id"),
                     session=self._params,
                 ),
             )

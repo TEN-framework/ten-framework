@@ -18,10 +18,14 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Literal
 
-from openai.types.beta.realtime.transcription_session_update_param import (
-    SessionTurnDetection,
-    SessionInputAudioTranscription,
-    SessionInputAudioNoiseReduction,
+from openai.types.realtime.audio_transcription_param import (
+    AudioTranscriptionParam,
+)
+from openai.types.realtime.realtime_transcription_session_audio_input_param import (
+    NoiseReduction,
+)
+from openai.types.realtime.realtime_transcription_session_audio_input_turn_detection_param import (
+    RealtimeTranscriptionSessionAudioInputTurnDetectionParam,
 )
 
 SessionType = TypeVar("SessionType")
@@ -43,11 +47,12 @@ class Error(BaseModel):
 
 class TranscriptionSessionUpdateParam(BaseModel):
     input_audio_format: Literal["pcm16", "g711_ulaw", "g711_alaw"]
-    input_audio_transcription: SessionInputAudioTranscription
-    turn_detection: SessionTurnDetection | None = None
-    input_audio_noise_reduction: SessionInputAudioNoiseReduction | None = None
+    input_audio_transcription: AudioTranscriptionParam
+    turn_detection: (
+        RealtimeTranscriptionSessionAudioInputTurnDetectionParam | None
+    ) = None
+    input_audio_noise_reduction: NoiseReduction | None = None
     include: list[str] | None = None
-    client_secret: str | None = None
 
 
 # User-facing config schema. The extension keeps the flat property.json shape
@@ -68,33 +73,40 @@ def _to_plain_dict(value: Any) -> dict[str, Any] | None:
     if value is None:
         return None
     if isinstance(value, dict):
-        return value
-    if hasattr(value, "model_dump"):
-        return value.model_dump(exclude_none=True)
-    return dict(value)
+        plain = value
+    elif hasattr(value, "model_dump"):
+        plain = value.model_dump(exclude_none=True)
+    else:
+        plain = dict(value)
+    return {k: v for k, v in plain.items() if v is not None} or None
+
+
+def _set_optional_field(target: dict[str, Any], key: str, value: Any) -> None:
+    if value is None:
+        return
+    plain = _to_plain_dict(value)
+    if plain is not None:
+        target[key] = plain
 
 
 def build_ga_session_update(params: TranscriptionParam) -> dict[str, Any]:
     audio_input: dict[str, Any] = {
-        "format": _AUDIO_FORMAT_TO_GA[params.input_audio_format],
+        "format": dict(_AUDIO_FORMAT_TO_GA[params.input_audio_format]),
     }
 
-    transcription = _to_plain_dict(params.input_audio_transcription)
-    if transcription:
-        audio_input["transcription"] = transcription
-
-    if params.turn_detection is not None:
-        audio_input["turn_detection"] = _to_plain_dict(params.turn_detection)
-
-    noise_reduction = _to_plain_dict(params.input_audio_noise_reduction)
-    if noise_reduction is not None:
-        audio_input["noise_reduction"] = noise_reduction
+    _set_optional_field(
+        audio_input, "transcription", params.input_audio_transcription
+    )
+    _set_optional_field(audio_input, "turn_detection", params.turn_detection)
+    _set_optional_field(
+        audio_input, "noise_reduction", params.input_audio_noise_reduction
+    )
 
     session: dict[str, Any] = {
         "type": "transcription",
         "audio": {"input": audio_input},
     }
-    if params.include:
+    if params.include is not None:
         session["include"] = params.include
 
     return {"type": "session.update", "session": session}
