@@ -60,11 +60,9 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
             "api_key": self.config.params.get("api_key", ""),
             "authorization": authorization,
             "voice": self.config.params.get("voice", ""),
+            "language": self.config.params.get("language", ""),
         }
-        language = self.config.params.get("language", "")
-        if language:
-            metadata["language"] = language
-        return metadata
+        return {key: value for key, value in metadata.items() if value}
 
     def synthesize_audio_sample_rate(self) -> int:
         return 24000

@@ -25,7 +25,6 @@ def test_vendor_metadata_builds_authorization_from_api_key():
         "url": "https://api.openai.com/v1/audio/speech",
         "model": "gpt-4o-mini-tts",
         "api_key": "api-secret",
-        "authorization": "",
         "voice": "coral",
     }
 
@@ -54,8 +53,9 @@ def test_vendor_metadata_handles_none_api_key():
     metadata = ext.vendor_metadata()
 
     assert "key" not in metadata
-    assert metadata["api_key"] == ""
-    assert metadata["authorization"] == ""
+    assert "api_key" not in metadata
+    assert "authorization" not in metadata
+    assert all(metadata.values())
 
 
 def test_vendor_metadata_without_config():
