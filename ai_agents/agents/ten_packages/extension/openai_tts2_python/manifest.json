@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_tts2_python",
-  "version": "0.6.11",
+  "version": "0.6.10",
   "dependencies": [
     {
       "type": "system",

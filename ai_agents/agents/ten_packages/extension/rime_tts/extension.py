@@ -142,7 +142,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             "key": self.config.api_key,
             "url": self.config.base_url,
             "model": self.config.params.get("modelId", ""),
-            "language": self.config.params.get("lang", ""),
+            "lang": self.config.params.get("lang", ""),
             "api_key": self.config.api_key,
         }
         return {key: value for key, value in metadata.items() if value}

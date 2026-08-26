@@ -60,7 +60,6 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
             "api_key": self.config.params.get("api_key", ""),
             "authorization": authorization,
             "voice": self.config.params.get("voice", ""),
-            "language": self.config.params.get("language", ""),
         }
         return {key: value for key, value in metadata.items() if value}
 
