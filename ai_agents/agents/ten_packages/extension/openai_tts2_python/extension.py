@@ -54,14 +54,13 @@ class OpenAITTSExtension(AsyncTTS2HttpExtension):
             "Authorization",
             "",
         ) or self.config.headers.get("authorization", "")
-        metadata = {
+        return {
             "url": self.config.url or "",
             "model": self.config.params.get("model", ""),
             "api_key": self.config.params.get("api_key", ""),
             "authorization": authorization,
             "voice": self.config.params.get("voice", ""),
         }
-        return {key: value for key, value in metadata.items() if value}
 
     def synthesize_audio_sample_rate(self) -> int:
         return 24000

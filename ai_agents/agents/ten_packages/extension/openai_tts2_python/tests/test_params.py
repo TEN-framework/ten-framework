@@ -445,7 +445,7 @@ def test_vendor_metadata_does_not_convert_api_key_to_authorization():
 
     metadata = extension.vendor_metadata()
 
-    assert "authorization" not in metadata
+    assert metadata["authorization"] == ""
     assert metadata["api_key"] == "test_api_key_123"
     assert "key" not in metadata
 
