@@ -739,7 +739,7 @@ class VolcengineASRClient:
                     if response.code != 0:
                         error_message = (
                             response.payload_msg.get("error_message")
-                            if response.payload_msg
+                            if isinstance(response.payload_msg, dict)
                             else None
                         )
                         error = ServerErrorResponse(

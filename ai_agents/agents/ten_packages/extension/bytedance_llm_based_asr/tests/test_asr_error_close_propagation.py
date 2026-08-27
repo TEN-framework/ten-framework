@@ -80,6 +80,37 @@ async def test_server_error_response_preserves_result_callback():
 
 
 @pytest.mark.asyncio
+async def test_server_error_response_handles_non_dict_payload():
+    client = VolcengineASRClient(
+        url="wss://example.test/asr",
+        app_key="app_key",
+        access_key="access_key",
+        api_key="api_key",
+        auth_method="api_key",
+        config=_minimal_config(),
+    )
+    client.websocket = _SingleMessageWebSocket()
+    client._first_response_received = True
+    client.result_callback = AsyncMock()
+    client.asr_error_callback = MagicMock(
+        return_value=(45000081, "Server error response: code=45000081")
+    )
+    client.set_on_disconnected_callback(AsyncMock())
+
+    with patch.object(
+        client_module.ResponseParser,
+        "parse_response",
+        return_value=ASRResponse(code=45000081, payload_msg=["unexpected"]),
+    ):
+        await client._listen_for_responses()
+
+    client.asr_error_callback.assert_called_once()
+    error = client.asr_error_callback.call_args.args[0]
+    assert error.code == 45000081
+    assert str(error) == "Server error response: code=45000081"
+
+
+@pytest.mark.asyncio
 async def test_extension_result_callback_does_not_report_server_error():
     extension = BytedanceASRLLMExtension("test_extension")
     extension.ten_env = MagicMock()
