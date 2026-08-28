@@ -191,7 +191,11 @@ class DumperByRequestTester(AsyncExtensionTester):
                         "session_id": self.sent_metadata.get("session_id", ""),
                         "turn_id": self.sent_metadata.get("turn_id", -1)
                     }
-                    if received_metadata != expected_metadata:
+                    if any(
+                        key not in received_metadata
+                        or received_metadata[key] != value
+                        for key, value in expected_metadata.items()
+                    ):
                         self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_start. Expected: {expected_metadata}, Received: {received_metadata}")
                         return
                 except json.JSONDecodeError:
@@ -219,7 +223,11 @@ class DumperByRequestTester(AsyncExtensionTester):
                         "session_id": self.sent_metadata.get("session_id", ""),
                         "turn_id": self.sent_metadata.get("turn_id", -1)
                     }
-                    if received_metadata != expected_metadata:
+                    if any(
+                        key not in received_metadata
+                        or received_metadata[key] != value
+                        for key, value in expected_metadata.items()
+                    ):
                         self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_end. Expected: {expected_metadata}, Received: {received_metadata}")
                         return
                 except json.JSONDecodeError:

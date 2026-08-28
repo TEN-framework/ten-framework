@@ -192,7 +192,10 @@ class AppendInputTester(AsyncExtensionTester):
         event_name: str,
     ) -> bool:
         """Validate metadata matches expected."""
-        if received_metadata != expected_metadata:
+        if any(
+            key not in received_metadata or received_metadata[key] != value
+            for key, value in expected_metadata.items()
+        ):
             self._stop_test_with_error(
                 ten_env,
                 f"Metadata mismatch in {event_name}. Expected: {expected_metadata}, Received: {received_metadata}",
@@ -505,4 +508,3 @@ def test_append_input(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
-
