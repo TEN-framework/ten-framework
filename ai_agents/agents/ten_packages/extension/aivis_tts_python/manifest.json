@@ -49,6 +49,10 @@
             "output_sampling_rate": {
               "type": "int64"
             },
+            "output_audio_channels": {
+              "type": "string",
+              "enum": ["mono", "stereo"]
+            },
             "language": {
               "type": "string"
             },
