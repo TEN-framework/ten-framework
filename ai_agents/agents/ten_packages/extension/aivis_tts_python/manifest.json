@@ -21,7 +21,7 @@
       "BUILD.gn",
       "**.tent",
       "**.py",
-      "README.md",
+      "**.md",
       "pyproject.toml",
       "requirements.txt"
     ]
