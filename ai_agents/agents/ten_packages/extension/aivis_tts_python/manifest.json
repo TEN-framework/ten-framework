@@ -53,6 +53,10 @@
               "type": "string",
               "enum": ["mono", "stereo"]
             },
+            "output_format": {
+              "type": "string",
+              "enum": ["wav", "mp3", "opus"]
+            },
             "language": {
               "type": "string"
             },
@@ -63,6 +67,15 @@
               "type": "int64"
             },
             "speaking_rate": {
+              "type": "float64"
+            },
+            "use_ssml": {
+              "type": "boolean"
+            },
+            "leading_silence_seconds": {
+              "type": "float64"
+            },
+            "trailing_silence_seconds": {
               "type": "float64"
             }
           }

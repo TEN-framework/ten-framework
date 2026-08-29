@@ -13,7 +13,7 @@ iterating the rest of the stream.
 
 from typing import Any, AsyncIterator, Tuple
 
-from httpx import AsyncClient, Timeout, Limits, HTTPStatusError
+from httpx import AsyncClient, Timeout, Limits
 
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -123,10 +123,12 @@ class AivisTTSClient(AsyncTTS2HttpClient):
                 # buffers the leading PCM bytes internally).
                 await parser.get_format_info()
 
-                # Yield the already-buffered first PCM chunk immediately so
-                # the base class can mark TTFB against the first audio byte.
-                first_chunk = getattr(parser, "_first_pcm_chunk", None)
-                if first_chunk and len(first_chunk) > 0:
+                # Pull the first PCM chunk off the parser and yield it
+                # immediately so the base class can mark TTFB against the
+                # first audio byte. We iterate via anext rather than reaching
+                # into the parser's private _first_pcm_chunk attribute.
+                first_chunk = await parser.__anext__()
+                if len(first_chunk) > 0:
                     self.ten_env.log_debug(
                         f"AivisTTS: first chunk len={len(first_chunk)} "
                         f"request_id={request_id}",
@@ -134,8 +136,8 @@ class AivisTTSClient(AsyncTTS2HttpClient):
                     )
                     yield bytes(first_chunk), TTS2HttpResponseEventType.RESPONSE
 
-                # Continue with the rest of the stream. The parser handles
-                # empty chunks (height/width validation lives in the base).
+                # Continue with the rest of the stream. Empty chunks are
+                # filtered before yielding.
                 async for pcm_chunk in parser:
                     if self._is_cancelled:
                         self.ten_env.log_debug(
@@ -150,24 +152,10 @@ class AivisTTSClient(AsyncTTS2HttpClient):
             if not self._is_cancelled:
                 yield None, TTS2HttpResponseEventType.END
 
-        except HTTPStatusError as e:
-            error_message = str(e)
-            self.ten_env.log_error(
-                f"vendor_error: {error_message} of request_id: {request_id}.",
-                category=LOG_CATEGORY_VENDOR,
-            )
-            if e.response is not None and e.response.status_code in (401, 403):
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
-            else:
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.ERROR
         except Exception as e:
             error_message = str(e)
             self.ten_env.log_error(
-                f"vendor_error: {error_message} of request_id: {request_id}.",
+                f"AivisTTS: vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
             if "401" in error_message or "403" in error_message:
@@ -180,11 +168,15 @@ class AivisTTSClient(AsyncTTS2HttpClient):
                 ), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
+        """Release the underlying httpx client."""
         self.ten_env.log_debug("AivisTTS: clean() called.")
         try:
             await self.client.aclose()
-        finally:
-            pass
+        except Exception as exc:
+            self.ten_env.log_warn(
+                f"AivisTTS: client.aclose() raised: {exc}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
     def get_extra_metadata(self) -> dict[str, Any]:
         return {

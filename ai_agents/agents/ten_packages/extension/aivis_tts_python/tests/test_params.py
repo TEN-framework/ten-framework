@@ -55,6 +55,7 @@ def test_params_passthrough(MockAivisTTSClient):
 
     mock_instance = MockAivisTTSClient.return_value
     mock_instance.clean = AsyncMock()
+    mock_instance.cancel = AsyncMock()
 
     real_params = {
         "api_key": "test_api_key",

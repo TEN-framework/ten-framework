@@ -41,4 +41,6 @@ class AivisTTSExtension(AsyncTTS2HttpExtension):
         return "aivis"
 
     def synthesize_audio_sample_rate(self) -> int:
+        if self.config is None:
+            return 16000
         return int(self.config.params.get("output_sampling_rate", 16000))

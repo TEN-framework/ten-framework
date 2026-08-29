@@ -39,9 +39,11 @@ Fills the Japan regional TTS gap the same way Gradium fills French/EU — a spec
 | `output_audio_channels` | | `mono` | `mono` / `stereo` |
 | `language` | | `ja` | Currently Japanese-focused |
 | `speaker_uuid` | | — | Optional speaker within the model |
-| `style_id` / `style_name` | | — | Mutually exclusive |
+| `style_id` | | — | Optional speaking style ID for the model |
 | `speaking_rate` | | `1.0` | 0.5–2.0 |
 | `use_ssml` | | `false` | Enable SSML / `<break>` tags |
+| `leading_silence_seconds` | | `0.0` | Pad before first sample |
+| `trailing_silence_seconds` | | `0.1` | Pad after last sample |
 
 `output_format` is forced to `wav` so the extension can strip the header and emit PCM.
 
@@ -75,4 +77,4 @@ Pay-as-you-go and a premium unlimited plan are available; free trial credits are
 
 ## Why not Supertone?
 
-Supertone API new signups ended 2026-07-23 and the service shuts down 2026-08-31 — unsuitable for a new TEN contribution.
+Supertone API new signups ended 2026-07-23 and the service shut down on 2026-08-31 — unsuitable as a new TEN contribution.
