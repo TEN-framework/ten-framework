@@ -10,7 +10,6 @@ project_root = str(Path(__file__).resolve().parents[6])
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from pathlib import Path
 import json
 from unittest.mock import patch, AsyncMock
 
@@ -127,7 +126,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("aivis_tts_python.aivis_tts.AsyncClient")
+@patch("httpx.AsyncClient")
 def test_invalid_api_key_error(MockAsyncClient):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")

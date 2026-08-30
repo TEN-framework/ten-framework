@@ -67,6 +67,15 @@ initial 4 KB window. We yield this chunk immediately after
 `get_format_info()` so the base class marks TTFB against the first
 audio byte, not against the moment the first WAV byte arrives.
 
+The 4 KB buffer is intentional: a canonical WAV header is 44 bytes
+(RIFF + WAVE + 16-byte `fmt ` + 8-byte `data` tag), and a single TCP
+chunk from the Aivis CDN typically contains the header plus a few KB
+of PCM. A vendor that emitted non-canonical WAV (e.g. with `LIST`,
+`JUNK`, or `bext` chunks pushing the header past 4 KB) would not
+parse correctly — we haven't seen that from Aivis, but if it ever
+shows up, the fix is to grow `initial_buffer_size` or switch to a
+proper chunk-walking parser.
+
 ## Why `output_format` is forced to `wav`
 
 `AivisTTSConfig.update_params()` calls
