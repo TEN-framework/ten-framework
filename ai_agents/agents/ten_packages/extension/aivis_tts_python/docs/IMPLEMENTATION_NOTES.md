@@ -98,3 +98,47 @@ Aivis accepts `mono` / `stereo`. `config.update_params()` defaults
 this to `"mono"`. Without a schema entry, a TEN property validator
 would silently accept the key without documenting it. Adding it to
 the manifest makes the contract match the behaviour.
+
+## Manifest schema is type-only (matches sibling extensions)
+
+The manifest declares each param's `type` (`int64`, `string`,
+`float64`, `boolean`) but no `enum` / `minimum` / `maximum`
+constraints. This matches `rime_http_tts` and `groq_tts_python`,
+which also leave value-level validation to the vendor. The README's
+parameter table carries the bounds and enums in human form instead,
+so a developer reading the docs sees the full contract while the
+manifest stays aligned with the existing extension set.
+
+## Why `use_ssml` defaults to `false` (vendor default is `true`)
+
+Aivis's API default for `use_ssml` is `true`: any `<`-shaped character
+in `text` is parsed as a potential SSML tag. For a conversational
+voice agent the input comes from an LLM that occasionally emits
+literal characters like `<` or `>` in plain prose (URL fragments,
+inequalities, template variables). Treating these as SSML causes the
+API to either silently drop them or, for malformed tags, return a
+422. Overriding to `false` keeps LLM output verbatim. Operators who
+*want* SSML control (pauses via `<break time="…"/>`, prosody) can
+flip the default in `property.json` or pass `use_ssml: true` in the
+graph.
+
+## API field coverage
+
+Every field Aivis's `/v1/tts/synthesize` body accepts (per the public
+ReDoc at `https://api.aivis-project.com/v1/docs`) is exposed in the
+manifest schema:
+
+- Core: `model_uuid`, `text`, `language`
+- Style: `speaker_uuid`, `style_id`, `style_name`
+- Prosody: `speaking_rate`, `emotional_intensity`, `tempo_dynamics`,
+  `pitch`, `volume`
+- Timing: `leading_silence_seconds`, `trailing_silence_seconds`,
+  `line_break_silence_seconds`
+- Format: `output_format` (forced `wav`), `output_sampling_rate`,
+  `output_audio_channels`
+- Parsing: `use_ssml`, `use_volume_normalizer`
+
+`request_body()` in `config.py` forwards every non-`None` param that
+isn't in `CLIENT_ONLY_KEYS` (`api_key`, `base_url`, `endpoint`). So
+adding a new field only requires a manifest schema entry plus the
+README table — no client code changes.

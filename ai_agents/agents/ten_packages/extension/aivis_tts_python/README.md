@@ -39,11 +39,18 @@ Fills the Japan regional TTS gap the same way Gradium fills French/EU — a spec
 | `output_audio_channels` | | `mono` | `mono` / `stereo` |
 | `language` | | `ja` | Currently Japanese-focused |
 | `speaker_uuid` | | — | Optional speaker within the model |
-| `style_id` | | — | Optional speaking style ID for the model |
+| `style_id` | | — | Speaking style ID (0–31); mutually exclusive with `style_name` |
+| `style_name` | | — | Speaking style name (1–20 chars); mutually exclusive with `style_id` |
 | `speaking_rate` | | `1.0` | 0.5–2.0 |
-| `use_ssml` | | `false` | Enable SSML / `<break>` tags |
-| `leading_silence_seconds` | | `0.0` | Pad before first sample |
+| `emotional_intensity` | | `1.0` | 0.0–2.0; ignored on ノーマル style |
+| `tempo_dynamics` | | `1.0` | 0.0–2.0; strength of tempo variation |
+| `pitch` | | `0.0` | -1.0–1.0 |
+| `volume` | | `1.0` | 0.0–2.0 |
+| `use_ssml` | | `false` | Vendor default is `true`; we override to `false` since LLM-generated text is usually not SSML |
+| `use_volume_normalizer` | | — | Per-segment RMS volume normalization (vendor default `true`) |
+| `leading_silence_seconds` | | `0.0` | Pad before first sample (vendor default 0.1) |
 | `trailing_silence_seconds` | | `0.1` | Pad after last sample |
+| `line_break_silence_seconds` | | — | Silence between newline-separated segments (vendor default 0.4) |
 
 `output_format` is forced to `wav` so the extension can strip the header and emit PCM.
 

@@ -50,12 +50,10 @@
               "type": "int64"
             },
             "output_audio_channels": {
-              "type": "string",
-              "enum": ["mono", "stereo"]
+              "type": "string"
             },
             "output_format": {
-              "type": "string",
-              "enum": ["wav", "mp3", "opus"]
+              "type": "string"
             },
             "language": {
               "type": "string"
@@ -66,16 +64,37 @@
             "style_id": {
               "type": "int64"
             },
+            "style_name": {
+              "type": "string"
+            },
             "speaking_rate": {
               "type": "float64"
             },
+            "emotional_intensity": {
+              "type": "float64"
+            },
+            "tempo_dynamics": {
+              "type": "float64"
+            },
+            "pitch": {
+              "type": "float64"
+            },
+            "volume": {
+              "type": "float64"
+            },
             "use_ssml": {
+              "type": "boolean"
+            },
+            "use_volume_normalizer": {
               "type": "boolean"
             },
             "leading_silence_seconds": {
               "type": "float64"
             },
             "trailing_silence_seconds": {
+              "type": "float64"
+            },
+            "line_break_silence_seconds": {
               "type": "float64"
             }
           }
