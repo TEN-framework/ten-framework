@@ -26,7 +26,7 @@ def patch_smallest_ws():
       - async send_str (finalize control message)
       - async send_bytes (binary PCM audio)
       - async close
-      - async iterator yielding predefined messages
+      - async iterator matching aiohttp's close-frame semantics
     - Exposes the WebSocket and message list so tests can control behavior.
     """
 
@@ -49,6 +49,7 @@ def patch_smallest_ws():
             self.sent_messages: list[str] = []
             self.sent_bytes: list[bytes] = []
             self.closed: bool = False
+            self.close_code: int | None = None
             self._exception = None
 
         async def send_str(self, data: str) -> bool:
@@ -78,6 +79,16 @@ def patch_smallest_ws():
 
                     if current_messages:
                         for msg in current_messages:
+                            # ClientWebSocketResponse.__anext__ consumes close
+                            # frames and ends iteration instead of yielding
+                            # them to an async-for loop.
+                            if msg.type in (
+                                aiohttp.WSMsgType.CLOSE,
+                                aiohttp.WSMsgType.CLOSING,
+                                aiohttp.WSMsgType.CLOSED,
+                            ):
+                                self.closed = True
+                                return
                             yield msg
                     else:
                         # Small sleep to avoid busy waiting when no messages

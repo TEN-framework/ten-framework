@@ -235,6 +235,7 @@ def test_reconnect_after_ws_close(patch_smallest_ws):
 
             ws = patch_smallest_ws.ws
             ws.closed = False
+            ws.close_code = None
             ws._exception = None
             # Each connection starts with a fresh message buffer so a new
             # message loop does not replay the previous session's messages.

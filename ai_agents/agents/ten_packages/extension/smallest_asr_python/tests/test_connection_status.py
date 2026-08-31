@@ -128,26 +128,6 @@ def test_connection_status_reports_disconnected_on_iterator_exit(
 
     from unittest.mock import patch
 
-    class IteratorEndingWebSocket:
-        def __init__(self) -> None:
-            self.closed = False
-            self.close_code = None
-
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            self.closed = True
-            self.close_code = 1000
-            raise StopAsyncIteration
-
-        async def close(self) -> bool:
-            self.closed = True
-            return True
-
-        def exception(self):
-            return None
-
     class MockSessionMidClose:
         def __init__(self, *args, **kwargs) -> None:
             self.closed: bool = False
@@ -156,20 +136,21 @@ def test_connection_status_reports_disconnected_on_iterator_exit(
             nonlocal connect_attempts
             connect_attempts += 1
 
+            ws = patch_smallest_ws.ws
+            ws.closed = False
+            ws.close_code = None
+            ws._exception = None
             with patch_smallest_ws.messages_lock:
                 patch_smallest_ws.messages.clear()
 
             if connect_attempts == 1:
-                return IteratorEndingWebSocket()
-
-            ws = patch_smallest_ws.ws
-            ws.closed = False
-            ws._exception = None
-            push_after(
-                0.3,
-                patch_smallest_ws.WSMsgType.TEXT,
-                json.dumps(transcript_message),
-            )
+                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED)
+            else:
+                push_after(
+                    0.3,
+                    patch_smallest_ws.WSMsgType.TEXT,
+                    json.dumps(transcript_message),
+                )
             return ws
 
         async def close(self) -> None:
@@ -198,7 +179,8 @@ def test_connection_status_reports_disconnected_on_iterator_exit(
         )
         err = tester.run()
         assert err is None, (
-            f"test_connection_status_reports_disconnected_on_ws_close err "
+            "test_connection_status_reports_disconnected_on_iterator_exit "
+            "err "
             f"code: {err.error_code()} message: {err.error_message()}"
         )
 
