@@ -289,6 +289,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                     )
                     # WebSocket closed unexpectedly, trigger reconnection
                     if not self.stopped:
+                        self.connected = False
                         error = ModuleError(
                             module=MODULE_NAME_ASR,
                             code=ModuleErrorCode.NON_FATAL_ERROR.value,
@@ -301,7 +302,20 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                         # Schedule (do not await) so this task can exit before
                         # the reconnect path cancels it via stop_connection.
                         self._schedule_reconnect()
-                    break
+                    return
+
+            # aiohttp's ClientWebSocketResponse.__anext__ raises
+            # StopAsyncIteration for CLOSE, CLOSING, and CLOSED messages, so
+            # production sockets reach this point instead of the close-message
+            # branch above. Treat an otherwise normal iterator exit as an
+            # unexpected disconnect while the extension is still running.
+            if not self.stopped:
+                self.connected = False
+                close_code = getattr(self.ws, "close_code", None)
+                raise RuntimeError(
+                    "WebSocket message loop ended unexpectedly "
+                    f"(close code: {close_code})"
+                )
 
         except Exception as e:
             self.ten_env.log_error(

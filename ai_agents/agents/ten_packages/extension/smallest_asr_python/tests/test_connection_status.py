@@ -98,11 +98,11 @@ def test_connection_status_reports_connected_after_handshake(
     ), f"never observed a 'connected' transition: {tester.transitions}"
 
 
-# The vendor drops the socket mid-session (a CLOSED frame). The extension
-# must report "disconnected" (with close details) before scheduling the
-# reconnect — otherwise the reported connection_status stays wrong for the
-# whole reconnect window.
-def test_connection_status_reports_disconnected_on_ws_close(
+# aiohttp consumes CLOSE/CLOSING/CLOSED frames in __anext__ and ends iteration
+# via StopAsyncIteration. The extension must report "disconnected" and
+# reconnect after that normal loop exit rather than waiting for a close frame
+# that aiohttp never yields to the loop body.
+def test_connection_status_reports_disconnected_on_iterator_exit(
     patch_smallest_ws,
 ):
     connect_attempts = 0
@@ -128,6 +128,26 @@ def test_connection_status_reports_disconnected_on_ws_close(
 
     from unittest.mock import patch
 
+    class IteratorEndingWebSocket:
+        def __init__(self) -> None:
+            self.closed = False
+            self.close_code = None
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            self.closed = True
+            self.close_code = 1000
+            raise StopAsyncIteration
+
+        async def close(self) -> bool:
+            self.closed = True
+            return True
+
+        def exception(self):
+            return None
+
     class MockSessionMidClose:
         def __init__(self, *args, **kwargs) -> None:
             self.closed: bool = False
@@ -136,20 +156,20 @@ def test_connection_status_reports_disconnected_on_ws_close(
             nonlocal connect_attempts
             connect_attempts += 1
 
-            ws = patch_smallest_ws.ws
-            ws.closed = False
-            ws._exception = None
             with patch_smallest_ws.messages_lock:
                 patch_smallest_ws.messages.clear()
 
             if connect_attempts == 1:
-                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED)
-            else:
-                push_after(
-                    0.3,
-                    patch_smallest_ws.WSMsgType.TEXT,
-                    json.dumps(transcript_message),
-                )
+                return IteratorEndingWebSocket()
+
+            ws = patch_smallest_ws.ws
+            ws.closed = False
+            ws._exception = None
+            push_after(
+                0.3,
+                patch_smallest_ws.WSMsgType.TEXT,
+                json.dumps(transcript_message),
+            )
             return ws
 
         async def close(self) -> None:
@@ -187,11 +207,18 @@ def test_connection_status_reports_disconnected_on_ws_close(
             "connected" in statuses
         ), f"never observed a 'connected' transition: {tester.transitions}"
         assert "disconnected" in statuses, (
-            "never observed a 'disconnected' transition after the ws close: "
+            "never observed a 'disconnected' transition after iterator exit: "
             f"{tester.transitions}"
         )
-        # The close must be reported before the reconnect's own "connected"
-        # transition, not silently skipped.
-        assert statuses.index("disconnected") > statuses.index(
-            "connected"
-        ), f"disconnected did not follow the initial connect: {statuses}"
+        assert connect_attempts >= 2, "iterator exit did not trigger reconnect"
+        assert statuses.count("connected") >= 2, (
+            "never observed the reconnect's 'connected' transition: "
+            f"{statuses}"
+        )
+        first_connected = statuses.index("connected")
+        disconnected = statuses.index("disconnected")
+        reconnected = statuses.index("connected", first_connected + 1)
+        assert first_connected < disconnected < reconnected, (
+            "expected connected -> disconnected -> connected transitions: "
+            f"{statuses}"
+        )
