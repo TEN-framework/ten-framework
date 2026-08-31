@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::{
+    ffi::OsString,
     fs,
     path::{Path, PathBuf},
     sync::Arc,
@@ -18,31 +19,97 @@ use super::{
     DesignerState,
 };
 
+/// Checks that the already-canonicalized `candidate` is contained within
+/// one of the canonicalized `allowed_roots`.
+fn is_within_allowed_roots(candidate: &Path, allowed_roots: &[String]) -> bool {
+    allowed_roots
+        .iter()
+        .filter_map(|root| fs::canonicalize(root).ok())
+        .any(|canonical_root| candidate.starts_with(&canonical_root))
+}
+
+/// Why [`ensure_within_allowed_roots`] rejected a path.
+enum PathRejection {
+    /// `fs::canonicalize` failed outright, most commonly because nothing
+    /// exists at `path` (a typo'd path, or a file removed after being
+    /// listed). Not a confinement violation.
+    Unresolvable(String),
+    /// The path resolves, but outside of every loaded project root.
+    OutsideAllowedRoots(String),
+}
+
 /// Canonicalizes `path` and checks that the result is contained within one
 /// of the canonicalized `allowed_roots`. This confines the file-content API
 /// to the directories of apps that are actually loaded, so a client cannot
 /// escape via an absolute path or a `..` traversal.
-fn ensure_within_allowed_roots(path: &Path, allowed_roots: &[String]) -> Result<PathBuf, String> {
+fn ensure_within_allowed_roots(
+    path: &Path,
+    allowed_roots: &[String],
+) -> Result<PathBuf, PathRejection> {
+    if allowed_roots.is_empty() {
+        return Err(PathRejection::OutsideAllowedRoots(
+            "No project root is currently loaded, so no file path can be validated.".to_string(),
+        ));
+    }
+
+    let canonical_path = fs::canonicalize(path).map_err(|e| {
+        PathRejection::Unresolvable(format!("Failed to resolve path {}: {}", path.display(), e))
+    })?;
+
+    if is_within_allowed_roots(&canonical_path, allowed_roots) {
+        Ok(canonical_path)
+    } else {
+        Err(PathRejection::OutsideAllowedRoots(format!(
+            "Path {} is outside of any loaded project root.",
+            canonical_path.display()
+        )))
+    }
+}
+
+/// Resolves `path` (which may not exist yet, e.g. the not-yet-created
+/// parent directory of a new file) to what its canonical form will be, and
+/// checks that it is contained within one of `allowed_roots`, without
+/// creating anything on disk. Walks up to the nearest existing ancestor,
+/// canonicalizes that (so any symlinks already on disk are resolved), then
+/// re-applies the remaining, not-yet-created path components on top of it.
+///
+/// This must run before `fs::create_dir_all`, not after: that call
+/// re-resolves any `..` left in its argument against the directories it
+/// creates along the way, so a crafted path (e.g. `a/b/../../../etc`, where
+/// only `a` exists and is an allowed root) can make it create directories
+/// outside of every loaded root even though the final target is correctly
+/// rejected afterwards.
+fn resolve_prospective_path(path: &Path, allowed_roots: &[String]) -> Result<PathBuf, String> {
     if allowed_roots.is_empty() {
         return Err("No project root is currently loaded, so no file path can be validated."
             .to_string());
     }
 
-    let canonical_path = fs::canonicalize(path)
+    let mut existing_ancestor = path;
+    let mut pending_components: Vec<OsString> = Vec::new();
+    while !existing_ancestor.exists() {
+        match existing_ancestor.file_name() {
+            Some(name) => pending_components.push(name.to_os_string()),
+            // A `..`/`.` component (or an empty path) with no existing
+            // ancestor left to resolve it against; `fs::canonicalize` below
+            // will fail on it, which is the correct outcome.
+            None => break,
+        }
+        existing_ancestor = existing_ancestor.parent().unwrap_or_else(|| Path::new(""));
+    }
+
+    let canonical_ancestor = fs::canonicalize(existing_ancestor)
         .map_err(|e| format!("Failed to resolve path {}: {}", path.display(), e))?;
 
-    let is_allowed = allowed_roots
-        .iter()
-        .filter_map(|root| fs::canonicalize(root).ok())
-        .any(|canonical_root| canonical_path.starts_with(&canonical_root));
+    let mut prospective_path = canonical_ancestor;
+    for name in pending_components.into_iter().rev() {
+        prospective_path.push(name);
+    }
 
-    if is_allowed {
-        Ok(canonical_path)
+    if is_within_allowed_roots(&prospective_path, allowed_roots) {
+        Ok(prospective_path)
     } else {
-        Err(format!(
-            "Path {} is outside of any loaded project root.",
-            canonical_path.display()
-        ))
+        Err(format!("Path {} is outside of any loaded project root.", prospective_path.display()))
     }
 }
 
@@ -66,7 +133,22 @@ pub async fn get_file_content_endpoint(
 
     let validated_path = match ensure_within_allowed_roots(Path::new(&file_path), &allowed_roots) {
         Ok(path) => path,
-        Err(err) => {
+        Err(PathRejection::Unresolvable(err)) => {
+            // Not a confinement violation (e.g. a typo'd path, or a file
+            // deleted between listing and opening): preserve the prior
+            // 400 Bad Request behavior instead of looking like a security
+            // rejection.
+            state.out.error_line(&format!("Error reading file at path {file_path}: {err}"));
+
+            let response = ApiResponse {
+                status: Status::Fail,
+                data: (),
+                meta: None,
+            };
+
+            return Ok(HttpResponse::BadRequest().json(response));
+        }
+        Err(PathRejection::OutsideAllowedRoots(err)) => {
             state.out.error_line(&format!("Rejected file read at path {file_path}: {err}"));
 
             let response = ApiResponse {
@@ -119,46 +201,17 @@ pub async fn save_file_content_endpoint(
 
     let file_path = Path::new(&file_path_str);
 
-    // Attempt to create parent directories if they don't exist.
-    if let Some(parent) = file_path.parent() {
-        if let Err(e) = fs::create_dir_all(parent) {
-            state.out.error_line(&format!(
-                "Error creating directories for {}: {}",
-                parent.display(),
-                e
-            ));
-
-            let response = ApiResponse {
-                status: Status::Fail,
-                data: (),
-                meta: None,
-            };
-
-            return Ok(HttpResponse::BadRequest().json(response));
-        }
-    }
-
     // The target file itself may not exist yet (e.g. a new file being
-    // saved for the first time), so canonicalize its now-created parent
-    // directory instead and confine the write to a loaded project root.
+    // saved for the first time), and its parent directories may not exist
+    // either. Resolve and confine the prospective parent to a loaded
+    // project root BEFORE creating any directories: `fs::create_dir_all`
+    // must never run on an unvalidated, attacker-supplied path (see
+    // `resolve_prospective_path`).
     let allowed_roots: Vec<String> = state.pkgs_cache.read().await.keys().cloned().collect();
     let parent = file_path.parent().unwrap_or_else(|| Path::new("."));
 
-    let validated_path = match ensure_within_allowed_roots(parent, &allowed_roots) {
-        Ok(canonical_parent) => match file_path.file_name() {
-            Some(file_name) => canonical_parent.join(file_name),
-            None => {
-                state.out.error_line(&format!("Invalid file path: {file_path_str}"));
-
-                let response = ApiResponse {
-                    status: Status::Fail,
-                    data: (),
-                    meta: None,
-                };
-
-                return Ok(HttpResponse::BadRequest().json(response));
-            }
-        },
+    let canonical_parent = match resolve_prospective_path(parent, &allowed_roots) {
+        Ok(path) => path,
         Err(err) => {
             state.out.error_line(&format!("Rejected file write at path {file_path_str}: {err}"));
 
@@ -169,6 +222,37 @@ pub async fn save_file_content_endpoint(
             };
 
             return Ok(HttpResponse::Forbidden().json(response));
+        }
+    };
+
+    if let Err(e) = fs::create_dir_all(&canonical_parent) {
+        state.out.error_line(&format!(
+            "Error creating directories for {}: {}",
+            canonical_parent.display(),
+            e
+        ));
+
+        let response = ApiResponse {
+            status: Status::Fail,
+            data: (),
+            meta: None,
+        };
+
+        return Ok(HttpResponse::BadRequest().json(response));
+    }
+
+    let validated_path = match file_path.file_name() {
+        Some(file_name) => canonical_parent.join(file_name),
+        None => {
+            state.out.error_line(&format!("Invalid file path: {file_path_str}"));
+
+            let response = ApiResponse {
+                status: Status::Fail,
+                data: (),
+                meta: None,
+            };
+
+            return Ok(HttpResponse::BadRequest().json(response));
         }
     };
 

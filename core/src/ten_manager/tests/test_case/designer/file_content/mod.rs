@@ -148,6 +148,34 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn test_get_file_content_missing_file_in_root_is_bad_request() {
+        let root = tempdir().unwrap();
+
+        // A path inside a loaded root, but nothing exists there (e.g. a
+        // typo'd path, or a file removed between listing and opening).
+        // This must be a 400, not a 403: it isn't a confinement violation.
+        let file_path = root.path().join("does-not-exist.txt");
+
+        let state = build_state(vec![root.path().to_string_lossy().to_string()]);
+
+        let app = test::init_service(App::new().app_data(state.clone()).route(
+            "/api/designer/v1/file-content",
+            web::post().to(get_file_content_endpoint),
+        ))
+        .await;
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/file-content")
+            .set_json(GetFileContentRequestPayload {
+                file_path: file_path.to_string_lossy().to_string(),
+            })
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), actix_web::http::StatusCode::BAD_REQUEST);
+    }
+
+    #[actix_web::test]
     async fn test_get_file_content_with_no_loaded_root_is_rejected() {
         let root = tempdir().unwrap();
         let file_path = root.path().join("inside.txt");
@@ -257,5 +285,39 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), actix_web::http::StatusCode::FORBIDDEN);
         assert!(fs::metadata(&target_path).is_err());
+    }
+
+    #[actix_web::test]
+    async fn test_save_file_content_outside_root_with_nonexistent_parent_chain_is_rejected() {
+        let root = tempdir().unwrap();
+        let outside = tempdir().unwrap();
+
+        // Unlike `test_save_file_content_outside_root_is_rejected`, none of
+        // `outside`'s `a/b/c` subdirectories exist yet, so a validation
+        // that only runs after `fs::create_dir_all` would let that call
+        // create them outside of every loaded root before the write
+        // itself is rejected.
+        let target_path = outside.path().join("a").join("b").join("c").join("pwned.txt");
+
+        let state = build_state(vec![root.path().to_string_lossy().to_string()]);
+
+        let app = test::init_service(App::new().app_data(state.clone()).route(
+            "/api/designer/v1/file-content",
+            web::put().to(save_file_content_endpoint),
+        ))
+        .await;
+
+        let req = test::TestRequest::put()
+            .uri("/api/designer/v1/file-content")
+            .set_json(SaveFileRequestPayload {
+                file_path: target_path.to_string_lossy().to_string(),
+                content: "PWNED".to_string(),
+            })
+            .to_request();
+
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), actix_web::http::StatusCode::FORBIDDEN);
+        assert!(fs::metadata(&target_path).is_err());
+        assert!(fs::metadata(outside.path().join("a")).is_err());
     }
 }
