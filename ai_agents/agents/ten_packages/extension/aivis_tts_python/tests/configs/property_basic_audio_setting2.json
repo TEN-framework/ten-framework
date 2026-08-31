@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./tests/keep_dump_output/",
+  "params": {
+    "api_key": "${env:AIVIS_API_KEY}",
+    "model_uuid": "a59cb814-0083-4369-8542-f51a29e72af7",
+    "output_sampling_rate": 24000,
+    "output_audio_channels": "mono",
+    "language": "ja"
+  }
+}

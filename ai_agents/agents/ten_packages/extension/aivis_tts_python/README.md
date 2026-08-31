@@ -63,6 +63,35 @@ LLM text → AivisTTSExtension → POST /v1/tts/synthesize (WAV stream)
 
 Pattern mirrors `rime_http_tts` (httpx stream) + `groq_tts_python` (WAV parse).
 
+## Guarder fixtures
+
+The TTS guarder at `ai_agents/agents/integration_tests/tts_guarder/` runs a
+fixed suite (basic audio setting, dump, miss-required, invalid, flush,
+interrupt, append, interleaved, metrics, etc.) against any extension that
+ships property fixtures under `tests/configs/`. The following files are
+provided for Aivis:
+
+| Fixture | Used by | Notes |
+| --- | --- | --- |
+| `property_basic_audio_setting1.json` | `test_basic_audio_setting` | 16 kHz mono |
+| `property_basic_audio_setting2.json` | `test_basic_audio_setting` | 24 kHz mono (different rate triggers the comparison) |
+| `property_dump.json` | `test_dump`, `test_dump_each_request_id`, `test_append_*`, `test_append_interrupt`, `test_interleaved_requests` | `dump: true` writes PCM for inspection |
+| `property_invalid.json` | `test_invalid_required_params` | `"api_key": "invalid"` triggers the 401 path |
+| `property_miss_required.json` | `test_miss_required_params` | `api_key: ""` triggers the config-validation error |
+
+Run the guarder from the repo root with a real key:
+
+```bash
+export AIVIS_API_KEY=...
+cd /path/to/ten-framework/ai_agents
+task tts-guarder-test EXTENSION=aivis_tts_python
+```
+
+The default `CONFIG_DIR` is `tests/configs`, which matches the layout
+above. Subtitle-alignment and websocket connection-status tests are
+skipped (Aivis is HTTP-streaming, not WebSocket; Aivis does not yet
+expose text-timing metadata).
+
 ## Local smoke test
 
 From this workspace (no full TEN runtime required):
