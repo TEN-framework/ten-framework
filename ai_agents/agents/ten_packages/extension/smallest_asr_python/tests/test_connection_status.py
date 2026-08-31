@@ -136,15 +136,10 @@ def test_connection_status_reports_disconnected_on_iterator_exit(
             nonlocal connect_attempts
             connect_attempts += 1
 
-            ws = patch_smallest_ws.ws
-            ws.closed = False
-            ws.close_code = None
-            ws._exception = None
-            with patch_smallest_ws.messages_lock:
-                patch_smallest_ws.messages.clear()
+            ws = patch_smallest_ws.prepare_connection()
 
             if connect_attempts == 1:
-                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED)
+                push_after(0.3, patch_smallest_ws.WSMsgType.CLOSED, 1006)
             else:
                 push_after(
                     0.3,
@@ -204,3 +199,11 @@ def test_connection_status_reports_disconnected_on_iterator_exit(
             "expected connected -> disconnected -> connected transitions: "
             f"{statuses}"
         )
+        disconnected_transition = next(
+            transition
+            for transition in tester.transitions
+            if transition.get("current") == "disconnected"
+        )
+        assert "close code: 1006" in disconnected_transition.get(
+            "message", ""
+        ), f"close code was not reported: {disconnected_transition}"

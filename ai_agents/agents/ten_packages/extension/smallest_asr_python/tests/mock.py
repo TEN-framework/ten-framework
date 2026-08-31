@@ -52,6 +52,12 @@ def patch_smallest_ws():
             self.close_code: int | None = None
             self._exception = None
 
+        def reset(self) -> None:
+            """Prepare the shared socket for a fresh ws_connect call."""
+            self.closed = False
+            self.close_code = None
+            self._exception = None
+
         async def send_str(self, data: str) -> bool:
             self.sent_messages.append(data)
             return True
@@ -88,6 +94,11 @@ def patch_smallest_ws():
                                 aiohttp.WSMsgType.CLOSED,
                             ):
                                 self.closed = True
+                                self.close_code = (
+                                    msg.data
+                                    if isinstance(msg.data, int)
+                                    else 1000
+                                )
                                 return
                             yield msg
                     else:
@@ -101,13 +112,19 @@ def patch_smallest_ws():
             self.closed: bool = False
 
         async def ws_connect(self, url, headers=None, timeout=None):
-            # Always return the same mock WebSocket instance
-            return ws
+            return prepare_connection()
 
         async def close(self) -> None:
             self.closed = True
 
     ws = MockWebSocket()
+
+    def prepare_connection():
+        """Reset the shared socket and discard the previous session's queue."""
+        ws.reset()
+        with messages_lock:
+            messages.clear()
+        return ws
 
     # Patch the ClientSession used inside the Smallest AI extension module
     with patch(
@@ -124,6 +141,7 @@ def patch_smallest_ws():
             ws=ws,
             messages=messages,
             messages_lock=messages_lock,  # Expose lock for thread-safe access
+            prepare_connection=prepare_connection,
             add_message=add_message,  # Helper function to add messages thread-safely
             WSMsgType=aiohttp.WSMsgType,  # Expose WSMsgType for tests
             MockWebSocketMessage=MockWebSocketMessage,  # Helper for creating messages
