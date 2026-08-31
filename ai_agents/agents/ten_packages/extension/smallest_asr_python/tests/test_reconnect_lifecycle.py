@@ -42,6 +42,36 @@ def test_schedule_reconnect_is_single_flight():
     asyncio.run(run_test())
 
 
+def test_disconnect_during_reconnect_unwind_schedules_follow_up():
+    async def run_test() -> None:
+        extension = make_extension()
+        reconnect_calls = 0
+        second_reconnect = asyncio.Event()
+
+        async def reconnect() -> None:
+            nonlocal reconnect_calls
+            reconnect_calls += 1
+            if reconnect_calls == 1:
+                # Model a successful handshake followed by an immediate close
+                # before this reconnect task's done callback has run.
+                extension.connected = True
+                extension.connected = False
+                extension._schedule_reconnect()
+            else:
+                extension.connected = True
+                second_reconnect.set()
+
+        extension._handle_reconnect = reconnect  # type: ignore[method-assign]
+
+        extension._schedule_reconnect()
+        await asyncio.wait_for(second_reconnect.wait(), timeout=1.0)
+
+        assert reconnect_calls == 2
+        await extension._cancel_reconnect_task()
+
+    asyncio.run(run_test())
+
+
 def test_on_stop_cancels_reconnect_during_backoff():
     async def run_test() -> None:
         extension = make_extension()

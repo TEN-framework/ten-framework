@@ -55,6 +55,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         # it cannot cancel the message task that detected the disconnect.
         # A single task also serializes retry-budget and connection mutations.
         self._reconnect_task: asyncio.Task[None] | None = None
+        self._reconnect_pending: bool = False
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -79,6 +80,7 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         """Cancel and drain the outstanding reconnection task, if any."""
         task = self._reconnect_task
         self._reconnect_task = None
+        self._reconnect_pending = False
         if task is None or task is asyncio.current_task():
             return
         task.cancel()
@@ -278,9 +280,14 @@ class SmallestASRExtension(AsyncASRBaseExtension):
         if self.stopped:
             return
         if self._reconnect_task and not self._reconnect_task.done():
+            # The active reconnect may have opened a socket which then closed
+            # before the reconnect task finished unwinding. Remember that
+            # disconnect so the done callback can start another attempt.
+            self._reconnect_pending = True
             self.ten_env.log_debug("Reconnect already in progress, skip")
             return
 
+        self._reconnect_pending = False
         task = asyncio.create_task(self._handle_reconnect())
         self._reconnect_task = task
 
@@ -291,6 +298,14 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                     self.ten_env.log_error(f"Reconnect task failed: {exc}")
             if self._reconnect_task is done_task:
                 self._reconnect_task = None
+                reconnect_pending = self._reconnect_pending
+                self._reconnect_pending = False
+                if (
+                    reconnect_pending
+                    and not self.stopped
+                    and not self.connected
+                ):
+                    self._schedule_reconnect()
 
         task.add_done_callback(clear_reconnect_task)
 
@@ -324,8 +339,9 @@ class SmallestASRExtension(AsyncASRBaseExtension):
 
     async def _process_messages(self) -> None:
         """Process incoming messages from the WebSocket."""
-        assert self.ws is not None
         ws = self.ws
+        if ws is None:
+            return
 
         try:
             async for msg in ws:
@@ -526,6 +542,8 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             # Call the public hook so AsyncASRBaseExtension's wrapper emits a
             # DISCONNECTED -> CONNECTING transition for every retry. Request
             # propagation so ReconnectManager can apply its retry budget.
+            if self.stopped:
+                return
             await self.start_connection(_propagate_error=True)
 
         while not self.stopped and self.reconnect_manager.can_retry():
