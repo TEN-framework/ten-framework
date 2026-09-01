@@ -202,6 +202,11 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.reset()
             self._utterance_start_ms = None
 
+            # Report the socket as usable now that the handshake succeeded,
+            # not just "connecting" — the base class only emits CONNECTING
+            # before this hook runs.
+            await self.on_connected()
+
             # Start message processing task
             self._message_task = asyncio.create_task(self._process_messages())
 
@@ -215,13 +220,13 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                 f"KEYPOINT start_connection failed: invalid vendor config: {e}"
             )
             self.connected = False
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=str(e),
-                ),
+            error = ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                message=str(e),
             )
+            await self.send_asr_error(error)
+            await self.on_disconnected(code=error.code, message=error.message)
             self._schedule_reconnect()
 
     def _schedule_reconnect(self) -> None:
@@ -284,12 +289,14 @@ class SmallestASRExtension(AsyncASRBaseExtension):
                     )
                     # WebSocket closed unexpectedly, trigger reconnection
                     if not self.stopped:
-                        await self.send_asr_error(
-                            ModuleError(
-                                module=MODULE_NAME_ASR,
-                                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                                message=f"WebSocket closed unexpectedly: {msg.type}",
-                            ),
+                        error = ModuleError(
+                            module=MODULE_NAME_ASR,
+                            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                            message=f"WebSocket closed unexpectedly: {msg.type}",
+                        )
+                        await self.send_asr_error(error)
+                        await self.on_disconnected(
+                            code=error.code, message=error.message
                         )
                         # Schedule (do not await) so this task can exit before
                         # the reconnect path cancels it via stop_connection.
@@ -303,12 +310,14 @@ class SmallestASRExtension(AsyncASRBaseExtension):
             )
             if not self.stopped:
                 # Send error before attempting reconnection
-                await self.send_asr_error(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        message=f"WebSocket error, attempting reconnection: {str(e)}",
-                    ),
+                error = ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=f"WebSocket error, attempting reconnection: {str(e)}",
+                )
+                await self.send_asr_error(error)
+                await self.on_disconnected(
+                    code=error.code, message=error.message
                 )
                 # Schedule (do not await): this runs inside `_message_task`,
                 # which the reconnect path cancels via stop_connection.
