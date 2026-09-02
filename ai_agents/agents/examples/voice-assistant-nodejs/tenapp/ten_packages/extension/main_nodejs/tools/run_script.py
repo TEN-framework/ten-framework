@@ -5,34 +5,39 @@
 # See the LICENSE file for more information.
 #
 import argparse
+import platform
 import subprocess
 import sys
 import os
 
+# On Windows npm ships as a batch script (`npm.cmd`). CreateProcess does not
+# apply PATHEXT resolution, so the extension has to be spelled out.
+NPM = "npm.cmd" if platform.system().lower() == "windows" else "npm"
 
-def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
-    """Run a shell command."""
+
+def run_cmd(cmd: list[str], env: dict[str, str] | None = None) -> int:
+    """Run a command without spawning a shell."""
     if env is None:
         env = os.environ.copy()
-    print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True, env=env)
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True, env=env)
     return result.returncode
 
 
 def run_cmd_build() -> int:
     """Build the application."""
-    cmd = "npm install"
+    cmd = [NPM, "install"]
 
     rc = run_cmd(cmd)
     if rc != 0:
         return rc
 
-    cmd = "npm run standalone-install"
+    cmd = [NPM, "run", "standalone-install"]
     rc = run_cmd(cmd)
     if rc != 0:
         return rc
 
-    cmd = "npm run build"
+    cmd = [NPM, "run", "build"]
     rc = run_cmd(cmd)
     return rc
 
