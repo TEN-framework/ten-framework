@@ -363,6 +363,69 @@ async def test_automatic_reconnect_waits_for_in_flight_audio():
 
 
 @pytest.mark.asyncio
+async def test_reconnect_waits_for_in_flight_update_configs_replace():
+    """update_configs and reconnect must not overlap start_connection / leak clients."""
+    old_client = MagicMock()
+    old_client.connected = True
+    extension = _new_extension(old_client)
+    extension.min_retry_delay = 0
+
+    start_entered = asyncio.Event()
+    allow_start = asyncio.Event()
+    live_clients: list[MagicMock] = []
+    max_concurrent_live = 0
+
+    async def stop_connection() -> None:
+        client = extension.client
+        if client is not None:
+            client.connected = False
+            if client in live_clients:
+                live_clients.remove(client)
+        extension.connected = False
+        extension.client = None
+
+    async def start_connection() -> None:
+        nonlocal max_concurrent_live
+        new_client = MagicMock()
+        new_client.connected = True
+        live_clients.append(new_client)
+        max_concurrent_live = max(max_concurrent_live, len(live_clients))
+        extension.client = new_client
+        extension.connected = True
+        start_entered.set()
+        await allow_start.wait()
+
+    extension.stop_connection = AsyncMock(side_effect=stop_connection)
+    extension.start_connection = AsyncMock(side_effect=start_connection)
+
+    update_task = asyncio.create_task(
+        extension._run_update_configs(
+            {"params": {"request": {"enable_nonstream": False}}}
+        )
+    )
+    await start_entered.wait()
+
+    reconnect_task = asyncio.create_task(extension._handle_reconnect())
+    await asyncio.sleep(0)
+
+    # Reconnect is blocked on _swap_lock; only the update swap's client is live.
+    assert len(live_clients) == 1
+    assert extension.start_connection.await_count == 1
+    assert extension._swap_lock.locked()
+
+    allow_start.set()
+    update_result, _ = await asyncio.gather(update_task, reconnect_task)
+
+    assert update_result == (True, "")
+    assert max_concurrent_live == 1
+    assert len(live_clients) == 1
+    assert extension.client is live_clients[0]
+    # Serialized: update's start, then reconnect's stop+start.
+    assert extension.start_connection.await_count == 2
+    assert extension.stop_connection.await_count == 2
+
+
+@pytest.mark.asyncio
 async def test_reconnect_does_not_run_after_stop_while_waiting_for_send_lock():
     client = MagicMock()
     client.connected = False

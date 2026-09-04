@@ -175,8 +175,12 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.enable_utterance_grouping: bool = True
 
         self._update_configs_lock: asyncio.Lock = asyncio.Lock()
+        # Serialises the whole stop+start swap (update_configs vs reconnect).
+        # Acquire before _send_lock when both are needed.
+        self._swap_lock: asyncio.Lock = asyncio.Lock()
         # Short critical section for one send/finalize against the current client.
-        # Acquire _update_configs_lock before this lock when both are needed.
+        # Acquire _update_configs_lock / _swap_lock before this lock when both
+        # are needed.
         self._send_lock: asyncio.Lock = asyncio.Lock()
         # >0 means a stop/start swap is in progress: is_connected() is False so
         # the base class Keep-buffers audio instead of racing send_audio.
@@ -372,32 +376,36 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     async def _replace_connection(self) -> None:
         """Stop then start the ASR connection under the swap gate.
 
-        Increments ``_connection_swap_depth`` first so ``is_connected()`` is False
-        and the base class buffers frames instead of racing send_audio against
+        ``_swap_lock`` makes stop+start atomic end-to-end so update_configs and
+        error-driven reconnect cannot interleave and leak a live client.
+        Increments ``_connection_swap_depth`` so ``is_connected()`` is False and
+        the base class buffers frames instead of racing send_audio against
         teardown. Holds ``_send_lock`` only around ``stop_connection`` so an
         in-flight send/finalize finishes; network connect runs outside the
         send lock.
         """
-        self._connection_swap_depth += 1
-        try:
-            async with self._send_lock:
+        async with self._swap_lock:
+            self._connection_swap_depth += 1
+            try:
+                async with self._send_lock:
+                    if self.stopped:
+                        return
+                    await self.stop_connection()
                 if self.stopped:
                     return
-                await self.stop_connection()
-            if self.stopped:
-                return
-            await self.start_connection()
-        finally:
-            self._connection_swap_depth -= 1
+                await self.start_connection()
+            finally:
+                self._connection_swap_depth -= 1
 
     async def _stop_connection_gated(self) -> None:
         """Stop under the swap gate, waiting for any in-flight send/finalize."""
-        self._connection_swap_depth += 1
-        try:
-            async with self._send_lock:
-                await self.stop_connection()
-        finally:
-            self._connection_swap_depth -= 1
+        async with self._swap_lock:
+            self._connection_swap_depth += 1
+            try:
+                async with self._send_lock:
+                    await self.stop_connection()
+            finally:
+                self._connection_swap_depth -= 1
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
