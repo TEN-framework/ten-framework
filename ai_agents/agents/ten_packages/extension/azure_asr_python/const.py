@@ -16,3 +16,5 @@ FATAL_ERROR_CODES = [
     speechsdk.CancellationErrorCode.AuthenticationFailure,
     speechsdk.CancellationErrorCode.BadRequest,
 ]
+# Default grace after transport disconnected before ext-level reconnect (overridable via params).
+DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC = 10
