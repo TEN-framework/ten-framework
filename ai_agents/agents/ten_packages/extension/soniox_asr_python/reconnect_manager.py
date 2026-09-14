@@ -29,9 +29,14 @@ class ReconnectManager:
         ] = None,
     ) -> bool:
         self.attempts += 1
-        delay = min(
-            self.base_delay * (2 ** (self.attempts - 1)), self.max_delay
-        )
+        delay = min(self.base_delay, self.max_delay)
+        remaining_doublings = self.attempts - 1
+        while remaining_doublings > 0 and delay < self.max_delay:
+            next_delay = min(delay * 2, self.max_delay)
+            if next_delay <= delay:
+                break
+            delay = next_delay
+            remaining_doublings -= 1
 
         if self.logger:
             self.logger.log_warn(

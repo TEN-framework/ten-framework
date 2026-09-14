@@ -1,0 +1,7 @@
+【实际结果】
+/app/scripts/tools/A42AD84NP73JN62CR69PV84VA26LN65F 错误 URL + 正确 key 重连次数只有3次
+/app/scripts/tools/A42AJ59NA74FM55JN27MD34LN46DF58E 正确 URL + 错误 key 会重连多次
+
+【预期结果】
+A42AD84NP73JN62CR69PV84VA26LN65F 错误 URL + 正确 key 可以无线重连
+A42AJ59NA74FM55JN27MD34LN46DF58E 正确 URL + 错误 key 只重连一次

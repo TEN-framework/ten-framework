@@ -6,6 +6,7 @@
 import asyncio
 import json
 import time
+from functools import partial
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
@@ -105,7 +106,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self._pending_close_finalize = False
         self._needs_reconnect = False
-        self._suppress_close_status = False
+        self._suppressed_close_client: SonioxWebsocketClient | None = None
+        self._should_reconnect = True
         self._last_final_time_ms: int = 0
         self._last_final_wall_ms: int = 0
         self._deferred_vendor_final_tokens: list[SonioxTranscriptToken] = []
@@ -221,6 +223,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
         self.reconnect_manager = ReconnectManager(logger=ten_env)
+        self._should_reconnect = True
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -282,7 +285,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             enable_keepalive=self.config.enable_keepalive,
         )
         ws.on(SonioxWebsocketEvents.OPEN, self._handle_open)
-        ws.on(SonioxWebsocketEvents.CLOSE, self._handle_close)
+        ws.on(SonioxWebsocketEvents.CLOSE, partial(self._handle_close, ws))
         ws.on(SonioxWebsocketEvents.EXCEPTION, self._handle_exception)
         ws.on(SonioxWebsocketEvents.ERROR, self._handle_error)
         ws.on(SonioxWebsocketEvents.FINISHED, self._handle_finished)
@@ -303,15 +306,18 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         task = self.ws_task
         self.websocket = None
         self.ws_task = None
-        if ws:
+        if ws and task is not asyncio.current_task():
             if suppress_status:
-                self._suppress_close_status = True
-            await ws.stop()
-        if task and not task.done():
+                self._suppressed_close_client = ws
             try:
-                await task
+                await ws.stop()
+                if task is not None and not task.done():
+                    await task
             except Exception:
                 pass
+            finally:
+                if self._suppressed_close_client is ws:
+                    self._suppressed_close_client = None
 
     @override
     async def start_connection(self) -> None:
@@ -320,6 +326,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         if not self.config.params.get("api_key"):
             self.ten_env.log_error("Missing required api_key")
+            self._should_reconnect = False
             error = ModuleError(
                 module=MODULE_NAME_ASR,
                 code=ModuleErrorCode.FATAL_ERROR.value,
@@ -335,6 +342,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             await self._start_websocket()
         except Exception as e:
             self.ten_env.log_error(f"start_connection failed: {e}")
+            self._should_reconnect = False
             error = ModuleError(
                 module=MODULE_NAME_ASR,
                 code=ModuleErrorCode.FATAL_ERROR.value,
@@ -629,12 +637,21 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await self.on_connected()
 
     async def _handle_close(
-        self, vendor_code: int = 0, vendor_message: str = "closed"
+        self,
+        client: SonioxWebsocketClient,
+        vendor_code: int = 0,
+        vendor_message: str = "closed",
     ):
-        if self._suppress_close_status:
-            self._suppress_close_status = False
+        if self._suppressed_close_client is client:
+            self._suppressed_close_client = None
             self.connected = False
             return
+
+        # The callback runs inside ws_task. Detach the closed client before
+        # reconnecting so start_connection() never stops or awaits this task.
+        if self.websocket is client:
+            self.websocket = None
+            self.ws_task = None
 
         self.ten_env.log_info(
             f"vendor connection closed: code={vendor_code}, message={vendor_message}",
@@ -669,13 +686,22 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return
 
         # Intentional close-finalize reconnects call start_connection() directly.
-        if not self.stopped:
+        if not self.stopped and self._should_reconnect:
             self.ten_env.log_warn(
                 "Soniox connection closed unexpectedly. Reconnecting..."
             )
             await self._handle_reconnect()
+        elif not self.stopped and not self._should_reconnect:
+            self.ten_env.log_warn(
+                "Soniox connection closed after fatal error. Skipping reconnect."
+            )
 
     async def _handle_exception(self, e: Exception):
+        if not self._should_reconnect:
+            self.ten_env.log_debug(
+                "Ignoring connection exception after fatal vendor error"
+            )
+            return
         self.ten_env.log_error(
             f"soniox connection exception: {type(e)} {str(e)}"
         )
@@ -692,6 +718,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         module_error_code = SonioxASRErrorFilter.get_module_error_code(
             error_code, error_message
         )
+        if module_error_code == ModuleErrorCode.FATAL_ERROR.value:
+            self._should_reconnect = False
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,

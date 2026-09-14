@@ -135,8 +135,8 @@ class SonioxWebsocketClient:
                     SonioxWebsocketEvents.CLOSE, close_code, close_message
                 )
         finally:
-            if self.state == self.State.STOPPING:
-                self._stop_event.set()
+            # Ensure stop() never hangs when connect() exits without entering _work().
+            self._stop_event.set()
 
     def _reset_client_state(self):
         self.state = self.State.INIT
