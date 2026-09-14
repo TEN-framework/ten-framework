@@ -50,22 +50,27 @@ class RTZRClient:
             return token
 
     async def connect(self) -> aiohttp.ClientWebSocketResponse:
-        token = await self.token()
-        try:
-            return await asyncio.wait_for(
-                self._session().ws_connect(
-                    self.config.params["websocket_url"]
-                    + "/v1/transcribe:streaming",
-                    params=self.config.query_params(),
-                    headers={"Authorization": f"Bearer {token}"},
-                    heartbeat=15,
-                ),
-                timeout=30,
-            )
-        except aiohttp.ClientResponseError as exc:
-            if exc.status == 401:
+        for attempt in range(2):
+            # Authentication endpoint failures remain terminal. Only a
+            # WebSocket 401 gets one attempt with a freshly issued token.
+            token = await self.token()
+            try:
+                return await asyncio.wait_for(
+                    self._session().ws_connect(
+                        self.config.params["websocket_url"]
+                        + "/v1/transcribe:streaming",
+                        params=self.config.query_params(),
+                        headers={"Authorization": f"Bearer {token}"},
+                        heartbeat=15,
+                    ),
+                    timeout=30,
+                )
+            except aiohttp.ClientResponseError as exc:
+                if exc.status != 401:
+                    raise
                 self._token = ""
-            raise
+                if attempt:
+                    raise
 
     async def close(self) -> None:
         if self.session is not None:

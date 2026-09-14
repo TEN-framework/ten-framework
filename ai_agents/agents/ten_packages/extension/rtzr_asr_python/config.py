@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, model_validator
 MODEL_LANGUAGES = {
     "sommers_ko": "ko-KR",
     "sommers_ja": "ja-JP",
-    "sommers_en": "en-US",
 }
 CONNECTION_PARAMS = {"client_id", "client_secret", "api_base", "websocket_url"}
 
@@ -33,11 +32,14 @@ class RTZRASRConfig(BaseModel):
                 or not self.params[key].strip()
             ):
                 raise ValueError(f"params.{key} is required")
-        if (
-            not isinstance(self.params["model_name"], str)
-            or self.params["model_name"] not in MODEL_LANGUAGES
-        ):
+        if not isinstance(self.params["model_name"], str) or self.params[
+            "model_name"
+        ] not in (*MODEL_LANGUAGES, "whisper"):
             raise ValueError("unsupported RTZR model_name")
+        if self.params["model_name"] == "whisper":
+            language = self.params.setdefault("language", "ko")
+            if not isinstance(language, str) or not language.strip():
+                raise ValueError("whisper language must be a non-empty string")
         rate = self.params["sample_rate"]
         if type(rate) is not int or not 8000 <= rate <= 48000:
             raise ValueError("sample_rate must be an integer in [8000, 48000]")
@@ -82,6 +84,11 @@ class RTZRASRConfig(BaseModel):
 
     @property
     def language(self) -> str:
+        if self.params["model_name"] == "whisper":
+            language = self.params["language"]
+            return {"ko": "ko-KR", "ja": "ja-JP", "en": "en-US"}.get(
+                language, language
+            )
         return MODEL_LANGUAGES[self.params["model_name"]]
 
     def query_params(self) -> dict[str, str]:

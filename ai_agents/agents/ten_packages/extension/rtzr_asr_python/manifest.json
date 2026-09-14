@@ -19,6 +19,7 @@
             "api_base": {"type": "string"},
             "websocket_url": {"type": "string"},
             "model_name": {"type": "string"},
+            "language": {"type": "string"},
             "sample_rate": {"type": "int32"},
             "encoding": {"type": "string"},
             "use_itn": {"type": "bool"}

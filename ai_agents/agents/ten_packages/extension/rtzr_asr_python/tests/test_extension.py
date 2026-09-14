@@ -158,7 +158,7 @@ class RecognitionTester(AsyncExtensionTester):
 
 @pytest.mark.parametrize(
     "model,language",
-    [("sommers_ko", "ko-KR"), ("sommers_ja", "ja-JP"), ("sommers_en", "en-US")],
+    [("sommers_ko", "ko-KR"), ("sommers_ja", "ja-JP"), ("whisper", "en-US")],
 )
 def test_runtime_results_finalize_dump(monkeypatch, tmp_path, model, language):
     sockets = []
@@ -170,7 +170,8 @@ def test_runtime_results_finalize_dump(monkeypatch, tmp_path, model, language):
 
     monkeypatch.setattr(RTZRClient, "connect", connect)
     tester = RecognitionTester()
-    value = config(model_name=model).model_dump()
+    params = {"language": "en"} if model == "whisper" else {}
+    value = config(model_name=model, **params).model_dump()
     value.update(dump=True, dump_path=str(tmp_path))
     tester.set_test_mode_single("rtzr_asr_python", json.dumps(value))
     error = tester.run()

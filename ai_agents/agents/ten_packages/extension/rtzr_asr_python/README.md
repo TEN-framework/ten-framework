@@ -15,6 +15,7 @@ properties override those defaults. The extension does not load `.env` files.
 | `api_base` | `RTZR_API_BASE` | `https://openapi.vito.ai` |
 | `websocket_url` | `RTZR_WEBSOCKET_URL` | `wss://openapi.vito.ai` |
 | `model_name` | — | `sommers_ko` |
+| `language` | — | `ko` for Whisper; use `en` for English |
 | `sample_rate` | — | `16000` |
 | `encoding` | — | `LINEAR16` |
 
@@ -24,8 +25,12 @@ including `http`/`ws` for explicitly configured internal deployments.
 Override both endpoints when using a different deployment. An explicitly empty
 `websocket_url` derives its scheme and host from `api_base`.
 
-Models `sommers_ko`, `sommers_ja`, and `sommers_en` report `ko-KR`, `ja-JP`, and
-`en-US`, respectively. Input is mono signed PCM16; `sample_rate` can be configured
+Models `sommers_ko` and `sommers_ja` report `ko-KR` and `ja-JP`.
+For English, use `"model_name": "whisper", "language": "en"` in `params`;
+results report `en-US`. Whisper defaults to `language=ko` when omitted, matching
+the RTZR API. Other configured language codes are passed through to RTZR and
+reported in results (`ko`, `ja`, and `en` use the corresponding locale tags).
+Input is mono signed PCM16; `sample_rate` can be configured
 from 8000 to 48000 Hz and must match the incoming audio. The extension does not
 resample audio. Additional RTZR recognition parameters such as `use_itn`,
 `use_punctuation`, `epd_time`, and `keywords` can be supplied in `params`.
@@ -84,7 +89,9 @@ the controller as needed. Finalize preserves the WebSocket for the next turn;
 EOS is only sent during connection shutdown.
 
 Transient failures retry up to five times with 300 ms exponential backoff.
-Authentication/configuration failures terminate immediately. Unsent audio is
+An HTTP authentication failure terminates immediately. A WebSocket handshake
+401 refreshes the token and retries once; a repeated 401 is terminal.
+Other authentication/configuration failures terminate immediately. Unsent audio is
 retained up to 10 MiB; overflow discards oldest frames and emits an error.
 Already accepted frames are not replayed after a disconnect, since RTZR has no
 resume/acknowledgement protocol for individual audio frames.
@@ -103,8 +110,8 @@ credentials or external audio. They cover model/language mapping, interim/final
 results, word timing, Finalize ordering, buffering, reconnection, and cleanup.
 
 The common guarder uses real RTZR credentials from the application's environment.
-Its Chinese-specific multilingual case is not applicable to these three Sommers
-models. The command above excludes that case and the optional long-duration test.
+Its Chinese-specific multilingual case has no configuration in this extension.
+The command above excludes that case and the optional long-duration test.
 To run the common long-duration test as well, omit `not test_long_duration_stream`
 and the preceding `and` from the filter.
 

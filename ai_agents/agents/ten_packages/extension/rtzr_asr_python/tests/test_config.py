@@ -11,10 +11,18 @@ def config(**params):
 
 @pytest.mark.parametrize(
     "model,language",
-    [("sommers_ko", "ko-KR"), ("sommers_ja", "ja-JP"), ("sommers_en", "en-US")],
+    [("sommers_ko", "ko-KR"), ("sommers_ja", "ja-JP"), ("whisper", "en-US")],
 )
 def test_model_language(model, language):
-    assert config(model_name=model).language == language
+    params = {"language": "en"} if model == "whisper" else {}
+    value = config(model_name=model, **params)
+    assert value.language == language
+    if model == "whisper":
+        assert value.query_params()["language"] == "en"
+
+
+def test_whisper_default_language():
+    assert config(model_name="whisper").language == "ko-KR"
 
 
 def test_endpoints_and_redaction():
@@ -40,6 +48,8 @@ def test_endpoints_and_redaction():
         {"sample_rate": True},
         {"sample_rate": "16000"},
         {"model_name": "unknown"},
+        {"model_name": "whisper", "language": ""},
+        {"model_name": "whisper", "language": None},
         {"encoding": "OPUS"},
         {"api_base": "ftp://example.com"},
         {"api_base": "http://user:secret@example.com"},
