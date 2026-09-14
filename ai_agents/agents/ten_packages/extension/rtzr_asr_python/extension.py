@@ -40,7 +40,7 @@ class RTZRASRExtension(AsyncASRBaseExtension):
         self._attempts = 0
         self._sent_bytes = 0
         self._connection_offset_ms = 0
-        self._final_bytes = 0
+        self._final_end_ms = 0
         self._pending_result = False
         self._received_result = False
         self._dumper: Dumper | None = None
@@ -268,7 +268,7 @@ class RTZRASRExtension(AsyncASRBaseExtension):
                 )
             )
         if payload["final"]:
-            self._final_bytes = self._sent_bytes
+            self._final_end_ms = self._connection_offset_ms + start + duration
             self._final.set()
 
     def _duration_ms(self) -> int:
@@ -361,11 +361,23 @@ class RTZRASRExtension(AsyncASRBaseExtension):
             await self._error("cannot finalize a disconnected RTZR stream")
             return
         self._final.clear()
+
+        async def wait_for_final():
+            # A final for earlier audio is not an acknowledgement of all
+            # sent audio. Keep waiting while a newer hypothesis is pending.
+            while (
+                self._pending_result or self._final_end_ms < self._duration_ms()
+            ):
+                await self._final.wait()
+                self._final.clear()
+                if self.ws is not ws or not self.is_connected():
+                    return
+
         try:
             await ws.send_json({"type": "Finalize"})
-            if self._sent_bytes != self._final_bytes:
+            if self._sent_bytes:
                 await asyncio.wait_for(
-                    self._final.wait(), self.config.finalize_timeout
+                    wait_for_final(), self.config.finalize_timeout
                 )
             if self.ws is ws and self.is_connected():
                 await self.send_asr_finalize_end()

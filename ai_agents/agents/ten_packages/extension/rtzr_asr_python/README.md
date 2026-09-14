@@ -98,21 +98,15 @@ task test-extension EXTENSION=agents/ten_packages/extension/rtzr_asr_python
 task asr-guarder-test EXTENSION=rtzr_asr_python -- -k 'not test_multi_language and not test_long_duration_stream'
 ```
 
-Standalone tests use mock transport by default and run the real TEN runtime.
-Live tests require `RTZR_RUN_LIVE=1`, credentials, and an explicit `RTZR_API_BASE`.
-`RTZR_AUDIO_MANIFEST` points to an external JSON object keyed by model name,
-with a list of records containing `pcm` (absolute path to 16 kHz mono PCM16).
-Internal test data and credentials must remain outside the package.
+Standalone tests use mock transport with the real TEN runtime and require no
+credentials or external audio. They cover model/language mapping, interim/final
+results, word timing, Finalize ordering, buffering, reconnection, and cleanup.
 
-```bash
-tests/bin/start -k live_recognition
-RTZR_RUN_LONG=1 tests/bin/start -k live_long_stream
-```
-
-The common guarder's Chinese multilingual case is not applicable to these three
-Sommers models. `test_live_recognition` covers Korean, Japanese, and English.
-The long test sends 300 seconds per model and verifies results through the end
-of the stream and one continuous connection.
+The common guarder uses real RTZR credentials from the application's environment.
+Its Chinese-specific multilingual case is not applicable to these three Sommers
+models. The command above excludes that case and the optional long-duration test.
+To run the common long-duration test as well, omit `not test_long_duration_stream`
+and the preceding `and` from the filter.
 
 ## References
 

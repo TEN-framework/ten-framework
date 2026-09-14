@@ -49,11 +49,3 @@ def test_endpoints_and_redaction():
 def test_invalid_config(params):
     with pytest.raises(ValidationError):
         config(**params)
-
-
-def test_comparison_normalization():
-    from .test_live import character_error_rate, normalized
-
-    assert normalized("Ｈｅｌｌｏ, WORLD!") == "helloworld"
-    assert character_error_rate("abc", "axc") == pytest.approx(1 / 3)
-    assert character_error_rate("", "") == 0

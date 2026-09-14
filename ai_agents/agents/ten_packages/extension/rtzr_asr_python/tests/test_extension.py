@@ -44,26 +44,27 @@ class FakeSocket:
     async def send_json(self, message):
         self.controls.append(message)
         end = len(self.audio) // 32
-        await self.messages.put(
-            {
-                "seq": len(self.controls),
-                "start_at": self.segment_start,
-                "duration": end - self.segment_start,
-                "final": True,
-                "alternatives": [
-                    {
-                        "text": "hello world",
-                        "words": [
-                            {
-                                "text": "hello",
-                                "start_at": 0,
-                                "duration": end - self.segment_start,
-                            }
-                        ],
-                    }
-                ],
-            }
-        )
+        for final in (False, True):
+            await self.messages.put(
+                {
+                    "seq": len(self.controls),
+                    "start_at": self.segment_start,
+                    "duration": end - self.segment_start,
+                    "final": final,
+                    "alternatives": [
+                        {
+                            "text": "hello world",
+                            "words": [
+                                {
+                                    "text": "hello",
+                                    "start_at": 0,
+                                    "duration": end - self.segment_start,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            )
         self.segment_start = end
 
     async def send_str(self, message):
@@ -83,13 +84,10 @@ class RecognitionTester(AsyncExtensionTester):
         self.errors = []
         self.ends = []
         self.statuses = []
-        self.sent_audio_bytes = 0
         self.done = asyncio.Event()
         self.task = None
         self.cycles = 3
         self.audio = b"\x01\x02" * 1600
-        self.audio_samples = None
-        self.expected_language = "ko-KR"
 
     async def on_start(self, ten_env):
         self.task = asyncio.create_task(self.run_audio(ten_env))
@@ -98,18 +96,8 @@ class RecognitionTester(AsyncExtensionTester):
         try:
             for cycle in range(self.cycles):
                 self.done.clear()
-                audio = (
-                    self.audio_samples[cycle]
-                    if self.audio_samples
-                    else self.audio
-                )
-                for offset in range(0, len(audio), 320):
-                    if len(audio) >= 32000 * 300 and offset % (32000 * 30) == 0:
-                        print(
-                            f"[stream] sent_audio_seconds={offset // 32000}",
-                            flush=True,
-                        )
-                    chunk = audio[offset : offset + 320]
+                for offset in range(0, len(self.audio), 320):
+                    chunk = self.audio[offset : offset + 320]
                     frame = AudioFrame.create("pcm_frame")
                     frame.set_property_from_json(
                         "metadata", json.dumps({"session_id": "session"})
@@ -119,7 +107,6 @@ class RecognitionTester(AsyncExtensionTester):
                     buf[:] = chunk
                     frame.unlock_buf(buf)
                     await ten_env.send_audio_frame(frame)
-                    self.sent_audio_bytes += len(chunk)
                     await asyncio.sleep(0.01)
                 finalize = Data.create("asr_finalize")
                 finalize.set_property_from_json(
@@ -189,15 +176,23 @@ def test_runtime_results_finalize_dump(monkeypatch, tmp_path, model, language):
     error = tester.run()
     assert error is None, error.error_message() if error else ""
     assert not tester.errors
-    assert len(tester.results) == 3
+    assert len(tester.results) == 6
     assert len({item["id"] for item in tester.results}) == 3
     for index, result in enumerate(tester.results):
         assert result["language"] == language
         assert result["metadata"]["session_id"] == "session"
-        assert result["final"] is True
-        assert result["start_ms"] == index * 100
+        assert result["final"] is (index % 2 == 1)
+        assert result["id"] == tester.results[index // 2 * 2]["id"]
+        assert result["start_ms"] == index // 2 * 100
         assert result["duration_ms"] == 100
-        assert result["words"][0]["word"] == "hello"
+        assert result["words"] == [
+            {
+                "word": "hello",
+                "start_ms": index // 2 * 100,
+                "duration_ms": 100,
+                "stable": result["final"],
+            }
+        ]
     assert [end["finalize_id"] for end in tester.ends] == ["0", "1", "2"]
     assert tester.metrics
     assert len(sockets) == 1
@@ -308,8 +303,17 @@ async def test_failed_send_retains_frame_for_reconnect():
     ws = FakeSocket()
     ext.ws = ws
     ws.send_bytes = AsyncMock(side_effect=OSError())
-    await ext._handle_audio_frame(ext.ten_env, audio_frame())
+    first, second = b"\x01\x00" * 160, b"\x02\x00" * 160
+    restored = FakeSocket()
+    ext.client.connect = AsyncMock(return_value=restored)
+    await ext._handle_audio_frame(ext.ten_env, audio_frame(first))
     assert ext._pending_bytes == 320
+    await ext._handle_audio_frame(ext.ten_env, audio_frame(second))
+    await asyncio.wait_for(ext._retry, 2)
+    assert bytes(restored.audio) == first + second
+    assert ext._pending_bytes == 0
+    await ext._flush_frames()
+    assert bytes(restored.audio) == first + second
     await ext.on_stop(ext.ten_env)
 
 
@@ -318,11 +322,13 @@ async def test_buffer_is_bounded():
     from ten_ai_base.asr import ASRBufferConfigModeKeep
 
     ext.buffer_strategy = lambda: ASRBufferConfigModeKeep(byte_limit=640)
-    for _ in range(3):
-        await ext._handle_audio_frame(ext.ten_env, audio_frame())
+    frames = [bytes([value, 0]) * 160 for value in (1, 2, 3)]
+    for audio in frames:
+        await ext._handle_audio_frame(ext.ten_env, audio_frame(audio))
     assert ext._pending_bytes == 640
     assert len(ext._pending) == 2
     assert ext.ten_env.send_data.call_args.args[0].get_name() == "error"
+    assert [bytes(frame.get_buf()) for frame in ext._pending] == frames[1:]
 
 
 async def test_settled_auto_final_has_explicit_local_completion():
@@ -332,7 +338,7 @@ async def test_settled_auto_final_has_explicit_local_completion():
     ext.config.finalize_timeout = 0.01
     ext._sent_bytes = 640
     ext._received_result = True
-    ext._final_bytes = 320
+    ext._final_end_ms = 10
     await ext.finalize("session")
     names = [
         call.args[0].get_name() for call in ext.ten_env.send_data.call_args_list
@@ -351,6 +357,57 @@ async def test_pending_hypothesis_cannot_complete_by_timeout():
     ext._pending_result = True
     await ext.finalize("session")
     assert ext.ten_env.send_data.call_args.args[0].get_name() == "error"
+
+
+@pytest.mark.parametrize("complete", [False, True])
+async def test_finalize_waits_for_pending_audio_after_automatic_final(complete):
+    ext = extension()
+    ext.ws = FakeSocket()
+    ext.config.finalize_timeout = 0.03
+    ext._sent_bytes = 64000
+    await ext._result(
+        {
+            "final": True,
+            "start_at": 0,
+            "duration": 1000,
+            "alternatives": [{"text": "first"}],
+        }
+    )
+    await ext._result(
+        {
+            "final": False,
+            "start_at": 1000,
+            "duration": 1000,
+            "alternatives": [{"text": "pending"}],
+        }
+    )
+    ext.ten_env.send_data.reset_mock()
+    sent = asyncio.Event()
+
+    async def send_finalize(_message):
+        sent.set()
+
+    ext.ws.send_json = send_finalize
+    task = asyncio.create_task(ext.finalize("session"))
+    await sent.wait()
+    await asyncio.sleep(0)
+    assert not task.done()
+    if complete:
+        await ext._result(
+            {
+                "final": True,
+                "start_at": 1000,
+                "duration": 1000,
+                "alternatives": [{"text": "second"}],
+            }
+        )
+    await task
+    names = [
+        call.args[0].get_name() for call in ext.ten_env.send_data.call_args_list
+    ]
+    assert names == (
+        ["asr_result", "asr_finalize_end"] if complete else ["error"]
+    )
 
 
 @pytest.mark.parametrize(
