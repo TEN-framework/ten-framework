@@ -51,7 +51,10 @@ class DeepgramTTSConfig(BaseModel):
             del params["sample_rate"]
 
         if "per_sentence_flush" in params:
-            self.per_sentence_flush = params["per_sentence_flush"]
+            per_sentence_flush = params["per_sentence_flush"]
+            if not isinstance(per_sentence_flush, bool):
+                raise ValueError("params.per_sentence_flush must be a boolean")
+            self.per_sentence_flush = per_sentence_flush
             del params["per_sentence_flush"]
 
     def to_str(self, sensitive_handling: bool = True) -> str:

@@ -112,13 +112,16 @@ class DeepgramTTSClient:
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
         self.reset_ttfb()
+        if not self._pending_text:
+            return
+
+        self._pending_text = False
         if self._ws:
             try:
                 await self._ws.send(json.dumps({"type": "Clear"}))
                 await asyncio.wait_for(
                     self._drain_until("Cleared"), timeout=3.0
                 )
-                self._pending_text = False
             except Exception as e:
                 self.ten_env.log_warn(
                     f"Cancel drain failed: {e}, "
