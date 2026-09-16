@@ -22,10 +22,15 @@ A TEN Framework extension that provides Text-to-Speech (TTS) capabilities using 
 | `params.encoding` | string | `linear16` | Audio encoding format |
 | `params.sample_rate` | int | `24000` | Output sample rate in Hz |
 | `params.base_url` | string | `wss://api.deepgram.com/v1/speak` | WebSocket endpoint |
+| `params.per_sentence_flush` | bool | `false` | Flush after each text fragment; when disabled, flush only at request end |
 | `params.<deepgram_query_param>` | scalar | Optional | Additional Deepgram websocket query parameters passed through to the vendor |
 | `dump` | bool | `false` | Enable audio dumping |
 | `dump_path` | string | `/tmp` | Path for audio dump files |
-| `params.per_sentence_flush` | bool | `false` | Flush after each text fragment; when disabled, flush only at request end |
+
+With `per_sentence_flush` disabled, Deepgram can use the complete response for
+better phrasing and avoids frequent flush limits, but audio may not begin until
+the request-end input arrives. Enable it when lower per-fragment latency is more
+important than batching.
 
 ### Example Configuration
 

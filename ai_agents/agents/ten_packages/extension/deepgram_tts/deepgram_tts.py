@@ -42,9 +42,8 @@ class DeepgramTTSConnectionException(Exception):
 class DeepgramTTSClient:
     """WebSocket client for Deepgram TTS.
 
-    Non-final calls send Speak; final calls send Flush and drain until
-    Flushed. Connection is reused but
-    reconnected when needed (cancel, error, new request).
+    Calls with flush=False buffer text server-side. Calls with flush=True
+    send Flush and drain responses until Flushed.
     """
 
     def __init__(
@@ -107,18 +106,19 @@ class DeepgramTTSClient:
     async def cancel(self) -> None:
         """Cancel current TTS.
 
-        Sends Flush and drains until Flushed so the
-        connection is clean for the next request.
+        Clears buffered text and audio so the connection is ready for the
+        next request without synthesizing discarded text.
         """
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
-        self._pending_text = False
         self.reset_ttfb()
         if self._ws:
             try:
-                await self._ws.send(json.dumps({"type": "Flush"}))
-                # Drain until Flushed to leave connection clean
-                await asyncio.wait_for(self._drain_until_flushed(), timeout=3.0)
+                await self._ws.send(json.dumps({"type": "Clear"}))
+                await asyncio.wait_for(
+                    self._drain_until("Cleared"), timeout=3.0
+                )
+                self._pending_text = False
             except Exception as e:
                 self.ten_env.log_warn(
                     f"Cancel drain failed: {e}, "
@@ -126,14 +126,14 @@ class DeepgramTTSClient:
                 )
                 self._needs_reconnect = True
 
-    async def _drain_until_flushed(self) -> None:
-        """Read and discard WS messages until Flushed."""
+    async def _drain_until(self, event_type: str) -> None:
+        """Read and discard websocket messages until event_type."""
         while self._ws:
             msg = await self._ws.recv()
             if isinstance(msg, str):
                 try:
                     data = json.loads(msg)
-                    if data.get("type") == "Flushed":
+                    if data.get("type") == event_type:
                         return
                 except json.JSONDecodeError:
                     pass
@@ -146,6 +146,12 @@ class DeepgramTTSClient:
         self, text: str, flush: bool = True
     ) -> AsyncIterator[tuple[bytes | int | None, int]]:
         """Send text and yield audio events."""
+        # Reconnect before consulting pending state because a new socket no
+        # longer owns text buffered on the previous socket.
+        if self._needs_reconnect:
+            await self._reconnect()
+            self._needs_reconnect = False
+
         if len(text.strip()) == 0:
             if not flush:
                 return
@@ -153,14 +159,14 @@ class DeepgramTTSClient:
                 yield None, EVENT_TTS_END
                 return
 
-        # Reconnect if needed (after error or cancel)
-        if self._needs_reconnect:
-            await self._reconnect()
-            self._needs_reconnect = False
-
         await self._ensure_connection()
 
-        if not self._ttfb_sent:
+        # _ensure_connection() may replace a socket that owned pending text.
+        if len(text.strip()) == 0 and not self._pending_text:
+            yield None, EVENT_TTS_END
+            return
+
+        if not self._ttfb_sent and self._sent_ts is None:
             self._sent_ts = datetime.now()
 
         # Clear cancel flag just before sending, not at
@@ -170,10 +176,9 @@ class DeepgramTTSClient:
         if text.strip():
             await self._ws.send(json.dumps({"type": "Speak", "text": text}))
             self._pending_text = True
-        if flush:
-            await self._ws.send(json.dumps({"type": "Flush"}))
-        else:
+        if not flush:
             return
+        await self._ws.send(json.dumps({"type": "Flush"}))
 
         # Drain all pending audio through the final Flushed marker.
         try:
@@ -260,6 +265,12 @@ class DeepgramTTSClient:
             )
 
     async def _connect(self) -> None:
+        if self._pending_text:
+            self.ten_env.log_warn(
+                "Discarding text buffered on a disconnected Deepgram "
+                "websocket"
+            )
+            self._pending_text = False
         try:
             extra_headers = {
                 "Authorization": f"Token {self.config.api_key}",
@@ -294,7 +305,6 @@ class DeepgramTTSClient:
 
     async def _reconnect(self) -> None:
         """Close and re-establish the connection."""
-        self._pending_text = False
         if self._ws:
             try:
                 await self._ws.close()
