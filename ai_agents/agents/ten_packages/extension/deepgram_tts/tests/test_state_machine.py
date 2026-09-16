@@ -38,6 +38,7 @@ def create_mock_client():
     mock.start = AsyncMock()
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
+    mock.discard_pending = AsyncMock()
     mock.reset_ttfb = lambda: None
     fake_audio = b"\x00\x01\x02\x03" * 100
 
@@ -130,6 +131,7 @@ def test_sequential_requests(MockClient):
         "seq_req_2",
         "seq_req_3",
     ], f"audio_start ids mismatch: {tester.audio_start_ids}"
+    assert MockClient.return_value.discard_pending.await_count == 2
 
 
 # ================ test reconnect after error ================
@@ -187,6 +189,7 @@ def test_reconnect_after_error(MockClient):
         mock.start = AsyncMock()
         mock.stop = AsyncMock()
         mock.cancel = AsyncMock()
+        mock.discard_pending = AsyncMock()
         mock.reset_ttfb = lambda: None
 
         fake_audio = b"\x00\x01" * 200
@@ -320,6 +323,7 @@ def test_auth_error_single_emission(MockClient):
     mock.start = AsyncMock()
     mock.stop = AsyncMock()
     mock.cancel = AsyncMock()
+    mock.discard_pending = AsyncMock()
     mock.reset_ttfb = lambda: None
 
     async def mock_get_auth_fail(text):
@@ -394,6 +398,7 @@ def test_nonfinal_error_not_surfaced(MockClient):
         mock.start = AsyncMock()
         mock.stop = AsyncMock()
         mock.cancel = AsyncMock()
+        mock.discard_pending = AsyncMock()
         mock.reset_ttfb = lambda: None
 
         fake_audio = b"\x00\x01" * 200

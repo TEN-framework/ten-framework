@@ -211,6 +211,8 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 if self.client:
+                    if self.current_request_id is not None:
+                        await self.client.discard_pending()
                     self.client.reset_ttfb()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
@@ -247,7 +249,12 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            if prepared_text != "" or (
+            has_text = (
+                prepared_text != ""
+                if self.config.per_sentence_flush
+                else t.text != ""
+            )
+            if has_text or (
                 t.text_input_end and not self.config.per_sentence_flush
             ):
                 await self._process_tts_text(text_to_send, t)

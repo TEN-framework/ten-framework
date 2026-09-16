@@ -112,6 +112,10 @@ class DeepgramTTSClient:
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
         self.reset_ttfb()
+        await self.discard_pending()
+
+    async def discard_pending(self) -> None:
+        """Discard text buffered on the current websocket, if any."""
         if not self._pending_text:
             return
 
@@ -124,7 +128,7 @@ class DeepgramTTSClient:
                 )
             except Exception as e:
                 self.ten_env.log_warn(
-                    f"Cancel drain failed: {e}, "
+                    f"Clear pending text failed: {e}, "
                     "will reconnect on next request"
                 )
                 self._needs_reconnect = True
@@ -155,17 +159,16 @@ class DeepgramTTSClient:
             await self._reconnect()
             self._needs_reconnect = False
 
-        if len(text.strip()) == 0:
-            if not flush:
-                return
-            if not self._pending_text:
-                yield None, EVENT_TTS_END
-                return
+        if not flush and text == "":
+            return
+        if flush and not text.strip() and not self._pending_text:
+            yield None, EVENT_TTS_END
+            return
 
         await self._ensure_connection()
 
         # _ensure_connection() may replace a socket that owned pending text.
-        if len(text.strip()) == 0 and not self._pending_text:
+        if flush and not text.strip() and not self._pending_text:
             yield None, EVENT_TTS_END
             return
 
@@ -177,7 +180,7 @@ class DeepgramTTSClient:
         self._is_cancelled = False
 
         try:
-            if text.strip():
+            if text != "":
                 await self._ws.send(json.dumps({"type": "Speak", "text": text}))
                 self._pending_text = True
             if not flush:
@@ -207,6 +210,7 @@ class DeepgramTTSClient:
                 except asyncio.TimeoutError:
                     self.ten_env.log_error("Timeout waiting for Deepgram audio")
                     self._needs_reconnect = True
+                    self._pending_text = False
                     yield (
                         b"Timeout waiting for Deepgram audio",
                         EVENT_TTS_ERROR,
@@ -254,6 +258,7 @@ class DeepgramTTSClient:
                                 f"Deepgram error: {error_msg}"
                             )
                             self._needs_reconnect = True
+                            self._pending_text = False
                             yield (
                                 error_msg.encode("utf-8"),
                                 EVENT_TTS_ERROR,
@@ -272,6 +277,7 @@ class DeepgramTTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
             self._needs_reconnect = True
+            self._pending_text = False
             yield (
                 str(e).encode("utf-8"),
                 EVENT_TTS_ERROR,

@@ -51,10 +51,12 @@ def test_fragments_flush_only_at_request_end():
         client._ws = ws
 
         first = [event async for event in client.get("Hello ", flush=False)]
+        space = [event async for event in client.get(" ", flush=False)]
         second = [event async for event in client.get("world.", flush=False)]
         last = [event async for event in client.get("", flush=True)]
 
         assert first == []
+        assert space == []
         assert second == []
         assert last[0][1] == EVENT_TTS_TTFB_METRIC
         assert last[1:] == [
@@ -66,6 +68,7 @@ def test_fragments_flush_only_at_request_end():
             json.loads(call.args[0]) for call in ws.send.await_args_list
         ] == [
             {"type": "Speak", "text": "Hello "},
+            {"type": "Speak", "text": " "},
             {"type": "Speak", "text": "world."},
             {"type": "Flush"},
         ]
@@ -104,6 +107,23 @@ def test_cancel_without_buffered_text_does_not_touch_websocket():
         ws.send.assert_not_awaited()
         ws.recv.assert_not_awaited()
         assert client._needs_reconnect is False
+
+    asyncio.run(run())
+
+
+def test_discard_pending_clears_buffered_text():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.recv = AsyncMock(return_value='{"type":"Cleared"}')
+        client = DeepgramTTSClient(DeepgramTTSConfig(), MagicMock())
+        client._ws = ws
+        client._pending_text = True
+
+        await client.discard_pending()
+
+        ws.send.assert_awaited_once_with(json.dumps({"type": "Clear"}))
+        assert client._pending_text is False
 
     asyncio.run(run())
 
@@ -166,6 +186,23 @@ def test_send_failure_marks_connection_for_reconnect():
     asyncio.run(run())
 
 
+def test_vendor_error_clears_pending_text():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.recv = AsyncMock(return_value='{"type":"Error","err_msg":"failed"}')
+        client = DeepgramTTSClient(DeepgramTTSConfig(), MagicMock())
+        client._ws = ws
+
+        events = [event async for event in client.get("text")]
+
+        assert events[0][1] == EVENT_TTS_ERROR
+        assert client._needs_reconnect is True
+        assert client._pending_text is False
+
+    asyncio.run(run())
+
+
 def test_explicit_fragment_flush():
     async def run():
         ws = MagicMock()
@@ -197,6 +234,7 @@ class ExtensionTesterBatchedEmptyFinal(ExtensionTester):
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         for text, text_input_end in (
             ("Hello ", False),
+            (" ", False),
             ("world.", False),
             ("", True),
         ):
@@ -255,9 +293,47 @@ def test_extension_batches_fragments_until_empty_final(MockDeepgramTTSClient):
 
     assert calls == [
         ("Hello ", False),
+        (" ", False),
         ("world.", False),
         ("", True),
     ]
     assert tester.audio_start_count == 1
     assert tester.audio_end_count == 1
     assert tester.audio_frame_count > 0
+
+
+@patch("deepgram_tts.extension.DeepgramTTSClient")
+def test_extension_flushes_each_fragment_when_enabled(MockDeepgramTTSClient):
+    calls = []
+    mock_client = MockDeepgramTTSClient.return_value
+    mock_client.start = AsyncMock()
+    mock_client.stop = AsyncMock()
+    mock_client.cancel = AsyncMock()
+    mock_client.reset_ttfb = MagicMock()
+
+    async def mock_get(text: str):
+        calls.append(text)
+        if len(calls) == 1:
+            yield (100, EVENT_TTS_TTFB_METRIC)
+        yield (b"\x00\x01" * 200, EVENT_TTS_RESPONSE)
+        yield (None, EVENT_TTS_END)
+
+    mock_client.get.side_effect = mock_get
+
+    tester = ExtensionTesterBatchedEmptyFinal()
+    tester.set_test_mode_single(
+        "deepgram_tts",
+        json.dumps(
+            {
+                "params": {
+                    "api_key": "test_api_key",
+                    "per_sentence_flush": True,
+                }
+            }
+        ),
+    )
+    tester.run()
+
+    assert calls == ["Hello", "world."]
+    assert tester.audio_start_count == 1
+    assert tester.audio_end_count == 1
