@@ -237,6 +237,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_finished = True
 
             prepared_text = t.text.strip()
+            text_to_send = (
+                prepared_text if self.config.per_sentence_flush else t.text
+            )
 
             if self._is_stopped:
                 self.ten_env.log_debug(
@@ -247,7 +250,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             if prepared_text != "" or (
                 t.text_input_end and not self.config.per_sentence_flush
             ):
-                await self._process_tts_text(prepared_text, t)
+                await self._process_tts_text(text_to_send, t)
             elif t.text_input_end:
                 await self._finalize_request(TTSAudioEndReason.REQUEST_END)
 

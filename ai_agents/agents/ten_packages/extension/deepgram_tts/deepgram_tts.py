@@ -176,12 +176,22 @@ class DeepgramTTSClient:
         # method entry — avoids race with concurrent cancel()
         self._is_cancelled = False
 
-        if text.strip():
-            await self._ws.send(json.dumps({"type": "Speak", "text": text}))
-            self._pending_text = True
-        if not flush:
+        try:
+            if text.strip():
+                await self._ws.send(json.dumps({"type": "Speak", "text": text}))
+                self._pending_text = True
+            if not flush:
+                return
+            await self._ws.send(json.dumps({"type": "Flush"}))
+        except Exception as e:
+            self._needs_reconnect = True
+            self._pending_text = False
+            self.ten_env.log_error(
+                f"Deepgram TTS send failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield str(e).encode("utf-8"), EVENT_TTS_ERROR
             return
-        await self._ws.send(json.dumps({"type": "Flush"}))
 
         # Drain all pending audio through the final Flushed marker.
         try:

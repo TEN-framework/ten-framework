@@ -16,6 +16,7 @@ from deepgram_tts.config import DeepgramTTSConfig
 from deepgram_tts.deepgram_tts import (
     DeepgramTTSClient,
     EVENT_TTS_END,
+    EVENT_TTS_ERROR,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_TTFB_METRIC,
 )
@@ -149,6 +150,22 @@ def test_non_final_fragments_keep_first_ttfb_timestamp():
     asyncio.run(run())
 
 
+def test_send_failure_marks_connection_for_reconnect():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock(side_effect=ConnectionError("socket closed"))
+        client = DeepgramTTSClient(DeepgramTTSConfig(), MagicMock())
+        client._ws = ws
+
+        events = [event async for event in client.get("text", flush=False)]
+
+        assert events[0][1] == EVENT_TTS_ERROR
+        assert client._needs_reconnect is True
+        assert client._pending_text is False
+
+    asyncio.run(run())
+
+
 def test_explicit_fragment_flush():
     async def run():
         ws = MagicMock()
@@ -237,7 +254,7 @@ def test_extension_batches_fragments_until_empty_final(MockDeepgramTTSClient):
     tester.run()
 
     assert calls == [
-        ("Hello", False),
+        ("Hello ", False),
         ("world.", False),
         ("", True),
     ]

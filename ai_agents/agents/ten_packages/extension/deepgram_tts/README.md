@@ -32,6 +32,10 @@ better phrasing and avoids frequent flush limits, but audio may not begin until
 the request-end input arrives. Enable it when lower per-fragment latency is more
 important than batching.
 
+TTFB is measured from the first text fragment in a request. With batching
+enabled, it includes the time spent waiting for later LLM fragments before the
+request-end flush.
+
 ### Example Configuration
 
 ```json
