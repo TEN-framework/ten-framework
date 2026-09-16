@@ -244,7 +244,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            if prepared_text != "":
+            if prepared_text != "" or (
+                t.text_input_end and not self.config.per_sentence_flush
+            ):
                 await self._process_tts_text(prepared_text, t)
             elif t.text_input_end:
                 await self._finalize_request(TTSAudioEndReason.REQUEST_END)
@@ -274,7 +276,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             f"of request_id: {t.request_id}",
             category=LOG_CATEGORY_VENDOR,
         )
-        data = self.client.get(text)
+        if not t.text_input_end and not self.config.per_sentence_flush:
+            data = self.client.get(text, flush=False)
+        else:
+            data = self.client.get(text)
 
         chunk_count = 0
         if self.sent_ts is None:

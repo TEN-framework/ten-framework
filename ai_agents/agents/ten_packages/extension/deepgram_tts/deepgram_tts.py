@@ -42,8 +42,8 @@ class DeepgramTTSConnectionException(Exception):
 class DeepgramTTSClient:
     """WebSocket client for Deepgram TTS.
 
-    Each get() call sends Speak+Flush and streams audio
-    until Flushed. Connection is reused across calls but
+    Non-final calls send Speak; final calls send Flush and drain until
+    Flushed. Connection is reused but
     reconnected when needed (cancel, error, new request).
     """
 
@@ -58,6 +58,7 @@ class DeepgramTTSClient:
         self._ws: ClientConnection | None = None
         self._is_cancelled = False
         self._needs_reconnect = False
+        self._pending_text = False
 
         # TTFB tracking
         self._sent_ts: datetime | None = None
@@ -91,6 +92,7 @@ class DeepgramTTSClient:
 
     async def stop(self) -> None:
         self._is_cancelled = True
+        self._pending_text = False
         if self._ws:
             try:
                 await self._ws.send(json.dumps({"type": "Close"}))
@@ -110,6 +112,7 @@ class DeepgramTTSClient:
         """
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
+        self._pending_text = False
         self.reset_ttfb()
         if self._ws:
             try:
@@ -140,13 +143,15 @@ class DeepgramTTSClient:
         self._ttfb_sent = False
 
     async def get(
-        self, text: str
+        self, text: str, flush: bool = True
     ) -> AsyncIterator[tuple[bytes | int | None, int]]:
         """Send text and yield audio events."""
         if len(text.strip()) == 0:
-            self.ten_env.log_warn("DeepgramTTS: empty text, returning END")
-            yield None, EVENT_TTS_END
-            return
+            if not flush:
+                return
+            if not self._pending_text:
+                yield None, EVENT_TTS_END
+                return
 
         # Reconnect if needed (after error or cancel)
         if self._needs_reconnect:
@@ -162,12 +167,15 @@ class DeepgramTTSClient:
         # method entry — avoids race with concurrent cancel()
         self._is_cancelled = False
 
-        # Send Speak + Flush
-        speak_msg = {"type": "Speak", "text": text}
-        await self._ws.send(json.dumps(speak_msg))
-        await self._ws.send(json.dumps({"type": "Flush"}))
+        if text.strip():
+            await self._ws.send(json.dumps({"type": "Speak", "text": text}))
+            self._pending_text = True
+        if flush:
+            await self._ws.send(json.dumps({"type": "Flush"}))
+        else:
+            return
 
-        # Receive audio until Flushed
+        # Drain all pending audio through the final Flushed marker.
         try:
             while True:
                 if self._is_cancelled:
@@ -212,6 +220,7 @@ class DeepgramTTSClient:
 
                         if msg_type == "Flushed":
                             self.ten_env.log_debug("DeepgramTTS: Flushed")
+                            self._pending_text = False
                             yield None, EVENT_TTS_END
                             break
 
@@ -285,6 +294,7 @@ class DeepgramTTSClient:
 
     async def _reconnect(self) -> None:
         """Close and re-establish the connection."""
+        self._pending_text = False
         if self._ws:
             try:
                 await self._ws.close()

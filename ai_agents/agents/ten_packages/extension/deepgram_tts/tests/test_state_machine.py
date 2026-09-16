@@ -398,7 +398,7 @@ def test_nonfinal_error_not_surfaced(MockClient):
 
         fake_audio = b"\x00\x01" * 200
 
-        async def mock_get(text):
+        async def mock_get(text, flush=True):
             nonlocal call_count
             call_count += 1
             if call_count == 1:

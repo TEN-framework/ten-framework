@@ -20,6 +20,7 @@ class DeepgramTTSConfig(BaseModel):
     model: str = "aura-2-thalia-en"
     encoding: str = "linear16"
     sample_rate: int = 24000
+    per_sentence_flush: bool = False
 
     dump: bool = False
     dump_path: str = "/tmp"
@@ -48,6 +49,10 @@ class DeepgramTTSConfig(BaseModel):
         if "sample_rate" in params:
             self.sample_rate = params["sample_rate"]
             del params["sample_rate"]
+
+        if "per_sentence_flush" in params:
+            self.per_sentence_flush = params["per_sentence_flush"]
+            del params["per_sentence_flush"]
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """

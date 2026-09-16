@@ -25,6 +25,7 @@ A TEN Framework extension that provides Text-to-Speech (TTS) capabilities using 
 | `params.<deepgram_query_param>` | scalar | Optional | Additional Deepgram websocket query parameters passed through to the vendor |
 | `dump` | bool | `false` | Enable audio dumping |
 | `dump_path` | string | `/tmp` | Path for audio dump files |
+| `params.per_sentence_flush` | bool | `false` | Flush after each text fragment; when disabled, flush only at request end |
 
 ### Example Configuration
 
@@ -35,7 +36,8 @@ A TEN Framework extension that provides Text-to-Speech (TTS) capabilities using 
     "model": "aura-2-thalia-en",
     "encoding": "linear16",
     "sample_rate": 24000,
-    "container": "none"
+    "container": "none",
+    "per_sentence_flush": false
   },
   "dump": false,
   "dump_path": "/tmp"
