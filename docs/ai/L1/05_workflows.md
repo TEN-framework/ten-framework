@@ -47,6 +47,11 @@ For full walkthrough with code and guarder expectations, see
 Use one recent strong example as the main template, not just any extension of
 the same type.
 
+For every new ASR extension or ASR behavior change, review against
+[ASR Plugin Design and Review Guide](L2/asr_plugin_design_review.md). Its
+`MUST` rules and PR checklist are the merge baseline for lifecycle, connection
+state, buffering, finalize, reconnect, result shape, metrics, and tests.
+
 | Type | Strong Template | Why |
 | ---- | --------------- | --- |
 | TTS (WS) | `deepgram_tts` | Better lifecycle and standalone test coverage |
