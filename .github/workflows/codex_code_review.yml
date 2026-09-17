@@ -34,7 +34,7 @@ jobs:
       issues: write
     env:
       CODEX_MODEL: ${{ vars.CODEX_MODEL || 'gpt-5.6-terra' }}
-      CODEX_BASE_URL: ${{ vars.CODEX_BASE_URL || 'https://sub2api.agoralab.co' }}
+      CODEX_BASE_URL: ${{ vars.CODEX_BASE_URL }}
 
     steps:
       # pull_request_target runs with secrets; checkout base (trusted) only — see
