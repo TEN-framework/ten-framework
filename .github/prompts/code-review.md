@@ -30,4 +30,8 @@ merge baseline (see docs/ai/L1/05_workflows.md):
 
 If the PR is not ASR-related, skip the ASR section.
 
+Use `gh pr diff` (and `gh pr view` as needed) with the PR NUMBER above to
+inspect this PR's changes. The checked-out worktree is the base branch, not the
+PR head; do not run scripts or install dependencies from the PR branch.
+
 Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.

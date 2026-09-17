@@ -37,10 +37,12 @@ jobs:
       CODEX_BASE_URL: ${{ vars.CODEX_BASE_URL || 'https://sub2api.agoralab.co' }}
 
     steps:
+      # pull_request_target runs with secrets; checkout base (trusted) only — see
+      # https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
 
       - name: Build code review prompt
