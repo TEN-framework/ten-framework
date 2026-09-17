@@ -166,7 +166,11 @@ ten_go_app_t *ten_go_app_create(ten_go_handle_t go_app_index) {
   // signal handler setup by the GO runtime. Ex: the following function
   // ten_global_setup_signal_stuff().
 
-  ten_global_setup_signal_stuff();
+  // Reinstall TEN handlers after Go runtime installs its own handlers, but do
+  // not reinstall the shared g_alt_stack on this OS thread. sigaltstack() is
+  // thread-local, and sharing one alt stack across threads corrupts signal
+  // frames when signals are handled concurrently.
+  ten_global_setup_signal_stuff_without_alt_stack();
 
   return app_bridge;
 }
