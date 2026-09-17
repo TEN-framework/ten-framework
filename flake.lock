@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1767313136,
+        "narHash": "sha256-16KkgfdYqjaeRGBaYsNrhPRRENs0qzkQVUooNHtoy2w=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ac62194c3917d5f474c1a844b6fd6da2db95077d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "ten-gn": "ten-gn"
+      }
+    },
+    "ten-gn": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767435511,
+        "narHash": "sha256-xgcamYFZn3PqBwR+bTAM182wKbPuCVgsUw0+opC3soI=",
+        "owner": "TEN-framework",
+        "repo": "ten_gn",
+        "rev": "0f293df9fcca0e2fd08568fb1044281dd894b0ca",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TEN-framework",
+        "repo": "ten_gn",
+        "rev": "0f293df9fcca0e2fd08568fb1044281dd894b0ca",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
