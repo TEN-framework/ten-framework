@@ -1,0 +1,69 @@
+name: Codex Code Review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+    branches: ["main"]
+    paths-ignore:
+      - "core/**"
+      - "tests/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/codex_code_review.yml"
+      - "!.github/prompts/code-review.md"
+      - "!.github/actions/bootstrap-codex/**"
+      - ".vscode/**"
+      - "**.md"
+      - "ai_agents/docs/**"
+      - "ai_agents/esp32-client/**"
+      - "ai_agents/Dockerfile"
+      - "ai_agents/docker-compose.yml"
+      - "ai_agents/playground/**"
+      - "ai_agents/agents/examples/demo/**"
+
+jobs:
+  codex-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      CODEX_MODEL: ${{ vars.CODEX_MODEL || 'gpt-5.6-terra' }}
+      CODEX_BASE_URL: ${{ vars.CODEX_BASE_URL || 'https://sub2api.agoralab.co' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Build code review prompt
+        run: |
+          PROMPT_FILE="$RUNNER_TEMP/codex_code_review_prompt.md"
+          {
+            printf 'REPO: %s\nPR NUMBER: %s\n\n' \
+              "${{ github.repository }}" \
+              "${{ github.event.pull_request.number }}"
+            cat .github/prompts/code-review.md
+          } > "$PROMPT_FILE"
+          echo "PROMPT_FILE=$PROMPT_FILE" >> "$GITHUB_ENV"
+
+      - name: Bootstrap Codex and run review
+        uses: ./.github/actions/bootstrap-codex
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          codex_api_key: ${{ secrets.CODEX_OPENAI_API_KEY }}
+          codex_model: ${{ env.CODEX_MODEL }}
+          codex_base_url: ${{ env.CODEX_BASE_URL }}
+          prompt_path: ${{ env.PROMPT_FILE }}
+          recent_change_advice: |
+            Prefer concrete risks in changed files or directly adjacent code when they have clear evidence.
+            Do not force findings just because a file changed recently.
