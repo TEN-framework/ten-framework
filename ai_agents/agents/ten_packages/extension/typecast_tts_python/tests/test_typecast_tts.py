@@ -31,7 +31,11 @@ def test_config_defaults_and_forces_wav():
             "api_key": "key",
             "voice_id": "voice",
             "url": "https://example.com/",
-            "output": {"audio_format": "mp3", "audio_tempo": 1.1},
+            "output": {
+                "audio_format": "mp3",
+                "audio_tempo": 1.1,
+                "remove_silence_ms": 0,
+            },
         }
     )
 
@@ -44,6 +48,7 @@ def test_config_defaults_and_forces_wav():
     assert config.params["output"] == {
         "audio_format": "wav",
         "audio_tempo": 1.1,
+        "remove_silence_ms": 0,
     }
 
 
@@ -220,6 +225,7 @@ def test_typecast_tts_extension_success():
     async def mock_text_to_speech_stream(request, chunk_size):
         assert request.text == "hello typecast"
         assert request.output.audio_format == "wav"
+        assert request.output.remove_silence_ms == 0
         assert chunk_size == 8192
         yield wav_header[:20]
         yield wav_header[20:] + audio_chunk_1
@@ -237,6 +243,7 @@ def test_typecast_tts_extension_success():
                 "api_key": "test_api_key",
                 "voice_id": "test_voice_id",
                 "model": "ssfm-v30",
+                "output": {"remove_silence_ms": 0},
             }
         }
 
