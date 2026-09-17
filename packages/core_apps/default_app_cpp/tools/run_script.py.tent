@@ -49,40 +49,32 @@ def detect_arch() -> str:
     raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
-def run_cmd(cmd: str) -> int:
-    """Run a shell command."""
-    print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True)
+def run_cmd(cmd: list[str]) -> int:
+    """Run a command without spawning a shell."""
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True)
     return result.returncode
 
 
 def run_cmd_start(os: str, _arch: str) -> int:
     """Start the application."""
     if os == "win":
-        command = "bin/{{package_name}}.exe"
+        command = ["bin/{{package_name}}.exe"]
     else:
-        command = "bin/{{package_name}}"
+        command = ["bin/{{package_name}}"]
 
     return run_cmd(command)
 
 
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
-    if os == "win":
-        command = f"tgn.bat gen {os} {arch} {BUILD_TYPE}"
-    else:
-        command = f"tgn gen {os} {arch} {BUILD_TYPE}"
+    tgn = "tgn.bat" if os == "win" else "tgn"
 
-    rc = run_cmd(command)
+    rc = run_cmd([tgn, "gen", os, arch, BUILD_TYPE])
     if rc != 0:
         return rc
 
-    if os == "win":
-        command = f"tgn.bat build {os} {arch} {BUILD_TYPE}"
-    else:
-        command = f"tgn build {os} {arch} {BUILD_TYPE}"
-
-    return run_cmd(command)
+    return run_cmd([tgn, "build", os, arch, BUILD_TYPE])
 
 
 def main():
