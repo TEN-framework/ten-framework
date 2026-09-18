@@ -44,10 +44,7 @@ template("ten_package_packaging") {
     }
     deps += [
       "//build/ten_runtime/feature:create_tman_config",
-      # Packaging needs the tman binary, but must not depend on the
-      # ten_manager group because that group may clean Cargo artifacts after
-      # assembling the binary.
-      "//core/src/ten_manager:ten_manager_package",
+      "//core/src/ten_manager",
     ]
   }
 
