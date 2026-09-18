@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "event_bus_go",
-  "version": "0.11.71",
+  "version": "0.11.72",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.71"
+      "version": "0.11.72"
     }
   ],
   "api": {
