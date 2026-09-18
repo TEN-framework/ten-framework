@@ -47,6 +47,7 @@ _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
         "deepgram_asr_python",
         "smallest_asr_python",
         "soniox_asr_python",
+        "speko_asr_python",
         "tencent_asr_python",
     }
 )
