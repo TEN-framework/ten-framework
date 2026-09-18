@@ -76,6 +76,10 @@ routes stop further attempts until the cause is corrected and the extension is
 restarted. Failed sends are not replayed; disconnected input uses the bounded
 buffer. Stop cancels pending recovery and finalization.
 
+Finalization waits for an in-progress handshake and previously accepted audio
+to drain through the base consumer before committing. Later ingress waits until
+that finalize completes, preserving audio order and the request's metadata.
+
 Segment and word timestamps are mapped onto TEN's user-audio timeline, retaining
 position across connection replacement and excluding protocol silence. The raw
 input dump records each ingress frame once, including buffered input.

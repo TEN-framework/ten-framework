@@ -555,3 +555,99 @@ async def test_stop_finishes_cleanup_cancelled_with_reconnect():
     assert client.close.await_count == 2
     assert client.close.await_args.kwargs == {"drain": True}
     assert not ext._retired_clients
+
+
+@pytest.mark.asyncio
+async def test_finalize_joins_handshake_and_commits_buffered_audio_before_ack():
+    ext, events = extension_and_events()
+    ext.client = None
+    entered, ready = asyncio.Event(), asyncio.Event()
+    order = []
+
+    def factory(**kwargs):
+        client = MagicMock(is_ready=False, close=AsyncMock(), usage={})
+
+        async def connect():
+            entered.set()
+            await ready.wait()
+            client.is_ready = True
+            await kwargs["on_event"]({"type": "session.ready"})
+
+        async def send(_audio):
+            order.append(ext.session_id)
+
+        async def commit():
+            order.append("commit")
+            await kwargs["on_event"](
+                {"type": "transcript.final", "text": "buffered speech"}
+            )
+
+        client.connect = connect
+        client.send_audio = send
+        client.commit = commit
+        return client
+
+    consumer = asyncio.create_task(ext._audio_frame_consumer())
+    try:
+        with patch("speko_asr_python.extension.SpekoASRClient", factory):
+            connection = asyncio.create_task(ext._ensure_connection())
+            await entered.wait()
+            for session in ("first", "second"):
+                await ext.on_audio_frame(
+                    ext.ten_env, audio({"session_id": session})
+                )
+            await ext._audio_queue_drained.wait()
+            assert ext.buffered_frames.qsize() == 2
+            finalize = asyncio.create_task(
+                ext.on_data(ext.ten_env, finalize_data("early", "turn"))
+            )
+            await asyncio.sleep(0)
+            later = asyncio.create_task(
+                ext.on_audio_frame(ext.ten_env, audio({"session_id": "later"}))
+            )
+            await asyncio.sleep(0)
+            assert not payloads(events, "asr_finalize_end")
+            assert not later.done()
+            ready.set()
+            await asyncio.wait_for(
+                asyncio.gather(connection, finalize, later), 1
+            )
+            await ext._audio_queue_drained.wait()
+        assert order == ["first", "second", "commit", "later"]
+        assert len(payloads(events, "asr_result")) == 1
+        assert payloads(events, "asr_finalize_end")[0]["finalize_id"] == "early"
+    finally:
+        await ext.on_stop(ext.ten_env)
+        consumer.cancel()
+        await asyncio.gather(consumer, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_finalize_waits_for_already_queued_audio_on_ready_connection():
+    ext, events = extension_and_events()
+    order = []
+
+    async def send(_audio):
+        await asyncio.sleep(0)
+        order.append(ext.session_id)
+
+    async def commit():
+        order.append("commit")
+
+    ext.client.send_audio.side_effect = send
+    ext.client.commit.side_effect = commit
+    consumer = asyncio.create_task(ext._audio_frame_consumer())
+    try:
+        for session in ("first", "second"):
+            await ext.on_audio_frame(
+                ext.ten_env, audio({"session_id": session})
+            )
+        await asyncio.wait_for(
+            ext.on_data(ext.ten_env, finalize_data("queued", "turn")), 1
+        )
+        assert order == ["first", "second", "commit"]
+        assert len(payloads(events, "asr_finalize_end")) == 1
+    finally:
+        await ext.on_stop(ext.ten_env)
+        consumer.cancel()
+        await asyncio.gather(consumer, return_exceptions=True)

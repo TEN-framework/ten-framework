@@ -65,6 +65,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         # callbacks while finalize is awaiting the vendor acknowledgement.
         self._input_lock = asyncio.Lock()
         self._metadata_lock = asyncio.Lock()
+        self._ingress_lock = asyncio.Lock()
+        self._audio_queue_drained = asyncio.Event()
+        self._audio_queue_drained.set()
         self._finalize_context: dict[str, Any] | None = None
 
     @override
@@ -232,6 +235,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         self.stopped = True
+        self._audio_queue_drained.set()
         try:
             await super().on_stop(ten_env)
         finally:
@@ -240,6 +244,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         self.stopped = True
+        self._audio_queue_drained.set()
         try:
             await self.stop_connection()
         finally:
@@ -277,6 +282,12 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, frame: AudioFrame
     ) -> None:
+        async with self._ingress_lock:
+            await self._enqueue_audio_frame(ten_env, frame)
+
+    async def _enqueue_audio_frame(
+        self, ten_env: AsyncTenEnv, frame: AudioFrame
+    ) -> None:
         if self.stopped:
             return
         # Dump original ingress once, including buffered/dropped input. Replaying
@@ -289,9 +300,19 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             and (self.auto_connect or self._connection_requested)
         ):
             self._schedule_reconnect()
+        self._audio_queue_drained.clear()
         await super().on_audio_frame(ten_env, frame)
 
     async def _handle_audio_frame(
+        self, ten_env: AsyncTenEnv, frame: AudioFrame
+    ) -> None:
+        try:
+            await self._consume_audio_frame(ten_env, frame)
+        finally:
+            if self.audio_frames_queue.empty():
+                self._audio_queue_drained.set()
+
+    async def _consume_audio_frame(
         self, ten_env: AsyncTenEnv, frame: AudioFrame
     ) -> None:
         # Coupled to TEN's serialized consumer so metadata cannot change during
@@ -399,14 +420,27 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         context = json.loads(raw) if raw else {}
         if not isinstance(context, dict):
             context = {}
-        # Lock before the base writes its single finalize_id/last_finalize_time.
-        async with self._input_lock:
-            self._finalize_context = copy.deepcopy(context)
-            try:
-                await super().on_data(ten_env, data)
-            finally:
-                self._finalize_context = None
-                self.last_finalize_time = None
+        # Hold later ingress while previously accepted audio drains through the
+        # base consumer. A finalize during the initial handshake must commit
+        # that buffered audio after ready, rather than acknowledge it early.
+        async with self._ingress_lock:
+            if self.connection_status == ModuleConnectionStatus.CONNECTING:
+                async with self._connection_lock:
+                    pass  # Join the existing owner; do not start another retry.
+            while not self.stopped and not self.audio_frames_queue.empty():
+                self._audio_queue_drained.clear()
+                await self._audio_queue_drained.wait()
+            if self.stopped:
+                return
+            # Lock before the base writes finalize_id/last_finalize_time, also
+            # waiting for the consumer's last in-flight send to finish.
+            async with self._input_lock:
+                self._finalize_context = copy.deepcopy(context)
+                try:
+                    await super().on_data(ten_env, data)
+                finally:
+                    self._finalize_context = None
+                    self.last_finalize_time = None
 
     @override
     async def finalize(self, session_id: str | None) -> None:
@@ -497,6 +531,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 while not self.audio_frames_queue.empty():
                     pending.append(self.audio_frames_queue.get_nowait())
                 self.buffered_frames_size = 0
+                self._audio_queue_drained.clear()
                 for frame in pending:
                     self.audio_frames_queue.put_nowait(frame)
             await self.on_connected()
