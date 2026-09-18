@@ -3,5 +3,8 @@
 set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-export PYTHONPATH=".:${PYTHONPATH}"
-pytest -q tests/ "$@"
+export PYTHONPATH=".:.ten/app/ten_packages/system/ten_runtime_python/lib:.ten/app/ten_packages/system/ten_runtime_python/interface:.ten/app/ten_packages/system/ten_ai_base/interface:${PYTHONPATH}"
+# uv's cached test environment keeps test dependencies out of provider installs.
+uv run --no-project --with-requirements requirements.txt \
+  --with-requirements tests/requirements.txt \
+  pytest -q -W error::pytest.PytestUnhandledCoroutineWarning tests/ "$@"

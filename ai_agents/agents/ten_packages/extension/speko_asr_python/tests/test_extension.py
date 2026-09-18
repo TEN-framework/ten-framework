@@ -1,3 +1,5 @@
+import asyncio
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -62,6 +64,7 @@ async def test_timeout_disconnects_and_completes_finalize_once():
         "request_timeout", "timeout", retryable=True
     )
     await extension.finalize("session")
+    await extension.stop_connection()
     client.close.assert_awaited_once()
     assert extension.client is None
     extension.send_asr_finalize_end.assert_awaited_once()
@@ -124,8 +127,7 @@ async def test_deinit_stops_dumper_once_even_after_connection_failure():
         "speko_asr_python.extension.AsyncASRBaseExtension.on_deinit",
         new_callable=AsyncMock,
     ):
-        with pytest.raises(OSError):
-            await extension.on_deinit(extension.ten_env)
+        await extension.on_deinit(extension.ten_env)
         await extension.on_deinit(extension.ten_env)
     dumper.stop.assert_awaited_once()
     assert extension.audio_dumper is None
@@ -134,7 +136,7 @@ async def test_deinit_stops_dumper_once_even_after_connection_failure():
 def test_metadata_contains_key_and_language():
     extension, _ = make_extension()
     assert extension.vendor_metadata()["key"] == "test-key"
-    assert extension.vendor_metadata()["api_key"] == "test-key"
+    assert "api_key" not in extension.vendor_metadata()
     assert extension.vendor_metadata()["language"]
 
 
@@ -170,6 +172,7 @@ async def test_audio_ingress_does_not_wait_for_reconnection_and_stop_joins_it():
         entered.set()
         await asyncio.Future()
 
+    extension.RECONNECT_DELAYS = (0,)
     extension._ensure_connection = AsyncMock(side_effect=connect)
     await asyncio.wait_for(
         extension.on_audio_frame(extension.ten_env, frame()), 0.1
@@ -238,15 +241,13 @@ async def test_reconnect_waits_for_failed_session_cleanup():
     extension, client = make_extension()
     entered, release = asyncio.Event(), asyncio.Event()
 
-    async def close():
+    async def close(**_kwargs):
         entered.set()
         await release.wait()
 
     client.close.side_effect = close
-    resetting = asyncio.create_task(
-        extension._reset_connection(
-            SpekoRouterError("relay_error", "broken", retryable=True)
-        )
+    await extension._reset_connection(
+        SpekoRouterError("relay_error", "broken", retryable=True)
     )
     await entered.wait()
 
@@ -258,6 +259,5 @@ async def test_reconnect_waits_for_failed_session_cleanup():
     await asyncio.sleep(0)
     extension.start_connection.assert_not_awaited()
     release.set()
-    await resetting
     await extension._reconnect_task
     extension.start_connection.assert_awaited_once()

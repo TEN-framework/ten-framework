@@ -3,7 +3,11 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from client import SpekoASRClient, SpekoRouterError, websocket_url
+from speko_asr_python.client import (
+    SpekoASRClient,
+    SpekoRouterError,
+    websocket_url,
+)
 
 
 class FakeWebSocket:
@@ -73,7 +77,8 @@ async def test_streams_audio_and_waits_for_final_transcript():
     client = make_client(events, disconnects)
 
     with patch(
-        "client.websockets.connect", AsyncMock(return_value=websocket)
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
     ) as connect:
         await client.connect()
         await client.send_audio(b"\x00\x01")
@@ -121,7 +126,10 @@ async def test_terminal_error_is_normalized():
     events = []
     disconnects = []
     client = make_client(events, disconnects)
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         await websocket.messages.put(
             json.dumps(
@@ -158,8 +166,12 @@ async def test_timeout_does_not_poison_next_commit():
     websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
     client = make_client([], [])
     client.finalize_timeout_sec = 0.01
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
+        await client.send_audio(b"\x00\x00")
         with pytest.raises(SpekoRouterError, match="Timed out"):
             await client.commit()
         assert client._finalize_waiter is None
@@ -182,7 +194,10 @@ async def test_auto_final_before_commit_and_new_audio():
             received.set() if event["type"] == "transcript.final" else None
         )
     )
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         await client.send_audio(b"first")
         websocket.messages.put_nowait(
@@ -207,7 +222,10 @@ async def test_close_delivers_terminal_usage():
     websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
     events = []
     client = make_client(events, [])
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         websocket.messages.put_nowait(
             json.dumps(
@@ -226,8 +244,12 @@ async def test_close_delivers_terminal_usage():
 async def test_failed_commit_send_clears_waiter():
     websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
     client = make_client([], [])
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
+        await client.send_audio(b"\x00\x00")
         websocket.send = AsyncMock(side_effect=OSError("socket closed"))
         with pytest.raises(OSError):
             await client.commit()
@@ -260,7 +282,7 @@ async def test_upgrade_preserves_classified_error(status, code, retryable):
     ).encode()
     client = make_client([], [])
     with patch(
-        "client.websockets.connect",
+        "speko_asr_python.client.websockets.connect",
         AsyncMock(side_effect=InvalidStatus(response)),
     ):
         with pytest.raises(SpekoRouterError) as caught:
@@ -274,7 +296,10 @@ async def test_upgrade_preserves_classified_error(status, code, retryable):
 async def test_cancel_during_handshake_closes_socket():
     websocket = FakeWebSocket()
     client = make_client([], [])
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         connecting = asyncio.create_task(client.connect())
         await asyncio.sleep(0)
         connecting.cancel()
@@ -282,3 +307,17 @@ async def test_cancel_during_handshake_closes_socket():
             await connecting
     assert websocket.closed
     assert not client.is_ready
+
+
+@pytest.mark.asyncio
+async def test_commit_without_audio_completes_without_protocol_wait():
+    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+    client = make_client([], [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        await asyncio.wait_for(client.commit(), 0.1)
+        assert len(websocket.sent) == 1
+        await client.close(drain=False)

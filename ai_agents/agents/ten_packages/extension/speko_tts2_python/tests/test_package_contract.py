@@ -32,3 +32,11 @@ def test_guarder_config_properties_are_declared(config_path):
     assert set(config) <= set(properties)
     assert "params" in config
     assert set(config["params"]) <= set(properties["params"]["properties"])
+
+
+def test_real_addon_registration():
+    from speko_tts2_python import addon
+    from ten_runtime.addon_manager import _AddonManager
+
+    assert callable(_AddonManager._registry["speko_tts2_python"])
+    assert addon.__file__.endswith("addon.py")

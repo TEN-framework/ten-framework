@@ -14,7 +14,7 @@ your graph.
 | `params.base_url` | `https://router.speko.dev` | Speko Router origin |
 | `params.sample_rate` | `24000` | PCM output sample rate |
 | `params.channels` | `1` | PCM output channel count |
-| `params.language` | `en` | Optional routing/voice hint |
+| `params.language` | `en` | Language tag for routing/voice |
 | `params.voice` | empty | Optional provider voice identifier |
 | `params.routing` | auto, balanced | Speko routing selection |
 
@@ -70,3 +70,15 @@ is never replayed; later text can continue unless a permanent admission denial
 blocks the session.
 A terminal close error produces an error completion and still releases the
 request. Non-retryable denials are not automatically retried.
+
+Standalone regression gate from `ai_agents/`:
+
+```bash
+task test-extension EXTENSION=agents/ten_packages/extension/speko_tts2_python
+```
+
+Authentication, credit, missing-route and unsupported-capability errors are fatal
+and latch the session. Temporary transport failures remain non-fatal. Dump
+recorders are released on completion, cancellation, request replacement, and
+shutdown, including close-error paths. Connection-status tests inspect emitted
+TEN JSON to verify key and endpoint redaction.

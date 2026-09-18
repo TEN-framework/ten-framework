@@ -171,7 +171,7 @@ async def test_recorder_failure_still_releases_request():
 def test_vendor_metadata():
     extension = make_extension()
     assert extension.vendor_metadata()["key"] == "test-key"
-    assert extension.vendor_metadata()["api_key"] == "test-key"
+    assert "api_key" not in extension.vendor_metadata()
     assert extension.vendor_metadata()["language"] == "en"
 
 
@@ -356,3 +356,67 @@ async def test_base_flush_cancels_active_stream_and_allows_next_request(
     extension._stream_text.side_effect = None
     await extension.request_tts(text("next", "next", True))
     extension.finish_request.assert_awaited_once()
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "authentication_failed",
+        "insufficient_credit",
+        "route_not_found",
+        "capability_unsupported",
+    ],
+)
+def test_terminal_error_classification_matches_latch(code):
+    from ten_ai_base.message import ModuleErrorCode
+
+    extension = make_extension()
+    error = SpekoRouterError(code, "terminal")
+    result = extension._make_module_error(error)
+    assert str(result.code) == ModuleErrorCode.FATAL_ERROR.value
+    assert extension._permanent_error is error
+    assert result.vendor_info.code == code
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("close_fails", [False, True])
+async def test_replaced_request_recorder_is_flushed_even_if_close_fails(
+    close_fails,
+):
+    extension = SpekoTTS2Extension("speko")
+    extension.config = SpekoTTS2Config(api_key="key")
+    extension.ten_env = MagicMock()
+    extension.on_disconnected = AsyncMock()
+    extension.current_request_id = "previous"
+    recorder = MagicMock(flush=AsyncMock())
+    extension._recorders["previous"] = recorder
+    extension.client = MagicMock(
+        close=AsyncMock(side_effect=OSError("close") if close_fails else None)
+    )
+    if close_fails:
+        with pytest.raises(OSError):
+            await extension._begin_request(text(request_id="next"))
+    else:
+        await extension._begin_request(text(request_id="next"))
+    recorder.flush.assert_awaited_once()
+    assert "previous" not in extension._recorders
+
+
+@pytest.mark.asyncio
+async def test_connection_event_redacts_credentials_and_url():
+    import json
+
+    extension = SpekoTTS2Extension("speko")
+    extension.config = SpekoTTS2Config(
+        api_key="test-secret-key-long",
+        base_url="https://user:password@example.com?token=private#secret",
+    )
+    extension.ten_env = MagicMock(send_data=AsyncMock())
+    await extension.on_connecting()
+    data = extension.ten_env.send_data.await_args.args[0]
+    raw, _ = data.get_property_to_json("")
+    vendor = json.loads(raw)["metadata"]["vendor_metadata"]
+    assert vendor["base_url"] == "https://example.com"
+    assert "key" in vendor and "api_key" not in vendor
+    for secret in ("test-secret-key-long", "password", "private", "#secret"):
+        assert secret not in raw + extension.config.to_str()
