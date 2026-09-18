@@ -49,6 +49,7 @@ def test_params_passthrough():
             "model": "aura-2-thalia-en",
             "encoding": "linear16",
             "sample_rate": 24000,
+            "per_sentence_flush": True,
             "bit_rate": 64000,
             "container": "none",
         }
@@ -69,6 +70,7 @@ def test_params_passthrough():
     assert query["container"] == ["none"]
     assert "api_key" not in query
     assert "base_url" not in query
+    assert "per_sentence_flush" not in query
 
 
 # ================ test different sample rates ================
