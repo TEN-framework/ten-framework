@@ -37,7 +37,7 @@ from ten_ai_base.types import LLMToolMetadata
 from ten_runtime import AsyncTenEnv, Data
 
 from .client import SpekoLLMClient, SpekoRouterError
-from .config import SpekoLLM2Config
+from .config import SpekoLLM2Config, safe_error
 
 
 class SpekoLLM2Extension(AsyncLLM2BaseExtension):
@@ -66,23 +66,25 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
         except Exception as error:
             self.config = None
             ten_env.log_error(
-                f"invalid property: {error}",
+                f"invalid property: {safe_error(error)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
             await self._send_error(
                 ModuleError(
                     module=ModuleType.LLM,
                     code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(error),
+                    message=safe_error(error),
                     vendor_info=ModuleErrorVendorInfo(vendor="speko"),
                 )
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_stop(ten_env)
-        if self.client is not None:
-            await self.client.close()
-            self.client = None
+        try:
+            await super().on_stop(ten_env)
+        finally:
+            client, self.client = self.client, None
+            if client is not None:
+                await client.close()
 
     async def on_retrieve_prompt(
         self, ten_env: AsyncTenEnv, request: LLMRequestRetrievePrompt
@@ -92,7 +94,12 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
             prompt=self.config.prompt if self.config else ""
         )
 
-    async def on_call_chat_completion(
+    def on_call_chat_completion(
+        self, ten_env: AsyncTenEnv, request: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
+        return self._chat_completion(ten_env, request)
+
+    async def _chat_completion(
         self, ten_env: AsyncTenEnv, request: LLMRequest
     ) -> AsyncGenerator[LLMResponse, None]:
         if self.config is None or self.client is None:
@@ -188,7 +195,7 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
         except SpekoRouterError as error:
             await self._report_router_error(error, request)
             raise RuntimeError(
-                f"Speko Router request failed ({error.code}): {error.message}"
+                f"Speko Router request failed ({error.code}): {safe_error(error)}"
             ) from error
 
     def _build_payload(self, request: LLMRequest) -> dict[str, Any]:
@@ -394,7 +401,7 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
         self, error: SpekoRouterError, request: LLMRequest
     ) -> None:
         self.ten_env.log_error(
-            f"vendor_error: code={error.code}, message={error.message}",
+            f"vendor_error: code={error.code}, message={safe_error(error)}",
             category=LOG_CATEGORY_VENDOR,
         )
         await self._send_error(
@@ -402,11 +409,11 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
                 id=request.request_id,
                 module=ModuleType.LLM,
                 code=self._module_error_code(error).value,
-                message=error.message,
+                message=safe_error(error),
                 vendor_info=ModuleErrorVendorInfo(
                     vendor="speko",
                     code=error.code,
-                    message=error.message,
+                    message=safe_error(error),
                 ),
             )
         )
@@ -418,7 +425,12 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
 
     @staticmethod
     def _module_error_code(error: SpekoRouterError) -> ModuleErrorCode:
-        fatal_codes = {"authentication_failed", "insufficient_credit"}
+        fatal_codes = {
+            "authentication_failed",
+            "insufficient_credit",
+            "route_not_found",
+            "capability_unsupported",
+        }
         if error.code in fatal_codes:
             return ModuleErrorCode.FATAL_ERROR
         return ModuleErrorCode.NON_FATAL_ERROR

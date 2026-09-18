@@ -76,13 +76,13 @@ class SpekoASRClient:
         self._listener_task: asyncio.Task[None] | None = None
         self._finalize_waiter: asyncio.Future[None] | None = None
         self._audio_generation = 0
-        self._final_generation = -1
+        self._final_generation = 0
         self._ready = False
         self._closing = False
 
     @property
     def is_ready(self) -> bool:
-        return self._ready and self._ws is not None
+        return self._ready and not self._closing and self._ws is not None
 
     async def connect(self) -> None:
         if self.is_ready:
@@ -117,7 +117,7 @@ class SpekoASRClient:
             self.request_id = str(event.get("request_id", ""))
             self.route = dict(event.get("route", {}))
             self._audio_generation = 0
-            self._final_generation = -1
+            self._final_generation = 0
             self._ready = True
             await self.on_event(event)
             self._listener_task = asyncio.create_task(self._listen())

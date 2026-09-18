@@ -38,3 +38,16 @@ configured in explicit mode.
 
 Speko's launch Responses contract accepts text content only. Image content is
 rejected locally with a clear error instead of being silently dropped.
+
+## Testing
+
+From `ai_agents/`:
+
+```bash
+task test-extension EXTENSION=agents/ten_packages/extension/speko_llm2_python
+```
+
+The suite covers SSE transport, streaming and non-streaming completion through
+TEN's synchronous async-generator interface, explicit-route normalization,
+shutdown cleanup, and config redaction. Explicit routing removes any automatic
+objective inherited from TEN's recursive property merge.

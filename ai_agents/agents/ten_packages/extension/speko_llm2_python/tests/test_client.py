@@ -2,7 +2,7 @@ import json
 
 import httpx
 import pytest
-from client import SpekoLLMClient, SpekoRouterError
+from speko_llm2_python.client import SpekoLLMClient, SpekoRouterError
 
 
 def sse(*events):

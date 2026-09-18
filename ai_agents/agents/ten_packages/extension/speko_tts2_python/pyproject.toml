@@ -6,3 +6,6 @@ dependencies = [
     "pydantic>=2.13.4",
     "websockets>=14.0,<16",
 ]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"

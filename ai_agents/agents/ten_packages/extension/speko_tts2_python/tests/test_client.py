@@ -3,7 +3,7 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from client import (
+from speko_tts2_python.client import (
     SpekoRouterError,
     SpekoTTSClient,
     SpekoTTSEventType,
@@ -67,7 +67,10 @@ async def test_append_commit_audio_and_usage():
         json.dumps({"type": "session.closed", "usage": {"characters": 5}}),
     )
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         events = [event async for event in client.stream_text("hello")]
 
@@ -104,7 +107,10 @@ async def test_cancel_sends_protocol_cancel_before_close():
         )
     )
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         await client.cancel()
 
@@ -145,7 +151,10 @@ async def test_router_error_keeps_retryable_flag():
         ),
     )
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         with pytest.raises(SpekoRouterError) as caught:
             _ = [event async for event in client.stream_text("hello")]
@@ -185,7 +194,10 @@ async def test_close_surfaces_terminal_router_error():
         ),
     )
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
         _ = [event async for event in client.stream_text("hello")]
         with pytest.raises(SpekoRouterError) as caught:
@@ -220,7 +232,7 @@ async def test_upgrade_preserves_classified_error(status, code, retryable):
     ).encode()
     client = make_client()
     with patch(
-        "client.websockets.connect",
+        "speko_tts2_python.client.websockets.connect",
         AsyncMock(side_effect=InvalidStatus(response)),
     ):
         with pytest.raises(SpekoRouterError) as caught:
@@ -234,7 +246,10 @@ async def test_upgrade_preserves_classified_error(status, code, retryable):
 async def test_cancel_during_handshake_closes_socket():
     websocket = FakeWebSocket()
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         connecting = asyncio.create_task(client.connect())
         await asyncio.sleep(0)
         connecting.cancel()
@@ -255,7 +270,10 @@ async def test_cancel_stops_buffered_audio_without_reading_closed_socket(
         b"audio",
     )
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
     stream = client.stream_text("hello")
     assert (await anext(stream)).type == SpekoTTSEventType.TTFB
@@ -270,7 +288,10 @@ async def test_cancel_stops_buffered_audio_without_reading_closed_socket(
 async def test_cancel_discards_a_receive_completing_during_close():
     websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
     client = make_client()
-    with patch("client.websockets.connect", AsyncMock(return_value=websocket)):
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
         await client.connect()
     stream = client.stream_text("hello")
     receiving = asyncio.create_task(anext(stream))

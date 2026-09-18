@@ -14,14 +14,16 @@ your graph.
 | `params.base_url` | `https://router.speko.dev` | Speko Router origin |
 | `params.sample_rate` | `16000` | PCM input sample rate |
 | `params.channels` | `1` | PCM input channel count |
-| `params.language` | `en-US` | Optional routing/transcription hint |
+| `params.language` | `en-US` | Language tag for routing/transcription |
 | `params.routing` | auto, balanced | Speko routing selection |
 | `params.options` | `{}` | Diarization, keywords, noise reduction, or namespaced provider options |
 | `params.buffer_duration_ms` | `5000` | Audio retained while disconnected; `0` discards |
 
 The transport is raw signed 16-bit little-endian PCM. A TEN `asr_finalize`
-message sends Speko `input.commit` and `asr_finalize_end` is emitted after the
-corresponding final transcript.
+message sends Speko `input.commit`. Each finalize is serialized and acknowledged
+with its own `finalize_id` and metadata, including disconnected and timeout paths.
+Silent or already-finalized input completes without waiting for another transcript.
+Empty vendor transcripts are not emitted as user turns.
 
 ```json
 {
@@ -67,8 +69,26 @@ installed guarder’s `tests/bin/start` with `--extension_name speko_asr_python`
 and `--config_dir /absolute/path/to/configs`. Keep invalid-key configs invalid.
 Client/lifecycle unit tests use mocked transport and do not require credentials.
 
-Transient disconnects reconnect on subsequent audio ingress; failed sends are
-not replayed. Finalize acknowledges already-finalized input without waiting
-for a duplicate transcript. Fallback timestamps retain session position while
-resetting per-turn audio accounting. Permanent admission denials require correcting
-the cause and restarting the extension.
+Transient disconnects have one background recovery loop with delays of 0.5, 1,
+2, 4, and 4 seconds. A successful handshake resets this retry budget. Exhaustion,
+invalid configuration, authentication/credit failures, and unavailable explicit
+routes stop further attempts until the cause is corrected and the extension is
+restarted. Failed sends are not replayed; disconnected input uses the bounded
+buffer. Stop cancels pending recovery and finalization.
+
+Segment and word timestamps are mapped onto TEN's user-audio timeline, retaining
+position across connection replacement and excluding protocol silence. The raw
+input dump records each ingress frame once, including buffered input.
+
+Run standalone tests before guarders using the same image as CI:
+
+```bash
+task test-extension EXTENSION=agents/ten_packages/extension/speko_asr_python
+task check
+task lint
+```
+
+The standalone suite inspects emitted TEN JSON for results, finalize context,
+metrics, status transitions, and redaction. Endpoint logs omit URL userinfo,
+query parameters, and fragments. The single `key` vendor metadata field is
+masked by TEN's reporting layer.

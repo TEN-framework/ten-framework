@@ -26,7 +26,7 @@ from .client import (
     SpekoTTSClient,
     SpekoTTSEventType,
 )
-from .config import SpekoTTS2Config
+from .config import SpekoTTS2Config, safe_error, safe_url
 
 
 class SpekoTTS2Extension(AsyncTTS2BaseExtension):
@@ -62,7 +62,7 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         except Exception as error:
             self.config = None
             ten_env.log_error(
-                f"invalid property: {error}",
+                f"invalid property: {safe_error(error)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
             await self.send_tts_error(
@@ -70,7 +70,7 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 error=ModuleError(
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(error),
+                    message=safe_error(error),
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
@@ -98,9 +98,8 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             return {}
         metadata: dict[str, Any] = {
             "key": self.config.api_key,
-            "api_key": self.config.api_key,
             "language": self.config.language,
-            "base_url": self.config.base_url,
+            "base_url": safe_url(self.config.base_url),
             "routing": self.config.routing,
         }
         if self._route:
@@ -154,7 +153,9 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             if self._cancelled or self._stopped:
                 return
             await self._handle_router_error(
-                SpekoRouterError("relay_error", str(error), retryable=True),
+                SpekoRouterError(
+                    "relay_error", safe_error(error), retryable=True
+                ),
                 text_input.text_input_end,
             )
 
@@ -175,7 +176,9 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             router_error = (
                 error
                 if isinstance(error, SpekoRouterError)
-                else SpekoRouterError("relay_error", str(error), retryable=True)
+                else SpekoRouterError(
+                    "relay_error", safe_error(error), retryable=True
+                )
             )
             await self.send_tts_error(
                 request_id, self._make_module_error(router_error)
@@ -196,8 +199,13 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 await self._flush_recorder(request_id)
 
     async def _begin_request(self, text_input: TTSTextInput) -> None:
-        if self.client is not None:
-            await self._close_client()
+        previous_request = self.current_request_id
+        try:
+            if self.client is not None:
+                await self._close_client()
+        finally:
+            if previous_request is not None:
+                await self._flush_recorder(previous_request)
         self.current_request_id = text_input.request_id
         self._route = {}
         self._router_usage = {}
@@ -288,7 +296,7 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                     close_error
                     if isinstance(close_error, SpekoRouterError)
                     else SpekoRouterError(
-                        "relay_error", str(close_error), retryable=True
+                        "relay_error", safe_error(close_error), retryable=True
                     )
                 )
                 reason = TTSAudioEndReason.ERROR
@@ -328,19 +336,14 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                     )
 
     def _make_module_error(self, error: SpekoRouterError) -> ModuleError:
-        if not error.retryable and error.code in {
-            "authentication_failed",
-            "insufficient_credit",
-            "route_not_found",
-            "capability_unsupported",
-        }:
+        if self._module_error_code(error) == ModuleErrorCode.FATAL_ERROR:
             self._permanent_error = error
         return ModuleError(
             module=ModuleType.TTS,
             code=self._module_error_code(error).value,
-            message=error.message,
+            message=safe_error(error),
             vendor_info=ModuleErrorVendorInfo(
-                vendor=self.vendor(), code=error.code, message=error.message
+                vendor=self.vendor(), code=error.code, message=safe_error(error)
             ),
         )
 
@@ -350,7 +353,7 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         module_error = self._make_module_error(error)
         await self.on_disconnected(
             code=module_error.code,
-            message=error.message,
+            message=safe_error(error),
             vendor_info=module_error.vendor_info,
         )
         if self._finalized:
@@ -442,7 +445,12 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
 
     @staticmethod
     def _module_error_code(error: SpekoRouterError) -> ModuleErrorCode:
-        fatal_codes = {"authentication_failed", "insufficient_credit"}
+        fatal_codes = {
+            "authentication_failed",
+            "insufficient_credit",
+            "route_not_found",
+            "capability_unsupported",
+        }
         if error.code in fatal_codes:
             return ModuleErrorCode.FATAL_ERROR
         return ModuleErrorCode.NON_FATAL_ERROR
