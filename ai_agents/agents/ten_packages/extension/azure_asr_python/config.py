@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, cast
 
-from .const import FINALIZE_MODE_MUTE_PKG
+from .const import DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC, FINALIZE_MODE_MUTE_PKG
 from ten_ai_base.utils import encrypt
 
 
@@ -19,6 +19,7 @@ class AzureASRConfig(BaseModel):
     hotwords: list[str] = Field(default_factory=list)
     dump: bool = False
     dump_path: str = "."
+    transport_reconnect_grace_sec: float = DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC
 
     def update(self, params: dict[str, Any]):
         for key, value in params.items():
