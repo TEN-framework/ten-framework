@@ -9,7 +9,7 @@ use std::time::Duration;
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
 use ten_manager::designer::terminal::ws_terminal_endpoint;
-use tokio::time::sleep;
+use tokio::time::timeout;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::test_case::common::builtin_server::start_test_server;
@@ -30,36 +30,44 @@ async fn test_ws_terminal_endpoint() {
     // Split the WebSocket stream.
     let (mut write, mut read) = ws_stream.split();
 
-    // Wait for the initial welcome message.
+    // Wait for the complete welcome message so that it cannot be mistaken for
+    // command output later in the test.
     let mut message_count = 0;
-    let mut has_welcome_message = false;
+    let got_complete_welcome = timeout(Duration::from_secs(10), async {
+        while let Some(message) = read.next().await {
+            match message.expect("Failed to read initial WebSocket message") {
+                Message::Text(text) => {
+                    println!(
+                        "Received initial message #{}: {}",
+                        message_count + 1,
+                        text
+                    );
+                    message_count += 1;
 
-    // First, read the welcome messages.
-    while let Some(Ok(message)) = read.next().await {
-        match message {
-            Message::Text(text) => {
-                println!("Received initial message #{}: {}", message_count + 1, text);
-                message_count += 1;
-                has_welcome_message = true;
-
-                // After receiving a few welcome messages, break to proceed with
-                // the test.
-                if message_count >= 3 {
-                    break;
+                    if text.contains("Enjoy your journey!") {
+                        return true;
+                    }
+                }
+                Message::Binary(bin) => {
+                    println!("Received initial binary data with length: {}", bin.len());
+                    message_count += 1;
+                }
+                Message::Close(_) => return false,
+                message => {
+                    println!("Received other initial message type: {message:?}");
                 }
             }
-            Message::Binary(bin) => {
-                println!("Received binary data with length: {}", bin.len());
-                message_count += 1;
-            }
-            _ => {
-                println!("Received other message type: {message:?}");
-            }
         }
-    }
 
-    // Verify that we received the welcome messages.
-    assert!(has_welcome_message, "Should have received welcome messages");
+        false
+    })
+    .await
+    .expect("Timed out waiting for the complete welcome message");
+
+    assert!(
+        got_complete_welcome,
+        "Should have received the complete welcome message"
+    );
 
     // Send a command to the terminal.
     let command = "echo 'Hello from terminal test'\n";
@@ -67,8 +75,33 @@ async fn test_ws_terminal_endpoint() {
     write.send(Message::Text(command.into())).await.unwrap();
     println!("Sent command: {command}");
 
-    // Wait a moment for the command to execute.
-    sleep(Duration::from_millis(500)).await;
+    // Wait for observable command output instead of relying on a fixed delay.
+    let mut command_output = String::new();
+    let got_command_output = timeout(Duration::from_secs(10), async {
+        while let Some(message) = read.next().await {
+            match message.expect("Failed to read command output") {
+                Message::Text(text) => command_output.push_str(&text),
+                Message::Binary(bin) => {
+                    command_output.push_str(&String::from_utf8_lossy(&bin));
+                }
+                Message::Close(_) => return false,
+                _ => {}
+            }
+
+            if command_output.matches("Hello from terminal test").count() >= 2 {
+                return true;
+            }
+        }
+
+        false
+    })
+    .await
+    .expect("Timed out waiting for terminal command output");
+
+    assert!(
+        got_command_output,
+        "Should have received terminal command output"
+    );
 
     // Send a resize message.
     let resize_msg = r#"{"type":"resize","cols":100,"rows":30}"#;
@@ -76,79 +109,51 @@ async fn test_ws_terminal_endpoint() {
     write.send(Message::Text(resize_msg.into())).await.unwrap();
     println!("Sent resize message: {resize_msg}");
 
-    // Wait a moment for the resize to take effect.
-    sleep(Duration::from_millis(300)).await;
-
     // Send an exit command to close the terminal properly.
     #[cfg(target_os = "windows")]
-    let exit_command = "exit\r\n";
+    let exit_command = "exit 0\r\n";
     #[cfg(not(target_os = "windows"))]
-    let exit_command = "exit\n";
+    let exit_command = "exit 0\n";
 
     write.send(Message::Text(exit_command.into())).await.unwrap();
     println!("Sent exit command to close the terminal");
 
-    // Read responses until we get an exit message or timeout.
-    let mut got_exit_message = false;
-    let mut response_count = 0;
+    // Apply the timeout to the asynchronous read itself. Checking elapsed time
+    // only after read.next() returns can wait forever when no message arrives.
+    let exit_code = timeout(Duration::from_secs(10), async {
+        while let Some(message) = read.next().await {
+            match message.expect("Failed to read terminal exit message") {
+                Message::Text(text) => {
+                    println!("Received response: {text}");
 
-    // Set a timeout for how long to wait for responses.
-    let timeout = Duration::from_secs(3);
-    let start_time = std::time::Instant::now();
-
-    while let Some(Ok(message)) = read.next().await {
-        // Check if we've exceeded the timeout.
-        if start_time.elapsed() > timeout {
-            println!("Timeout reached, breaking read loop");
-            break;
-        }
-
-        match message {
-            Message::Text(text) => {
-                println!("Received response #{}: {}", response_count + 1, text);
-
-                // Check if this is an exit message.
-                if text.contains(r#""type":"exit"#) {
-                    println!("Found exit message: {text}");
-                    got_exit_message = true;
-
-                    // Verify the exit message format.
-                    let expected_exit_message_part = r#""type":"exit"#;
-                    assert!(
-                        text.contains(expected_exit_message_part),
-                        "Exit message should contain exit code information"
-                    );
-
-                    break;
+                    if let Ok(exit_message) = serde_json::from_str::<serde_json::Value>(&text) {
+                        if exit_message.get("type").and_then(|value| value.as_str()) == Some("exit")
+                        {
+                            return exit_message.get("code").and_then(|value| value.as_i64());
+                        }
+                    }
                 }
-
-                response_count += 1;
-            }
-            Message::Binary(bin) => {
-                println!("Received binary data with length: {}", bin.len());
-                response_count += 1;
-            }
-            Message::Close(_) => {
-                println!("Server closed the connection");
-                break;
-            }
-            _ => {
-                println!("Received other message type: {message:?}");
+                Message::Binary(bin) => {
+                    println!("Received binary data with length: {}", bin.len());
+                }
+                Message::Close(_) => return None,
+                message => println!("Received other message type: {message:?}"),
             }
         }
-    }
 
-    // Verify that we got responses to our commands.
-    assert!(response_count > 0, "Should have received responses to our commands");
+        None
+    })
+    .await
+    .expect("Timed out waiting for the terminal exit message");
 
-    // Verify that we got an exit message or the connection was closed.
-    assert!(got_exit_message, "Should have received an exit message");
+    assert_eq!(
+        exit_code,
+        Some(0),
+        "Should have received a successful exit message"
+    );
 
     // Close the connection if the server hasn't done so already.
     let _ = write.send(Message::Close(None)).await;
 
-    println!(
-        "Test completed successfully with {message_count} initial messages and {response_count} \
-         response messages"
-    );
+    println!("Test completed successfully with {message_count} initial messages");
 }
