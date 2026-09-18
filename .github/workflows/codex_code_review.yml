@@ -64,7 +64,7 @@ jobs:
         with:
           codex_api_key: ${{ secrets.CODEX_OPENAI_API_KEY }}
           codex_model: ${{ env.CODEX_MODEL }}
-          codex_base_url: ${{ env.CODEX_BASE_URL }}
+          codex_base_url: ${{ secrets.CODEX_BASE_URL }}
           prompt_path: ${{ env.PROMPT_FILE }}
           recent_change_advice: |
             Prefer concrete risks in changed files or directly adjacent code when they have clear evidence.

@@ -168,16 +168,7 @@ static int setup_signal_handler(int signo,
   return sigaction(signo, act, NULL);
 }
 
-// Setup signal handlers for various signals.
-static void ten_global_setup_sig_handler(void) {
-  struct sigaction act;
-  memset(&act, 0, sizeof(act));
-
-  // SA_SIGINFO flag allows the signal handler to receive additional
-  // information.
-  act.sa_flags = SA_SIGINFO;
-
-  // Configure alternate stack for signal handling.
+static void ten_global_setup_signal_alt_stack(void) {
   stack_t ss;
   ss.ss_sp = g_alt_stack;
   if (ss.ss_sp == NULL) {
@@ -196,6 +187,16 @@ static void ten_global_setup_sig_handler(void) {
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
     exit(EXIT_FAILURE);
   }
+}
+
+// Setup signal handlers for various signals.
+static void ten_global_setup_sig_handler(void) {
+  struct sigaction act;
+  memset(&act, 0, sizeof(act));
+
+  // SA_SIGINFO flag allows the signal handler to receive additional
+  // information.
+  act.sa_flags = SA_SIGINFO;
 
   // SA_ONSTACK flag ensures the signal handler uses the alternate stack.
   act.sa_flags |= SA_ONSTACK;
@@ -239,6 +240,17 @@ static void ten_global_setup_sig_handler(void) {
   }
 }
 
+void ten_global_setup_signal_stuff_without_alt_stack(void) {
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
+  const char *disable_signal_trap = getenv("TEN_DISABLE_SIGNAL_TRAP");
+  if (disable_signal_trap && !strcmp(disable_signal_trap, "true")) {
+    // No trap signal, for nodejs / python / java bindings.
+  } else {
+    ten_global_ignore_sigpipe();
+    ten_global_setup_sig_handler();
+  }
+}
+
 void ten_global_setup_signal_stuff(void) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe)
   const char *disable_signal_trap = getenv("TEN_DISABLE_SIGNAL_TRAP");
@@ -246,6 +258,7 @@ void ten_global_setup_signal_stuff(void) {
     // No trap signal, for nodejs / python / java bindings.
   } else {
     ten_global_ignore_sigpipe();
+    ten_global_setup_signal_alt_stack();
     ten_global_setup_sig_handler();
   }
 }
@@ -319,7 +332,7 @@ BOOL WINAPI ConsoleHandler(DWORD dwCtrlType) {
   }
 }
 
-void ten_global_setup_signal_stuff(void) {
+void ten_global_setup_signal_stuff_without_alt_stack(void) {
   // NOLINTNEXTLINE(concurrency-mt-unsafe)
   const char *disable_signal_trap = getenv("TEN_DISABLE_SIGNAL_TRAP");
   if (disable_signal_trap && !strcmp(disable_signal_trap, "true")) {
@@ -336,6 +349,10 @@ void ten_global_setup_signal_stuff(void) {
     // Register exception handler for access violations (segmentation faults).
     SetUnhandledExceptionFilter(TenUnhandledExceptionFilter);
   }
+}
+
+void ten_global_setup_signal_stuff(void) {
+  ten_global_setup_signal_stuff_without_alt_stack();
 }
 
 #endif
