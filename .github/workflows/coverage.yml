@@ -234,7 +234,7 @@ jobs:
           CARGO_NET_GIT_FETCH_WITH_CLI: "true"
           CARGO_BUILD_JOBS: "2"
           MAKEFLAGS: "-j2"
-          RUSTUP_TOOLCHAIN: nightly-2026-08-01
+          RUSTUP_TOOLCHAIN: nightly
         run: |
           # Ensure /usr/local/bin is at the front of PATH so our LLVM 22 clang symlinks are used
           export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
@@ -257,11 +257,11 @@ jobs:
           echo "=== Disk space after Go installation ==="
           df -h
 
-          # Rust branch coverage uses -Z coverage-options=branch. Pin the nightly date
-          # so Rust's LLVM profile ABI matches the apt.llvm.org LLVM 22 packages.
-          rustup toolchain install nightly-2026-08-01 --profile minimal
+          # Rust branch coverage uses -Z coverage-options=branch, which is
+          # only accepted by the nightly compiler.
+          rustup update nightly
 
-          # Make sure Rust nightly-2026-08-01 LLVM profile runtime matches the clang/llvm-profdata
+          # Make sure Rust nightly's LLVM profile runtime matches the clang/llvm-profdata
           # major version used for C/C++ coverage instrumentation. A mismatch can corrupt
           # mixed Rust + C/C++ profile records and segfault while writing .profraw.
           rustc -vV | grep LLVM
@@ -535,7 +535,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -979,7 +979,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -1249,7 +1249,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -1520,7 +1520,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -1791,7 +1791,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -2082,7 +2082,7 @@ jobs:
           sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
@@ -2318,7 +2318,7 @@ jobs:
           sudo apt-get autopurge -y || true
 
           # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
-          # matching Rust nightly-2026-08-01 profile ABI. Otherwise mixed profile records can crash
+          # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
           sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
