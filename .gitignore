@@ -143,3 +143,4 @@ ai_agents/*.log
 ai_agents/*.pcm
 ai_agents/*.pem
 /.trae
+result
