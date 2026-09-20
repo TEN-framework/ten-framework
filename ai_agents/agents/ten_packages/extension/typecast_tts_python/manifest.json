@@ -66,6 +66,9 @@
                 },
                 "target_lufs": {
                   "type": "float64"
+                },
+                "remove_silence_ms": {
+                  "type": "int64"
                 }
               }
             },
