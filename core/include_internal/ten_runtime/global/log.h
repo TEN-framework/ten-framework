@@ -30,3 +30,9 @@ TEN_RUNTIME_PRIVATE_API void ten_log_rust_config_deinit(void *config);
 
 TEN_RUNTIME_PRIVATE_API void ten_log_rust_config_reopen_all(ten_log_t *self,
                                                             void *config);
+
+// Replaces the process-wide advanced log configuration. The caller owns the
+// JSON input and must release an error string returned through err_msg with
+// ten_rust_free_cstring().
+TEN_RUNTIME_PRIVATE_API bool ten_log_global_configure_from_json(
+    const char *log_config_json, char **err_msg);

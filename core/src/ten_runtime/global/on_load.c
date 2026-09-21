@@ -41,6 +41,7 @@ TEN_CONSTRUCTOR(ten_runtime_on_load) {
   ten_global_setup_signal_stuff();
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   ten_log_global_init(true);
+  ten_log_global_set_advanced_log_reloadable();
 #else
   ten_log_global_init(false);
   ten_log_global_set_output_level(DEFAULT_LOG_OUTPUT_LEVEL);

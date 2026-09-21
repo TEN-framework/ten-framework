@@ -11,6 +11,40 @@
 #include "ten_utils/macro/mark.h"
 #endif
 
+bool ten_log_global_configure_from_json(const char *log_config_json,
+                                        char **err_msg) {
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  if (!log_config_json) {
+    if (err_msg) {
+      *err_msg = NULL;
+    }
+    return false;
+  }
+
+  AdvancedLogConfig *config =
+      ten_rust_create_log_config_from_json(log_config_json, err_msg);
+  if (!config) {
+    return false;
+  }
+
+  bool success = ten_rust_configure_log(
+      config, ten_log_global_is_advanced_log_reloadable(), err_msg);
+  if (!success) {
+    ten_rust_log_config_destroy(config);
+    return false;
+  }
+
+  ten_log_global_set_advanced_impl_with_config(
+      ten_log_rust_log_func, ten_log_rust_config_deinit,
+      ten_log_rust_config_reopen_all, config);
+  return true;
+#else
+  TEN_UNUSED(log_config_json);
+  TEN_UNUSED(err_msg);
+  return false;
+#endif
+}
+
 void ten_encrypt_log_data(uint8_t *data, size_t data_len, void *user_data) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   Cipher *cipher = (Cipher *)user_data;
