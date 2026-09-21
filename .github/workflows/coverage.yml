@@ -143,15 +143,15 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang versions BEFORE installing LLVM 22 clang
+          # Purge preinstalled clang versions BEFORE installing LLVM 23 clang
           #
           # Root cause:
           # - GitHub Actions ubuntu-22.04 runner preinstalls Clang 13.0.1, 14.0.0, and 15.0.7
@@ -164,7 +164,7 @@ jobs:
           # - During the test stage, we compile C++ applications (.cc files) that include
           #   C++ standard library headers (like <string>, <iostream>). When clang uses
           #   `-stdlib=libc++` (set in core/ten_gn/.gnfiles/build/platform/linux/BUILD.gn:68), it:
-          #   1. Uses LLVM 22's C++ stdlib headers from apt.llvm.org default packages
+          #   1. Uses LLVM 23's C++ stdlib headers from apt.llvm.org default packages
           #   2. BUT also picks up LLVM 13/14/15's compiler intrinsic headers from preinstalled versions
           #
           # This mixing causes compilation errors. Even with PATH prioritization and symlinks,
@@ -175,22 +175,22 @@ jobs:
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22 with all required packages
+          # Now install LLVM 23 with all required packages
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -200,22 +200,22 @@ jobs:
 
           # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix).
           # Coverage builds link Rust and C/C++ objects into the same binaries, so clang's
-          # instrumentation runtime must match Rust nightly's LLVM 22 profile ABI. If clang
+          # instrumentation runtime must match Rust nightly's LLVM 23 profile ABI. If clang
           # emits an older __llvm_prf_data layout, the LLVM profile runtime can misread the
           # mixed records and segfault while writing .profraw at process exit.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-ar-22 /usr/local/bin/llvm-ar
-          sudo ln -sf /usr/bin/llvm-nm-22 /usr/local/bin/llvm-nm
-          sudo ln -sf /usr/bin/llvm-ranlib-22 /usr/local/bin/llvm-ranlib
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-23 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-23 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-23 /usr/local/bin/llvm-ranlib
 
           # Create symlinks for coverage tools
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
-          # Verify installation - should all show LLVM 22
-          echo "=== Verifying LLVM 22 tools are correctly linked ==="
+          # Verify installation - should all show LLVM 23
+          echo "=== Verifying LLVM 23 tools are correctly linked ==="
           which clang
           clang --version | head -3
           which clang++
@@ -223,7 +223,7 @@ jobs:
           llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
           echo "=== Disk space after LLVM installation ==="
           df -h
@@ -236,7 +236,7 @@ jobs:
           MAKEFLAGS: "-j2"
           RUSTUP_TOOLCHAIN: nightly
         run: |
-          # Ensure /usr/local/bin is at the front of PATH so our LLVM 22 clang symlinks are used
+          # Ensure /usr/local/bin is at the front of PATH so our LLVM 23 clang symlinks are used
           export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
           echo "PATH: $PATH"
 
@@ -496,37 +496,37 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -534,23 +534,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Clean profraw files before tests
         run: |
@@ -940,37 +940,37 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -978,23 +978,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Clean profraw files before tests
         run: |
@@ -1210,37 +1210,37 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -1248,23 +1248,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Clean profraw files before tests
         run: |
@@ -1481,37 +1481,37 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -1519,23 +1519,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Clean profraw files before tests
         run: |
@@ -1752,37 +1752,37 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -1790,23 +1790,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Clean profraw files before tests
         run: |
@@ -2043,37 +2043,37 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
 
-          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 22 clang (see build job for details)
+          # Purge preinstalled clang-13/14/15 BEFORE installing LLVM 23 clang (see build job for details)
           sudo apt-get purge -y clang-13 clang-14 clang-15 \
             llvm-13-dev llvm-13-runtime llvm-13 \
             llvm-14-dev llvm-14-runtime llvm-14 \
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Now install LLVM 22
+          # Now install LLVM 23
           # Try versioned libc++ package names first; fall back to unversioned libc++ if unavailable
           # Keep the explicit major-version checks below so package drift fails early.
           sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
-            libc++-22-dev \
-            libc++abi-22-dev \
+            llvm-23 \
+            clang-23 \
+            libc++-23-dev \
+            libc++abi-23-dev \
           || sudo apt-get install -y \
-            llvm-22 \
-            clang-22 \
+            llvm-23 \
+            clang-23 \
             libc++-dev \
             libc++abi-dev
 
@@ -2081,23 +2081,23 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
 
       - name: Install Go for building Go apps
         run: |
@@ -2292,14 +2292,14 @@ jobs:
           sudo apt-get clean
           sudo rm -rf /var/lib/apt/lists/*
 
-      - name: Install LLVM 22 tools
+      - name: Install LLVM 23 tools
         run: |
-          # Add LLVM official repository for LLVM 22
+          # Add LLVM official repository for LLVM 23
           wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-22 main"
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-23 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-22 clang-22 lcov
+          sudo apt-get install -y llvm-23 clang-23 lcov
 
           # Clean up apt cache
           sudo apt-get clean
@@ -2312,28 +2312,28 @@ jobs:
             llvm-15-dev llvm-15-runtime llvm-15 \
             libc++-14-dev libc++abi-14-dev \
             libc++-dev libc++abi-dev || true
-          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 22
+          # Force remove old libc++ runtime packages to avoid conflicts with LLVM 23
           sudo dpkg -r --force-depends \
             libc++1-14 libc++abi1-14 libc++abi-dev 2>/dev/null || true
           sudo apt-get autopurge -y || true
 
-          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 22,
+          # Create symlinks so C/C++ coverage instrumentation and coverage tools use LLVM 23,
           # matching Rust nightly's profile ABI. Otherwise mixed profile records can crash
           # while writing .profraw.
-          sudo ln -sf /usr/bin/clang-22 /usr/local/bin/clang
-          sudo ln -sf /usr/bin/clang++-22 /usr/local/bin/clang++
-          sudo ln -sf /usr/bin/llvm-cov-22 /usr/local/bin/llvm-cov
-          sudo ln -sf /usr/bin/llvm-profdata-22 /usr/local/bin/llvm-profdata
-          sudo ln -sf /usr/bin/llvm-objdump-22 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/clang-23 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-cov-23 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-23 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-23 /usr/local/bin/llvm-objdump
 
           # Verify installation
-          echo "=== Verifying LLVM 22 installation ==="
+          echo "=== Verifying LLVM 23 installation ==="
           which clang
           clang --version | head -1
           llvm-cov --version | head -1
           llvm-profdata merge --version 2>&1 | head -1 || echo "llvm-profdata installed"
           TOOL_LLVM_MAJOR=$(llvm-profdata merge --version 2>&1 | sed -n 's/.*LLVM version \([0-9]*\).*/\1/p' | head -1)
-          test "$TOOL_LLVM_MAJOR" = "22"
+          test "$TOOL_LLVM_MAJOR" = "23"
           lcov --version
 
       - name: Download binaries and libraries for coverage analysis
