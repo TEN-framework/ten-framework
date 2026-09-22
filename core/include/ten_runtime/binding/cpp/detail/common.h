@@ -8,6 +8,7 @@
 
 #if !defined(_WIN32)
 #include <cxxabi.h>
+#include <typeinfo>
 #endif
 
 #include <string>
@@ -22,10 +23,16 @@ namespace {  // NOLINT
 // Internal helper function to get the name of the current exception type.
 #if !defined(_WIN32)
 TEN_UNUSED inline std::string curr_exception_type_name() {
+  const std::type_info *type = abi::__cxa_current_exception_type();
+  if (!type) {
+    return "unknown";
+  }
+
   int status = 0;
-  char *exception_type = abi::__cxa_demangle(
-      abi::__cxa_current_exception_type()->name(), nullptr, nullptr, &status);
-  std::string result(exception_type);
+  char *exception_type =
+      abi::__cxa_demangle(type->name(), nullptr, nullptr, &status);
+  std::string result =
+      (status == 0 && exception_type) ? exception_type : type->name();
   // NOLINTNEXTLINE(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory,hicpp-no-malloc)
   TEN_FREE(exception_type);
   return result;
