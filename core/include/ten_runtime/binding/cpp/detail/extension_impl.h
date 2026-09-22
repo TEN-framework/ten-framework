@@ -48,6 +48,7 @@ inline void extension_t::proxy_on_cmd_internal(
     cpp_cmd_ptr = new close_app_cmd_t(cmd);
     break;
 
+  case TEN_MSG_TYPE_CMD_RELOAD_LOG:
   case TEN_MSG_TYPE_CMD:
     cpp_cmd_ptr = new cmd_t(cmd);
     break;

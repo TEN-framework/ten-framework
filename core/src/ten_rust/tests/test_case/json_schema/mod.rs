@@ -1302,6 +1302,64 @@ mod tests {
     }
 
     #[test]
+    fn test_validate_property_json_with_reloadable_log_valid() {
+        let property = r#"
+        {
+          "ten": {
+            "log": {
+              "reloadable": true,
+              "handlers": [
+                {
+                  "matchers": [{ "level": "info" }],
+                  "formatter": {
+                    "type": "plain",
+                    "colored": false
+                  },
+                  "emitter": {
+                    "type": "console",
+                    "config": { "stream": "stdout" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_property_json_with_non_boolean_reloadable_log_invalid() {
+        let property = r#"
+        {
+          "ten": {
+            "log": {
+              "reloadable": "true",
+              "handlers": [
+                {
+                  "matchers": [{ "level": "info" }],
+                  "formatter": {
+                    "type": "plain",
+                    "colored": false
+                  },
+                  "emitter": {
+                    "type": "console",
+                    "config": { "stream": "stdout" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+        "#;
+
+        let result = ten_validate_property_json_string(property);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_validate_property_key_can_be_any_string() {
         // Test that property keys with hyphens are now allowed
         let property = r#"

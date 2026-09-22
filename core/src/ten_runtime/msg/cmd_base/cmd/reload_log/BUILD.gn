@@ -6,16 +6,7 @@
 #
 import("//build/ten_runtime/glob.gni")
 
-ten_runtime_glob("cmd") {
+ten_runtime_glob("reload_log") {
   file_list = all_native_files
-  deps = [
-    "close_app",
-    "custom",
-    "reload_log",
-    "start_graph",
-    "stop_graph",
-    "timeout",
-    "timer",
-    "trigger_life_cycle",
-  ]
+  deps = [ "field" ]
 }

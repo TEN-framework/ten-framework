@@ -25,6 +25,7 @@ class fake_app_t : public ten::app_t {
       R"({
            "ten": {
              "log": {
+               "reloadable": true,
                "handlers": [
                  {
                    "matchers": [
@@ -97,8 +98,6 @@ class GlobalTestEnvironment : public ::testing::Environment {
  public:
   // This method is run before any test cases.
   void SetUp() override {
-    ten_log_global_set_advanced_log_reloadable();
-
     fake_app_thread_args args = {nullptr, nullptr};
 
     args.event = ten_event_create(0, 1);

@@ -9,12 +9,14 @@
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/engine/msg_interface/close_app.h"
 #include "include_internal/ten_runtime/engine/msg_interface/cmd_result.h"
+#include "include_internal/ten_runtime/engine/msg_interface/reload_log.h"
 #include "include_internal/ten_runtime/engine/msg_interface/start_graph.h"
 #include "include_internal/ten_runtime/engine/msg_interface/stop_graph.h"
 #include "include_internal/ten_runtime/engine/msg_interface/timer.h"
 #include "include_internal/ten_runtime/msg/audio_frame/audio_frame.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/close_app/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/custom/cmd.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/reload_log/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/stop_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/timeout/cmd.h"
@@ -144,6 +146,18 @@ TEN_UNUSED static const ten_msg_info_t ten_msg_info[] = {
             NULL,                                  /* validate_schema */
             NULL,                                  /* set_ten_property */
             NULL,                                  /* peek_ten_property */
+        },
+    [TEN_MSG_TYPE_CMD_RELOAD_LOG] =
+        {
+            TEN_STR_RELOAD_LOG,                     /* msg_type_name */
+            TEN_STR_MSG_NAME_TEN_RELOAD_LOG,        /* msg_unique_name */
+            true,                                   /* create_in_path */
+            ten_engine_handle_cmd_reload_log,       /* engine_handler */
+            NULL,                                   /* clone */
+            ten_raw_cmd_reload_log_loop_all_fields, /* loop_all_fields */
+            NULL,                                   /* validate_schema */
+            NULL,                                   /* set_ten_property */
+            NULL,                                   /* peek_ten_property */
         },
     [TEN_MSG_TYPE_CMD_TIMEOUT] =
         {
