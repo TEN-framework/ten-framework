@@ -95,12 +95,12 @@ export const globalSlice = createSlice({
       state.rtmConnected = action.payload;
     },
     addChatItem: (state, action: PayloadAction<IChatItem>) => {
-      const { userId, text, isFinal, type, time } = action.payload;
+      const { userId, data_type, isFinal, time } = action.payload;
       const LastFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId === userId && el.isFinal;
+        return el.userId === userId && el.data_type === data_type && el.isFinal;
       });
       const LastNonFinalIndex = state.chatItems.findLastIndex((el) => {
-        return el.userId === userId && !el.isFinal;
+        return el.userId === userId && el.data_type === data_type && !el.isFinal;
       });
       const LastFinalItem = state.chatItems[LastFinalIndex];
       const LastNonFinalItem = state.chatItems[LastNonFinalIndex];
@@ -108,44 +108,19 @@ export const globalSlice = createSlice({
         // has last final Item
         if (time <= LastFinalItem.time) {
           // discard
-          console.log(
-            "[test] addChatItem, time < last final item, discard!:",
-            text,
-            isFinal,
-            type
-          );
           return;
         } else {
           if (LastNonFinalItem) {
-            console.log(
-              "[test] addChatItem, update last item(none final):",
-              text,
-              isFinal,
-              type
-            );
             state.chatItems[LastNonFinalIndex] = action.payload;
           } else {
-            console.log(
-              "[test] addChatItem, add new item:",
-              text,
-              isFinal,
-              type
-            );
             state.chatItems.push(action.payload);
           }
         }
       } else {
         // no last final Item
         if (LastNonFinalItem) {
-          console.log(
-            "[test] addChatItem, update last item(none final):",
-            text,
-            isFinal,
-            type
-          );
           state.chatItems[LastNonFinalIndex] = action.payload;
         } else {
-          console.log("[test] addChatItem, add new item:", text, isFinal, type);
           state.chatItems.push(action.payload);
         }
       }

@@ -1,0 +1,69 @@
+"""Static checks for the optional Jev voice-assistant graph."""
+
+import json
+from pathlib import Path
+
+
+TENAPP = Path(__file__).resolve().parents[1] / "tenapp"
+
+
+def test_jev_graph_is_optional_and_has_required_nodes():
+    app = json.loads((TENAPP / "property.json").read_text())
+    graphs = {graph["name"]: graph for graph in app["ten"]["predefined_graphs"]}
+    assert graphs["voice_assistant"]["auto_start"] is True
+    assert graphs["voice_assistant_jev_router"]["auto_start"] is False
+    default_llm = next(
+        node
+        for node in graphs["voice_assistant"]["graph"]["nodes"]
+        if node["name"] == "llm"
+    )
+    assert default_llm["property"]["model"] == "${env:OPENAI_MODEL}"
+    assert default_llm["property"]["base_url"] == (
+        "${env:OPENAI_API_BASE|https://api.openai.com/v1}"
+    )
+
+    nodes = {
+        node["name"]: node
+        for node in graphs["voice_assistant_jev_router"]["graph"]["nodes"]
+    }
+    assert nodes["jev"]["addon"] == "typesafe_jev_python"
+    assert nodes["llm_fast"]["addon"] == "openai_llm2_python"
+    assert nodes["llm_deep"]["addon"] == "openai_llm2_python"
+    assert nodes["stt"]["property"]["params"]["language"] == "en-US"
+    assert nodes["stt"]["property"]["params"]["endpointing"] == 500
+    assert nodes["jev"]["property"]["params"]["api_key"] == (
+        "${env:TYPESAFE_API_KEY}"
+    )
+    for node_name in ("llm_fast", "llm_deep"):
+        properties = nodes[node_name]["property"]
+        assert properties["base_url"] == "https://api.deepseek.com"
+        assert properties["api_key"] == "${env:DEEPSEEK_API_KEY}"
+        assert properties["proxy_url"] == "${env:DEEPSEEK_PROXY_URL|}"
+    assert nodes["llm_fast"]["property"]["model"] == "deepseek-flash"
+    assert nodes["llm_deep"]["property"]["model"] == "deepseek-flash"
+    assert nodes["llm_deep"]["property"]["max_tokens"] > 512
+    assert "weatherapi_tool_python" not in nodes
+    routing = nodes["main_control"]["property"]["model_routing"]
+    assert (
+        nodes["main_control"]["property"]["turn_detection_mode"]
+        == "speech_final"
+    )
+    assert routing["enabled"] is True
+    assert routing["decision_dest"] == "jev"
+    assert routing["fast_dest"] == "llm_fast"
+    assert routing["deep_dest"] == "llm_deep"
+    main_cmds = next(
+        connection["cmd"]
+        for connection in graphs["voice_assistant_jev_router"]["graph"][
+            "connections"
+        ]
+        if connection["extension"] == "main_control"
+    )
+    assert all("tool_register" not in cmd["names"] for cmd in main_cmds)
+
+
+def test_jev_dependency_is_declared():
+    app = json.loads((TENAPP / "manifest.json").read_text())
+    assert {
+        "path": "../../../ten_packages/extension/typesafe_jev_python"
+    } in app["dependencies"]

@@ -25,7 +25,9 @@ from ten_ai_base.struct import (
 )
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
 from ..helper import _send_cmd, _send_cmd_ex
-from ten_runtime import AsyncTenEnv, Loc, StatusCode
+from ..config import ModelRoutingConfig
+from ..routing import RoutingDecision, resolve_destination
+from ten_runtime import AsyncTenEnv, StatusCode
 import uuid
 
 
@@ -35,8 +37,11 @@ class LLMExec:
     This class handles the interaction with the LLM, including processing commands and data.
     """
 
-    def __init__(self, ten_env: AsyncTenEnv):
+    def __init__(
+        self, ten_env: AsyncTenEnv, routing: ModelRoutingConfig | None = None
+    ):
         self.ten_env = ten_env
+        self.routing = routing or ModelRoutingConfig()
         self.input_queue = AsyncQueue()
         self.stopped = False
         self.on_response: Optional[
@@ -48,6 +53,9 @@ class LLMExec:
         self.on_tool_call: Optional[
             Callable[[AsyncTenEnv, LLMToolMetadata], Awaitable[None]]
         ] = None
+        self.on_route: Optional[
+            Callable[[AsyncTenEnv, RoutingDecision], Awaitable[None]]
+        ] = None
         self.current_task: Optional[asyncio.Task] = None
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self._process_input_queue())
@@ -58,6 +66,8 @@ class LLMExec:
         )  # Lock to ensure thread-safe access
         self.contexts: list[LLMMessage] = []
         self.current_request_id: Optional[str] = None
+        self.current_decision_request_id: Optional[str] = None
+        self.current_llm_dest: Optional[str] = None
         self.current_text = None
 
     async def queue_input(self, item: str) -> None:
@@ -69,14 +79,32 @@ class LLMExec:
         This is useful for ensuring that all pending inputs are handled before stopping.
         """
         await self.input_queue.flush()
-        if self.current_request_id:
-            request_id = self.current_request_id
-            self.current_request_id = None
-            await _send_cmd(
-                self.ten_env, "abort", "llm", {"request_id": request_id}
-            )
+        decision_id = self.current_decision_request_id
+        request_id = self.current_request_id
+        llm_dest = self.current_llm_dest
+        self.current_decision_request_id = None
+        self.current_request_id = None
+        self.current_llm_dest = None
         if self.current_task:
             self.current_task.cancel()
+        aborts = []
+        if decision_id:
+            aborts.append(
+                _send_cmd(
+                    self.ten_env,
+                    "abort",
+                    self.routing.decision_dest,
+                    {"request_id": decision_id},
+                )
+            )
+        if request_id and llm_dest:
+            aborts.append(
+                _send_cmd(
+                    self.ten_env, "abort", llm_dest, {"request_id": request_id}
+                )
+            )
+        if aborts:
+            await asyncio.gather(*aborts, return_exceptions=True)
 
     async def stop(self) -> None:
         """
@@ -116,7 +144,7 @@ class LLMExec:
                 self.current_text = None
                 if self.on_response and text:
                     await self.on_response(self.ten_env, "", text, True)
-            except Exception as e:
+            except Exception:
                 self.ten_env.log_error(
                     f"Error processing input queue: {traceback.format_exc()}"
                 )
@@ -130,7 +158,9 @@ class LLMExec:
         Queue a new message to the LLM context.
         This method appends the new message to the existing context and sends it to the LLM.
         """
-        ten_env.log_info(f"_queue_context: {new_message}")
+        ten_env.log_info(
+            f"_queue_context: role={getattr(new_message, 'role', 'unknown')}"
+        )
         self.contexts.append(new_message)
 
     async def _write_context(
@@ -149,37 +179,93 @@ class LLMExec:
             await self._queue_context(ten_env, new_message)
 
     async def _send_to_llm(
-        self, ten_env: AsyncTenEnv, new_message: LLMMessage
+        self,
+        ten_env: AsyncTenEnv,
+        new_message: LLMMessage,
+        llm_dest: Optional[str] = None,
     ) -> None:
+        if llm_dest is None:
+            llm_dest = await self._choose_llm_dest(new_message.content)
         messages = self.contexts.copy()
         messages.append(new_message)
         request_id = str(uuid.uuid4())
         self.current_request_id = request_id
+        self.current_llm_dest = llm_dest
+        thinking = self.routing.enabled and llm_dest == self.routing.deep_dest
+        parameters = {
+            "extra_body": {
+                "thinking": {"type": "enabled" if thinking else "disabled"}
+            }
+        }
+        if thinking:
+            parameters["reasoning_effort"] = "high"
+        else:
+            parameters["temperature"] = 0.7
         llm_input = LLMRequest(
             request_id=request_id,
             messages=messages,
             streaming=True,
-            parameters={"temperature": 0.7},
+            parameters=parameters,
             tools=self.available_tools,
         )
         input_json = llm_input.model_dump()
-        response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
+        response = _send_cmd_ex(
+            ten_env, "chat_completion", llm_dest, input_json
+        )
 
         # Queue the new message to the context
         await self._queue_context(ten_env, new_message)
 
-        async for cmd_result, _ in response:
-            if cmd_result and cmd_result.is_final() is False:
-                if cmd_result.get_status_code() == StatusCode.OK:
-                    response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_info(
-                        f"_send_to_llm: response_json {response_json}"
-                    )
-                    completion = parse_llm_response(response_json)
-                    await self._handle_llm_response(completion)
+        try:
+            async for cmd_result, _ in response:
+                if cmd_result and cmd_result.is_final() is False:
+                    if cmd_result.get_status_code() == StatusCode.OK:
+                        response_json, _ = cmd_result.get_property_to_json(None)
+                        completion = parse_llm_response(response_json)
+                        await self._handle_llm_response(completion, llm_dest)
+        finally:
+            if self.current_request_id == request_id:
+                self.current_request_id = None
+                self.current_llm_dest = None
 
-    async def _handle_llm_response(self, llm_output: LLMResponse | None):
-        self.ten_env.log_info(f"_handle_llm_response: {llm_output}")
+    async def _choose_llm_dest(self, text: str) -> str:
+        if not self.routing.enabled:
+            return "llm"
+
+        decision_id = str(uuid.uuid4())
+        self.current_decision_request_id = decision_id
+        try:
+            route = await resolve_destination(
+                self.routing,
+                text,
+                decision_id,
+                lambda payload: _send_cmd(
+                    self.ten_env,
+                    "decision_evaluate",
+                    self.routing.decision_dest,
+                    payload,
+                ),
+            )
+            if self.current_decision_request_id != decision_id:
+                raise asyncio.CancelledError
+            if self.on_route:
+                await self.on_route(self.ten_env, route)
+            self.ten_env.log_info(
+                f"Jev route: {route.status}, destination={route.destination}, "
+                f"latency_ms={route.latency_ms}"
+            )
+            return route.destination
+        finally:
+            if self.current_decision_request_id == decision_id:
+                self.current_decision_request_id = None
+
+    async def _handle_llm_response(
+        self, llm_output: LLMResponse | None, llm_dest: str
+    ):
+        if llm_output is not None:
+            self.ten_env.log_info(
+                f"_handle_llm_response: {type(llm_output).__name__}"
+            )
 
         match llm_output:
             case LLMResponseMessageDelta():
@@ -249,6 +335,7 @@ class LLMExec:
                                     call_id=llm_output.tool_call_id,
                                     type="function_call_output",
                                 ),
+                                llm_dest,
                             )
                         else:
                             self.ten_env.log_error(

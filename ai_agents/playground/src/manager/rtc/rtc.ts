@@ -174,8 +174,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   private _parseData(data: any): void {
     const ascii = String.fromCharCode(...new Uint8Array(data));
 
-    console.log("[test] textstream raw data", ascii);
-
     // const { stream_id, is_final, text, text_ts, data_type, message_id, part_number, total_parts } = textstream;
 
     // if (total_parts > 0) {
@@ -239,9 +237,6 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         );
         const { stream_id, is_final, text, text_ts, data_type, role } =
           JSON.parse(this.base64ToUtf8(completeMessage));
-        console.log(
-          `[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`
-        );
         const isAgent = role === "assistant";
         let textItem: IChatItem = {
           type: isAgent ? EMessageType.AGENT : EMessageType.USER,
@@ -266,6 +261,12 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               data_type: EMessageDataType.REASON,
               text: data.text,
             };
+          } else if (type === "routing") {
+            textItem = {
+              ...textItem,
+              data_type: EMessageDataType.ROUTE,
+              text: data.text,
+            };
           } else if (type === "action") {
             const { action, data: actionData } = data;
             if (action === "browse_website") {
@@ -276,7 +277,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
           }
         }
 
-        if (text.trim().length > 0) {
+        if (textItem.text.trim().length > 0) {
           this.emit("textChanged", textItem);
         }
 

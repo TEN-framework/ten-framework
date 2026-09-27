@@ -70,9 +70,7 @@ class OpenAIChatGPT:
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAILLM2Config):
         self.config = config
         self.ten_env = ten_env
-        ten_env.log_info(
-            f"OpenAIChatGPT initialized with config: {config.api_key}"
-        )
+        ten_env.log_info("OpenAIChatGPT initialized")
         self.http_client = None
         if config.proxy_url:
             ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
@@ -236,10 +234,15 @@ class OpenAIChatGPT:
         for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
             if not self.config.is_black_list_params(key):
-                self.ten_env.log_debug(f"set openai param: {key} = {value}")
+                self.ten_env.log_debug(f"set openai param: {key}")
                 req[key] = value
 
-        self.ten_env.log_info(f"Requesting chat completions with: {req}")
+        thinking_config = (req.get("extra_body") or {}).get("thinking") or {}
+        self.ten_env.log_info(
+            f"Requesting chat completions: model={self.config.model}, "
+            f"messages={len(req['messages'])}, thinking="
+            f"{thinking_config.get('type', 'default')}"
+        )
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
@@ -263,14 +266,11 @@ class OpenAIChatGPT:
             last_chat_completion: ChatCompletionChunk | None = None
 
             async for chat_completion in response:
-                self.ten_env.log_debug(f"Chat completion: {chat_completion}")
                 if chat_completion is None or len(chat_completion.choices) == 0:
                     continue
                 last_chat_completion = chat_completion
                 choice = chat_completion.choices[0]
                 delta = choice.delta
-
-                self.ten_env.log_debug(f"Processing choice: {choice}")
 
                 content = delta.content if delta and delta.content else ""
                 raw_reasoning_content = (
