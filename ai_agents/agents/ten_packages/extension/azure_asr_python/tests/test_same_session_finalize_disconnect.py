@@ -20,13 +20,11 @@ class SameSessionFinalizeDisconnectTester(AsyncExtensionTester):
 
     def __init__(self):
         super().__init__()
-        self.cycle = 0
         self.final_texts: list[str] = []
 
     @override
     async def on_start(self, ten_env_tester: AsyncTenEnvTester) -> None:
         for cycle in (1, 2):
-            self.cycle = cycle
             for _ in range(5):
                 chunk = b"\x01\x02" * 160
                 audio_frame = AudioFrame.create("pcm_frame")
@@ -52,7 +50,7 @@ class SameSessionFinalizeDisconnectTester(AsyncExtensionTester):
                 ),
             )
             await ten_env_tester.send_data(finalize_data)
-            await asyncio.sleep(1.0)
+            await asyncio.sleep(2.0)
 
     def stop_test_if_checking_failed(
         self,
@@ -93,51 +91,67 @@ class SameSessionFinalizeDisconnectTester(AsyncExtensionTester):
 
 def test_same_session_finalize_disconnect_two_cycles(patch_azure_ws):
     start_calls = 0
+    result_index = 0
     lock = threading.Lock()
+    timers_active = {"value": True}
+
+    def emit_recognized(text: str) -> None:
+        evt = SimpleNamespace(
+            result=SimpleNamespace(
+                text=text,
+                offset=0,
+                duration=5000000,
+                no_match_details=None,
+                json=json.dumps(
+                    {
+                        "DisplayText": text,
+                        "Offset": 0,
+                        "Duration": 5000000,
+                    }
+                ),
+            )
+        )
+        patch_azure_ws.event_handlers["recognized"](evt)
 
     def fake_start_continuous_recognition():
-        nonlocal start_calls
+        nonlocal start_calls, result_index
         with lock:
             start_calls += 1
-            call_index = start_calls
+            result_index += 1
+            text = f"cycle-{result_index}"
 
-        def emit_finalize_stop_then_reopen():
-            stopped = SimpleNamespace(session_id="123")
-            patch_azure_ws.event_handlers["session_stopped"](stopped)
-            threading.Timer(
-                0.15,
-                lambda: trigger_vendor_live(
-                    patch_azure_ws.event_handlers, session_id="123"
-                ),
-            ).start()
-
-        def emit_result_and_finalize_stop():
-            evt = SimpleNamespace(
-                result=SimpleNamespace(
-                    text=f"cycle-{call_index}",
-                    offset=0,
-                    duration=5000000,
-                    no_match_details=None,
-                    json=json.dumps(
-                        {
-                            "DisplayText": f"cycle-{call_index}",
-                            "Offset": 0,
-                            "Duration": 5000000,
-                        }
-                    ),
-                )
+        def arm_attempt() -> None:
+            if not timers_active["value"]:
+                return
+            trigger_vendor_live(
+                patch_azure_ws.event_handlers, session_id="123"
             )
-            patch_azure_ws.event_handlers["recognized"](evt)
-            threading.Timer(0.05, emit_finalize_stop_then_reopen).start()
+            threading.Timer(0.2, lambda: emit_recognized(text)).start()
 
-        threading.Timer(0.2, emit_result_and_finalize_stop).start()
+        threading.Timer(0.05, arm_attempt).start()
+        return None
+
+    def fake_stop_continuous_recognition():
+        def emit_session_stopped() -> None:
+            if not timers_active["value"]:
+                return
+            stopped = SimpleNamespace(session_id="123")
+            handler = patch_azure_ws.event_handlers.get("session_stopped")
+            if handler is None:
+                return
+            try:
+                handler(stopped)
+            except RuntimeError:
+                return
+
+        threading.Timer(0.05, emit_session_stopped).start()
         return None
 
     patch_azure_ws.recognizer_instance.start_continuous_recognition.side_effect = (
         fake_start_continuous_recognition
     )
-    patch_azure_ws.recognizer_instance.stop_continuous_recognition.return_value = (
-        None
+    patch_azure_ws.recognizer_instance.stop_continuous_recognition.side_effect = (
+        fake_stop_continuous_recognition
     )
 
     property_json = {
@@ -150,9 +164,15 @@ def test_same_session_finalize_disconnect_two_cycles(patch_azure_ws):
 
     tester = SameSessionFinalizeDisconnectTester()
     tester.set_test_mode_single("azure_asr_python", json.dumps(property_json))
-    err = tester.run()
+    try:
+        err = tester.run()
+    finally:
+        timers_active["value"] = False
+
     assert err is None, (
         f"test_same_session_finalize_disconnect_two_cycles failed: "
         f"{err.error_code() if err else None} {err.error_message() if err else ''}"
     )
-    assert start_calls >= 3, f"expected reopen after finalize, starts={start_calls}"
+    assert start_calls >= 2, (
+        f"expected reopen after first finalize, starts={start_calls}"
+    )

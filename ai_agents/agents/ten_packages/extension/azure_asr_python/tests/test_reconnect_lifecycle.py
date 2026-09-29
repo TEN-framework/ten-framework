@@ -41,6 +41,32 @@ def make_extension(
     return extension
 
 
+def make_extension_with_real_stop(
+    transport_reconnect_grace_sec: float = 10,
+) -> AzureASRExtension:
+    """Extension with real stop_connection; SDK/metrics dependencies mocked."""
+    extension = AzureASRExtension("azure_asr_python")
+    extension.ten_env = MagicMock()
+    extension.config = AzureASRConfig(
+        transport_reconnect_grace_sec=transport_reconnect_grace_sec
+    )
+    extension.reconnect_manager = ReconnectManager(
+        max_attempts=5, logger=MagicMock()
+    )
+    extension.client = MagicMock()
+    extension.client.stop_continuous_recognition = MagicMock()
+    extension.send_vendor_metrics = AsyncMock()  # type: ignore[method-assign]
+    extension.on_disconnected = AsyncMock()  # type: ignore[method-assign]
+    extension.on_connected = AsyncMock()  # type: ignore[method-assign]
+    extension.send_connect_delay_metrics = AsyncMock()  # type: ignore[method-assign]
+    extension.send_asr_error = AsyncMock()  # type: ignore[method-assign]
+    extension.stopped = False
+    extension.connected = True
+    extension._transport_connected = False
+    extension._recognizer_epoch = 1
+    return extension
+
+
 def test_transport_recovery_runs_after_grace_when_sdk_does_not_reconnect():
     async def run_test() -> None:
         extension = make_extension(transport_reconnect_grace_sec=0.05)
@@ -233,8 +259,16 @@ def test_handshake_timeout_keeps_transport_recovery_scheduled():
         extension = make_extension(transport_reconnect_grace_sec=0.05)
         extension._transport_connected = False
         extension._handle_reconnect = AsyncMock(return_value=False)  # type: ignore[method-assign]
-        schedule_mock = AsyncMock()
-        extension._schedule_transport_recovery = schedule_mock  # type: ignore[method-assign]
+
+        schedule_calls = 0
+        real_schedule = extension._schedule_transport_recovery
+
+        async def schedule_spy() -> None:
+            nonlocal schedule_calls
+            schedule_calls += 1
+            await real_schedule()
+
+        extension._schedule_transport_recovery = schedule_spy  # type: ignore[method-assign]
 
         await extension._azure_event_handler_on_disconnected(
             SimpleNamespace(session_id="session-1"), 1
@@ -242,7 +276,7 @@ def test_handshake_timeout_keeps_transport_recovery_scheduled():
         await asyncio.sleep(0.12)
 
         extension._handle_reconnect.assert_awaited()  # type: ignore[attr-defined]
-        schedule_mock.assert_awaited()
+        assert schedule_calls >= 2
 
     asyncio.run(run_test())
 
@@ -279,10 +313,8 @@ def test_stale_connected_callback_does_not_mark_transport_live():
 
 def test_stop_connection_retires_recognizer_epoch():
     async def run_test() -> None:
-        extension = make_extension()
+        extension = make_extension_with_real_stop()
         extension._recognizer_epoch = 4
-        extension.client = MagicMock()
-        extension.ten_env = MagicMock()
 
         await extension.stop_connection()
 
@@ -310,11 +342,9 @@ def test_handshake_wait_rejects_stale_transport_flag():
 
 def test_late_old_connected_during_replacement_does_not_complete_handshake():
     async def run_test() -> None:
-        extension = make_extension()
+        extension = make_extension_with_real_stop()
         extension._recognizer_epoch = 1
         extension.connected = True
-        extension.client = MagicMock()
-        extension.ten_env = MagicMock()
 
         await extension.stop_connection()
         assert extension._recognizer_epoch == 2
