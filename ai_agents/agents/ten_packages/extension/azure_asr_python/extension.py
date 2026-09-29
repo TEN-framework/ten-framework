@@ -588,17 +588,29 @@ class AzureASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
 
+    def _connected_callback_may_publish(self, recognizer_epoch: int) -> bool:
+        return (
+            not self.stopped and recognizer_epoch == self._recognizer_epoch
+        )
+
+    def _discard_stale_connected_callback(self, recognizer_epoch: int) -> None:
+        if self._transport_connected_epoch == recognizer_epoch:
+            self._reset_transport_handshake_state()
+
     async def _azure_event_handler_on_connected(
         self, evt: speechsdk.ConnectionEventArgs, recognizer_epoch: int
     ):
         """Handle the connected event from Azure ASR."""
-        if recognizer_epoch != self._recognizer_epoch:
+        if not self._connected_callback_may_publish(recognizer_epoch):
             return
 
         self._transport_connected = True
         self._transport_connected_epoch = recognizer_epoch
         self._transport_handshake_ready.set()
         await self._cancel_transport_recovery()
+        if not self._connected_callback_may_publish(recognizer_epoch):
+            self._discard_stale_connected_callback(recognizer_epoch)
+            return
 
         connection_delay_ms = (
             int(datetime.now().timestamp() * 1000)
@@ -611,6 +623,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
 
         await self.send_connect_delay_metrics(connection_delay_ms)
+        if not self._connected_callback_may_publish(recognizer_epoch):
+            self._discard_stale_connected_callback(recognizer_epoch)
+            return
 
         # Notify reconnect manager that connection is successful
         if self.reconnect_manager:
@@ -804,6 +819,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
             return False
         return self._transport_handshake_complete(expected_epoch)
 
+    async def _teardown_failed_handshake_attempt(self, message: str) -> None:
+        """Vendor start returned without a usable transport handshake."""
+        await self.stop_connection()
+        if self.stopped:
+            return
+        await self.on_disconnected(
+            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+            message=message,
+        )
+
     async def _emit_reconnect_ceiling_fatal(self) -> None:
         if self.stopped:
             return
@@ -849,7 +874,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
             await self.start_connection()
             expected_epoch = self._recognizer_epoch
             if not await self._wait_for_transport_handshake(expected_epoch):
-                await self.stop_connection()
+                await self._teardown_failed_handshake_attempt(
+                    "Azure transport handshake timed out after finalize reconnect"
+                )
                 if not self.stopped and self.reconnect_manager:
                     if self.reconnect_manager.can_retry():
                         await self._handle_reconnect()
@@ -899,7 +926,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_debug("Reconnection handshake completed")
                 return True
 
-            await self.stop_connection()
+            await self._teardown_failed_handshake_attempt(
+                "Azure transport handshake timed out during reconnect"
+            )
             info = self.reconnect_manager.get_attempts_info()
             self.ten_env.log_debug(
                 f"Reconnection handshake failed. Status: {info}"

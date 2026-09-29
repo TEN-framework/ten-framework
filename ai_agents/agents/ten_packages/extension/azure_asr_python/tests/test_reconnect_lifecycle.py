@@ -250,6 +250,42 @@ def test_handshake_timeout_returns_false_and_tears_down():
         assert ok is False
         extension.start_connection.assert_awaited_once()  # type: ignore[attr-defined]
         extension.stop_connection.assert_awaited_once()  # type: ignore[attr-defined]
+        extension.on_disconnected.assert_awaited_once()  # type: ignore[attr-defined]
+        disconnect_kwargs = extension.on_disconnected.await_args.kwargs  # type: ignore[attr-defined]
+        assert disconnect_kwargs["message"].startswith(
+            "Azure transport handshake timed out"
+        )
+
+    asyncio.run(run_test())
+
+
+def test_stale_connected_callback_aborted_after_metrics_await():
+    async def run_test() -> None:
+        extension = make_extension_with_real_stop()
+        extension._recognizer_epoch = 5
+        extension.connection_start_timestamp = 0
+        evt = SimpleNamespace(session_id="session-5")
+
+        metrics_started = asyncio.Event()
+        metrics_release = asyncio.Event()
+
+        async def slow_metrics(_ms: int) -> None:
+            metrics_started.set()
+            await metrics_release.wait()
+
+        extension.send_connect_delay_metrics = slow_metrics  # type: ignore[method-assign]
+
+        connected_task = asyncio.create_task(
+            extension._azure_event_handler_on_connected(evt, 5)
+        )
+        await metrics_started.wait()
+        await extension.stop_connection()
+        metrics_release.set()
+        await connected_task
+
+        extension.on_connected.assert_not_awaited()  # type: ignore[attr-defined]
+        assert extension._transport_connected is False
+        assert extension._recognizer_epoch == 6
 
     asyncio.run(run_test())
 
