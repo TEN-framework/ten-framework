@@ -59,3 +59,12 @@ sections 6 (generate) and 7 (bootstrap).
 
 - `ai_agents/` — primary area for agents, examples, server, integrations
 - `core/`, `packages/`, `build/` — framework internals
+
+## Domain Skills
+
+- For pull-request or diff reviews of implementation, configuration, dependency,
+  or test changes inside `ai_agents/agents/ten_packages/extension/<tts-extension>/`,
+  load and follow
+  [ten-tts-review](.agents/skills/ten-tts-review/SKILL.md).
+- Do not apply that skill to `ten_ai_base`, `tts_guarder`, examples, graphs, or
+  paths outside the TTS extension directory.

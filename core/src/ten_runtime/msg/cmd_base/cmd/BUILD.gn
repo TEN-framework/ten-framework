@@ -11,6 +11,7 @@ ten_runtime_glob("cmd") {
   deps = [
     "close_app",
     "custom",
+    "reload_log",
     "start_graph",
     "stop_graph",
     "timeout",

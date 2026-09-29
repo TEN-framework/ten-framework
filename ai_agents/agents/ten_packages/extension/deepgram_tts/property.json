@@ -6,6 +6,7 @@
     "base_url": "wss://api.deepgram.com/v1/speak",
     "model": "aura-2-thalia-en",
     "encoding": "linear16",
-    "sample_rate": 24000
+    "sample_rate": 24000,
+    "per_sentence_flush": false
   }
 }

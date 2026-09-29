@@ -169,7 +169,8 @@ typedef struct ten_log_advanced_impl_t {
   ten_log_advanced_log_config_on_deinit_func_t on_deinit;
   ten_log_advanced_log_reopen_all_func_t reopen_all;
 
-  // The reloadable feature is for internal use only and is used in smoke tests
+  // Enables replacing the advanced log configuration at runtime. This must be
+  // set before the initial advanced log configuration is installed.
   bool is_reloadable;
 
   void *config;

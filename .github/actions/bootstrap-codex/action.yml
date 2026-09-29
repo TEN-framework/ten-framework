@@ -1,0 +1,134 @@
+name: Bootstrap Codex
+description: Install and configure Codex (sub2api provider), then run a prompt.
+inputs:
+  codex_api_key:
+    description: API key used to authenticate Codex.
+    required: true
+  codex_model:
+    description: Codex model name.
+    required: true
+  codex_base_url:
+    description: Base URL for the Codex model provider.
+    required: true
+  prompt_path:
+    description: Absolute or workspace path to the prompt file.
+    required: true
+  recent_change_advice:
+    description: Optional guidance prepended with recent-change git context.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install Codex CLI
+      shell: bash
+      run: |
+        if command -v codex >/dev/null 2>&1; then
+          codex --version
+          exit 0
+        fi
+        npm install -g @openai/codex
+        npm_prefix="$(npm prefix -g)"
+        echo "$npm_prefix/bin" >> "$GITHUB_PATH"
+        export PATH="$npm_prefix/bin:$PATH"
+        codex --version
+
+    - name: Configure Codex
+      shell: bash
+      env:
+        CODEX_OPENAI_API_KEY: ${{ inputs.codex_api_key }}
+        CODEX_MODEL: ${{ inputs.codex_model }}
+        CODEX_BASE_URL: ${{ inputs.codex_base_url }}
+      run: |
+        if [ -z "$CODEX_OPENAI_API_KEY" ]; then
+          echo "CODEX_OPENAI_API_KEY secret is required"
+          exit 1
+        fi
+
+        mkdir -p "$HOME/.codex"
+        {
+          printf '{\n'
+          printf '  "OPENAI_API_KEY": "%s"\n' "$CODEX_OPENAI_API_KEY"
+          printf '}\n'
+        } > "$HOME/.codex/auth.json"
+        chmod 0600 "$HOME/.codex/auth.json"
+
+        {
+          printf '%s\n' 'model_provider = "sub2api"'
+          printf 'model = "%s"\n' "$CODEX_MODEL"
+          printf 'review_model = "%s"\n' "$CODEX_MODEL"
+          printf '%s\n' 'model_reasoning_effort = "xhigh"'
+          printf '%s\n' 'disable_response_storage = true'
+          printf '%s\n' 'network_access = "enabled"'
+          printf '%s\n' 'model_context_window = 1000000'
+          printf '%s\n' 'model_auto_compact_token_limit = 900000'
+          printf '\n%s\n' '[model_providers.sub2api]'
+          printf '%s\n' 'name = "sub2api"'
+          printf 'base_url = "%s"\n' "$CODEX_BASE_URL"
+          printf '%s\n' 'wire_api = "responses"'
+          printf '%s\n' 'requires_openai_auth = true'
+          printf '\n%s\n' '[features]'
+          printf '%s\n' 'goals = true'
+          printf '\n[projects."%s"]\n' "$GITHUB_WORKSPACE"
+          printf '%s\n' 'trust_level = "trusted"'
+        } > "$HOME/.codex/config.toml"
+
+    - name: Build recent-change context
+      if: inputs.recent_change_advice != ''
+      shell: bash
+      env:
+        RECENT_CHANGE_ADVICE: ${{ inputs.recent_change_advice }}
+      run: |
+        recent_context="$RUNNER_TEMP/codex-recent-changes.md"
+        recent_files="$(
+          git log \
+            --since='30 days ago' \
+            --name-only \
+            --pretty=format: \
+            --diff-filter=ACMR \
+            -- \
+            . \
+            ':(exclude).github/prompts/**' \
+            ':(exclude).github/workflows/**' \
+            ':(exclude)third_party/**' \
+            ':(exclude)node_modules/**' |
+          sed '/^[[:space:]]*$/d' |
+          sort |
+          uniq -c |
+          sort -rn |
+          sed -n '1,80p'
+        )"
+
+        {
+          echo "# Recent Change Context"
+          echo
+          echo "The following files were changed most often in the last 30 days."
+          echo "Use this as a priority hint for code importance and active development areas."
+          printf '%s\n' "$RECENT_CHANGE_ADVICE"
+          echo
+          echo '```text'
+          if [ -n "$recent_files" ]; then
+            printf '%s\n' "$recent_files"
+          else
+            echo "No recent changed files found."
+          fi
+          echo '```'
+          echo
+        } > "$recent_context"
+
+    - name: Run Codex
+      shell: bash
+      env:
+        PROMPT_PATH: ${{ inputs.prompt_path }}
+      run: |
+        prompt_path="$RUNNER_TEMP/codex-run-prompt.md"
+        if [ -f "$RUNNER_TEMP/codex-recent-changes.md" ]; then
+          cat "$RUNNER_TEMP/codex-recent-changes.md" "$PROMPT_PATH" > "$prompt_path"
+        else
+          cat "$PROMPT_PATH" > "$prompt_path"
+        fi
+
+        codex exec \
+          --cd "$GITHUB_WORKSPACE" \
+          --dangerously-bypass-approvals-and-sandbox \
+          - < "$prompt_path"

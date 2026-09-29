@@ -46,6 +46,7 @@ _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
         "bytedance_llm_based_asr",
         "deepgram_asr_python",
         "smallest_asr_python",
+        "rtzr_asr_python",
         "soniox_asr_python",
         "tencent_asr_python",
     }

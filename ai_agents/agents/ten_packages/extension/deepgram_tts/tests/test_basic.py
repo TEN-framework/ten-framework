@@ -285,7 +285,7 @@ def test_flush(MockDeepgramTTSClient):
 
     fake_audio_chunk = b"\x00\x01\x02\x03" * 50
 
-    async def mock_get_audio_stream(text: str):
+    async def mock_get_audio_stream(text: str, flush: bool = True):
         yield (100, EVENT_TTS_TTFB_METRIC)
         yield (fake_audio_chunk, EVENT_TTS_RESPONSE)
         yield (None, EVENT_TTS_END)

@@ -56,3 +56,6 @@ TEN_RUNTIME_PRIVATE_API bool ten_app_init_addon(ten_app_t *self,
 
 TEN_RUNTIME_PRIVATE_API bool ten_app_init_advanced_log(ten_app_t *self,
                                                        ten_value_t *value);
+
+TEN_RUNTIME_PRIVATE_API bool ten_app_configure_advanced_log(ten_value_t *value,
+                                                            ten_error_t *err);

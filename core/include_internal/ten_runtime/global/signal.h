@@ -10,6 +10,8 @@
 
 TEN_RUNTIME_API void ten_global_setup_signal_stuff(void);
 
+TEN_RUNTIME_API void ten_global_setup_signal_stuff_without_alt_stack(void);
+
 #if !defined(OS_WINDOWS)
 TEN_RUNTIME_PRIVATE_API void ten_global_signal_alt_stack_create(void);
 

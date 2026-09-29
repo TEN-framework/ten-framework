@@ -14,7 +14,8 @@ on:
       - "third_party/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/claude-code-review.yml"
+      - "!.github/workflows/claude_code_review.yml"
+      - "!.github/prompts/code-review.md"
       - ".vscode/**"
       - "**.md"
       - "ai_agents/docs/**"
@@ -43,6 +44,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Build code review prompt
+        id: code-review-prompt
+        run: |
+          {
+            echo 'prompt<<EOF'
+            printf 'REPO: %s\nPR NUMBER: %s\n\n' \
+              "${{ github.repository }}" \
+              "${{ github.event.pull_request.number }}"
+            cat .github/prompts/code-review.md
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
@@ -52,20 +65,7 @@ jobs:
         with:
           anthropic_api_key: "${{ secrets.ANTHROPIC_API_KEY }}"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
-          prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+          prompt: ${{ steps.code-review-prompt.outputs.prompt }}
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options

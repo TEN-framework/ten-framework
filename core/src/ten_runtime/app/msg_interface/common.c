@@ -22,6 +22,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
+#include "include_internal/ten_utils/log/log.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_runtime/msg/cmd/stop_graph/cmd.h"
@@ -467,6 +468,36 @@ static bool ten_app_is_msg_dest(ten_app_t *self, ten_loc_t *dest_loc) {
          ten_string_is_empty(&dest_loc->graph_id);
 }
 
+static bool ten_app_handle_reload_log_cmd(ten_app_t *self,
+                                          ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(self, "Invalid app pointer.");
+  TEN_ASSERT(ten_app_check_integrity(self, true), "Corrupted app structure.");
+  TEN_ASSERT(cmd, "Invalid command pointer.");
+  TEN_ASSERT(ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_RELOAD_LOG,
+             "Invalid command type.");
+
+  if (!ten_log_global_is_advanced_log_reloadable()) {
+    ten_app_create_cmd_result_and_dispatch(
+        self, cmd, TEN_STATUS_CODE_ERROR,
+        "Log reload is disabled. Set ten.log.reloadable to true during app "
+        "initialization.");
+    return true;
+  }
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  ten_value_t *log_config = ten_msg_peek_property(cmd, NULL, &err);
+  bool success = log_config && ten_app_configure_advanced_log(log_config, &err);
+
+  ten_app_create_cmd_result_and_dispatch(
+      self, cmd, success ? TEN_STATUS_CODE_OK : TEN_STATUS_CODE_ERROR,
+      success ? NULL : ten_error_message(&err));
+
+  ten_error_deinit(&err);
+  return true;
+}
+
 /**
  * @brief Handles an incoming message for the app.
  *
@@ -521,6 +552,9 @@ bool ten_app_handle_in_msg(ten_app_t *self, ten_connection_t *connection,
 
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
     return ten_app_handle_close_app_cmd(self, connection, err);
+
+  case TEN_MSG_TYPE_CMD_RELOAD_LOG:
+    return ten_app_handle_reload_log_cmd(self, msg);
 
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     return ten_app_handle_stop_graph_cmd(self, msg, err);

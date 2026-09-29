@@ -211,6 +211,8 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 if self.client:
+                    if self.current_request_id is not None:
+                        await self.client.discard_pending()
                     self.client.reset_ttfb()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
@@ -237,6 +239,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_finished = True
 
             prepared_text = t.text.strip()
+            text_to_send = (
+                prepared_text if self.config.per_sentence_flush else t.text
+            )
 
             if self._is_stopped:
                 self.ten_env.log_debug(
@@ -244,8 +249,15 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            if prepared_text != "":
-                await self._process_tts_text(prepared_text, t)
+            has_text = (
+                prepared_text != ""
+                if self.config.per_sentence_flush
+                else t.text != ""
+            )
+            if has_text or (
+                t.text_input_end and not self.config.per_sentence_flush
+            ):
+                await self._process_tts_text(text_to_send, t)
             elif t.text_input_end:
                 await self._finalize_request(TTSAudioEndReason.REQUEST_END)
 
@@ -274,7 +286,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             f"of request_id: {t.request_id}",
             category=LOG_CATEGORY_VENDOR,
         )
-        data = self.client.get(text)
+        if not t.text_input_end and not self.config.per_sentence_flush:
+            data = self.client.get(text, flush=False)
+        else:
+            data = self.client.get(text)
 
         chunk_count = 0
         if self.sent_ts is None:

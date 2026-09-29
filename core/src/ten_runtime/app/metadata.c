@@ -19,6 +19,7 @@
 #include "include_internal/ten_utils/log/log.h"
 #include "include_internal/ten_utils/log/output.h"
 #include "ten_runtime/app/app.h"
+#include "ten_runtime/common/error_code.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/container/list_node_ptr.h"
 #include "ten_utils/lib/error.h"
@@ -230,14 +231,15 @@ bool ten_app_init_addon(ten_app_t *self, ten_value_t *value) {
   return true;
 }
 
-bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
-  TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
+bool ten_app_configure_advanced_log(ten_value_t *value, ten_error_t *err) {
   TEN_ASSERT(value, "Should not happen.");
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
 
   if (!ten_value_is_object(value)) {
-    TEN_LOGE("Invalid value type for property: %s", TEN_STR_LOG);
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "Log configuration must be an object.");
+    }
     return false;
   }
 
@@ -247,7 +249,11 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
       TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
   bool success = ten_value_to_json(value, &log_config_json);
   if (!success) {
-    TEN_LOGE("Failed to convert log config to JSON");
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Failed to convert log config to JSON.");
+    }
+    ten_json_deinit(&log_config_json);
     return false;
   }
 
@@ -257,22 +263,35 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
 
   ten_json_deinit(&log_config_json);
 
-  char *err_msg = NULL;
-
-  AdvancedLogConfig *log_config =
-      ten_rust_create_log_config_from_json(log_config_json_str, &err_msg);
-  if (log_config == NULL) {
-    if (err_msg) {
-      TEN_LOGE("Failed to create log config: %s", err_msg);
-      ten_rust_free_cstring(err_msg);
-    } else {
-      TEN_LOGE("Failed to create log config: unknown error");
+  if (!log_config_json_str) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Failed to serialize log config to JSON.");
     }
     return false;
   }
 
+  char *err_msg = NULL;
+
+  AdvancedLogConfig *log_config =
+      ten_rust_create_log_config_from_json(log_config_json_str, &err_msg);
+
   if (must_free) {
     TEN_FREE(log_config_json_str);
+  }
+
+  if (log_config == NULL) {
+    if (err_msg) {
+      if (err) {
+        ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                      "Failed to create log config: %s", err_msg);
+      }
+      ten_rust_free_cstring(err_msg);
+    } else if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "Failed to create log config: unknown error.");
+    }
+    return false;
   }
 
   err_msg = NULL;
@@ -280,10 +299,14 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
       log_config, ten_log_global_is_advanced_log_reloadable(), &err_msg);
   if (!success) {
     if (err_msg) {
-      TEN_LOGE("Failed to configure log: %s", err_msg);
+      if (err) {
+        ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                      "Failed to configure log: %s", err_msg);
+      }
       ten_rust_free_cstring(err_msg);
-    } else {
-      TEN_LOGE("Failed to configure log: unknown error");
+    } else if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                    "Failed to configure log: unknown error.");
     }
     ten_rust_log_config_destroy(log_config);
 
@@ -297,6 +320,42 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
 #endif
 
   return true;
+}
+
+bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
+  TEN_ASSERT(value, "Should not happen.");
+  TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
+
+  if (!ten_value_is_object(value)) {
+    TEN_LOGE("Invalid value type for property: %s", TEN_STR_LOG);
+    return false;
+  }
+
+  ten_value_t *reloadable = ten_value_object_peek(value, TEN_STR_RELOADABLE);
+  if (reloadable) {
+    if (!ten_value_is_bool(reloadable)) {
+      TEN_LOGE("Invalid value type for property: %s.%s", TEN_STR_LOG,
+               TEN_STR_RELOADABLE);
+      return false;
+    }
+
+    if (ten_value_get_bool(reloadable, NULL)) {
+      ten_log_global_set_advanced_log_reloadable();
+    }
+  }
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool success = ten_app_configure_advanced_log(value, &err);
+  if (!success) {
+    TEN_LOGE("%s", ten_error_message(&err));
+  }
+
+  ten_error_deinit(&err);
+  return success;
 }
 
 static bool ten_app_determine_ten_namespace_properties(

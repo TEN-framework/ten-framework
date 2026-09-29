@@ -60,6 +60,7 @@
 #define TEN_STR_MSG_NAME_TEN_EMPTY "ten:empty"
 
 #define TEN_STR_MSG_NAME_TEN_CLOSE_APP "ten:close_app"
+#define TEN_STR_MSG_NAME_TEN_RELOAD_LOG "ten:reload_log"
 #define TEN_STR_MSG_NAME_TEN_STOP_GRAPH "ten:stop_graph"
 #define TEN_STR_MSG_NAME_TEN_START_GRAPH "ten:start_graph"
 #define TEN_STR_MSG_NAME_TEN_RESULT "ten:result"
@@ -70,6 +71,7 @@
 // Special command.
 #define TEN_STR_STOP_GRAPH "stop_graph"
 #define TEN_STR_CLOSE_APP "close_app"
+#define TEN_STR_RELOAD_LOG "reload_log"
 #define TEN_STR_START_GRAPH "start_graph"
 #define TEN_STR_TIMER "timer"
 #define TEN_STR_TIMEOUT "timeout"
@@ -154,6 +156,7 @@
 #define TEN_STR_ONE_EVENT_LOOP_PER_ENGINE "one_event_loop_per_engine"
 #define TEN_STR_DEPRECATED_LOG "deprecated_log"
 #define TEN_STR_LOG "log"
+#define TEN_STR_RELOADABLE "reloadable"
 #define TEN_STR_LEVEL "level"
 #define TEN_STR_FILE "file"
 #define TEN_STR_ENCRYPTION "encryption"

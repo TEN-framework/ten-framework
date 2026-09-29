@@ -99,6 +99,11 @@ void ten_raw_cmd_base_init(ten_cmd_base_t *self, TEN_MSG_TYPE type) {
                              TEN_STR_MSG_NAME_TEN_CLOSE_APP);
     break;
 
+  case TEN_MSG_TYPE_CMD_RELOAD_LOG:
+    ten_string_set_formatted(ten_value_peek_string(&self->msg_hdr.name), "%s",
+                             TEN_STR_MSG_NAME_TEN_RELOAD_LOG);
+    break;
+
   case TEN_MSG_TYPE_CMD_RESULT:
     ten_string_set_formatted(ten_value_peek_string(&self->msg_hdr.name), "%s",
                              TEN_STR_MSG_NAME_TEN_RESULT);

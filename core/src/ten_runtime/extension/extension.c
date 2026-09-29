@@ -1065,6 +1065,7 @@ bool ten_extension_validate_msg_schema(ten_extension_t *self,
       case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
       case TEN_MSG_TYPE_CMD_CLOSE_APP:
       case TEN_MSG_TYPE_CMD_START_GRAPH:
+      case TEN_MSG_TYPE_CMD_RELOAD_LOG:
       case TEN_MSG_TYPE_CMD: {
         ten_shared_ptr_t *cmd_result =
             ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, msg);

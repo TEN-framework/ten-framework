@@ -1,0 +1,67 @@
+{
+  "skill_name": "ten-tts-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review commit 3f9b4c6c4 as a pull-request diff against its first parent. Apply the TTS review only to changed files inside the fish_audio_tts_python extension directory.",
+      "expected_output": "A concise, line-specific review that traces fish_audio TTS flush and terminal-event behavior and avoids generic checklist comments.",
+      "files": [],
+      "expectations": [
+        "Every finding identifies a reachable event ordering and user-visible consequence",
+        "The review classifies fish_audio_tts_python as WebSocket/custom and applies the direct-base transport checks",
+        "The review checks exactly-once audio_end and post-flush emission behavior",
+        "The review does not ask cancel_tts to call finish_request when the base class owns cleanup",
+        "The review produces no findings for ten_ai_base, tts_guarder, examples, or graph files",
+        "The output uses P0-P3 priorities and tight changed-line locations"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review commit dc488ff14 as if it were a new TTS extension PR. Review only files under ai_agents/agents/ten_packages/extension/mistral_tts_python and ignore every other changed path.",
+      "expected_output": "A high-signal review of the initial Mistral/Voxtral TTS implementation, especially emitted audio representation, sample-rate truth, streaming, secrets, and tests.",
+      "files": [],
+      "expectations": [
+        "The review verifies that vendor audio bytes match TEN pcm_frame metadata",
+        "The review classifies mistral_tts_python as HTTP and applies the HTTP client stream contract",
+        "The review does not require lifecycle methods already inherited unchanged from AsyncTTS2HttpExtension",
+        "The review considers sample conversion across streamed chunk boundaries",
+        "The review checks that request-only fields and credentials are not forwarded or logged",
+        "The review treats extension-local tests as required and checks the full common matrix plus HTTP-specific cases",
+        "The review recognizes the extension directory as new and requires current passing guarder evidence with a screenshot and downloadable PCM output in a pull request comment",
+        "The tts_guarder runner and documentation changes in the commit receive no findings",
+        "Generic praise and non-actionable style feedback are absent"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review commit 26cca0807 against its first parent. Limit this TTS review to ai_agents/agents/ten_packages/extension/gradium_tts_python, even though the commit also changes examples and generated manifests.",
+      "expected_output": "A focused review of latency, TTFB/event ordering, sample-rate handling, configuration, failure completion, and regression coverage in the initial Gradium TTS change.",
+      "files": [],
+      "expectations": [
+        "The review follows success, vendor error, iterator end, and cancellation paths",
+        "The review classifies gradium_tts_python as WebSocket/custom rather than applying the HTTP-base checklist",
+        "The review detects whole-response buffering or duplicate TTFB when present",
+        "The review separately validates audio duration from emitted PCM bytes and event interval from audio_start to audio_end",
+        "The review treats extension-local tests as required and checks the full common matrix plus WebSocket-specific lifecycle cases",
+        "The review recognizes the extension directory as new and requires current passing guarder evidence with a screenshot and downloadable PCM output in a pull request comment",
+        "Each reported issue explains why base-class guards do not prevent it",
+        "Example graph and manifest-lock changes receive no findings",
+        "The output says no actionable findings instead of inventing issues when evidence is insufficient"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review commit 85c777953 as a TTS extension change, limited to ai_agents/agents/ten_packages/extension/cosy_tts_python. Pay particular attention to every tts_audio_end payload.",
+      "expected_output": "A line-specific review that detects audio-end interval measurement from the vendor request timestamp instead of the audio-start timestamp and verifies the PCM duration formula independently.",
+      "files": [],
+      "expectations": [
+        "The review defines request_event_interval_ms as elapsed time from tts_audio_start to tts_audio_end",
+        "The review applies the WebSocket/custom lifecycle and concurrency guide to the direct AsyncTTS2BaseExtension subclass",
+        "The review explains that measuring from request_start_ts incorrectly includes TTFB",
+        "The review checks request_total_audio_duration_ms using emitted PCM bytes, sample rate, sample width, and channels",
+        "The review checks success, partial error, interruption, and no-audio terminal paths",
+        "Findings remain limited to the cosy_tts_python extension directory"
+      ]
+    }
+  ]
+}

@@ -19,6 +19,7 @@
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_store/extension_store.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/reload_log/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/field/field_info.h"
 #include "include_internal/ten_runtime/msg/msg_info.h"
@@ -1015,6 +1016,8 @@ ten_shared_ptr_t *ten_msg_create_from_msg_type(TEN_MSG_TYPE msg_type) {
   switch (msg_type) {
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
     return ten_cmd_close_app_create();
+  case TEN_MSG_TYPE_CMD_RELOAD_LOG:
+    return ten_cmd_reload_log_create();
   case TEN_MSG_TYPE_CMD:
     return ten_cmd_custom_create_empty();
   case TEN_MSG_TYPE_CMD_START_GRAPH:
@@ -1154,10 +1157,12 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
       // Special cases:
       // - start_graph: Handled by the app to create a new graph.
       // - close_app: Handled by the app to shut down.
+      // - reload_log: Handled by the app to reconfigure the global logger.
       TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
       switch (msg_type) {
       case TEN_MSG_TYPE_CMD_START_GRAPH:
       case TEN_MSG_TYPE_CMD_CLOSE_APP:
+      case TEN_MSG_TYPE_CMD_RELOAD_LOG:
         ten_msg_clear_dest_graph_id(msg);
         break;
 

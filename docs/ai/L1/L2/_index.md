@@ -3,6 +3,7 @@
 | Document                                                 | Summary                                          | Load When                                        |
 | -------------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
 | [extension_development.md](extension_development.md)     | Full extension creation guide, base classes, test configs, pre-submission checklist | Creating a new TTS/ASR/LLM extension |
+| [asr_plugin_design_review.md](asr_plugin_design_review.md) | Required ASR design rules, lifecycle pitfalls, and PR review checklist | Adding or modifying any ASR extension |
 | [graph_configuration.md](graph_configuration.md)         | Graph nodes, connections, routing, property.json  | Modifying graphs or wiring extensions together   |
 | [testing.md](testing.md)                                 | Core TTS and ASR guarder tests, pass criteria, config files, debugging | Running or debugging tests for an extension |
 | [deployment.md](deployment.md)                           | Docker, Cloudflare, Nginx, Grafana monitoring    | Deploying to production or setting up monitoring |
