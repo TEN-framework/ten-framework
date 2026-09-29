@@ -29,6 +29,9 @@
       "properties": {
         "greeting": {
           "type": "string"
+        },
+        "agent_context_dest": {
+          "type": "string"
         }
       }
     }
