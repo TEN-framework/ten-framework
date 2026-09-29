@@ -62,6 +62,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self._recognizer_epoch: int = 0
         # Session (recognizer) vs transport (Connection websocket) are separate on Azure.
         self._transport_connected: bool = False
+        self._transport_connected_epoch: int = 0
         self._transport_recovery_task: asyncio.Task[None] | None = None
         self._transport_recovery_in_flight: bool = False
         self._reconnect_in_flight: bool = False
@@ -138,7 +139,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_info("start_connection")
         self._expected_disconnect = False
         self._expected_disconnect_reported = False
-        self._transport_handshake_ready.clear()
+        self._reset_transport_handshake_state()
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -595,6 +596,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             return
 
         self._transport_connected = True
+        self._transport_connected_epoch = recognizer_epoch
         self._transport_handshake_ready.set()
         await self._cancel_transport_recovery()
 
@@ -770,11 +772,23 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
         self.ten_env.log_debug("finalize mute pkg completed")
 
+    def _reset_transport_handshake_state(self) -> None:
+        self._transport_connected = False
+        self._transport_connected_epoch = 0
+        self._transport_handshake_ready.clear()
+
     def _handshake_timeout_sec(self) -> float:
         return float(DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC)
 
-    async def _wait_for_transport_handshake(self) -> bool:
-        if self._transport_connected:
+    def _transport_handshake_complete(self, expected_epoch: int) -> bool:
+        return (
+            self._transport_connected
+            and self._transport_connected_epoch == expected_epoch
+            and self._recognizer_epoch == expected_epoch
+        )
+
+    async def _wait_for_transport_handshake(self, expected_epoch: int) -> bool:
+        if self._transport_handshake_complete(expected_epoch):
             return True
         timeout_sec = self._handshake_timeout_sec()
         try:
@@ -784,11 +798,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
         except asyncio.TimeoutError:
             self.ten_env.log_warn(
                 f"vendor_error: Azure transport handshake timed out after "
-                f"{timeout_sec}s",
+                f"{timeout_sec}s (expected epoch {expected_epoch})",
                 category=LOG_CATEGORY_VENDOR,
             )
             return False
-        return self._transport_connected
+        return self._transport_handshake_complete(expected_epoch)
 
     async def _emit_reconnect_ceiling_fatal(self) -> None:
         if self.stopped:
@@ -833,7 +847,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
             if self.stopped:
                 return
             await self.start_connection()
-            if not await self._wait_for_transport_handshake():
+            expected_epoch = self._recognizer_epoch
+            if not await self._wait_for_transport_handshake(expected_epoch):
                 await self.stop_connection()
                 if not self.stopped and self.reconnect_manager:
                     if self.reconnect_manager.can_retry():
@@ -879,7 +894,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 )
                 return False
 
-            if await self._wait_for_transport_handshake():
+            expected_epoch = self._recognizer_epoch
+            if await self._wait_for_transport_handshake(expected_epoch):
                 self.ten_env.log_debug("Reconnection handshake completed")
                 return True
 
@@ -909,7 +925,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
             await self._cancel_finalize_reconnect()
         await self._cancel_transport_recovery()
         self.connected = False
-        self._transport_connected = False
+        # Retire callbacks from the recognizer being torn down before stop returns.
+        self._recognizer_epoch += 1
+        self._reset_transport_handshake_state()
 
         if self.stream:
             self.stream.close()

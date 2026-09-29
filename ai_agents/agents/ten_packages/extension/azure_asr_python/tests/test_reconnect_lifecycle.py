@@ -258,3 +258,78 @@ def test_session_stopped_does_not_reconnect_during_transport_recovery():
         assert extension.connected is False
 
     asyncio.run(run_test())
+
+
+def test_stale_connected_callback_does_not_mark_transport_live():
+    async def run_test() -> None:
+        extension = make_extension()
+        extension._recognizer_epoch = 2
+        extension._transport_connected = False
+        evt = SimpleNamespace(session_id="old-session")
+
+        await extension._azure_event_handler_on_connected(evt, 1)
+
+        assert extension._transport_connected is False
+        extension.on_connected.assert_not_awaited()  # type: ignore[attr-defined]
+        extension.reconnect_manager.mark_connection_successful.assert_not_called()  # type: ignore[attr-defined]
+
+    asyncio.run(run_test())
+
+
+def test_stop_connection_retires_recognizer_epoch():
+    async def run_test() -> None:
+        extension = make_extension()
+        extension._recognizer_epoch = 4
+        extension.client = MagicMock()
+        extension.ten_env = MagicMock()
+
+        await extension.stop_connection()
+
+        assert extension._recognizer_epoch == 5
+        assert extension._transport_connected is False
+        assert extension._transport_connected_epoch == 0
+
+    asyncio.run(run_test())
+
+
+def test_handshake_wait_rejects_stale_transport_flag():
+    async def run_test() -> None:
+        extension = make_extension()
+        extension._recognizer_epoch = 3
+        extension._transport_connected = True
+        extension._transport_connected_epoch = 1
+        extension._handshake_timeout_sec = lambda: 0.05  # type: ignore[method-assign]
+
+        ok = await extension._wait_for_transport_handshake(3)
+
+        assert ok is False
+
+    asyncio.run(run_test())
+
+
+def test_late_old_connected_during_replacement_does_not_complete_handshake():
+    async def run_test() -> None:
+        extension = make_extension()
+        extension._recognizer_epoch = 1
+        extension.connected = True
+        extension.client = MagicMock()
+        extension.ten_env = MagicMock()
+
+        await extension.stop_connection()
+        assert extension._recognizer_epoch == 2
+
+        extension._recognizer_epoch += 1
+        new_epoch = extension._recognizer_epoch
+        extension._reset_transport_handshake_state()
+
+        stale_evt = SimpleNamespace(session_id="stale")
+        await extension._azure_event_handler_on_connected(stale_evt, 1)
+
+        assert extension._transport_handshake_complete(new_epoch) is False
+
+        fresh_evt = SimpleNamespace(session_id="fresh")
+        await extension._azure_event_handler_on_connected(fresh_evt, new_epoch)
+
+        assert extension._transport_handshake_complete(new_epoch) is True
+
+    asyncio.run(run_test())
