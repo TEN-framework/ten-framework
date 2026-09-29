@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import os
 
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2_http import (
@@ -26,6 +27,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self.config: TypecastTTSConfig = None
         self.client: TypecastTTSClient = None
         self._emitted_audio_bytes = 0
+        self._finish_task: asyncio.Task | None = None
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
         return TypecastTTSConfig.model_validate_json(config_json_str)
@@ -44,6 +46,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
     async def request_tts(self, t: TTSTextInput) -> None:
         if t.request_id != self.current_request_id:
             self._emitted_audio_bytes = 0
+            self._finish_task = None
         # Let the inherited flush path cancel the HTTP wait, not the queue loop.
         task = asyncio.create_task(super().request_tts(t))
         self.current_task = task
@@ -74,6 +77,10 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self._emitted_audio_bytes += len(audio_data)
 
     async def cancel_tts(self) -> None:
+        if self._finish_task is not None:
+            # Finish the winning terminal event before acknowledging a flush.
+            await asyncio.shield(self._finish_task)
+            return
         # Received bytes can include a frame cancelled before its send completed.
         self.total_audio_bytes = self._emitted_audio_bytes
         await super().cancel_tts()
@@ -84,11 +91,33 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         reason: TTSAudioEndReason,
         log_message: str | None = None,
     ) -> None:
+        if self._finish_task is None:
+            self._finish_task = asyncio.create_task(
+                self._finish_audio(request_id, reason, log_message)
+            )
+        # Cancellation must not split terminal emission from state cleanup.
+        await asyncio.shield(self._finish_task)
+
+    async def _finish_audio(
+        self,
+        request_id: str,
+        reason: TTSAudioEndReason,
+        log_message: str | None,
+    ) -> None:
         # The base PCMWriter may retain tail bytes while a write is in flight.
         # Its cleanup flush then writes those bytes on this second pass.
         recorder = self.recorder_map.get(request_id)
         if recorder:
             await recorder.flush()
+            if reason == TTSAudioEndReason.INTERRUPTED:
+                await recorder.flush()
+                # Discard the received chunk if its frame send was cancelled.
+                if os.path.exists(recorder.file_name):
+                    await asyncio.to_thread(
+                        os.truncate,
+                        recorder.file_name,
+                        self._emitted_audio_bytes,
+                    )
 
         await super()._send_audio_end_and_finish(
             request_id=request_id,

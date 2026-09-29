@@ -104,15 +104,21 @@ def test_config_accepts_silence_bounds_and_omission(output):
 
 
 @pytest.mark.parametrize("late_chunk", [False, True])
+@pytest.mark.parametrize("dump", [False, True])
 @pytest.mark.parametrize(
-    "phase", ["first_byte", "start", "ttfb", "audio", "next_byte"]
+    "phase",
+    ["first_byte", "start", "ttfb", "audio", "next_byte", "end", "finish"],
 )
-def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
+def test_real_flush_at_emission_boundaries_recovers(
+    late_chunk, dump, phase, tmp_path
+):
     async def run():
         waiting = asyncio.Event()
         release = asyncio.Event()
         closed = asyncio.Event()
         recovered = asyncio.Event()
+        cancelled = asyncio.Event()
+        terminal = phase in ("end", "finish")
         events = []
         now = datetime(2026, 1, 1)
         env = MagicMock()
@@ -122,19 +128,18 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
             payload = json.loads(body)
             if extension.current_request_id == "first" and not waiting.is_set():
                 if (
-                    phase == "start" and data.get_name() == "tts_audio_start"
-                ) or (
-                    phase == "ttfb"
-                    and data.get_name() == "metrics"
-                    and extension.request_ts is not None
+                    (phase == "start" and data.get_name() == "tts_audio_start")
+                    or (phase == "end" and data.get_name() == "tts_audio_end")
+                    or (
+                        phase == "ttfb"
+                        and data.get_name() == "metrics"
+                        and extension.request_ts is not None
+                    )
                 ):
                     waiting.set()
                     await release.wait()
             if data.get_name() != "metrics":
                 events.append((data.get_name(), payload))
-            if data.get_name() == "tts_audio_end":
-                if payload["request_id"] == "recovery":
-                    recovered.set()
 
         async def send_audio(frame):
             if phase == "audio" and extension.current_request_id == "first":
@@ -151,11 +156,34 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
         extension = TypecastTTSExtension("test")
         extension.ten_env = env
         extension.config = TypecastTTSConfig(
-            params={"api_key": "key", "voice_id": "voice"}
+            dump=dump,
+            dump_path=str(tmp_path),
+            params={"api_key": "key", "voice_id": "voice"},
         )
         extension.config.update_params()
         extension.config.validate()
         extension.client = TypecastTTSClient(extension.config, env)
+        cancel_task = extension._cancel_current_task
+        finish_request = extension.finish_request
+
+        async def cancel_current_task():
+            await cancel_task()
+            cancelled.set()
+
+        async def finish(*args, **kwargs):
+            if (
+                phase == "finish"
+                and kwargs.get("request_id") == "first"
+                and not waiting.is_set()
+            ):
+                waiting.set()
+                await release.wait()
+            await finish_request(*args, **kwargs)
+            if kwargs.get("request_id") == "recovery":
+                recovered.set()
+
+        extension._cancel_current_task = cancel_current_task
+        extension.finish_request = finish
         sdk = MagicMock()
         sdk.__aenter__ = AsyncMock(return_value=sdk)
         sdk.__aexit__ = AsyncMock()
@@ -166,8 +194,12 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
             if request.text == "first":
                 try:
                     if phase != "first_byte":
-                        yield b"h" * 44 + b"\x05\x06" * 3200
+                        # Exceed the dump writer's buffer while frame emission stalls.
+                        samples = 40000 if phase == "audio" else 3200
+                        yield b"h" * 44 + b"\x05\x06" * samples
                     now += timedelta(milliseconds=275)
+                    if terminal:
+                        return
                     waiting.set()
                     await release.wait()
                 except asyncio.CancelledError:
@@ -204,30 +236,52 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
                     },
                 )
                 await asyncio.wait_for(waiting.wait(), 1)
-                now += timedelta(milliseconds=125)
-                await asyncio.wait_for(
-                    input_data("tts_flush", {"flush_id": "flush-first"}), 1
+                if not terminal:
+                    now += timedelta(milliseconds=125)
+                flush = asyncio.create_task(
+                    input_data("tts_flush", {"flush_id": "flush-first"})
                 )
+                if terminal:
+                    await asyncio.wait_for(cancelled.wait(), 1)
+                    assert not flush.done()
+                    release.set()
+                await asyncio.wait_for(flush, 1)
                 prefix = []
-                if phase in ("ttfb", "audio", "next_byte"):
+                if phase in ("ttfb", "audio", "next_byte", "end", "finish"):
                     prefix.append("tts_audio_start")
-                    if phase == "next_byte":
+                    if phase == "next_byte" or terminal:
                         prefix.append("pcm")
                     prefix.append("tts_audio_end")
                     end = events[-2][1]
                     assert end["request_id"] == "first"
-                    assert end["reason"] == TTSAudioEndReason.INTERRUPTED.value
+                    assert (
+                        end["reason"]
+                        == (
+                            TTSAudioEndReason.REQUEST_END
+                            if terminal
+                            else TTSAudioEndReason.INTERRUPTED
+                        ).value
+                    )
                     assert end["request_total_audio_duration_ms"] == (
-                        100 if phase == "next_byte" else 0
+                        100 if phase == "next_byte" or terminal else 0
                     )
                     assert end["request_event_interval_ms"] == (
-                        400 if phase == "next_byte" else 125
+                        275
+                        if terminal
+                        else 400 if phase == "next_byte" else 125
                     )
                 prefix.append("tts_flush_end")
                 assert [name for name, _ in events] == prefix
                 assert events[-1][1]["flush_id"] == "flush-first"
-                if phase == "next_byte":
+                if phase == "next_byte" or terminal:
                     assert events[1][1] == b"\x05\x06" * 3200
+                if dump:
+                    output = tmp_path / "typecast_dump_first.pcm"
+                    assert (
+                        output.read_bytes() if output.exists() else b""
+                    ) == b"".join(
+                        body for name, body in events if name == "pcm"
+                    )
                 events.clear()
                 await input_data(
                     "tts_text_input",
@@ -239,7 +293,7 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
                 )
                 # Recovery must finish without releasing the stalled stream.
                 await asyncio.wait_for(recovered.wait(), 1)
-                assert not release.is_set()
+                assert release.is_set() == terminal
                 assert closed.is_set()
                 assert [name for name, _ in events] == [
                     "tts_audio_start",
@@ -255,7 +309,12 @@ def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
                 assert end["request_event_interval_ms"] == 275
                 assert "first" not in extension.request_states
                 assert extension._processing_request_id is None
+                if dump:
+                    assert (
+                        tmp_path / "typecast_dump_recovery.pcm"
+                    ).read_bytes() == events[1][1]
             finally:
+                release.set()
                 await extension.input_queue.put(None)
                 loop.cancel()
                 await asyncio.gather(loop, return_exceptions=True)
