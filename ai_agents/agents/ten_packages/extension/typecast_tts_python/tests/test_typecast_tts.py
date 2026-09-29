@@ -104,7 +104,7 @@ def test_config_accepts_silence_bounds_and_omission(output):
 
 
 @pytest.mark.parametrize("late_chunk", [False, True])
-@pytest.mark.parametrize("dump", [False, True])
+@pytest.mark.parametrize("dump", [False, True, "existing"])
 @pytest.mark.parametrize(
     "phase",
     ["first_byte", "start", "ttfb", "audio", "next_byte", "end", "finish"],
@@ -112,6 +112,12 @@ def test_config_accepts_silence_bounds_and_omission(output):
 def test_real_flush_at_emission_boundaries_recovers(
     late_chunk, dump, phase, tmp_path
 ):
+    previous = b"\x11\x22" * 50 if dump == "existing" else b""
+    previous_recovery = b"\x33\x44" * 75 if dump == "existing" else b""
+    if dump == "existing":
+        (tmp_path / "typecast_dump_first.pcm").write_bytes(previous)
+        (tmp_path / "typecast_dump_recovery.pcm").write_bytes(previous_recovery)
+
     async def run():
         waiting = asyncio.Event()
         release = asyncio.Event()
@@ -156,7 +162,7 @@ def test_real_flush_at_emission_boundaries_recovers(
         extension = TypecastTTSExtension("test")
         extension.ten_env = env
         extension.config = TypecastTTSConfig(
-            dump=dump,
+            dump=bool(dump),
             dump_path=str(tmp_path),
             params={"api_key": "key", "voice_id": "voice"},
         )
@@ -279,7 +285,7 @@ def test_real_flush_at_emission_boundaries_recovers(
                     output = tmp_path / "typecast_dump_first.pcm"
                     assert (
                         output.read_bytes() if output.exists() else b""
-                    ) == b"".join(
+                    ) == previous + b"".join(
                         body for name, body in events if name == "pcm"
                     )
                 events.clear()
@@ -312,7 +318,7 @@ def test_real_flush_at_emission_boundaries_recovers(
                 if dump:
                     assert (
                         tmp_path / "typecast_dump_recovery.pcm"
-                    ).read_bytes() == events[1][1]
+                    ).read_bytes() == previous_recovery + events[1][1]
             finally:
                 release.set()
                 await extension.input_queue.put(None)

@@ -27,6 +27,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self.config: TypecastTTSConfig = None
         self.client: TypecastTTSClient = None
         self._emitted_audio_bytes = 0
+        self._dump_start_offset = 0
         self._finish_task: asyncio.Task | None = None
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
@@ -47,6 +48,17 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         if t.request_id != self.current_request_id:
             self._emitted_audio_bytes = 0
             self._finish_task = None
+            self._dump_start_offset = 0
+            if self.config and self.config.dump:
+                # PCMWriter appends, so preserve recordings from earlier workers.
+                dump_path = os.path.join(
+                    self.config.dump_path,
+                    f"{self.vendor()}_dump_{t.request_id}.pcm",
+                )
+                try:
+                    self._dump_start_offset = os.path.getsize(dump_path)
+                except FileNotFoundError:
+                    pass
         # Let the inherited flush path cancel the HTTP wait, not the queue loop.
         task = asyncio.create_task(super().request_tts(t))
         self.current_task = task
@@ -116,7 +128,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
                     await asyncio.to_thread(
                         os.truncate,
                         recorder.file_name,
-                        self._emitted_audio_bytes,
+                        self._dump_start_offset + self._emitted_audio_bytes,
                     )
 
         await super()._send_audio_end_and_finish(
