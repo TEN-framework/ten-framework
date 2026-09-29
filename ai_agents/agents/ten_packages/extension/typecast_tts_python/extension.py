@@ -25,6 +25,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         super().__init__(name)
         self.config: TypecastTTSConfig = None
         self.client: TypecastTTSClient = None
+        self._emitted_audio_bytes = 0
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
         return TypecastTTSConfig.model_validate_json(config_json_str)
@@ -41,14 +42,41 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         return TYPECAST_STREAM_SAMPLE_RATE
 
     async def request_tts(self, t: TTSTextInput) -> None:
+        if t.request_id != self.current_request_id:
+            self._emitted_audio_bytes = 0
         # Let the inherited flush path cancel the HTTP wait, not the queue loop.
         task = asyncio.create_task(super().request_tts(t))
         self.current_task = task
         try:
             await task
         finally:
+            if self.client:
+                await self.client.close_stream()
             if self.current_task is task:
                 self.current_task = None
+
+    async def send_tts_audio_start(
+        self,
+        request_id: str,
+        turn_id: int = -1,
+        extra_metadata: dict | None = None,
+    ) -> None:
+        # The HTTP base sets this before awaiting the start event.
+        start_ts = self.request_ts
+        self.request_ts = None
+        await super().send_tts_audio_start(request_id, turn_id, extra_metadata)
+        self.request_ts = start_ts
+
+    async def send_tts_audio_data(
+        self, audio_data: bytes, timestamp: int = 0
+    ) -> None:
+        await super().send_tts_audio_data(audio_data, timestamp)
+        self._emitted_audio_bytes += len(audio_data)
+
+    async def cancel_tts(self) -> None:
+        # Received bytes can include a frame cancelled before its send completed.
+        self.total_audio_bytes = self._emitted_audio_bytes
+        await super().cancel_tts()
 
     async def _send_audio_end_and_finish(
         self,

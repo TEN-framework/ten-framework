@@ -104,7 +104,10 @@ def test_config_accepts_silence_bounds_and_omission(output):
 
 
 @pytest.mark.parametrize("late_chunk", [False, True])
-def test_real_flush_during_first_byte_wait_recovers(late_chunk):
+@pytest.mark.parametrize(
+    "phase", ["first_byte", "start", "ttfb", "audio", "next_byte"]
+)
+def test_real_flush_at_emission_boundaries_recovers(late_chunk, phase):
     async def run():
         waiting = asyncio.Event()
         release = asyncio.Event()
@@ -117,6 +120,16 @@ def test_real_flush_during_first_byte_wait_recovers(late_chunk):
         async def send_data(data):
             body, _ = data.get_property_to_json()
             payload = json.loads(body)
+            if extension.current_request_id == "first" and not waiting.is_set():
+                if (
+                    phase == "start" and data.get_name() == "tts_audio_start"
+                ) or (
+                    phase == "ttfb"
+                    and data.get_name() == "metrics"
+                    and extension.request_ts is not None
+                ):
+                    waiting.set()
+                    await release.wait()
             if data.get_name() != "metrics":
                 events.append((data.get_name(), payload))
             if data.get_name() == "tts_audio_end":
@@ -124,6 +137,9 @@ def test_real_flush_during_first_byte_wait_recovers(late_chunk):
                     recovered.set()
 
         async def send_audio(frame):
+            if phase == "audio" and extension.current_request_id == "first":
+                waiting.set()
+                await release.wait()
             buffer = frame.lock_buf()
             try:
                 events.append(("pcm", bytes(buffer)))
@@ -148,13 +164,18 @@ def test_real_flush_during_first_byte_wait_recovers(late_chunk):
             nonlocal now
             assert chunk_size == extension.config.chunk_size
             if request.text == "first":
-                waiting.set()
                 try:
+                    if phase != "first_byte":
+                        yield b"h" * 44 + b"\x05\x06" * 3200
+                    now += timedelta(milliseconds=275)
+                    waiting.set()
                     await release.wait()
                 except asyncio.CancelledError:
                     if not late_chunk:
                         raise
-                    yield b"h" * 44 + b"\x09\x09" * 3200
+                    yield (
+                        b"h" * 44 if phase == "first_byte" else b""
+                    ) + b"\x09\x09" * 3200
                 finally:
                     closed.set()
                 return
@@ -183,11 +204,31 @@ def test_real_flush_during_first_byte_wait_recovers(late_chunk):
                     },
                 )
                 await asyncio.wait_for(waiting.wait(), 1)
+                now += timedelta(milliseconds=125)
                 await asyncio.wait_for(
                     input_data("tts_flush", {"flush_id": "flush-first"}), 1
                 )
-                assert [name for name, _ in events] == ["tts_flush_end"]
-                assert events[0][1]["flush_id"] == "flush-first"
+                prefix = []
+                if phase in ("ttfb", "audio", "next_byte"):
+                    prefix.append("tts_audio_start")
+                    if phase == "next_byte":
+                        prefix.append("pcm")
+                    prefix.append("tts_audio_end")
+                    end = events[-2][1]
+                    assert end["request_id"] == "first"
+                    assert end["reason"] == TTSAudioEndReason.INTERRUPTED.value
+                    assert end["request_total_audio_duration_ms"] == (
+                        100 if phase == "next_byte" else 0
+                    )
+                    assert end["request_event_interval_ms"] == (
+                        400 if phase == "next_byte" else 125
+                    )
+                prefix.append("tts_flush_end")
+                assert [name for name, _ in events] == prefix
+                assert events[-1][1]["flush_id"] == "flush-first"
+                if phase == "next_byte":
+                    assert events[1][1] == b"\x05\x06" * 3200
+                events.clear()
                 await input_data(
                     "tts_text_input",
                     {
@@ -201,14 +242,13 @@ def test_real_flush_during_first_byte_wait_recovers(late_chunk):
                 assert not release.is_set()
                 assert closed.is_set()
                 assert [name for name, _ in events] == [
-                    "tts_flush_end",
                     "tts_audio_start",
                     "pcm",
                     "tts_audio_end",
                 ]
-                assert events[1][1]["request_id"] == "recovery"
-                assert events[2][1] == b"\x01\x02" * 3200
-                end = events[3][1]
+                assert events[0][1]["request_id"] == "recovery"
+                assert events[1][1] == b"\x01\x02" * 3200
+                end = events[2][1]
                 assert end["request_id"] == "recovery"
                 assert end["reason"] == TTSAudioEndReason.REQUEST_END.value
                 assert end["request_total_audio_duration_ms"] == 100
