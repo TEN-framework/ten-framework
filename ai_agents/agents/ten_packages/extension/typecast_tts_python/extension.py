@@ -47,6 +47,9 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
 
     async def request_tts(self, t: TTSTextInput) -> None:
         if t.request_id != self.current_request_id:
+            # A flush may cancel the child before the HTTP base initializes it.
+            # The previous request's audio start must not survive this boundary.
+            self.request_ts = None
             self._emitted_audio_bytes = 0
             self._finish_task = None
             self._terminal_audio_sent = False
