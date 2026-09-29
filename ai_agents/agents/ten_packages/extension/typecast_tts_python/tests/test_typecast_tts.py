@@ -329,6 +329,146 @@ def test_real_flush_at_emission_boundaries_recovers(
     asyncio.run(run())
 
 
+def test_appended_text_finishes_before_buffered_request(tmp_path):
+    async def run():
+        waiting, release, completed = (asyncio.Event() for _ in range(3))
+        events, calls, closed = [], [], []
+        now = datetime(2026, 1, 1)
+        env = MagicMock()
+
+        async def send_data(data):
+            body, _ = data.get_property_to_json()
+            if data.get_name() != "metrics":
+                events.append((data.get_name(), json.loads(body)))
+
+        async def send_audio(frame):
+            buffer = frame.lock_buf()
+            try:
+                events.append(("pcm", bytes(buffer)))
+            finally:
+                frame.unlock_buf(buffer)
+
+        env.send_data = AsyncMock(side_effect=send_data)
+        env.send_audio_frame = AsyncMock(side_effect=send_audio)
+        extension = TypecastTTSExtension("test")
+        extension.ten_env = env
+        extension.config = TypecastTTSConfig(
+            dump=True,
+            dump_path=str(tmp_path),
+            params={"api_key": "key", "voice_id": "voice"},
+        )
+        extension.config.update_params()
+        extension.config.validate()
+        extension.client = TypecastTTSClient(extension.config, env)
+        finish_request = extension.finish_request
+
+        async def finish(*args, **kwargs):
+            await finish_request(*args, **kwargs)
+            if kwargs.get("request_id") == "buffered":
+                completed.set()
+
+        extension.finish_request = finish
+        sdk = MagicMock()
+        sdk.__aenter__ = AsyncMock(return_value=sdk)
+        sdk.__aexit__ = AsyncMock()
+        pcm = {
+            "part1": b"\x01\x02" * 3200,
+            "part2": b"\x03\x04" * 1600,
+            "buffered": b"\x05\x06" * 6400,
+        }
+
+        async def stream(request, chunk_size):
+            nonlocal now
+            assert chunk_size == extension.config.chunk_size
+            assert calls == closed  # Prior segment's SDK stream is closed.
+            calls.append(request.text)
+            try:
+                yield b"h" * 44 + pcm[request.text]
+                now += timedelta(milliseconds=100)
+                if request.text == "part1":
+                    waiting.set()
+                    await release.wait()
+                elif request.text == "part2":
+                    now += timedelta(milliseconds=50)
+            finally:
+                closed.append(request.text)
+
+        async def enqueue(request_id, text, final):
+            data = Data.create("tts_text_input")
+            data.set_property_from_json(
+                None,
+                json.dumps(
+                    {
+                        "request_id": request_id,
+                        "text": text,
+                        "text_input_end": final,
+                    }
+                ),
+            )
+            await extension.on_data(env, data)
+
+        sdk.text_to_speech_stream = stream
+        with patch(
+            "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
+        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+            clock.now.side_effect = lambda: now
+            loop = asyncio.create_task(extension._process_input_queue(env))
+            try:
+                await enqueue("first", "part1", False)
+                await asyncio.wait_for(waiting.wait(), 1)
+                assert [name for name, _ in events] == [
+                    "tts_audio_start",
+                    "pcm",
+                ]
+                await enqueue("buffered", "buffered", True)
+                await enqueue("first", "part2", True)
+                release.set()
+                await asyncio.wait_for(completed.wait(), 1)
+                assert calls == closed == ["part1", "part2", "buffered"]
+                assert [name for name, _ in events] == [
+                    "tts_audio_start",
+                    "pcm",
+                    "pcm",
+                    "tts_audio_end",
+                    "tts_audio_start",
+                    "pcm",
+                    "tts_audio_end",
+                ]
+                for start, end, request_id, duration, interval in (
+                    (0, 3, "first", 150, 250),
+                    (4, 6, "buffered", 200, 100),
+                ):
+                    assert events[start][1]["request_id"] == request_id
+                    payload = events[end][1]
+                    assert payload["request_id"] == request_id
+                    assert (
+                        payload["reason"] == TTSAudioEndReason.REQUEST_END.value
+                    )
+                    assert (
+                        payload["request_total_audio_duration_ms"] == duration
+                    )
+                    assert payload["request_event_interval_ms"] == interval
+                assert [body for name, body in events if name == "pcm"] == list(
+                    pcm.values()
+                )
+                assert (
+                    tmp_path / "typecast_dump_first.pcm"
+                ).read_bytes() == pcm["part1"] + pcm["part2"]
+                assert (
+                    tmp_path / "typecast_dump_buffered.pcm"
+                ).read_bytes() == pcm["buffered"]
+                assert not extension._pending_messages
+                assert extension._processing_request_id is None
+            finally:
+                release.set()
+                await extension.input_queue.put(None)
+                loop.cancel()
+                await asyncio.gather(loop, return_exceptions=True)
+                await extension.client.clean()
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("scenario", ["success", "error", "flush", "empty"])
 def test_extension_audio_accounting_and_recovery(scenario):
     async def run():
