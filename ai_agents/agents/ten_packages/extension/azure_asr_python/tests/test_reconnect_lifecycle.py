@@ -217,6 +217,7 @@ def test_handshake_timeout_returns_false_and_tears_down():
         extension.stop_connection = AsyncMock()  # type: ignore[method-assign]
         extension._handshake_timeout_sec = lambda: 0.05  # type: ignore[method-assign]
         extension._transport_connected = False
+        extension._recognizer_epoch = 1
 
         ok = await extension._handle_reconnect()
 
