@@ -1,11 +1,13 @@
 {
     "params": {
         "api_key": "${env:ASSEMBLYAI_API_KEY}",
+        "speech_model": "universal-3-6-pro",
         "sample_rate": 16000,
         "language": "en-US",
+        "prompt": "Conversation with a voice assistant built on the TEN Framework.",
         "keyterms_prompt": [
-            "aaaaa",
-            "bbbbb"
+            "TEN Framework",
+            "AssemblyAI"
         ]
     }
 }
