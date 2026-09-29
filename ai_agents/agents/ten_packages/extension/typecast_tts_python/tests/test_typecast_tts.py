@@ -3,6 +3,7 @@ from pathlib import Path
 import asyncio
 import json
 import threading
+from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,6 +20,7 @@ from ten_ai_base.helper import PCMWriter
 from ten_ai_base.helper import write_pcm_to_file
 from ten_ai_base.message import TTSAudioEndReason
 from ten_ai_base.tts2_http import AsyncTTS2HttpExtension
+from ten_ai_base.tts2 import RequestState
 
 from pcm import StreamingWavToPcm16
 from typecast_tts_python.config import TypecastTTSConfig
@@ -63,6 +65,186 @@ def test_config_requires_credentials_and_voice(missing):
 
     with pytest.raises(ValueError, match=missing):
         config.validate()
+
+
+@pytest.mark.parametrize("value", [-1, 1001, True, False, 1.5, "0"])
+def test_config_rejects_invalid_silence(value):
+    config = TypecastTTSConfig(
+        params={
+            "api_key": "key",
+            "voice_id": "voice",
+            "output": {"remove_silence_ms": value},
+        }
+    )
+    config.update_params()
+    with pytest.raises(ValueError, match="remove_silence_ms"):
+        config.validate()
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        {},
+        {"remove_silence_ms": None},
+        {"remove_silence_ms": 0},
+        {"remove_silence_ms": 1000},
+    ],
+)
+def test_config_accepts_silence_bounds_and_omission(output):
+    config = TypecastTTSConfig(
+        params={
+            "api_key": "key",
+            "voice_id": "voice",
+            "output": output.copy(),
+        }
+    )
+    config.update_params()
+    config.validate()
+    assert config.params["output"] == {**output, "audio_format": "wav"}
+
+
+@pytest.mark.parametrize("scenario", ["success", "error", "flush", "empty"])
+def test_extension_audio_accounting_and_recovery(scenario):
+    async def run():
+        events = []
+        now = datetime(2026, 1, 1)
+        env = MagicMock()
+
+        async def send_data(data):
+            body, _ = data.get_property_to_json()
+            if data.get_name() != "metrics":
+                events.append((data.get_name(), json.loads(body)))
+
+        async def send_audio(frame):
+            buffer = frame.lock_buf()
+            try:
+                events.append(("pcm", bytes(buffer)))
+            finally:
+                frame.unlock_buf(buffer)
+            assert frame.get_sample_rate() == 32000
+            assert frame.get_bytes_per_sample() == 2
+            assert frame.get_number_of_channels() == 1
+
+        env.send_data = AsyncMock(side_effect=send_data)
+        env.send_audio_frame = AsyncMock(side_effect=send_audio)
+        extension = TypecastTTSExtension("test")
+        extension.ten_env = env
+        extension.config = TypecastTTSConfig(
+            params={
+                "api_key": "key",
+                "voice_id": "voice",
+                "output": {"remove_silence_ms": 0},
+            }
+        )
+        extension.config.update_params()
+        extension.config.validate()
+        extension.client = TypecastTTSClient(extension.config, env)
+        sdk = MagicMock()
+        sdk.__aenter__ = AsyncMock(return_value=sdk)
+        sdk.__aexit__ = AsyncMock()
+
+        async def stream(request, chunk_size):
+            nonlocal now
+            assert request.output.remove_silence_ms == 0
+            assert chunk_size == 8192
+            mode = scenario if request.text == "first" else "success"
+            if mode == "empty":
+                return
+            now += timedelta(milliseconds=100)
+            yield b"h" * 20
+            yield b"h" * 24 + b"\x01\x02" * 3200
+            now += timedelta(milliseconds=275)
+            if mode == "error":
+                raise TypecastError("temporary failure", 500)
+            if mode == "flush":
+                await extension.cancel_tts()
+            # A late chunk after cancellation must not become a PCM frame.
+            yield b"\x03\x04" * 1600
+
+        sdk.text_to_speech_stream = stream
+        with patch(
+            "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
+        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+            clock.now.side_effect = lambda: now
+            try:
+                for request_id in ("first", "recovery"):
+                    events.clear()
+                    # Enter the inherited HTTP handler at its queue dispatch boundary.
+                    extension.request_states[request_id] = (
+                        RequestState.FINALIZING
+                    )
+                    extension._processing_request_id = request_id
+                    await extension.request_tts(
+                        TTSTextInput(
+                            request_id=request_id,
+                            text=request_id,
+                            text_input_end=True,
+                        )
+                    )
+                    mode = scenario if request_id == "first" else "success"
+                    names = [name for name, _ in events]
+                    expected = {
+                        "success": [
+                            "tts_audio_start",
+                            "pcm",
+                            "pcm",
+                            "tts_audio_end",
+                        ],
+                        "error": [
+                            "tts_audio_start",
+                            "pcm",
+                            "error",
+                            "tts_audio_end",
+                        ],
+                        "flush": ["tts_audio_start", "pcm", "tts_audio_end"],
+                        "empty": ["tts_audio_end"],
+                    }
+                    assert names == expected[mode]
+                    end = events[-1][1]
+                    assert end["request_id"] == request_id
+                    assert (
+                        end["request_total_audio_duration_ms"]
+                        == {
+                            "success": 150,
+                            "error": 100,
+                            "flush": 100,
+                            "empty": 0,
+                        }[mode]
+                    )
+                    assert end["request_event_interval_ms"] == (
+                        0 if mode == "empty" else 275
+                    )
+                    assert (
+                        end["reason"]
+                        == {
+                            "success": TTSAudioEndReason.REQUEST_END,
+                            "error": TTSAudioEndReason.ERROR,
+                            "flush": TTSAudioEndReason.INTERRUPTED,
+                            "empty": TTSAudioEndReason.REQUEST_END,
+                        }[mode].value
+                    )
+                    if mode != "empty":
+                        assert events[0][1]["request_id"] == request_id
+                    pcm = b"".join(
+                        body for name, body in events if name == "pcm"
+                    )
+                    assert pcm == (
+                        b""
+                        if mode == "empty"
+                        else b"\x01\x02" * 3200
+                        + (b"\x03\x04" * 1600 if mode == "success" else b"")
+                    )
+                    assert (
+                        extension.request_states[request_id]
+                        == RequestState.COMPLETED
+                    )
+                    assert extension._processing_request_id is None
+                    assert extension.current_audio_request_id is None
+            finally:
+                await extension.client.clean()
+        sdk.__aexit__.assert_awaited_once_with(None, None, None)
+
+    asyncio.run(run())
 
 
 def test_streaming_wav_to_pcm16_strips_header_across_chunks():
