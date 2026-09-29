@@ -103,6 +103,127 @@ def test_config_accepts_silence_bounds_and_omission(output):
     assert config.params["output"] == {**output, "audio_format": "wav"}
 
 
+@pytest.mark.parametrize("late_chunk", [False, True])
+def test_real_flush_during_first_byte_wait_recovers(late_chunk):
+    async def run():
+        waiting = asyncio.Event()
+        release = asyncio.Event()
+        closed = asyncio.Event()
+        recovered = asyncio.Event()
+        events = []
+        now = datetime(2026, 1, 1)
+        env = MagicMock()
+
+        async def send_data(data):
+            body, _ = data.get_property_to_json()
+            payload = json.loads(body)
+            if data.get_name() != "metrics":
+                events.append((data.get_name(), payload))
+            if data.get_name() == "tts_audio_end":
+                if payload["request_id"] == "recovery":
+                    recovered.set()
+
+        async def send_audio(frame):
+            buffer = frame.lock_buf()
+            try:
+                events.append(("pcm", bytes(buffer)))
+            finally:
+                frame.unlock_buf(buffer)
+
+        env.send_data = AsyncMock(side_effect=send_data)
+        env.send_audio_frame = AsyncMock(side_effect=send_audio)
+        extension = TypecastTTSExtension("test")
+        extension.ten_env = env
+        extension.config = TypecastTTSConfig(
+            params={"api_key": "key", "voice_id": "voice"}
+        )
+        extension.config.update_params()
+        extension.config.validate()
+        extension.client = TypecastTTSClient(extension.config, env)
+        sdk = MagicMock()
+        sdk.__aenter__ = AsyncMock(return_value=sdk)
+        sdk.__aexit__ = AsyncMock()
+
+        async def stream(request, chunk_size):
+            nonlocal now
+            assert chunk_size == extension.config.chunk_size
+            if request.text == "first":
+                waiting.set()
+                try:
+                    await release.wait()
+                except asyncio.CancelledError:
+                    if not late_chunk:
+                        raise
+                    yield b"h" * 44 + b"\x09\x09" * 3200
+                finally:
+                    closed.set()
+                return
+            assert closed.is_set()
+            yield b"h" * 44 + b"\x01\x02" * 3200
+            now += timedelta(milliseconds=275)
+
+        async def input_data(name, payload):
+            data = Data.create(name)
+            data.set_property_from_json(None, json.dumps(payload))
+            await extension.on_data(env, data)
+
+        sdk.text_to_speech_stream = stream
+        with patch(
+            "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
+        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+            clock.now.side_effect = lambda: now
+            loop = asyncio.create_task(extension._process_input_queue(env))
+            try:
+                await input_data(
+                    "tts_text_input",
+                    {
+                        "request_id": "first",
+                        "text": "first",
+                        "text_input_end": True,
+                    },
+                )
+                await asyncio.wait_for(waiting.wait(), 1)
+                await asyncio.wait_for(
+                    input_data("tts_flush", {"flush_id": "flush-first"}), 1
+                )
+                assert [name for name, _ in events] == ["tts_flush_end"]
+                assert events[0][1]["flush_id"] == "flush-first"
+                await input_data(
+                    "tts_text_input",
+                    {
+                        "request_id": "recovery",
+                        "text": "recovery",
+                        "text_input_end": True,
+                    },
+                )
+                # Recovery must finish without releasing the stalled stream.
+                await asyncio.wait_for(recovered.wait(), 1)
+                assert not release.is_set()
+                assert closed.is_set()
+                assert [name for name, _ in events] == [
+                    "tts_flush_end",
+                    "tts_audio_start",
+                    "pcm",
+                    "tts_audio_end",
+                ]
+                assert events[1][1]["request_id"] == "recovery"
+                assert events[2][1] == b"\x01\x02" * 3200
+                end = events[3][1]
+                assert end["request_id"] == "recovery"
+                assert end["reason"] == TTSAudioEndReason.REQUEST_END.value
+                assert end["request_total_audio_duration_ms"] == 100
+                assert end["request_event_interval_ms"] == 275
+                assert "first" not in extension.request_states
+                assert extension._processing_request_id is None
+            finally:
+                await extension.input_queue.put(None)
+                loop.cancel()
+                await asyncio.gather(loop, return_exceptions=True)
+                await extension.client.clean()
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("scenario", ["success", "error", "flush", "empty"])
 def test_extension_audio_accounting_and_recovery(scenario):
     async def run():

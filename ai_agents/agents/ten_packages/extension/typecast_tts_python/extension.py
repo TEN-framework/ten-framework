@@ -3,6 +3,9 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
+
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2_http import (
     AsyncTTS2HttpClient,
     AsyncTTS2HttpConfig,
@@ -36,6 +39,16 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
 
     def synthesize_audio_sample_rate(self) -> int:
         return TYPECAST_STREAM_SAMPLE_RATE
+
+    async def request_tts(self, t: TTSTextInput) -> None:
+        # Let the inherited flush path cancel the HTTP wait, not the queue loop.
+        task = asyncio.create_task(super().request_tts(t))
+        self.current_task = task
+        try:
+            await task
+        finally:
+            if self.current_task is task:
+                self.current_task = None
 
     async def _send_audio_end_and_finish(
         self,
