@@ -30,6 +30,7 @@ def make_extension(
     extension.send_connect_delay_metrics = AsyncMock()  # type: ignore[method-assign]
     extension.send_asr_error = AsyncMock()  # type: ignore[method-assign]
     extension.stop_connection = AsyncMock()  # type: ignore[method-assign]
+
     async def mock_reconnect() -> bool:
         return await _mock_reconnect_handshake_ok(extension)
 

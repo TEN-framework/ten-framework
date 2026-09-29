@@ -589,9 +589,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
         )
 
     def _connected_callback_may_publish(self, recognizer_epoch: int) -> bool:
-        return (
-            not self.stopped and recognizer_epoch == self._recognizer_epoch
-        )
+        return not self.stopped and recognizer_epoch == self._recognizer_epoch
 
     def _discard_stale_connected_callback(self, recognizer_epoch: int) -> None:
         if self._transport_connected_epoch == recognizer_epoch:
@@ -699,12 +697,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
             return float(DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC)
         return float(self.config.transport_reconnect_grace_sec)
 
-    async def _transport_recovery_after_grace(self, scheduled_epoch: int) -> None:
+    async def _transport_recovery_after_grace(
+        self, scheduled_epoch: int
+    ) -> None:
         grace_sec = self._grace_sec()
-        try:
-            await asyncio.sleep(grace_sec)
-        except asyncio.CancelledError:
-            raise
+        await asyncio.sleep(grace_sec)
 
         if (
             self.stopped

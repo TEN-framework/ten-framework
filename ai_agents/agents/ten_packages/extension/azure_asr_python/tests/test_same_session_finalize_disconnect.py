@@ -60,9 +60,7 @@ class SameSessionFinalizeDisconnectTester(AsyncExtensionTester):
     ) -> None:
         if not success:
             ten_env_tester.stop_test(
-                TenError.create(
-                    TenErrorCode.ErrorCodeGeneric, error_message
-                )
+                TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
             )
 
     @override
@@ -123,9 +121,7 @@ def test_same_session_finalize_disconnect_two_cycles(patch_azure_ws):
         def arm_attempt() -> None:
             if not timers_active["value"]:
                 return
-            trigger_vendor_live(
-                patch_azure_ws.event_handlers, session_id="123"
-            )
+            trigger_vendor_live(patch_azure_ws.event_handlers, session_id="123")
             threading.Timer(0.2, lambda: emit_recognized(text)).start()
 
         threading.Timer(0.05, arm_attempt).start()
@@ -173,6 +169,6 @@ def test_same_session_finalize_disconnect_two_cycles(patch_azure_ws):
         f"test_same_session_finalize_disconnect_two_cycles failed: "
         f"{err.error_code() if err else None} {err.error_message() if err else ''}"
     )
-    assert start_calls >= 2, (
-        f"expected reopen after first finalize, starts={start_calls}"
-    )
+    assert (
+        start_calls >= 2
+    ), f"expected reopen after first finalize, starts={start_calls}"
