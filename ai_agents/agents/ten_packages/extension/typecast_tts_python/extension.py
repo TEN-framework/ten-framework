@@ -29,6 +29,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self._emitted_audio_bytes = 0
         self._dump_start_offset = 0
         self._finish_task: asyncio.Task | None = None
+        self._terminal_audio_sent = False
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
         return TypecastTTSConfig.model_validate_json(config_json_str)
@@ -48,17 +49,8 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         if t.request_id != self.current_request_id:
             self._emitted_audio_bytes = 0
             self._finish_task = None
+            self._terminal_audio_sent = False
             self._dump_start_offset = 0
-            if self.config and self.config.dump:
-                # PCMWriter appends, so preserve recordings from earlier workers.
-                dump_path = os.path.join(
-                    self.config.dump_path,
-                    f"{self.vendor()}_dump_{t.request_id}.pcm",
-                )
-                try:
-                    self._dump_start_offset = os.path.getsize(dump_path)
-                except FileNotFoundError:
-                    pass
         # Let the inherited flush path cancel the HTTP wait, not the queue loop.
         task = asyncio.create_task(super().request_tts(t))
         self.current_task = task
@@ -79,6 +71,14 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         # The HTTP base sets this before awaiting the start event.
         start_ts = self.request_ts
         self.request_ts = None
+        recorder = self.recorder_map.get(request_id)
+        if recorder:
+            # Capture the append offset before the first write, inside the
+            # inherited request error handler so a stat failure can finalize.
+            try:
+                self._dump_start_offset = os.path.getsize(recorder.file_name)
+            except FileNotFoundError:
+                self._dump_start_offset = 0
         await super().send_tts_audio_start(request_id, turn_id, extra_metadata)
         self.request_ts = start_ts
 
@@ -91,7 +91,9 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
     async def cancel_tts(self) -> None:
         if self._finish_task is not None:
             # Finish the winning terminal event before acknowledging a flush.
-            await asyncio.shield(self._finish_task)
+            await self._send_audio_end_and_finish(
+                self.current_request_id, TTSAudioEndReason.INTERRUPTED
+            )
             return
         # Received bytes can include a frame cancelled before its send completed.
         self.total_audio_bytes = self._emitted_audio_bytes
@@ -103,12 +105,21 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         reason: TTSAudioEndReason,
         log_message: str | None = None,
     ) -> None:
-        if self._finish_task is None:
+        if self._finish_task is None or (
+            self._finish_task.done()
+            and self._finish_task.exception() is not None
+        ):
             self._finish_task = asyncio.create_task(
                 self._finish_audio(request_id, reason, log_message)
             )
         # Cancellation must not split terminal emission from state cleanup.
         await asyncio.shield(self._finish_task)
+
+    async def send_tts_audio_end(self, *args, **kwargs) -> None:
+        # A failed usage/dump cleanup may retry the terminal path after emission.
+        if not self._terminal_audio_sent:
+            await super().send_tts_audio_end(*args, **kwargs)
+            self._terminal_audio_sent = True
 
     async def _finish_audio(
         self,
@@ -116,6 +127,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         reason: TTSAudioEndReason,
         log_message: str | None,
     ) -> None:
+        self.total_audio_bytes = self._emitted_audio_bytes
         # The base PCMWriter may retain tail bytes while a write is in flight.
         # Its cleanup flush then writes those bytes on this second pass.
         recorder = self.recorder_map.get(request_id)

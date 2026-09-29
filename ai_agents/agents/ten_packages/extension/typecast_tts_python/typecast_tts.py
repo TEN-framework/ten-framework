@@ -91,6 +91,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                     yield pcm, TTS2HttpResponseEventType.RESPONSE
 
             if not self._is_cancelled:
+                converter.finish()
                 self.ten_env.log_debug(
                     f"TypecastTTS: sending END event for request_id: {request_id}"
                 )

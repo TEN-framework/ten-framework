@@ -1,4 +1,5 @@
 import sys
+import struct
 from pathlib import Path
 import asyncio
 import json
@@ -27,6 +28,15 @@ from typecast_tts_python.config import TypecastTTSConfig
 from typecast_tts_python.extension import TypecastTTSExtension
 from typecast_tts_python.typecast_tts import TypecastTTSClient
 from typecast import TypecastError, UnauthorizedError
+
+WAV_HEADER = (
+    b"RIFF"
+    + b"\xff" * 4
+    + b"WAVEfmt "
+    + struct.pack("<IHHIIHH", 16, 1, 1, 32000, 64000, 2, 16)
+    + b"data"
+    + b"\xff" * 4
+)
 
 
 def test_config_defaults_and_forces_wav():
@@ -202,7 +212,7 @@ def test_real_flush_at_emission_boundaries_recovers(
                     if phase != "first_byte":
                         # Exceed the dump writer's buffer while frame emission stalls.
                         samples = 40000 if phase == "audio" else 3200
-                        yield b"h" * 44 + b"\x05\x06" * samples
+                        yield WAV_HEADER + b"\x05\x06" * samples
                     now += timedelta(milliseconds=275)
                     if terminal:
                         return
@@ -212,13 +222,13 @@ def test_real_flush_at_emission_boundaries_recovers(
                     if not late_chunk:
                         raise
                     yield (
-                        b"h" * 44 if phase == "first_byte" else b""
+                        WAV_HEADER if phase == "first_byte" else b""
                     ) + b"\x09\x09" * 3200
                 finally:
                     closed.set()
                 return
             assert closed.is_set()
-            yield b"h" * 44 + b"\x01\x02" * 3200
+            yield WAV_HEADER + b"\x01\x02" * 3200
             now += timedelta(milliseconds=275)
 
         async def input_data(name, payload):
@@ -333,12 +343,15 @@ def test_appended_text_finishes_before_buffered_request(tmp_path):
     async def run():
         waiting, release, completed = (asyncio.Event() for _ in range(3))
         events, calls, closed = [], [], []
+        metrics = []
         now = datetime(2026, 1, 1)
         env = MagicMock()
 
         async def send_data(data):
             body, _ = data.get_property_to_json()
-            if data.get_name() != "metrics":
+            if data.get_name() == "metrics":
+                metrics.append(json.loads(body)["metrics"])
+            else:
                 events.append((data.get_name(), json.loads(body)))
 
         async def send_audio(frame):
@@ -383,7 +396,7 @@ def test_appended_text_finishes_before_buffered_request(tmp_path):
             assert calls == closed  # Prior segment's SDK stream is closed.
             calls.append(request.text)
             try:
-                yield b"h" * 44 + pcm[request.text]
+                yield WAV_HEADER + pcm[request.text]
                 now += timedelta(milliseconds=100)
                 if request.text == "part1":
                     waiting.set()
@@ -459,6 +472,18 @@ def test_appended_text_finishes_before_buffered_request(tmp_path):
                 ).read_bytes() == pcm["buffered"]
                 assert not extension._pending_messages
                 assert extension._processing_request_id is None
+                # Appended text remains one logical request, including TTFB.
+                assert [m["ttfb"] for m in metrics if "ttfb" in m] == [0, 0]
+                usage = [m for m in metrics if "output_characters" in m]
+                assert [m["output_characters"] for m in usage] == [10, 8]
+                assert [m["recv_audio_duration"] for m in usage] == [150, 200]
+                assert [m["total_output_characters"] for m in usage] == [10, 18]
+                assert [m["total_recv_audio_duration"] for m in usage] == [
+                    150,
+                    350,
+                ]
+                assert extension.output_characters == 0
+                assert extension.recv_audio_chunks_len == 0
             finally:
                 release.set()
                 await extension.input_queue.put(None)
@@ -470,15 +495,18 @@ def test_appended_text_finishes_before_buffered_request(tmp_path):
 
 
 @pytest.mark.parametrize("scenario", ["success", "error", "flush", "empty"])
-def test_extension_audio_accounting_and_recovery(scenario):
+def test_extension_audio_accounting_and_recovery(scenario, tmp_path):
     async def run():
         events = []
+        metrics = []
         now = datetime(2026, 1, 1)
         env = MagicMock()
 
         async def send_data(data):
             body, _ = data.get_property_to_json()
-            if data.get_name() != "metrics":
+            if data.get_name() == "metrics":
+                metrics.append(json.loads(body)["metrics"])
+            else:
                 events.append((data.get_name(), json.loads(body)))
 
         async def send_audio(frame):
@@ -496,11 +524,13 @@ def test_extension_audio_accounting_and_recovery(scenario):
         extension = TypecastTTSExtension("test")
         extension.ten_env = env
         extension.config = TypecastTTSConfig(
+            dump=True,
+            dump_path=str(tmp_path),
             params={
                 "api_key": "key",
                 "voice_id": "voice",
                 "output": {"remove_silence_ms": 0},
-            }
+            },
         )
         extension.config.update_params()
         extension.config.validate()
@@ -517,8 +547,8 @@ def test_extension_audio_accounting_and_recovery(scenario):
             if mode == "empty":
                 return
             now += timedelta(milliseconds=100)
-            yield b"h" * 20
-            yield b"h" * 24 + b"\x01\x02" * 3200
+            yield WAV_HEADER[:20]
+            yield WAV_HEADER[20:] + b"\x01\x02" * 3200
             now += timedelta(milliseconds=275)
             if mode == "error":
                 raise TypecastError("temporary failure", 500)
@@ -535,6 +565,7 @@ def test_extension_audio_accounting_and_recovery(scenario):
             try:
                 for request_id in ("first", "recovery"):
                     events.clear()
+                    metrics.clear()
                     # Enter the inherited HTTP handler at its queue dispatch boundary.
                     extension.request_states[request_id] = (
                         RequestState.FINALIZING
@@ -606,6 +637,22 @@ def test_extension_audio_accounting_and_recovery(scenario):
                     )
                     assert extension._processing_request_id is None
                     assert extension.current_audio_request_id is None
+                    assert [m["ttfb"] for m in metrics if "ttfb" in m] == (
+                        [] if mode == "empty" else [100]
+                    )
+                    usage = [m for m in metrics if "output_characters" in m]
+                    assert len(usage) == 1
+                    assert usage[0]["output_characters"] == len(request_id)
+                    assert usage[0]["input_characters"] == 0
+                    assert usage[0]["recv_audio_duration"] == len(pcm) / 64
+                    assert extension.output_characters == 0
+                    assert extension.recv_audio_chunks_len == 0
+                    assert request_id not in extension.recorder_map
+                    dump = tmp_path / f"typecast_dump_{request_id}.pcm"
+                    if pcm:
+                        assert dump.read_bytes() == pcm
+                    else:
+                        assert not dump.exists() or dump.read_bytes() == b""
             finally:
                 await extension.client.clean()
         sdk.__aexit__.assert_awaited_once_with(None, None, None)
@@ -615,7 +662,7 @@ def test_extension_audio_accounting_and_recovery(scenario):
 
 def test_streaming_wav_to_pcm16_strips_header_across_chunks():
     converter = StreamingWavToPcm16()
-    header = b"h" * 44
+    header = WAV_HEADER
 
     assert converter.feed(header[:20]) == b""
     assert converter.feed(header[20:] + b"\x01\x02\x03") == b"\x01\x02"
@@ -625,7 +672,7 @@ def test_streaming_wav_to_pcm16_strips_header_across_chunks():
 
 def test_streaming_wav_to_pcm16_strips_header_in_single_chunk():
     converter = StreamingWavToPcm16()
-    header = b"h" * 44
+    header = WAV_HEADER
 
     assert converter.feed(header + b"\x01\x02\x03\x04") == b"\x01\x02\x03\x04"
 
@@ -697,7 +744,7 @@ def test_client_preserves_sdk_headers_and_adds_ten_user_agent():
         async def stream(request):
             headers.append(dict(request.headers))
             return web.Response(
-                body=b"h" * 44 + b"\x01\x02", content_type="audio/wav"
+                body=WAV_HEADER + b"\x01\x02", content_type="audio/wav"
             )
 
         app = web.Application()
@@ -774,6 +821,283 @@ def test_client_maps_vendor_errors(error, expected_event):
     assert events == [(str(error).encode(), expected_event)]
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "first_byte",
+        "next_byte",
+        "401",
+        "429",
+        "500",
+        "octet",
+        "html",
+        "json",
+        "truncated",
+        "odd",
+    ],
+)
+def test_real_http_response_cleanup_and_recovery(mode):
+    async def run():
+        waiting, release, server_done, got_audio, completed = (
+            asyncio.Event() for _ in range(5)
+        )
+        events = []
+        transports = []
+        pcm = b"\x01\x02" * 3200
+        # Standard PCM16 mono WAV header; the body can be served as octet-stream.
+
+        header = (
+            b"RIFF"
+            + struct.pack("<I", 36 + len(pcm))
+            + b"WAVEfmt "
+            + struct.pack("<IHHIIHH", 16, 1, 1, 32000, 64000, 2, 16)
+            + b"data"
+            + struct.pack("<I", len(pcm))
+        )
+
+        async def serve(request):
+            body = await request.json()
+            if body["text"] == "recovery" or mode == "octet":
+                return web.Response(
+                    body=header + pcm, content_type="application/octet-stream"
+                )
+            if mode.isdigit():
+                return web.Response(
+                    status=int(mode),
+                    text="upstream unavailable",
+                    content_type="text/html",
+                )
+            if mode in ("html", "json", "truncated", "odd"):
+                body, content_type = {
+                    "html": (b"<html>upstream error</html>" * 4, "text/html"),
+                    "json": (b'{"error":"unavailable"}', "application/json"),
+                    "truncated": (header[:20], "audio/wav"),
+                    "odd": (header + pcm + b"\x01", "audio/wav"),
+                }[mode]
+                return web.Response(body=body, content_type=content_type)
+            transport = request.transport
+            transports.append(transport)
+            response = web.StreamResponse(headers={"Content-Type": "audio/wav"})
+            await response.prepare(request)
+            if mode == "next_byte":
+                await response.write(header + pcm)
+            waiting.set()
+            try:
+                await release.wait()
+                await response.write(
+                    header + pcm if mode == "first_byte" else pcm
+                )
+            except ConnectionResetError:
+                pass
+            finally:
+                server_done.set()
+            return response
+
+        env = MagicMock()
+
+        async def send_data(data):
+            body, _ = data.get_property_to_json()
+            if data.get_name() != "metrics":
+                events.append((data.get_name(), json.loads(body)))
+
+        async def send_audio(frame):
+            buffer = frame.lock_buf()
+            try:
+                events.append(("pcm", bytes(buffer)))
+            finally:
+                frame.unlock_buf(buffer)
+            got_audio.set()
+
+        env.send_data = AsyncMock(side_effect=send_data)
+        env.send_audio_frame = AsyncMock(side_effect=send_audio)
+        app = web.Application()
+        app.router.add_post("/v1/text-to-speech/stream", serve)
+        async with TestServer(app) as server:
+            extension = TypecastTTSExtension("test")
+            extension.ten_env = env
+            extension.config = TypecastTTSConfig(
+                params={
+                    "api_key": "local-test-key",
+                    "voice_id": "voice",
+                    "url": str(server.make_url("/")),
+                }
+            )
+            extension.config.update_params()
+            extension.config.validate()
+            extension.client = TypecastTTSClient(extension.config, env)
+            original_finish = extension.finish_request
+
+            async def finish(*args, **kwargs):
+                await original_finish(*args, **kwargs)
+                completed.set()
+
+            extension.finish_request = finish
+
+            async def input_data(name, payload):
+                data = Data.create(name)
+                data.set_property_from_json(None, json.dumps(payload))
+                await extension.on_data(env, data)
+
+            async def released_response():
+                while extension.client._client.session.connector._acquired or (
+                    transports and not transports[0].is_closing()
+                ):
+                    await asyncio.sleep(0.005)
+
+            loop = asyncio.create_task(extension._process_input_queue(env))
+            try:
+                await input_data(
+                    "tts_text_input",
+                    {
+                        "request_id": "first",
+                        "text": "first",
+                        "text_input_end": True,
+                    },
+                )
+                if mode in ("first_byte", "next_byte"):
+                    await asyncio.wait_for(waiting.wait(), 2)
+                    if mode == "next_byte":
+                        await asyncio.wait_for(got_audio.wait(), 2)
+                    await asyncio.wait_for(
+                        input_data("tts_flush", {"flush_id": "f"}), 2
+                    )
+                    await asyncio.wait_for(released_response(), 2)
+                    assert [name for name, _ in events] == (
+                        [
+                            "tts_audio_start",
+                            "pcm",
+                            "tts_audio_end",
+                            "tts_flush_end",
+                        ]
+                        if mode == "next_byte"
+                        else ["tts_flush_end"]
+                    )
+                    if mode == "next_byte":
+                        assert (
+                            events[2][1]["reason"]
+                            == TTSAudioEndReason.INTERRUPTED.value
+                        )
+                        assert (
+                            events[2][1]["request_total_audio_duration_ms"]
+                            == 100
+                        )
+                else:
+                    await asyncio.wait_for(completed.wait(), 2)
+                    assert [name for name, _ in events] == (
+                        ["tts_audio_start", "pcm", "tts_audio_end"]
+                        if mode == "octet"
+                        else (
+                            ["tts_audio_start", "pcm", "error", "tts_audio_end"]
+                            if mode == "odd"
+                            else ["error", "tts_audio_end"]
+                        )
+                    )
+                    assert (
+                        events[-1][1]["reason"]
+                        == (
+                            TTSAudioEndReason.REQUEST_END
+                            if mode == "octet"
+                            else TTSAudioEndReason.ERROR
+                        ).value
+                    )
+                events.clear()
+                completed.clear()
+                await input_data(
+                    "tts_text_input",
+                    {
+                        "request_id": "recovery",
+                        "text": "recovery",
+                        "text_input_end": True,
+                    },
+                )
+                await asyncio.wait_for(completed.wait(), 2)
+                assert [name for name, _ in events] == [
+                    "tts_audio_start",
+                    "pcm",
+                    "tts_audio_end",
+                ]
+                assert events[0][1]["request_id"] == "recovery"
+                assert events[1][1] == pcm
+                assert events[2][1]["request_id"] == "recovery"
+                assert events[2][1]["request_total_audio_duration_ms"] == 100
+                assert not extension.client._client.session.connector._acquired
+                release.set()
+                if transports:
+                    await asyncio.wait_for(server_done.wait(), 2)
+                    assert (
+                        len(events) == 3
+                    )  # The stalled response cannot emit late PCM.
+                assert extension._processing_request_id is None
+            finally:
+                release.set()
+                await extension.input_queue.put(None)
+                loop.cancel()
+                await asyncio.gather(loop, return_exceptions=True)
+                session = extension.client._client.session
+                await extension.client.clean()
+                assert session.closed
+
+    asyncio.run(run())
+
+
+def test_dump_stat_failure_finishes_and_recovers(tmp_path):
+    async def run():
+        env = MagicMock()
+        events = []
+
+        async def send_data(data):
+            body, _ = data.get_property_to_json()
+            if data.get_name() != "metrics":
+                events.append((data.get_name(), json.loads(body)))
+
+        env.send_data = AsyncMock(side_effect=send_data)
+        env.send_audio_frame = AsyncMock()
+        extension = TypecastTTSExtension("test")
+        extension.ten_env = env
+        extension.config = TypecastTTSConfig(
+            dump=True,
+            dump_path=str(tmp_path),
+            params={"api_key": "key", "voice_id": "voice"},
+        )
+        extension.client = MagicMock()
+        extension.client.close_stream = AsyncMock()
+        extension.client.get_extra_metadata.return_value = {}
+
+        async def stream(*_):
+            yield b"\x01\x02" * 3200, TTS2HttpResponseEventType.RESPONSE
+            yield None, TTS2HttpResponseEventType.END
+
+        extension.client.get = stream
+        with patch(
+            "typecast_tts_python.extension.os.path.getsize",
+            side_effect=[PermissionError("cannot stat dump"), 0],
+        ):
+            for request_id, reason in (
+                ("first", TTSAudioEndReason.ERROR),
+                ("recovery", TTSAudioEndReason.REQUEST_END),
+            ):
+                events.clear()
+                extension.request_states[request_id] = RequestState.FINALIZING
+                extension._processing_request_id = request_id
+                await extension.request_tts(
+                    TTSTextInput(
+                        request_id=request_id, text="text", text_input_end=True
+                    )
+                )
+                assert events[-1][0] == "tts_audio_end"
+                assert events[-1][1]["reason"] == reason.value
+                assert events[-1][1]["request_total_audio_duration_ms"] == (
+                    0 if request_id == "first" else 100
+                )
+                assert (
+                    extension.request_states[request_id]
+                    == RequestState.COMPLETED
+                )
+                assert extension._processing_request_id is None
+
+    asyncio.run(run())
+
+
 class TypecastTTSExtensionTester(AsyncExtensionTester):
     def __init__(self):
         super().__init__()
@@ -817,7 +1141,7 @@ class TypecastTTSExtensionTester(AsyncExtensionTester):
 
 
 def test_typecast_tts_extension_success():
-    wav_header = b"h" * 44
+    wav_header = WAV_HEADER
     audio_chunk_1 = b"\x01\x02\x03\x04"
     audio_chunk_2 = b"\x05\x06\x07\x08"
 
