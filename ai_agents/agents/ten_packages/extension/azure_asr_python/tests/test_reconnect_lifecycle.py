@@ -1,9 +1,17 @@
 import asyncio
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ..config import AzureASRConfig
 from ..extension import AzureASRExtension
+from ..reconnect_manager import ReconnectManager
+
+
+async def _mock_reconnect_handshake_ok(extension: AzureASRExtension) -> bool:
+    extension._transport_connected = True
+    extension.connected = True
+    extension._transport_handshake_ready.set()
+    return True
 
 
 def make_extension(
@@ -15,13 +23,17 @@ def make_extension(
         transport_reconnect_grace_sec=transport_reconnect_grace_sec
     )
     extension.reconnect_manager = MagicMock()
+    extension.reconnect_manager.can_retry = MagicMock(return_value=True)
     extension.client = MagicMock()
     extension.on_disconnected = AsyncMock()  # type: ignore[method-assign]
     extension.on_connected = AsyncMock()  # type: ignore[method-assign]
     extension.send_connect_delay_metrics = AsyncMock()  # type: ignore[method-assign]
     extension.send_asr_error = AsyncMock()  # type: ignore[method-assign]
     extension.stop_connection = AsyncMock()  # type: ignore[method-assign]
-    extension._handle_reconnect = AsyncMock(return_value=True)  # type: ignore[method-assign]
+    async def mock_reconnect() -> bool:
+        return await _mock_reconnect_handshake_ok(extension)
+
+    extension._handle_reconnect = AsyncMock(side_effect=mock_reconnect)  # type: ignore[method-assign]
     extension._recognizer_epoch = 1
     extension.stopped = False
     extension.connected = True
@@ -146,16 +158,90 @@ def test_stale_canceled_is_ignored():
     asyncio.run(run_test())
 
 
-def test_expected_session_stop_does_not_reconnect():
+def test_expected_session_stop_schedules_finalize_reconnect():
     async def run_test() -> None:
         extension = make_extension()
         extension._expected_disconnect = True
         evt = SimpleNamespace(session_id="session-1")
 
-        await extension._azure_event_handler_on_session_stopped(evt, 1)
+        with patch.object(
+            extension, "_schedule_finalize_reconnect"
+        ) as schedule_finalize:
+            await extension._azure_event_handler_on_session_stopped(evt, 1)
 
+        schedule_finalize.assert_called_once()
         extension._handle_reconnect.assert_not_awaited()  # type: ignore[attr-defined]
         assert extension._expected_disconnect is False
+
+    asyncio.run(run_test())
+
+
+def test_reconnect_after_finalize_reopens_transport():
+    async def run_test() -> None:
+        extension = make_extension()
+        extension._transport_connected = False
+        extension.connected = False
+        extension.start_connection = AsyncMock()  # type: ignore[method-assign]
+
+        async def complete_handshake() -> bool:
+            extension._transport_connected = True
+            extension._transport_handshake_ready.set()
+            return True
+
+        extension._wait_for_transport_handshake = AsyncMock(  # type: ignore[method-assign]
+            side_effect=complete_handshake
+        )
+
+        await extension._reconnect_after_finalize()
+
+        extension.stop_connection.assert_awaited_once()  # type: ignore[attr-defined]
+        extension.start_connection.assert_awaited_once()  # type: ignore[attr-defined]
+        assert extension.is_connected() is True
+
+    asyncio.run(run_test())
+
+
+def test_handshake_timeout_returns_false_and_tears_down():
+    async def run_test() -> None:
+        extension = AzureASRExtension("azure_asr_python")
+        extension.ten_env = MagicMock()
+        extension.config = AzureASRConfig()
+        extension.reconnect_manager = ReconnectManager(
+            max_attempts=5, logger=MagicMock()
+        )
+        extension.on_disconnected = AsyncMock()  # type: ignore[method-assign]
+        extension.on_connected = AsyncMock()  # type: ignore[method-assign]
+        extension.send_connect_delay_metrics = AsyncMock()  # type: ignore[method-assign]
+        extension.send_asr_error = AsyncMock()  # type: ignore[method-assign]
+        extension.start_connection = AsyncMock()  # type: ignore[method-assign]
+        extension.stop_connection = AsyncMock()  # type: ignore[method-assign]
+        extension._handshake_timeout_sec = lambda: 0.05  # type: ignore[method-assign]
+        extension._transport_connected = False
+
+        ok = await extension._handle_reconnect()
+
+        assert ok is False
+        extension.start_connection.assert_awaited_once()  # type: ignore[attr-defined]
+        extension.stop_connection.assert_awaited_once()  # type: ignore[attr-defined]
+
+    asyncio.run(run_test())
+
+
+def test_handshake_timeout_keeps_transport_recovery_scheduled():
+    async def run_test() -> None:
+        extension = make_extension(transport_reconnect_grace_sec=0.05)
+        extension._transport_connected = False
+        extension._handle_reconnect = AsyncMock(return_value=False)  # type: ignore[method-assign]
+        schedule_mock = AsyncMock()
+        extension._schedule_transport_recovery = schedule_mock  # type: ignore[method-assign]
+
+        await extension._azure_event_handler_on_disconnected(
+            SimpleNamespace(session_id="session-1"), 1
+        )
+        await asyncio.sleep(0.12)
+
+        extension._handle_reconnect.assert_awaited()  # type: ignore[attr-defined]
+        schedule_mock.assert_awaited()
 
     asyncio.run(run_test())
 

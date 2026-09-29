@@ -18,6 +18,8 @@ from .const import (
     FATAL_ERROR_CODES,
     AZURE_LANGUAGE_ID_MODE_KEY,
     DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC,
+    DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC,
+    RECONNECT_MAX_ATTEMPTS,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -65,6 +67,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self._reconnect_in_flight: bool = False
         self._expected_disconnect: bool = False
         self._expected_disconnect_reported: bool = False
+        self._init_failed: bool = False
+        self._transport_handshake_ready: asyncio.Event = asyncio.Event()
+        self._finalize_reconnect_task: asyncio.Task[None] | None = None
 
     @override
     def vendor(self) -> str:
@@ -82,7 +87,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         await super().on_init(ten_env)
 
         # Initialize reconnection manager
-        self.reconnect_manager = ReconnectManager(logger=ten_env)
+        self.reconnect_manager = ReconnectManager(
+            logger=ten_env, max_attempts=RECONNECT_MAX_ATTEMPTS
+        )
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -104,6 +111,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             ten_env.log_error(
                 f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
             )
+            self._init_failed = True
             self.config = AzureASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -115,6 +123,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        await self._cancel_finalize_reconnect()
         await self._cancel_transport_recovery()
         await super().on_deinit(ten_env)
 
@@ -123,10 +132,13 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def start_connection(self) -> None:
+        if self._init_failed:
+            return
         assert self.config is not None
         self.ten_env.log_info("start_connection")
         self._expected_disconnect = False
         self._expected_disconnect_reported = False
+        self._transport_handshake_ready.clear()
 
         try:
             speech_config = speechsdk.SpeechConfig(
@@ -487,6 +499,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
             if not self._expected_disconnect_reported:
                 await self.on_disconnected(code=0, message="closed")
             self._expected_disconnect_reported = False
+            if not self.stopped:
+                self._schedule_finalize_reconnect()
             return
 
         await self.on_disconnected(code=0, message="closed")
@@ -581,6 +595,7 @@ class AzureASRExtension(AsyncASRBaseExtension):
             return
 
         self._transport_connected = True
+        self._transport_handshake_ready.set()
         await self._cancel_transport_recovery()
 
         connection_delay_ms = (
@@ -688,12 +703,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         self._transport_recovery_in_flight = True
-        reconnect_ok = False
         try:
             await self.stop_connection()
             if self.stopped:
                 return
-            reconnect_ok = await self._handle_reconnect()
+            await self._handle_reconnect()
         except Exception as e:
             self.ten_env.log_error(
                 f"vendor_error: transport recovery failed: {e}",
@@ -703,12 +717,14 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self._transport_recovery_in_flight = False
 
         if (
-            not reconnect_ok
-            and not self.stopped
+            not self.stopped
             and not self._transport_connected
             and not self._reconnect_in_flight
         ):
-            await self._schedule_transport_recovery()
+            if self.reconnect_manager and self.reconnect_manager.can_retry():
+                await self._schedule_transport_recovery()
+            else:
+                await self._emit_reconnect_ceiling_fatal()
 
     async def _handle_finalize_disconnect(self):
         assert self.config is not None
@@ -754,10 +770,88 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
         self.ten_env.log_debug("finalize mute pkg completed")
 
+    def _handshake_timeout_sec(self) -> float:
+        return float(DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC)
+
+    async def _wait_for_transport_handshake(self) -> bool:
+        if self._transport_connected:
+            return True
+        timeout_sec = self._handshake_timeout_sec()
+        try:
+            await asyncio.wait_for(
+                self._transport_handshake_ready.wait(), timeout=timeout_sec
+            )
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn(
+                f"vendor_error: Azure transport handshake timed out after "
+                f"{timeout_sec}s",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return False
+        return self._transport_connected
+
+    async def _emit_reconnect_ceiling_fatal(self) -> None:
+        if self.stopped:
+            return
+        self.stopped = True
+        message = "Azure ASR reconnect attempts exhausted"
+        await self.send_asr_error(
+            ModuleError(
+                module=MODULE_NAME_ASR,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=message,
+            ),
+        )
+
+    async def _cancel_finalize_reconnect(self) -> None:
+        task = self._finalize_reconnect_task
+        self._finalize_reconnect_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+
+    def _schedule_finalize_reconnect(self) -> None:
+        if self.stopped:
+            return
+        task = self._finalize_reconnect_task
+        if task is not None and not task.done():
+            return
+        task = asyncio.create_task(self._reconnect_after_finalize())
+        self._finalize_reconnect_task = task
+        task.add_done_callback(self._clear_finalize_reconnect_task)
+
+    def _clear_finalize_reconnect_task(self, task: asyncio.Task[None]) -> None:
+        if self._finalize_reconnect_task is task:
+            self._finalize_reconnect_task = None
+
+    async def _reconnect_after_finalize(self) -> None:
+        if self.stopped:
+            return
+        try:
+            await self.stop_connection()
+            if self.stopped:
+                return
+            await self.start_connection()
+            if not await self._wait_for_transport_handshake():
+                await self.stop_connection()
+                if not self.stopped and self.reconnect_manager:
+                    if self.reconnect_manager.can_retry():
+                        await self._handle_reconnect()
+                    else:
+                        await self._emit_reconnect_ceiling_fatal()
+        except Exception as e:
+            self.ten_env.log_error(
+                f"vendor_error: post-finalize reconnect failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            if not self.stopped:
+                await self._request_unexpected_reconnect(immediate=True)
+
     async def _handle_reconnect(self) -> bool:
         """
         Handle a single reconnection attempt using the ReconnectManager.
-        Connection success is determined by the _azure_event_handler_on_connected callback.
+        Returns True only after the vendor transport handshake completes.
         """
         if self._reconnect_in_flight:
             self.ten_env.log_debug("reconnect already in flight")
@@ -767,23 +861,34 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_error("ReconnectManager not initialized")
             return False
 
+        if not self.reconnect_manager.can_retry():
+            await self._emit_reconnect_ceiling_fatal()
+            return False
+
         self._reconnect_in_flight = True
         try:
-            success = await self.reconnect_manager.handle_reconnect(
+            initiated = await self.reconnect_manager.handle_reconnect(
                 connection_func=self.start_connection,
                 error_handler=self.send_asr_error,
             )
 
-            if success:
-                self.ten_env.log_debug(
-                    "Reconnection attempt initiated successfully"
-                )
-            else:
+            if not initiated:
                 info = self.reconnect_manager.get_attempts_info()
                 self.ten_env.log_debug(
                     f"Reconnection attempt failed. Status: {info}"
                 )
-            return success
+                return False
+
+            if await self._wait_for_transport_handshake():
+                self.ten_env.log_debug("Reconnection handshake completed")
+                return True
+
+            await self.stop_connection()
+            info = self.reconnect_manager.get_attempts_info()
+            self.ten_env.log_debug(
+                f"Reconnection handshake failed. Status: {info}"
+            )
+            return False
         finally:
             self._reconnect_in_flight = False
 
@@ -799,6 +904,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
     @override
     async def stop_connection(self) -> None:
+        finalize_task = self._finalize_reconnect_task
+        if finalize_task is not asyncio.current_task():
+            await self._cancel_finalize_reconnect()
         await self._cancel_transport_recovery()
         self.connected = False
         self._transport_connected = False
