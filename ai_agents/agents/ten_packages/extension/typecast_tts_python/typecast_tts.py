@@ -37,6 +37,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 api_key=self.config.params["api_key"],
             )
             await self._client.__aenter__()
+            self._client.session.headers["User-Agent"] += " ten-framework"
         return self._client
 
     async def cancel(self):

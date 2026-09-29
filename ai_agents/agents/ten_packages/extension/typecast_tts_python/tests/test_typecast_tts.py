@@ -6,6 +6,8 @@ import threading
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from aiohttp import web
+from aiohttp.test_utils import TestServer
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -138,6 +140,55 @@ def test_client_empty_text_ends_without_request():
         return [event async for event in client.get("  ", "request-id")]
 
     assert asyncio.run(collect()) == [(None, TTS2HttpResponseEventType.END)]
+
+
+def test_client_preserves_sdk_headers_and_adds_ten_user_agent():
+    async def run():
+        headers = []
+
+        async def stream(request):
+            headers.append(dict(request.headers))
+            return web.Response(
+                body=b"h" * 44 + b"\x01\x02", content_type="audio/wav"
+            )
+
+        app = web.Application()
+        app.router.add_post("/v1/text-to-speech/stream", stream)
+        async with TestServer(app) as server:
+            config = TypecastTTSConfig(
+                params={
+                    "api_key": "test_api_key",
+                    "voice_id": "test_voice_id",
+                    "url": str(server.make_url("/")),
+                }
+            )
+            config.update_params()
+            client = TypecastTTSClient(config, MagicMock())
+            try:
+                for _ in range(2):
+                    events = [
+                        event async for event in client.get("hello", "id")
+                    ]
+                    assert events == [
+                        (b"\x01\x02", TTS2HttpResponseEventType.RESPONSE),
+                        (None, TTS2HttpResponseEventType.END),
+                    ]
+                session = client._client.session
+            finally:
+                await client.clean()
+            assert session.closed
+
+        assert len(headers) == 2
+        for request_headers in headers:
+            user_agent = request_headers["User-Agent"]
+            assert user_agent.startswith("typecast-python/0.3.15 ")
+            assert " Python/" in user_agent
+            assert "mode=async; base=custom; transport=rest" in user_agent
+            assert user_agent.endswith(" ten-framework")
+            assert user_agent.count("ten-framework") == 1
+            assert request_headers["X-API-KEY"] == "test_api_key"
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize(
