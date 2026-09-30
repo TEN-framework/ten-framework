@@ -146,6 +146,6 @@ def test_cancel_interrupts_websocket_handshake():
                 EVENT_TTS_FLUSH,
             )
             await stream.aclose()
-            assert connect_context.exited.is_set()
+            assert not connect_context.exited.is_set()
 
     asyncio.run(run_test())

@@ -220,8 +220,6 @@ class FishAudioTTSClient:
             if connect_task is not None and not connect_task.done():
                 connect_task.cancel()
                 await asyncio.gather(connect_task, return_exceptions=True)
-            if connect_context is not None and not context_entered:
-                await connect_context.__aexit__(None, None, None)
             await self._close_active_connection(active_websocket, sender_task)
 
     @staticmethod
