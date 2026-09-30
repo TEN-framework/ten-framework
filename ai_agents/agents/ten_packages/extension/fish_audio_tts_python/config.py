@@ -1,7 +1,6 @@
 from typing import Any
 import copy
 from ten_ai_base import utils
-from fish_audio_sdk.apis import Backends
 from pydantic import BaseModel, Field
 
 
@@ -11,7 +10,7 @@ class FishAudioTTSConfig(BaseModel):
     sample_rate: int = 16000
     dump: bool = False
     dump_path: str = "/tmp"
-    backend: Backends = "speech-1.5"
+    backend: str = "s2.1-pro"
     params: dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:

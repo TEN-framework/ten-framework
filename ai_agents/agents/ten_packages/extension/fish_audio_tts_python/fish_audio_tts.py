@@ -1,14 +1,15 @@
+import asyncio
 import secrets
-import time
-from typing import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable
 
-# Only import the specific TTS modules we need to avoid PortAudio dependency
-from fish_audio_sdk import AsyncWebSocketSession, TTSRequest
-from ten_runtime import AsyncTenEnv
+import ormsgpack
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_runtime import AsyncTenEnv
+from websockets.asyncio.client import ClientConnection, connect
+from websockets.exceptions import ConnectionClosed, WebSocketException
+
 from .config import FishAudioTTSConfig
 
-# Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
@@ -28,22 +29,22 @@ class FishAudioTTSClient:
         self.on_request_start = on_request_start
         self._traceparent = ""
         self._response_headers: dict[str, str] = {}
-        self.client: AsyncWebSocketSession | None = self._create_session()
+        self._websocket: ClientConnection | None = None
+        self._sender_task: asyncio.Task[None] | None = None
+        self._connect_task: asyncio.Task[ClientConnection] | None = None
         self._is_cancelled = False
 
-    def _create_session(self) -> AsyncWebSocketSession:
-        if self.config.base_url.strip() != "":
-            session = AsyncWebSocketSession(
-                self.config.api_key, base_url=self.config.base_url
-            )
-        else:
-            session = AsyncWebSocketSession(self.config.api_key)
+    @property
+    def websocket_url(self) -> str:
+        base_url = self.config.base_url.strip()
+        if not base_url:
+            base_url = "wss://api.fish.audio"
+        elif base_url.startswith("https://"):
+            base_url = "wss://" + base_url.removeprefix("https://")
+        elif base_url.startswith("http://"):
+            base_url = "ws://" + base_url.removeprefix("http://")
 
-        sdk_client = getattr(session, "_client", None)
-        if sdk_client is not None:
-            response_hooks = sdk_client.event_hooks.setdefault("response", [])
-            response_hooks.append(self._capture_response_headers)
-        return session
+        return f"{base_url.rstrip('/')}/v1/tts/live/with-timestamp"
 
     @staticmethod
     def _new_traceparent() -> str:
@@ -51,16 +52,32 @@ class FishAudioTTSClient:
         span_id = secrets.token_hex(8)
         return f"00-{trace_id}-{span_id}-01"
 
-    def _set_traceparent(self, session: AsyncWebSocketSession) -> None:
+    def _build_headers(self) -> dict[str, str]:
         self._traceparent = self._new_traceparent()
-        self._response_headers = {}
-        sdk_client = getattr(session, "_client", None)
-        if sdk_client is not None:
-            sdk_client.headers["traceparent"] = self._traceparent
+        return {
+            "Authorization": f"Bearer {self.config.api_key}",
+            "model": self.config.backend,
+            "traceparent": self._traceparent,
+        }
 
-    async def _capture_response_headers(self, response) -> None:
-        self._response_headers = dict(response.headers.items())
-        datacenter = response.headers.get("x-fishaudio-datacenter", "")
+    def _build_request(self) -> dict[str, object]:
+        request: dict[str, object] = {
+            "text": "",
+            "chunk_length": 200,
+        }
+        request.update(self.config.params)
+        request["text"] = ""
+        request["chunk_length"] = 200
+        return request
+
+    async def _capture_response_headers(self, websocket: ClientConnection) -> None:
+        response = getattr(websocket, "response", None)
+        headers = getattr(response, "headers", None)
+        if headers is None:
+            headers = getattr(websocket, "response_headers", {})
+
+        self._response_headers = dict(headers.items())
+        datacenter = self._response_headers.get("x-fishaudio-datacenter", "")
         trace_id = self._traceparent.split("-")[1]
         self.ten_env.log_info(
             "FishAudioTTS: WebSocket response headers: "
@@ -68,113 +85,156 @@ class FishAudioTTSClient:
             f"x-fishaudio-datacenter={datacenter}; trace_id={trace_id}"
         )
 
-    async def _text_stream(self, text: str) -> AsyncIterator[str]:
-        yield text
+    async def _send_request(
+        self,
+        websocket: ClientConnection,
+        text: str,
+    ) -> None:
+        await websocket.send(
+            ormsgpack.packb(
+                {"event": "start", "request": self._build_request()}
+            )
+        )
+        await websocket.send(ormsgpack.packb({"event": "text", "text": text}))
+        await websocket.send(ormsgpack.packb({"event": "stop"}))
+
+    async def _close_active_connection(
+        self,
+        websocket: ClientConnection | None = None,
+        sender_task: asyncio.Task[None] | None = None,
+    ) -> None:
+        if sender_task is None:
+            sender_task = self._sender_task
+        if sender_task is self._sender_task:
+            self._sender_task = None
+        if sender_task is not None and not sender_task.done():
+            sender_task.cancel()
+            await asyncio.gather(sender_task, return_exceptions=True)
+
+        if websocket is None:
+            websocket = self._websocket
+        if websocket is self._websocket:
+            self._websocket = None
+        if websocket is not None:
+            try:
+                await websocket.close()
+            except Exception as close_error:
+                self.ten_env.log_warn(
+                    "FishAudioTTS: failed to close WebSocket: "
+                    f"type={type(close_error).__name__}, "
+                    f"message={str(close_error)}"
+                )
 
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
-        """Process a single TTS request in serial manner"""
-        # AsyncTTS2BaseExtension invokes get() serially. The cancellation flag
-        # therefore belongs to the active stream and is reset for its successor.
+        """Stream one text request through the timestamped WebSocket."""
         self._is_cancelled = False
-        if self.client is None:
-            self.client = self._create_session()
-
-        session = self.client
-        self._set_traceparent(session)
-
-        tts_request = TTSRequest(
-            text="", chunk_length=200, **self.config.params
-        )
-
-        start_time = time.time()
+        headers = self._build_headers()
+        active_websocket: ClientConnection | None = None
+        sender_task: asyncio.Task[None] | None = None
+        connect_context = None
+        connect_task: asyncio.Task[ClientConnection] | None = None
+        context_entered = False
 
         try:
             if self.on_request_start is not None:
                 self.on_request_start()
-            gen = session.tts(
-                request=tts_request,
-                text_stream=self._text_stream(text),
-                backend=self.config.backend,
+
+            connect_context = connect(
+                self.websocket_url, additional_headers=headers
             )
-            async for chunk in gen:
-                if self._is_cancelled:
-                    self.ten_env.log_debug(
-                        "Cancellation flag detected, sending flush event and stopping TTS stream."
-                    )
-                    yield None, EVENT_TTS_FLUSH
-                    return
-
-                self.ten_env.log_debug(
-                    f"FishAudioTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
+            connect_task = asyncio.create_task(connect_context.__aenter__())
+            self._connect_task = connect_task
+            websocket = await connect_task
+            context_entered = True
+            if self._connect_task is connect_task:
+                self._connect_task = None
+            try:
+                active_websocket = websocket
+                self._websocket = websocket
+                await self._capture_response_headers(websocket)
+                sender_task = asyncio.create_task(
+                    self._send_request(websocket, text)
                 )
-                if len(chunk) > 0:
-                    yield chunk, EVENT_TTS_RESPONSE
+                self._sender_task = sender_task
 
-                # Only send EVENT_TTS_END if not cancelled (flush event already sent)
+                while True:
+                    message = await websocket.recv()
+                    if isinstance(message, str):
+                        raise RuntimeError(
+                            "Fish Audio returned a text WebSocket message"
+                        )
+
+                    data = ormsgpack.unpackb(message)
+                    event = data.get("event")
+                    if event == "audio":
+                        audio = data.get("audio")
+                        if isinstance(audio, bytes) and audio:
+                            yield audio, EVENT_TTS_RESPONSE
+                    elif event == "error":
+                        raise RuntimeError(str(data.get("error", "Unknown error")))
+                    elif event == "finish":
+                        break
+
+                await sender_task
+                if self._sender_task is sender_task:
+                    self._sender_task = None
+            finally:
+                await connect_context.__aexit__(None, None, None)
 
             if not self._is_cancelled:
-                self.ten_env.log_debug(
-                    f"FishAudioTTS: sending EVENT_TTS_END, total time: {time.time() - start_time}"
-                )
                 yield None, EVENT_TTS_END
-
-        except Exception as e:
+        except asyncio.CancelledError:
             if self._is_cancelled:
-                self.ten_env.log_debug(
-                    "FishAudioTTS: vendor stream stopped after cancellation: "
-                    f"type={type(e).__name__}"
-                )
+                yield None, EVENT_TTS_FLUSH
+                return
+            raise
+        except (ConnectionClosed, WebSocketException, OSError) as error:
+            if self._is_cancelled:
+                yield None, EVENT_TTS_FLUSH
+                return
+            self._log_vendor_error(error)
+            yield self._error_event(error)
+        except Exception as error:
+            if self._is_cancelled:
                 yield None, EVENT_TTS_FLUSH
                 return
 
-            error_message = str(e)
-            self.ten_env.log_error(
-                "vendor_error: "
-                f"type={type(e).__name__}, message={error_message}",
-                category=LOG_CATEGORY_VENDOR,
-            )
+            self._log_vendor_error(error)
+            yield self._error_event(error)
+        finally:
+            if self._connect_task is connect_task:
+                self._connect_task = None
+            if connect_task is not None and not connect_task.done():
+                connect_task.cancel()
+                await asyncio.gather(connect_task, return_exceptions=True)
+            if connect_context is not None and not context_entered:
+                await connect_context.__aexit__(None, None, None)
+            await self._close_active_connection(active_websocket, sender_task)
 
-            # Check if it's an API key authentication error
-            if (
-                "402" in error_message and "Payment Required" in error_message
-            ) or ("Payment Required" in error_message):
-                yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
-            else:
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+    @staticmethod
+    def _error_event(error: Exception) -> tuple[bytes, int]:
+        error_message = str(error)
+        if "402" in error_message or "Payment Required" in error_message:
+            return error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
+        return error_message.encode("utf-8"), EVENT_TTS_ERROR
+
+    def _log_vendor_error(self, error: Exception) -> None:
+        self.ten_env.log_error(
+            "vendor_error: "
+            f"type={type(error).__name__}, message={str(error)}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     async def cancel(self) -> None:
         self.ten_env.log_debug("FishAudioTTS: cancel() called.")
         self._is_cancelled = True
-
-        # Closing the owning SDK session tears down the active WebSocket and
-        # releases a blocked receive immediately. Do not call gen.aclose(): the
-        # Fish Audio SDK performs a graceful WebSocket context shutdown there,
-        # which can wait forever after an interrupted stream.
-        session = self.client
-        self.client = None
-        if session is not None:
-            try:
-                await session.close()
-            except Exception as close_error:
-                self.ten_env.log_warn(
-                    "FishAudioTTS: failed to close cancelled session: "
-                    f"type={type(close_error).__name__}, "
-                    f"message={str(close_error)}"
-                )
+        connect_task = self._connect_task
+        if connect_task is not None and not connect_task.done():
+            connect_task.cancel()
+            await asyncio.gather(connect_task, return_exceptions=True)
+        await self._close_active_connection()
 
     async def clean(self) -> None:
         self.ten_env.log_debug("FishAudioTTS: clean() called.")
-        session = self.client
-        self.client = None
-        if session is not None:
-            try:
-                await session.close()
-            except Exception as close_error:
-                # Shutdown must continue even when the vendor connection is
-                # already broken. Avoid logging exception repr because HTTP
-                # exception objects may retain sensitive request headers.
-                self.ten_env.log_warn(
-                    "FishAudioTTS: failed to close session during cleanup: "
-                    f"type={type(close_error).__name__}, "
-                    f"message={str(close_error)}"
-                )
+        self._is_cancelled = True
+        await self._close_active_connection()

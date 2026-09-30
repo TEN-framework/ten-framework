@@ -6,7 +6,7 @@
 
 <!-- main features introduction -->
 
-- WebSocket streaming TTS through the Fish Audio Python SDK.
+- Direct WebSocket streaming TTS through Fish Audio's timestamped endpoint.
 - WebSocket observability with a W3C `traceparent` header.
 - Logs the Fish Audio handshake response headers, including
   `x-fishaudio-datacenter` and the generated trace ID.
@@ -33,10 +33,14 @@ Refer to `api` definition in [manifest.json] and default values in [property.jso
 
 ### Observability
 
-Each TTS request sends a new W3C `traceparent` value on the Fish Audio
-WebSocket upgrade request. The response headers and trace ID are written to
-the extension logs after the handshake, so the `x-fishaudio-datacenter`
-value can be shared with Fish Audio support for latency analysis.
+Each TTS request connects to
+`wss://api.fish.audio/v1/tts/live/with-timestamp`, sends MessagePack
+`start`, `text`, and `stop` events, and forwards the binary `audio` payloads.
+The timestamp and alignment fields are currently ignored. Each request sends
+a new W3C `traceparent` value on the WebSocket upgrade request. The response
+headers and trace ID are written to the extension logs after the handshake, so
+the `x-fishaudio-datacenter` value can be shared with Fish Audio support for
+latency analysis.
 
 ### raise OSError('PortAudio library not found')
 apt-get update && apt-get install -y portaudio19-dev python3-pyaudio
