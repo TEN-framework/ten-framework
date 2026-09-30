@@ -28,7 +28,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 5. **Optional Jev routing graph**: `voice_assistant_jev_router` needs
    `TYPESAFE_API_KEY` and `DEEPSEEK_API_KEY`. Both routes use `deepseek-flash`:
    simple conversation runs without thinking, while complex requests enable
-   high-effort thinking. It also needs the same Deepgram and ElevenLabs keys
+   thinking. It also needs the same Deepgram and ElevenLabs keys
    as the default graph. This optional graph is a chatbot and has no tools.
 
 ### Provider-specific keys
@@ -142,14 +142,15 @@ record with the choice, confidence (when available), selected LLM, latency,
 and whether an error or timeout caused a fallback.
 Jev evaluates the final English ASR text with a `fast`/`deep` choice. A `fast`
 choice with confidence at least 0.8 uses Flash without thinking; `deep` or
-an uncertain `fast` choice uses Flash with high-effort thinking. Jev errors,
+an uncertain `fast` choice uses Flash with thinking. Jev errors,
 invalid responses, and timeouts fall back to Flash without thinking to keep
 the voice response responsive. The Jev request has a 1000 ms deadline and
 the controller waits at most 1200 ms. These thresholds are demo starting
 points and should be calibrated with real requests before production use.
 When thinking is selected, the complete DeepSeek reasoning is shown in a
-separate chat message before the final answer; it is never sent to TTS. This
-graph registers no tools.
+separate chat message before the final answer; it is never sent to TTS. The
+route appears as a normal assistant message, so no frontend changes are
+needed. This graph registers no tools.
 Both LLM nodes are pinned to `deepseek-flash`; the old
 `DEEPSEEK_FAST_MODEL` and `DEEPSEEK_DEEP_MODEL` values do not override this
 graph.

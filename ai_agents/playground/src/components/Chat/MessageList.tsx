@@ -1,4 +1,4 @@
-import { Bot, Brain, GitBranch } from "lucide-react";
+import { Bot, Brain } from "lucide-react";
 import * as React from "react";
 import { useAppSelector, useAutoScroll } from "@/common";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,8 +19,8 @@ export default function MessageList(props: { className?: string }) {
       ref={containerRef}
       className={cn("grow space-y-2 overflow-y-auto p-4", className)}
     >
-      {chatItems.map((item, index) => {
-        return <MessageItem data={item} key={`${item.time}-${index}`} />;
+      {chatItems.map((item, _index) => {
+        return <MessageItem data={item} key={item.time} />;
       })}
     </div>
   );
@@ -42,12 +42,6 @@ export function MessageItem(props: { data: IChatItem }) {
               <Brain size={20} />
             </AvatarFallback>
           </Avatar>
-        ) : data.data_type === EMessageDataType.ROUTE ? (
-          <Avatar>
-            <AvatarFallback>
-              <GitBranch size={20} />
-            </AvatarFallback>
-          </Avatar>
         ) : (
           <Avatar>
             <AvatarFallback>
@@ -56,35 +50,19 @@ export function MessageItem(props: { data: IChatItem }) {
           </Avatar>
         )
       ) : null}
-      <div
-        className={cn(
-          "max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground",
-          data.data_type === EMessageDataType.REASON &&
-            "border border-violet-700/40 bg-violet-950/20",
-          data.data_type === EMessageDataType.ROUTE &&
-            "border border-sky-700/50 bg-sky-950/30"
-        )}
-      >
+      <div className="max-w-[80%] rounded-lg bg-secondary p-2 text-secondary-foreground">
         {data.data_type === EMessageDataType.IMAGE ? (
           <img src={data.text} alt="chat" className="w-full" />
         ) : (
-          <>
-            {data.data_type === EMessageDataType.REASON && (
-              <p className="mb-1 text-xs font-medium text-violet-300">
-                DeepSeek 思考过程
-              </p>
-            )}
-            <p
-              className={cn(
-                "whitespace-pre-wrap break-words",
-                (data.data_type === EMessageDataType.REASON ||
-                  data.data_type === EMessageDataType.ROUTE) &&
-                  "text-xs text-zinc-400"
-              )}
-            >
-              {data.text}
-            </p>
-          </>
+          <p
+            className={
+              data.data_type === EMessageDataType.REASON
+                ? cn("text-xs", "text-zinc-500")
+                : ""
+            }
+          >
+            {data.text}
+          </p>
         )}
       </div>
     </div>

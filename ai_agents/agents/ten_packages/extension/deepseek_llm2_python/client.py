@@ -37,12 +37,10 @@ from .think_parser import ThinkParser
 
 
 @dataclass
-class OpenAILLM2Config(BaseModel):
+class DeepSeekLLM2Config(BaseModel):
     api_key: str = ""
-    base_url: str = "https://api.openai.com/v1"
-    model: str = (
-        "gpt-4o"  # Adjust this to match the equivalent of `openai.GPT4o` in the Python library
-    )
+    base_url: str = "https://api.deepseek.com"
+    model: str = "deepseek-flash"
     proxy_url: str = ""
     temperature: float = 0.7
     top_p: float = 1.0
@@ -64,22 +62,19 @@ class ReasoningMode(str, Enum):
     ModeV1 = "v1"
 
 
-class OpenAIChatGPT:
+class DeepSeekChatClient:
     client = None
 
-    def __init__(self, ten_env: AsyncTenEnv, config: OpenAILLM2Config):
+    def __init__(self, ten_env: AsyncTenEnv, config: DeepSeekLLM2Config):
         self.config = config
         self.ten_env = ten_env
-        ten_env.log_info("OpenAIChatGPT initialized")
+        ten_env.log_info("DeepSeekChatClient initialized")
         self.http_client = None
         if config.proxy_url:
-            ten_env.log_info(f"Setting httpx proxy: {config.proxy_url}")
+            ten_env.log_info("Setting httpx proxy")
             self.http_client = httpx.AsyncClient(proxy=config.proxy_url)
 
-        default_headers = {
-            "api-key": config.api_key,
-            "Authorization": f"Bearer {config.api_key}",
-        }
+        default_headers = {}
         for key, value in config.custom_headers.items():
             if isinstance(value, (dict, list)):
                 ten_env.log_warn(
@@ -237,9 +232,11 @@ class OpenAIChatGPT:
                 self.ten_env.log_debug(f"set openai param: {key}")
                 req[key] = value
 
+        thinking_config = (req.get("extra_body") or {}).get("thinking") or {}
         self.ten_env.log_info(
             f"Requesting chat completions: model={self.config.model}, "
-            f"messages={len(req['messages'])}"
+            f"messages={len(req['messages'])}, thinking="
+            f"{thinking_config.get('type', 'default')}"
         )
 
         try:
@@ -359,7 +356,7 @@ class OpenAIChatGPT:
                 if delta.tool_calls:
                     try:
                         for tool_call in delta.tool_calls:
-                            self.ten_env.log_info(f"Tool call: {tool_call}")
+                            self.ten_env.log_info("Received a tool call")
                             if tool_call.index not in tool_calls_dict:
                                 tool_calls_dict[tool_call.index] = {
                                     "id": None,
@@ -390,11 +387,8 @@ class OpenAIChatGPT:
                                     "type"
                                 ] = tool_call.type
                     except Exception as e:
-                        import traceback
-
-                        traceback.print_exc()
                         self.ten_env.log_error(
-                            f"Error processing tool call: {e} {tool_calls_dict}"
+                            f"Error processing tool call: {type(e).__name__}"
                         )
 
             if last_chat_completion is None:
@@ -437,9 +431,7 @@ class OpenAIChatGPT:
             if tool_calls_list:
                 for tool_call in tool_calls_list:
                     arguements = json.loads(tool_call["function"]["arguments"])
-                    self.ten_env.log_info(
-                        f"Tool call22: {choice.delta.model_dump_json()}"
-                    )
+                    self.ten_env.log_info("Emitting a tool call")
                     yield LLMResponseToolCall(
                         response_id=last_chat_completion.id,
                         id=last_chat_completion.id,

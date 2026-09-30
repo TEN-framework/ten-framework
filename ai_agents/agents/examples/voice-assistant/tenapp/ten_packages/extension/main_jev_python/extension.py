@@ -1,4 +1,3 @@
-import asyncio
 import json
 import time
 from typing import Literal
@@ -15,6 +14,7 @@ from .agent.agent import Agent
 from .agent.events import (
     ASRResultEvent,
     LLMResponseEvent,
+    ModelRouteEvent,
     ToolRegisterEvent,
     UserJoinedEvent,
     UserLeftEvent,
@@ -42,6 +42,15 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
+        self._asr_final_segments: list[str] = []
+        self._asr_interim: str = ""
+        self._last_text_ts: int = 0
+
+    def _next_text_ts(self) -> int:
+        self._last_text_ts = max(
+            int(time.time() * 1000), self._last_text_ts + 1
+        )
+        return self._last_text_ts
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -53,7 +62,7 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
-        self.agent = Agent(ten_env)
+        self.agent = Agent(ten_env, self.config.model_routing)
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
@@ -64,7 +73,7 @@ class MainControlExtension(AsyncExtension):
 
     # === Register handlers with decorators ===
     @agent_event_handler(UserJoinedEvent)
-    async def _on_user_joined(self, event: UserJoinedEvent):
+    async def _on_user_joined(self, _event: UserJoinedEvent):
         self._rtc_user_count += 1
         if self._rtc_user_count == 1 and self.config and self.config.greeting:
             await self._send_to_tts(self.config.greeting, True)
@@ -73,7 +82,7 @@ class MainControlExtension(AsyncExtension):
             )
 
     @agent_event_handler(UserLeftEvent)
-    async def _on_user_left(self, event: UserLeftEvent):
+    async def _on_user_left(self, _event: UserLeftEvent):
         self._rtc_user_count -= 1
 
     @agent_event_handler(ToolRegisterEvent)
@@ -82,8 +91,18 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(ASRResultEvent)
     async def _on_asr_result(self, event: ASRResultEvent):
-        self.session_id = event.metadata.get("session_id", "100")
+        session_id = event.metadata.get("session_id", "100")
+        if (
+            self.config.turn_detection_mode == "speech_final"
+            and session_id != self.session_id
+        ):
+            self._asr_final_segments.clear()
+            self._asr_interim = ""
+        self.session_id = session_id
         stream_id = int(self.session_id)
+        if self.config.turn_detection_mode == "speech_final":
+            await self._on_asr_result_speech_final(event, stream_id)
+            return
         if not event.text:
             return
         if event.final or len(event.text) > 2:
@@ -93,8 +112,46 @@ class MainControlExtension(AsyncExtension):
             await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
 
+    async def _on_asr_result_speech_final(
+        self, event: ASRResultEvent, stream_id: int
+    ):
+        asr_info = event.metadata.get("asr_info") or {}
+        speech_final = (
+            isinstance(asr_info, dict) and asr_info.get("speech_final") is True
+        )
+        if event.text:
+            # Keep the existing barge-in policy separate from turn detection.
+            if event.final or len(event.text) > 2:
+                await self._interrupt()
+            if event.final:
+                self._asr_final_segments.append(event.text)
+                self._asr_interim = ""
+            else:
+                self._asr_interim = event.text
+
+        segments = self._asr_final_segments.copy()
+        if self._asr_interim:
+            segments.append(self._asr_interim)
+        utterance = " ".join(
+            segment.strip() for segment in segments if segment.strip()
+        )
+
+        if speech_final:
+            self._asr_final_segments.clear()
+            self._asr_interim = ""
+            if utterance:
+                self.turn_id += 1
+                await self.agent.queue_llm_input(utterance)
+                await self._send_transcript("user", utterance, True, stream_id)
+        elif event.text and utterance:
+            await self._send_transcript("user", utterance, False, stream_id)
+
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
+        # The collector queues every snapshot as a new message. Send the
+        # complete reasoning once so a long chain cannot delay the answer.
+        if event.type == "reasoning" and not event.is_final:
+            return
         if not event.is_final and event.type == "message":
             sentences, self.sentence_fragment = parse_sentences(
                 self.sentence_fragment, event.delta
@@ -111,22 +168,53 @@ class MainControlExtension(AsyncExtension):
             "assistant",
             event.text,
             event.is_final,
-            100,
+            (2_000_000 if event.type == "reasoning" else 3_000_000)
+            + self.turn_id,
             data_type=("reasoning" if event.type == "reasoning" else "text"),
         )
 
-    async def on_start(self, ten_env: AsyncTenEnv):
-        ten_env.log_info("[MainControlExtension] on_start")
+    @agent_event_handler(ModelRouteEvent)
+    async def _on_model_route(self, event: ModelRouteEvent):
+        if event.choice:
+            confidence = (
+                f" (confidence {event.confidence:.2f})"
+                if event.confidence is not None
+                else ""
+            )
+            result = f"{event.choice}{confidence}"
+        else:
+            result = "unavailable"
+        if event.status == "below_threshold":
+            reason = (
+                f" (below {self.config.model_routing.min_confidence:.2f} "
+                "threshold)"
+            )
+        elif event.status not in ("selected_fast", "selected_deep"):
+            reason = f" ({event.status.replace('_', ' ')} fallback)"
+        else:
+            reason = ""
+        mode = (
+            "Flash · thinking on"
+            if event.destination == self.config.model_routing.deep_dest
+            else "Flash · thinking off"
+        )
+        label = f"Jev route: {result} → {mode}{reason} · {event.latency_ms} ms"
+        await self._send_transcript(
+            "assistant", label, True, 1_000_000 + self.turn_id
+        )
 
-    async def on_stop(self, ten_env: AsyncTenEnv):
-        ten_env.log_info("[MainControlExtension] on_stop")
+    async def on_start(self, _ten_env: AsyncTenEnv):
+        self.ten_env.log_info("[MainControlExtension] on_start")
+
+    async def on_stop(self, _ten_env: AsyncTenEnv):
+        self.ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
         await self.agent.stop()
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
+    async def on_cmd(self, _ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+    async def on_data(self, _ten_env: AsyncTenEnv, data: Data):
         await self.agent.on_data(data)
 
     # === helpers ===
@@ -150,7 +238,7 @@ class MainControlExtension(AsyncExtension):
                     "data_type": "transcribe",
                     "role": role,
                     "text": text,
-                    "text_ts": int(time.time() * 1000),
+                    "text_ts": self._next_text_ts(),
                     "is_final": final,
                     "stream_id": stream_id,
                 },
@@ -171,13 +259,14 @@ class MainControlExtension(AsyncExtension):
                             },
                         }
                     ),
-                    "text_ts": int(time.time() * 1000),
+                    "text_ts": self._next_text_ts(),
                     "is_final": final,
                     "stream_id": stream_id,
                 },
             )
         self.ten_env.log_info(
-            f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
+            f"[MainControlExtension] Sent transcript: role={role}, "
+            f"type={data_type}, final={final}, length={len(text)}"
         )
 
     async def _send_to_tts(self, text: str, is_final: bool):
@@ -197,7 +286,8 @@ class MainControlExtension(AsyncExtension):
             },
         )
         self.ten_env.log_info(
-            f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}"
+            f"[MainControlExtension] Sent to TTS: is_final={is_final}, "
+            f"length={len(text)}"
         )
 
     async def _interrupt(self):

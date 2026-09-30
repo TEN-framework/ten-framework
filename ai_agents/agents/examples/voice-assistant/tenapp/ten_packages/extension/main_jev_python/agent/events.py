@@ -62,6 +62,18 @@ class LLMResponseEvent(AgentEventBase):
     is_final: bool
 
 
+class ModelRouteEvent(AgentEventBase):
+    """The selected LLM destination for a user turn."""
+
+    type: Literal["data"] = "data"
+    name: Literal["model_route"] = "model_route"
+    destination: str
+    status: str
+    latency_ms: int
+    choice: str | None = None
+    confidence: float | None = None
+
+
 # ==== Unified Event Union ====
 
 AgentEvent = Union[
@@ -70,4 +82,5 @@ AgentEvent = Union[
     ToolRegisterEvent,
     ASRResultEvent,
     LLMResponseEvent,
+    ModelRouteEvent,
 ]

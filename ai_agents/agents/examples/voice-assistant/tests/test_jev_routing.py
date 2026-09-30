@@ -10,12 +10,12 @@ from pathlib import Path
 import pytest
 
 
-PACKAGE = "main_python_routing_test"
+PACKAGE = "main_jev_python_routing_test"
 package = types.ModuleType(PACKAGE)
 package.__path__ = [
     str(
         Path(__file__).resolve().parents[1]
-        / "tenapp/ten_packages/extension/main_python"
+        / "tenapp/ten_packages/extension/main_jev_python"
     )
 ]
 sys.modules.setdefault(PACKAGE, package)

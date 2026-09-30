@@ -12,9 +12,9 @@ import pytest
 
 ROOT = (
     Path(__file__).resolve().parents[1]
-    / "tenapp/ten_packages/extension/main_python"
+    / "tenapp/ten_packages/extension/main_jev_python"
 )
-PACKAGE = "main_python_reasoning_test"
+PACKAGE = "main_jev_python_reasoning_test"
 package = types.ModuleType(PACKAGE)
 package.__path__ = [str(ROOT)]
 sys.modules[PACKAGE] = package
@@ -109,6 +109,84 @@ async def test_complete_reasoning_is_visible_but_never_sent_to_tts():
     assert messages[1]["data_type"] == "transcribe"
     assert messages[1]["text"] == "Answer"
     extension._send_to_tts.assert_awaited_once_with("", True)
+
+
+@pytest.mark.asyncio
+async def test_route_precedes_reasoning_and_answer_without_frontend_changes():
+    messages.clear()
+    extension = MainControlExtension("main_control")
+    extension.ten_env = types.SimpleNamespace(log_info=lambda _message: None)
+    extension.config = types.SimpleNamespace(
+        model_routing=types.SimpleNamespace(
+            deep_dest="llm_deep", min_confidence=0.8
+        )
+    )
+    extension.turn_id = 1
+    extension._send_to_tts = AsyncMock()
+
+    await extension._on_model_route(
+        types.SimpleNamespace(
+            choice="deep",
+            confidence=0.91,
+            status="selected_deep",
+            destination="llm_deep",
+            latency_ms=80,
+        )
+    )
+    await extension._on_llm_response(
+        types.SimpleNamespace(
+            type="reasoning", delta="", text="Think", is_final=True
+        )
+    )
+    await extension._on_llm_response(
+        types.SimpleNamespace(
+            type="message", delta="", text="Answer", is_final=True
+        )
+    )
+
+    assert [item["data_type"] for item in messages] == [
+        "transcribe",
+        "raw",
+        "transcribe",
+    ]
+    assert "Jev route: deep (confidence 0.91)" in messages[0]["text"]
+    assert "thinking on" in messages[0]["text"]
+    assert json.loads(messages[1]["text"])["type"] == "reasoning"
+    assert messages[2]["text"] == "Answer"
+    assert len({item["stream_id"] for item in messages}) == 3
+    assert [item["text_ts"] for item in messages] == sorted(
+        item["text_ts"] for item in messages
+    )
+    extension._send_to_tts.assert_awaited_once_with("", True)
+
+
+@pytest.mark.asyncio
+async def test_route_fallback_explains_error_and_uses_fast_mode():
+    messages.clear()
+    extension = MainControlExtension("main_control")
+    extension.ten_env = types.SimpleNamespace(log_info=lambda _message: None)
+    extension.config = types.SimpleNamespace(
+        model_routing=types.SimpleNamespace(
+            deep_dest="llm_deep", min_confidence=0.8
+        )
+    )
+    extension.turn_id = 2
+    extension._send_to_tts = AsyncMock()
+
+    await extension._on_model_route(
+        types.SimpleNamespace(
+            choice=None,
+            confidence=None,
+            status="timeout",
+            destination="llm_fast",
+            latency_ms=1200,
+        )
+    )
+
+    assert messages[0]["data_type"] == "transcribe"
+    assert "thinking off" in messages[0]["text"]
+    assert "timeout fallback" in messages[0]["text"]
+    extension._send_to_tts.assert_not_awaited()
 
 
 def make_asr_event(text, *, final, speech_final, session_id="100"):

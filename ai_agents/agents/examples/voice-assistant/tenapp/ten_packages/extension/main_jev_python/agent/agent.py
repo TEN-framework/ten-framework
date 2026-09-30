@@ -2,13 +2,25 @@ import asyncio
 import json
 from typing import Awaitable, Callable, Optional
 from .llm_exec import LLMExec
+from ..config import ModelRoutingConfig
+from ..routing import RoutingDecision
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata
-from .events import *
+from .events import (
+    ASRResultEvent,
+    AgentEvent,
+    LLMResponseEvent,
+    ModelRouteEvent,
+    ToolRegisterEvent,
+    UserJoinedEvent,
+    UserLeftEvent,
+)
 
 
 class Agent:
-    def __init__(self, ten_env: AsyncTenEnv):
+    def __init__(
+        self, ten_env: AsyncTenEnv, routing: ModelRoutingConfig | None = None
+    ):
         self.ten_env: AsyncTenEnv = ten_env
         self.stopped = False
 
@@ -28,13 +40,14 @@ class Agent:
             None  # currently running handler
         )
 
-        self.llm_exec = LLMExec(ten_env)
+        self.llm_exec = LLMExec(ten_env, routing)
         self.llm_exec.on_response = (
             self._on_llm_response
         )  # callback handled internally
         self.llm_exec.on_reasoning_response = (
             self._on_llm_reasoning_response
         )  # callback handled internally
+        self.llm_exec.on_route = self._on_route
 
         # Start consumers
         self._asr_consumer = asyncio.create_task(self._consume_asr())
@@ -71,8 +84,6 @@ class Agent:
                 for h in handlers:
                     try:
                         await h(event)
-                    except asyncio.CancelledError:
-                        raise
                     except Exception as e:
                         self.ten_env.log_error(
                             f"Handler error for {etype}: {e}"
@@ -156,14 +167,25 @@ class Agent:
             self.ten_env.log_error(f"on_data error: {e}")
 
     async def _on_llm_response(
-        self, ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool
+        self, _ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool
     ):
         await self._emit_llm(
             LLMResponseEvent(delta=delta, text=text, is_final=is_final)
         )
 
+    async def _on_route(self, _ten_env: AsyncTenEnv, route: RoutingDecision):
+        await self._emit_direct(
+            ModelRouteEvent(
+                destination=route.destination,
+                status=route.status,
+                latency_ms=route.latency_ms,
+                choice=route.choice,
+                confidence=route.confidence,
+            )
+        )
+
     async def _on_llm_reasoning_response(
-        self, ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool
+        self, _ten_env: AsyncTenEnv, delta: str, text: str, is_final: bool
     ):
         """
         Internal callback for streaming LLM output, wrapped as an AgentEvent.

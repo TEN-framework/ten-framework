@@ -36,7 +36,6 @@ export enum EMessageType {
 export enum EMessageDataType {
   TEXT = "text",
   REASON = "reason",
-  ROUTE = "route",
   IMAGE = "image",
 }
 

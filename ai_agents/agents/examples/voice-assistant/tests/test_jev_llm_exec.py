@@ -13,9 +13,9 @@ import pytest
 
 ROOT = (
     Path(__file__).resolve().parents[1]
-    / "tenapp/ten_packages/extension/main_python"
+    / "tenapp/ten_packages/extension/main_jev_python"
 )
-PACKAGE = "main_python_exec_test"
+PACKAGE = "main_jev_python_exec_test"
 package = types.ModuleType(PACKAGE)
 package.__path__ = [str(ROOT)]
 sys.modules.setdefault(PACKAGE, package)
@@ -236,6 +236,48 @@ async def test_interrupted_decision_does_not_emit_route(monkeypatch):
     with pytest.raises(asyncio.CancelledError):
         await pending
     assert observed == []
+
+
+@pytest.mark.asyncio
+async def test_cancelled_reply_does_not_emit_stale_final_text():
+    started = asyncio.Event()
+
+    class OneInputQueue:
+        def __init__(self):
+            self.sent = False
+
+        async def get(self):
+            if not self.sent:
+                self.sent = True
+                return "First request"
+            await asyncio.Event().wait()
+
+    executor = object.__new__(LLMExec)
+    executor.ten_env = FakeEnv()
+    executor.input_queue = OneInputQueue()
+    executor.stopped = False
+    executor.loop = asyncio.get_running_loop()
+    executor.current_task = None
+    executor.current_text = "partial stale answer"
+    replies = []
+
+    async def on_response(_env, _delta, text, _final):
+        replies.append(text)
+
+    async def pending_llm(_env, _message):
+        started.set()
+        await asyncio.Event().wait()
+
+    executor.on_response = on_response
+    executor._send_to_llm = pending_llm
+    worker = asyncio.create_task(executor._process_input_queue())
+    await started.wait()
+    executor.current_task.cancel()
+    await asyncio.sleep(0)
+    executor.stopped = True
+    worker.cancel()
+    await worker
+    assert replies == []
 
 
 @pytest.mark.asyncio

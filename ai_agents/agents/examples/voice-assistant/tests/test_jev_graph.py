@@ -1,5 +1,6 @@
 """Static checks for the optional Jev voice-assistant graph."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -18,17 +19,17 @@ def test_jev_graph_is_optional_and_has_required_nodes():
         if node["name"] == "llm"
     )
     assert default_llm["property"]["model"] == "${env:OPENAI_MODEL}"
-    assert default_llm["property"]["base_url"] == (
-        "${env:OPENAI_API_BASE|https://api.openai.com/v1}"
-    )
+    assert default_llm["property"]["base_url"] == "https://api.openai.com/v1"
+    assert default_llm["property"]["api_key"] == "${env:OPENAI_API_KEY}"
 
     nodes = {
         node["name"]: node
         for node in graphs["voice_assistant_jev_router"]["graph"]["nodes"]
     }
     assert nodes["jev"]["addon"] == "typesafe_jev_python"
-    assert nodes["llm_fast"]["addon"] == "openai_llm2_python"
-    assert nodes["llm_deep"]["addon"] == "openai_llm2_python"
+    assert nodes["llm_fast"]["addon"] == "deepseek_llm2_python"
+    assert nodes["llm_deep"]["addon"] == "deepseek_llm2_python"
+    assert nodes["main_control"]["addon"] == "main_jev_python"
     assert nodes["stt"]["property"]["params"]["language"] == "en-US"
     assert nodes["stt"]["property"]["params"]["endpointing"] == 500
     assert nodes["jev"]["property"]["params"]["api_key"] == (
@@ -67,3 +68,22 @@ def test_jev_dependency_is_declared():
     assert {
         "path": "../../../ten_packages/extension/typesafe_jev_python"
     } in app["dependencies"]
+    assert {
+        "path": "../../../ten_packages/extension/deepseek_llm2_python"
+    } in app["dependencies"]
+
+
+def test_other_graphs_match_pre_jev_commit():
+    current = json.loads((TENAPP / "property.json").read_text())
+    current_graphs = [
+        graph
+        for graph in current["ten"]["predefined_graphs"]
+        if graph["name"] != "voice_assistant_jev_router"
+    ]
+    # Canonical SHA-256 of predefined_graphs at 70e4d8da7^.
+    encoded = json.dumps(
+        current_graphs, sort_keys=True, separators=(",", ":")
+    ).encode()
+    assert hashlib.sha256(encoded).hexdigest() == (
+        "312a4f54b9f68f4bbb94c09df9e9bca3be585a712cb106083e95dc8aec837650"
+    )

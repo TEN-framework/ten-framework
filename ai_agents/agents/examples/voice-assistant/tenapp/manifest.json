@@ -88,6 +88,9 @@
       "path": "../../../ten_packages/extension/openai_llm2_python"
     },
     {
+      "path": "../../../ten_packages/extension/deepseek_llm2_python"
+    },
+    {
       "path": "../../../ten_packages/extension/typesafe_jev_python"
     },
     {
