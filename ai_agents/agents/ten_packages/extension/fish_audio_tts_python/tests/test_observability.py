@@ -109,7 +109,6 @@ def test_traceparent_is_sent_and_response_headers_are_logged():
 
     asyncio.run(run_test())
 
-
 def test_request_start_callback_runs_before_sdk_tts():
     async def run_test() -> None:
         events: list[str] = []
@@ -159,12 +158,3 @@ def test_payment_required_handshake_is_reported_as_invalid_key():
         assert b"Payment Required" in event[0]
 
     asyncio.run(run_test())
-
-
-def test_legacy_backend_name_maps_to_timestamped_model():
-    client = FishAudioTTSClient(
-        FishAudioTTSConfig(api_key="test-key", backend="speech-1.5"),
-        MagicMock(),
-    )
-
-    assert client._build_headers()["model"] == "s2.1-pro"

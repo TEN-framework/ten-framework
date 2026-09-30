@@ -10,7 +10,7 @@ class FishAudioTTSConfig(BaseModel):
     sample_rate: int = 16000
     dump: bool = False
     dump_path: str = "/tmp"
-    backend: str = "s2.1-pro"
+    backend: str = "speech-1.5"
     params: dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:

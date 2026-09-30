@@ -54,12 +54,9 @@ class FishAudioTTSClient:
 
     def _build_headers(self) -> dict[str, str]:
         self._traceparent = self._new_traceparent()
-        model = {
-            "speech-1.5": "s2.1-pro",
-        }.get(self.config.backend, self.config.backend)
         return {
             "Authorization": f"Bearer {self.config.api_key}",
-            "model": model,
+            "model": self.config.backend,
             "traceparent": self._traceparent,
         }
 
