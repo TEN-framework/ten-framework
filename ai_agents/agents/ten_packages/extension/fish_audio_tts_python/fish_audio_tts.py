@@ -54,9 +54,12 @@ class FishAudioTTSClient:
 
     def _build_headers(self) -> dict[str, str]:
         self._traceparent = self._new_traceparent()
+        model = {
+            "speech-1.5": "s2.1-pro",
+        }.get(self.config.backend, self.config.backend)
         return {
             "Authorization": f"Bearer {self.config.api_key}",
-            "model": self.config.backend,
+            "model": model,
             "traceparent": self._traceparent,
         }
 
@@ -70,13 +73,26 @@ class FishAudioTTSClient:
         request["chunk_length"] = 200
         return request
 
+    @staticmethod
+    def _headers_to_dict(headers) -> dict[str, str]:
+        raw_items = getattr(headers, "raw_items", None)
+        items = raw_items() if callable(raw_items) else headers.items()
+        normalized: dict[str, str] = {}
+        for name, value in items:
+            name = name.lower()
+            if name in normalized:
+                normalized[name] = f"{normalized[name]}, {value}"
+            else:
+                normalized[name] = value
+        return normalized
+
     async def _capture_response_headers(self, websocket: ClientConnection) -> None:
         response = getattr(websocket, "response", None)
         headers = getattr(response, "headers", None)
         if headers is None:
             headers = getattr(websocket, "response_headers", {})
 
-        self._response_headers = dict(headers.items())
+        self._response_headers = self._headers_to_dict(headers)
         datacenter = self._response_headers.get("x-fishaudio-datacenter", "")
         trace_id = self._traceparent.split("-")[1]
         self.ten_env.log_info(

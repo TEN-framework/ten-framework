@@ -17,10 +17,7 @@ class FakeSession:
     def __init__(self, events: list[str]) -> None:
         self.events = events
         self.response = SimpleNamespace(
-            headers={
-                "x-fishaudio-datacenter": "us-east-1",
-                "x-request-id": "request-123",
-            }
+            headers=DuplicateHeaders()
         )
         self.sent_messages: list[dict] = []
         self.received = False
@@ -36,6 +33,16 @@ class FakeSession:
 
     async def close(self) -> None:
         self.events.append("close")
+
+
+class DuplicateHeaders:
+    def raw_items(self):
+        return [
+            ("x-fishaudio-datacenter", "us-east-1"),
+            ("x-request-id", "request-123"),
+            ("server-timing", "edge;dur=1"),
+            ("server-timing", "inference;dur=2"),
+        ]
 
 
 class FakeConnect:
@@ -152,3 +159,12 @@ def test_payment_required_handshake_is_reported_as_invalid_key():
         assert b"Payment Required" in event[0]
 
     asyncio.run(run_test())
+
+
+def test_legacy_backend_name_maps_to_timestamped_model():
+    client = FishAudioTTSClient(
+        FishAudioTTSConfig(api_key="test-key", backend="speech-1.5"),
+        MagicMock(),
+    )
+
+    assert client._build_headers()["model"] == "s2.1-pro"
