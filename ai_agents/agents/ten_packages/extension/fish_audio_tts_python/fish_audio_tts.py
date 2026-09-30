@@ -1,5 +1,6 @@
+import secrets
 import time
-from typing import AsyncIterator
+from typing import AsyncIterator, Callable
 
 # Only import the specific TTS modules we need to avoid PortAudio dependency
 from fish_audio_sdk import AsyncWebSocketSession, TTSRequest
@@ -16,18 +17,56 @@ EVENT_TTS_FLUSH = 5
 
 
 class FishAudioTTSClient:
-    def __init__(self, config: FishAudioTTSConfig, ten_env: AsyncTenEnv):
+    def __init__(
+        self,
+        config: FishAudioTTSConfig,
+        ten_env: AsyncTenEnv,
+        on_request_start: Callable[[], None] | None = None,
+    ):
         self.config = config
         self.ten_env = ten_env
+        self.on_request_start = on_request_start
+        self._traceparent = ""
+        self._response_headers: dict[str, str] = {}
         self.client: AsyncWebSocketSession | None = self._create_session()
         self._is_cancelled = False
 
     def _create_session(self) -> AsyncWebSocketSession:
         if self.config.base_url.strip() != "":
-            return AsyncWebSocketSession(
+            session = AsyncWebSocketSession(
                 self.config.api_key, base_url=self.config.base_url
             )
-        return AsyncWebSocketSession(self.config.api_key)
+        else:
+            session = AsyncWebSocketSession(self.config.api_key)
+
+        sdk_client = getattr(session, "_client", None)
+        if sdk_client is not None:
+            response_hooks = sdk_client.event_hooks.setdefault("response", [])
+            response_hooks.append(self._capture_response_headers)
+        return session
+
+    @staticmethod
+    def _new_traceparent() -> str:
+        trace_id = secrets.token_hex(16)
+        span_id = secrets.token_hex(8)
+        return f"00-{trace_id}-{span_id}-01"
+
+    def _set_traceparent(self, session: AsyncWebSocketSession) -> None:
+        self._traceparent = self._new_traceparent()
+        self._response_headers = {}
+        sdk_client = getattr(session, "_client", None)
+        if sdk_client is not None:
+            sdk_client.headers["traceparent"] = self._traceparent
+
+    async def _capture_response_headers(self, response) -> None:
+        self._response_headers = dict(response.headers.items())
+        datacenter = response.headers.get("x-fishaudio-datacenter", "")
+        trace_id = self._traceparent.split("-")[1]
+        self.ten_env.log_info(
+            "FishAudioTTS: WebSocket response headers: "
+            f"{self._response_headers}; "
+            f"x-fishaudio-datacenter={datacenter}; trace_id={trace_id}"
+        )
 
     async def _text_stream(self, text: str) -> AsyncIterator[str]:
         yield text
@@ -41,6 +80,7 @@ class FishAudioTTSClient:
             self.client = self._create_session()
 
         session = self.client
+        self._set_traceparent(session)
 
         tts_request = TTSRequest(
             text="", chunk_length=200, **self.config.params
@@ -49,6 +89,8 @@ class FishAudioTTSClient:
         start_time = time.time()
 
         try:
+            if self.on_request_start is not None:
+                self.on_request_start()
             gen = session.tts(
                 request=tts_request,
                 text_stream=self._text_stream(text),

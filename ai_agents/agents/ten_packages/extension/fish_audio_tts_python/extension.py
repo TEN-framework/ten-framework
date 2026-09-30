@@ -18,7 +18,11 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
+)
 from .config import FishAudioTTSConfig
 
 from .fish_audio_tts import (
@@ -74,7 +78,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 raise ValueError("API key is required")
 
             self.client = FishAudioTTSClient(
-                config=self.config, ten_env=ten_env
+                config=self.config,
+                ten_env=ten_env,
+                on_request_start=self._on_vendor_request_start,
             )
 
         except Exception as e:
@@ -149,6 +155,10 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    def _on_vendor_request_start(self) -> None:
+        if self.sent_ts is None:
+            self.sent_ts = datetime.now()
+
     async def request_tts(self, t: TTSTextInput) -> None:
         """
         Override this method to handle TTS requests.
@@ -157,10 +167,13 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if not self.client:
                 self.client = FishAudioTTSClient(
-                    config=self.config, ten_env=self.ten_env
+                    config=self.config,
+                    ten_env=self.ten_env,
+                    on_request_start=self._on_vendor_request_start,
                 )
                 self.ten_env.log_info("TTS client reconnected successfully.")
 
@@ -173,7 +186,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 self.first_chunk = True
-                self.sent_ts = datetime.now()
+                self.sent_ts = None
                 self.request_ts = None
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
