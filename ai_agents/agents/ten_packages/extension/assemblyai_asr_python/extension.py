@@ -25,7 +25,7 @@ from ten_ai_base.message import (
     ModuleType,
 )
 from ten_ai_base.struct import ASRWord, TTSTextInput
-from ten_ai_base.utils import redact_json
+from ten_ai_base.utils import redact_json, redact_url
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -185,7 +185,9 @@ class AssemblyAIASRExtension(
             return {}
         fields = {
             "key": self.config.api_key,
-            "url": self.config.ws_url,
+            # The base class masks JSON keys, not query values inside a
+            # URL string, so mask any signed query here.
+            "url": redact_url(self.config.ws_url),
             "model": self.config.speech_model,
             "mode": self.config.mode,
         }
@@ -503,26 +505,40 @@ class AssemblyAIASRExtension(
     ) -> bool:
         assert self.config is not None
 
-        if not self.recognition:
-            self.ten_env.log_error("AssemblyAI ASR recognition not initialized")
+        # Snapshot the client once; the base class may only hand audio to
+        # the connection that was checked, never to a replacement.
+        recognition = self.recognition
+        if recognition is None or not self.is_connected():
+            self.ten_env.log_debug("send_audio: no live AssemblyAI session")
             return False
 
         buf = None
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
+        finally:
+            if buf is not None:
+                frame.unlock_buf(buf)
+
+        try:
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
-            await self.recognition.send_audio_frame(audio_data)
+        except Exception as e:
+            self.ten_env.log_warn(f"audio dump failed: {e}")
+
+        if self.recognition is not recognition or not self.is_connected():
+            # Replaced or disconnected while the dump was awaited.
+            self.ten_env.log_debug("send_audio: session changed; frame dropped")
+            return False
+
+        try:
+            await recognition.send_audio_frame(audio_data)
             return True
         except Exception as e:
             self.ten_env.log_error(
                 f"Error sending audio to AssemblyAI ASR: {e}"
             )
             return False
-        finally:
-            if buf is not None:
-                frame.unlock_buf(buf)
 
     # ------------------------------------------------------------------
     # Finalize: exactly one asr_finalize_end per request, always bounded

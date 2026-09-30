@@ -229,7 +229,7 @@ def test_validate_config_accepts_a_full_valid_config():
     _config(
         api_key="k",
         mode="min_latency",
-        encoding="pcm_mulaw",
+        encoding="pcm_s16le",
         voice_focus="far-field",
         vad_threshold=0.5,
         previous_context_n_turns=10,

@@ -10,8 +10,9 @@ PROMPT_MAX_CHARS = 1750
 MAX_KEYTERMS = 100
 MAX_LANGUAGE_CODES = 10
 
-# Accepted enum values.
-VALID_ENCODINGS = frozenset({"pcm_s16le", "pcm_mulaw"})
+# Accepted enum values. TEN delivers PCM16 mono `pcm_frame`; this
+# extension performs no transcoding, so only pcm_s16le is valid.
+VALID_ENCODINGS = frozenset({"pcm_s16le"})
 VALID_MODES = frozenset({"min_latency", "balanced", "max_accuracy"})
 VALID_VOICE_FOCUS = frozenset({"near-field", "far-field"})
 VALID_PII_SUBSTITUTIONS = frozenset({"hash", "entity_name"})

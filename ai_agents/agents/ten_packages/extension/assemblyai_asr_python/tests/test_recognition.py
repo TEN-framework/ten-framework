@@ -397,3 +397,101 @@ def test_control_message_log_does_not_contain_agent_context_text():
     )
     assert all("4242-9999" not in line for line in logs)
     assert any("UpdateConfiguration" in line for line in logs)
+
+
+class _SendFailingWebSocket(_FakeWebSocket):
+    """First send raises a generic transport error (not ConnectionClosed)."""
+
+    async def send(self, message) -> None:
+        raise OSError("broken pipe")
+
+
+def test_send_failure_closes_the_client_and_reports_on_close():
+    """A generic send error must not leave the client looking connected:
+    the extension relies on on_close to drive reconnect."""
+    ws = _SendFailingWebSocket()
+    recognition, callback = _make(ws=ws)
+
+    async def scenario():
+        recognition._consumer_task = asyncio.create_task(
+            recognition._consume_and_send()
+        )
+        await recognition.send_audio_frame(b"\x00\x01" * 800)
+        for _ in range(20):
+            await asyncio.sleep(0)
+        await asyncio.sleep(0.05)
+
+    asyncio.run(scenario())
+
+    assert recognition.is_connected() is False
+    assert ws.closed is True
+    assert len(callback.closes) == 1
+    assert callback.closes[0][0] == 1006
+    assert "broken pipe" in callback.closes[0][1]
+
+
+def test_timeline_advances_only_after_a_successful_send():
+    from ten_ai_base.timeline import AudioTimeline
+
+    timeline = AudioTimeline()
+    ws = _SendFailingWebSocket()
+    recognition, _ = _make(ws=ws)
+    recognition.audio_timeline = timeline
+
+    async def scenario():
+        recognition._consumer_task = asyncio.create_task(
+            recognition._consume_and_send()
+        )
+        await recognition.send_audio_frame(b"\x00\x01" * 800)  # 50 ms
+        await asyncio.sleep(0.05)
+
+    asyncio.run(scenario())
+
+    assert timeline.get_total_user_audio_duration() == 0
+
+
+def test_timeline_advances_after_a_successful_send():
+    from ten_ai_base.timeline import AudioTimeline
+
+    timeline = AudioTimeline()
+    ws = _FakeWebSocket()
+    recognition, _ = _make(ws=ws)
+    recognition.audio_timeline = timeline
+
+    async def scenario():
+        recognition._consumer_task = asyncio.create_task(
+            recognition._consume_and_send()
+        )
+        await recognition.send_audio_frame(b"\x00\x01" * 800)  # 50 ms
+        await asyncio.sleep(0.05)
+        recognition._consumer_task.cancel()
+
+    asyncio.run(scenario())
+
+    assert ws.sent and len(ws.sent[0]) == 1600
+    assert timeline.get_total_user_audio_duration() == 50
+
+
+def test_connect_log_masks_signed_url_query():
+    logs = []
+
+    class _LoggingEnv(_FakeTenEnv):
+        def log_info(self, msg, **kwargs):
+            logs.append(msg)
+
+    recognition = AssemblyAIWSRecognition(
+        api_key="fake_key",
+        ws_url="wss://streaming.assemblyai.com/v3/ws?token=signed-secret-9876",
+        ten_env=_LoggingEnv(),
+        config={"sample_rate": 16000},
+        callback=_RecordingCallback(),
+    )
+
+    async def fake_connect(*args, **kwargs):
+        raise OSError("unreachable")
+
+    with pytest.raises(OSError):
+        asyncio.run(recognition.start(connect=fake_connect))
+
+    assert all("signed-secret-9876" not in line for line in logs)
+    assert any("Connecting to AssemblyAI" in line for line in logs)

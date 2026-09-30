@@ -47,7 +47,7 @@ Set `ASSEMBLYAI_API_KEY` in `ai_agents/.env`. All vendor settings live under
 | `ws_url` | string | `wss://streaming.assemblyai.com/v3/ws` | Use `wss://streaming.eu.assemblyai.com/v3/ws` for EU residency. |
 | `speech_model` | string | `universal-3-6-pro` | `universal-3-*-pro`, `universal-streaming-english`, `universal-streaming-multilingual`. |
 | `sample_rate` | int | `16000` | Input PCM sample rate. |
-| `encoding` | string | `pcm_s16le` | `pcm_s16le` or `pcm_mulaw`. |
+| `encoding` | string | `pcm_s16le` | Only `pcm_s16le`: TEN delivers PCM16 mono and the extension does not transcode. |
 | `format_turns` | bool | `true` | Punctuation, casing and inverse text normalization on final turns. |
 | `language` | string | `en-US` | Locale reported in `asr_result.language`; also derives `language_codes` when that is unset. |
 | `language_codes` | string[] | derived | Pro only. Steers output toward these ISO 639-1 codes. `[]` disables steering. |

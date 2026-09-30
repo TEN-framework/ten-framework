@@ -14,7 +14,7 @@ from websockets.protocol import State
 from .audio_buffer_manager import AudioBufferManager
 from ten_ai_base.timeline import AudioTimeline
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
-from ten_ai_base.utils import redact_json
+from ten_ai_base.utils import redact_json, redact_url
 from ten_runtime import AsyncTenEnv
 
 # Close code reported when the socket died without a close frame.
@@ -254,7 +254,7 @@ class AssemblyAIWSRecognition:
         connect = connect or websockets.connect
 
         self.ten_env.log_info(
-            f"[AssemblyAI] Connecting to AssemblyAI: {self.ws_url}"
+            f"[AssemblyAI] Connecting to AssemblyAI: {redact_url(self.ws_url)}"
         )
 
         try:
@@ -311,20 +311,49 @@ class AssemblyAIWSRecognition:
                 ):
                     break
 
+                await self.websocket.send(chunk)
+
+                # Count only audio the vendor actually received.
                 duration_ms = int(len(chunk) / (sample_rate / 1000 * 2))
                 if self.audio_timeline:
                     self.audio_timeline.add_user_audio(duration_ms)
 
-                await self.websocket.send(chunk)
-
         except ConnectionClosed:
+            # The receive loop observes the same closure and reports
+            # on_close with the server's code; nothing more to do here.
             self.ten_env.log_error(
                 "[AssemblyAI] WebSocket connection closed while sending audio"
             )
-        except Exception as e:
+        except Exception as e:  # CancelledError is not an Exception
+            # A transport error on send means the session is unusable even
+            # though no close frame arrived. Tear it down through the normal
+            # close path so the extension reconnects instead of queueing
+            # audio forever on a dead client.
             self.ten_env.log_error(f"[AssemblyAI] Consumer loop error: {e}")
-            if self.callback:
-                await self.callback.on_error(f"Consumer loop error: {e}")
+            await self._fail_session(f"audio send failed: {e}")
+
+    async def _fail_session(self, reason: str) -> None:
+        """Close a session whose transport failed without a close frame."""
+        if self._closed_by_client or not self.is_started:
+            return
+        self.is_started = False
+        websocket, self.websocket = self.websocket, None
+        if websocket is not None:
+            try:
+                await websocket.close()
+            except Exception as e:
+                self.ten_env.log_debug(
+                    f"[AssemblyAI] ignoring close error after send failure: {e}"
+                )
+        message_task = self._message_task
+        if (
+            message_task
+            and not message_task.done()
+            and message_task is not asyncio.current_task()
+        ):
+            message_task.cancel()
+        if self.callback:
+            await self.callback.on_close(ABNORMAL_CLOSURE_CODE, reason)
 
     # ------------------------------------------------------------------
     # Outbound control messages

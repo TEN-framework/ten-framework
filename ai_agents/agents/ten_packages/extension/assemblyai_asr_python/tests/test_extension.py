@@ -1001,3 +1001,103 @@ def test_config_log_masks_secret_extra_params_and_signed_url():
         "signed-9876",
     ):
         assert all(secret not in line for line in env.logs), secret
+
+
+# --------------------------------------------------------------------------
+# Review round 2: send contract, mu-law, signed URL in vendor metadata
+# --------------------------------------------------------------------------
+
+
+def _pcm_frame(n_bytes: int = 320) -> Any:
+    from ten_runtime import AudioFrame
+
+    frame = AudioFrame.create("pcm_frame")
+    frame.alloc_buf(n_bytes)
+    buf = frame.lock_buf()
+    buf[:] = b"\x01\x02" * (n_bytes // 2)
+    frame.unlock_buf(buf)
+    return frame
+
+
+class _EnqueueRecognition(_FakeRecognition):
+    def __init__(self, connected: bool = True) -> None:
+        super().__init__(connected)
+        self.frames: List[bytes] = []
+
+    async def send_audio_frame(self, audio_data: bytes) -> None:
+        self.frames.append(audio_data)
+
+
+def test_send_audio_returns_false_while_swapping_and_enqueues_nothing():
+    ext, _, _ = _make_extension()
+    recognition = _EnqueueRecognition(connected=True)
+    ext.recognition = recognition  # type: ignore[assignment]
+    ext._swapping = True
+
+    assert asyncio.run(ext.send_audio(_pcm_frame(), "123")) is False
+    assert recognition.frames == []
+
+
+def test_send_audio_returns_false_before_the_session_has_opened():
+    ext, _, _ = _make_extension()
+    recognition = _EnqueueRecognition(connected=False)
+    ext.recognition = recognition  # type: ignore[assignment]
+
+    assert asyncio.run(ext.send_audio(_pcm_frame(), "123")) is False
+    assert recognition.frames == []
+
+
+def test_send_audio_hands_the_frame_to_the_connected_client():
+    ext, _, _ = _make_extension()
+    recognition = _EnqueueRecognition(connected=True)
+    ext.recognition = recognition  # type: ignore[assignment]
+
+    assert asyncio.run(ext.send_audio(_pcm_frame(320), "123")) is True
+    assert recognition.frames == [b"\x01\x02" * 160]
+
+
+def test_send_audio_uses_the_client_snapshot_taken_at_entry():
+    """If a replacement lands while the dumper is awaited, the frame must
+    not be handed to a different client than the one checked."""
+    ext, _, _ = _make_extension()
+    first = _EnqueueRecognition(connected=True)
+    second = _EnqueueRecognition(connected=True)
+    ext.recognition = first  # type: ignore[assignment]
+
+    class _SwappingDumper:
+        async def push_bytes(self, _data: bytes) -> None:
+            ext.recognition = second  # replacement during the await
+
+    ext.audio_dumper = _SwappingDumper()  # type: ignore[assignment]
+
+    result = asyncio.run(ext.send_audio(_pcm_frame(), "123"))
+
+    assert second.frames == []
+    assert result is False
+    assert first.frames == []
+
+
+def test_mulaw_encoding_is_rejected_until_conversion_exists():
+    config = AssemblyAIASRConfig.model_validate(
+        {"params": {"api_key": "k", "encoding": "pcm_mulaw"}}
+    )
+    config.update(config.params)
+
+    with pytest.raises(ValueError, match="encoding"):
+        config.validate_config()
+
+
+def test_vendor_metadata_masks_signed_url_query():
+    ext, env, _ = _make_extension(
+        ws_url="wss://streaming.assemblyai.com/v3/ws?token=signed-secret-9876"
+    )
+    ext._connection_machine.try_connecting()
+
+    asyncio.run(ext.on_open("sess-1", {}))
+
+    assert "signed-secret-9876" not in json.dumps(ext.vendor_metadata())
+    assert ext.vendor_metadata()["url"].startswith(
+        "wss://streaming.assemblyai.com/v3/ws?token="
+    )
+    statuses = env.payloads("connection_status_changed")
+    assert "signed-secret-9876" not in json.dumps(statuses)
