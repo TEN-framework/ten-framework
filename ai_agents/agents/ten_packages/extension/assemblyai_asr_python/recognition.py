@@ -338,7 +338,12 @@ class AssemblyAIWSRecognition:
             return False
         try:
             await self.websocket.send(json.dumps(message))
-            self.ten_env.log_info(f"[AssemblyAI] Sent {what}: {message}")
+            # Payloads can carry conversational text (agent_context) or
+            # prompts; log only the message type and field names.
+            self.ten_env.log_info(
+                f"[AssemblyAI] Sent {what}: type={message.get('type')} "
+                f"fields={sorted(k for k in message if k != 'type')}"
+            )
             return True
         except ConnectionClosed:
             self.ten_env.log_error(

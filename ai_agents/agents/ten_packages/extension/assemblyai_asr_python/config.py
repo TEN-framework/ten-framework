@@ -1,7 +1,7 @@
 import re
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
-from ten_ai_base.utils import encrypt
+from ten_ai_base.utils import redact_json, redact_url
 
 from .const import (
     AGENT_CONTEXT_MAX_CHARS,
@@ -285,13 +285,22 @@ class AssemblyAIASRConfig(BaseModel):
         params.update(self.extra_params)
         return params
 
+    def to_redacted_dict(self) -> Dict[str, Any]:
+        """Config snapshot safe for logs: secret-looking keys anywhere in
+        the tree (including ``params`` / ``extra_params``) and signed query
+        values in ``ws_url`` are masked."""
+        config_dict = redact_json(self.model_dump())
+        for key in ("ws_url",):
+            if isinstance(config_dict.get(key), str):
+                config_dict[key] = redact_url(config_dict[key])
+        for section in ("params", "extra_params"):
+            value = config_dict.get(section)
+            if isinstance(value, dict) and isinstance(value.get("ws_url"), str):
+                value["ws_url"] = redact_url(value["ws_url"])
+        return config_dict
+
     def to_json(self, sensitive_handling: bool = False) -> str:
-        """Serialize for logging, masking the API key when requested."""
-        config_dict = self.model_dump()
-        if sensitive_handling and self.api_key:
-            config_dict["api_key"] = encrypt(config_dict["api_key"])
-        if config_dict["params"]:
-            for key, value in config_dict["params"].items():
-                if key == "api_key" and value:
-                    config_dict["params"][key] = encrypt(value)
-        return str(config_dict)
+        """Serialize for logging, masking secrets when requested."""
+        if sensitive_handling:
+            return str(self.to_redacted_dict())
+        return str(self.model_dump())

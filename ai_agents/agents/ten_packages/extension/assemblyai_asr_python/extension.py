@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import json
 import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -24,6 +25,7 @@ from ten_ai_base.message import (
     ModuleType,
 )
 from ten_ai_base.struct import ASRWord, TTSTextInput
+from ten_ai_base.utils import redact_json
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -31,6 +33,8 @@ from ten_runtime import (
 )
 
 from .config import AssemblyAIASRConfig
+from ten_ai_base.const import DATA_IN_ASR_FINALIZE
+
 from .const import (
     AGENT_CONTEXT_MAX_CHARS,
     DATA_IN_TTS_TEXT_INPUT,
@@ -45,6 +49,23 @@ from .recognition import (
     AssemblyAIWSRecognition,
     AssemblyAIWSRecognitionCallback,
 )
+
+
+class _FinalizeContext:
+    """One in-flight asr_finalize handshake."""
+
+    __slots__ = ("finalize_id", "metadata", "started_ms", "timeout_task")
+
+    def __init__(
+        self,
+        finalize_id: Optional[str],
+        metadata: Dict[str, Any],
+        started_ms: int,
+    ):
+        self.finalize_id = finalize_id
+        self.metadata = metadata
+        self.started_ms = started_ms
+        self.timeout_task: Optional[asyncio.Task] = None
 
 
 class _EpochCallback(AssemblyAIWSRecognitionCallback):
@@ -103,7 +124,6 @@ class AssemblyAIASRExtension(
         self.config: Optional[AssemblyAIASRConfig] = None
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
-        self.last_finalize_timestamp: int = 0
         self.reconnect_manager: Optional[ReconnectManager] = None
         # Model confirmed by the server in the `Begin` message.
         self.session_model: Optional[str] = None
@@ -115,8 +135,12 @@ class AssemblyAIASRExtension(
         self._swapping = False
         self._swap_lock = asyncio.Lock()
         self._reconnect_task: Optional[asyncio.Task] = None
-        self._finalize_timeout_task: Optional[asyncio.Task] = None
         self._connect_started_at: Optional[float] = None
+        # Pending finalize handshakes, oldest first. Each entry owns its
+        # finalize_id, session metadata and timeout task so overlapping
+        # requests each get exactly one asr_finalize_end.
+        self._pending_finalizes: List[_FinalizeContext] = []
+        self._next_finalize_metadata: Dict[str, Any] = {}
 
         # agent_context bookkeeping (text of the agent reply in flight).
         self._agent_context_request_id: Optional[str] = None
@@ -182,7 +206,7 @@ class AssemblyAIASRExtension(
             self.config = config
 
             ten_env.log_info(
-                f"config: {config.to_json(sensitive_handling=True)}",
+                f"config: {config.to_redacted_dict()}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
 
@@ -257,7 +281,8 @@ class AssemblyAIASRExtension(
 
                 connection_params = self.config.to_connection_params()
                 self.ten_env.log_info(
-                    f"AssemblyAI ASR connection params: {connection_params}",
+                    "AssemblyAI ASR connection params: "
+                    f"{redact_json(connection_params)}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
 
@@ -279,6 +304,7 @@ class AssemblyAIASRExtension(
             await recognition.start()
         except AssemblyAIConnectionError as e:
             await self._handle_connect_failure(
+                recognition,
                 message=str(e),
                 vendor_code=e.code,
                 fatal=e.code in FATAL_HTTP_STATUSES,
@@ -286,6 +312,7 @@ class AssemblyAIASRExtension(
             return
         except Exception as e:
             await self._handle_connect_failure(
+                recognition,
                 message=f"Failed to start AssemblyAI ASR connection: {e}",
                 vendor_code=None,
                 fatal=False,
@@ -306,8 +333,23 @@ class AssemblyAIASRExtension(
         self.ten_env.log_info("AssemblyAI ASR connection started")
 
     async def _handle_connect_failure(
-        self, message: str, vendor_code: Optional[str], fatal: bool
+        self,
+        recognition: AssemblyAIWSRecognition,
+        message: str,
+        vendor_code: Optional[str],
+        fatal: bool,
     ) -> None:
+        if self.recognition is not recognition:
+            # This client was superseded (or stopped) while handshaking.
+            # Its failure is history: release it and leave the live client
+            # and the reported connection state alone.
+            self.ten_env.log_info(
+                "stale handshake failed after replacement; ignoring: "
+                f"{message}"
+            )
+            await self._close_client(recognition)
+            return
+
         self.ten_env.log_error(
             f"vendor_error: code: {vendor_code}, reason: {message}",
             category=LOG_CATEGORY_VENDOR,
@@ -345,6 +387,11 @@ class AssemblyAIASRExtension(
     async def _close_recognition(self) -> None:
         """Release the current client (idempotent, never raises)."""
         recognition, self.recognition = self.recognition, None
+        await self._close_client(recognition)
+
+    async def _close_client(
+        self, recognition: Optional[AssemblyAIWSRecognition]
+    ) -> None:
         if recognition is None:
             return
         try:
@@ -357,9 +404,8 @@ class AssemblyAIASRExtension(
         self._swapping = True
         try:
             await self._cancel_background_tasks()
-            if self.last_finalize_timestamp != 0:
-                # A caller is still waiting on the finalize handshake.
-                await self._finalize_end()
+            # Callers may still be waiting on finalize handshakes.
+            await self._complete_all_finalizes("stop")
             await self._close_recognition()
             self.ten_env.log_info("AssemblyAI ASR connection stopped")
         except Exception as e:
@@ -446,7 +492,6 @@ class AssemblyAIASRExtension(
                 pass
         if reconnect is not current:
             self._reconnect_task = None
-        await self._cancel_finalize_timeout()
 
     # ------------------------------------------------------------------
     # Audio in
@@ -483,42 +528,87 @@ class AssemblyAIASRExtension(
     # Finalize: exactly one asr_finalize_end per request, always bounded
     # ------------------------------------------------------------------
 
+    @property
+    def last_finalize_timestamp(self) -> int:
+        """Start time (ms) of the oldest pending finalize, 0 when idle."""
+        return (
+            self._pending_finalizes[0].started_ms
+            if self._pending_finalizes
+            else 0
+        )
+
     @override
     async def finalize(self, session_id: str | None) -> None:
         assert self.config is not None
 
-        self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(
-            f"AssemblyAI ASR finalize start at {self.last_finalize_timestamp}"
+        # The base class stored this request's finalize_id and session
+        # metadata just before calling us; capture them so the response
+        # echoes this request even if another finalize arrives meanwhile.
+        request_metadata, self._next_finalize_metadata = (
+            self._next_finalize_metadata,
+            {},
         )
-        await self._cancel_finalize_timeout()
+        context = _FinalizeContext(
+            finalize_id=self.finalize_id,
+            metadata=(
+                request_metadata
+                or (copy.deepcopy(self.metadata) if self.metadata else {})
+            ),
+            started_ms=int(datetime.now().timestamp() * 1000),
+        )
+        self._pending_finalizes.append(context)
+        self.ten_env.log_debug(
+            f"AssemblyAI ASR finalize start id={context.finalize_id} "
+            f"at {context.started_ms}"
+        )
 
         if not (self.recognition and self.is_connected()):
             self.ten_env.log_warn(
                 "finalize while disconnected; completing immediately",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            await self._finalize_end()
+            await self._complete_finalize(context)
             return
 
         await self.recognition.force_endpoint()
-        self._finalize_timeout_task = asyncio.create_task(
-            self._finalize_timeout(self.config.finalize_timeout_ms)
+        context.timeout_task = asyncio.create_task(
+            self._finalize_timeout(context, self.config.finalize_timeout_ms)
         )
 
-    async def _finalize_timeout(self, timeout_ms: int) -> None:
+    async def _finalize_timeout(
+        self, context: "_FinalizeContext", timeout_ms: int
+    ) -> None:
         await asyncio.sleep(timeout_ms / 1000)
-        self._finalize_timeout_task = None
-        if self.last_finalize_timestamp != 0:
+        context.timeout_task = None
+        if context in self._pending_finalizes:
             self.ten_env.log_warn(
-                f"no final turn within {timeout_ms}ms of finalize; "
-                "completing finalize",
+                f"no final turn within {timeout_ms}ms of finalize "
+                f"{context.finalize_id}; completing finalize",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            await self._finalize_end()
+            await self._complete_finalize(context)
 
-    async def _cancel_finalize_timeout(self) -> None:
-        task, self._finalize_timeout_task = self._finalize_timeout_task, None
+    async def _finalize_end(self) -> None:
+        """Complete the oldest pending finalize (a final turn arrived)."""
+        if self._pending_finalizes:
+            await self._complete_finalize(self._pending_finalizes[0])
+
+    async def _complete_all_finalizes(self, reason: str) -> None:
+        while self._pending_finalizes:
+            self.ten_env.log_warn(
+                f"completing finalize {self._pending_finalizes[0].finalize_id} "
+                f"on {reason}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            await self._complete_finalize(self._pending_finalizes[0])
+
+    async def _complete_finalize(self, context: "_FinalizeContext") -> None:
+        """Emit exactly one asr_finalize_end for ``context``."""
+        if context not in self._pending_finalizes:
+            return
+        self._pending_finalizes.remove(context)
+
+        task, context.timeout_task = context.timeout_task, None
         if task and not task.done() and task is not asyncio.current_task():
             task.cancel()
             try:
@@ -526,17 +616,21 @@ class AssemblyAIASRExtension(
             except asyncio.CancelledError:
                 pass
 
-    async def _finalize_end(self) -> None:
-        if self.last_finalize_timestamp == 0:
-            return
-        timestamp = int(datetime.now().timestamp() * 1000)
-        latency = timestamp - self.last_finalize_timestamp
+        latency = int(datetime.now().timestamp() * 1000) - context.started_ms
         self.ten_env.log_debug(
-            f"AssemblyAI ASR finalize end at {timestamp}, latency: {latency}ms"
+            f"AssemblyAI ASR finalize end id={context.finalize_id}, "
+            f"latency: {latency}ms"
         )
-        self.last_finalize_timestamp = 0
-        await self._cancel_finalize_timeout()
-        await self.send_asr_finalize_end()
+        # send_asr_finalize_end() reads the base-class fields; restore this
+        # request's identity so overlapping requests do not swap responses.
+        self.finalize_id = context.finalize_id
+        saved_metadata = self.metadata
+        if context.metadata:
+            self.metadata = context.metadata
+        try:
+            await self.send_asr_finalize_end()
+        finally:
+            self.metadata = saved_metadata
 
     # ------------------------------------------------------------------
     # Data in: agent replies -> agent_context
@@ -544,9 +638,25 @@ class AssemblyAIASRExtension(
 
     @override
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        if data.get_name() == DATA_IN_ASR_FINALIZE:
+            # The base class only forwards finalize_id; the request's own
+            # metadata (session_id) must be captured here so the response
+            # echoes it even when the latest audio frame belongs elsewhere.
+            self._next_finalize_metadata = self._read_metadata(data)
         await super().on_data(ten_env, data)
         if data.get_name() == DATA_IN_TTS_TEXT_INPUT:
             await self._on_tts_text_input(data)
+
+    @staticmethod
+    def _read_metadata(data: Data) -> Dict[str, Any]:
+        raw, err = data.get_property_to_json("metadata")
+        if err or not raw:
+            return {}
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            return {}
+        return value if isinstance(value, dict) else {}
 
     async def _on_tts_text_input(self, data: Data) -> None:
         try:
@@ -656,7 +766,7 @@ class AssemblyAIASRExtension(
             if not transcript:
                 # An empty end-of-turn is not a user turn, but it does
                 # acknowledge a pending finalize (silence after ForceEndpoint).
-                if is_final_turn and self.last_finalize_timestamp != 0:
+                if is_final_turn and self._pending_finalizes:
                     self.ten_env.log_debug(
                         "empty final turn acknowledges finalize"
                     )

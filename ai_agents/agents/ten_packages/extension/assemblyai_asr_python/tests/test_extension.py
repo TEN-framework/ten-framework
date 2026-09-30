@@ -649,7 +649,7 @@ def test_final_result_cancels_the_finalize_timeout():
     asyncio.run(scenario())
 
     assert len(env.payloads("asr_finalize_end")) == 1
-    assert ext._finalize_timeout_task is None
+    assert ext._pending_finalizes == []
 
 
 # --------------------------------------------------------------------------
@@ -841,3 +841,163 @@ def test_dropped_legacy_params_are_logged_once_at_connect():
         if "end_of_turn_confidence_threshold" in l and "ignored" in l
     ]
     assert len(warnings) == 1
+
+
+# --------------------------------------------------------------------------
+# Review follow-ups: stale handshake failure, overlapping finalize, logs
+# --------------------------------------------------------------------------
+
+
+def test_failed_handshake_of_a_replaced_client_does_not_touch_the_new_one():
+    """Connection A fails after B superseded it: B must stay untouched and
+    no disconnect/reconnect may be reported for A's failure."""
+    ext, env, _ = _make_extension()
+    ext.recognition = None
+
+    first = AsyncMock()
+    second = AsyncMock()
+    second.is_connected.return_value = True
+    order = []
+
+    async def first_start(*_a, **_k):
+        # Let B replace A while A's handshake is in flight.
+        ext.recognition = second
+        ext._connection_epoch += 1
+        order.append("A-failed-after-B")
+        raise AssemblyAIConnectionError("503", "late failure of A")
+
+    first.start.side_effect = first_start
+
+    with patch.object(
+        extension_module, "AssemblyAIWSRecognition", return_value=first
+    ):
+        asyncio.run(ext.start_connection())
+
+    assert order == ["A-failed-after-B"]
+    first.close.assert_awaited_once()
+    second.close.assert_not_awaited()
+    assert ext.recognition is second
+    assert env.payloads("error") == []
+    assert env.payloads("connection_status_changed")[-1]["current"] != (
+        "disconnected"
+    )
+    ext._handle_reconnect.assert_not_awaited()
+
+
+def _finalize_data(finalize_id: str, session_id: str) -> Data:
+    data = Data.create("asr_finalize")
+    data.set_property_from_json(
+        None,
+        json.dumps(
+            {"finalize_id": finalize_id, "metadata": {"session_id": session_id}}
+        ),
+    )
+    return data
+
+
+def test_two_finalizes_before_any_response_each_get_their_own_end():
+    ext, env, recognition = _make_extension()
+
+    async def scenario():
+        await ext.on_data(ext.ten_env, _finalize_data("fin-A", "s1"))
+        await ext.on_data(ext.ten_env, _finalize_data("fin-B", "s1"))
+        await ext.on_result(_turn())  # completes A
+        await ext.on_result(_turn(turn_order=4))  # completes B
+
+    asyncio.run(scenario())
+
+    ends = env.payloads("asr_finalize_end")
+    assert [e["finalize_id"] for e in ends] == ["fin-A", "fin-B"]
+    assert recognition.force_endpoints == 2
+
+
+def test_overlapping_finalizes_keep_their_own_session_ids():
+    ext, env, _ = _make_extension()
+
+    async def scenario():
+        await ext.on_data(ext.ten_env, _finalize_data("fin-A", "session-A"))
+        await ext.on_data(ext.ten_env, _finalize_data("fin-B", "session-B"))
+        await ext.on_result(_turn())
+        await ext.on_result(_turn(turn_order=4))
+
+    asyncio.run(scenario())
+
+    ends = env.payloads("asr_finalize_end")
+    assert [(e["finalize_id"], e["metadata"]["session_id"]) for e in ends] == [
+        ("fin-A", "session-A"),
+        ("fin-B", "session-B"),
+    ]
+
+
+def test_overlapping_finalizes_time_out_independently():
+    ext, env, _ = _make_extension(finalize_timeout_ms=20)
+
+    async def scenario():
+        await ext.on_data(ext.ten_env, _finalize_data("fin-A", "s1"))
+        await ext.on_data(ext.ten_env, _finalize_data("fin-B", "s1"))
+        await asyncio.sleep(0.15)
+
+    asyncio.run(scenario())
+
+    ends = env.payloads("asr_finalize_end")
+    assert sorted(e["finalize_id"] for e in ends) == ["fin-A", "fin-B"]
+    assert len(ends) == 2
+
+
+def test_finalize_end_after_stop_uses_each_pending_id():
+    ext, env, _ = _make_extension()
+
+    async def scenario():
+        await ext.on_data(ext.ten_env, _finalize_data("fin-A", "s1"))
+        await ext.on_data(ext.ten_env, _finalize_data("fin-B", "s1"))
+        ext.stopped = True
+        await ext.stop_connection()
+
+    asyncio.run(scenario())
+
+    assert [e["finalize_id"] for e in env.payloads("asr_finalize_end")] == [
+        "fin-A",
+        "fin-B",
+    ]
+
+
+def test_connection_params_log_masks_secret_extra_params():
+    ext, env, _ = _make_extension(
+        token="temp-token-value-1234", prompt="Billing support call."
+    )
+    ext.recognition = None
+    fake = _FakeRecognition(connected=False)
+
+    with patch.object(
+        extension_module, "AssemblyAIWSRecognition", return_value=fake
+    ):
+        asyncio.run(ext.start_connection())
+
+    assert all("temp-token-value-1234" not in line for line in env.logs)
+    assert any("Billing support call." in line for line in env.logs)
+
+
+def test_config_log_masks_secret_extra_params_and_signed_url():
+    ext = AssemblyAIASRExtension("test")
+    env = _InitEnv(
+        {
+            "api_key": "top-secret-key-value",
+            "token": "temp-token-value-1234",
+            "ws_url": "wss://streaming.assemblyai.com/v3/ws?token=signed-9876",
+        }
+    )
+
+    async def scenario():
+        await ext.on_init(env)  # type: ignore[arg-type]
+        await asyncio.sleep(0)
+
+    asyncio.run(scenario())
+
+    config_logs = [l for l in env.logs if l.startswith("config:")]
+    assert config_logs
+    for secret in (
+        "top-secret-key-value",
+        "temp-token-value-1234",
+        "signed-9876",
+    ):
+        assert all(secret not in line for line in env.logs), secret

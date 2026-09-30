@@ -367,3 +367,33 @@ def test_url_log_line_redacts_secret_looking_params():
 
     assert "temp-token-value" in url
     assert all("temp-token-value" not in line for line in logs)
+
+
+def test_control_message_log_does_not_contain_agent_context_text():
+    logs = []
+
+    class _LoggingEnv(_FakeTenEnv):
+        def log_info(self, msg, **kwargs):
+            logs.append(msg)
+
+        def log_debug(self, msg, **kwargs):
+            logs.append(msg)
+
+    ws = _FakeWebSocket()
+    recognition = AssemblyAIWSRecognition(
+        api_key="fake_key", ten_env=_LoggingEnv(), callback=_RecordingCallback()
+    )
+    recognition.websocket = ws
+    recognition.is_started = True
+
+    asyncio.run(
+        recognition.send_update_configuration(
+            {"agent_context": "Your account number is 4242-9999."}
+        )
+    )
+
+    assert (
+        _sent_json(ws)["agent_context"] == "Your account number is 4242-9999."
+    )
+    assert all("4242-9999" not in line for line in logs)
+    assert any("UpdateConfiguration" in line for line in logs)

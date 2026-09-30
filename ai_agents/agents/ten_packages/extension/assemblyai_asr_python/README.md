@@ -122,9 +122,13 @@ See the `voice_assistant_assemblyai` graph in
   non-fatal and trigger a reconnect with exponential backoff (5 attempts,
   then fatal). A clean `1000` close reconnects silently, so an
   `inactivity_timeout` will cause periodic reconnects during long silences.
-- Every `asr_finalize` produces exactly one `asr_finalize_end`: after the
-  final turn, after an empty end-of-turn (silence), immediately when
-  disconnected, or after `finalize_timeout_ms`.
+- Every `asr_finalize` produces exactly one `asr_finalize_end` echoing its
+  own `finalize_id` and `session_id`: after the final turn, after an empty
+  end-of-turn (silence), immediately when disconnected, on stop, or after
+  `finalize_timeout_ms`. Overlapping requests are completed in order.
+- Logs never contain credentials or conversational text: secret-looking
+  keys in `params` (for example a `token`) and signed `ws_url` query values
+  are masked, and control messages are logged by type and field names only.
 - Parameters the selected model does not accept are logged as ignored at
   connect time rather than sent.
 
