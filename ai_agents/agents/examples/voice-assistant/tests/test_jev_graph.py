@@ -43,6 +43,9 @@ def test_jev_graph_is_optional_and_has_required_nodes():
     assert nodes["llm_fast"]["property"]["model"] == "deepseek-flash"
     assert nodes["llm_deep"]["property"]["model"] == "deepseek-flash"
     assert nodes["llm_deep"]["property"]["max_tokens"] > 512
+    deep_prompt = nodes["llm_deep"]["property"]["prompt"]
+    assert "it is delivered separately" in deep_prompt
+    assert "Never reveal internal reasoning" not in deep_prompt
     assert "weatherapi_tool_python" not in nodes
     routing = nodes["main_control"]["property"]["model_routing"]
     assert (

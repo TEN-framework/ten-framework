@@ -1840,7 +1840,7 @@
                 "api_key": "${env:DEEPSEEK_API_KEY}",
                 "model": "deepseek-flash",
                 "max_tokens": 8192,
-                "prompt": "You are a voice assistant. Think carefully, then give a concise spoken answer unless the user asks for detail. Never reveal internal reasoning.",
+                "prompt": "You are a voice assistant. Think carefully, then give a concise final answer unless the user asks for detail. Keep reasoning out of the spoken answer; it is delivered separately.",
                 "proxy_url": "${env:DEEPSEEK_PROXY_URL|}"
               }
             },
