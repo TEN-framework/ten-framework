@@ -117,7 +117,16 @@ def test_config_accepts_silence_bounds_and_omission(output):
 @pytest.mark.parametrize("dump", [False, True, "existing"])
 @pytest.mark.parametrize(
     "phase",
-    ["first_byte", "start", "ttfb", "audio", "next_byte", "end", "finish"],
+    [
+        "first_byte",
+        "start",
+        "start_sent",
+        "ttfb",
+        "audio",
+        "next_byte",
+        "end",
+        "finish",
+    ],
 )
 def test_real_flush_at_emission_boundaries_recovers(
     late_chunk, dump, phase, tmp_path
@@ -144,7 +153,10 @@ def test_real_flush_at_emission_boundaries_recovers(
             payload = json.loads(body)
             if extension.current_request_id == "first" and not waiting.is_set():
                 if (
-                    (phase == "start" and data.get_name() == "tts_audio_start")
+                    (
+                        phase in ("start", "start_sent")
+                        and data.get_name() == "tts_audio_start"
+                    )
                     or (phase == "end" and data.get_name() == "tts_audio_end")
                     or (
                         phase == "ttfb"
@@ -152,8 +164,12 @@ def test_real_flush_at_emission_boundaries_recovers(
                         and extension.request_ts is not None
                     )
                 ):
+                    if phase == "start_sent":
+                        events.append((data.get_name(), payload))
                     waiting.set()
                     await release.wait()
+                    if phase == "start_sent":
+                        return
             if data.get_name() != "metrics":
                 events.append((data.get_name(), payload))
 
@@ -184,6 +200,8 @@ def test_real_flush_at_emission_boundaries_recovers(
 
         async def cancel_current_task():
             await cancel_task()
+            if phase in ("start", "start_sent"):
+                assert extension.request_ts == datetime(2026, 1, 1)
             cancelled.set()
 
         async def finish(*args, **kwargs):
@@ -262,9 +280,13 @@ def test_real_flush_at_emission_boundaries_recovers(
                     assert not flush.done()
                     release.set()
                 await asyncio.wait_for(flush, 1)
+                if phase in ("start", "start_sent"):
+                    await asyncio.wait_for(closed.wait(), 1)
+                    assert extension.request_ts == datetime(2026, 1, 1)
                 prefix = []
-                if phase in ("ttfb", "audio", "next_byte", "end", "finish"):
-                    prefix.append("tts_audio_start")
+                if phase != "first_byte":
+                    if phase != "start":
+                        prefix.append("tts_audio_start")
                     if phase == "next_byte" or terminal:
                         prefix.append("pcm")
                     prefix.append("tts_audio_end")
@@ -298,6 +320,12 @@ def test_real_flush_at_emission_boundaries_recovers(
                     ) == previous + b"".join(
                         body for name, body in events if name == "pcm"
                     )
+                if phase in ("start", "start_sent"):
+                    # A repeated flush must not emit a second terminal event.
+                    await input_data("tts_flush", {"flush_id": "flush-again"})
+                    assert [name for name, _ in events] == prefix + [
+                        "tts_flush_end"
+                    ]
                 events.clear()
                 await input_data(
                     "tts_text_input",

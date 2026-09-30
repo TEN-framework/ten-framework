@@ -71,19 +71,26 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         turn_id: int = -1,
         extra_metadata: dict | None = None,
     ) -> None:
-        # The HTTP base sets this before awaiting the start event.
+        # Keep the HTTP base timestamp visible while the start send is pending:
+        # the flush path signals child cancellation without waiting for it.
         start_ts = self.request_ts
-        self.request_ts = None
-        recorder = self.recorder_map.get(request_id)
-        if recorder:
-            # Capture the append offset before the first write, inside the
-            # inherited request error handler so a stat failure can finalize.
-            try:
-                self._dump_start_offset = os.path.getsize(recorder.file_name)
-            except FileNotFoundError:
-                self._dump_start_offset = 0
-        await super().send_tts_audio_start(request_id, turn_id, extra_metadata)
-        self.request_ts = start_ts
+        try:
+            recorder = self.recorder_map.get(request_id)
+            if recorder:
+                # Capture the append offset before the first write, inside the
+                # inherited request error handler so a stat failure can finalize.
+                try:
+                    self._dump_start_offset = os.path.getsize(
+                        recorder.file_name
+                    )
+                except FileNotFoundError:
+                    self._dump_start_offset = 0
+            await super().send_tts_audio_start(
+                request_id, turn_id, extra_metadata
+            )
+        finally:
+            # Preserve timing even when the pending start send is cancelled.
+            self.request_ts = start_ts
 
     async def send_tts_audio_data(
         self, audio_data: bytes, timestamp: int = 0
