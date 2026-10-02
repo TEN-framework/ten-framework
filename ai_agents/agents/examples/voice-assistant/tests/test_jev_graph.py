@@ -35,6 +35,7 @@ def test_jev_graph_is_optional_and_has_required_nodes():
     assert nodes["jev"]["property"]["params"]["api_key"] == (
         "${env:TYPESAFE_API_KEY}"
     )
+    assert nodes["jev"]["property"]["params"]["timeout_ms"] == 2000
     for node_name in ("llm_fast", "llm_deep"):
         properties = nodes[node_name]["property"]
         assert properties["base_url"] == "https://api.deepseek.com"
@@ -56,6 +57,7 @@ def test_jev_graph_is_optional_and_has_required_nodes():
     assert routing["decision_dest"] == "jev"
     assert routing["fast_dest"] == "llm_fast"
     assert routing["deep_dest"] == "llm_deep"
+    assert routing["timeout_ms"] == 2300
     main_cmds = next(
         connection["cmd"]
         for connection in graphs["voice_assistant_jev_router"]["graph"][

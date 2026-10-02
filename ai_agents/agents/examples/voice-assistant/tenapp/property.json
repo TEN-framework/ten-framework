@@ -1853,7 +1853,7 @@
                 "params": {
                   "api_key": "${env:TYPESAFE_API_KEY}",
                   "model": "jev-1.13.0",
-                  "timeout_ms": 1000
+                  "timeout_ms": 2000
                 }
               }
             },
@@ -1887,7 +1887,7 @@
                   "fast_dest": "llm_fast",
                   "deep_dest": "llm_deep",
                   "min_confidence": 0.8,
-                  "timeout_ms": 1200,
+                  "timeout_ms": 2300,
                   "question": {
                     "type": "choice",
                     "instructions": "Does the latest user request need deliberate multi-step reasoning before a concise spoken answer? Do not judge by length alone.",

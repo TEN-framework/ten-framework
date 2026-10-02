@@ -144,8 +144,8 @@ Jev evaluates the final English ASR text with a `fast`/`deep` choice. A `fast`
 choice with confidence at least 0.8 uses Flash without thinking; `deep` or
 an uncertain `fast` choice uses Flash with thinking. Jev errors,
 invalid responses, and timeouts fall back to Flash without thinking to keep
-the voice response responsive. The Jev request has a 1000 ms deadline and
-the controller waits at most 1200 ms. These thresholds are demo starting
+the voice response responsive. The Jev request has a 2000 ms deadline and
+the controller waits at most 2300 ms. These thresholds are demo starting
 points and should be calibrated with real requests before production use.
 When thinking is selected, the complete DeepSeek reasoning is shown in a
 separate chat message before the final answer; it is never sent to TTS. The
