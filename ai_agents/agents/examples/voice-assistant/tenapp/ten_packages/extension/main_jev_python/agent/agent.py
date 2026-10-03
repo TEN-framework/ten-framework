@@ -7,6 +7,7 @@ from ..routing import RoutingDecision
 from ten_runtime import AsyncTenEnv, Cmd, CmdResult, Data, StatusCode
 from ten_ai_base.types import LLMToolMetadata
 from .events import (
+    ASRCommitTimeoutEvent,
     ASRResultEvent,
     AgentEvent,
     LLMResponseEvent,
@@ -30,7 +31,9 @@ class Agent:
         ] = {}
 
         # Queues for ordered processing
-        self._asr_queue: asyncio.Queue[ASRResultEvent] = asyncio.Queue()
+        self._asr_queue: asyncio.Queue[
+            ASRResultEvent | ASRCommitTimeoutEvent
+        ] = asyncio.Queue()
         self._llm_queue: asyncio.Queue[LLMResponseEvent] = asyncio.Queue()
 
         # Current consumer tasks
@@ -111,6 +114,17 @@ class Agent:
     async def _emit_asr(self, event: ASRResultEvent):
         await self._asr_queue.put(event)
 
+    async def queue_asr_timeout(
+        self, session_id: str, stream_id: int, generation: int
+    ):
+        await self._asr_queue.put(
+            ASRCommitTimeoutEvent(
+                session_id=session_id,
+                stream_id=stream_id,
+                generation=generation,
+            )
+        )
+
     async def _emit_llm(self, event: LLMResponseEvent):
         await self._llm_queue.put(event)
 
@@ -157,6 +171,7 @@ class Agent:
                         text=asr.get("text", ""),
                         final=asr.get("final", False),
                         metadata=asr.get("metadata", {}),
+                        start_ms=asr.get("start_ms"),
                     )
                 )
             elif data.get_name() in ("tts_audio_start", "tts_audio_end"):

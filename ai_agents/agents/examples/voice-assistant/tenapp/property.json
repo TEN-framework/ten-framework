@@ -1881,6 +1881,7 @@
               "property": {
                 "greeting": "TEN Agent connected. How can I help you today?",
                 "turn_detection_mode": "speech_final",
+                "asr_final_fallback_ms": 1000,
                 "model_routing": {
                   "enabled": true,
                   "decision_dest": "jev",

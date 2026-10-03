@@ -50,6 +50,17 @@ class ASRResultEvent(AgentEventBase):
     text: str
     final: bool
     metadata: Dict[str, Any]
+    start_ms: int | None = None
+
+
+class ASRCommitTimeoutEvent(AgentEventBase):
+    """The speech-final fallback deadline for one ASR session."""
+
+    type: Literal["data"] = "data"
+    name: Literal["asr_commit_timeout"] = "asr_commit_timeout"
+    session_id: str
+    stream_id: int
+    generation: int
 
 
 class LLMResponseEvent(AgentEventBase):
@@ -81,6 +92,7 @@ AgentEvent = Union[
     UserLeftEvent,
     ToolRegisterEvent,
     ASRResultEvent,
+    ASRCommitTimeoutEvent,
     LLMResponseEvent,
     ModelRouteEvent,
 ]

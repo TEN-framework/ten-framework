@@ -134,9 +134,12 @@ http://localhost:3000/?graph=voice_assistant_jev_router
 
 The Jev graph is opt-in; the default `voice_assistant` graph is unchanged.
 Its Deepgram Nova-3 ASR uses a 500 ms endpointing window. Stable `is_final`
-segments are accumulated, and only `speech_final` submits the complete
-utterance to Jev and DeepSeek. The default graph retains segment-final turn
-handling. Barge-in behavior is unchanged.
+segments are accumulated. `speech_final` submits the complete utterance to Jev
+and DeepSeek immediately; if it does not arrive, a 1000 ms deadline after the
+last nonempty ASR result submits the buffered stable text once. Empty ASR
+results do not extend the deadline, and late results from an already submitted
+segment are ignored. The default graph retains segment-final turn handling.
+Barge-in behavior is unchanged.
 Before each routed reply, the chat shows a separate, non-spoken Jev route
 record with the choice, confidence (when available), selected LLM, latency,
 and whether an error or timeout caused a fallback.

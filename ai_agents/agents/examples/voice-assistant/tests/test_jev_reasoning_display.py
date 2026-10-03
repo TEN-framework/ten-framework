@@ -1,5 +1,6 @@
 """The optional thinking graph shows reasoning without reading it aloud."""
 
+import asyncio
 import importlib
 import json
 import sys
@@ -32,6 +33,7 @@ sys.modules[agent.__name__] = agent
 
 events = types.ModuleType(f"{PACKAGE}.agent.events")
 for name in (
+    "ASRCommitTimeoutEvent",
     "ASRResultEvent",
     "LLMResponseEvent",
     "ModelRouteEvent",
@@ -189,10 +191,13 @@ async def test_route_fallback_explains_error_and_uses_fast_mode():
     extension._send_to_tts.assert_not_awaited()
 
 
-def make_asr_event(text, *, final, speech_final, session_id="100"):
+def make_asr_event(
+    text, *, final, speech_final, session_id="100", start_ms=None
+):
     return types.SimpleNamespace(
         text=text,
         final=final,
+        start_ms=start_ms,
         metadata={
             "session_id": session_id,
             "asr_info": {"speech_final": speech_final},
@@ -200,12 +205,27 @@ def make_asr_event(text, *, final, speech_final, session_id="100"):
     )
 
 
-def make_asr_extension(mode="speech_final"):
+def make_asr_extension(mode="speech_final", fallback_ms=1000):
     messages.clear()
     extension = MainControlExtension("main_control")
     extension.ten_env = types.SimpleNamespace(log_info=lambda _message: None)
-    extension.config = types.SimpleNamespace(turn_detection_mode=mode)
-    extension.agent = types.SimpleNamespace(queue_llm_input=AsyncMock())
+    extension.config = types.SimpleNamespace(
+        turn_detection_mode=mode, asr_final_fallback_ms=fallback_ms
+    )
+    extension.agent = types.SimpleNamespace(
+        queue_llm_input=AsyncMock(), queue_asr_timeout=AsyncMock()
+    )
+
+    async def deliver_timeout(session_id, stream_id, generation):
+        await extension._on_asr_commit_timeout(
+            types.SimpleNamespace(
+                session_id=session_id,
+                stream_id=stream_id,
+                generation=generation,
+            )
+        )
+
+    extension.agent.queue_asr_timeout.side_effect = deliver_timeout
     extension._interrupt = AsyncMock()
     return extension
 
@@ -294,3 +314,121 @@ async def test_default_mode_keeps_segment_final_behavior():
 
     extension.agent.queue_llm_input.assert_awaited_once_with("Hello")
     assert messages[-1]["is_final"] is True
+
+
+@pytest.mark.asyncio
+async def test_missing_speech_final_commits_once_after_last_nonempty_result():
+    extension = make_asr_extension(fallback_ms=20)
+    committed = asyncio.Event()
+
+    async def record_commit(_text):
+        committed.set()
+
+    extension.agent.queue_llm_input.side_effect = record_commit
+    await extension._on_asr_result(
+        make_asr_event(
+            "Okay. Just introduce yourself.",
+            final=True,
+            speech_final=False,
+            start_ms=4430,
+        )
+    )
+    for start_ms in (5000, 5500, 6000):
+        await extension._on_asr_result(
+            make_asr_event(
+                "", final=False, speech_final=False, start_ms=start_ms
+            )
+        )
+
+    await asyncio.wait_for(committed.wait(), timeout=0.5)
+    extension.agent.queue_llm_input.assert_awaited_once_with(
+        "Okay. Just introduce yourself."
+    )
+    assert messages[-1]["is_final"] is True
+
+    # The delayed endpoint and its final duplicate must not make a second turn.
+    await extension._on_asr_result(
+        make_asr_event("", final=False, speech_final=True, start_ms=7000)
+    )
+    await extension._on_asr_result(
+        make_asr_event(
+            "Okay. Just introduce yourself.",
+            final=True,
+            speech_final=True,
+            start_ms=4430,
+        )
+    )
+    assert extension.agent.queue_llm_input.await_count == 1
+    assert extension.turn_id == 1
+
+    # Repeating the same words later is a real new turn, not a text duplicate.
+    await extension._on_asr_result(
+        make_asr_event(
+            "Okay. Just introduce yourself.",
+            final=True,
+            speech_final=True,
+            start_ms=20000,
+        )
+    )
+    assert extension.agent.queue_llm_input.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_stale_deadline_cannot_commit_newer_buffer():
+    extension = make_asr_extension()
+    await extension._on_asr_result(
+        make_asr_event("Hello", final=True, speech_final=False, start_ms=1000)
+    )
+    old_generation = extension._asr_fallback_generation
+    await extension._on_asr_result(
+        make_asr_event("world", final=False, speech_final=False, start_ms=1600)
+    )
+    new_generation = extension._asr_fallback_generation
+    assert new_generation > old_generation
+
+    await extension._on_asr_commit_timeout(
+        types.SimpleNamespace(
+            session_id="100", stream_id=100, generation=old_generation
+        )
+    )
+    extension.agent.queue_llm_input.assert_not_awaited()
+    await extension._on_asr_commit_timeout(
+        types.SimpleNamespace(
+            session_id="100", stream_id=100, generation=new_generation
+        )
+    )
+    extension.agent.queue_llm_input.assert_awaited_once_with("Hello world")
+
+
+@pytest.mark.asyncio
+async def test_session_change_discards_buffer_and_old_timeout():
+    extension = make_asr_extension()
+    await extension._on_asr_result(
+        make_asr_event("Old", final=True, speech_final=False, start_ms=1000)
+    )
+    old_generation = extension._asr_fallback_generation
+    await extension._on_asr_result(
+        make_asr_event(
+            "New",
+            final=True,
+            speech_final=False,
+            session_id="101",
+            start_ms=100,
+        )
+    )
+    await extension._on_asr_commit_timeout(
+        types.SimpleNamespace(
+            session_id="100", stream_id=100, generation=old_generation
+        )
+    )
+    extension.agent.queue_llm_input.assert_not_awaited()
+    await extension._on_asr_result(
+        make_asr_event(
+            "",
+            final=False,
+            speech_final=True,
+            session_id="101",
+            start_ms=200,
+        )
+    )
+    extension.agent.queue_llm_input.assert_awaited_once_with("New")

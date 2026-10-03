@@ -56,6 +56,7 @@ class MainControlConfig(BaseModel):
     turn_detection_mode: Literal["segment_final", "speech_final"] = (
         "segment_final"
     )
+    asr_final_fallback_ms: int = Field(default=1000, ge=1)
     model_routing: ModelRoutingConfig = Field(
         default_factory=ModelRoutingConfig
     )

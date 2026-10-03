@@ -53,6 +53,7 @@ def test_jev_graph_is_optional_and_has_required_nodes():
         nodes["main_control"]["property"]["turn_detection_mode"]
         == "speech_final"
     )
+    assert nodes["main_control"]["property"]["asr_final_fallback_ms"] == 1000
     assert routing["enabled"] is True
     assert routing["decision_dest"] == "jev"
     assert routing["fast_dest"] == "llm_fast"

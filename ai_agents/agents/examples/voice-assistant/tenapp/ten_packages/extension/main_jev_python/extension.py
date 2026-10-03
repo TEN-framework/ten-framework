@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from typing import Literal
@@ -12,6 +13,7 @@ from ten_runtime import (
 
 from .agent.agent import Agent
 from .agent.events import (
+    ASRCommitTimeoutEvent,
     ASRResultEvent,
     LLMResponseEvent,
     ModelRouteEvent,
@@ -44,7 +46,61 @@ class MainControlExtension(AsyncExtension):
         self.session_id: str = "0"
         self._asr_final_segments: list[str] = []
         self._asr_interim: str = ""
+        self._asr_buffer_start_ms: int | None = None
+        self._asr_final_start_ms: set[int] = set()
+        self._asr_last_committed_start_ms: int | None = None
+        self._asr_fallback_task: asyncio.Task | None = None
+        self._asr_fallback_generation: int = 0
         self._last_text_ts: int = 0
+
+    def _cancel_asr_fallback(self):
+        self._asr_fallback_generation += 1
+        if self._asr_fallback_task is not None:
+            self._asr_fallback_task.cancel()
+            self._asr_fallback_task = None
+
+    def _schedule_asr_fallback(self, stream_id: int):
+        self._cancel_asr_fallback()
+        generation = self._asr_fallback_generation
+        session_id = self.session_id
+
+        async def commit_after_silence():
+            try:
+                await asyncio.sleep(self.config.asr_final_fallback_ms / 1000)
+                # Use the ASR queue so the deadline and arriving ASR results
+                # cannot race while modifying the utterance buffer.
+                await self.agent.queue_asr_timeout(
+                    session_id, stream_id, generation
+                )
+            except asyncio.CancelledError:
+                pass
+
+        self._asr_fallback_task = asyncio.create_task(commit_after_silence())
+
+    def _clear_asr_buffer(self):
+        self._asr_final_segments.clear()
+        self._asr_final_start_ms.clear()
+        self._asr_interim = ""
+        self._asr_buffer_start_ms = None
+
+    async def _commit_asr_utterance(self, stream_id: int):
+        segments = self._asr_final_segments.copy()
+        if self._asr_interim:
+            segments.append(self._asr_interim)
+        utterance = " ".join(
+            segment.strip() for segment in segments if segment.strip()
+        )
+        if self._asr_buffer_start_ms is not None:
+            previous = self._asr_last_committed_start_ms
+            self._asr_last_committed_start_ms = max(
+                previous if previous is not None else -1,
+                self._asr_buffer_start_ms,
+            )
+        self._clear_asr_buffer()
+        if utterance:
+            self.turn_id += 1
+            await self.agent.queue_llm_input(utterance)
+            await self._send_transcript("user", utterance, True, stream_id)
 
     def _next_text_ts(self) -> int:
         self._last_text_ts = max(
@@ -84,6 +140,8 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, _event: UserLeftEvent):
         self._rtc_user_count -= 1
+        self._cancel_asr_fallback()
+        self._clear_asr_buffer()
 
     @agent_event_handler(ToolRegisterEvent)
     async def _on_tool_register(self, event: ToolRegisterEvent):
@@ -96,8 +154,9 @@ class MainControlExtension(AsyncExtension):
             self.config.turn_detection_mode == "speech_final"
             and session_id != self.session_id
         ):
-            self._asr_final_segments.clear()
-            self._asr_interim = ""
+            self._cancel_asr_fallback()
+            self._clear_asr_buffer()
+            self._asr_last_committed_start_ms = None
         self.session_id = session_id
         stream_id = int(self.session_id)
         if self.config.turn_detection_mode == "speech_final":
@@ -119,32 +178,64 @@ class MainControlExtension(AsyncExtension):
         speech_final = (
             isinstance(asr_info, dict) and asr_info.get("speech_final") is True
         )
-        if event.text:
+        start_ms = getattr(event, "start_ms", None)
+        already_committed = (
+            start_ms is not None
+            and self._asr_last_committed_start_ms is not None
+            and start_ms <= self._asr_last_committed_start_ms
+        )
+        already_buffered = (
+            event.final
+            and start_ms is not None
+            and start_ms in self._asr_final_start_ms
+        )
+        accepted_text = bool(
+            event.text and not already_committed and not already_buffered
+        )
+        if accepted_text:
             # Keep the existing barge-in policy separate from turn detection.
             if event.final or len(event.text) > 2:
                 await self._interrupt()
             if event.final:
                 self._asr_final_segments.append(event.text)
                 self._asr_interim = ""
+                if start_ms is not None:
+                    self._asr_final_start_ms.add(start_ms)
             else:
                 self._asr_interim = event.text
-
-        segments = self._asr_final_segments.copy()
-        if self._asr_interim:
-            segments.append(self._asr_interim)
-        utterance = " ".join(
-            segment.strip() for segment in segments if segment.strip()
-        )
+            if start_ms is not None:
+                previous = self._asr_buffer_start_ms
+                self._asr_buffer_start_ms = max(
+                    previous if previous is not None else -1, start_ms
+                )
 
         if speech_final:
-            self._asr_final_segments.clear()
-            self._asr_interim = ""
+            self._cancel_asr_fallback()
+            await self._commit_asr_utterance(stream_id)
+        elif accepted_text:
+            if self._asr_final_segments:
+                self._schedule_asr_fallback(stream_id)
+            segments = self._asr_final_segments.copy()
+            if self._asr_interim:
+                segments.append(self._asr_interim)
+            utterance = " ".join(
+                segment.strip() for segment in segments if segment.strip()
+            )
             if utterance:
-                self.turn_id += 1
-                await self.agent.queue_llm_input(utterance)
-                await self._send_transcript("user", utterance, True, stream_id)
-        elif event.text and utterance:
-            await self._send_transcript("user", utterance, False, stream_id)
+                await self._send_transcript("user", utterance, False, stream_id)
+
+    @agent_event_handler(ASRCommitTimeoutEvent)
+    async def _on_asr_commit_timeout(self, event: ASRCommitTimeoutEvent):
+        if (
+            self.stopped
+            or self.config.turn_detection_mode != "speech_final"
+            or event.session_id != self.session_id
+            or event.generation != self._asr_fallback_generation
+            or not self._asr_final_segments
+        ):
+            return
+        self._cancel_asr_fallback()
+        await self._commit_asr_utterance(event.stream_id)
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
@@ -209,6 +300,10 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, _ten_env: AsyncTenEnv):
         self.ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        fallback_task = self._asr_fallback_task
+        self._cancel_asr_fallback()
+        if fallback_task is not None:
+            await asyncio.gather(fallback_task, return_exceptions=True)
         await self.agent.stop()
 
     async def on_cmd(self, _ten_env: AsyncTenEnv, cmd: Cmd):
