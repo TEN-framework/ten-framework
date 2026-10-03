@@ -185,20 +185,23 @@ class MainControlExtension(AsyncExtension):
         Sends a sentence to the TTS system.
         """
         request_id = f"tts-request-{self.turn_id}"
-        await _send_data(
-            self.ten_env,
-            "tts_text_input",
-            "tts",
-            {
-                "request_id": request_id,
-                "text": text,
-                "text_input_end": is_final,
-                "metadata": self._current_metadata(),
-            },
-        )
+        payload = {
+            "request_id": request_id,
+            "text": text,
+            "text_input_end": is_final,
+            "metadata": self._current_metadata(),
+        }
+        await _send_data(self.ten_env, "tts_text_input", "tts", payload)
         self.ten_env.log_info(
             f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}"
         )
+        if self.config and self.config.agent_context_dest:
+            await _send_data(
+                self.ten_env,
+                "tts_text_input",
+                self.config.agent_context_dest,
+                payload,
+            )
 
     async def _interrupt(self):
         """

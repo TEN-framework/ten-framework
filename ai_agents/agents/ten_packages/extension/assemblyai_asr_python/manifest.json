@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "assemblyai_asr_python",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "dependencies": [
     {
       "type": "system",
@@ -31,20 +31,35 @@
             "ws_url": {
               "type": "string"
             },
+            "speech_model": {
+              "type": "string"
+            },
             "sample_rate": {
               "type": "int64"
             },
             "encoding": {
               "type": "string"
             },
+            "format_turns": {
+              "type": "bool"
+            },
             "language": {
               "type": "string"
             },
-            "end_of_turn_confidence_threshold": {
-              "type": "float64"
+            "language_codes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
-            "format_turns": {
+            "language_detection": {
               "type": "bool"
+            },
+            "mode": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
             },
             "keyterms_prompt": {
               "type": "array",
@@ -52,16 +67,112 @@
                 "type": "string"
               }
             },
-            "min_end_of_turn_silence_when_confident": {
+            "agent_context": {
+              "type": "string"
+            },
+            "previous_context_n_turns": {
+              "type": "int64"
+            },
+            "min_turn_silence": {
               "type": "int64"
             },
             "max_turn_silence": {
+              "type": "int64"
+            },
+            "vad_threshold": {
+              "type": "float64"
+            },
+            "interruption_delay": {
+              "type": "int64"
+            },
+            "continuous_partials": {
+              "type": "bool"
+            },
+            "include_partial_turns": {
+              "type": "bool"
+            },
+            "end_of_turn_confidence_threshold": {
+              "type": "float64"
+            },
+            "min_end_of_turn_silence_when_confident": {
+              "type": "int64"
+            },
+            "voice_focus": {
+              "type": "string"
+            },
+            "voice_focus_threshold": {
+              "type": "float64"
+            },
+            "speaker_labels": {
+              "type": "bool"
+            },
+            "max_speakers": {
+              "type": "int64"
+            },
+            "domain": {
+              "type": "string"
+            },
+            "redact_pii": {
+              "type": "bool"
+            },
+            "redact_pii_policies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "redact_pii_sub": {
+              "type": "string"
+            },
+            "filter_profanity": {
+              "type": "bool"
+            },
+            "inactivity_timeout": {
+              "type": "int64"
+            },
+            "session_heartbeat": {
+              "type": "bool"
+            },
+            "finalize_timeout_ms": {
               "type": "int64"
             }
           }
         }
       }
-    }
+    },
+    "data_in": [
+      {
+        "name": "tts_text_input",
+        "property": {
+          "properties": {
+            "request_id": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "text_input_end": {
+              "type": "bool"
+            },
+            "metadata": {
+              "type": "object",
+              "properties": {
+                "session_id": {
+                  "type": "string"
+                },
+                "turn_id": {
+                  "type": "int64"
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "request_id",
+          "text"
+        ]
+      }
+    ]
   },
   "package": {
     "include": [
@@ -70,6 +181,7 @@
       "**.py",
       "pyproject.toml",
       "requirements.txt",
+      "README.md",
       "docs/**"
     ]
   }

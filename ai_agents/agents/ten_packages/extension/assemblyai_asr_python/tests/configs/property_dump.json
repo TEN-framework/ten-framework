@@ -1,8 +1,10 @@
 {
+    "dump": true,
+    "dump_path": "./tests/dump_output/",
     "params": {
         "api_key": "${env:ASSEMBLYAI_API_KEY}",
         "speech_model": "universal-3-6-pro",
         "sample_rate": 16000,
-        "language": "zh-CN"
+        "language": "en-US"
     }
 }
