@@ -6,6 +6,7 @@
 #
 import argparse
 import platform
+import shlex
 import subprocess
 import sys
 import os as os_module
@@ -48,12 +49,12 @@ def detect_arch() -> str:
     raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
-def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
-    """Run a shell command."""
+def run_cmd(cmd: list[str], env: dict[str, str] | None = None) -> int:
+    """Run a command without spawning a shell."""
     if env is None:
         env = os_module.environ.copy()
-    print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True, env=env)
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True, env=env)
     return result.returncode
 
 
@@ -65,9 +66,9 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
         env["PATH"] = (
             env["PATH"] + ";" + ".ten/app/ten_packages/system/ten_runtime/lib"
         )
-        command = "bin/default_extension_cpp_test.exe"
+        command = ["bin/default_extension_cpp_test.exe"]
     else:
-        command = "bin/default_extension_cpp_test"
+        command = ["bin/default_extension_cpp_test"]
 
     return run_cmd(command, env)
 
@@ -77,27 +78,29 @@ def run_cmd_build(os: str, arch: str) -> int:
     # Allow extra GN args via environment variable (e.g. vs_version=2026)
     extra_gn_args = os_module.environ.get("TEN_EXTRA_GN_ARGS", "")
 
-    if os == "win":
-        command = (
-            f"tgn.bat gen {os} {arch} {BUILD_TYPE} "
-            f"-- ten_enable_standalone_test=true {extra_gn_args}"
-        )
-    else:
-        command = (
-            f"tgn gen {os} {arch} {BUILD_TYPE} "
-            f"-- ten_enable_standalone_test=true {extra_gn_args}"
-        )
+    tgn = "tgn.bat" if os == "win" else "tgn"
+
+    # Kept as a single string so extra args can be appended to it in place
+    # (CI does this to add vs_version=2022); shlex.split then turns it back
+    # into separate arguments.
+    gn_args = "ten_enable_standalone_test=true"
+
+    command = [
+        tgn,
+        "gen",
+        os,
+        arch,
+        BUILD_TYPE,
+        "--",
+        *shlex.split(gn_args),
+        *shlex.split(extra_gn_args),
+    ]
 
     rc = run_cmd(command)
     if rc != 0:
         return rc
 
-    if os == "win":
-        command = f"tgn.bat build {os} {arch} {BUILD_TYPE}"
-    else:
-        command = f"tgn build {os} {arch} {BUILD_TYPE}"
-
-    return run_cmd(command)
+    return run_cmd([tgn, "build", os, arch, BUILD_TYPE])
 
 
 def main():
