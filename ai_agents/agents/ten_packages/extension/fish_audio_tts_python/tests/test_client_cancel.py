@@ -24,6 +24,7 @@ class BlockingWebSocket:
         return None
 
     async def recv(self) -> bytes:
+        await asyncio.sleep(0)
         if not self.audio_sent:
             self.audio_sent = True
             return ormsgpack.packb({"event": "audio", "audio": b"audio"})
@@ -48,6 +49,7 @@ class SuccessfulWebSocket:
         return None
 
     async def recv(self) -> bytes:
+        await asyncio.sleep(0)
         return ormsgpack.packb(self.messages.pop(0))
 
     async def close(self) -> None:

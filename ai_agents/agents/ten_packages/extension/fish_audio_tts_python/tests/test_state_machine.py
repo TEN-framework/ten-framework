@@ -194,7 +194,7 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
 
     # Mock the async iterator returned by client.get()
     # fish_audio_tts uses: async for audio_chunk, event in self.client.get(text)
-    async def mock_get_request1(text: str):
+    async def mock_get_request1(text: str, **_kwargs):
         """Mock get() for first request - yields audio chunks then END event"""
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding chunk 1 for request 1")
@@ -209,7 +209,7 @@ def test_sequential_requests_state_machine(MockFishAudioTTSClient):
         print("  → Mock: Yielding END event for request 1")
         yield None, EVENT_TTS_END
 
-    async def mock_get_request2(text: str):
+    async def mock_get_request2(text: str, **_kwargs):
         """Mock get() for second request"""
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding chunk 1 for request 2")
@@ -291,7 +291,7 @@ def test_request_state_transitions(MockFishAudioTTSClient):
     MockFishAudioTTSClient.return_value = mock_instance
 
     # Simple mock for single request
-    async def mock_get(text: str):
+    async def mock_get(text: str, **_kwargs):
         """Mock a simple TTS request"""
         await asyncio.sleep(0.01)
         print("  → Mock: Yielding audio chunk")

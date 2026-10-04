@@ -126,7 +126,7 @@ def test_dump_functionality(MockFishAudioTTSClient):
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # This async generator simulates the TTS client's get() method
-    async def mock_get_audio_stream(text: str):
+    async def mock_get_audio_stream(text: str, **_kwargs):
         yield (fake_audio_chunk_1, EVENT_TTS_RESPONSE)
         await asyncio.sleep(0.01)
         yield (fake_audio_chunk_2, EVENT_TTS_RESPONSE)
@@ -297,7 +297,7 @@ def test_flush_logic(MockFishAudioTTSClient):
     mock_instance.cancel = AsyncMock()
     mock_instance.clean = AsyncMock()
 
-    async def mock_get_long_audio_stream(text: str):
+    async def mock_get_long_audio_stream(text: str, **_kwargs):
         for _ in range(20):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.

@@ -26,6 +26,7 @@ class FakeSession:
         self.sent_messages.append(ormsgpack.unpackb(message))
 
     async def recv(self) -> bytes:
+        await asyncio.sleep(0)
         if not self.received:
             self.received = True
             return ormsgpack.packb({"event": "audio", "audio": b"audio"})
@@ -43,6 +44,31 @@ class DuplicateHeaders:
             ("server-timing", "edge;dur=1"),
             ("server-timing", "inference;dur=2"),
         ]
+
+
+class PersistentFakeSession:
+    def __init__(self) -> None:
+        self.response = SimpleNamespace(headers={})
+        self.sent_messages: list[dict] = []
+        self.responses: asyncio.Queue[bytes] = asyncio.Queue()
+
+    async def send(self, message: bytes) -> None:
+        data = ormsgpack.unpackb(message)
+        self.sent_messages.append(data)
+        if data.get("event") == "text":
+            await self.responses.put(
+                ormsgpack.packb({"event": "audio", "audio": b"audio"})
+            )
+        elif data.get("event") == "stop":
+            await self.responses.put(
+                ormsgpack.packb({"event": "finish", "reason": "stop"})
+            )
+
+    async def recv(self) -> bytes:
+        return await self.responses.get()
+
+    async def close(self) -> None:
+        return None
 
 
 class FakeConnect:
@@ -134,6 +160,87 @@ def test_request_start_callback_runs_before_sdk_tts():
 
         assert events[:2] == ["request_start", "connect"]
         await client.clean()
+
+    asyncio.run(run_test())
+
+
+def test_appended_text_reuses_one_websocket_session():
+    async def run_test() -> None:
+        session = PersistentFakeSession()
+        ten_env = MagicMock()
+        connect_calls = 0
+
+        def fake_connect(*_args, **_kwargs):
+            nonlocal connect_calls
+            connect_calls += 1
+            return FakeConnect(session, [])
+
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            side_effect=fake_connect,
+        ):
+            client = FishAudioTTSClient(
+                FishAudioTTSConfig(api_key="test-key"), ten_env
+            )
+            first = [
+                event
+                async for event in client.get(
+                    "first ", request_id="request-1", text_input_end=False
+                )
+            ]
+            second = [
+                event
+                async for event in client.get(
+                    "second", request_id="request-1", text_input_end=True
+                )
+            ]
+            await client.clean()
+
+        assert connect_calls == 1
+        assert session.sent_messages[0]["event"] == "start"
+        assert [message["event"] for message in session.sent_messages] == [
+            "start",
+            "text",
+            "text",
+            "stop",
+        ]
+        assert all(event[1] == EVENT_TTS_RESPONSE for event in first)
+        assert sum(event[1] == EVENT_TTS_RESPONSE for event in first + second) == 2
+        assert second[-1] == (None, EVENT_TTS_END)
+
+    asyncio.run(run_test())
+
+
+def test_connection_status_callbacks_cover_socket_lifecycle():
+    async def run_test() -> None:
+        session = FakeSession([])
+        statuses: list[str] = []
+        ten_env = MagicMock()
+
+        async def connecting() -> None:
+            statuses.append("connecting")
+
+        async def connected() -> None:
+            statuses.append("connected")
+
+        async def disconnected(**_kwargs) -> None:
+            statuses.append("disconnected")
+
+        with patch(
+            "fish_audio_tts_python.fish_audio_tts.connect",
+            return_value=FakeConnect(session, []),
+        ):
+            client = FishAudioTTSClient(
+                FishAudioTTSConfig(api_key="test-key"),
+                ten_env,
+                on_connection_connecting=connecting,
+                on_connection_connected=connected,
+                on_connection_disconnected=disconnected,
+            )
+            await client.get("hello").__anext__()
+            await client.clean()
+
+        assert statuses == ["connecting", "connected", "disconnected"]
 
     asyncio.run(run_test())
 
