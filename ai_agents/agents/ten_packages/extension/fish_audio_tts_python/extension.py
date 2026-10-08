@@ -80,7 +80,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             self.client = FishAudioTTSClient(
                 config=self.config,
                 ten_env=ten_env,
-                on_request_start=self._on_vendor_request_start,
+                on_text_send=self._on_text_send,
                 on_connection_connecting=self.on_connecting,
                 on_connection_connected=self.on_connected,
                 on_connection_disconnected=self.on_disconnected,
@@ -173,7 +173,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
-    def _on_vendor_request_start(self) -> None:
+    def _on_text_send(self) -> None:
         if self.sent_ts is None:
             self.sent_ts = time.monotonic()
 
@@ -225,7 +225,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 self.client = FishAudioTTSClient(
                     config=self.config,
                     ten_env=self.ten_env,
-                    on_request_start=self._on_vendor_request_start,
+                    on_text_send=self._on_text_send,
                     on_connection_connecting=self.on_connecting,
                     on_connection_connected=self.on_connected,
                     on_connection_disconnected=self.on_disconnected,

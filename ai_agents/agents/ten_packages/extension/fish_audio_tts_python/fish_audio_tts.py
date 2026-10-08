@@ -29,10 +29,12 @@ class FishAudioTTSClient:
         on_connection_connected: Callable[[], object] | None = None,
         on_connection_disconnected: Callable[..., object] | None = None,
         on_audio: Callable[[bytes, str], object] | None = None,
+        on_text_send: Callable[[], None] | None = None,
     ):
         self.config = config
         self.ten_env = ten_env
         self.on_request_start = on_request_start
+        self.on_text_send = on_text_send
         self.on_connection_connecting = on_connection_connecting
         self.on_connection_connected = on_connection_connected
         self.on_connection_disconnected = on_connection_disconnected
@@ -180,7 +182,12 @@ class FishAudioTTSClient:
         if websocket is None:
             raise ConnectionError("Fish Audio WebSocket is not connected")
         async with self._send_lock:
-            await websocket.send(ormsgpack.packb(message))
+            payload = ormsgpack.packb(message)
+            if message.get("event") == "text" and self.on_text_send is not None:
+                # Mark TTFB immediately before the first text payload is sent.
+                # The extension callback is idempotent for subsequent chunks.
+                self.on_text_send()
+            await websocket.send(payload)
 
     async def _start_session(self, request_id: str) -> None:
         if self._session_active and self._session_request_id == request_id:
