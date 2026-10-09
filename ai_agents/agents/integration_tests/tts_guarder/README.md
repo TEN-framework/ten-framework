@@ -1,5 +1,8 @@
 # TTS Guarder Test Guide
 
+As of: 2026-10-09 13:35 UTC
+Codebase commit: `2ff14de45dabb2e70206557dd8b21cd081d63a29`
+
 This document describes how to run Guarder Test for TTS
 
 ## Environment Variables
@@ -44,4 +47,13 @@ task tts-guarder-test EXTENSION=cartesia_tts
 task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 ```
 
-Currently, `test_subtitle_alignment.py` only runs for `cartesia_tts`.
+`test_subtitle_alignment.py` supports `cartesia_tts` and
+`minimax_tts_websocket_duplex`. It validates two sequential requests against
+the cumulative PCM clock. MiniMax also compares TEN word timestamps with
+untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
+for the validation rules and their limits.
+
+`test_guarder_timing.py` also runs seven deterministic standalone TEN tests.
+They load a test-only extension, exchange loopback WebSocket provider messages,
+and judge its public output through the same Guarder consumer. Their assertions
+use the returned runner result instead of calling checker functions directly.

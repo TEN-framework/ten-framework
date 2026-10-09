@@ -1,4 +1,5 @@
 ten_packages
 .env
 manifest.json
+!tests/timing_fixture/manifest.json
 manifest-lock.json
