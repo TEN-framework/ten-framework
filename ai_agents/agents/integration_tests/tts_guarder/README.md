@@ -52,8 +52,3 @@ task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 the cumulative PCM clock. MiniMax also compares TEN word timestamps with
 untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
 for the validation rules and their limits.
-
-`test_guarder_timing.py` also runs seven deterministic standalone TEN tests.
-They load a test-only extension, exchange loopback WebSocket provider messages,
-and judge its public output through the same Guarder consumer. Their assertions
-use the returned runner result instead of calling checker functions directly.

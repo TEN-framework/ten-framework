@@ -222,7 +222,7 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
 def run_subtitle_alignment(
     extension_name, config, monkeypatch, observe_provider=False
 ):
-    """Run the same standalone TEN consumer for live and controlled providers."""
+    """Observe live TTS output through the standalone TEN consumer."""
     oracle = None
     if observe_provider:
         import websockets

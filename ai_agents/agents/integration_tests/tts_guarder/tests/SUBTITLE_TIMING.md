@@ -24,22 +24,6 @@ boundary. They return every message unchanged. The checker reads the actual
 times. It compares those inputs with TEN output rather than trusting only the
 extension's converted timestamps. Nonzero first-word offsets must be retained.
 
-`test_guarder_timing.py` runs seven standalone TEN cases through the same
-`SubtitleAlignmentTester` entry point as the live test. A test-only registered
-extension in `timing_fixture/` exchanges actual loopback WebSocket messages
-with a controlled provider and emits public TEN `Data` and `AudioFrame`
-messages. It supplies valid traces and intentionally invalid traces for erased
-word offsets, cumulative frame drift, and words or result ranges outside PCM.
-The separate-origins case uses a long fractional first request and a short
-second request. Every case includes two requests and empty terminal markers.
-
-The regression functions assert only the public TEN runner's success or returned
-error. A negative case must return the expected diagnostic, so a missing addon,
-timeout, or unrelated setup error cannot make the case pass. They do not call
-the timing validators directly, inspect the Guarder's captured lists, or read
-private extension fields. These cases verify the Guarder's behavior; the live
-case separately verifies production MiniMax output.
-
 | Observation point | Information read |
 | --- | --- |
 | TEN tester `on_data` | Public TTS results, audio start/end, request metadata |
@@ -48,9 +32,7 @@ case separately verifies production MiniMax output.
 | TEN tester `run` result | Success or the externally returned rejection diagnostic |
 
 No observation uses production extension private members or methods. The
-Guarder naturally runs its own validators to judge received messages; the
-regression tests observe only its runner result. Mock provider and fixture
-extension state belongs to test doubles, not the production extension.
+Guarder naturally runs its own validators to judge received public messages.
 
 These checks protect timestamp conversion and the PCM timeline. They do not
 perform phonetic forced alignment or prove that a provider's word annotations
