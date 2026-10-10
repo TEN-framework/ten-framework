@@ -23,10 +23,11 @@ from ten_runtime import (
 
 from .subtitle_timing import (
     AudioFrameTiming,
-    MiniMaxTimingOracle,
     validate_audio_clock,
+    validate_provider_reference,
     validate_subtitle_bounds,
 )
+from .timing_hooks import install_timing_hook
 
 TTS_SUBTITLE_CONFIG_FILE = "property_subtitle_alignment.json"
 SUPPORTED_TTS_EXTENSIONS = {"cartesia_tts", "minimax_tts_websocket_duplex"}
@@ -37,14 +38,14 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
     """Observe two sequential requests at public TEN output boundaries.
 
     A first word may follow leading silence. Generic checks validate ranges
-    against the cumulative PCM sample clock. MiniMax also uses a socket
-    observer as an independent oracle for the original provider word times.
+    against the cumulative PCM sample clock. An optional vendor hook provides
+    an independent reference for original provider word times.
     """
 
-    def __init__(self, session_id="subtitle_alignment", oracle=None):
+    def __init__(self, session_id="subtitle_alignment", reference_source=None):
         super().__init__()
         self.session_id = session_id
-        self.oracle = oracle
+        self.reference_source = reference_source
         self.request_index = 0
         self.timeout_task = None
         self.text_results: list[dict[str, Any]] = []
@@ -98,6 +99,8 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
                 }
             ),
         )
+        if self.reference_source:
+            self.reference_source.begin_request(self.request_id)
         await ten_env.send_data(data)
 
     def _fail(self, ten_env, message):
@@ -168,10 +171,13 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
             validate_subtitle_bounds(self.text_results, self.audio_frames),
             self._validate_sequence(),
         ]
-        if self.oracle:
+        if self.reference_source:
             checks.append(
-                self.oracle.validate(
-                    self.request_id, self.text_results, self.audio_frames
+                validate_provider_reference(
+                    self.request_id,
+                    self.text_results,
+                    self.audio_frames,
+                    self.reference_source.reference(self.request_id),
                 )
             )
         for valid, message in checks:
@@ -219,35 +225,14 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
                 await self.timeout_task
 
 
-def run_subtitle_alignment(
-    extension_name, config, monkeypatch, observe_provider=False
-):
-    """Observe live TTS output through the standalone TEN consumer."""
-    oracle = None
-    if observe_provider:
-        import websockets
-
-        oracle = MiniMaxTimingOracle(REQUEST_IDS)
-        original_send = websockets.ClientConnection.send
-        original_receive = websockets.ClientConnection.recv
-
-        async def observe_send(connection, message, *args, **kwargs):
-            if isinstance(message, (str, bytes)):
-                oracle.observe_send(message)
-            return await original_send(connection, message, *args, **kwargs)
-
-        async def observe_receive(connection, *args, **kwargs):
-            message = await original_receive(connection, *args, **kwargs)
-            oracle.observe_receive(message)
-            return message
-
-        monkeypatch.setattr(websockets.ClientConnection, "send", observe_send)
-        monkeypatch.setattr(
-            websockets.ClientConnection, "recv", observe_receive
-        )
-    tester = SubtitleAlignmentTester(oracle=oracle)
-    tester.set_test_mode_single(extension_name, json.dumps(config))
-    return tester.run()
+def run_subtitle_alignment(extension_name, config, monkeypatch):
+    """Observe live TTS output with an optional case-scoped vendor hook."""
+    with install_timing_hook(
+        extension_name, config, REQUEST_IDS, monkeypatch
+    ) as reference_source:
+        tester = SubtitleAlignmentTester(reference_source=reference_source)
+        tester.set_test_mode_single(extension_name, json.dumps(config))
+        return tester.run()
 
 
 def test_subtitle_alignment(
@@ -268,7 +253,6 @@ def test_subtitle_alignment(
         extension_name,
         config,
         monkeypatch,
-        observe_provider=extension_name == "minimax_tts_websocket_duplex",
     )
     assert (
         error is None

@@ -5,9 +5,9 @@
 #
 """Independent checks for the PCM sample clock observed by the Guarder."""
 
-import json
-from copy import deepcopy
 from dataclasses import dataclass
+
+from .timing_hooks.base import RequestTimingReference
 
 
 @dataclass(frozen=True)
@@ -105,113 +105,53 @@ def validate_subtitle_bounds(
     return True, "Subtitle words stay within PCM and their result ranges"
 
 
-class MiniMaxTimingOracle:
-    """Compare public TEN output with untouched provider messages at the socket."""
-
-    def __init__(self, request_ids: list[str]):
-        self.request_ids = request_ids
-        self.request_index = 0
-        self.sample_rate = 0
-        self.channels = 1
-        self.pcm_bytes = {request_id: 0 for request_id in request_ids}
-        self.subtitles = {request_id: [] for request_id in request_ids}
-        self.sentence_start_bytes = 0
-
-    def observe_send(self, payload: str | bytes) -> None:
-        message = json.loads(payload)
-        if message.get("event") == "task_start":
-            setting = message.get("audio_setting", {})
-            self.sample_rate = setting.get("sample_rate", 0)
-            self.channels = setting.get("channels", setting.get("channel", 1))
-
-    def observe_receive(self, payload: str | bytes) -> None:
-        message = json.loads(payload)
-        if self.request_index >= len(self.request_ids):
-            return
-        request_id = self.request_ids[self.request_index]
-        event = message.get("event")
-        if event == "sentence_start":
-            self.sentence_start_bytes = self.pcm_bytes[request_id]
-        if event == "task_continued":
-            data = message.get("data", {})
-            self.pcm_bytes[request_id] += len(
-                bytes.fromhex(data.get("audio") or "")
-            )
-            subtitle = data.get("subtitle")
-            if subtitle and subtitle.get("timestamped_words"):
-                self.subtitles[request_id].append(
-                    (self.sentence_start_bytes, deepcopy(subtitle))
-                )
-        if event == "task_flushed":
-            self.request_index += 1
-            self.sentence_start_bytes = 0
-
-    @staticmethod
-    def expected_words(subtitle: dict) -> list[dict]:
-        words = []
-        for item in subtitle["timestamped_words"]:
+def validate_provider_reference(
+    request_id: str,
+    results: list[dict],
+    frames: list[AudioFrameTiming],
+    reference: RequestTimingReference,
+) -> tuple[bool, str]:
+    vendor = reference.vendor
+    if reference.error:
+        return False, reference.error
+    if not reference.complete:
+        return False, f"{vendor} timing reference did not complete"
+    if any(result.get("request_id") != request_id for result in results):
+        return False, "Subtitle belongs to another request"
+    if reference.sample_rate <= 0 or reference.channels <= 0:
+        return False, f"{vendor} audio format was not observed"
+    if not frames or any(
+        frame.sample_rate != reference.sample_rate
+        or frame.channels != reference.channels
+        for frame in frames
+    ):
+        return False, f"TEN audio format differs from {vendor}"
+    observed_bytes = sum(frame.samples * frame.channels * 2 for frame in frames)
+    if observed_bytes != reference.pcm_bytes:
+        return False, "TEN PCM sample count differs from provider audio"
+    captions = timed_results(results)
+    if not reference.captions or len(captions) != len(reference.captions):
+        return False, "TEN subtitle count differs from provider subtitles"
+    origin = frames[0].timestamp_ms
+    for result, expected_words in zip(captions, reference.captions):
+        if len(result["words"]) != len(expected_words):
+            return False, "TEN word count differs from provider words"
+        for actual, raw in zip(result["words"], expected_words):
+            expected_start = origin + int(raw.start_ms)
+            expected_end = origin + int(raw.end_ms)
+            actual_end = actual["start_ms"] + actual["duration_ms"]
             if (
-                words
-                and item.get("word_begin") is not None
-                and item.get("word_end") is not None
-                and (item.get("word_begin"), item.get("word_end"))
-                == (words[-1].get("word_begin"), words[-1].get("word_end"))
+                actual["word"] != raw.word
+                or abs(actual["start_ms"] - expected_start) > 1
+                or abs(actual_end - expected_end) > 1
             ):
-                words[-1]["time_end"] = item["time_end"]
-            else:
-                words.append(dict(item))
-        return words
-
-    def validate(
-        self,
-        request_id: str,
-        results: list[dict],
-        frames: list[AudioFrameTiming],
-    ) -> tuple[bool, str]:
-        if any(result.get("request_id") != request_id for result in results):
-            return False, "Subtitle belongs to another request"
-        if self.sample_rate <= 0 or self.channels <= 0:
-            return False, "MiniMax task_start audio format was not observed"
-        if not frames or any(
-            frame.sample_rate != self.sample_rate
-            or frame.channels != self.channels
-            for frame in frames
-        ):
-            return False, "TEN audio format differs from MiniMax task_start"
-        observed_bytes = sum(
-            frame.samples * frame.channels * 2 for frame in frames
-        )
-        if observed_bytes != self.pcm_bytes[request_id]:
-            return False, "TEN PCM sample count differs from provider audio"
-        captions = timed_results(results)
-        expected = self.subtitles[request_id]
-        if not expected or len(captions) != len(expected):
-            return False, "TEN subtitle count differs from provider subtitles"
-        origin = frames[0].timestamp_ms
-        for result, (sentence_bytes, subtitle) in zip(captions, expected):
-            words = self.expected_words(subtitle)
-            if len(result["words"]) != len(words):
-                return False, "TEN word count differs from provider words"
-            sentence_ms = (
-                sentence_bytes * 1000 / (2 * self.channels * self.sample_rate)
-            )
-            for actual, raw in zip(result["words"], words):
-                expected_start = origin + int(sentence_ms + raw["time_begin"])
-                expected_end = origin + int(sentence_ms + raw["time_end"])
-                actual_end = actual["start_ms"] + actual["duration_ms"]
-                expected_text = " " if raw["word"] == "[SPACE]" else raw["word"]
-                if (
-                    actual["word"] != expected_text
-                    or abs(actual["start_ms"] - expected_start) > 1
-                    or abs(actual_end - expected_end) > 1
-                ):
-                    return (
-                        False,
-                        f"TEN word timing differs from MiniMax: expected [{expected_start}, {expected_end}], got [{actual['start_ms']}, {actual_end}]",
-                    )
-        first_offset = expected[0][1]["timestamped_words"][0]["time_begin"]
-        observed_offset = captions[0]["words"][0]["start_ms"] - origin
-        return (
-            True,
-            f"MiniMax raw timing verified: {len(captions)} subtitles, first word offset {first_offset:.3f}ms -> {observed_offset}ms",
-        )
+                return (
+                    False,
+                    f"TEN word timing differs from {vendor}: expected [{expected_start}, {expected_end}], got [{actual['start_ms']}, {actual_end}]",
+                )
+    first_offset = float(reference.captions[0][0].start_ms)
+    observed_offset = captions[0]["words"][0]["start_ms"] - origin
+    return (
+        True,
+        f"{vendor} raw timing verified: {len(captions)} subtitles, first word offset {first_offset:.3f}ms -> {observed_offset}ms",
+    )

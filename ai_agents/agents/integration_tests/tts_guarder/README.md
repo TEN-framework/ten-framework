@@ -1,7 +1,6 @@
 # TTS Guarder Test Guide
 
-As of: 2026-10-09 13:35 UTC
-Codebase commit: `2ff14de45dabb2e70206557dd8b21cd081d63a29`
+As of: 2026-10-10
 
 This document describes how to run Guarder Test for TTS
 
@@ -52,3 +51,8 @@ task tts-guarder-test EXTENSION=cartesia_tts -- --enable_subtitle_alignment=True
 the cumulative PCM clock. MiniMax also compares TEN word timestamps with
 untouched provider messages. See [the timing checks](tests/SUBTITLE_TIMING.md)
 for the validation rules and their limits.
+
+Only `minimax_tts_websocket_duplex` installs a vendor timing hook. The hook
+applies to the alignment test's matching connections and restores the client
+dependency afterward. Other vendors and other cases receive no hook; their
+existing behavior is unchanged.
