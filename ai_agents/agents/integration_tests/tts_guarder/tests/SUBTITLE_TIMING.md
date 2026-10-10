@@ -25,13 +25,20 @@ parameter; the original connect object retains its await, context-manager,
 and reconnect semantics. The shared WebSocket library and its global
 `ClientConnection.send/recv` methods are not modified.
 
-The hook observes unchanged public messages, binds them to known TEN test
-inputs, and keeps connection and request capture separate. It reads the
-`task_start` audio format, PCM bytes, sentence boundaries, original word times,
-and flush completion. It returns immutable request-relative reference data;
-the common checker compares that reference with TEN output. Nonzero first-word
-offsets must be retained. Capture errors fail the timing check without raising
-new exceptions into the extension's wire path.
+The hook records only the actual `task_start` audio setting, original subtitle
+payloads, and cumulative audio byte positions at sentence boundaries. Audio
+chunks are counted from their hex length; their content is not retained or
+decoded. The public TEN test input resets capture for each sequential request.
+The hook does not track connection ownership, task submission, flush ACKs, or
+reconnection lifecycle.
+
+`reference_calculators/minimax_duplex.py` separately interprets captured facts:
+it merges duplicate word indexes, handles space markers, and converts sentence
+offsets plus original word times into request-relative references. The common
+checker compares those references with TEN output. Request completion continues
+to be observed through public TEN audio/text end events. Nonzero first-word
+offsets must be retained. Capture and calculation errors fail the timing check
+without changing the extension's wire path.
 
 The dependency binding is restored when the runner exits, including failure
 paths. Only MiniMax Duplex is registered. Other vendors do not import or

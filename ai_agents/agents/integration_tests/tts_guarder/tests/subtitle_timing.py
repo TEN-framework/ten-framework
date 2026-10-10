@@ -114,8 +114,6 @@ def validate_provider_reference(
     vendor = reference.vendor
     if reference.error:
         return False, reference.error
-    if not reference.complete:
-        return False, f"{vendor} timing reference did not complete"
     if any(result.get("request_id") != request_id for result in results):
         return False, "Subtitle belongs to another request"
     if reference.sample_rate <= 0 or reference.channels <= 0:

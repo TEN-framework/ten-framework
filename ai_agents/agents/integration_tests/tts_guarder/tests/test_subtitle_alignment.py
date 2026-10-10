@@ -228,7 +228,7 @@ class SubtitleAlignmentTester(AsyncExtensionTester):
 def run_subtitle_alignment(extension_name, config, monkeypatch):
     """Observe live TTS output with an optional case-scoped vendor hook."""
     with install_timing_hook(
-        extension_name, config, REQUEST_IDS, monkeypatch
+        extension_name, config, monkeypatch
     ) as reference_source:
         tester = SubtitleAlignmentTester(reference_source=reference_source)
         tester.set_test_mode_single(extension_name, json.dumps(config))

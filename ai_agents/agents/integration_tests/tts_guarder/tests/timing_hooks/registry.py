@@ -8,22 +8,26 @@
 from contextlib import contextmanager
 from importlib import import_module
 
+from .base import TimingReferenceSource
+
 HOOK_FACTORIES = {
     "minimax_tts_websocket_duplex": (
         ".minimax_duplex",
         "MiniMaxTimingHook",
+        "..reference_calculators.minimax_duplex",
     ),
 }
 
 
 @contextmanager
-def install_timing_hook(extension_name, config, request_ids, monkeypatch):
+def install_timing_hook(extension_name, config, monkeypatch):
     spec = HOOK_FACTORIES.get(extension_name)
     if spec is None:
         yield None
         return
     module = import_module(spec[0], package=__package__)
-    hook = getattr(module, spec[1])(request_ids)
+    hook = getattr(module, spec[1])()
+    calculator = import_module(spec[2], package=__package__)
     with monkeypatch.context() as scoped_patch:
         hook.install(scoped_patch, config)
-        yield hook
+        yield TimingReferenceSource(hook, calculator.build_reference)

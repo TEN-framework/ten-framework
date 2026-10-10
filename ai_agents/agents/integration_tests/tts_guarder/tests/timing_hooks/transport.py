@@ -33,17 +33,13 @@ class ObservedWebSockets:
         class ObservedConnection(base):
             """Keep the original connection API and cancellation behavior."""
 
-            def __init__(self, *connection_args, **connection_kwargs):
-                super().__init__(*connection_args, **connection_kwargs)
-                self.timing_connection_id = observer.open_connection()
-
             async def send(self, message, *send_args, **send_kwargs):
-                observer.observe_send(self.timing_connection_id, message)
+                observer.observe_send(message)
                 return await super().send(message, *send_args, **send_kwargs)
 
             async def recv(self, *recv_args, **recv_kwargs):
                 message = await super().recv(*recv_args, **recv_kwargs)
-                observer.observe_receive(self.timing_connection_id, message)
+                observer.observe_receive(message)
                 return message
 
         kwargs["create_connection"] = ObservedConnection
