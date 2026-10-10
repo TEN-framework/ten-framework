@@ -10,7 +10,7 @@ from importlib import import_module
 
 HOOK_FACTORIES = {
     "minimax_tts_websocket_duplex": (
-        ".minimax",
+        ".minimax_duplex",
         "MiniMaxTimingHook",
     ),
 }
