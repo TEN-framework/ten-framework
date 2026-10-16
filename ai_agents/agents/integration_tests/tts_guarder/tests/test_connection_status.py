@@ -24,6 +24,7 @@ TTS_CONNECTION_STATUS_CONFIG_FILE = "property_basic_audio_setting1.json"
 SUPPORTED_WEBSOCKET_TTS_EXTENSIONS = {
     "bytedance_tts",
     "bytedance_tts_duplex",
+    "kotoba_tts_python",
     "minimax_tts_websocket",
     "minimax_tts_websocket_python",
     "rime_tts",
