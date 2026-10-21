@@ -1,11 +1,11 @@
-# FDB graph validation — 2026-10-20
+# FDB graph validation — 2026-10-21
 
-Tested TEN source commit: `5f2cb52e0`.
-Packaged graph regression test: `5f2cb52e0` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `b81ffba8a`.
+Packaged graph regression test: `b81ffba8a` (`tests/test_fdb_runtime.py`).
 Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
-`06d9cd66ee212346e9e8df03c37d0d9333de60a1943a9025ea94b0334c2edcf7`.
+`b4d40893e7aa745fa2d3175d5a13d1c91b0b6ea4666ca292cd5beecb09c39b2d`.
 
 ## Results
 
@@ -125,14 +125,17 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:e95dc666914ce7315e1b5e841f20b3b501a5d01002f54090f2b42e9df6ae14e3`
+`sha256:e43e9d2a407864febf1ff9dc4d8a17ff54094466b895ac3c5f4a136829091411`
 
-The image is local and has no published registry digest. Compilation and release
-completed using the common Dockerfile. After a Docker Hub timeout, the runtime
-stage reused the completed builder and a cached Ubuntu 22.04 image. The final
-bridge Python files, bridge manifest and graph configuration were copied into
-the image after runtime tests verified the registration, TTS metadata, lifecycle,
-failure reporting and ASR replay fixes. Their hashes match the current checkout.
+Published runtime image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent@sha256:938d16c40e4d0fbe74fae8555fe63e9dd7303e35ece78a69d79e095b356995bc`
+
+Compilation and release completed using the common Dockerfile. Docker Hub's
+registry endpoint timed out, so the image was published to the configured
+`hub.agoralab.co` registry. The final bridge Python files, bridge manifest and
+graph configuration were copied into the image after runtime tests verified the
+registration, TTS metadata, lifecycle, failure reporting and ASR replay fixes.
+Their hashes match the current checkout.
 The final WebSocket extension also includes verified PCM frame validation and
 strict base64 decoding.
 The API server was rebuilt from the tested source using Go 1.21.13 with
