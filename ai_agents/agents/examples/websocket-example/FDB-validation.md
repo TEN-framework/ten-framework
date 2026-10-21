@@ -11,7 +11,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 54 passed, 9 opt-in skips |
+| Graph, transport and bridge lifecycle tests | 46 passed, 9 opt-in skips |
 | Existing bridge unit tests | 12 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
@@ -20,7 +20,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression tests | 8 passed in 61.48 seconds |
+| Packaged graph regression tests | 8 passed in 61.75 seconds |
 | Real Agora Mind backend graph test | 1 passed in 3.83 seconds |
 | Real backend Taskfile entry (`test-fdb-real`) | 1 passed in 3.83 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
@@ -155,3 +155,15 @@ The API server was rebuilt from the tested source using Go 1.21.13 with
 ASR and TTS graph settings are Nova-3 multilingual and
 `eleven_multilingual_v2` / `pcm_16000`. The synthetic smoke uses deterministic
 service replies and measures routing and lifecycle behavior.
+
+The 2026-10-21 host verification reran the graph, transport and bridge suite
+(`46 passed, 9 skipped`), the bridge extension suite (`12 passed`), the native
+WebSocket extension suite (`2 passed`), and the ElevenLabs extension suite
+(`9 passed`, with the existing deprecation/resource warnings). The packaged
+runtime regression passed all 8 cases against the rebuilt image. Go server
+`go test ./...` passed in the TEN build container (`app` and `app/internal`, no
+test files). Pulling the published reference returned the same image digest.
+
+The image build used the standard command with
+`USE_AGENT=agents/examples/websocket-example`; the build container required
+`GOPROXY=https://goproxy.cn,direct` because `proxy.golang.org` timed out.
