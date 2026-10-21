@@ -138,13 +138,13 @@ registration, TTS metadata, lifecycle, failure reporting and ASR replay fixes.
 Their hashes match the current checkout.
 The final WebSocket extension also includes verified PCM frame validation and
 strict base64 decoding.
-The API server was rebuilt from the tested source using Go 1.21.13 with
-`CGO_ENABLED=0` and copied into the image. Its SHA-256 matches the local build:
-`7e2064fa8953e15c570821c9ce62a09d9e2989137fc3701bef0f800cd2d39bcb`.
+The API server was rebuilt from the tested source using Go 1.22.3 and copied
+into the image. Its SHA-256 is
+`743e4083bb9a9aacb78ed1acbb92946cb005d26f53377686ab76452650837408`.
 
 | Package | Version |
 | --- | --- |
-| `ten_runtime`, `ten_runtime_python` | `0.11.73` |
+| `ten_runtime`, `ten_runtime_python` | `0.11.74` |
 | `ten_ai_base` | `0.7.62` |
 | `agora_mind_extension_rust` | `0.1.0` |
 | `agora_mind_bridge_python` | `0.1.0` |
