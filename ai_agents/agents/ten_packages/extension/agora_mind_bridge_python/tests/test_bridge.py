@@ -181,6 +181,40 @@ async def test_duplicate_asr_final_is_submitted_once():
 
 
 @pytest.mark.asyncio
+async def test_asr_interim_finals_wait_for_speech_final():
+    bridge = bridge_with_session()
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData(
+            "asr_result",
+            {
+                "text": "The order ID is",
+                "final": True,
+                "metadata": {"asr_info": {"speech_final": False}},
+            },
+        ),
+    )
+    assert bridge.ten_env.commands == []
+
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData(
+            "asr_result",
+            {
+                "text": "ABC123",
+                "final": True,
+                "metadata": {"asr_info": {"speech_final": True}},
+            },
+        ),
+    )
+    assert len(bridge.ten_env.commands) == 1
+    command = bridge.ten_env.commands[0]
+    assert json.loads(command.properties["input_json"])["text"] == (
+        "The order ID is ABC123"
+    )
+
+
+@pytest.mark.asyncio
 async def test_same_text_is_allowed_again_after_turn_completion():
     bridge = bridge_with_session()
     asr = FakeData("asr_result", {"text": "Yes", "final": True, "metadata": {}})

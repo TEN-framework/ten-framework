@@ -26,6 +26,7 @@ from .protocol import (
     asr_final_key,
     pure_text_input,
     session_id_from_response,
+    speech_final_from_payload,
     turn_key,
     turn_text_from_event,
 )
@@ -51,6 +52,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._completed_turns: set[tuple[Any, ...]] = set()
         self._submitted_finals: set[tuple[int, int, str]] = set()
         self._session_epoch = 0
+        self._pending_asr_text: list[str] = []
+        self._pending_asr_created_at: Any = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -90,6 +93,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._last_final_text = None
         self._completed_turns.clear()
         self._submitted_finals.clear()
+        self._pending_asr_text.clear()
+        self._pending_asr_created_at = None
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         name = cmd.get_name()
@@ -190,6 +195,20 @@ class AgoraMindBridgeExtension(AsyncExtension):
         if not isinstance(text, str) or not text.strip():
             return
         normalized = text.strip()
+        if not speech_final_from_payload(payload):
+            self._pending_asr_text.append(normalized)
+            metadata = payload.get("metadata")
+            if isinstance(metadata, dict) and self._pending_asr_created_at is None:
+                self._pending_asr_created_at = metadata.get("created_at")
+            return
+
+        parts = [*self._pending_asr_text, normalized]
+        self._pending_asr_text.clear()
+        created_at = self._pending_asr_created_at
+        self._pending_asr_created_at = None
+        normalized = " ".join(part for part in parts if part).strip()
+        if not normalized:
+            return
         key = asr_final_key(payload, normalized)
         if key in self._submitted_finals or (
             key is None and normalized == self._last_final_text
@@ -202,7 +221,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
 
         metadata = payload.get("metadata")
         metadata = metadata if isinstance(metadata, dict) else {}
-        input_payload = pure_text_input(normalized, metadata.get("created_at"))
+        input_payload = pure_text_input(normalized, metadata.get("created_at") or created_at)
         # Reserve before awaiting: concurrent duplicate finals and ambiguous
         # command timeouts must not resubmit an input that may be accepted.
         self._last_final_text = normalized
