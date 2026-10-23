@@ -181,7 +181,8 @@
                   "model": "nova-3",
                   "sample_rate": 16000,
                   "encoding": "linear16",
-                  "endpointing": 1000
+                  "endpointing": 1000,
+                  "finalize_mode": "close_stream"
                 }
               }
             },
@@ -232,7 +233,8 @@
                     "create_session",
                     "flush_session",
                     "set_session_debug",
-                    "delete_session"
+                    "delete_session",
+                    "finalize_audio"
                   ],
                   "dest": [
                     {
@@ -255,6 +257,12 @@
             {
               "extension": "stt",
               "data": [
+                {
+                  "name": "asr_finalize_end",
+                  "dest": [
+                    {"extension": "bridge"}
+                  ]
+                },
                 {
                   "name": "asr_result",
                   "dest": [

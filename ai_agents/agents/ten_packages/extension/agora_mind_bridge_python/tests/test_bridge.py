@@ -59,6 +59,9 @@ class FakeData:
     def set_dests(self, destinations):
         self.destinations = destinations
 
+    def set_property_string(self, name, value):
+        self.payload[name] = value
+
 
 class FakeResult:
     def __init__(self, status=StatusCode.OK, response=None):
@@ -206,6 +209,42 @@ async def test_asr_interim_finals_wait_for_speech_final():
                 "metadata": {"asr_info": {"speech_final": True}},
             },
         ),
+    )
+    assert len(bridge.ten_env.commands) == 1
+    command = bridge.ten_env.commands[0]
+    assert json.loads(command.properties["input_json"])["text"] == (
+        "The order ID is ABC123"
+    )
+
+
+@pytest.mark.asyncio
+async def test_finalize_end_submits_buffered_asr_once():
+    bridge = bridge_with_session()
+    for text in ("The order ID is", "ABC123"):
+        await bridge.on_data(
+            bridge.ten_env,
+            FakeData(
+                "asr_result",
+                {
+                    "text": text,
+                    "final": True,
+                    "metadata": {"asr_info": {"speech_final": False}},
+                },
+            ),
+        )
+    assert bridge.ten_env.commands == []
+    bridge._finalize_id = "case-1-end"
+    await bridge.on_data(
+        bridge.ten_env, FakeData("asr_finalize_end", {"finalize_id": "stale"})
+    )
+    assert bridge.ten_env.commands == []
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_finalize_end", {"finalize_id": "case-1-end"}),
+    )
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_finalize_end", {"finalize_id": "case-1-end"}),
     )
     assert len(bridge.ten_env.commands) == 1
     command = bridge.ten_env.commands[0]
