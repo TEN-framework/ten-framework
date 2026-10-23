@@ -167,3 +167,44 @@ test files). Pulling the published reference returned the same image digest.
 The image build used the standard command with
 `USE_AGENT=agents/examples/websocket-example`; the build container required
 `GOPROXY=https://goproxy.cn,direct` because `proxy.golang.org` timed out.
+
+## Explicit audio finalization — 2026-10-23
+
+TEN source: `f0489f9e0`.
+Runtime image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent:ten-0.7.14-finalize`.
+Published digest:
+`sha256:98ed261f2f31ab67f7d2e20cd4a505cc9c6079c49edffc3c4f44e7f32a03a83e`.
+Image ID:
+`sha256:6f3fab6eb95ab80f5312b36f1a9effb237f04bc73db386cb0709b8388574e0f3`.
+
+This image adds the updated bridge, Deepgram extension, WebSocket manifest and
+FDB graph to the prior runtime image pinned at
+`sha256:f8af9e08858dd6d680c4873f7eedb02ca845d604c5880703a5d5c8dc6b6cda93`.
+No dependency installation or network access is needed for this final layer.
+Reproduce from `ai_agents/` with the following Dockerfile and run
+`docker build --network=none --pull=false -f <dockerfile> -t <image> .`:
+
+```dockerfile
+FROM hub.agoralab.co/agora-mind/fdb-ten-agent@sha256:f8af9e08858dd6d680c4873f7eedb02ca845d604c5880703a5d5c8dc6b6cda93
+COPY agents/ten_packages/extension/agora_mind_bridge_python/extension.py agents/ten_packages/extension/agora_mind_bridge_python/protocol.py agents/ten_packages/extension/agora_mind_bridge_python/config.py agents/ten_packages/extension/agora_mind_bridge_python/manifest.json /app/agents/ten_packages/extension/agora_mind_bridge_python/
+COPY agents/ten_packages/extension/deepgram_asr_python/recognition.py agents/ten_packages/extension/deepgram_asr_python/extension.py agents/ten_packages/extension/deepgram_asr_python/config.py /app/agents/ten_packages/extension/deepgram_asr_python/
+COPY agents/ten_packages/extension/websocket_server/manifest.json /app/agents/ten_packages/extension/websocket_server/manifest.json
+COPY agents/examples/websocket-example/tenapp/property.json /app/agents/property.json
+```
+
+Validation: bridge unit tests 14 passed; graph/transport/bridge quick suite 46
+passed; packaged runtime tests 10 passed in 68.03 seconds. The two new native
+cases send duplicate stable fragments without any speech-final indication, then
+request `finalize_audio`. One provider fixture returns the final word only after
+CloseStream; the other returns no additional text. Both must submit exactly one
+complete Agora Mind input and receive the expected TTS PCM.
+
+The original real-audio case `ecommerce_01_65e8cf8f4c7424fa062e54a3` then completed
+in 53.9 seconds with real Deepgram, Agora Mind model/tools and ElevenLabs. It
+submitted the full transcript once, recorded one `track_order` call and received
+TTS output. Strict scoring remains false because the model supplied lowercase
+`abc123` where metadata requires `ABC123`; this is an argument mismatch, not a
+transport timeout. The runner also required a separate fix to read `example_id`
+from the outer production tool-log envelope. The published reference was pulled
+back and resolved to the tested local image ID above.
