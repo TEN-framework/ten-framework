@@ -67,6 +67,7 @@ def test_fdb_nodes_dependencies_and_pcm_contract(graph):
     assert socket["host"] == "0.0.0.0"
     assert nodes["stt"]["property"]["params"]["sample_rate"] == 16000
     assert nodes["stt"]["property"]["params"]["encoding"] == "linear16"
+    assert nodes["stt"]["property"]["params"]["endpointing"] == 1000
     assert nodes["tts"]["property"]["params"]["output_format"] == "pcm_16000"
     assert nodes["agora_mind"]["property"]["model"] == "custom"
     assert (

@@ -180,7 +180,8 @@
                   "language": "multi",
                   "model": "nova-3",
                   "sample_rate": 16000,
-                  "encoding": "linear16"
+                  "encoding": "linear16",
+                  "endpointing": 1000
                 }
               }
             },
