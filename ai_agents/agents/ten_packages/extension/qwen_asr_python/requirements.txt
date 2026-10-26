@@ -1,0 +1,4 @@
+pydantic>=2.0.0
+websockets>=14.0,<18
+aiofiles>=23.0.0
+

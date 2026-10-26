@@ -1,0 +1,12 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "url": "invalid-url",
+    "model": "invalid-model",
+    "format": "wav",
+    "sample_rate": -1,
+    "vad_model": "invalid-vad",
+    "max_sentence_silence": 100,
+    "language_hints": ["invalid-language"]
+  }
+}
