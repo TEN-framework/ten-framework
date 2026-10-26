@@ -45,7 +45,10 @@ class StepFunASRConfig(BaseModel):
             return data
         merged = dict(data)
         root_language = merged.pop("language", None)
-        params = dict(merged.get("params") or {})
+        raw_params = merged.get("params", {})
+        if not isinstance(raw_params, dict):
+            raise ValueError("params must be an object")
+        params = dict(raw_params)
         if (
             root_language is not None
             and not str(params.get("language") or "").strip()

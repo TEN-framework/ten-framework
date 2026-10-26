@@ -113,15 +113,29 @@ class FakeWebSocket:
     def __init__(self, *, fail_send: Exception | None = None):
         self.open = True
         self.sent = []
+        self.audio_sent = asyncio.Event()
         self._fail_send = fail_send
 
     async def send(self, raw):
         if self._fail_send is not None:
             raise self._fail_send
         self.sent.append(json.loads(raw))
+        if self.sent[-1]["type"] == "input_audio_buffer.append":
+            self.audio_sent.set()
 
     async def close(self):
         self.open = False
+
+
+async def _consume_audio(ext: StepFunASRExtension, frame: AudioFrame):
+    consumer = asyncio.create_task(ext._audio_frame_consumer())
+    try:
+        await ext.audio_frames_queue.put(frame)
+        await asyncio.wait_for(ext.recognition.websocket.audio_sent.wait(), 1)
+    finally:
+        consumer.cancel()
+        with suppress(asyncio.CancelledError):
+            await consumer
 
 
 class ExhaustingWebSocket(FakeWebSocket):
@@ -347,7 +361,7 @@ async def test_active_final_leaves_ttlw_timestamp_cleared():
 
 
 @pytest.mark.asyncio
-async def test_send_failure_journals_but_reports_delivery_false():
+async def test_send_failure_does_not_count_undelivered_audio():
     callback = CapturingCallback()
     recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
     recognition.websocket = FakeWebSocket(fail_send=RuntimeError("send failed"))
@@ -356,27 +370,9 @@ async def test_send_failure_journals_but_reports_delivery_false():
 
     audio = b"\x01\x02" * 160
     assert await recognition.send_audio(audio) is False
-    assert recognition._tail == len(audio)
+    assert recognition._tail == 0
     assert callback.closed == 1
     assert callback.errors
-
-
-@pytest.mark.asyncio
-async def test_flush_does_not_requeue_journaled_failed_delivery():
-    ext = _extension()
-    recognition = StepFunASRRecognition(
-        ext.config, SimpleNamespace(), CapturingCallback()
-    )
-    recognition.websocket = FakeWebSocket(fail_send=RuntimeError("send failed"))
-    recognition._started = True
-    recognition._generation = 1
-    ext.recognition = recognition
-
-    frame = FakeFrame(b"\x01\x02" * 160)
-    ext.buffered_frames_size = 320
-    assert await ext._consume_buffered_frame(frame) is True
-    assert recognition._tail == 320
-    assert ext.buffered_frames.qsize() == 0
 
 
 @pytest.mark.asyncio
@@ -393,7 +389,7 @@ async def test_failed_first_delivery_does_not_set_first_audio_time():
     delivered = await ext.send_audio(FakeFrame(b"\x01\x02" * 160), "sess")
     assert delivered is False
     assert ext.first_audio_time is None
-    assert recognition._tail == 320
+    assert recognition._tail == 0
 
 
 @pytest.mark.asyncio
@@ -488,7 +484,6 @@ async def test_server_vad_segment_keeps_originating_session_metadata():
         }
     )
     # Force end within sent range for the open B span.
-    recognition._sent = recognition._tail
     sealed = recognition._pending[-1]
     assert sealed.session_id in {"session-a", "session-b"}
 
@@ -509,241 +504,6 @@ async def test_server_vad_segment_keeps_originating_session_metadata():
     sent = ext.ten_env.send_data.await_args.args[0]
     payload = json.loads(sent.get_property_to_json(None)[0])
     assert payload["metadata"]["session_id"] == "session-a"
-
-
-@pytest.mark.asyncio
-async def test_confirmed_replay_survives_before_replacement_item_mapping(
-    monkeypatch,
-):
-    """B published before A; after reconnect A's final arrives before B's item."""
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(
-        _config(server_vad=True), SimpleNamespace(), callback
-    )
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "a"},
-        session_id="a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-a0",
-            "audio_end_ms": 20,
-        }
-    )
-    seg_a = recognition._pending[0]
-
-    await recognition.send_audio(
-        b"\x03\x04" * 160,
-        metadata={"session_id": "b"},
-        session_id="b",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b0",
-            "audio_end_ms": 40,
-        }
-    )
-    seg_b = recognition._pending[1]
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b0",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    assert seg_b.published is True
-
-    async def connect(_url, **_kwargs):
-        return _ReadyWebSocket()
-
-    monkeypatch.setattr(
-        "stepfun_asr_python.recognition.websockets.connect", connect
-    )
-    await recognition.start()
-    assert recognition._generation == 2
-
-    # Only A's replacement item is mapped; B has no new mapping yet.
-    recognition._items["item-a1"] = seg_a
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-a1",
-            "transcript": "a",
-            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
-        }
-    )
-    assert seg_b in recognition._pending
-
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b1",
-            "audio_end_ms": 40,
-        }
-    )
-    assert recognition._items.get("item-b1") is seg_b
-
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b1",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    assert callback.errors == []
-    assert seg_b.published is True
-    assert seg_b not in recognition._pending
-    assert recognition._base >= seg_b.end
-    # Confirmed PCM released — subsequent audio must not hit the journal ceiling.
-    await recognition.send_audio(b"\x05\x06" * 160, session_id="c")
-    assert recognition._tail > recognition._base
-    await recognition.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_replay_final_for_published_span_survives_earlier_pending_final():
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(
-        _config(server_vad=True), SimpleNamespace(), callback
-    )
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "a"},
-        session_id="a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-a0",
-            "audio_end_ms": 20,
-        }
-    )
-    seg_a = recognition._pending[0]
-
-    await recognition.send_audio(
-        b"\x03\x04" * 160,
-        metadata={"session_id": "b"},
-        session_id="b",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b0",
-            "audio_end_ms": 40,
-        }
-    )
-    seg_b = recognition._pending[1]
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b0",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    assert seg_b.published is True
-
-    recognition._generation = 2
-    recognition._items.clear()
-    recognition._item_starts.clear()
-    recognition._completed_item_set.clear()
-    recognition._completed_items.clear()
-    recognition._awaiting_ack.clear()
-    seg_a.generation = 2
-    seg_b.generation = 2
-    recognition._items["item-a1"] = seg_a
-    recognition._items["item-b1"] = seg_b
-
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-a1",
-            "transcript": "a",
-            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
-        }
-    )
-    assert recognition._items.get("item-b1") is seg_b
-
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b1",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    assert callback.errors == []
-    assert not any(
-        code == "missing_commit_boundary" for _, _, code in callback.errors
-    )
-
-
-@pytest.mark.asyncio
-async def test_replayed_vad_item_uses_retained_pending_segment():
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(
-        _config(server_vad=True), SimpleNamespace(), callback
-    )
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "session-a"},
-        session_id="session-a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-old",
-            "audio_end_ms": 20,
-        }
-    )
-    retained = recognition._pending[0]
-
-    recognition._generation = 2
-    recognition._items.clear()
-    retained.generation = 2
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.delta",
-            "item_id": "item-replayed",
-            "text": "hello",
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-replayed",
-            "audio_end_ms": 20,
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-replayed",
-            "transcript": "hello",
-        }
-    )
-
-    assert callback.errors == []
-    assert callback.messages[0][1] is retained
-    assert callback.messages[-1][1] is retained
-    assert retained.published is True
 
 
 @pytest.mark.asyncio
@@ -1110,53 +870,6 @@ async def test_handshake_normal_close_does_not_emit_error(
 
     assert callback.errors == []
     assert callback.closed == 1
-
-
-@pytest.mark.asyncio
-async def test_recovery_replay_normal_close_sets_flag(monkeypatch):
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(_config(), SimpleNamespace(), callback)
-    await recognition.send_audio(b"\x01\x02" * 160)
-
-    class ReplayCloseWebSocket:
-        open = True
-
-        def __init__(self):
-            self._ready = asyncio.Event()
-            self._messages = [json.dumps({"type": "session.updated"})]
-
-        async def send(self, raw):
-            message = json.loads(raw)
-            if message.get("type") == "input_audio_buffer.append":
-                raise ConnectionClosedOK(
-                    Close(1000, "bye"), Close(1000, "bye"), True
-                )
-
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            if self._messages:
-                return self._messages.pop(0)
-            await self._ready.wait()
-            raise StopAsyncIteration
-
-        async def close(self):
-            self.open = False
-            self._ready.set()
-
-    async def connect(_url, **_kwargs):
-        return ReplayCloseWebSocket()
-
-    monkeypatch.setattr(
-        "stepfun_asr_python.recognition.websockets.connect", connect
-    )
-
-    await recognition.start()
-
-    assert callback.errors == []
-    assert recognition.normal_close is True
-    assert callback.closed >= 1
 
 
 @pytest.mark.asyncio
@@ -1540,70 +1253,6 @@ async def test_finalize_timeout_seals_queued_turn_before_next_finalize():
 
 
 @pytest.mark.asyncio
-async def test_recovery_flush_preserves_in_flight_ttfw_session():
-    ext = _real_output_extension()
-    ext.config = _config()
-    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-    ext.recognition = recognition
-    ext.ttfw_sent = False
-    ext.first_audio_time = asyncio.get_running_loop().time() - 0.1
-    ext.metadata = {"session_id": "session-a"}
-    ext.session_id = "session-a"
-
-    metrics_gate = asyncio.Event()
-    original_ttfw = ext._send_metrics_ttfw
-
-    async def gated_ttfw(latency_ms):
-        await metrics_gate.wait()
-        await original_ttfw(latency_ms)
-
-    ext._send_metrics_ttfw = gated_ttfw
-
-    result_task = asyncio.create_task(
-        ext.on_result(
-            {
-                "type": "response.audio_transcription.delta",
-                "item_id": "item-a",
-                "text": "hello",
-            },
-            TranscriptSegment(
-                0,
-                320,
-                metadata={"session_id": "session-a"},
-                session_id="session-a",
-            ),
-        )
-    )
-    await asyncio.sleep(0)
-
-    ext.buffered_frames.put_nowait(
-        FakeFrame(b"\x05\x06" * 160, {"session_id": "session-b"})
-    )
-    ext.buffered_frames_size = len(b"\x05\x06" * 160)
-    flush_task = asyncio.create_task(ext._flush_buffered_frames())
-    await asyncio.sleep(0.02)
-    assert not flush_task.done()
-    assert ext.session_id == "session-a"
-
-    metrics_gate.set()
-    await result_task
-    await flush_task
-
-    metrics = _capture_named(ext, "metrics")
-    ttfw = [
-        item
-        for item in metrics
-        if ModuleMetricKey.ASR_TTFW in item.get("metrics", {})
-    ]
-    assert ttfw
-    assert ttfw[0].get("metadata", {}).get("session_id") == "session-a"
-    assert ext.session_id == "session-b"
-
-
-@pytest.mark.asyncio
 async def test_result_ttlw_context_isolated_from_concurrent_finalize():
     ext = _real_output_extension()
     ext.config = _config()
@@ -1724,55 +1373,7 @@ async def test_server_vad_session_boundary_emits_vendor_commit():
         }
     )
     assert seg_a.published is True
-    assert recognition._base >= seg_a.end
-
-
-@pytest.mark.asyncio
-async def test_recovery_flush_journals_before_concurrent_finalize():
-    ext = _real_output_extension()
-    ext.config = _config()
-    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-    ext.recognition = recognition
-
-    dump_gate = asyncio.Event()
-    dump_entered = asyncio.Event()
-
-    class GatedDumper:
-        async def push_bytes(self, _data):
-            dump_entered.set()
-            await dump_gate.wait()
-
-        async def start(self):
-            return None
-
-        async def stop(self):
-            return None
-
-    ext.audio_dumper = GatedDumper()
-    frame = FakeFrame(b"\x01\x02" * 160, {"session_id": "session-a"})
-    ext.buffered_frames.put_nowait(frame)
-    ext.buffered_frames_size = len(frame.get_buf())
-
-    flush_task = asyncio.create_task(ext._flush_buffered_frames())
-    await dump_entered.wait()
-    # Journal lands before dump gates; finalize prep no longer blocks on dump I/O.
-    assert recognition._tail > 0
-    finalize_task = asyncio.create_task(
-        ext._handle_finalize(
-            "final-a",
-            asyncio.get_running_loop().time(),
-            {"session_id": "session-a"},
-        )
-    )
-    await asyncio.sleep(0.02)
-    dump_gate.set()
-    await flush_task
-    await finalize_task
-    assert recognition._pending[0].finalize_id == "final-a"
-    assert recognition._pending[0].session_id == "session-a"
+    assert seg_a not in recognition._pending
 
 
 @pytest.mark.asyncio
@@ -2034,6 +1635,7 @@ async def test_two_complete_same_session_cycles(monkeypatch):
     )
     try:
         await ext.start_connection()
+        result_ids = []
 
         for index, finalize_id in enumerate(("final-1", "final-2"), start=1):
             ext.ten_env.send_data.reset_mock()
@@ -2045,6 +1647,13 @@ async def test_two_complete_same_session_cycles(monkeypatch):
                     session_id="sess-loop",
                 )
                 is True
+            )
+            await ext.recognition._handle_message(
+                {
+                    "type": "response.audio_transcription.delta",
+                    "item_id": f"item-{index}",
+                    "text": f"turn-{index}",
+                }
             )
             received_at = asyncio.get_running_loop().time()
             await ext._handle_finalize(
@@ -2073,78 +1682,16 @@ async def test_two_complete_same_session_cycles(monkeypatch):
             results = [item for item in outputs if "text" in item]
             ends = [item for item in outputs if "finalize_id" in item]
             assert results[-1]["text"] == f"turn-{index}"
+            assert [result["final"] for result in results] == [False, True]
+            assert results[0]["id"] == results[1]["id"]
+            result_ids.append(results[-1]["id"])
             assert results[-1]["metadata"]["session_id"] == "sess-loop"
             assert ends[-1]["finalize_id"] == finalize_id
             assert pending.finalize_id == finalize_id
+        assert len(set(result_ids)) == 2
     finally:
         ext.stopped = True
         await ext.stop_connection()
-
-
-@pytest.mark.asyncio
-async def test_retained_span_replay_via_replacement_socket(monkeypatch):
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(
-        _config(server_vad=True), SimpleNamespace(), callback
-    )
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "session-a"},
-        session_id="session-a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-old",
-            "audio_end_ms": 20,
-        }
-    )
-    retained = recognition._pending[0]
-    first_generation = recognition._generation
-
-    ready = _ReadyWebSocket()
-
-    async def connect(_url, **_kwargs):
-        return ready
-
-    monkeypatch.setattr(
-        "stepfun_asr_python.recognition.websockets.connect", connect
-    )
-    await recognition.start()
-    assert recognition._generation == first_generation + 1
-    assert recognition.is_connected()
-
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.delta",
-            "item_id": "item-replayed",
-            "text": "hello",
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-replayed",
-            "audio_end_ms": 20,
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-replayed",
-            "transcript": "hello",
-            "words": [{"word": "hello", "start": 0.0, "end": 0.1}],
-        }
-    )
-
-    assert callback.errors == []
-    assert callback.messages[-1][1] is retained
-    assert retained.published is True
-    await recognition.shutdown()
 
 
 @pytest.mark.asyncio
@@ -2287,9 +1834,8 @@ async def test_live_audio_cannot_replace_in_flight_result_session():
     await asyncio.sleep(0)
 
     audio_task = asyncio.create_task(
-        StepFunASRExtension._handle_audio_frame(
+        _consume_audio(
             ext,
-            ext.ten_env,
             _audio_frame(b"\x05\x06" * 160, {"session_id": "session-b"}),
         )
     )
@@ -2311,117 +1857,6 @@ async def test_live_audio_cannot_replace_in_flight_result_session():
     assert ttfw[0].get("metadata", {}).get("session_id") == "session-a"
     assert ext.session_id == "session-b"
     assert ext.metadata["session_id"] == "session-b"
-
-
-@pytest.mark.asyncio
-async def test_replay_final_without_words_is_non_fatal(monkeypatch):
-    callback = CapturingCallback()
-    recognition = StepFunASRRecognition(
-        _config(server_vad=True), SimpleNamespace(), callback
-    )
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "a"},
-        session_id="a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-a0",
-            "audio_end_ms": 20,
-        }
-    )
-    seg_a = recognition._pending[0]
-    await recognition.send_audio(
-        b"\x03\x04" * 160,
-        metadata={"session_id": "b"},
-        session_id="b",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b0",
-            "audio_end_ms": 40,
-        }
-    )
-    seg_b = recognition._pending[1]
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b0",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    assert seg_b.published is True
-
-    async def connect(_url, **_kwargs):
-        return _ReadyWebSocket()
-
-    monkeypatch.setattr(
-        "stepfun_asr_python.recognition.websockets.connect", connect
-    )
-    await recognition.start()
-    assert recognition._replay_confirmed
-
-    recognition._items["item-a1"] = seg_a
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-a1",
-            "transcript": "a-without-words",
-        }
-    )
-    assert callback.errors == []
-    assert seg_a.published is True
-    assert any(
-        message.get("transcript") == "a-without-words"
-        for message, _ in callback.messages
-    )
-
-    # After retirement, obsolete confirmed ranges must not latch later turns.
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b1",
-            "audio_end_ms": 40,
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-b1",
-            "transcript": "b-replay",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        }
-    )
-    await recognition.send_audio(b"\x05\x06" * 160, session_id="c")
-    await recognition.commit(
-        "final-c",
-        asyncio.get_running_loop().time(),
-        metadata={"session_id": "c"},
-        session_id="c",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.committed",
-            "item_id": "item-c",
-        }
-    )
-    await recognition._handle_message(
-        {
-            "type": "response.audio_transcription.completed",
-            "item_id": "item-c",
-            "transcript": "later-turn-no-words",
-        }
-    )
-    assert callback.errors == []
-    assert recognition._replay_confirmed == []
-    await recognition.shutdown()
 
 
 @pytest.mark.asyncio
@@ -2516,7 +1951,7 @@ async def test_metadata_less_finalize_inherits_queued_session_b():
         metadata={"session_id": "session-a"},
         session_id="session-a",
     )
-    # Seal A so B becomes the open span once journaled.
+    # Seal A so B becomes the open span once sent.
     await recognition.commit(
         "final-a-prev",
         asyncio.get_running_loop().time(),
@@ -2625,9 +2060,8 @@ async def test_finish_finalize_does_not_restore_over_live_session():
     )
     await entered_end.wait()
     audio_task = asyncio.create_task(
-        StepFunASRExtension._handle_audio_frame(
+        _consume_audio(
             ext,
-            ext.ten_env,
             _audio_frame(b"\x05\x06" * 160, {"session_id": "session-b"}),
         )
     )
@@ -2773,7 +2207,7 @@ async def test_fatal_finalize_metadata_stops_at_dequeued_boundary():
 
 
 @pytest.mark.asyncio
-async def test_metadata_less_finalize_fatal_prefers_discarded_over_journal():
+async def test_metadata_less_finalize_fatal_prefers_discarded_over_segment():
     ext = _real_output_extension()
     ext.config = _config()
     recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
@@ -2814,7 +2248,7 @@ async def test_metadata_less_finalize_fatal_prefers_discarded_over_journal():
 
 
 @pytest.mark.asyncio
-async def test_metadata_less_finalize_timeout_prefers_queued_over_journal():
+async def test_metadata_less_finalize_timeout_prefers_queued_over_segment():
     ext = _real_output_extension()
     ext.config = _config(finalize_timeout=0.05, server_vad=False)
     recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
@@ -2845,80 +2279,6 @@ async def test_metadata_less_finalize_timeout_prefers_queued_over_journal():
     assert len(ends) == 1
     assert ends[0]["finalize_id"] == "final-b"
     assert ends[0]["metadata"].get("session_id") == "session-b"
-
-
-@pytest.mark.asyncio
-async def test_replay_emits_stable_result_ids_per_segment():
-    ext = _real_output_extension()
-    ext.send_asr_result = AsyncASRBaseExtension.send_asr_result.__get__(ext)
-    ext.config = _config(server_vad=True)
-    recognition = StepFunASRRecognition(ext.config, SimpleNamespace(), ext)
-    recognition.websocket = FakeWebSocket()
-    recognition._started = True
-    recognition._generation = 1
-    ext.recognition = recognition
-
-    await recognition.send_audio(
-        b"\x01\x02" * 160,
-        metadata={"session_id": "a"},
-        session_id="a",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-a0",
-            "audio_end_ms": 20,
-        }
-    )
-    seg_a = recognition._pending[0]
-
-    await recognition.send_audio(
-        b"\x03\x04" * 160,
-        metadata={"session_id": "b"},
-        session_id="b",
-    )
-    await recognition._handle_message(
-        {
-            "type": "input_audio_buffer.speech_stopped",
-            "item_id": "item-b0",
-            "audio_end_ms": 40,
-        }
-    )
-    seg_b = recognition._pending[1]
-
-    await ext.on_result(
-        {
-            "type": "response.audio_transcription.delta",
-            "text": "partial-a",
-        },
-        seg_a,
-    )
-    await ext.on_result(
-        {
-            "type": "response.audio_transcription.completed",
-            "transcript": "b",
-            "words": [{"word": "b", "start": 0.2, "end": 0.3}],
-        },
-        seg_b,
-    )
-    await ext.on_result(
-        {
-            "type": "response.audio_transcription.completed",
-            "transcript": "a",
-            "words": [{"word": "a", "start": 0.0, "end": 0.1}],
-        },
-        seg_a,
-    )
-
-    results = _capture_named(ext, "asr_result")
-    assert len(results) == 3
-    id_partial_a, id_final_b, id_final_a = (
-        results[0]["id"],
-        results[1]["id"],
-        results[2]["id"],
-    )
-    assert id_partial_a == id_final_a
-    assert id_final_b != id_final_a
 
 
 @pytest.mark.asyncio

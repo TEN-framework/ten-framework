@@ -97,6 +97,29 @@ def test_config_params_language_overrides_root_language():
 
 
 @pytest.mark.parametrize(
+    "params",
+    [
+        [{"api_key": "test-key", "url": "wss://example.test"}],
+        [["api_key", "test-key"]],
+        [],
+        None,
+        False,
+        "",
+        0,
+    ],
+)
+def test_config_rejects_non_object_params_before_normalization(params):
+    with pytest.raises(ValueError):
+        StepFunASRConfig.model_validate({"params": params})
+
+
+def test_config_allows_omitted_params_for_root_language_normalization():
+    config = StepFunASRConfig.model_validate({"language": "zh-CN"})
+
+    assert config.params == {"language": "zh"}
+
+
+@pytest.mark.parametrize(
     "change",
     [
         {"params": {"api_key": ""}},

@@ -1,5 +1,8 @@
 # StepFun ASR Python Extension
 
+As of: 2026-10-26 UTC
+Codebase commit: `3cac62982579929acdee4403761a610a09f850ae` (with local changes)
+
 StepFun StepAudio 2.5 streaming ASR integration for TEN Framework.
 
 ## Configuration
@@ -38,6 +41,12 @@ instructions). `server_vad` enables StepFun server-side VAD; otherwise the
 extension commits audio on TEN's `asr_finalize` input. `full_rerun_on_commit`
 and `enable_timestamp_align` are passed through to StepFun.
 
-The extension retains up to 10 MB of unconfirmed PCM so a transient WebSocket
-disconnect can replay audio after reconnect. Replayed transcript words are
-deduplicated when StepFun supplies word timestamps.
+Audio received while disconnected is buffered by `AsyncASRBaseExtension`
+(up to 10 MiB, dropping the oldest frames on overflow). After reconnect,
+the input consumer drains this buffer even if no new frame arrives.
+
+Audio is sent directly to StepFun without retaining PCM until final results.
+Previously sent audio is not replayed after disconnect, so an interrupted
+utterance may be incomplete. Finalize requests still complete or time out
+with their original request and session metadata. Provider timestamps are
+offset across connections to preserve the audio timeline.
