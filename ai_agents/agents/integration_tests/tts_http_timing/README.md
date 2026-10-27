@@ -9,7 +9,8 @@ audio outputs, completion and TTFB metrics. An injected HTTPX provider delays
 connection admission, supplies first audio and delayed response completion,
 and timestamps those provider boundaries. Each test sends two request IDs,
 with one final-text second request. The outer tester bound is strict; the
-independent local mock reference allows 5 ms for scheduling and rounding.
+provider hook reference allows 1 ms; the separately captured local mock
+reference audits the hook within 5 ms for scheduling and rounding.
 
 ## Run
 
@@ -44,3 +45,6 @@ prepared development container. The shared base also passed raw audio and
 partial-JSON-envelope native TEN tests. All touched package versions were
 bumped for subsequent publication. These PRs depend on publication of the
 shared base 0.7.63; no package is published by running these tests.
+
+All thirteen provider hooks and the reusable live guarder case are documented
+in [PROVIDER_TTFB.md](../tts_guarder/tests/PROVIDER_TTFB.md).

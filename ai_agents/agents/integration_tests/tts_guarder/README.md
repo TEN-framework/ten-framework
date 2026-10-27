@@ -1,7 +1,7 @@
 # TTS Guarder Test Guide
 
 As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `a452b6d9ed66f9c57fa1d4a80cf5f3473f61b170`
+Codebase commit: `56f790d47`
 
 This document describes how to run Guarder Test for TTS
 
@@ -74,3 +74,9 @@ copy in the conversational agent tree.
 
 See [the repeatable TTFB procedure](tests/TTFB_TESTING.md) for the seven
 first-batch configurations, isolated runner, screenshot evidence and limitations.
+
+## Second-stage provider TTFB checks
+
+See [provider TTFB hooks](tests/PROVIDER_TTFB.md) for the additional adapters,
+transport/SDK boundaries, 1 ms assertions, local fixtures and live provider commands.
+
