@@ -75,6 +75,10 @@ class Services:
         self.input_failure = None
         self.input_sequence = 0
         self.last_asr = None
+        self.defer_asr = False
+        self.asr_closed = False
+        self.expected_text = "Book the flight"
+        self.finalize_tail = "flight"
 
     async def handle(self, websocket):
         path = websocket.request.path
@@ -85,12 +89,19 @@ class Services:
                     result = {
                         "type": "Results",
                         "is_final": True,
-                        "speech_final": True,
+                        "speech_final": not self.defer_asr,
                         "start": start_ms / 1000,
                         "duration": 0.02,
                         "channel": {
                             "alternatives": [
-                                {"transcript": "Book the flight", "words": []}
+                                {
+                                    "transcript": (
+                                        "Book the"
+                                        if self.defer_asr
+                                        else "Book the flight"
+                                    ),
+                                    "words": [],
+                                }
                             ]
                         },
                     }
@@ -99,6 +110,30 @@ class Services:
                     # Both finals describe the same input audio.
                     await websocket.send(json.dumps(result))
                     await websocket.send(json.dumps(result))
+                elif json.loads(raw).get("type") == "CloseStream":
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "Results",
+                                "is_final": True,
+                                "speech_final": False,
+                                "from_finalize": True,
+                                "start": start_ms / 1000,
+                                "duration": 0.02,
+                                "channel": {
+                                    "alternatives": [
+                                        {
+                                            "transcript": self.finalize_tail,
+                                            "words": [],
+                                        }
+                                    ]
+                                },
+                            }
+                        )
+                    )
+                    await websocket.send(json.dumps({"type": "Metadata"}))
+                    self.asr_closed = True
+                    await websocket.close()
             elif path.startswith("/tts"):
                 if json.loads(raw).get("text") == "":
                     await websocket.send(
@@ -133,7 +168,7 @@ class Services:
             }
         elif name == "session.user_input":
             assert command["session_id"] == 7
-            assert command["input"]["text"] == "Book the flight"
+            assert command["input"]["text"] == self.expected_text
             if self.input_failure == "timeout":
                 return
             if self.input_failure == "disconnect":
@@ -489,3 +524,36 @@ async def test_native_long_case_keepalive(runtime, keepalive):
             await command(client, "delete_session", {"session_id": 7})
 
     await asyncio.wait_for(exercise(), 20)
+
+
+@pytest.mark.parametrize("tail", ["flight", ""])
+async def test_audio_finalize_drains_buffered_results_without_speech_final(
+    runtime, tail
+):
+    services = runtime[3]
+    services.defer_asr = True
+    services.finalize_tail = tail
+    services.expected_text = "Book the flight" if tail else "Book the"
+    async with case(runtime, "fdb-finalize") as client:
+        await send_audio(client, "fdb-finalize")
+        # Wait until the duplicated fragment has passed through the real ASR
+        # addon before asking it to drain. Neither final may submit user input.
+        finals = 0
+        while finals < 2:
+            event = json.loads(await asyncio.wait_for(client.recv(), 5))
+            if event.get("name") == "asr_result" and event["data"].get("final"):
+                finals += 1
+        assert not any(
+            c["type"] == "session.user_input" for c in services.commands
+        )
+        await command(
+            client, "finalize_audio", {"finalize_id": "fdb-finalize-end"}
+        )
+        await asyncio.wait_for(receive_turn(client, "fdb-finalize", 1), 10)
+        assert services.asr_closed
+        inputs = [
+            c for c in services.commands if c["type"] == "session.user_input"
+        ]
+        assert len(inputs) == 1
+        assert inputs[0]["input"]["text"] == services.expected_text
+        await command(client, "delete_session", {"session_id": 7})

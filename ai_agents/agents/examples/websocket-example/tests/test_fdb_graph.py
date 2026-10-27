@@ -67,6 +67,8 @@ def test_fdb_nodes_dependencies_and_pcm_contract(graph):
     assert socket["host"] == "0.0.0.0"
     assert nodes["stt"]["property"]["params"]["sample_rate"] == 16000
     assert nodes["stt"]["property"]["params"]["encoding"] == "linear16"
+    assert nodes["stt"]["property"]["params"]["endpointing"] == 1000
+    assert nodes["stt"]["property"]["params"]["finalize_mode"] == "close_stream"
     assert nodes["tts"]["property"]["params"]["output_format"] == "pcm_16000"
     assert nodes["agora_mind"]["property"]["model"] == "custom"
     assert (
@@ -90,6 +92,7 @@ def test_routes_are_complete_and_do_not_duplicate_delivery(graph):
     }
     data_routes = set(edges(graph, "data"))
     assert {
+        ("stt", "asr_finalize_end", "bridge"),
         ("stt", "asr_result", "bridge"),
         ("stt", "asr_result", "websocket_server"),
         ("agora_mind", "agora_mind_event", "bridge"),

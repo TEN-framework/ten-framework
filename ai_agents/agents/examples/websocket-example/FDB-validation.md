@@ -1,17 +1,17 @@
-# FDB graph validation — 2026-10-20
+# FDB graph validation — 2026-10-21
 
-Tested TEN source commit: `5f2cb52e0`.
-Packaged graph regression test: `5f2cb52e0` (`tests/test_fdb_runtime.py`).
+Tested TEN source commit: `b81ffba8a`.
+Packaged graph regression test: `b81ffba8a` (`tests/test_fdb_runtime.py`).
 Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.
 Graph: `fdb_v3` in `tenapp/property.json`.
 Canonical graph SHA-256 (sorted JSON, compact separators):
-`06d9cd66ee212346e9e8df03c37d0d9333de60a1943a9025ea94b0334c2edcf7`.
+`b4d40893e7aa745fa2d3175d5a13d1c91b0b6ea4666ca292cd5beecb09c39b2d`.
 
 ## Results
 
 | Check | Result |
 | --- | --- |
-| Graph, transport and bridge lifecycle tests | 54 passed, 9 opt-in skips |
+| Graph, transport and bridge lifecycle tests | 46 passed, 9 opt-in skips |
 | Existing bridge unit tests | 12 passed |
 | Native TEN WebSocket command/event/PCM tests | 2 passed |
 | Deepgram query and metadata regression tests | 6 passed |
@@ -20,7 +20,7 @@ Canonical graph SHA-256 (sorted JSON, compact separators):
 | TEN graph/property and three manifest schema checks | Passed |
 | Black on affected Python directories | Passed |
 | Pylint on WebSocket and bridge extensions | 10.00/10 |
-| Packaged graph regression tests | 8 passed in 61.48 seconds |
+| Packaged graph regression tests | 8 passed in 61.75 seconds |
 | Real Agora Mind backend graph test | 1 passed in 3.83 seconds |
 | Real backend Taskfile entry (`test-fdb-real`) | 1 passed in 3.83 seconds |
 | Runtime image graph, manifest and bridge/transport source hashes | Match the current checkout |
@@ -125,23 +125,26 @@ Build-image digest:
 Local runtime image: `agora-mind/fdb-ten-agent:ten-0.7.14`
 
 Local image ID:
-`sha256:e95dc666914ce7315e1b5e841f20b3b501a5d01002f54090f2b42e9df6ae14e3`
+`sha256:e43e9d2a407864febf1ff9dc4d8a17ff54094466b895ac3c5f4a136829091411`
 
-The image is local and has no published registry digest. Compilation and release
-completed using the common Dockerfile. After a Docker Hub timeout, the runtime
-stage reused the completed builder and a cached Ubuntu 22.04 image. The final
-bridge Python files, bridge manifest and graph configuration were copied into
-the image after runtime tests verified the registration, TTS metadata, lifecycle,
-failure reporting and ASR replay fixes. Their hashes match the current checkout.
+Published runtime image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent@sha256:938d16c40e4d0fbe74fae8555fe63e9dd7303e35ece78a69d79e095b356995bc`
+
+Compilation and release completed using the common Dockerfile. Docker Hub's
+registry endpoint timed out, so the image was published to the configured
+`hub.agoralab.co` registry. The final bridge Python files, bridge manifest and
+graph configuration were copied into the image after runtime tests verified the
+registration, TTS metadata, lifecycle, failure reporting and ASR replay fixes.
+Their hashes match the current checkout.
 The final WebSocket extension also includes verified PCM frame validation and
 strict base64 decoding.
-The API server was rebuilt from the tested source using Go 1.21.13 with
-`CGO_ENABLED=0` and copied into the image. Its SHA-256 matches the local build:
-`7e2064fa8953e15c570821c9ce62a09d9e2989137fc3701bef0f800cd2d39bcb`.
+The API server was rebuilt from the tested source using Go 1.22.3 and copied
+into the image. Its SHA-256 is
+`743e4083bb9a9aacb78ed1acbb92946cb005d26f53377686ab76452650837408`.
 
 | Package | Version |
 | --- | --- |
-| `ten_runtime`, `ten_runtime_python` | `0.11.73` |
+| `ten_runtime`, `ten_runtime_python` | `0.11.74` |
 | `ten_ai_base` | `0.7.62` |
 | `agora_mind_extension_rust` | `0.1.0` |
 | `agora_mind_bridge_python` | `0.1.0` |
@@ -152,3 +155,56 @@ The API server was rebuilt from the tested source using Go 1.21.13 with
 ASR and TTS graph settings are Nova-3 multilingual and
 `eleven_multilingual_v2` / `pcm_16000`. The synthetic smoke uses deterministic
 service replies and measures routing and lifecycle behavior.
+
+The 2026-10-21 host verification reran the graph, transport and bridge suite
+(`46 passed, 9 skipped`), the bridge extension suite (`12 passed`), the native
+WebSocket extension suite (`2 passed`), and the ElevenLabs extension suite
+(`9 passed`, with the existing deprecation/resource warnings). The packaged
+runtime regression passed all 8 cases against the rebuilt image. Go server
+`go test ./...` passed in the TEN build container (`app` and `app/internal`, no
+test files). Pulling the published reference returned the same image digest.
+
+The image build used the standard command with
+`USE_AGENT=agents/examples/websocket-example`; the build container required
+`GOPROXY=https://goproxy.cn,direct` because `proxy.golang.org` timed out.
+
+## Explicit audio finalization — 2026-10-23
+
+TEN source: `f0489f9e0`.
+Runtime image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent:ten-0.7.14-finalize`.
+Published digest:
+`sha256:98ed261f2f31ab67f7d2e20cd4a505cc9c6079c49edffc3c4f44e7f32a03a83e`.
+Image ID:
+`sha256:6f3fab6eb95ab80f5312b36f1a9effb237f04bc73db386cb0709b8388574e0f3`.
+
+This image adds the updated bridge, Deepgram extension, WebSocket manifest and
+FDB graph to the prior runtime image pinned at
+`sha256:f8af9e08858dd6d680c4873f7eedb02ca845d604c5880703a5d5c8dc6b6cda93`.
+No dependency installation or network access is needed for this final layer.
+Reproduce from `ai_agents/` with the following Dockerfile and run
+`docker build --network=none --pull=false -f <dockerfile> -t <image> .`:
+
+```dockerfile
+FROM hub.agoralab.co/agora-mind/fdb-ten-agent@sha256:f8af9e08858dd6d680c4873f7eedb02ca845d604c5880703a5d5c8dc6b6cda93
+COPY agents/ten_packages/extension/agora_mind_bridge_python/extension.py agents/ten_packages/extension/agora_mind_bridge_python/protocol.py agents/ten_packages/extension/agora_mind_bridge_python/config.py agents/ten_packages/extension/agora_mind_bridge_python/manifest.json /app/agents/ten_packages/extension/agora_mind_bridge_python/
+COPY agents/ten_packages/extension/deepgram_asr_python/recognition.py agents/ten_packages/extension/deepgram_asr_python/extension.py agents/ten_packages/extension/deepgram_asr_python/config.py /app/agents/ten_packages/extension/deepgram_asr_python/
+COPY agents/ten_packages/extension/websocket_server/manifest.json /app/agents/ten_packages/extension/websocket_server/manifest.json
+COPY agents/examples/websocket-example/tenapp/property.json /app/agents/property.json
+```
+
+Validation: bridge unit tests 14 passed; graph/transport/bridge quick suite 46
+passed; packaged runtime tests 10 passed in 68.03 seconds. The two new native
+cases send duplicate stable fragments without any speech-final indication, then
+request `finalize_audio`. One provider fixture returns the final word only after
+CloseStream; the other returns no additional text. Both must submit exactly one
+complete Agora Mind input and receive the expected TTS PCM.
+
+The original real-audio case `ecommerce_01_65e8cf8f4c7424fa062e54a3` then completed
+in 53.9 seconds with real Deepgram, Agora Mind model/tools and ElevenLabs. It
+submitted the full transcript once, recorded one `track_order` call and received
+TTS output. Strict scoring remains false because the model supplied lowercase
+`abc123` where metadata requires `ABC123`; this is an argument mismatch, not a
+transport timeout. The runner also required a separate fix to read `example_id`
+from the outer production tool-log envelope. The published reference was pulled
+back and resolved to the tested local image ID above.

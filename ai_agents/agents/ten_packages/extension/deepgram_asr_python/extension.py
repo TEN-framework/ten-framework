@@ -196,7 +196,7 @@ class DeepgramASRExtension(
             else:
                 await self._handle_finalize_mute_pkg()
         else:
-            if finalize_mode == "flush_api":
+            if finalize_mode in {"flush_api", "close_stream"}:
                 await self._handle_finalize_flush_api()
             elif finalize_mode == "mute_pkg":
                 await self._handle_finalize_mute_pkg()
@@ -270,9 +270,6 @@ class DeepgramASRExtension(
         """Process ASR recognition result"""
         assert self.config is not None
 
-        if final:
-            await self._finalize_end()
-
         asr_result = ASRResult(
             text=text,
             final=final,
@@ -284,6 +281,8 @@ class DeepgramASRExtension(
         )
 
         await self.send_asr_result(asr_result)
+        if final and self.config.finalize_mode != "close_stream":
+            await self._finalize_end()
 
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization.
@@ -426,6 +425,10 @@ class DeepgramASRExtension(
         assert self.config is not None
 
         try:
+            if message_data.get("type") == "Metadata":
+                if self.config.finalize_mode == "close_stream":
+                    await self._finalize_end()
+                return
             # Extract basic fields
             if self.config.is_flux_model:
                 event = message_data.get("event", "")

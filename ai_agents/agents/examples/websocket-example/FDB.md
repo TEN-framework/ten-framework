@@ -138,6 +138,14 @@ Output audio uses `{"type":"audio","audio":"<base64 PCM>","metadata":{...}}`.
 Use the output metadata's `sample_rate`, `channels`, and `bytes_per_sample` when
 saving WAV. This graph requests 16 kHz PCM from TTS.
 
+After the last input frame, send `finalize_audio` with
+`{"finalize_id":"<example-id>-audio-end"}` and wait for its successful command
+result. The graph drains Deepgram using `CloseStream` and submits buffered
+transcript fragments after the matching ASR completion. This file boundary
+works even when Deepgram never emits `speech_final=true`; fixed trailing
+silence is not the completion signal. Continue collecting events while waiting
+for the command response.
+
 The graph also exposes the following through
 `{"type":"data","name":"<event>","data":{...}}`:
 
