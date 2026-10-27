@@ -1,5 +1,8 @@
 # TEN TTS contract
 
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `11562f89409198d942a1f4eb05bec6c7bd01cb53`
+
 ## Extension surface
 
 `AsyncTTS2BaseExtension` provides lifecycle hooks, the input queue, flush coordination, PCM framing, metrics, and standardized error output. A streaming subclass supplies:
@@ -104,6 +107,16 @@ For HTTP, rely on `AsyncTTS2HttpExtension` for the common request cancellation, 
 
 The real-provider acceptance gate is mandatory: configure a valid provider key and run the full TTS guarder, including its audio, flush, error, metrics, dump, and request-isolation cases. A mock provider may supplement this suite but cannot substitute for it. If credentials, network access, or provider quota prevent the guarder from running, report the extension as not validated rather than marking it complete.
 
+## Guarder hook acceptance
+
+Every implementation must supply or reuse a protocol-matched independent TTFB
+hook with a working registration and reference-enabled guarder evidence. Follow
+[timing-hooks.md](timing-hooks.md) for boundary timestamps, deferred protocol
+parsing, request isolation and tests. The test-side upper bound alone does not
+validate provider TTFB. Subtitle alignment hooks are required only when the
+adapter supplies subtitle timestamps; otherwise document the capability limit.
+This gate supplements extension-local tests and the full real-provider guarder.
+
 ## Provider-free validation stage
 
 Use this stage only when no real provider is available. Create a local deterministic mock at the protocol boundary, without changing the extension’s production path. The mock must exercise:
@@ -141,4 +154,6 @@ Before running tests, verify all of the following:
 - Same-request-ID appended input has one audio lifecycle, and a second request ID proceeds after the first completes.
 - A request that fails terminally before final input releases its active slot, allowing a buffered second request ID to complete.
 - Provider errors and callbacks preserve request correlation and vendor metadata without leaking secrets.
-- Standalone tests, formatting, lint, and the real-key TTS guarder are all scheduled and their results will be reported.
+- The provider TTFB hook exists, is selected for the actual transport/model, and produces independent reference timing. Unsupported observation is not counted as passing validation.
+- Subtitle timestamp capability is stated; supported subtitles have a registered alignment hook, while unsupported subtitles have an explicit not-applicable explanation.
+- Standalone tests, hook protocol/transport tests, formatting, lint, and the real-key TTS guarder are all scheduled and their results will be reported.

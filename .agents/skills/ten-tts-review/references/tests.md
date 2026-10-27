@@ -1,5 +1,8 @@
 # Required extension-local test matrix
 
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `11562f89409198d942a1f4eb05bec6c7bd01cb53`
+
 Every TTS extension must own a deterministic local test suite under its
 extension directory. Treat this matrix as a merge gate for every TTS extension
 touched by the pull request. Shared base-class, guarder, graph, example, and live
@@ -132,3 +135,12 @@ and manifest/config rather than accepting an unexplained test gap.
   into the smallest useful P2 findings; do not list every test name separately.
 - Name the unprotected runtime behavior and expected assertion. Do not give vague
   advice such as "add more tests."
+
+## Independent guarder hooks
+
+In addition to the extension-local matrix, inspect the mandatory TTFB hook and
+registration for every touched extension using [guarder.md](guarder.md). Test
+protocol identity, empty/control frames, sequential requests and connection
+isolation. Subtitle alignment hook coverage is conditional on the adapter
+supplying subtitle timestamps. These shared hook tests do not replace the
+extension's local tests.

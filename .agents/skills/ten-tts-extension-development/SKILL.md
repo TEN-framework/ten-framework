@@ -5,6 +5,9 @@ description: Build production-quality TEN Framework TTS extensions from a third-
 
 # Build a TEN TTS extension from a provider contract
 
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `11562f89409198d942a1f4eb05bec6c7bd01cb53`
+
 Use this skill when the input is a vendor API specification, SDK guide, WebSocket message schema, or a short description of how text and audio flow. Extract the provider’s actual lifecycle and implement an adapter that preserves the TEN TTS contract.
 
 The requested deliverable is code, not a design essay. Generate only the extension package and its required artifacts. The required package contract is:
@@ -34,7 +37,7 @@ The requested deliverable is code, not a design essay. Generate only the extensi
 from . import addon
 ```
 
-`config.py` may be small but is required for a non-trivial provider. Generate only this extension package and its tests; do not modify graphs, examples, framework base classes, or unrelated files unless the user explicitly asks for that.
+`config.py` may be small but is required for a non-trivial provider. Generate the extension package, its tests, and the required guarder hook/registry/test changes described in [timing hooks](references/timing-hooks.md). This is the explicit exception to the extension-only output scope. Do not modify graphs, examples, framework base classes, or unrelated files unless the user explicitly asks for that.
 
 ## Choose the transport model
 
@@ -52,6 +55,7 @@ Read the appropriate reference only when needed:
 - [Single-request stream adapter](references/single-stream.md)
 - [Bidirectional stream adapter](references/bidirectional.md)
 - [TEN contract and acceptance criteria](references/common.md)
+- [Required TTFB and conditional subtitle alignment hooks](references/timing-hooks.md) — read for every TTS implementation
 
 ## Implement the adapter boundary
 
@@ -85,6 +89,8 @@ Derive configuration fields from the provider contract. Validate required values
 Trace normal completion, incremental input, empty input, provider error, cancellation, connection loss, reconnect, and shutdown before writing code. For each asynchronous path, identify who owns the request state and who is allowed to emit its terminal event.
 
 Add focused tests for basic audio and event order, empty and malformed text, flush races, invalid credentials, metrics/TTFB, duration, state transitions, dump output, and request isolation. Add transport-specific tests for serialized requests or interleaved contexts and reconnect replay. Prefer a deterministic mock provider over live credentials.
+
+Add or verify an independent TTFB hook and its registry entry for every implementation, including HTTP/SDK adapters. If the adapter supports subtitle timestamps, also add or verify the subtitle alignment hook; otherwise record why it is not applicable. Follow [timing-hooks.md](references/timing-hooks.md), including deferred decoding and request/connection isolation. An unsupported or missing TTFB observer is not accepted as validated.
 
 After generating code, run the self-check in [references/common.md](references/common.md) before running commands. Treat any failed check as an implementation defect to fix.
 
