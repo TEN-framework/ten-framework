@@ -13,14 +13,21 @@ def test_sequential_requests_ttfb_with_provider_hook(
     extension_name, config_dir, monkeypatch, record_property
 ):
     if extension_name not in HOOKS:
-        pytest.skip("This case covers the thirteen second-stage adapters")
+        pytest.skip("This case covers the second-stage adapters")
     from integration_tests.tts_http_timing.tests.boundary import SequentialTTFBTester
 
     config = json.loads(
         (Path(config_dir) / "property_basic_audio_setting1.json").read_text()
     )
+    if extension_name == "azure_tts" and not config.get("ttfb_mock_sdk_library"):
+        pytest.skip(
+            "Azure live native SDK has no independent Python hook; run the native mock reference app"
+        )
     with install_hook(extension_name, config, monkeypatch) as reference:
-        record_property("ttfb_provider_reference", "enabled")
+        record_property(
+            "ttfb_provider_reference",
+            "native-mock-sdk" if extension_name == "azure_tts" else "enabled",
+        )
         tester = SequentialTTFBTester(reference, reference_tolerance_ms=1)
         tester.set_test_mode_single(extension_name, json.dumps(config))
         error = tester.run()
