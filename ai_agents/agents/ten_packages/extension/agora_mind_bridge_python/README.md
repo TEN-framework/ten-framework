@@ -63,3 +63,16 @@ installs the published `agora_mind_extension_rust` addon. It also sends
 `tts_text_input` directly to `tts_extension`, so no additional route is needed
 for either path. See the example's [FDB guide](../../../examples/websocket-example/FDB.md)
 for WebSocket commands, case isolation and runtime-image setup.
+
+## End of file audio
+
+For a finite WAV, send `finalize_audio` with a unique `finalize_id` after the
+last PCM frame. The bridge sends `asr_finalize` to `stt` and returns
+`audio.finalize.accepted`. Acceptance is not recognition completion. The bridge
+submits buffered final fragments only after the matching `asr_finalize_end`;
+Session reset discards pending fragments and invalidates the finalize ID.
+The FDB graph uses Deepgram `finalize_mode: close_stream`, which drains all
+remaining Results and acknowledges completion on the provider's Metadata frame,
+including when no additional text remains. Natural `speech_final` boundaries
+continue to work while streaming. Neither duplicates nor a stale finalize event
+may submit another input.
