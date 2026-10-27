@@ -23,7 +23,9 @@ flowchart LR
 
 `main_control` has `"context_tool": "search_knowledge_base"`. It keeps that tool away from the
 LLM, calls it with each final transcript, and puts the passages before the user's words in
-that turn. The transcript shown to the user does not change.
+that turn. The transcript shown to the user does not change. A turn that arrives while the
+index is still loading waits for it, until 10 seconds after the agent starts. If the tool has
+not registered by then, turns go to the LLM without passages.
 
 ## Tool call
 
