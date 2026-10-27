@@ -125,10 +125,29 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             "api_subscription_key": "mock",
             "target_language_code": "hi-IN",
         }
-    tester = SequentialTTFBTester(reference)
-    tester.set_test_mode_single(extension_name, json.dumps(config))
-    error = tester.run()
-    assert error is None, error.error_message() if error else ""
+    from integration_tests.tts_guarder.tests.provider_ttfb_hooks import install_hook
+
+    with install_hook(extension_name, config, monkeypatch) as hook_reference:
+        tester = SequentialTTFBTester(hook_reference, reference_tolerance_ms=1)
+        # The fixture separately timestamps provider sends to audit the hook.
+        original_begin = hook_reference.begin_request
+
+        def begin(request_id):
+            original_begin(request_id)
+            reference.begin_request(request_id)
+
+        monkeypatch.setattr(hook_reference, "begin_request", begin)
+        tester.set_test_mode_single(extension_name, json.dumps(config))
+        error = tester.run()
+        assert error is None, error.error_message() if error else ""
+        for request_id in tester.request_ids:
+            assert (
+                abs(
+                    hook_reference.elapsed_ms(request_id)
+                    - reference.elapsed_ms(request_id)
+                )
+                <= 5
+            )
 
 
 pytestmark = pytest.mark.api

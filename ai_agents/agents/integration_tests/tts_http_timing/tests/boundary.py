@@ -31,9 +31,10 @@ class ProviderReference:
 class SequentialTTFBTester(AsyncExtensionTester):
     """Check reported TTFB against first audio received for two requests."""
 
-    def __init__(self, reference=None):
+    def __init__(self, reference=None, reference_tolerance_ms=5):
         super().__init__()
         self.reference = reference
+        self.reference_tolerance_ms = reference_tolerance_ms
         self.request_ids = ("ttfb_streamed", "ttfb_single_final")
         self.sent_at: dict[str, float] = {}
         self.first_audio_at: dict[str, float] = {}
@@ -41,6 +42,12 @@ class SequentialTTFBTester(AsyncExtensionTester):
         self.audio_request_id: str | None = None
         self.finished: set[str] = set()
         self.watchdog: asyncio.Task | None = None
+        self.stopped = False
+
+    def stop_once(self, ten_env, error=None):
+        if not self.stopped:
+            self.stopped = True
+            ten_env.stop_test(error)
 
     async def _send(self, ten_env, request_id, text, final):
         data = Data.create("tts_text_input")
@@ -68,11 +75,12 @@ class SequentialTTFBTester(AsyncExtensionTester):
     async def on_start(self, ten_env):
         async def timeout():
             await asyncio.sleep(20)
-            ten_env.stop_test(
+            self.stop_once(
+                ten_env,
                 TenError.create(
                     TenErrorCode.ErrorCodeGeneric,
                     "Timed out waiting for both requests' audio and TTFB metrics",
-                )
+                ),
             )
 
         self.watchdog = asyncio.create_task(timeout())
@@ -80,6 +88,8 @@ class SequentialTTFBTester(AsyncExtensionTester):
         await self._send(ten_env, self.request_ids[0], "", True)
 
     def _check(self, ten_env):
+        if self.stopped:
+            return
         for request_id in self.request_ids:
             if (
                 request_id not in self.first_audio_at
@@ -91,26 +101,31 @@ class SequentialTTFBTester(AsyncExtensionTester):
             ) * 1000
             ttfb = self.reported_ttfb[request_id]
             if not 0 <= ttfb <= elapsed_ms:
-                ten_env.stop_test(
+                self.stop_once(
+                    ten_env,
                     TenError.create(
                         TenErrorCode.ErrorCodeGeneric,
                         f"{request_id}: reported TTFB {ttfb}ms exceeds observed first-audio delay {elapsed_ms:.1f}ms",
-                    )
+                    ),
                 )
                 return
             if self.reference is not None:
                 expected = self.reference.elapsed_ms(request_id)
-                if expected is None or abs(ttfb - expected) > 5:
+                if (
+                    expected is None
+                    or abs(ttfb - expected) > self.reference_tolerance_ms
+                ):
                     print(
                         f"TTFB mismatch: request={request_id}, reported={ttfb}ms, "
-                        f"reference={expected}ms, tolerance=5ms",
+                        f"reference={expected}ms, tolerance={self.reference_tolerance_ms}ms",
                         flush=True,
                     )
-                    ten_env.stop_test(
+                    self.stop_once(
+                        ten_env,
                         TenError.create(
                             TenErrorCode.ErrorCodeGeneric,
                             f"{request_id}: reported TTFB {ttfb}ms differs from provider-boundary reference {expected}ms",
-                        )
+                        ),
                     )
                     return
         if all(
@@ -119,7 +134,7 @@ class SequentialTTFBTester(AsyncExtensionTester):
             and request_id in self.reported_ttfb
             for request_id in self.request_ids
         ):
-            ten_env.stop_test()
+            self.stop_once(ten_env)
 
     @override
     async def on_data(self, ten_env, data):
@@ -127,8 +142,11 @@ class SequentialTTFBTester(AsyncExtensionTester):
         payload = json.loads(payload_str)
         match data.get_name():
             case "error":
-                ten_env.stop_test(
-                    TenError.create(TenErrorCode.ErrorCodeGeneric, "TTS returned error")
+                self.stop_once(
+                    ten_env,
+                    TenError.create(
+                        TenErrorCode.ErrorCodeGeneric, "TTS returned error"
+                    ),
                 )
             case "tts_audio_start":
                 self.audio_request_id = payload["request_id"]
@@ -136,20 +154,22 @@ class SequentialTTFBTester(AsyncExtensionTester):
                 if "ttfb" in payload.get("metrics", {}):
                     turn_id = payload.get("metadata", {}).get("turn_id")
                     if turn_id not in (1, 2):
-                        ten_env.stop_test(
+                        self.stop_once(
+                            ten_env,
                             TenError.create(
                                 TenErrorCode.ErrorCodeGeneric,
                                 "TTFB has no matching turn_id",
-                            )
+                            ),
                         )
                         return
                     request_id = self.request_ids[turn_id - 1]
                     if request_id in self.reported_ttfb:
-                        ten_env.stop_test(
+                        self.stop_once(
+                            ten_env,
                             TenError.create(
                                 TenErrorCode.ErrorCodeGeneric,
                                 "Duplicate request TTFB",
-                            )
+                            ),
                         )
                         return
                     self.reported_ttfb[request_id] = payload["metrics"]["ttfb"]
