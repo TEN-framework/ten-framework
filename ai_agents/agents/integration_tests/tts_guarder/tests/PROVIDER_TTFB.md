@@ -1,7 +1,7 @@
 # Second-stage provider TTFB hooks
 
 As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `ce3b74b5e48a6405bd9b10f6d32388ff1ba886a8`
+Codebase commit: `a7eaf18847b0b720a3f1b7d14e9f895b5f2261ac`
 
 ## Scope
 
@@ -17,6 +17,9 @@ Unknown providers are skipped explicitly by this second-stage case.
 
 | Provider module | Observed start | Observed end |
 |---|---|---|
+| generic_http | HTTPX body send trace | first raw PCM response chunk |
+| gemini | HTTPX body send trace | valid audio MIME inlineData in JSON/SSE |
+| azure | compile-time mock SDK first synthesis call | compile-time mock SDK first audio; live native reference unavailable |
 | openai | HTTPX body send trace, after connection admission | first raw audio response chunk |
 | mistral | HTTPX body send trace | SSE audio_data payload |
 | smallest | HTTPX body send trace | SSE audio payload |
@@ -80,3 +83,34 @@ TEN mock runs also passed through these hooks with the 1 ms reference bound;
 the mock provider independently audits hook timing with a separate 5 ms
 scheduling allowance. Existing adapter tests remain in place. No claim is made
 that all thirteen live vendor services have been run with these new hooks.
+
+## Additional HTTP and native adapters
+
+Gemini and Generic HTTP are registered even when their extension packages are
+provided by an external prepared app. Generic HTTP requires its raw PCM contract.
+Gemini recognizes only `inlineData`/`inline_data` with an audio MIME type and
+nonempty decoded data; image/control payloads cannot stop TTFB. Both are covered
+by local wire fixtures and two-request TEN adapter mocks with the 1 ms bound.
+
+Azure is native C++. A Python network/SDK observer cannot intercept its real
+C++ Speech SDK calls, so live mode without an independent reference is explicitly
+skipped by this case. This is not reported as a passing independent-hook run.
+The native mock hook uses the compile-time SDK fixture's independent exported
+functions `azure_mock_synthesis_count`, `azure_mock_text_sent_ns` and
+`azure_mock_first_audio_ns`. It never reads production timing state. Configure
+`ttfb_mock_sdk_library` with the absolute path to the prepared mock extension's
+shared library, and use that same library in the TEN app. Each request records
+the next synthesis index before submitting text; subsequent text chunks do not
+reset its first SDK call. Production libraries do not expose these mock symbols.
+
+The Azure mock build must already be prepared before running the case; the
+hook neither recompiles an extension nor adds instrumentation to a production
+binary. Use `azure_tts` with its valid mock configuration plus the library path.
+The JUnit property is `native-mock-sdk` rather than a live provider reference.
+
+Verification after these additions: 20 local hook cases passed; Gemini and
+Generic HTTP two-request adapter mocks passed with independent hooks at 1 ms;
+an actual native Azure extension built against the SDK fixture passed a
+request containing two text chunks followed by a single-final-text request,
+using the new NativeReference with a 1 ms comparison. Azure production SDK
+online timing is not independently verified by this result.

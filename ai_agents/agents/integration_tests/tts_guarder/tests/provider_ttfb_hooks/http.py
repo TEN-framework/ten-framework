@@ -11,6 +11,16 @@ def has_audio(value, keys):
     if isinstance(value, dict):
         for key, item in value.items():
             if key in keys:
+                if key in {"inlineData", "inline_data"} and isinstance(item, dict):
+                    mime = item.get("mimeType") or item.get("mime_type") or ""
+                    data = item.get("data")
+                    if (
+                        mime.startswith("audio/")
+                        and data
+                        and base64.b64decode(data, validate=True)
+                    ):
+                        return True
+                    continue
                 chunks = item if isinstance(item, list) else [item]
                 if any(
                     isinstance(chunk, str)

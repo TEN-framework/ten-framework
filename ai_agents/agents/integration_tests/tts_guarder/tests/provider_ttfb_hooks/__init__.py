@@ -6,6 +6,9 @@ from importlib import import_module
 from .reference import Reference
 
 HOOKS = {
+    "azure_tts": "azure",
+    "gemini_tts_python": "gemini",
+    "generic_tts_http_python": "generic_http",
     "openai_tts2_python": "openai",
     "mistral_tts_python": "mistral",
     "smallest_tts_python": "smallest",
@@ -27,5 +30,5 @@ def install_hook(extension_name, config, monkeypatch):
     module = import_module(f".{HOOKS[extension_name]}", __package__)
     reference = Reference()
     with monkeypatch.context() as scoped:
-        module.Hook().install(scoped, reference, config)
-        yield reference
+        installed = module.Hook().install(scoped, reference, config)
+        yield installed if installed is not None else reference

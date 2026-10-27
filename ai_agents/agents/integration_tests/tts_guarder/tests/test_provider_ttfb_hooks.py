@@ -331,3 +331,89 @@ def test_oracle_detector_waits_for_fragmented_wav_audio():
     assert not detector.feed(audio[2:16])
     assert not detector.feed(audio[16:44])
     assert detector.feed(audio[44:])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["generic_tts_http_python", "gemini_tts_python"])
+async def test_additional_http_hooks(monkeypatch, clock, name):
+    spec = import_module(f".provider_ttfb_hooks.{HOOKS[name]}", __package__)
+    hook = spec.Hook()
+    target = import_module(hook.module_name)
+    original = target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
+    gemini = name == "gemini_tts_python"
+
+    class Stream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            clock[0] = 155_000_000
+            if gemini:
+                yield b'data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/png","data":"AQA="}}]}}]}\n\n'
+            clock[0] = 170_000_000
+            if gemini:
+                yield b'data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"audio/L16;rate=24000","data":"AQA="}}]}}]}\n\n'
+            else:
+                yield b"\x01\x00"
+
+    class Transport(httpx.AsyncBaseTransport):
+        async def handle_async_request(self, request):
+            clock[0] = 150_000_000
+            await request.extensions["trace"]("http11.send_request_body.started", {})
+            return httpx.Response(
+                200,
+                headers={
+                    "content-type": "text/event-stream" if gemini else "audio/pcm"
+                },
+                stream=Stream(),
+            )
+
+    with install_hook(name, {}, monkeypatch) as reference:
+        reference.begin_request("first")
+        client_type = (
+            target.AsyncClient
+            if hook.binding == "AsyncClient"
+            else target.httpx.AsyncClient
+        )
+        async with client_type(transport=Transport()) as client:
+            response = await client.post("https://local.invalid/tts", content="Hello")
+            assert response.content
+        assert reference.audio == {}
+        assert reference.elapsed_ms("first") == 20
+    assert (
+        target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
+    ) is original
+
+
+def test_azure_mock_reference_uses_sdk_timestamps(monkeypatch):
+    from .provider_ttfb_hooks.azure import Hook
+
+    class Function:
+        def __init__(self, callback):
+            self.callback = callback
+
+        def __call__(self, *args):
+            return self.callback(*args)
+
+    count = [0]
+    sent = [100_000_000, 200_000_000, 300_000_000]
+    received = [120_000_000, 240_000_000, 330_000_000]
+    library = SimpleNamespace(
+        azure_mock_synthesis_count=Function(lambda: count[0]),
+        azure_mock_text_sent_ns=Function(lambda index: sent[index]),
+        azure_mock_first_audio_ns=Function(lambda index: received[index]),
+    )
+    monkeypatch.setattr(
+        "tests.provider_ttfb_hooks.azure.ctypes.CDLL", lambda path: library
+    )
+    reference = Hook().install(None, None, {"ttfb_mock_sdk_library": "/mock/library"})
+    reference.begin_request("first")
+    count[0] = 2  # First request had two text chunks; retain its first SDK call.
+    reference.begin_request("second")
+    assert reference.elapsed_ms("first") == 20
+    assert reference.elapsed_ms("second") == 30
+    assert reference.elapsed_ms("missing") is None
+
+
+def test_azure_live_sdk_is_not_claimed_as_independent_reference():
+    from .provider_ttfb_hooks.azure import Hook
+
+    with pytest.raises(ValueError, match="cannot be intercepted"):
+        Hook().install(None, None, {})

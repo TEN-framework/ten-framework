@@ -31,7 +31,8 @@ uv run --no-project --python /path/to/python python -m pytest \
 ```
 
 Repeat with `mistral_tts_python`, `smallest_tts_python`, `ezai_tw_tts_python`,
-and `sarvam_http_tts`. The extension must exist in the prepared app; collection
+`sarvam_http_tts`, `generic_tts_http_python` and `gemini_tts_python`.
+The last two require their packages to be supplied by the prepared app. The extension must exist in the prepared app; collection
 from an unprepared checkout is not a valid installation test.
 
 Other second-stage adapters have focused extension-local `test_ttfb_boundary.py`

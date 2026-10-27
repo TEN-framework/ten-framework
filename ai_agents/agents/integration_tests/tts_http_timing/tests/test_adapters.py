@@ -14,6 +14,8 @@ import pytest
 from .boundary import SequentialTTFBTester, ProviderReference
 
 SUPPORTED = {
+    "generic_tts_http_python",
+    "gemini_tts_python",
     "openai_tts2_python",
     "mistral_tts_python",
     "smallest_tts_python",
@@ -41,6 +43,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     wav16 = base64.b64encode(_wav(2)).decode()
     wav24 = base64.b64encode(_wav(3)).decode()
     is_sse = extension_name in {
+        "gemini_tts_python",
         "mistral_tts_python",
         "smallest_tts_python",
     }
@@ -53,6 +56,23 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             if extension_name == "mistral_tts_python":
                 encoded = base64.b64encode(struct.pack("<f", 0.1) * 800).decode()
                 payload = {"type": "speech.audio.delta", "audio_data": encoded}
+            elif extension_name == "gemini_tts_python":
+                payload = {
+                    "candidates": [
+                        {
+                            "content": {
+                                "parts": [
+                                    {
+                                        "inlineData": {
+                                            "data": pcm,
+                                            "mimeType": "audio/L16;rate=24000",
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
             elif extension_name == "smallest_tts_python":
                 payload = {"audio": pcm}
             elif extension_name == "sarvam_http_tts":
@@ -101,6 +121,8 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
 
     monkeypatch.setattr(httpx, "AsyncClient", Client)
     filenames = {
+        "generic_tts_http_python": "generic_tts",
+        "gemini_tts_python": "gemini_tts",
         "openai_tts2_python": "openai_tts",
         "mistral_tts_python": "mistral_tts",
         "smallest_tts_python": "smallest_tts",
@@ -110,7 +132,8 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     module = import_module(
         f"ten_packages.extension.{extension_name}.{filenames[extension_name]}"
     )
-    monkeypatch.setattr(module, "AsyncClient", Client)
+    if extension_name != "gemini_tts_python":
+        monkeypatch.setattr(module, "AsyncClient", Client)
     config = {
         "url": "https://mock.example/tts",
         "api_key": "mock",
