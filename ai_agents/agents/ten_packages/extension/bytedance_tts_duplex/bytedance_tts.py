@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Callable, Tuple, Union
+from collections.abc import Awaitable, Callable
 
 import fastrand
 import websockets
@@ -10,22 +10,26 @@ from pydantic import BaseModel
 from websockets.legacy.client import WebSocketClientProtocol
 from websockets.protocol import State
 
-from ten_ai_base.const import LOG_CATEGORY_VENDOR
-from ten_ai_base.message import (
-    ModuleError,
-    ModuleErrorCode,
-    ModuleErrorVendorInfo,
-)
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
+from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
 from ten_runtime import AsyncTenEnv
 
 from .config import BytedanceTTSDuplexConfig
-
+import contextlib
 
 # https://www.volcengine.com/docs/6561/1329505#%E7%A4%BA%E4%BE%8Bsamples
 
 # Connection-related constants
 MAX_RETRY_TIMES_FOR_TRANSPORT = 5
 ERR_WS_CONNECTION = 0
+NORMAL_WEBSOCKET_CLOSE_CODES = {1000, 1001}
+
+
+def _module_code_for_connection_closed(e: websockets.ConnectionClosed) -> int:
+    if e.code in NORMAL_WEBSOCKET_CLOSE_CODES:
+        return 0
+    return int(ModuleErrorCode.NON_FATAL_ERROR)
+
 
 PROTOCOL_VERSION = 0b0001
 DEFAULT_HEADER_SIZE = 0b0001
@@ -80,6 +84,11 @@ EVENT_TTSSentenceEnd = 351
 
 EVENT_TTSResponse = 352
 
+EVENT_TTSSubtitle = 364
+
+# Internal event used to forward protocol error frames to the extension.
+EVENT_TTSError = -1
+
 # TODO all received
 # TODO all sent
 # TODO key points
@@ -111,7 +120,7 @@ class Header:
                 (self.message_type << 4) | self.message_type_specific_flags,
                 (self.serial_method << 4) | self.compression_type,
                 self.reserved_data,
-            ]
+            ],
         )
 
 
@@ -153,6 +162,7 @@ class Response:
 
 
 class ServerResponse(BaseModel):
+    received_at: float | None = None
     event: int = EVENT_NONE
     sessionId: str | None = None
     response_meta_json: str | None = None
@@ -160,6 +170,8 @@ class ServerResponse(BaseModel):
     payload_json: str | None = None
     header: dict | None = None
     optional: dict | None = None
+    error_code: int = 0
+    error_message: str | None = None
 
     def __str__(self):
         return f"ServerResponse(event={self.event}, sessionId={self.sessionId}, response_meta_json={self.response_meta_json}, payload={self.payload}, payload_json={self.payload_json}, header={self.header}, optional={self.optional})"
@@ -184,44 +196,45 @@ def parser_response(res) -> Response:
 
     offset = 4
     optional = response.optional
-    if header.message_type == FULL_SERVER_RESPONSE or AUDIO_ONLY_RESPONSE:
+    if header.message_type in (FULL_SERVER_RESPONSE, AUDIO_ONLY_RESPONSE):
         # read event
         if header.message_type_specific_flags == MsgTypeFlagWithEvent:
             optional.event = int.from_bytes(
-                res[offset : offset + 4], "big", signed=False
+                res[offset : offset + 4],
+                "big",
+                signed=False,
             )
             offset += 4
             if optional.event == EVENT_NONE:
                 return response
             # read connectionId
-            elif optional.event == EVENT_ConnectionStarted:
+            if optional.event == EVENT_ConnectionStarted:
                 optional.connectionId, offset = read_res_content(res, offset)
             elif optional.event == EVENT_ConnectionFailed:
-                optional.response_meta_json, offset = read_res_content(
-                    res, offset
-                )
-            elif (
-                optional.event == EVENT_SessionStarted
-                or optional.event == EVENT_SessionFailed
-                or optional.event == EVENT_SessionFinished
+                optional.response_meta_json, offset = read_res_content(res, offset)
+            elif optional.event in (
+                EVENT_SessionStarted,
+                EVENT_SessionFailed,
+                EVENT_SessionFinished,
             ):
                 optional.sessionId, offset = read_res_content(res, offset)
-                optional.response_meta_json, offset = read_res_content(
-                    res, offset
-                )
+                optional.response_meta_json, offset = read_res_content(res, offset)
             elif optional.event == EVENT_TTSResponse:
                 optional.sessionId, offset = read_res_content(res, offset)
                 response.payload, offset = read_res_payload(res, offset)
-            elif (
-                optional.event == EVENT_TTSSentenceEnd
-                or optional.event == EVENT_TTSSentenceStart
+            elif optional.event in (
+                EVENT_TTSSentenceEnd,
+                EVENT_TTSSentenceStart,
+                EVENT_TTSSubtitle,
             ):
                 optional.sessionId, offset = read_res_content(res, offset)
                 response.payload_json, offset = read_res_content(res, offset)
 
     elif header.message_type == ERROR_INFORMATION:
         optional.errorCode = int.from_bytes(
-            res[offset : offset + 4], "big", signed=False
+            res[offset : offset + 4],
+            "big",
+            signed=False,
         )
         offset += 4
         response.payload, offset = read_res_payload(res, offset)
@@ -252,10 +265,15 @@ class BytedanceV3Synthesizer:
         config: BytedanceTTSDuplexConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[Tuple[int, Union[bytes, dict, None]]],
-        on_error: Callable[[ModuleError], None] | None = None,
+        response_msgs: asyncio.Queue[tuple[int, bytes | dict | None]],
+        on_error: Callable[[ModuleError], Awaitable[None]] | None = None,
         on_usage_characters: Callable[[int], None] | None = None,
-        on_fatal_failure: Callable[[ModuleError], None] | None = None,
+        on_fatal_failure: Callable[[ModuleError], Awaitable[None]] | None = None,
+        on_connection_connecting: Callable[[], Awaitable[None]] | None = None,
+        on_connection_connected: Callable[[], Awaitable[None]] | None = None,
+        on_connection_disconnected: Callable[..., Awaitable[None]] | None = None,
+        on_text_send: Callable[[str, float], None] | None = None,
+        on_audio_receive: Callable[[str, float], None] | None = None,
     ):
         self.config = config
         self.app_id = config.app_id
@@ -269,12 +287,17 @@ class BytedanceV3Synthesizer:
         self.stop_event = asyncio.Event()
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
-        self.response_msgs: (
-            asyncio.Queue[Tuple[int, Union[bytes, dict, None]]] | None
-        ) = response_msgs
+        self.response_msgs: asyncio.Queue[tuple[int, bytes | dict | None]] | None = (
+            response_msgs
+        )
         self.on_error = on_error
         self.on_usage_characters = on_usage_characters
         self.on_fatal_failure = on_fatal_failure
+        self.on_connection_connecting = on_connection_connecting
+        self.on_connection_connected = on_connection_connected
+        self.on_connection_disconnected = on_connection_disconnected
+        self.on_text_send = on_text_send
+        self.on_audio_receive = on_audio_receive
 
         # Connection management related
         self._session_closing = False
@@ -282,6 +305,10 @@ class BytedanceV3Synthesizer:
         self.websocket_task = None
         self.channel_tasks = []
         self._session_started = False
+        self._connection_id: str | None = None
+        self._connection_started_ms: int | None = None
+        self._connect_id: str | None = None
+        self._tt_logid: str | None = None
 
         # Queue for pending text to be sent
         self.text_queue = asyncio.Queue()
@@ -303,23 +330,44 @@ class BytedanceV3Synthesizer:
         return f"02{ts}{local_ip}{r:08x}"
 
     def get_headers(self):
+        explicit_headers = self.config.headers or {}
+        explicit_app_auth = explicit_headers.get(
+            "X-Api-App-Key",
+        ) and explicit_headers.get("X-Api-Access-Key")
+        explicit_api_key_auth = explicit_headers.get("X-Api-Key")
+
+        self._connect_id = str(uuid.uuid4())
+        self._tt_logid = self.gen_log_id()
+        headers = {
+            "X-Api-Resource-Id": self.resource_id,
+            "X-Api-Connect-Id": self._connect_id,
+            "X-Tt-Logid": self._tt_logid,
+            "X-Control-Require-Usage-Tokens-Return": "*",
+        }
+
+        if explicit_app_auth or explicit_api_key_auth:
+            headers.update(explicit_headers)
+            self._connect_id = headers.get("X-Api-Connect-Id")
+            self._tt_logid = headers.get("X-Tt-Logid")
+            return headers
+
         if self.app_id:
-            return {
-                "X-Api-App-Key": self.app_id,
-                "X-Api-Access-Key": self.token,
-                "X-Api-Resource-Id": self.resource_id,
-                "X-Api-Connect-Id": str(uuid.uuid4()),
-                "X-Tt-Logid": self.gen_log_id(),
-                "X-Control-Require-Usage-Tokens-Return": "*",
-            }
+            headers.update(
+                {
+                    "X-Api-App-Key": self.app_id,
+                    "X-Api-Access-Key": self.token,
+                },
+            )
         else:
-            return {
-                "x-api-key": self.api_key,
-                "X-Api-Resource-Id": self.resource_id,
-                "X-Api-Connect-Id": str(uuid.uuid4()),
-                "X-Tt-Logid": self.gen_log_id(),
-                "X-Control-Require-Usage-Tokens-Return": "*",
-            }
+            headers["X-Api-Key"] = self.api_key
+
+        if explicit_headers:
+            headers.update(explicit_headers)
+
+        self._connect_id = headers.get("X-Api-Connect-Id")
+        self._tt_logid = headers.get("X-Tt-Logid")
+
+        return headers
 
     def get_payload_bytes(
         self,
@@ -347,18 +395,26 @@ class BytedanceV3Synthesizer:
             },
         }
         json_str = json.dumps(json_params)
-        self.ten_env.log_info(f"Payload JSON: {json_str}")
+        self.ten_env.log_info(
+            f"Payload JSON: text_length={len(text)}",
+        )
+        self.ten_env.log_debug(
+            f"Payload JSON details: {json_str}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         return str.encode(json_str)
 
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
+        self.ten_env.log_warn(f"Websocket internal error during connecting: {exp}.")
         self.ten_env.log_warn(
-            f"Websocket internal error during connecting: {exp}."
+            "vendor_status: websocket_connect_error "
+            f"ts_ms={int(time.time() * 1000)} error={exp!s}",
         )
         self._connect_exp_cnt += 1
         if self._connect_exp_cnt > MAX_RETRY_TIMES_FOR_TRANSPORT:
             self.ten_env.log_error(
-                f"Max retries ({MAX_RETRY_TIMES_FOR_TRANSPORT}) exceeded: {str(exp)}"
+                f"Max retries ({MAX_RETRY_TIMES_FOR_TRANSPORT}) exceeded: {exp!s}",
             )
             return exp
         return None  # Return None to continue reconnection
@@ -369,6 +425,8 @@ class BytedanceV3Synthesizer:
 
         try:
             self.ten_env.log_info("Starting websocket connection process")
+            if self.on_connection_connecting:
+                await self.on_connection_connecting()
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
                 uri=self.config.api_url,
@@ -378,8 +436,15 @@ class BytedanceV3Synthesizer:
                 process_exception=self._process_ws_exception,
             ):
                 self.ws = ws
+                self._connection_id = uuid.uuid4().hex
+                self._connection_started_ms = int(time.time() * 1000)
                 try:
                     self.ten_env.log_info("Websocket connected successfully")
+                    self.ten_env.log_info(
+                        "vendor_status: websocket_connected "
+                        f"ts_ms={self._connection_started_ms} internal_connection_id={self._connection_id} "
+                        f"server_connect_id={self._connect_id} server_tt_logid={self._tt_logid}",
+                    )
                     self.ten_env.log_debug(
                         f"vendor_status: connected to: {self.config.api_url}",
                         category=LOG_CATEGORY_VENDOR,
@@ -396,18 +461,37 @@ class BytedanceV3Synthesizer:
 
                     # Wait for receive loop to be ready before establishing connection
                     await self._receive_ready_event.wait()
-                    await self.start_connection()
+                    connection_error = await self.start_connection()
+                    if connection_error:
+                        if self.on_connection_disconnected:
+                            await self.on_connection_disconnected(
+                                code=int(ModuleErrorCode.NON_FATAL_ERROR),
+                                message=connection_error.message,
+                                vendor_info=connection_error,
+                            )
+                        if not self._session_closing:
+                            self.ten_env.log_info(
+                                "Start connection failed, will reconnect.",
+                            )
+                            await self._reset_connection_state_for_reconnect()
+                            self._connect_exp_cnt = 0
+                            if self.on_connection_connecting:
+                                await self.on_connection_connecting()
+                            continue
+                        return
+                    if self.on_connection_connected:
+                        await self.on_connection_connected()
 
                     if not self.channel_tasks:
                         return
 
                     # Wait for the first task to complete (sender or receiver)
-                    (done, pending) = await asyncio.wait(
+                    done, pending = await asyncio.wait(
                         self.channel_tasks,
                         return_when=asyncio.FIRST_COMPLETED,
                     )
                     self.ten_env.log_info(
-                        "A channel task finished, indicating connection is closing."
+                        "A channel task finished, indicating connection is closing.",
                     )
 
                     # Cancel any remaining pending tasks
@@ -423,69 +507,86 @@ class BytedanceV3Synthesizer:
                         exp = task.exception()
                         if exp and not isinstance(exp, asyncio.CancelledError):
                             self.ten_env.log_warn(
-                                f"Channel task raised an exception: {exp}"
+                                f"Channel task raised an exception: {exp}",
                             )
                             # Re-raise to be caught by the outer exception handlers
                             raise exp
 
                 except websockets.ConnectionClosed as e:
                     self.ten_env.log_info(f"Websocket connection closed: {e}.")
+                    if self.on_connection_disconnected:
+                        await self.on_connection_disconnected(
+                            code=_module_code_for_connection_closed(e),
+                            message=e.reason or str(e),
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor,
+                                code=str(e.code),
+                                message=e.reason or str(e),
+                            ),
+                        )
+                    self.ten_env.log_info(
+                        "vendor_status: websocket_closed "
+                        f"ts_ms={int(time.time() * 1000)} internal_connection_id={self._connection_id} "
+                        f"server_connect_id={self._connect_id} server_tt_logid={self._tt_logid} "
+                        f"code={e.code} reason={e.reason!r}",
+                    )
                     if not self._session_closing:
                         self.ten_env.log_info(
-                            "Websocket connection closed, will reconnect."
+                            "Websocket connection closed, will reconnect.",
                         )
 
-                        # Cancel all channel tasks and wait for them to finish
-                        if self.channel_tasks:
-                            for task in self.channel_tasks:
-                                task.cancel()
-                            # Wait for tasks to complete their cancellation
-                            await asyncio.wait(self.channel_tasks)
-                            self.channel_tasks.clear()
-
-                        # Reset all event states
-                        self._receive_ready_event.clear()
-                        self._connection_event.clear()
-                        self._session_event.clear()
-                        self._connection_success = False
-                        self._session_success = False
-                        self._session_started = False
+                        await self._reset_connection_state_for_reconnect()
 
                         # Reset connection exception counter
                         self._connect_exp_cnt = 0
+                        if self.on_connection_connecting:
+                            await self.on_connection_connecting()
                         continue
 
             # If we exit the async for loop normally (not via exception),
             # it means retries were exhausted by _process_ws_exception
             if not self._session_closing:
                 self.ten_env.log_error(
-                    "Websocket connection loop exited, retries exhausted"
+                    "Websocket connection loop exited, retries exhausted",
                 )
                 terminal_error = ModuleError(
-                    code=ERR_WS_CONNECTION,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message="Websocket connection failed: retries exhausted",
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor),
                 )
-                if self.on_error:
-                    await self.on_error(terminal_error)
 
         except Exception as e:
             self.ten_env.log_error(f"Exception in websocket process: {e}")
             terminal_error = ModuleError(
-                code=ERR_WS_CONNECTION,
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=f"Websocket connection failed: {e}",
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor),
             )
-            if self.on_error:
-                await self.on_error(terminal_error)
         finally:
-            # Notify extension that the connection has failed terminally
-            # This covers both exception exit and normal loop exit (retries exhausted)
-            if terminal_error and self.on_fatal_failure:
-                await self.on_fatal_failure(terminal_error)
+            if terminal_error:
+                if self.on_fatal_failure:
+                    await self.on_fatal_failure(terminal_error)
+                elif self.on_error:
+                    await self.on_error(terminal_error)
 
             if self.ws:
                 await self.ws.close()
+            if self.on_connection_disconnected:
+                disconnected_message = (
+                    terminal_error.message if terminal_error else "closed"
+                )
+                disconnected_code = (
+                    int(ModuleErrorCode.FATAL_ERROR) if terminal_error else 0
+                )
+                await self.on_connection_disconnected(
+                    code=disconnected_code,
+                    message=disconnected_message,
+                    vendor_info=ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code=str(terminal_error.code) if terminal_error else "0",
+                        message=disconnected_message,
+                    ),
+                )
             self.ten_env.log_info("Websocket connection process ended.")
 
     async def _send_loop(self, ws: WebSocketClientProtocol) -> None:
@@ -522,7 +623,7 @@ class BytedanceV3Synthesizer:
 
         except Exception as e:
             self.ten_env.log_error(f"Exception in send_loop: {e}")
-            raise e
+            raise
 
     async def _receive_loop(self, ws: WebSocketClientProtocol) -> None:
         """Message receiving loop"""
@@ -531,30 +632,56 @@ class BytedanceV3Synthesizer:
             self._receive_ready_event.set()
 
             async for message in ws:
+                received_at = time.monotonic()
+                self.ten_env.log_debug(
+                    "vendor_io: websocket_receive "
+                    f"ts_ms={int(time.time() * 1000)} internal_connection_id={self._connection_id} "
+                    f"server_session_id={self.session_id} frame_bytes={len(message)}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
                 if self._session_closing:
-                    self.ten_env.log_warn(
-                        "Session is closing, break receive loop."
-                    )
+                    self.ten_env.log_warn("Session is closing, break receive loop.")
                     break
 
                 try:
                     server_response = self.handle_server_message(message)
                     if server_response:
+                        server_response.received_at = received_at
                         await self._handle_server_response(server_response)
                 except Exception as e:
-                    self.ten_env.log_error(
-                        f"Error handling server message: {e}"
-                    )
+                    self.ten_env.log_error(f"Error handling server message: {e}")
 
         except asyncio.CancelledError:
             self.ten_env.log_debug("Receive loop cancelled")
             raise
         except Exception as e:
             self.ten_env.log_error(f"Exception in receive_loop: {e}")
-            raise e
+            raise
+
+    async def _handle_audio_payload(self, message: ServerResponse) -> None:
+        if message.payload and self.response_msgs is not None:
+            if self.on_audio_receive is not None and message.sessionId:
+                self.on_audio_receive(
+                    message.sessionId,
+                    (
+                        message.received_at
+                        if message.received_at is not None
+                        else time.monotonic()
+                    ),
+                )
+            await self.response_msgs.put((message.event, message.payload))
+        else:
+            self.ten_env.log_error("Received empty payload for TTS response")
 
     async def _handle_server_response(self, message: ServerResponse):
         """Handle server responses"""
+        self.ten_env.log_debug(
+            "vendor_protocol: websocket_event "
+            f"ts_ms={int(time.time() * 1000)} internal_connection_id={self._connection_id} "
+            f"server_session_id={message.sessionId} event={message.event} "
+            f"payload_bytes={len(message.payload) if message.payload else 0}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         if message.event == EVENT_ConnectionStarted:
             self._connection_success = True
             self._connection_event.set()
@@ -570,37 +697,35 @@ class BytedanceV3Synthesizer:
             self._session_success = False
             self._session_event.set()
         elif message.event == EVENT_TTSResponse:
-            if message.payload and self.response_msgs is not None:
-                await self.response_msgs.put((message.event, message.payload))
-            else:
-                self.ten_env.log_error(
-                    "Received empty payload for TTS response"
+            await self._handle_audio_payload(message)
+        elif message.event == EVENT_TTSError:
+            if self.response_msgs is not None:
+                await self.response_msgs.put(
+                    (
+                        message.event,
+                        {
+                            "code": message.error_code,
+                            "message": message.error_message or "Unknown error",
+                            "session_id": message.sessionId,
+                        },
+                    ),
                 )
         elif message.event == EVENT_TTSSentenceEnd:
-            self.ten_env.log_info(
-                f"KEYPOINT Received sentence end event from Bytedance: {message}"
-            )
-
-            data_to_send = None
-            if message.payload_json and self.config.enable_words:
-                try:
-                    data_to_send = json.loads(message.payload_json)
-                    self.ten_env.log_debug(
-                        f"receive_words: receive_words: {message.payload_json} of request id: {message.sessionId}",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-                except json.JSONDecodeError:
-                    self.ten_env.log_error(
-                        f"Failed to decode sentence end payload_json: {message.payload_json}"
-                    )
-
-            if self.response_msgs is not None:
-                await self.response_msgs.put((message.event, data_to_send))
+            await self._handle_sentence_end(message)
+        elif message.event == EVENT_TTSSubtitle:
+            await self._forward_subtitle(message)
         elif message.event == EVENT_SessionFinished:
             if self.response_msgs is not None:
-                await self.response_msgs.put((message.event, b""))
+                await self.response_msgs.put(
+                    (message.event, {"session_id": message.sessionId}),
+                )
                 self.ten_env.log_info(
-                    f"KEYPOINT Received usage event from Bytedance: {message.payload_json}"
+                    "KEYPOINT Received usage event from Bytedance: "
+                    f"session_id={message.sessionId}",
+                )
+                self.ten_env.log_debug(
+                    f"KEYPOINT Received usage event details: {message.payload_json}",
+                    category=LOG_CATEGORY_TRANSCRIPTS,
                 )
                 if message.payload_json and self.on_usage_characters:
                     try:
@@ -613,14 +738,60 @@ class BytedanceV3Synthesizer:
                             self.on_usage_characters(char_count)
                     except (json.JSONDecodeError, KeyError, TypeError) as e:
                         self.ten_env.log_error(
-                            f"Failed to parse usage data: {message.payload_json}, error: {e}"
+                            f"Failed to parse usage data: error_type={type(e).__name__}",
+                        )
+                        self.ten_env.log_debug(
+                            f"Failed to parse usage data payload: {message.payload_json}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
         elif message.event == EVENT_TTSSentenceStart:
             self.ten_env.log_info(
-                f"KEYPOINT Received sentence start event from Bytedance: {message}"
+                "KEYPOINT Received sentence start event from Bytedance: "
+                f"session_id={message.sessionId}",
+            )
+            self.ten_env.log_debug(
+                f"KEYPOINT Received sentence start event details: {message}",
+                category=LOG_CATEGORY_TRANSCRIPTS,
             )
             if self.response_msgs is not None:
                 await self.response_msgs.put((message.event, b""))
+
+    async def _forward_subtitle(self, message: ServerResponse) -> None:
+        subtitle = None
+        if message.payload_json and self.config.enable_words:
+            payload_bytes = len(message.payload_json.encode("utf-8"))
+            try:
+                subtitle = json.loads(message.payload_json)
+                word_count = (
+                    len(subtitle.get("words", [])) if isinstance(subtitle, dict) else 0
+                )
+                self.ten_env.log_debug(
+                    "receive_words: subtitle received "
+                    f"server_session_id={message.sessionId} "
+                    f"payload_bytes={payload_bytes} word_count={word_count}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+            except json.JSONDecodeError:
+                self.ten_env.log_error(
+                    "Failed to decode subtitle payload: "
+                    f"server_session_id={message.sessionId} "
+                    f"payload_bytes={payload_bytes}",
+                )
+
+        if self.response_msgs is not None:
+            await self.response_msgs.put((message.event, subtitle))
+
+    async def _handle_sentence_end(self, message: ServerResponse) -> None:
+        self.ten_env.log_info(
+            "KEYPOINT Received sentence end event from Bytedance: "
+            f"event={message.event} session_id={message.sessionId}",
+        )
+        if self.response_msgs is None:
+            return
+        if message.payload_json and self.config.enable_words:
+            await self._forward_subtitle(message)
+            return
+        await self.response_msgs.put((message.event, None))
 
     async def send_text(self, text: str):
         """Send text (external interface)"""
@@ -632,10 +803,16 @@ class BytedanceV3Synthesizer:
 
     async def _send_text_internal(self, ws: WebSocketClientProtocol, text: str):
         """Internal text sending implementation"""
-        self.ten_env.log_info(f"KEYPOINT Sending text to Bytedance: {text}")
+        self.ten_env.log_info(
+            f"KEYPOINT Sending text to Bytedance: text_length={len(text)}",
+        )
+        self.ten_env.log_debug(
+            f"KEYPOINT Sending text to Bytedance details: {text}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {text} of request_id: {self.session_id}",
-            category=LOG_CATEGORY_VENDOR,
+            category=LOG_CATEGORY_TRANSCRIPTS,
         )
         header = Header(
             message_type=FULL_CLIENT_REQUEST,
@@ -643,7 +820,8 @@ class BytedanceV3Synthesizer:
             serial_method=JSON,
         ).as_bytes()
         optional = Optional(
-            event=EVENT_TaskRequest, sessionId=self.session_id
+            event=EVENT_TaskRequest,
+            sessionId=self.session_id,
         ).as_bytes()
         payload = self.get_payload_bytes(
             event=EVENT_TaskRequest,
@@ -651,7 +829,7 @@ class BytedanceV3Synthesizer:
             speaker=self.speaker,
             model=self.model,
         )
-        await self.send_event(ws, header, optional, payload)
+        await self.send_event(ws, header, optional, payload, text_send=True)
 
     async def send_event(
         self,
@@ -659,23 +837,32 @@ class BytedanceV3Synthesizer:
         header: bytes,
         optional: bytes | None = None,
         payload: bytes | None = None,
+        *,
+        text_send: bool = False,
     ):
-        if ws is not None:
-            if ws.state != State.OPEN:
-                self.ten_env.log_warn(
-                    "WebSocket is not open, cannot send event"
-                )
-            else:
-                full_client_request = bytearray(header)
-                if optional is not None:
-                    full_client_request.extend(optional)
-                if payload is not None:
-                    payload_size = len(payload).to_bytes(4, "big", signed=False)
-                    full_client_request.extend(payload_size)
-                    full_client_request.extend(payload)
-                await ws.send(bytes(full_client_request))
+        if ws is None:
+            return
+        if ws.state != State.OPEN:
+            self.ten_env.log_warn("WebSocket is not open, cannot send event")
+            return
+        full_client_request = bytearray(header)
+        if optional is not None:
+            full_client_request.extend(optional)
+        if payload is not None:
+            payload_size = len(payload).to_bytes(4, "big", signed=False)
+            full_client_request.extend(payload_size)
+            full_client_request.extend(payload)
+        if text_send and self.on_text_send is not None:
+            self.on_text_send(self.session_id, time.monotonic())
+        await ws.send(bytes(full_client_request))
+        self.ten_env.log_debug(
+            "vendor_io: websocket_send "
+            f"ts_ms={int(time.time() * 1000)} internal_connection_id={self._connection_id} "
+            f"server_session_id={self.session_id} frame_bytes={len(full_client_request)}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
-    async def start_connection(self):
+    async def start_connection(self) -> ModuleErrorVendorInfo | None:
         self.ten_env.log_info("KEYPOINT Starting connection")
         # Reset connection event
         self._connection_event.clear()
@@ -705,8 +892,9 @@ class BytedanceV3Synthesizer:
                             code=ModuleErrorCode.NON_FATAL_ERROR.value,
                             message=error_info.message,
                             vendor_info=error_info,
-                        )
+                        ),
                     )
+                return error_info
         except asyncio.TimeoutError:
             error_info = ModuleErrorVendorInfo(
                 vendor=self.vendor,
@@ -719,8 +907,24 @@ class BytedanceV3Synthesizer:
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message=error_info.message,
                         vendor_info=error_info,
-                    )
+                    ),
                 )
+            return error_info
+        return None
+
+    async def _reset_connection_state_for_reconnect(self) -> None:
+        if self.channel_tasks:
+            for task in self.channel_tasks:
+                task.cancel()
+            await asyncio.wait(self.channel_tasks)
+            self.channel_tasks.clear()
+
+        self._receive_ready_event.clear()
+        self._connection_event.clear()
+        self._session_event.clear()
+        self._connection_success = False
+        self._session_success = False
+        self._session_started = False
 
     async def start_session(self):
         self.ten_env.log_info("KEYPOINT start session")
@@ -734,10 +938,13 @@ class BytedanceV3Synthesizer:
             serial_method=JSON,
         ).as_bytes()
         optional = Optional(
-            event=EVENT_StartSession, sessionId=self.session_id
+            event=EVENT_StartSession,
+            sessionId=self.session_id,
         ).as_bytes()
         payload = self.get_payload_bytes(
-            event=EVENT_StartSession, speaker=self.speaker, model=self.model
+            event=EVENT_StartSession,
+            speaker=self.speaker,
+            model=self.model,
         )
         await self.send_event(self.ws, header, optional, payload)
 
@@ -756,7 +963,7 @@ class BytedanceV3Synthesizer:
                             code=ModuleErrorCode.NON_FATAL_ERROR.value,
                             message=error_info.message,
                             vendor_info=error_info,
-                        )
+                        ),
                     )
         except asyncio.TimeoutError:
             error_info = ModuleErrorVendorInfo(
@@ -770,7 +977,7 @@ class BytedanceV3Synthesizer:
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         message=error_info.message,
                         vendor_info=error_info,
-                    )
+                    ),
                 )
 
     async def _finish_session_internal(self, ws: WebSocketClientProtocol):
@@ -782,7 +989,8 @@ class BytedanceV3Synthesizer:
             serial_method=JSON,
         ).as_bytes()
         optional = Optional(
-            event=EVENT_FinishSession, sessionId=self.session_id
+            event=EVENT_FinishSession,
+            sessionId=self.session_id,
         ).as_bytes()
         await self.send_event(ws, header, optional, b"{}")
         # Reset session state, next text sending will re-establish session
@@ -813,9 +1021,21 @@ class BytedanceV3Synthesizer:
     def parse_server_message(self, res) -> ServerResponse:
         try:
             response = parser_response(res)
-            if (
-                response.header.message_type == FULL_SERVER_RESPONSE
-                or response.header.message_type == AUDIO_ONLY_RESPONSE
+            self.ten_env.log_debug(
+                "vendor_protocol: websocket_frame "
+                f"ts_ms={int(time.time() * 1000)} internal_connection_id={self._connection_id} "
+                f"message_type={response.header.message_type} "
+                f"flags={response.header.message_type_specific_flags} "
+                f"serialization={response.header.serial_method} "
+                f"compression={response.header.compression_type} "
+                f"event={response.optional.event} server_session_id={response.optional.sessionId} "
+                f"error_code={response.optional.errorCode} "
+                f"payload_bytes={len(response.payload) if response.payload else 0}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            if response.header.message_type in (
+                FULL_SERVER_RESPONSE,
+                AUDIO_ONLY_RESPONSE,
             ):
                 return ServerResponse(
                     event=response.optional.event,
@@ -826,45 +1046,39 @@ class BytedanceV3Synthesizer:
                     header=response.header.__dict__,
                     optional=response.optional.__dict__,
                 )
-            elif response.header.message_type == ERROR_INFORMATION:
+            if response.header.message_type == ERROR_INFORMATION:
                 # Try to parse error payload
                 error_message = "Unknown error"
                 if response.payload:
                     try:
                         error_message = response.payload.decode("utf-8")
                         self.ten_env.log_error(
-                            f"KEYPOINT decoded error payload: {error_message}"
+                            "KEYPOINT decoded error payload: "
+                            f"code={response.optional.errorCode}",
                         )
                         self.ten_env.log_error(
-                            f"vendor_error: code: {response.optional.errorCode} reason: {error_message}",
+                            f"vendor_error: code: {response.optional.errorCode}",
                             category=LOG_CATEGORY_VENDOR,
                         )
-                    except Exception as e:
-                        self.ten_env.log_error(
-                            f"Failed to decode error payload: {e}"
+                        self.ten_env.log_debug(
+                            f"vendor_error details: {error_message}",
+                            category=LOG_CATEGORY_TRANSCRIPTS,
                         )
+                    except Exception as e:
+                        self.ten_env.log_error(f"Failed to decode error payload: {e}")
                         error_message = (
                             f"Binary payload (length: {len(response.payload)})"
                         )
 
-                # error_info = ModuleErrorVendorInfo(
-                #     vendor=self.vendor,
-                #     code=str(response.optional.errorCode),
-                #     message=error_message,
-                # )
-                # if self.error_callback:
-                #     await self.error_callback(
-                #         ModuleError(
-                #             code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                #             message=error_info.message,
-                #             vendor_info=error_info,
-                #         )
-                #     )
-                # return None  # Return None as we've handled the error
-            else:
-                raise RuntimeError(
-                    f"unknown message type: {response.header.message_type}"
+                return ServerResponse(
+                    event=EVENT_TTSError,
+                    sessionId=self.session_id,
+                    error_code=response.optional.errorCode,
+                    error_message=error_message,
                 )
+            raise RuntimeError(
+                f"unknown message type: {response.header.message_type}",
+            )
         except json.JSONDecodeError as e:
             self.ten_env.log_error(f"Failed to parse server message: {e}")
             raise RuntimeError(f"Failed to parse server message: {e}") from e
@@ -873,9 +1087,12 @@ class BytedanceV3Synthesizer:
         self.ten_env.log_debug(f"[{tag}] Header: {res.header}")
         self.ten_env.log_debug(f"[{tag}] Optional: {res.optional}")
         self.ten_env.log_debug(
-            f"[{tag}] Payload Len: {len(res.payload) if res.payload else 0}"
+            f"[{tag}] Payload Len: {len(res.payload) if res.payload else 0}",
         )
-        self.ten_env.log_debug(f"[{tag}] Payload JSON: {res.payload_json}")
+        self.ten_env.log_debug(
+            f"[{tag}] Payload JSON: {res.payload_json}",
+            category=LOG_CATEGORY_TRANSCRIPTS,
+        )
 
     def cancel(self) -> None:
         """Cancel current connection, used for flush scenarios"""
@@ -900,6 +1117,21 @@ class BytedanceV3Synthesizer:
         # should be quit soon, and then `close()` will be called on the
         # websocket connection at exit of function. So the websocket connection
         # will be closed eventually.
+
+    async def suppress_connection_callbacks_for_replacement(self) -> None:
+        if self.on_connection_disconnected and self.channel_tasks:
+            await self.on_connection_disconnected(
+                code=0,
+                message="closed",
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor,
+                    code="0",
+                    message="closed",
+                ),
+            )
+        self.on_connection_connecting = None
+        self.on_connection_connected = None
+        self.on_connection_disconnected = None
 
     def _clear_queues(self) -> None:
         """Clear all queues to prevent old data from being processed"""
@@ -932,10 +1164,8 @@ class BytedanceV3Synthesizer:
         # Cancel websocket task
         if self.websocket_task:
             self.websocket_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.websocket_task
-            except asyncio.CancelledError:
-                pass
 
         # Close websocket connection
         if self.ws:
@@ -950,10 +1180,15 @@ class BytedanceV3Client:
         config: BytedanceTTSDuplexConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[Tuple[int, Union[bytes, dict, None]]],
-        on_error: Callable[[ModuleError], None] | None = None,
+        response_msgs: asyncio.Queue[tuple[int, bytes | dict | None]],
+        on_error: Callable[[ModuleError], Awaitable[None]] | None = None,
         on_usage_characters: Callable[[int], None] | None = None,
-        on_fatal_failure: Callable[[ModuleError], None] | None = None,
+        on_fatal_failure: Callable[[ModuleError], Awaitable[None]] | None = None,
+        on_connection_connecting: Callable[[], Awaitable[None]] | None = None,
+        on_connection_connected: Callable[[], Awaitable[None]] | None = None,
+        on_connection_disconnected: Callable[..., Awaitable[None]] | None = None,
+        on_text_send: Callable[[str, float], None] | None = None,
+        on_audio_receive: Callable[[str, float], None] | None = None,
     ):
         self.config = config
         self.ten_env = ten_env
@@ -962,6 +1197,11 @@ class BytedanceV3Client:
         self.on_error = on_error
         self.on_usage_characters = on_usage_characters
         self.on_fatal_failure = on_fatal_failure
+        self.on_connection_connecting = on_connection_connecting
+        self.on_connection_connected = on_connection_connected
+        self.on_connection_disconnected = on_connection_disconnected
+        self.on_text_send = on_text_send
+        self.on_audio_receive = on_audio_receive
 
         # Current active synthesizer
         self.synthesizer: BytedanceV3Synthesizer = self._create_synthesizer()
@@ -970,9 +1210,11 @@ class BytedanceV3Client:
         self.cancelled_synthesizers = []
 
         # Cleanup task
-        self.cleanup_task = asyncio.create_task(
-            self._cleanup_cancelled_synthesizers()
-        )
+        self.cleanup_task = asyncio.create_task(self._cleanup_cancelled_synthesizers())
+
+    @property
+    def session_id(self) -> str:
+        return self.synthesizer.session_id
 
     def _create_synthesizer(self) -> BytedanceV3Synthesizer:
         """Create new synthesizer instance"""
@@ -984,19 +1226,27 @@ class BytedanceV3Client:
             self.on_error,
             self.on_usage_characters,
             self.on_fatal_failure,
+            self.on_connection_connecting,
+            self.on_connection_connected,
+            self.on_connection_disconnected,
+            self.on_text_send,
+            self.on_audio_receive,
         )
+
+    def update_config(self, config: BytedanceTTSDuplexConfig) -> None:
+        """Update the configuration used for future synthesizer instances."""
+        self.config = config
+        if self.ten_env:
+            self.ten_env.log_info("Manager configuration updated.")
 
     async def _cleanup_cancelled_synthesizers(self) -> None:
         """Periodically clean up completed cancelled synthesizers"""
         while True:
             try:
                 for synthesizer in self.cancelled_synthesizers[:]:
-                    if (
-                        synthesizer.websocket_task
-                        and synthesizer.websocket_task.done()
-                    ):
+                    if synthesizer.websocket_task and synthesizer.websocket_task.done():
                         self.ten_env.log_info(
-                            f"Cleaning up cancelled synthesizer {id(synthesizer)}"
+                            f"Cleaning up cancelled synthesizer {id(synthesizer)}",
                         )
                         self.cancelled_synthesizers.remove(synthesizer)
 
@@ -1005,11 +1255,9 @@ class BytedanceV3Client:
                 self.ten_env.log_error(f"Error in cleanup task: {e}")
                 await asyncio.sleep(5.0)
 
-    def cancel(self) -> None:
+    async def cancel(self) -> None:
         """Cancel current synthesizer and create new synthesizer"""
-        self.ten_env.log_info(
-            "Cancelling current synthesizer and creating new one"
-        )
+        self.ten_env.log_info("Cancelling current synthesizer and creating new one")
 
         # Clear response messages queue to prevent old data from being processed
         if self.response_msgs:
@@ -1018,23 +1266,23 @@ class BytedanceV3Client:
                     self.response_msgs.get_nowait()
                 except asyncio.QueueEmpty:
                     break
-            self.ten_env.log_info(
-                "Response messages queue cleared during cancel"
-            )
+            self.ten_env.log_info("Response messages queue cleared during cancel")
 
         # Move current synthesizer to cleanup list
         if self.synthesizer:
             self.cancelled_synthesizers.append(self.synthesizer)
+            await self.synthesizer.suppress_connection_callbacks_for_replacement()
             self.synthesizer.cancel()
 
         # Create new synthesizer
         self.synthesizer = self._create_synthesizer()
         self.ten_env.log_info("New synthesizer created successfully")
 
-    def reset_synthesizer(self):
+    async def reset_synthesizer(self):
         """Reset synthesizer"""
         if self.synthesizer:
             self.cancelled_synthesizers.append(self.synthesizer)
+            await self.synthesizer.suppress_connection_callbacks_for_replacement()
             self.synthesizer.cancel()
 
         self.synthesizer = self._create_synthesizer()
@@ -1059,10 +1307,8 @@ class BytedanceV3Client:
         # Cancel cleanup task
         if self.cleanup_task:
             self.cleanup_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self.cleanup_task
-            except asyncio.CancelledError:
-                pass
 
         # Close current synthesizer
         if self.synthesizer:
@@ -1073,9 +1319,7 @@ class BytedanceV3Client:
             try:
                 await synthesizer.close()
             except Exception as e:
-                self.ten_env.log_error(
-                    f"Error closing cancelled synthesizer: {e}"
-                )
+                self.ten_env.log_error(f"Error closing cancelled synthesizer: {e}")
 
         self.cancelled_synthesizers.clear()
         self.ten_env.log_info("BytedanceV3Client closed")
