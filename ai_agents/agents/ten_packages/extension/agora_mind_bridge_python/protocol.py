@@ -25,6 +25,18 @@ def pure_text_input(text: str, created_at: Any = None) -> dict[str, str]:
     return {"created_at": utc_timestamp(created_at), "text": text}
 
 
+def speech_final_from_payload(payload: dict[str, Any]) -> bool:
+    """Return whether an ASR final closes the current speech interval."""
+
+    if payload.get("speech_final") is True:
+        return True
+    metadata = payload.get("metadata")
+    asr_info = metadata.get("asr_info") if isinstance(metadata, dict) else None
+    if isinstance(asr_info, dict) and "speech_final" in asr_info:
+        return asr_info.get("speech_final") is True
+    return "speech_final" not in payload
+
+
 def asr_final_key(
     payload: dict[str, Any], text: str
 ) -> tuple[int, int, str] | None:

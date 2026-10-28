@@ -13,6 +13,7 @@
     "property": {
       "properties": {
         "agora_mind_extension": {"type": "string"},
+        "stt_extension": {"type": "string"},
         "tts_extension": {"type": "string"},
         "example_id": {"type": "string"},
         "session_id": {"type": "uint64"},
@@ -24,9 +25,11 @@
       {"name": "create_session"},
       {"name": "flush_session"},
       {"name": "set_session_debug"},
-      {"name": "delete_session"}
+      {"name": "delete_session"},
+      {"name": "finalize_audio"}
     ],
     "data_in": [
+      {"name": "asr_finalize_end"},
       {
         "name": "asr_result",
         "property": {
@@ -48,6 +51,7 @@
       }
     ],
     "data_out": [
+      {"name": "asr_finalize"},
       {"name": "error"},
       {
         "name": "tts_text_input",
