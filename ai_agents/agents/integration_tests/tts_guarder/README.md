@@ -1,6 +1,6 @@
 # TTS Guarder Test Guide
 
-As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+As of: 2026-10-28 (Asia/Shanghai, UTC+08:00)
 Codebase commit: `56f790d47`
 
 This document describes how to run Guarder Test for TTS

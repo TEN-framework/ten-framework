@@ -1,19 +1,21 @@
 # Second-stage provider TTFB hooks
 
-As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `a7eaf18847b0b720a3f1b7d14e9f895b5f2261ac`
+As of: 2026-10-28 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `56f790d47`
 
 ## Scope
 
 Every changed second-stage provider has a module in `provider_ttfb_hooks/` and
-an entry in its `HOOKS` registry. The separate case is
-`test_provider_ttfb.py::test_sequential_requests_ttfb_with_provider_hook`.
-This addition does not overwrite the first-stage hooks/case under review.
+an entry in its `HOOKS` registry. Both stages use the same case,
+`test_metrics.py::test_sequential_requests_ttfb`, and the same
+`task tts-guarder-test` entry point. The reference installer selects only
+the requested extension's hook; other vendor extensions need not be installed.
 The tester sends two sequential requests (the second has one final text),
 checks actual audio/completion/metrics, rejects duplicate TTFB, and requires
 `0 <= reported TTFB <= tester send-to-first-audio elapsed time`. It also requires
 an independent hook reference and an absolute difference no greater than 1 ms.
-Unknown providers are skipped explicitly by this second-stage case.
+Providers without a hook retain the first-stage tester bound and are marked
+`ttfb_provider_reference=unsupported`. Registered hooks must produce a reference.
 
 | Provider module | Observed start | Observed end |
 |---|---|---|
@@ -46,21 +48,33 @@ callbacks are not proven distinguishable. Installations are scoped and restored.
 
 ## Run
 
-Use a prepared Linux TEN app containing the current second-stage extensions,
-base 0.7.63 and runtime packages, plus all required vendor Python SDKs. Set
-PYTHONPATH to that app, its system lib/interface paths, and the parent
-`ai_agents/agents` directory so both guarder and shared tester packages import.
-The caller must load valid environment variables referenced by the config.
+Run inside the development container from `ai_agents/`, after loading the
+provider credentials. Use the same command as the first stage:
 
-From that app, run one provider (repeat with any registry extension name):
+```bash
+task tts-guarder-test EXTENSION=openai_tts2_python -- \
+  -k test_sequential_requests_ttfb -m api --strict-markers -v --tb=short
+```
+
+Change `EXTENSION` to the provider under test. The Task installs the selected
+extension and uses its `tests/configs/property_basic_audio_setting1.json`.
+Override `CONFIG_DIR` with another directory relative to that extension when
+needed. The HTTP changes require `ten_ai_base` 0.7.63 or later; until it is
+published, copy the updated base into the guarder app locally after installation.
+Do not commit installed package copies.
+
+For a prepared Linux TEN app, the equivalent direct command is:
 
 ```bash
 uv run --no-project --python /path/to/prepared/python python -m pytest \
-  /path/to/agents/integration_tests/tts_guarder/tests/test_provider_ttfb.py::test_sequential_requests_ttfb_with_provider_hook \
+  /path/to/agents/integration_tests/tts_guarder/tests/test_metrics.py::test_sequential_requests_ttfb \
   --extension_name openai_tts2_python \
   --config_dir /path/to/private/openai-configs \
   -m api --strict-markers -v --tb=short
 ```
+
+Set `PYTHONPATH` to the prepared app and its runtime/base library and interface
+paths. This entry point no longer requires a sibling test package on PYTHONPATH.
 
 Each config directory contains `property_basic_audio_setting1.json`. Preserve
 provider-specific configuration schemas and load private credentials separately.
@@ -93,8 +107,8 @@ nonempty decoded data; image/control payloads cannot stop TTFB. Both are covered
 by local wire fixtures and two-request TEN adapter mocks with the 1 ms bound.
 
 Azure is native C++. A Python network/SDK observer cannot intercept its real
-C++ Speech SDK calls, so live mode without an independent reference is explicitly
-skipped by this case. This is not reported as a passing independent-hook run.
+C++ Speech SDK calls. Without the prepared mock library, hook installation
+fails explicitly; it cannot be reported as a passing independent-hook run.
 The native mock hook uses the compile-time SDK fixture's independent exported
 functions `azure_mock_synthesis_count`, `azure_mock_text_sent_ns` and
 `azure_mock_first_audio_ns`. It never reads production timing state. Configure
@@ -106,7 +120,8 @@ reset its first SDK call. Production libraries do not expose these mock symbols.
 The Azure mock build must already be prepared before running the case; the
 hook neither recompiles an extension nor adds instrumentation to a production
 binary. Use `azure_tts` with its valid mock configuration plus the library path.
-The JUnit property is `native-mock-sdk` rather than a live provider reference.
+The common JUnit property is `ttfb_provider_reference=enabled`; Azure results
+must additionally be labeled as native mock results when sharing evidence.
 
 Verification after these additions: 20 local hook cases passed; Gemini and
 Generic HTTP two-request adapter mocks passed with independent hooks at 1 ms;

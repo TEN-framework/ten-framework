@@ -11,7 +11,8 @@ import wave
 import httpx
 import pytest
 
-from .boundary import SequentialTTFBTester, ProviderReference
+from .boundary import ProviderReference
+from integration_tests.tts_guarder.tests.test_metrics import SequentialTTFBTester
 
 SUPPORTED = {
     "generic_tts_http_python",
@@ -148,10 +149,12 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             "api_subscription_key": "mock",
             "target_language_code": "hi-IN",
         }
-    from integration_tests.tts_guarder.tests.provider_ttfb_hooks import install_hook
+    from integration_tests.tts_guarder.tests.ttfb_reference import (
+        install_ttfb_reference,
+    )
 
-    with install_hook(extension_name, config, monkeypatch) as hook_reference:
-        tester = SequentialTTFBTester(hook_reference, reference_tolerance_ms=1)
+    with install_ttfb_reference(extension_name, config, monkeypatch) as hook_reference:
+        tester = SequentialTTFBTester(hook_reference)
         # The fixture separately timestamps provider sends to audit the hook.
         original_begin = hook_reference.begin_request
 
