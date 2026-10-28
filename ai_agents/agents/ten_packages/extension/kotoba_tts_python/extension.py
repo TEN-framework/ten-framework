@@ -544,17 +544,25 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         if not request.ended:
             await self._interrupt(request)
             return
+        await self._await_terminal(request)
+
+    async def _interrupt(self, request: _RequestState) -> None:
+        """Stop a request that is still synthesizing, end it as
+        INTERRUPTED, and wait (bounded) until its events are out.
+        ``finish_request()`` is not called: the base class owns the state
+        transition on flush."""
+        await self._abort(request, TTSAudioEndReason.INTERRUPTED, finish=False)
+        await self._await_terminal(request)
+
+    async def _await_terminal(self, request: _RequestState) -> None:
+        """Wait up to _TERMINAL_JOIN_SECONDS for the request's terminal
+        events. If they do not land, the task running them is cancelled
+        and the rest is completed here, as INTERRUPTED."""
         if await self._wait_settled(request):
             return
         await self._finalize(
             request, TTSAudioEndReason.INTERRUPTED, finish=False
         )
-
-    async def _interrupt(self, request: _RequestState) -> None:
-        """Stop a request that is still synthesizing and end it as
-        INTERRUPTED. ``finish_request()`` is not called: the base class
-        owns the state transition on flush."""
-        await self._abort(request, TTSAudioEndReason.INTERRUPTED, finish=False)
 
     async def _abort(
         self,
@@ -564,14 +572,43 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         *,
         finish: bool,
     ) -> None:
-        """End a request that is still synthesizing: stop its worker,
-        cancel its in-flight response, then run the terminal sequence."""
+        """End a request that is still synthesizing: stop its worker and
+        cancel its in-flight response, then start the terminal sequence as
+        the request's own task.
+
+        The terminal sequence always runs in ``request.worker``, never in
+        the caller's task: a flush or a shutdown can then cancel and take
+        it over however long a send stalls, which they could not do if it
+        held the request's lock on, for example, the base class's input
+        loop. Callers that must not return before the events are out wait
+        with ``_await_terminal()``; this method returns at once.
+        """
         request.ended = True
         self._generation += 1
         await self._stop_worker(request)
         if self.client is not None:
             await self.client.cancel()
-        await self._finalize(request, reason, error, finish=finish)
+        request.worker = asyncio.create_task(
+            self._run_terminal(request, reason, error, finish)
+        )
+
+    async def _run_terminal(
+        self,
+        request: _RequestState,
+        reason: TTSAudioEndReason,
+        error: ModuleError | None,
+        finish: bool,
+    ) -> None:
+        """Task body for ``_abort()``: the terminal sequence, with a failure
+        logged rather than left unobserved on the task. A waiter then takes
+        over after its bound, as for a stalled send."""
+        try:
+            await self._finalize(request, reason, error, finish=finish)
+        except Exception:
+            self.ten_env.log_error(
+                f"request {request.request_id} terminal sequence failed: "
+                f"{traceback.format_exc()}"
+            )
 
     async def _finalize(
         self,
@@ -662,9 +699,9 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         request.pending_connect_delay_ms = None
 
     async def _wait_settled(self, request: _RequestState) -> bool:
-        """Flush found the worker inside its terminal events: wait for them
-        to land. Returns False when they did not land in time, in which
-        case the worker has been cancelled and the caller takes over."""
+        """Wait for the request's terminal events to land. Returns False
+        when they did not land in time, in which case the task running them
+        has been cancelled and the caller takes over."""
         try:
             await asyncio.wait_for(
                 request.settled.wait(), _TERMINAL_JOIN_SECONDS
@@ -673,7 +710,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         except asyncio.TimeoutError:
             self.ten_env.log_warn(
                 f"request {request.request_id} did not finish within "
-                f"{_TERMINAL_JOIN_SECONDS:g} s of flush; cancelling it"
+                f"{_TERMINAL_JOIN_SECONDS:g} s; cancelling it"
             )
             await self._stop_worker(request)
             return False
