@@ -90,6 +90,9 @@ class _RequestState:
         self.ended = False
         # text_input_end has arrived: later input for this id is late.
         self.input_ended = False
+        # Characters of the sentences queued for the worker and not yet
+        # taken; with the buffered fragment, the request's pending text.
+        self.queued_chars = 0
         self.error_sent = False
         self.audio_end_sent = False
         self.usage_sent = False
@@ -316,7 +319,33 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         if t.text:
             self.metrics_add_input_characters(len(t.text))
             for segment in request.buffer.push(t.text):
+                request.queued_chars += len(segment)
                 await request.segments.put(segment)
+            pending = request.queued_chars + len(request.buffer.pending)
+            if pending > self.config.max_pending_chars:
+                # Synthesis has fallen this far behind the input: end the
+                # request with an explicit error rather than keep growing
+                # or drop text silently. Later deltas for it are ignored.
+                self.ten_env.log_warn(
+                    f"request {t.request_id}: {pending} characters pending "
+                    f"exceed max_pending_chars "
+                    f"{self.config.max_pending_chars}; ending it"
+                )
+                await self._abort(
+                    request,
+                    TTSAudioEndReason.ERROR,
+                    error=self._module_error(
+                        KotobaTTSError(
+                            f"pending text exceeded max_pending_chars "
+                            f"({self.config.max_pending_chars})",
+                            code="pending_text_limit",
+                            fatal=False,
+                            retryable=False,
+                        )
+                    ),
+                    finish=True,
+                )
+                return
         if t.text_input_end:
             request.input_ended = True
             await self._finalize_input(request)
@@ -366,6 +395,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                 segment = await request.segments.get()
                 if segment is _END_OF_REQUEST:
                     break
+                request.queued_chars -= len(segment)
                 await self._synthesize_segment(request, segment)
             await self._end_request(request, TTSAudioEndReason.REQUEST_END)
         # CancelledError is a BaseException: it passes through the handlers
@@ -524,14 +554,24 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         """Stop a request that is still synthesizing and end it as
         INTERRUPTED. ``finish_request()`` is not called: the base class
         owns the state transition on flush."""
+        await self._abort(request, TTSAudioEndReason.INTERRUPTED, finish=False)
+
+    async def _abort(
+        self,
+        request: _RequestState,
+        reason: TTSAudioEndReason,
+        error: ModuleError | None = None,
+        *,
+        finish: bool,
+    ) -> None:
+        """End a request that is still synthesizing: stop its worker,
+        cancel its in-flight response, then run the terminal sequence."""
         request.ended = True
         self._generation += 1
         await self._stop_worker(request)
         if self.client is not None:
             await self.client.cancel()
-        await self._finalize(
-            request, TTSAudioEndReason.INTERRUPTED, finish=False
-        )
+        await self._finalize(request, reason, error, finish=finish)
 
     async def _finalize(
         self,

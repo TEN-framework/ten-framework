@@ -27,6 +27,7 @@ def test_defaults_apply_when_only_key_given():
     assert config.speaker_id == "male-01"
     assert config.sample_rate == 16000
     assert config.request_timeout_seconds == 30.0
+    assert config.max_pending_chars == 5000
     assert config.ignored_params() == []
 
 
@@ -105,6 +106,9 @@ def test_validate_rejects(params, message):
             {"key": "k", "request_timeout_seconds": "fast"},
             id="text-timeout",
         ),
+        pytest.param(
+            {"key": "k", "max_pending_chars": "lots"}, id="text-pending"
+        ),
     ],
 )
 def test_update_params_rejects_bad_types(params):
@@ -163,6 +167,9 @@ def test_redacted_base_url_masks_userinfo_and_signed_query():
             0,
             "segment_soft_limit_chars",
             id="zero-soft-limit",
+        ),
+        pytest.param(
+            "max_pending_chars", 0, "max_pending_chars", id="zero-pending"
         ),
     ],
 )

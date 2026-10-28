@@ -5,6 +5,7 @@
 """Long input: one long text, many streamed deltas, and flush under a deep
 sentence backlog. The segmenter and the per-request segment queue are this
 extension's own logic, so they are exercised at length here."""
+import asyncio
 import sys
 import time
 from pathlib import Path
@@ -123,5 +124,79 @@ def test_flush_under_backlog_cancels_once_and_recovers():
 
         run_tester(script, make_config(server.url))
         assert server.recorded.cancels == 1
+    finally:
+        server.stop()
+
+
+def test_pending_text_limit_ends_the_request_cleanly():
+    """The service speaks one sentence per second while ten sentences
+    arrive at once. Past max_pending_chars the request ends with one
+    non-fatal pending_text_limit error and one audio_end(ERROR); the rest
+    of its text is never sent. Flush then stays responsive on the next
+    request, and the request after that succeeds."""
+    sentences = _sentences(10)
+    limit = 100
+    assert len(sentences[0]) * 2 > limit  # crossed while the first speaks
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=20, chunk_delay_s=0.05)
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            rec = tester.recording
+            await tester.send_text(ten_env, "flood", sentences[0], end=False)
+            # The first sentence is being spoken; the rest arrives at once.
+            await tester.wait_for(lambda r: len(r.audio_bytes("flood")) > 0)
+            for i, sentence in enumerate(sentences[1:], start=1):
+                last = i == len(sentences) - 1
+                await tester.send_text(ten_env, "flood", sentence, end=last)
+            end = await tester.wait_for_audio_end("flood", timeout_s=5.0)
+            assert end.payload["reason"] == 3
+            errors = [
+                e for e in rec.named("error") if e.payload.get("id") == "flood"
+            ]
+            assert len(errors) == 1, errors
+            assert errors[0].payload["code"] == 1000  # NON_FATAL_ERROR
+            assert (
+                errors[0].payload["vendor_info"]["code"] == "pending_text_limit"
+            )
+            assert errors[0].at <= end.at
+            await asyncio.sleep(0.5)
+            ends = [
+                e
+                for e in rec.named("tts_audio_end")
+                if e.payload["request_id"] == "flood"
+            ]
+            assert len(ends) == 1
+            late = [
+                f
+                for f in events_after(tester, "pcm_frame", end)
+                if f.payload.get("request_id") == "flood"
+            ]
+            assert late == []
+            # Only the sentence in flight reached the service.
+            assert server.recorded.texts == sentences[:1], server.recorded.texts
+
+            # Flush stays responsive on the next request.
+            await tester.send_text(ten_env, "next", sentences[1], end=True)
+            await tester.wait_for(lambda r: len(r.audio_bytes("next")) > 0)
+            t0 = time.monotonic()
+            await tester.send_flush(ten_env, "flush-after-limit")
+            await tester.wait_for_event("tts_flush_end", timeout_s=2.0)
+            assert time.monotonic() - t0 < 1.0
+            end2 = await tester.wait_for_audio_end("next", timeout_s=1.0)
+            assert end2.payload["reason"] == 2
+
+            # And the request after that succeeds.
+            await tester.send_text(ten_env, "after", "復旧。", end=True)
+            end3 = await tester.wait_for_audio_end("after", timeout_s=5.0)
+            assert end3.payload["reason"] == 1
+            assert rec.audio_bytes("after") == server.expected_pcm(1)
+
+        run_tester(
+            script,
+            make_config(server.url, params={"max_pending_chars": limit}),
+            timeout_s=30.0,
+        )
     finally:
         server.stop()

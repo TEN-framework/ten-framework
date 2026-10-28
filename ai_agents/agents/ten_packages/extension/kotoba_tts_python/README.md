@@ -26,6 +26,7 @@ export KOTOBA_TTS_KEY=<your fal key>
 | `sample_rate` | `16000` | `8000`, `16000` or `24000` |
 | `request_timeout_seconds` | `30` | longest wait for the first audio chunk of a sentence, and between chunks |
 | `segment_soft_limit_chars` | `120` | buffered text longer than this is cut at a comma; twice this is cut unconditionally |
+| `max_pending_chars` | `5000` | text accepted for a request but not yet sent to the service; past this the request ends with a non-fatal `pending_text_limit` error and `tts_audio_end(ERROR)` (about 15 minutes of Japanese speech) |
 
 Top-level `dump` / `dump_path` write one `kotoba_tts_dump_<request_id>.pcm`
 per request for debugging. If `dump_path` cannot be created, recording is

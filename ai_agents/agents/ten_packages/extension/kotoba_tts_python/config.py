@@ -23,6 +23,7 @@ _KNOWN_PARAMS = (
     "sample_rate",
     "request_timeout_seconds",
     "segment_soft_limit_chars",
+    "max_pending_chars",
 )
 
 
@@ -43,6 +44,11 @@ class KotobaTTSConfig(BaseModel):
     # Buffered text longer than this is cut at a comma; twice this length
     # is cut unconditionally so buffering stays bounded.
     segment_soft_limit_chars: int = 120
+    # Text accepted for a request but not yet sent to the service. Past
+    # this, the request ends with a pending_text_limit error instead of
+    # growing without bound while synthesis falls behind. 5,000 characters
+    # is about 15 minutes of Japanese speech, far above one LLM turn.
+    max_pending_chars: int = 5000
 
     def update_params(self) -> None:
         """Move known keys from ``params`` into typed fields.
@@ -79,6 +85,10 @@ class KotobaTTSConfig(BaseModel):
                 soft_limit, "segment_soft_limit_chars"
             )
 
+        max_pending = params.pop("max_pending_chars", None)
+        if max_pending is not None:
+            self.max_pending_chars = _as_int(max_pending, "max_pending_chars")
+
         self.params = params
 
     def validate_config(self) -> None:
@@ -100,6 +110,8 @@ class KotobaTTSConfig(BaseModel):
             raise ValueError("params.request_timeout_seconds must be > 0")
         if self.segment_soft_limit_chars < 1:
             raise ValueError("params.segment_soft_limit_chars must be >= 1")
+        if self.max_pending_chars < 1:
+            raise ValueError("params.max_pending_chars must be >= 1")
 
     def ignored_params(self) -> list[str]:
         return sorted(self.params.keys())
