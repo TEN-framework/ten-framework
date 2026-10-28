@@ -176,6 +176,9 @@
       },
       {
         "name": "delete_session"
+      },
+      {
+        "name": "finalize_audio"
       }
     ],
     "audio_frame_in": [
