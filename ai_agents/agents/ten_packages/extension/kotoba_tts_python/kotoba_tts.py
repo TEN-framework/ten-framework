@@ -474,6 +474,11 @@ class KotobaTTSClient:
         self._response_active = False
         try:
             await session.cancel()
+        except asyncio.CancelledError:
+            # The cancel may not have reached the service, so the old
+            # response can still be streaming on this socket.
+            await self.drop(message="cancel interrupted")
+            raise
         except Exception as exc:
             await self.drop(message=f"cancel failed: {self._scrub(str(exc))}")
             return

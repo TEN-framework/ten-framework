@@ -331,7 +331,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
                     f"exceed max_pending_chars "
                     f"{self.config.max_pending_chars}; ending it"
                 )
-                await self._abort(
+                self._abort(
                     request,
                     TTSAudioEndReason.ERROR,
                     error=self._module_error(
@@ -551,7 +551,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         INTERRUPTED, and wait (bounded) until its events are out.
         ``finish_request()`` is not called: the base class owns the state
         transition on flush."""
-        await self._abort(request, TTSAudioEndReason.INTERRUPTED, finish=False)
+        self._abort(request, TTSAudioEndReason.INTERRUPTED, finish=False)
         await self._await_terminal(request)
 
     async def _await_terminal(self, request: _RequestState) -> None:
@@ -564,7 +564,7 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
             request, TTSAudioEndReason.INTERRUPTED, finish=False
         )
 
-    async def _abort(
+    def _abort(
         self,
         request: _RequestState,
         reason: TTSAudioEndReason,
@@ -572,37 +572,46 @@ class KotobaTTSExtension(AsyncTTS2BaseExtension):
         *,
         finish: bool,
     ) -> None:
-        """End a request that is still synthesizing: stop its worker and
-        cancel its in-flight response, then start the terminal sequence as
-        the request's own task.
+        """End a request that is still synthesizing: cancel its worker and
+        start the abort as the request's own task, which waits for the
+        worker, cancels the in-flight response and runs the terminal
+        sequence.
 
-        The terminal sequence always runs in ``request.worker``, never in
-        the caller's task: a flush or a shutdown can then cancel and take
-        it over however long a send stalls, which they could not do if it
-        held the request's lock on, for example, the base class's input
-        loop. Callers that must not return before the events are out wait
-        with ``_await_terminal()``; this method returns at once.
+        Nothing here awaits, so ``request.worker`` holds the abort from the
+        moment the request is marked ended. A flush or a shutdown can then
+        cancel and take it over however long a step stalls, including the
+        ``response.cancel`` write; a step awaited on the caller's task (for
+        example, the base class's input loop) could neither be taken over
+        nor be stopped from emitting after the takeover. Callers that must
+        not return before the events are out wait with
+        ``_await_terminal()``.
         """
         request.ended = True
         self._generation += 1
-        await self._stop_worker(request)
-        if self.client is not None:
-            await self.client.cancel()
+        worker = request.worker
+        if worker is not None:
+            worker.cancel()
         request.worker = asyncio.create_task(
-            self._run_terminal(request, reason, error, finish)
+            self._run_terminal(request, worker, reason, error, finish)
         )
 
     async def _run_terminal(
         self,
         request: _RequestState,
+        worker: asyncio.Task | None,
         reason: TTSAudioEndReason,
         error: ModuleError | None,
         finish: bool,
     ) -> None:
-        """Task body for ``_abort()``: the terminal sequence, with a failure
-        logged rather than left unobserved on the task. A waiter then takes
-        over after its bound, as for a stalled send."""
+        """Task body for ``_abort()``: wait for the cancelled worker, cancel
+        the in-flight response, then the terminal sequence. A failure is
+        logged rather than left unobserved on the task; a waiter then
+        takes over after its bound, as for a stalled send."""
         try:
+            if worker is not None:
+                await wait_done(worker)
+            if self.client is not None:
+                await self.client.cancel()
             await self._finalize(request, reason, error, finish=finish)
         except Exception:
             self.ten_env.log_error(

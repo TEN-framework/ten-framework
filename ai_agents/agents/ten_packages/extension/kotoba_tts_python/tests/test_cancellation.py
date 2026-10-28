@@ -1172,3 +1172,132 @@ def test_flush_is_bounded_when_its_own_audio_end_stalls():
             run_tester(script, make_config(server.url), timeout_s=20.0)
     finally:
         server.stop()
+
+
+def _hold_first_cancel(hold_s: float):
+    """Patch AsyncTTSSession.cancel so its first call (the response.cancel
+    write) stalls for ``hold_s`` (cancellable); later calls go through."""
+    import kotoba._ws_tts as sdk_tts
+
+    original = sdk_tts.AsyncTTSSession.cancel
+    state = {"held": False}
+
+    async def held(self):
+        if not state["held"]:
+            state["held"] = True
+            await asyncio.sleep(hold_s)
+        return await original(self)
+
+    return held, state
+
+
+def test_flush_takes_over_while_the_limit_cancel_send_stalls():
+    """The pending-text limit ends a request and its response.cancel write
+    stalls. Flush takes over within the bound; when the write would have
+    resumed, nothing more for the old request may follow tts_flush_end
+    (no late error, no second audio_end). The socket whose cancel never
+    went out is dropped, and the next request gets clean audio."""
+    from unittest.mock import patch
+    import kotoba._ws_tts as sdk_tts
+    import kotoba_tts_python.extension as ext_mod
+
+    hold_s = 1.5
+    sentences = [
+        f"これは{i}番目の長めの文で、上限を超えるために続けて送ります。"
+        for i in range(6)
+    ]
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=20, chunk_delay_s=0.05)
+    ).start()
+    held, state = _hold_first_cancel(hold_s)
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.5), patch.object(
+            sdk_tts.AsyncTTSSession, "cancel", held
+        ):
+
+            async def script(tester, ten_env):
+                rec = tester.recording
+                await tester.send_text(
+                    ten_env, "flood", sentences[0], end=False
+                )
+                await tester.wait_for(lambda r: len(r.audio_bytes("flood")) > 0)
+                for s in sentences[1:]:
+                    await tester.send_text(ten_env, "flood", s, end=False)
+                await _wait_until(lambda: state["held"])
+                t0 = time.monotonic()
+                await tester.send_flush(ten_env, "flush-limit-cancel")
+                await tester.wait_for_event("tts_flush_end", timeout_s=3.0)
+                assert time.monotonic() - t0 < 2.0
+                # Outlast the stalled write, then look for late events.
+                await asyncio.sleep(hold_s)
+                flush_end = rec.named("tts_flush_end")[0]
+                for name in ("error", "tts_audio_end", "pcm_frame"):
+                    late = [
+                        e
+                        for e in events_after(tester, name, flush_end)
+                        if "flood"
+                        in (e.payload.get("id"), e.payload.get("request_id"))
+                    ]
+                    assert (
+                        late == []
+                    ), f"{name} for the old request after flush_end"
+                ends = [
+                    e
+                    for e in rec.named("tts_audio_end")
+                    if e.payload["request_id"] == "flood"
+                ]
+                assert len(ends) == 1 and ends[0].payload["reason"] == 2
+                await tester.send_text(ten_env, "after", "復旧。", end=True)
+                end = await tester.wait_for_audio_end("after", timeout_s=5.0)
+                assert end.payload["reason"] == 1
+                assert rec.audio_bytes("after") == server.expected_pcm(1)
+
+            run_tester(
+                script,
+                make_config(server.url, params={"max_pending_chars": 60}),
+                timeout_s=20.0,
+            )
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()
+
+
+def test_flush_is_bounded_when_its_own_cancel_send_stalls():
+    """Flush interrupts a speaking request and the response.cancel write
+    stalls: tts_flush_end must still arrive within the takeover bound,
+    with exactly one audio_end, and the next request gets clean audio on
+    a new socket."""
+    from unittest.mock import patch
+    import kotoba._ws_tts as sdk_tts
+    import kotoba_tts_python.extension as ext_mod
+
+    server = FakeKotobaServer(
+        Scenario(chunks_per_response=40, chunk_delay_s=0.05)
+    ).start()
+    held, state = _hold_first_cancel(4.0)
+    try:
+        with patch.object(ext_mod, "_TERMINAL_JOIN_SECONDS", 0.5), patch.object(
+            sdk_tts.AsyncTTSSession, "cancel", held
+        ):
+
+            async def script(tester, ten_env):
+                rec = tester.recording
+                await tester.send_text(ten_env, "x", "長い文です。", end=True)
+                await tester.wait_for_event("pcm_frame", count=2)
+                t0 = time.monotonic()
+                await tester.send_flush(ten_env, "flush-own-cancel")
+                await tester.wait_for_event("tts_flush_end", timeout_s=6.0)
+                assert time.monotonic() - t0 < 2.0
+                assert state["held"]
+                end = await tester.wait_for_audio_end("x", timeout_s=0.5)
+                assert end.payload["reason"] == 2
+                _assert_clean_after_flush(tester, "x")
+                await tester.send_text(ten_env, "y", "次。", end=True)
+                end = await tester.wait_for_audio_end("y", timeout_s=5.0)
+                assert end.payload["reason"] == 1
+                assert rec.audio_bytes("y") == server.expected_pcm(1)
+
+            run_tester(script, make_config(server.url), timeout_s=20.0)
+        assert server.recorded.connections == 2
+    finally:
+        server.stop()
