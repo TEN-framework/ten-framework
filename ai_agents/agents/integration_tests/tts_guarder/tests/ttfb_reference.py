@@ -126,6 +126,12 @@ def effective_config(extension_name, config):
 @contextmanager
 def install_ttfb_reference(extension_name, config, monkeypatch):
     """Install a fresh protocol observer per connection; restore it on exit."""
+    from .provider_ttfb_hooks import HOOKS as PROVIDER_HOOKS, install_hook
+
+    if extension_name in PROVIDER_HOOKS:
+        with install_hook(extension_name, config, monkeypatch) as reference:
+            yield reference
+        return
     spec = HOOKS.get(extension_name)
     if spec is None:
         yield None

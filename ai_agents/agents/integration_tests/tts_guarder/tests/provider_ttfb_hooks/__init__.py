@@ -1,4 +1,4 @@
-"""Second-stage registry, independent of the pending first-stage guarder hooks."""
+"""Additional provider hooks used by the shared guarder TTFB entry point."""
 
 from contextlib import contextmanager
 from importlib import import_module
