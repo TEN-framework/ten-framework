@@ -19,7 +19,7 @@ def test_pcm_byte_receipt_matches_frames_and_resets_per_request(
     asyncio.run(check_pcm_receipt(sample_rate, reason))
 
 
-async def check_pcm_receipt(sample_rate, reason):
+def make_extension(sample_rate):
     from elevenlabs_tts2_python.extension import ElevenLabsTTS2Extension
 
     extension = ElevenLabsTTS2Extension("tts")
@@ -33,6 +33,11 @@ async def check_pcm_receipt(sample_rate, reason):
         synthesizer=SimpleNamespace(send_text_in_connection=False),
     )
 
+    return extension
+
+
+async def check_pcm_receipt(sample_rate, reason):
+    extension = make_extension(sample_rate)
     for request_id, chunks in (("first", [b"a", b"bcd"]), ("second", [])):
         extension.metadatas[request_id] = {"request_id": request_id}
         await extension.request_tts(
@@ -64,3 +69,32 @@ async def check_pcm_receipt(sample_rate, reason):
         assert payload["metadata"]["pcm_bytes"] == len(emitted)
         assert emitted == (b"abcd" if chunks else b"")
         extension.ten_env.send_audio_frame.reset_mock()
+
+
+def test_end_declares_pcm_that_is_still_in_flight():
+    asyncio.run(check_inflight_end())
+
+
+async def check_inflight_end():
+    extension = make_extension(16000)
+    extension.metadatas["first"] = {"request_id": "first", "pcm_bytes": 0}
+    await extension.send_tts_audio_start("first")
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def delayed_frame(_frame):
+        started.set()
+        await release.wait()
+
+    extension.ten_env.send_audio_frame.side_effect = delayed_frame
+    sending = asyncio.create_task(extension.send_tts_audio_data(b"abcd"))
+    try:
+        await started.wait()
+        await extension.send_tts_audio_end("first", 0, 0)
+        payload, _ = extension.ten_env.send_data.await_args.args[
+            0
+        ].get_property_to_json(None)
+        assert json.loads(payload)["metadata"]["pcm_bytes"] == 4
+        assert not sending.done()
+    finally:
+        release.set()
+        await sending
