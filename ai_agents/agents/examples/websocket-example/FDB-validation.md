@@ -211,9 +211,15 @@ back and resolved to the tested local image ID above.
 
 ## Finite-input completion — 2026-10-29
 
-The local `agora-mind/fdb-ten-agent:ten-0.7.14-completion` image has ID
-`sha256:328ae91730da1b5f207709bf8e18a7595cba75724bd631062b3334209da4c264`. Rebuild it with the checked-in `Dockerfile.fdb` from
-`ai_agents/`; the layer uses the verified finalize image and no network access.
+Published image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent:ten-0.7.14-completion`.
+Published digest:
+`sha256:c301683560b14a9c06ce72a260d4eccaa9edbf75b14edfb6885bd384ea72f8b6`.
+Pulling the digest back returned the tested image ID
+`sha256:328ae91730da1b5f207709bf8e18a7595cba75724bd631062b3334209da4c264`.
+The local alias is `agora-mind/fdb-ten-agent:ten-0.7.14-completion`.
+Rebuild it with the checked-in `Dockerfile.fdb` from `ai_agents/`; the layer
+uses the verified finalize image and no network access.
 
 Validation: 18 bridge tests, 46 graph/transport/lifecycle tests, all 16 TTS
 extension tests, 11 packaged native graph tests, and the real Agora Mind backend
