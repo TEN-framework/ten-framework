@@ -190,6 +190,14 @@ async def test_graph_session_asr_turn_tts_and_cleanup(graph, modules):
                 if command.name == "create_session"
                 else {"type": "ok"}
             )
+            if command.name == "submit_user_input":
+                response = {
+                    "type": "session.user_input.accepted",
+                    "session_id": 7,
+                    "input_sequence": sum(
+                        cmd.name == "submit_user_input" for cmd in commands
+                    ),
+                }
             result = Result.create(StatusCode.OK, command)
             result.set_property_string("response_json", json.dumps(response))
             return result, None

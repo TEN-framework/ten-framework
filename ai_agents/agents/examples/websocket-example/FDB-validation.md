@@ -1,5 +1,23 @@
 # FDB graph validation — 2026-10-21
 
+## Finite-input completion — 2026-10-29
+
+The local `agora-mind/fdb-ten-agent:ten-0.7.14-completion` image has ID
+`sha256:328ae91730da`. Rebuild it with the checked-in `Dockerfile.fdb` from
+`ai_agents/`; the layer uses the verified finalize image and no network access.
+
+Validation: 18 bridge tests, 46 graph/transport/lifecycle tests, all 15 TTS
+extension tests, 11 packaged native graph tests, and the real Agora Mind backend
+test passed. Finalize tests collect the command acknowledgement, processing
+receipt and TTS byte receipt in either arrival order. A two-turn case verifies
+that the final request list includes the earlier completed TTS request.
+
+The actual Rust runner also passed a complete case with local ASR/TTS/model
+service fixtures, a real Agora Mind server, the FDB `book_flight` tool and the
+original scorers. Its 0.02-second input produced the complete 0.2-second output:
+6400 PCM bytes received and declared, two model requests, strict pass true.
+The runner removed its TEN container and stopped its server after collection.
+
 Tested TEN source commit: `b81ffba8a`.
 Packaged graph regression test: `b81ffba8a` (`tests/test_fdb_runtime.py`).
 Agora Mind source commit: `2658e3ba1f68329be632745c91a3e635cad30bfc`.

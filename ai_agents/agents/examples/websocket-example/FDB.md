@@ -20,6 +20,31 @@ WAV conversion, case scheduling, collection and evaluation. This graph uses the
 existing Rust TEN addon for Agora Mind's WebSocket protocol and the Python bridge
 for the ASR/TTS message conversion.
 
+## Finite-audio completion
+
+Send `finalize_audio` after the last PCM frame. The command reply only confirms
+acceptance. The bridge emits `processing_completed` after ASR has finalized,
+all final text has been accepted by Agora Mind, all accepted input sequences
+are covered by normally completed turns, and all replies have been handed to
+TTS. The event carries `example_id`, `session_id`, `finalize_id`,
+`last_input_sequence`, and the complete `tts_request_ids` list.
+
+Audio frames retain `metadata.request_id`. Each TTS end event reports exact
+aligned PCM bytes in `metadata.pcm_bytes`, including partial output on error or
+interruption. A collector must require normal ends for every listed request
+and verify all bytes arrived, even when an end event overtakes an audio frame.
+Empty model replies create no TTS request. No fixed sleep or first-TTS-end
+condition can replace these receipts; missing receipts must time out.
+
+Build the local completion image from `ai_agents/` using the cached verified
+finalize image and no network access:
+
+```sh
+docker build --network=none --pull=false \
+  -f agents/examples/websocket-example/Dockerfile.fdb \
+  -t agora-mind/fdb-ten-agent:ten-0.7.14-completion .
+```
+
 ## Install and start
 
 `tenapp/manifest.json` pins the published Linux x64

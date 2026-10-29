@@ -356,7 +356,21 @@ async def send_audio(client, example_id):
     )
 
 
-async def receive_turn(client, example_id, turn_index):
+async def receive_turn(client, example_id, turn_index, finalize_id=None):
+    finalized = finalize_id is None
+    processing_completed = finalize_id is None
+    audio_ended = False
+    if finalize_id is not None:
+        await client.send(
+            json.dumps(
+                {
+                    "type": "cmd",
+                    "name": "finalize_audio",
+                    "request_id": "finalize",
+                    "data": {"finalize_id": finalize_id},
+                }
+            )
+        )
     output = bytearray()
     events = []
     agent_transcript_seen = False
@@ -370,8 +384,21 @@ async def receive_turn(client, example_id, turn_index):
             assert event["metadata"]["example_id"] == example_id
             assert event["metadata"]["turn_id"] == turn_index
             output.extend(base64.b64decode(event["audio"]))
+        elif event["type"] == "cmd_result":
+            assert event["status"] == 0, event
+            finalized = True
         elif event["type"] == "data":
             events.append(event["name"])
+            if event["name"] == "processing_completed":
+                receipt = event["data"]
+                assert receipt["example_id"] == example_id
+                assert receipt["session_id"] == 7
+                assert receipt["finalize_id"] == finalize_id
+                assert receipt["last_input_sequence"] == turn_index
+                assert receipt["tts_request_ids"] == [
+                    f"fdb-tts-7-{index}" for index in range(1, turn_index + 1)
+                ]
+                processing_completed = True
             if event["name"] == "agora_mind_event":
                 payload = json.loads(event["data"]["event_json"])
                 completed = payload.get("event", {})
@@ -388,7 +415,15 @@ async def receive_turn(client, example_id, turn_index):
                 assert event["data"]["request_id"] == f"fdb-tts-7-{turn_index}"
                 assert event["data"]["reason"] == 1  # REQUEST_END
                 assert event["data"]["request_total_audio_duration_ms"] == 200
-                break
+                assert event["data"]["metadata"]["pcm_bytes"] == len(PCM)
+                audio_ended = True
+        if (
+            audio_ended
+            and finalized
+            and processing_completed
+            and len(output) == len(PCM)
+        ):
+            break
     assert output == PCM
     assert "asr_result" in events
     assert events.count("tts_audio_start") == 1
@@ -546,14 +581,26 @@ async def test_audio_finalize_drains_buffered_results_without_speech_final(
         assert not any(
             c["type"] == "session.user_input" for c in services.commands
         )
-        await command(
-            client, "finalize_audio", {"finalize_id": "fdb-finalize-end"}
+        await asyncio.wait_for(
+            receive_turn(client, "fdb-finalize", 1, "fdb-finalize-end"), 10
         )
-        await asyncio.wait_for(receive_turn(client, "fdb-finalize", 1), 10)
         assert services.asr_closed
         inputs = [
             c for c in services.commands if c["type"] == "session.user_input"
         ]
         assert len(inputs) == 1
         assert inputs[0]["input"]["text"] == services.expected_text
+        await command(client, "delete_session", {"session_id": 7})
+
+
+async def test_final_case_receipt_includes_earlier_completed_tts(runtime):
+    runtime[3].finalize_tail = ""
+    async with case(runtime, "fdb-two-turn-finalize") as client:
+        await send_audio(client, "fdb-two-turn-finalize")
+        await receive_turn(client, "fdb-two-turn-finalize", 1)
+        await send_audio(client, "fdb-two-turn-finalize")
+        await asyncio.wait_for(
+            receive_turn(client, "fdb-two-turn-finalize", 2, "two-turn-end"), 10
+        )
+        assert runtime[3].asr_closed
         await command(client, "delete_session", {"session_id": 7})

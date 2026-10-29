@@ -9,7 +9,6 @@ import pytest
 
 from ten_ai_base.message import TTSAudioEndReason
 from ten_ai_base.struct import TTSTextInput
-from elevenlabs_tts2_python.extension import ElevenLabsTTS2Extension
 
 
 @pytest.mark.parametrize("sample_rate", [16000, 24000])
@@ -21,6 +20,8 @@ def test_pcm_byte_receipt_matches_frames_and_resets_per_request(
 
 
 async def check_pcm_receipt(sample_rate, reason):
+    from elevenlabs_tts2_python.extension import ElevenLabsTTS2Extension
+
     extension = ElevenLabsTTS2Extension("tts")
     extension.config = SimpleNamespace(sample_rate=sample_rate, dump=False)
     extension.ten_env = Mock(
