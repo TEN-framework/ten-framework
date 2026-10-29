@@ -56,7 +56,10 @@ punctuation-only input ends immediately without contacting the service.
 
 Errors: a rejected key or an unsupported language / sample rate is reported
 as `FATAL_ERROR`; worker and transport failures are `NON_FATAL_ERROR`, and
-the next request starts on a fresh connection.
+the next request starts on a fresh connection. A response the service stops
+at its generation length limit keeps the audio already sent and ends the
+request with a non-fatal `response_truncated` error and
+`tts_audio_end(ERROR)`; it is not retried.
 
 ## Tests
 

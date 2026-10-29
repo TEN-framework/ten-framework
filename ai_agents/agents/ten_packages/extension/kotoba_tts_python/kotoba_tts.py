@@ -411,6 +411,7 @@ class KotobaTTSClient:
 
         done = False
         finished = False
+        finish_reason = None
         try:
             while True:
                 try:
@@ -425,8 +426,12 @@ class KotobaTTSClient:
                 elif event.type == "done":
                     done = True
                     status = event.metadata.get("status")
+                    # The SDK lifts only ``status`` out of the response.
+                    response = event.metadata.get("response") or {}
+                    finish_reason = response.get("finish_reason")
                     self.ten_env.log_debug(
-                        f"vendor_status: response done status={status}",
+                        f"vendor_status: response done status={status} "
+                        f"finish_reason={finish_reason}",
                         category=LOG_CATEGORY_VENDOR,
                     )
             finished = True
@@ -459,6 +464,19 @@ class KotobaTTSClient:
                 code="connection_closed",
                 fatal=False,
                 retryable=True,
+            )
+
+        if finish_reason == "length":
+            # The service stopped at its generation length limit and still
+            # reports the response completed. The audio already yielded
+            # stands; the rest of the text was never synthesized, and the
+            # same text would stop at the same place again.
+            raise KotobaTTSError(
+                "the service stopped at its generation length limit; "
+                "the rest of the text was not synthesized",
+                code="response_truncated",
+                fatal=False,
+                retryable=False,
             )
 
     async def cancel(self) -> None:

@@ -61,6 +61,11 @@ class Scenario:
     # ``close_after_chunks`` chunks.
     close_response_index: int | None = None
     close_after_chunks: int = 0
+    # Stop the N-th response at the generation length limit after
+    # ``length_after_chunks`` chunks: response.done(status=completed,
+    # finish_reason=length), as the service does for a truncated response.
+    length_response_index: int | None = None
+    length_after_chunks: int = 0
     # Close the socket this long after the last response completed,
     # imitating the service's idle timeout.
     idle_close_s: float | None = None
@@ -307,12 +312,16 @@ class FakeKotobaServer:
         )
         fail_here = sc.fail_response_index == index
         close_here = sc.close_response_index == index
+        length_here = sc.length_response_index == index
+        chunks = (
+            sc.length_after_chunks if length_here else sc.chunks_per_response
+        )
         if sc.hold_response_index == index:
             # Imitate a stalled service: wait for cancel or forever.
             await cancel_event.wait()
             await self._finish_cancelled(ws, response_id)
             return
-        for i in range(sc.chunks_per_response):
+        for i in range(chunks):
             if fail_here and i >= sc.fail_after_chunks:
                 await self._send(
                     ws,
@@ -348,18 +357,15 @@ class FakeKotobaServer:
                 {
                     "type": "audio.chunk",
                     "audio": base64.b64encode(chunk).decode("ascii"),
-                    "isFinal": i == sc.chunks_per_response - 1,
+                    "isFinal": i == chunks - 1,
                     "response_id": response_id,
                 },
             )
         self.recorded.responses_completed += 1
-        await self._send(
-            ws,
-            {
-                "type": "response.done",
-                "response": {"id": response_id, "status": "completed"},
-            },
-        )
+        done = {"id": response_id, "status": "completed"}
+        if length_here:
+            done["finish_reason"] = "length"
+        await self._send(ws, {"type": "response.done", "response": done})
         if sc.close_after_done:
             await ws.close(code=1000, reason="done")
 

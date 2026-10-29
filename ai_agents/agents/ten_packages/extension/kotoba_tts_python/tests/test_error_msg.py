@@ -421,6 +421,55 @@ def test_text_rejected_by_the_service_is_non_fatal_and_not_retried():
         server.stop()
 
 
+def test_length_truncated_response_is_a_non_fatal_error():
+    """The service stops a response at its generation length limit
+    (completed with finish_reason=length): the audio already sent is kept,
+    followed by one NON_FATAL response_truncated error and one ERROR end
+    whose duration is that audio. The truncated text is not retried, the
+    rest of the request is not spoken, and the next request works on the
+    same connection."""
+    server = FakeKotobaServer(
+        Scenario(
+            chunks_per_response=4,
+            length_response_index=1,
+            length_after_chunks=2,
+        )
+    ).start()
+    try:
+
+        async def script(tester, ten_env):
+            rec = tester.recording
+            await tester.send_text(
+                ten_env, "long", "途中で切れる長い文。続きの文。", end=True
+            )
+            end = await tester.wait_for_audio_end("long")
+            assert end.payload["reason"] == 3
+            emitted = rec.audio_bytes("long")
+            assert len(emitted) == 2 * server.scenario.samples_per_chunk * 2
+            assert end.payload["request_total_audio_duration_ms"] == (
+                len(emitted) * 1000 // (16000 * 2)
+            )
+            errors = rec.named("error")
+            assert len(errors) == 1
+            assert errors[0].payload["code"] == NON_FATAL
+            assert (
+                errors[0].payload["vendor_info"]["code"] == "response_truncated"
+            )
+            assert errors[0].payload["id"] == "long"
+            assert errors[0].at <= end.at
+            await tester.send_text(ten_env, "next", "次の文。", end=True)
+            end2 = await tester.wait_for_audio_end("next")
+            assert end2.payload["reason"] == 1
+            assert rec.audio_bytes("next") == server.expected_pcm(1)
+            assert len(rec.named("error")) == 1
+
+        run_tester(script, make_config(server.url))
+        assert server.recorded.texts == ["途中で切れる長い文。", "次の文。"]
+        assert server.recorded.connections == 1
+    finally:
+        server.stop()
+
+
 def test_init_failure_reports_each_request_once_across_deltas():
     """With the extension uninitialized, a request arriving as several
     deltas gets exactly one error and one audio_end, not one per delta."""
