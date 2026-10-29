@@ -5,6 +5,8 @@ import asyncio
 import json
 import threading
 from datetime import datetime, timedelta
+from importlib.metadata import version
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -804,7 +806,9 @@ def test_client_preserves_sdk_headers_and_adds_ten_user_agent():
         assert len(headers) == 2
         for request_headers in headers:
             user_agent = request_headers["User-Agent"]
-            assert user_agent.startswith("typecast-python/0.3.15 ")
+            assert user_agent.startswith(
+                f"typecast-python/{version('typecast-python')} "
+            )
             assert " Python/" in user_agent
             assert "mode=async; base=custom; transport=rest" in user_agent
             assert user_agent.endswith(" ten-framework")
@@ -1169,31 +1173,35 @@ class TypecastTTSExtensionTester(AsyncExtensionTester):
 
 
 def test_typecast_tts_extension_success():
+    model = "ssfm-v31"
     wav_header = WAV_HEADER
     audio_chunk_1 = b"\x01\x02\x03\x04"
     audio_chunk_2 = b"\x05\x06\x07\x08"
 
-    async def mock_text_to_speech_stream(request, chunk_size):
-        assert request.text == "hello typecast"
-        assert request.output.audio_format == "wav"
-        assert request.output.remove_silence_ms == 0
-        assert chunk_size == 8192
-        yield wav_header[:20]
-        yield wav_header[20:] + audio_chunk_1
-        yield audio_chunk_2
+    requests = []
 
-    with patch("typecast_tts_python.typecast_tts.AsyncTypecast") as mock_cls:
-        mock_client = MagicMock()
-        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-        mock_client.__aexit__ = AsyncMock(return_value=None)
-        mock_client.text_to_speech_stream = mock_text_to_speech_stream
-        mock_cls.return_value = mock_client
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            requests.append(
+                json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            )
+            body = wav_header + audio_chunk_1 + audio_chunk_2
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/wav")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
 
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
         property_json = {
             "params": {
                 "api_key": "test_api_key",
                 "voice_id": "test_voice_id",
-                "model": "ssfm-v30",
+                "url": f"http://127.0.0.1:{server.server_port}",
+                "model": model,
                 "output": {"remove_silence_ms": 0},
             }
         }
@@ -1204,6 +1212,10 @@ def test_typecast_tts_extension_success():
         )
 
         err = tester.run()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
 
     assert err is None, (
         "test_typecast_tts_extension_success err: "
@@ -1213,11 +1225,11 @@ def test_typecast_tts_extension_success():
     assert b"".join(tester.received_audio_chunks) == (
         audio_chunk_1 + audio_chunk_2
     )
-    mock_cls.assert_called_once_with(
-        host="https://api.typecast.ai",
-        api_key="test_api_key",
-    )
-    mock_client.__aexit__.assert_awaited_once_with(None, None, None)
+    assert len(requests) == 1
+    assert requests[0]["model"] == model
+    assert requests[0]["text"] == "hello typecast"
+    assert requests[0]["output"]["audio_format"] == "wav"
+    assert requests[0]["output"]["remove_silence_ms"] == 0
 
 
 if __name__ == "__main__":

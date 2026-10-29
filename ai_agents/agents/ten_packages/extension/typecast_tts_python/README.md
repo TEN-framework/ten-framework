@@ -9,6 +9,11 @@ mono audio to TEN.
 
 ## Configuration
 
+Requires Python 3.11 or later and `typecast-python>=0.5.3,<0.6`.
+Set `params.model` to `ssfm-v21`, `ssfm-v30` (default), or `ssfm-v31`.
+For SSFM 3.1, find compatible voices using `GET /v3/voices?model=ssfm-v31`
+and check the selected voice's supported emotions.
+
 ```json
 {
   "params": {

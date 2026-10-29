@@ -1,7 +1,7 @@
 [project]
 name = "typecast-tts-python"
 version = "0.1.1"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "typecast-python==0.3.15",
+    "typecast-python>=0.5.3,<0.6",
 ]
