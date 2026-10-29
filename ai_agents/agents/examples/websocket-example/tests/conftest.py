@@ -56,6 +56,13 @@ class Result(Message):
     def create(cls, status, cmd):
         result = cls(cmd.name)
         result.status = status
+        result.properties["response_json"] = json.dumps(
+            {
+                "type": "session.user_input.accepted",
+                "session_id": 7,
+                "input_sequence": 1,
+            }
+        )
         return result
 
     def get_status_code(self):
