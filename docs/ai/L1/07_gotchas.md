@@ -97,6 +97,22 @@ Two practical traps when converting a stream:
 Requesting raw `pcm` (vs. a container like `wav`/`mp3`) also lowers
 time-to-first-audio — there is no header to buffer before the first samples.
 
+## HTTP TTS Vendors: Strict Schemas and Text Limits
+
+Two traps seen with `breezeblue_tts_python`, likely to repeat with other HTTP
+TTS vendors:
+- **Unknown request fields can be a hard 422.** BreezeBlue's request schema is
+  `additionalProperties: false`, so forwarding all of `params` (as the Mistral
+  client does) breaks on any stray key, e.g. the playground's generic
+  `sample_rate`. Build the body from a whitelist instead.
+- **`AsyncTTS2HttpExtension` does not split text.** `request_tts` passes
+  `t.text` to `client.get()` unchanged, so a vendor with a per-request character
+  cap (BreezeBlue: 1000) rejects long LLM chunks. Split inside the client, at
+  sentence boundaries, and stream the pieces in order.
+- **Check the PCM stream is already PCM16** before adding a converter: BreezeBlue's
+  `pcm` is s16le 24 kHz, so only sample-boundary alignment (hold back an odd
+  trailing byte) is needed.
+
 ## Audio Routing: Split at Source Only
 
 When routing audio to multiple destinations, the split must happen at the
