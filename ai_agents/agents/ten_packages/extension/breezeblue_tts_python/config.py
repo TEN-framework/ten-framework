@@ -53,56 +53,51 @@ class BreezeBlueTTSConfig(AsyncTTS2HttpConfig):
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
+        # pylint misreads pydantic Field attributes (params, headers) as
+        # FieldInfo instead of the dict they are at runtime.
+        # pylint: disable=no-member,unsubscriptable-object,unsupported-membership-test
         # The playground adds sample_rate to every TTS configuration, but the
         # BreezeBlue request schema rejects unknown fields. The output rate is
         # fixed at 24 kHz and declared by the extension, so drop it.
-        self.params.pop("sample_rate", None)  # pylint: disable=no-member
+        self.params.pop("sample_rate", None)
 
         # `max_text_length` may also arrive in params (the common TEN style).
-        if (
-            "max_text_length" in self.params
-        ):  # pylint: disable=unsupported-membership-test
-            self.max_text_length = int(
-                self.params.pop("max_text_length")  # pylint: disable=no-member
-            )
+        if "max_text_length" in self.params:
+            self.max_text_length = int(self.params.pop("max_text_length"))
 
         # Build the endpoint URL unless an explicit one was given. The voice is
         # part of the path, so it must be known here.
         if not self.url:
             if "url" in self.params:
-                self.url = self.params.pop("url")  # pylint: disable=no-member
+                self.url = self.params.pop("url")
             else:
-                base_url = self.params.get(  # pylint: disable=no-member
-                    "base_url", DEFAULT_BASE_URL
-                ).rstrip("/")
+                base_url = self.params.get("base_url", DEFAULT_BASE_URL).rstrip(
+                    "/"
+                )
                 voice_id = self.params.get("voice_id")
                 # Without a voice there is no valid endpoint; leave the URL
                 # unset so validate() reports the missing voice_id.
                 if voice_id:
                     self.url = f"{base_url}/v1/text-to-speech/{voice_id}/stream"
-        self.params.pop("base_url", None)  # pylint: disable=no-member
+        self.params.pop("base_url", None)
 
     def build_request_body(self, text: str) -> dict[str, Any]:
         """Build the JSON body from the whitelisted params."""
+        # pylint misreads pydantic Field attributes (params, headers) as
+        # FieldInfo instead of the dict they are at runtime.
+        # pylint: disable=no-member,unsubscriptable-object,unsupported-membership-test
         body: dict[str, Any] = {"text": text}
         for key in BODY_FIELDS:
-            if self.params.get(key):  # pylint: disable=no-member
-                body[key] = self.params[
-                    key
-                ]  # pylint: disable=unsubscriptable-object
+            if self.params.get(key):
+                body[key] = self.params[key]
 
         # Voice settings may be given nested (`voice_settings`) or flat
         # (`speed`, `volume`, ...) like other TEN TTS extensions. Flat keys win.
-        settings = dict(
-            self.params.get("voice_settings") or {}
-        )  # pylint: disable=no-member
+        nested = self.params.get("voice_settings")
+        settings = dict(nested or {})
         for key in VOICE_SETTING_FIELDS:
-            if (
-                key in self.params
-            ):  # pylint: disable=unsupported-membership-test
-                settings[key] = self.params[
-                    key
-                ]  # pylint: disable=unsubscriptable-object
+            if key in self.params:
+                settings[key] = self.params[key]
         settings = {
             k: v for k, v in settings.items() if k in VOICE_SETTING_FIELDS
         }
@@ -125,7 +120,10 @@ class BreezeBlueTTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate BreezeBlue-specific configuration."""
-        # pylint: disable=no-member
+        # pylint misreads pydantic Field attributes (params, headers) as
+        # FieldInfo instead of the dict they are at runtime.
+        # pylint: disable=no-member,unsubscriptable-object,unsupported-membership-test
+
         has_api_key = bool(self.params.get("api_key"))
         has_auth_header = bool(
             self.headers.get("xi-api-key") or self.headers.get("Authorization")
