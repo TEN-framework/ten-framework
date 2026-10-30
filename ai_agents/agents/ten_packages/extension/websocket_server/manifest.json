@@ -119,6 +119,7 @@
       }
     },
     "data_in": [
+      {"name": "processing_completed"},
       {
         "name": "text_data"
       },

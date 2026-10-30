@@ -1,0 +1,7 @@
+# Reuse the verified runtime and its installed native/Python dependencies.
+FROM hub.agoralab.co/agora-mind/fdb-ten-agent@sha256:98ed261f2f31ab67f7d2e20cd4a505cc9c6079c49edffc3c4f44e7f32a03a83e
+
+COPY agents/ten_packages/extension/agora_mind_bridge_python/*.py agents/ten_packages/extension/agora_mind_bridge_python/manifest.json /app/agents/ten_packages/extension/agora_mind_bridge_python/
+COPY agents/ten_packages/extension/elevenlabs_tts2_python/extension.py /app/agents/ten_packages/extension/elevenlabs_tts2_python/extension.py
+COPY agents/ten_packages/extension/websocket_server/manifest.json /app/agents/ten_packages/extension/websocket_server/manifest.json
+COPY agents/examples/websocket-example/tenapp/property.json /app/agents/property.json

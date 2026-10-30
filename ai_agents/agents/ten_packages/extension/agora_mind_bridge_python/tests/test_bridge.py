@@ -91,6 +91,14 @@ class FakeEnv:
         response = {"type": f"{command.name}.completed"}
         if command.name == "create_session":
             response = {"type": "session.created", "session_id": 7}
+        elif command.name == "submit_user_input":
+            response = {
+                "type": "session.user_input.accepted",
+                "session_id": command.properties["session_id"],
+                "input_sequence": sum(
+                    cmd.name == "submit_user_input" for cmd in self.commands
+                ),
+            }
         return FakeResult(response=response), None
 
     async def send_data(self, data):
@@ -132,7 +140,7 @@ from ten_packages.extension.agora_mind_bridge_python.extension import (  # noqa:
     AgoraMindBridgeExtension,
 )
 from ten_packages.extension.agora_mind_bridge_python.protocol import (  # noqa: E402
-    turn_text_from_event,
+    turn_from_event,
 )
 
 
@@ -151,6 +159,7 @@ def test_turn_text_ignores_monitoring_events_and_collects_text_items():
             "type": "session_turn_completed",
             "session_id": 7,
             "source": {"type": "top_level"},
+            "input_sequence_range": {"first": 1, "last": 1},
             "result": [
                 {"type": "text", "text": "Done"},
                 {"type": "action", "name": "ignored"},
@@ -158,9 +167,9 @@ def test_turn_text_ignores_monitoring_events_and_collects_text_items():
             ],
         },
     }
-    assert turn_text_from_event(json.dumps(event), 7) == (7, "Done.")
+    assert turn_from_event(event["event"], 7) == (1, 1, "Done.")
     event["event"]["source"] = {"type": "monitoring"}
-    assert turn_text_from_event(json.dumps(event), 7) is None
+    assert turn_from_event(event["event"], 7) is None
 
 
 @pytest.mark.asyncio
@@ -251,6 +260,161 @@ async def test_finalize_end_submits_buffered_asr_once():
     assert json.loads(command.properties["input_json"])["text"] == (
         "The order ID is ABC123"
     )
+
+
+def completed_turn(first=1, last=1, text="Done.", **extra):
+    return FakeData(
+        "agora_mind_event",
+        {
+            "event_json": json.dumps(
+                {
+                    "type": "workspace.event",
+                    "event": {
+                        "type": "session_turn_completed",
+                        "session_id": 7,
+                        "source": {"type": "top_level"},
+                        "input_sequence_range": {"first": first, "last": last},
+                        "result": [{"type": "text", "text": text}],
+                        **extra,
+                    },
+                }
+            )
+        },
+    )
+
+
+async def finalize(bridge):
+    bridge._finalize_id = "case-1-end"
+    bridge._completion.finalize_id = "case-1-end"
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_finalize_end", {"finalize_id": "case-1-end"}),
+    )
+
+
+def reports(bridge):
+    return [
+        data.payload
+        for data in bridge.ten_env.data
+        if data.name == "processing_completed"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_completion_waits_for_input_receipt_even_if_turn_arrives_first():
+    bridge = bridge_with_session()
+    started, release = asyncio.Event(), asyncio.Event()
+    original_send = bridge.ten_env.send_cmd
+
+    async def delayed_send(command):
+        started.set()
+        await release.wait()
+        return await original_send(command)
+
+    bridge.ten_env.send_cmd = delayed_send
+    submitting = asyncio.create_task(
+        bridge.on_data(
+            bridge.ten_env,
+            FakeData("asr_result", {"text": "Book it", "final": True}),
+        )
+    )
+    await started.wait()
+    await finalize(bridge)
+    await bridge.on_data(bridge.ten_env, completed_turn())
+    assert reports(bridge) == []
+    release.set()
+    await submitting
+    assert reports(bridge) == [
+        {
+            "example_id": "case-1",
+            "session_id": 7,
+            "finalize_id": "case-1-end",
+            "last_input_sequence": 1,
+            "tts_request_ids": ["fdb-tts-7-1"],
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_completion_waits_for_all_inputs_and_tts_handoff():
+    bridge = bridge_with_session()
+    for text in ("First", "Second"):
+        await bridge.on_data(
+            bridge.ten_env,
+            FakeData("asr_result", {"text": text, "final": True}),
+        )
+    await bridge.on_data(bridge.ten_env, completed_turn())
+    await finalize(bridge)
+    assert reports(bridge) == []
+    started, release = asyncio.Event(), asyncio.Event()
+    original_send = bridge.ten_env.send_data
+
+    async def delayed_tts(data):
+        if data.name == "tts_text_input":
+            started.set()
+            await release.wait()
+        await original_send(data)
+
+    bridge.ten_env.send_data = delayed_tts
+    finishing = asyncio.create_task(
+        bridge.on_data(bridge.ten_env, completed_turn(2, 2))
+    )
+    await started.wait()
+    await bridge.on_data(bridge.ten_env, completed_turn(2, 2))
+    assert reports(bridge) == []
+    release.set()
+    await finishing
+    assert reports(bridge)[0]["tts_request_ids"] == [
+        "fdb-tts-7-1",
+        "fdb-tts-7-2",
+    ]
+    await bridge.on_data(bridge.ten_env, completed_turn(2, 2))
+    assert len(reports(bridge)) == 1
+
+
+@pytest.mark.asyncio
+async def test_empty_reply_completes_without_a_tts_request():
+    bridge = bridge_with_session()
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_result", {"text": "Wait", "final": True}),
+    )
+    await finalize(bridge)
+    assert reports(bridge) == []
+    await bridge.on_data(bridge.ten_env, completed_turn(text=""))
+    assert reports(bridge)[0]["tts_request_ids"] == []
+
+
+@pytest.mark.asyncio
+async def test_stopped_turn_and_invalid_receipt_cannot_complete():
+    bridge = bridge_with_session()
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_result", {"text": "Book it", "final": True}),
+    )
+    await bridge.on_data(
+        bridge.ten_env, completed_turn(stop_reason="budget_exhausted")
+    )
+    await finalize(bridge)
+    assert reports(bridge) == []
+    assert bridge.ten_env.data[-1].name == "error"
+
+    bridge = bridge_with_session()
+
+    async def invalid_receipt(_command):
+        return (
+            FakeResult(response={"type": "session.user_input.accepted"}),
+            None,
+        )
+
+    bridge.ten_env.send_cmd = invalid_receipt
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_result", {"text": "Book it", "final": True}),
+    )
+    await bridge.on_data(bridge.ten_env, completed_turn())
+    await finalize(bridge)
+    assert reports(bridge) == []
 
 
 @pytest.mark.asyncio

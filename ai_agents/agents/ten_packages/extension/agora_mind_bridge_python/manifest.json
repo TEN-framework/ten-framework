@@ -52,6 +52,7 @@
     ],
     "data_out": [
       {"name": "asr_finalize"},
+      {"name": "processing_completed"},
       {"name": "error"},
       {
         "name": "tts_text_input",

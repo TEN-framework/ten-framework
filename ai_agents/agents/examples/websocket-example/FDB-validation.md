@@ -208,3 +208,27 @@ TTS output. Strict scoring remains false because the model supplied lowercase
 transport timeout. The runner also required a separate fix to read `example_id`
 from the outer production tool-log envelope. The published reference was pulled
 back and resolved to the tested local image ID above.
+
+## Finite-input completion — 2026-10-29
+
+Published image:
+`hub.agoralab.co/agora-mind/fdb-ten-agent:ten-0.7.14-completion`.
+Published digest:
+`sha256:c301683560b14a9c06ce72a260d4eccaa9edbf75b14edfb6885bd384ea72f8b6`.
+Pulling the digest back returned the tested image ID
+`sha256:328ae91730da1b5f207709bf8e18a7595cba75724bd631062b3334209da4c264`.
+The local alias is `agora-mind/fdb-ten-agent:ten-0.7.14-completion`.
+Rebuild it with the checked-in `Dockerfile.fdb` from `ai_agents/`; the layer
+uses the verified finalize image and no network access.
+
+Validation: 18 bridge tests, 46 graph/transport/lifecycle tests, all 16 TTS
+extension tests, 11 packaged native graph tests, and the real Agora Mind backend
+test passed. Finalize tests collect the command acknowledgement, processing
+receipt and TTS byte receipt in either arrival order. A two-turn case verifies
+that the final request list includes the earlier completed TTS request.
+
+The actual Rust runner also passed a complete case with local ASR/TTS/model
+service fixtures, a real Agora Mind server, the FDB `book_flight` tool and the
+original scorers. Its 0.02-second input produced the complete 0.2-second output:
+6400 PCM bytes received and declared, two model requests, strict pass true.
+The runner removed its TEN container and stopped its server after collection.
