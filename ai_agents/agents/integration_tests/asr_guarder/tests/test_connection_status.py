@@ -53,10 +53,6 @@ _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
     }
 )
 
-_EXTENSIONS_WITH_RECONNECTION_STATUS = _EXTENSIONS_WITH_CONNECTION_STATUS - {
-    "qwen_asr_python"
-}
-
 _CONNECTION_STATUSES = frozenset({"connecting", "connected", "disconnected"})
 
 
@@ -515,9 +511,9 @@ def test_connection_status_reconnection(
 ) -> None:
     """Verify connection_status_changed transitions during reconnection."""
 
-    if extension_name not in _EXTENSIONS_WITH_RECONNECTION_STATUS:
+    if extension_name not in _EXTENSIONS_WITH_CONNECTION_STATUS:
         pytest.skip(
-            f"{extension_name} does not use the guarder's reconnect-close flow"
+            f"{extension_name} does not report connection_status_changed yet"
         )
 
     audio_file_path = os.path.join(

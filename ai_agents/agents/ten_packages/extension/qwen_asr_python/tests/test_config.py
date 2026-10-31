@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -47,7 +48,9 @@ def test_vocabulary_and_context_are_explicit_and_mutually_exclusive():
 
 
 def test_context_is_nested_under_input():
-    context = [{"role": "user", "content": [{"type": "input_text", "text": "TEN"}]}]
+    context = [
+        {"role": "user", "content": [{"type": "input_text", "text": "TEN"}]}
+    ]
     request = make_config(context=context).build_run_task("task-1")
     assert request["payload"]["input"] == {"context": context}
 
@@ -72,3 +75,12 @@ def test_sensitive_config_is_redacted():
     config = make_config()
     redacted = json.loads(config.to_json(sensitive_handling=True))
     assert "secret" not in json.dumps(redacted)
+
+
+def test_guarder_invalid_credentials_pass_local_config_validation():
+    fixture = Path(__file__).parent / "configs" / "property_invalid.json"
+    config = QwenASRConfig.model_validate_json(fixture.read_text())
+    config.apply_defaults()
+    config.validate_config()
+    assert config.api_key == "invalid"
+    assert config.url.startswith("wss://")

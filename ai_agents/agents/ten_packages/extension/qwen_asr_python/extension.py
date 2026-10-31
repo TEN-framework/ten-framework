@@ -48,7 +48,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self._reconnect_attempt = 0
         self._generation = 0
         self._connection_start = 0.0
-        self._task_audio_offset_ms = 0
+        self._task_audio_start_ms = 0
 
     @override
     def vendor(self) -> str:
@@ -129,7 +129,9 @@ class QwenASRExtension(AsyncASRBaseExtension):
             run_task_factory=self.config.build_run_task,
             finish_task_factory=self.config.build_finish_task,
             event_callback=lambda event: self._handle_event(event, generation),
-            close_callback=lambda reason: self._handle_close(reason, generation),
+            close_callback=lambda reason: self._handle_close(
+                reason, generation
+            ),
             timeout_s=self.config.connect_timeout_s,
         )
         self.client = client
@@ -140,10 +142,13 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 return
             self.connected = True
             self._reconnect_attempt = 0
-            self._reset_task_timeline()
+            self._start_task_timeline()
             await self.on_connected()
             await self.send_connect_delay_metrics(
-                int((asyncio.get_event_loop().time() - self._connection_start) * 1000)
+                int(
+                    (asyncio.get_event_loop().time() - self._connection_start)
+                    * 1000
+                )
             )
         except asyncio.CancelledError:
             await client.close()
@@ -178,7 +183,9 @@ class QwenASRExtension(AsyncASRBaseExtension):
 
     @override
     def is_connected(self) -> bool:
-        return self.connected and self.client is not None and self.client.connected
+        return (
+            self.connected and self.client is not None and self.client.connected
+        )
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
@@ -189,7 +196,9 @@ class QwenASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate if self.config else 16000
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         if not self.is_connected() or self.client is None:
             return False
         buf = None
@@ -202,9 +211,13 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     return False
                 if not client.task_ready:
                     await client.start_task()
+                    self._start_task_timeline()
                 await client.send_audio(audio_data)
                 self.audio_timeline.add_user_audio(
-                    int(len(audio_data) / (self.input_audio_sample_rate() / 1000 * 2))
+                    int(
+                        len(audio_data)
+                        / (self.input_audio_sample_rate() / 1000 * 2)
+                    )
                 )
                 self.session_id = session_id
                 if self.audio_dumper:
@@ -243,15 +256,16 @@ class QwenASRExtension(AsyncASRBaseExtension):
         finally:
             if self.last_finalize_time is not None:
                 ttlw = int(
-                    (asyncio.get_event_loop().time() - self.last_finalize_time) * 1000
+                    (asyncio.get_event_loop().time() - self.last_finalize_time)
+                    * 1000
                 )
                 await self._send_metrics_ttlw(ttlw)
                 self.last_finalize_time = None
-            if client is not None:
-                self._reset_task_timeline()
             await self.send_asr_finalize_end()
 
-    async def _handle_event(self, event: dict[str, Any], generation: int) -> None:
+    async def _handle_event(
+        self, event: dict[str, Any], generation: int
+    ) -> None:
         if generation != self._generation or self._stop_requested:
             return
         event_name = (event.get("header") or {}).get("event")
@@ -270,17 +284,23 @@ class QwenASRExtension(AsyncASRBaseExtension):
         final = bool(sentence.get("sentence_end", False))
         begin_time = int(sentence.get("begin_time") or 0)
         end_time = sentence.get("end_time")
-        duration = max(0, int(end_time or begin_time) - begin_time)
+        start_ms = self._timeline_time(begin_time)
+        duration = max(
+            0, self._timeline_time(int(end_time or begin_time)) - start_ms
+        )
         words: list[ASRWord] = []
         for word in sentence.get("words") or []:
             word_start = int(word.get("begin_time") or 0)
             word_end = int(word.get("end_time") or word_start)
+            word_start_ms = self._timeline_time(word_start)
             words.append(
                 ASRWord(
                     word=str(word.get("text") or "")
                     + str(word.get("punctuation") or ""),
-                    start_ms=self._timeline_time(word_start),
-                    duration_ms=max(0, word_end - word_start),
+                    start_ms=word_start_ms,
+                    duration_ms=max(
+                        0, self._timeline_time(word_end) - word_start_ms
+                    ),
                     stable=final or bool(word.get("fixed", False)),
                 )
             )
@@ -297,7 +317,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
             ASRResult(
                 text=text,
                 final=final,
-                start_ms=self._timeline_time(begin_time),
+                start_ms=start_ms,
                 duration_ms=duration,
                 language=self.config.language if self.config else "und",
                 words=words,
@@ -310,15 +330,15 @@ class QwenASRExtension(AsyncASRBaseExtension):
         )
 
     def _timeline_time(self, vendor_time_ms: int) -> int:
-        return (
-            self._task_audio_offset_ms
-            + self.audio_timeline.get_audio_duration_before_time(vendor_time_ms)
+        return self.audio_timeline.get_audio_duration_before_time(
+            self._task_audio_start_ms + vendor_time_ms
         )
 
-    def _reset_task_timeline(self) -> None:
-        self._task_audio_offset_ms += self.audio_timeline.total_user_audio_duration
-        self.audio_timeline.reset()
-        self.last_reported_audio_duration = 0
+    def _start_task_timeline(self) -> None:
+        self._task_audio_start_ms = (
+            self.audio_timeline.total_user_audio_duration
+            + self.audio_timeline.total_silence_audio_duration
+        )
 
     async def _handle_close(self, reason: str, generation: int) -> None:
         if generation != self._generation or self._stop_requested:
