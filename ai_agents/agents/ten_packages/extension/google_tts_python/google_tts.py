@@ -231,9 +231,9 @@ class GoogleTTS:
                 # Create request generator
                 request_generator = self._create_request_generator(text)
 
-                def timed_requests():
+                def timed_requests(generator=request_generator):
                     nonlocal first_text_sent_at
-                    for request in request_generator:
+                    for request in generator:
                         if request.input.text and first_text_sent_at is None:
                             first_text_sent_at = time.monotonic()
                         yield request
