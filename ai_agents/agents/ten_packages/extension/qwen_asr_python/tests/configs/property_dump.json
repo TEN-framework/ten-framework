@@ -1,0 +1,19 @@
+{
+  "dump": true,
+  "dump_path": "/tmp",
+  "finalize_timeout_ms": 5000,
+  "connect_timeout_s": 10,
+  "reconnect_max_attempts": 5,
+  "params": {
+    "api_key": "${env:DASHSCOPE_API_KEY}",
+    "url": "wss://dashscope.aliyuncs.com/api-ws/v1/inference",
+    "model": "qwen-audio-3.1-asr-flash-streaming",
+    "format": "pcm",
+    "sample_rate": 16000,
+    "vad_model": "near_meeting_16k",
+    "max_sentence_silence": 240,
+    "keep_dialect": false,
+    "heartbeat": false,
+    "language_hints": ["zh"]
+  }
+}

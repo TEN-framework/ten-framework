@@ -1,0 +1,12 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "url": "wss://dashscope.aliyuncs.com/api-ws/v1/inference",
+    "model": "qwen-audio-3.1-asr-flash-streaming",
+    "format": "pcm",
+    "sample_rate": 16000,
+    "vad_model": "near_meeting_16k",
+    "max_sentence_silence": 240,
+    "language_hints": ["en"]
+  }
+}
