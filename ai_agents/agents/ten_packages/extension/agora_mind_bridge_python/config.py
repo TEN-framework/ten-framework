@@ -7,12 +7,13 @@ class AgoraMindBridgeConfig(BaseModel):
     """Names and limits used by the graph-local bridge."""
 
     agora_mind_extension: str = Field(default="agora_mind", min_length=1)
+    stt_extension: str = Field(default="stt", min_length=1)
     tts_extension: str = Field(default="tts", min_length=1)
     example_id: str = ""
     session_id: int | None = Field(default=None, ge=1)
     command_timeout_ms: int = Field(default=30_000, ge=1)
 
-    @field_validator("agora_mind_extension", "tts_extension")
+    @field_validator("agora_mind_extension", "stt_extension", "tts_extension")
     @classmethod
     def validate_extension_name(cls, value: str) -> str:
         value = value.strip()

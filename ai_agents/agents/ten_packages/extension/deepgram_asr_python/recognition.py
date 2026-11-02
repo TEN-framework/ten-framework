@@ -115,7 +115,7 @@ class DeepgramASRRecognition:
 
             message_type = message_data.get("type")
             if self.is_flux_model == False:
-                if message_type == "Results":
+                if message_type in {"Results", "Metadata"}:
                     await self.callback.on_result(message_data)
             else:
                 if message_type == "TurnInfo":
@@ -329,7 +329,13 @@ class DeepgramASRRecognition:
         try:
             # Send end identifier
             if self.is_flux_model == False:
-                d = {"type": "Finalize"}
+                d = {
+                    "type": (
+                        "CloseStream"
+                        if self.config.get("finalize_mode") == "close_stream"
+                        else "Finalize"
+                    )
+                }
                 ws = self.websocket
                 if ws is not None:
                     await ws.send(json.dumps(d))

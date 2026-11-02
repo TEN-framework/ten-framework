@@ -25,6 +25,35 @@ def pure_text_input(text: str, created_at: Any = None) -> dict[str, str]:
     return {"created_at": utc_timestamp(created_at), "text": text}
 
 
+def speech_final_from_payload(payload: dict[str, Any]) -> bool:
+    """Return whether an ASR final closes the current speech interval."""
+
+    if payload.get("speech_final") is True:
+        return True
+    metadata = payload.get("metadata")
+    asr_info = metadata.get("asr_info") if isinstance(metadata, dict) else None
+    if isinstance(asr_info, dict) and "speech_final" in asr_info:
+        return asr_info.get("speech_final") is True
+    return "speech_final" not in payload
+
+
+def asr_final_key(
+    payload: dict[str, Any], text: str
+) -> tuple[int, int, str] | None:
+    """Identify a final within the graph's single ASR audio timeline."""
+
+    start_ms = payload.get("start_ms")
+    duration_ms = payload.get("duration_ms")
+    if any(
+        not isinstance(value, int) or isinstance(value, bool)
+        for value in (start_ms, duration_ms)
+    ):
+        return None
+    if start_ms < 0 or duration_ms <= 0:
+        return None
+    return start_ms, duration_ms, text
+
+
 def session_id_from_response(response_json: str) -> int | None:
     """Extract a session ID from a successful ``session.created`` response."""
 

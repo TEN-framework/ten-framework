@@ -1,6 +1,7 @@
 # TTS Guarder Test Guide
 
-As of: 2026-10-13
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `a452b6d9ed66f9c57fa1d4a80cf5f3473f61b170`
 
 This document describes how to run Guarder Test for TTS
 
@@ -59,12 +60,17 @@ See [adding a TTS extension](tests/SUBTITLE_TIMING.md#adding-a-tts-extension)
 for extension setup, the vendor object interface, registry entries, and
 verification steps.
 
-Only `minimax_tts_websocket_duplex`, `cartesia_tts`,
+Only `minimax_tts_websocket_duplex`, `minimax_tts_websocket`, `cartesia_tts`,
 `elevenlabs_multiple_context_tts_python`, `bytedance_tts`, and
 `bytedance_tts_duplex` install a vendor timing hook. A hook applies to the
 alignment test's matching connections and restores the client dependency
 afterward. Unregistered vendors receive no hook, and other Guarder cases retain
-their behavior. `minimax_tts_websocket`, `soul_tts_python`, and `azure_tts` use
-the strengthened generic alignment checks without a vendor hook. `azure_tts` is
+their behavior. `soul_tts_python` and `azure_tts` use the strengthened generic
+alignment checks without a vendor hook. `azure_tts` is
 a C++ extension that is not part of this checkout, so its runs use a guarder
 copy in the conversational agent tree.
+
+## TTFB regression verification
+
+See [the repeatable TTFB procedure](tests/TTFB_TESTING.md) for the seven
+first-batch configurations, isolated runner, screenshot evidence and limitations.

@@ -59,6 +59,9 @@ class FakeData:
     def set_dests(self, destinations):
         self.destinations = destinations
 
+    def set_property_string(self, name, value):
+        self.payload[name] = value
+
 
 class FakeResult:
     def __init__(self, status=StatusCode.OK, response=None):
@@ -104,6 +107,8 @@ class FakeEnv:
 
 
 runtime = types.ModuleType("ten_runtime")
+runtime.Addon = object
+runtime.register_addon_as_extension = lambda _name: lambda addon: addon
 runtime.AsyncExtension = type(
     "AsyncExtension", (), {"__init__": lambda self, _name: None}
 )
@@ -179,6 +184,76 @@ async def test_duplicate_asr_final_is_submitted_once():
 
 
 @pytest.mark.asyncio
+async def test_asr_interim_finals_wait_for_speech_final():
+    bridge = bridge_with_session()
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData(
+            "asr_result",
+            {
+                "text": "The order ID is",
+                "final": True,
+                "metadata": {"asr_info": {"speech_final": False}},
+            },
+        ),
+    )
+    assert bridge.ten_env.commands == []
+
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData(
+            "asr_result",
+            {
+                "text": "ABC123",
+                "final": True,
+                "metadata": {"asr_info": {"speech_final": True}},
+            },
+        ),
+    )
+    assert len(bridge.ten_env.commands) == 1
+    command = bridge.ten_env.commands[0]
+    assert json.loads(command.properties["input_json"])["text"] == (
+        "The order ID is ABC123"
+    )
+
+
+@pytest.mark.asyncio
+async def test_finalize_end_submits_buffered_asr_once():
+    bridge = bridge_with_session()
+    for text in ("The order ID is", "ABC123"):
+        await bridge.on_data(
+            bridge.ten_env,
+            FakeData(
+                "asr_result",
+                {
+                    "text": text,
+                    "final": True,
+                    "metadata": {"asr_info": {"speech_final": False}},
+                },
+            ),
+        )
+    assert bridge.ten_env.commands == []
+    bridge._finalize_id = "case-1-end"
+    await bridge.on_data(
+        bridge.ten_env, FakeData("asr_finalize_end", {"finalize_id": "stale"})
+    )
+    assert bridge.ten_env.commands == []
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_finalize_end", {"finalize_id": "case-1-end"}),
+    )
+    await bridge.on_data(
+        bridge.ten_env,
+        FakeData("asr_finalize_end", {"finalize_id": "case-1-end"}),
+    )
+    assert len(bridge.ten_env.commands) == 1
+    command = bridge.ten_env.commands[0]
+    assert json.loads(command.properties["input_json"])["text"] == (
+        "The order ID is ABC123"
+    )
+
+
+@pytest.mark.asyncio
 async def test_same_text_is_allowed_again_after_turn_completion():
     bridge = bridge_with_session()
     asr = FakeData("asr_result", {"text": "Yes", "final": True, "metadata": {}})
@@ -231,6 +306,7 @@ async def test_turn_completion_is_sent_to_tts_once_with_case_metadata():
     assert output.payload["text"] == "Flight booked."
     assert output.payload["text_input_end"] is True
     assert output.payload["metadata"]["example_id"] == "case-1"
+    assert output.payload["metadata"]["session_id"] == "7"
 
 
 @pytest.mark.asyncio
@@ -255,6 +331,56 @@ async def test_create_session_response_sets_session_id():
     assert len(returned) == 1
     assert returned[0].status == StatusCode.OK
     assert bridge.ten_env.commands[0].properties == command.properties
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "name,properties",
+    [
+        ("flush_session", {"session_id": 7}),
+        ("set_session_debug", {"session_id": 7, "enabled": True}),
+        ("delete_session", {"session_id": 7}),
+    ],
+)
+async def test_session_control_commands_forward_properties_and_results(
+    name, properties
+):
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    command = FakeCmd(name)
+    command.properties = properties
+    await bridge.on_cmd(bridge.ten_env, command)
+    assert len(bridge.ten_env.commands) == 1
+    forwarded = bridge.ten_env.commands[0]
+    assert forwarded.name == name
+    assert forwarded.properties == properties
+    assert forwarded.destinations == [("", "", "agora_mind")]
+    assert returned[0].status == StatusCode.OK
+    assert json.loads(returned[0].response_json)["type"] == f"{name}.completed"
+    if name == "delete_session":
+        assert bridge.session_id is None
+
+
+@pytest.mark.asyncio
+async def test_unsupported_command_returns_bridge_error_without_forwarding():
+    bridge = bridge_with_session()
+    returned = []
+
+    async def return_result(result):
+        returned.append(result)
+
+    bridge.ten_env.return_result = return_result
+    await bridge.on_cmd(bridge.ten_env, FakeCmd("unknown_command"))
+    assert not bridge.ten_env.commands
+    assert returned[0].status == StatusCode.ERROR
+    error = json.loads(returned[0].response_json)
+    assert error["error"]["kind"] == "bridge"
+    assert "unsupported bridge command" in error["error"]["message"]
 
 
 @pytest.mark.asyncio
