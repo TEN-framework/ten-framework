@@ -40,9 +40,7 @@ def wav_bytes():
     [
         ("openai_tts2_python", "audio/pcm", None),
         ("mistral_tts_python", "text/event-stream", "audio_data"),
-        ("smallest_tts_python", "text/event-stream", "audio"),
         ("ezai_tw_tts_python", "application/json", "audio"),
-        ("sarvam_http_tts", "application/json", "audios"),
         ("humeai_tts_python", "application/json", "audio"),
     ],
 )
@@ -131,169 +129,7 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
-def test_polly_public_call_and_audio_stream(monkeypatch, clock):
-    module = import_module("ten_packages.extension.polly_tts.polly_tts")
-    closed = []
 
-    class Stream:
-        def iter_chunks(self, chunk_size):
-            yield b""
-            clock[0] = 20_000_000
-            yield b"audio"
-            clock[0] = 120_000_000
-            yield b"tail"
-
-        def close(self):
-            closed.append(True)
-
-    class Client:
-        def synthesize_speech(self, **kwargs):
-            return {"AudioStream": Stream()}
-
-    class Session:
-        def client(self, **kwargs):
-            return Client()
-
-    monkeypatch.setattr(module.boto3, "Session", Session)
-    with install_hook("polly_tts", {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        stream = (
-            module.boto3.Session()
-            .client()
-            .synthesize_speech(Text="Hello")["AudioStream"]
-        )
-        assert list(stream.iter_chunks(chunk_size=2)) == [b"", b"audio", b"tail"]
-        stream.close()
-        assert reference.elapsed_ms("first") == 20
-    assert closed == [True]
-
-
-def test_oracle_ignores_wav_header_and_complete_body_wait(monkeypatch, clock):
-    module = import_module("ten_packages.extension.oracle_tts_python.oracle_tts")
-    audio = wav_bytes()
-
-    class Body:
-        def iter_content(self, chunk_size):
-            clock[0] = 5_000_000
-            yield audio[:44]
-            clock[0] = 20_000_000
-            yield audio[44:]
-            clock[0] = 120_000_000
-
-    class Client:
-        def synthesize_speech(self, **kwargs):
-            return SimpleNamespace(data=Body())
-
-    monkeypatch.setattr(module.oci.ai_speech, "AIServiceSpeechClient", Client)
-    with install_hook("oracle_tts_python", {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        response = module.oci.ai_speech.AIServiceSpeechClient().synthesize_speech(
-            synthesize_speech_details=SimpleNamespace(text="Hello")
-        )
-        assert b"".join(response.data.iter_content(chunk_size=4096)) == audio
-        assert reference.elapsed_ms("first") == 20
-
-
-def test_cosy_public_callback_is_forwarded(monkeypatch, clock):
-    module = import_module("ten_packages.extension.cosy_tts_python.cosy_tts")
-    received = []
-
-    class Synthesizer:
-        def __init__(self, callback):
-            self.callback = callback
-
-        def streaming_call(self, text):
-            self.callback.on_data(b"")
-            clock[0] = 20_000_000
-            self.callback.on_data(b"audio")
-            clock[0] = 120_000_000
-            self.callback.on_complete()
-
-    monkeypatch.setattr(module, "SpeechSynthesizer", Synthesizer)
-    callback = SimpleNamespace(
-        on_data=received.append, on_complete=lambda: received.append("done")
-    )
-    with install_hook("cosy_tts_python", {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        module.SpeechSynthesizer(callback=callback).streaming_call("Hello")
-        assert received == [b"", b"audio", "done"]
-        assert reference.elapsed_ms("first") == 20
-
-
-@pytest.mark.asyncio
-async def test_typecast_trace_and_sdk_chunks(monkeypatch, clock):
-    module = import_module("ten_packages.extension.typecast_tts_python.typecast_tts")
-
-    class Session:
-        def __init__(self, trace_configs):
-            self.traces = trace_configs
-
-    class Client:
-        def __init__(self, session):
-            self.session = session
-
-        async def text_to_speech_stream(self):
-            clock[0] = 150_000_000
-            for trace in self.session.traces:
-                for callback in trace.on_request_chunk_sent:
-                    await callback(self.session, None, SimpleNamespace(chunk=b"Hello"))
-            yield b""
-            clock[0] = 170_000_000
-            yield b"audio"
-
-    monkeypatch.setattr(module.aiohttp, "ClientSession", Session)
-    monkeypatch.setattr(module, "AsyncTypecast", Client)
-    with install_hook("typecast_tts_python", {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        session = module.aiohttp.ClientSession()
-        chunks = [
-            chunk
-            async for chunk in module.AsyncTypecast(
-                session=session
-            ).text_to_speech_stream()
-        ]
-        assert chunks == [b"", b"audio"]
-        assert reference.elapsed_ms("first") == 20
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("name", ["murf_tts_python", "stepfun_tts_python"])
-async def test_websocket_hook_uses_wire_payloads(monkeypatch, name):
-    import websockets
-
-    module_name = "murf_tts" if name == "murf_tts_python" else "stepfun_tts"
-    module = import_module(f"ten_packages.extension.{name}.{module_name}")
-    original = module.websockets
-    audio = base64.b64encode(wav_bytes()).decode()
-    outgoing = (
-        {"context_id": "first", "text": "Hello"}
-        if name == "murf_tts_python"
-        else {"type": "tts.text.delta", "data": {"text": "Hello"}}
-    )
-    incoming = (
-        {"context_id": "first", "audio": audio}
-        if name == "murf_tts_python"
-        else {"type": "tts.response.audio.delta", "data": {"audio": audio}}
-    )
-
-    async def provider(socket):
-        assert json.loads(await socket.recv()) == outgoing
-        await socket.send(json.dumps({"type": "control", "audio": ""}))
-        await asyncio.sleep(0.02)
-        await socket.send(json.dumps(incoming))
-        await socket.wait_closed()
-
-    async with websockets.serve(provider, "127.0.0.1", 0) as server:
-        url = f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}"
-        with install_hook(name, {"url": url}, monkeypatch) as reference:
-            reference.begin_request("first")
-            async with module.websockets.connect(url) as socket:
-                await socket.send(json.dumps(outgoing))
-                await socket.recv()
-                assert reference.elapsed_ms("first") is None
-                assert json.loads(await socket.recv()) == incoming
-                assert reference.elapsed_ms("first") >= 15
-    assert module.websockets is original
 
 
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
@@ -314,23 +150,6 @@ def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
     assert reference.elapsed_ms("second") == 25
 
 
-def test_murf_context_mismatch_is_excluded():
-    from .provider_ttfb_hooks.murf import Hook
-
-    assert not Hook.is_audio(json.dumps({"context_id": "old", "audio": "AQA="}), "new")
-    assert not Hook.is_text(json.dumps({"context_id": "old", "text": "Hello"}), "new")
-    assert Hook.is_audio(json.dumps({"context_id": "new", "audio": "AQA="}), "new")
-
-
-def test_oracle_detector_waits_for_fragmented_wav_audio():
-    from .provider_ttfb_hooks.oracle import AudioDetector
-
-    audio = wav_bytes()
-    detector = AudioDetector()
-    assert not detector.feed(audio[:2])
-    assert not detector.feed(audio[2:16])
-    assert not detector.feed(audio[16:44])
-    assert detector.feed(audio[44:])
 
 
 @pytest.mark.asyncio

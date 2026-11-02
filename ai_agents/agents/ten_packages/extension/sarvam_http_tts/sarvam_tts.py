@@ -62,7 +62,6 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
             ),
             http2=True,  # Enable HTTP/2 if server supports it
         )
-        self.observe_http_ttfb(self.client)
 
     async def cancel(self):
         self.ten_env.log_debug("SarvamTTS: cancel() called.")
@@ -145,8 +144,6 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
             audio_base64 = audios[0]
             try:
                 wav_bytes = base64.b64decode(audio_base64)
-                if wav_bytes:
-                    self.record_audio_received()
                 # Convert WAV to PCM
                 pcm_data = wav_to_pcm(wav_bytes)
 

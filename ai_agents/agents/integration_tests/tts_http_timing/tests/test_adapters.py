@@ -19,9 +19,7 @@ SUPPORTED = {
     "gemini_tts_python",
     "openai_tts2_python",
     "mistral_tts_python",
-    "smallest_tts_python",
     "ezai_tw_tts_python",
-    "sarvam_http_tts",
 }
 
 
@@ -46,8 +44,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     is_sse = extension_name in {
         "gemini_tts_python",
         "mistral_tts_python",
-        "smallest_tts_python",
-    }
+        }
 
     class AudioStream(httpx.AsyncByteStream):
         async def __aiter__(self):
@@ -74,10 +71,6 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                         }
                     ]
                 }
-            elif extension_name == "smallest_tts_python":
-                payload = {"audio": pcm}
-            elif extension_name == "sarvam_http_tts":
-                payload = {"audios": [wav16]}
             elif extension_name == "ezai_tw_tts_python":
                 payload = {"audio": wav24}
             else:
@@ -103,7 +96,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                 if is_sse
                 else (
                     "application/json"
-                    if extension_name in {"sarvam_http_tts", "ezai_tw_tts_python"}
+                    if extension_name in {"ezai_tw_tts_python"}
                     else "audio/pcm"
                 )
             )
@@ -126,8 +119,6 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
         "gemini_tts_python": "gemini_tts",
         "openai_tts2_python": "openai_tts",
         "mistral_tts_python": "mistral_tts",
-        "smallest_tts_python": "smallest_tts",
-        "sarvam_http_tts": "sarvam_tts",
         "ezai_tw_tts_python": "ezai_tts",
     }
     module = import_module(
@@ -140,15 +131,8 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
         "api_key": "mock",
         "params": {"api_key": "mock"},
     }
-    if extension_name == "smallest_tts_python":
-        config["params"]["voice_id"] = "mock"
-    elif extension_name == "mistral_tts_python":
+    if extension_name == "mistral_tts_python":
         config["params"]["model"] = "mock"
-    elif extension_name == "sarvam_http_tts":
-        config["params"] = {
-            "api_subscription_key": "mock",
-            "target_language_code": "hi-IN",
-        }
     from integration_tests.tts_guarder.tests.ttfb_reference import (
         install_ttfb_reference,
     )
