@@ -328,8 +328,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     return False
             await self._dump_audio([audio_data])
             return True
-        except asyncio.CancelledError:
-            raise
         except Exception as exc:
             fatal = self._is_fatal_exception(exc)
             self._fatal_error = self._fatal_error or fatal
@@ -406,15 +404,13 @@ class QwenASRExtension(AsyncASRBaseExtension):
             return
         event_name = (event.get("header") or {}).get("event")
         if event_name == "task-failed":
-            await self._handle_task_failed(event, generation)
+            await self._handle_task_failed(event)
         elif event_name == "result-generated":
             await self._handle_result(event)
 
-    async def _handle_task_failed(
-        self, event: dict[str, Any], generation: int
-    ) -> None:
+    async def _handle_task_failed(self, event: dict[str, Any]) -> None:
         client = self.client
-        code, message = QwenASRClient._parse_task_failed(event)
+        code, message = QwenASRClient.parse_task_failed(event)
         fatal = self._is_fatal_vendor_code(code)
         if client is not None:
             client.task_ready = False
@@ -577,8 +573,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     self._task_starting = False
                     self._connection_swap_depth -= 1
             await self._dump_audio(flushed_audio)
-        except asyncio.CancelledError:
-            raise
         except Exception as exc:
             fatal = self._is_fatal_exception(exc)
             self._fatal_error = self._fatal_error or fatal
@@ -872,8 +866,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 await self.start_connection()
                 if self.is_connected():
                     return
-        except asyncio.CancelledError:
-            raise
         finally:
             if self._reconnect_task is asyncio.current_task():
                 self._reconnect_task = None

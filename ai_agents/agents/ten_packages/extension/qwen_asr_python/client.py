@@ -170,7 +170,7 @@ class QwenASRClient:
         elif event_name == "task-finished":
             self._task_finished.set()
         elif event_name == "task-failed":
-            code, message = self._parse_task_failed(event)
+            code, message = self.parse_task_failed(event)
             self._task_error = QwenProtocolError(message, code)
             self.task_ready = False
             try:
@@ -181,7 +181,7 @@ class QwenASRClient:
         await self.event_callback(event)
 
     @staticmethod
-    def _parse_task_failed(event: dict[str, Any]) -> tuple[str, str]:
+    def parse_task_failed(event: dict[str, Any]) -> tuple[str, str]:
         header = event.get("header") or {}
         payload = event.get("payload") or {}
         error = (
