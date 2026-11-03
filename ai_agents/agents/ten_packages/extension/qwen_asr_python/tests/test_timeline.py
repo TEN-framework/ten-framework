@@ -218,14 +218,16 @@ def test_new_task_origin_is_committed_only_after_success(extension):
     async def run():
         await extension.start_connection()
         assert await extension.send_audio(audio_frame(1000), "session-1")
-        await extension.finalize("session-1")
         client = extension.client
-        start_task = client.start_task.side_effect
-        client.start_task.side_effect = RuntimeError("task start failed")
-        assert not await extension.send_audio(audio_frame(500), "session-1")
+        client.finish_task = AsyncMock(
+            side_effect=lambda: setattr(client, "task_ready", False)
+        )
+        client.start_task = AsyncMock(
+            side_effect=RuntimeError("task start failed")
+        )
+        await extension.finalize("session-1")
         assert extension._timeline_time(100) == 100
         assert extension.audio_timeline.total_user_audio_duration == 1000
-        client.start_task.side_effect = start_task
         assert not extension.is_connected()
         await extension.start_connection()
         if extension._task_start_task is not None:

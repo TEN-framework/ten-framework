@@ -481,6 +481,179 @@ def test_flush_send_failure_keeps_failed_frame_as_head(monkeypatch):
     asyncio.run(run())
 
 
+def test_flush_failure_recovery_sends_each_buffered_frame_once():
+    async def run():
+        extension = connection_extension()
+        first = make_audio_frame(b"aaaa")
+        second = make_audio_frame(b"bbbb")
+        extension.buffered_frames.put_nowait(first)
+        extension.buffered_frames.put_nowait(second)
+        extension.buffered_frames_size = 8
+
+        client = fake_client()
+        client.send_audio = AsyncMock(
+            side_effect=[
+                None,
+                QwenProtocolError("timeout", "timeout"),
+                None,
+            ]
+        )
+        extension.client = client
+        extension.connected = True
+        extension._generation = 1
+
+        with pytest.raises(QwenProtocolError):
+            await extension._flush_buffered_frames_locked()
+
+        assert extension._buffer_flush_head is second
+        assert extension.buffered_frames_size == 4
+
+        flushed = await extension._flush_buffered_frames_locked()
+        assert extension._buffer_flush_head is None
+        assert flushed == [b"bbbb"]
+        assert extension.buffered_frames.empty()
+        assert extension.buffered_frames_size == 0
+        assert client.send_audio.await_count == 3
+
+    asyncio.run(run())
+
+
+def test_handle_audio_frame_buffers_during_finalize_finish():
+    async def run():
+        extension = connection_extension()
+        client = fake_client()
+        release_finish = asyncio.Event()
+        finish_started = asyncio.Event()
+
+        async def finish_task():
+            finish_started.set()
+            await release_finish.wait()
+            client.task_ready = False
+
+        client.finish_task = AsyncMock(side_effect=finish_task)
+        extension.client = client
+        extension.connected = True
+
+        finalize_task = asyncio.create_task(extension.finalize("session-1"))
+        await finish_started.wait()
+
+        frame = make_audio_frame(b"\x01\x02\x03\x04")
+        await extension._handle_audio_frame(extension.ten_env, frame)
+        assert extension.buffered_frames.qsize() == 1
+        assert extension.buffered_frames_size == 4
+        client.send_audio.assert_not_awaited()
+
+        release_finish.set()
+        await finalize_task
+        if extension._task_start_task is not None:
+            await extension._task_start_task
+
+    asyncio.run(run())
+
+
+def test_send_audio_rebuffers_when_blocked_on_finalize_transition():
+    async def run():
+        extension = connection_extension()
+        client = fake_client()
+        release_finish = asyncio.Event()
+        finish_started = asyncio.Event()
+
+        async def finish_task():
+            finish_started.set()
+            await release_finish.wait()
+            client.task_ready = False
+
+        client.finish_task = AsyncMock(side_effect=finish_task)
+        extension.client = client
+        extension.connected = True
+
+        finalize_task = asyncio.create_task(extension.finalize("session-1"))
+        await finish_started.wait()
+
+        frame = make_audio_frame(b"\x05\x06")
+        send_task = asyncio.create_task(
+            extension.send_audio(frame, "session-1")
+        )
+        await asyncio.sleep(0)
+        release_finish.set()
+        assert await send_task is False
+        assert (
+            extension._buffer_flush_head is frame
+            or extension.buffered_frames.qsize() == 1
+        )
+        assert extension.buffered_frames_size == 2
+        await finalize_task
+        if extension._task_start_task is not None:
+            await extension._task_start_task
+
+    asyncio.run(run())
+
+
+def test_finalize_clears_last_finalize_time_when_handshake_completes():
+    async def run():
+        extension = connection_extension()
+        client = fake_client()
+        extension.client = client
+        extension.connected = True
+        extension.send_asr_result = (
+            AsyncASRBaseExtension.send_asr_result.__get__(extension)
+        )
+        extension._send_metrics_ttlw = AsyncMock()
+
+        await extension._handle_result(
+            {
+                "payload": {
+                    "output": {
+                        "sentence": {
+                            "text": "auto final",
+                            "sentence_end": True,
+                        }
+                    }
+                }
+            }
+        )
+        extension._send_metrics_ttlw.assert_not_awaited()
+
+        loop = asyncio.get_event_loop()
+        extension.last_finalize_time = loop.time() - 10.0
+        await extension.finalize("session-1")
+        if extension._task_start_task is not None:
+            await extension._task_start_task
+
+        assert extension.last_finalize_time is None
+        extension._send_metrics_ttlw.assert_not_awaited()
+
+        base_time = loop.time()
+        extension.last_finalize_time = base_time
+        real_time = loop.time
+
+        def later_time():
+            return base_time + 0.05
+
+        loop.time = later_time
+        try:
+            await extension._handle_result(
+                {
+                    "payload": {
+                        "output": {
+                            "sentence": {
+                                "text": "turn two",
+                                "sentence_end": True,
+                            }
+                        }
+                    }
+                }
+            )
+        finally:
+            loop.time = real_time
+
+        extension._send_metrics_ttlw.assert_awaited_once()
+        ttlw = extension._send_metrics_ttlw.await_args.args[0]
+        assert 0 <= ttlw < 100
+
+    asyncio.run(run())
+
+
 def test_stale_recovery_skips_disconnect_after_replacement(monkeypatch):
     async def run():
         extension = connection_extension()

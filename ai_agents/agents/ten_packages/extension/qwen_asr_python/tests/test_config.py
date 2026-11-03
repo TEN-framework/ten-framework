@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from qwen_asr_python.config import MODEL_NAME, QwenASRConfig
+from qwen_asr_python.config import (
+    LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE,
+    MODEL_NAME,
+    QwenASRConfig,
+)
 
 
 def make_config(**params):
@@ -84,6 +88,15 @@ def test_sensitive_config_is_redacted():
 def test_empty_language_hints_falls_back_to_unknown_language():
     config = make_config(language_hints=[])
     assert config.language == "und"
+
+
+@pytest.mark.parametrize(
+    "hint,expected",
+    sorted(LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.items()),
+)
+def test_language_hints_map_to_asr_result_language(hint, expected):
+    config = make_config(language_hints=[hint])
+    assert config.language == expected
 
 
 def test_sensitive_config_redacts_url_query_credentials():

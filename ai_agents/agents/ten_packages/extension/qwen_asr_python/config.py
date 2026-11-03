@@ -8,38 +8,41 @@ from ten_ai_base.utils import encrypt, redact_url
 
 DEFAULT_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/inference"
 MODEL_NAME = "qwen-audio-3.1-asr-flash-streaming"
-SUPPORTED_LANGUAGES = {
-    "zh",
-    "en",
-    "ja",
-    "ko",
-    "vi",
-    "th",
-    "id",
-    "ms",
-    "tl",
-    "hi",
-    "ar",
-    "fr",
-    "de",
-    "es",
-    "pt",
-    "ru",
-    "it",
-    "nl",
-    "sv",
-    "da",
-    "fi",
-    "no",
-    "el",
-    "pl",
-    "cs",
-    "hu",
-    "ro",
-    "bg",
-    "hr",
-    "sk",
+# Qwen language_hints (ISO 639-1) -> TEN asr_result.language (BCP-47).
+# See https://help.aliyun.com/zh/model-studio/asr-model
+LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE: dict[str, str] = {
+    "zh": "zh-CN",
+    "en": "en-US",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "vi": "vi-VN",
+    "th": "th-TH",
+    "id": "id-ID",
+    "ms": "ms-MY",
+    "tl": "tl-PH",
+    "hi": "hi-IN",
+    "ar": "ar-SA",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "es": "es-ES",
+    "pt": "pt-PT",
+    "ru": "ru-RU",
+    "it": "it-IT",
+    "nl": "nl-NL",
+    "sv": "sv-SE",
+    "da": "da-DK",
+    "fi": "fi-FI",
+    "no": "nb-NO",
+    "el": "el-GR",
+    "pl": "pl-PL",
+    "cs": "cs-CZ",
+    "hu": "hu-HU",
+    "ro": "ro-RO",
+    "bg": "bg-BG",
+    "hr": "hr-HR",
+    "sk": "sk-SK",
 }
+SUPPORTED_LANGUAGES = set(LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE)
 
 
 class QwenASRConfig(BaseModel):
@@ -175,12 +178,8 @@ class QwenASRConfig(BaseModel):
         hints = self.params.get("language_hints") or []
         if not hints:
             return "und"
-        return {
-            "zh": "zh-CN",
-            "en": "en-US",
-            "ja": "ja-JP",
-            "ko": "ko-KR",
-        }.get(hints[0], hints[0])
+        hint = hints[0]
+        return LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.get(hint, hint)
 
     def build_run_task(self, task_id: str) -> dict[str, Any]:
         params = self.params

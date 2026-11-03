@@ -70,6 +70,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self._task_recovery_task: asyncio.Task[None] | None = None
         self._buffer_flush_head: AudioFrame | None = None
         self._dump_lock = asyncio.Lock()
+        self._task_transition_active = False
 
     @override
     def vendor(self) -> str:
@@ -296,6 +297,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
         buf = None
+        transition_active_at_entry = self._task_transition_active
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
@@ -313,10 +315,20 @@ class QwenASRExtension(AsyncASRBaseExtension):
                         and not task_start_task.done()
                     )
                 ):
+                    if (
+                        transition_active_at_entry
+                        or self._should_rebuffer_send_failure()
+                    ):
+                        self._keep_buffer_frame(frame)
                     return False
                 if not await self._prepare_task_for_session_locked(
                     client, frame_session_id
                 ):
+                    if (
+                        transition_active_at_entry
+                        or self._should_rebuffer_send_failure()
+                    ):
+                        self._keep_buffer_frame(frame)
                     return False
                 async with self._send_lock:
                     if (
@@ -325,10 +337,20 @@ class QwenASRExtension(AsyncASRBaseExtension):
                         or not client.connected
                         or not client.task_ready
                     ):
+                        if (
+                            transition_active_at_entry
+                            or self._should_rebuffer_send_failure()
+                        ):
+                            self._keep_buffer_frame(frame)
                         return False
                     if not await self._send_audio_locked(
                         audio_data, frame_metadata, frame_session_id
                     ):
+                        if (
+                            transition_active_at_entry
+                            or self._should_rebuffer_send_failure()
+                        ):
+                            self._keep_buffer_frame(frame)
                         return False
             await self._dump_audio([audio_data])
             return True
@@ -353,10 +375,14 @@ class QwenASRExtension(AsyncASRBaseExtension):
     async def _finalize_impl(self, session_id: str | None) -> None:
         finalize_id = self.finalize_id
         finalize_metadata = copy.deepcopy(self.metadata or {})
+        finalize_swap_gated = False
+        self._task_transition_active = True
         try:
             async with self._swap_lock:
                 client = self.client
                 if self.is_connected() and client is not None:
+                    self._connection_swap_depth += 1
+                    finalize_swap_gated = True
                     try:
                         await asyncio.wait_for(
                             client.finish_task(),
@@ -375,12 +401,26 @@ class QwenASRExtension(AsyncASRBaseExtension):
                         client.task_ready = False
                         fatal = self._is_fatal_exception(exc)
                         self._schedule_task_recovery(client, exc, fatal)
+            if finalize_swap_gated and self._task_start_task is not None:
+                try:
+                    await self._task_start_task
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    pass
         finally:
+            if finalize_swap_gated:
+                async with self._swap_lock:
+                    self._connection_swap_depth = max(
+                        0, self._connection_swap_depth - 1
+                    )
+            self._task_transition_active = False
             self.finalize_id = finalize_id
             self.metadata = finalize_metadata
             if session_id is not None:
                 self.session_id = session_id
                 self.metadata.setdefault("session_id", session_id)
+            self.last_finalize_time = None
             await self.send_asr_finalize_end()
 
     async def _handle_event(
@@ -811,9 +851,50 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 self._task_starting = False
         return client.task_ready
 
+    def _should_rebuffer_send_failure(self) -> bool:
+        if self.stopped or not isinstance(
+            self.buffer_strategy(), ASRBufferConfigModeKeep
+        ):
+            return False
+        return self.connected and (
+            self._connection_swap_depth > 0
+            or self._task_starting
+            or (
+                self._task_start_task is not None
+                and not self._task_start_task.done()
+            )
+        )
+
+    def _keep_buffer_frame(self, frame: AudioFrame) -> None:
+        frame_buf = frame.get_buf()
+        if not frame_buf:
+            return
+        byte_limit = self.buffer_strategy().byte_limit
+        frame_size = len(frame_buf)
+        while self.buffered_frames_size + frame_size > byte_limit:
+            if self.buffered_frames.empty():
+                break
+            discard_frame = self.buffered_frames.get_nowait()
+            discard_size = len(discard_frame.get_buf())
+            self.buffered_frames_size -= discard_size
+            self.audio_timeline.add_dropped_audio(
+                int(
+                    discard_size
+                    / (
+                        self.input_audio_sample_rate()
+                        / 1000
+                        * self.input_audio_channels()
+                        * self.input_audio_sample_width()
+                    )
+                )
+            )
+        self.buffered_frames.put_nowait(frame)
+        self.buffered_frames_size += frame_size
+
     async def _flush_buffered_frames_locked(self) -> list[bytes]:
         flushed_audio: list[bytes] = []
         pending = self._buffer_flush_head
+        self._buffer_flush_head = None
         while True:
             if pending is None:
                 try:
