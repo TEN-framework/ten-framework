@@ -24,6 +24,7 @@ HOOK_FACTORIES = {
         "MiniMaxTimingHook",
     ),
     "minimax_tts_websocket": (".minimax", "MiniMaxTimingHook"),
+    "cosy_tts_python": (".cosy", "CosyTimingHook"),
 }
 
 
