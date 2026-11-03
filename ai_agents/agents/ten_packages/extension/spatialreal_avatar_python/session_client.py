@@ -19,9 +19,10 @@ follows the observable event:
   failures the fast schedule (1, 2, 4, 8, 15, 30… s while running);
 * ``init()`` refused with HTTP 400: configuration error, stop; other
   token failures take the fast schedule;
-* ``on_error`` mid-session: retryable codes take the fast schedule; a
-  4010 relayed as a server error while the session continues is reported
-  without a reconnect; anything else non-retryable is fatal;
+* ``on_error`` mid-session: retryable codes and errors with no close code
+  take the fast schedule; a 4010 relayed as a server error while the
+  session continues is reported without a reconnect; anything else
+  non-retryable is fatal;
 * ``on_close`` with no preceding error (drain), ``ValueError`` from
   ``send_audio`` (connection gone) and ``transport_frames`` (animation over
   the WebSocket: egress lost the channel) take the fast schedule;
@@ -123,6 +124,10 @@ def classify_start_error(exc: Exception) -> tuple[Decision, int, str]:
             return Decision.CONFIG, CODE_CONFIG, vendor
         return Decision.FAST, CODE_NON_FATAL, vendor
     if isinstance(exc, AvatarSDKError):
+        if exc.close_code is None:
+            # No close code: transport failure, a frame that did not parse,
+            # or a ServerError with no session-fate code. D7 says fast.
+            return Decision.FAST, CODE_NON_FATAL, vendor
         if exc.close_code in (_CLOSE_CREDITS, _CLOSE_AUTH):
             return Decision.STOP, CODE_FATAL, vendor
         if exc.close_code == _CLOSE_CONCURRENCY:
@@ -141,7 +146,10 @@ def classify_runtime_error(exc: Exception) -> tuple[Decision, int, str]:
     """Decide on an exception from ``on_error`` or a send (D7)."""
     vendor = _vendor_code(exc)
     if isinstance(exc, AvatarSDKError):
-        if exc.retryable:
+        if exc.close_code is None or exc.retryable:
+            # D7: retryable codes and the absence of a close code (a failed
+            # inference call relayed as ServerError{code: 0}, a frame that
+            # did not parse, a transport drop) both take the fast schedule.
             return Decision.FAST, CODE_NON_FATAL, vendor
         if exc.close_code == _CLOSE_AUTH and exc.server_code:
             # A server error frame, not a close: inference auth failed but
@@ -349,9 +357,7 @@ class SessionClient:
             self._session = session
             await session.init()
             connection_id = await session.start()
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
             self._session = None
             decision, code, vendor = classify_start_error(exc)
             logger.warning(
@@ -409,9 +415,7 @@ class SessionClient:
     async def _close_quietly(session) -> None:
         try:
             await session.close()
-        except asyncio.CancelledError:
-            raise
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception:
             logger.exception("spatialreal session close raised")
 
     # -- events -------------------------------------------------------------

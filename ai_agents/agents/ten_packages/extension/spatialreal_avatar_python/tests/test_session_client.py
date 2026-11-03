@@ -241,6 +241,12 @@ async def connected_harness(vt: VirtualTime, **overrides) -> Harness:
         (sdk_error(4503), (Decision.FAST, CODE_NON_FATAL, "4503")),
         (sdk_error(None), (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError")),
         (
+            # Handshake frame that did not parse: no close code, SDK says
+            # not retryable, D7 says fast.
+            sdk_error(None, code=AvatarSDKErrorCode.protocolError),
+            (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError"),
+        ),
+        (
             SessionTokenError("bad request", http_status=400),
             (Decision.CONFIG, CODE_CONFIG, "SessionTokenError"),
         ),
@@ -267,6 +273,18 @@ def test_classify_start_errors(exc, expected):
         (sdk_error(4002), (Decision.FAST, CODE_NON_FATAL, "4002")),
         (sdk_error(4503), (Decision.FAST, CODE_NON_FATAL, "4503")),
         (sdk_error(None), (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError")),
+        (
+            # One inference call failed: ServerError{code: 0}, session
+            # continues; the SDK marks it not retryable, D7 says fast.
+            sdk_error(
+                None, code=AvatarSDKErrorCode.serverError, server_code="0"
+            ),
+            (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError"),
+        ),
+        (
+            sdk_error(None, code=AvatarSDKErrorCode.protocolError),
+            (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError"),
+        ),
         (
             sdk_error(4010, server_code="4010"),
             (Decision.REPORT_ONLY, CODE_NON_FATAL, "4010"),
