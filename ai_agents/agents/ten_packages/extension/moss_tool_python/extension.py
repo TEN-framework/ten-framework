@@ -43,6 +43,7 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         if self.loading:
             self.loading.cancel()
+            await asyncio.wait([self.loading])
         if self.client:
             await self.client.close()
         await super().on_stop(ten_env)
@@ -60,6 +61,11 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
             ten_env.log_error(f"Moss index not loaded, no results: {e}")
             return False
         return True
+
+    async def _wait_for_index(self) -> bool:
+        """Waits for the load. A load cancelled on stop counts as failed."""
+        await asyncio.wait([self.loading])
+        return not self.loading.cancelled() and self.loading.result()
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         return [
@@ -81,7 +87,7 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
         self, ten_env: AsyncTenEnv, name: str, args: dict
     ) -> LLMToolResult | None:
         query = args.get("query", "")
-        if name != TOOL_NAME or not query or not await self.loading:
+        if name != TOOL_NAME or not query or not await self._wait_for_index():
             return {"type": "llmresult", "content": ""}
         try:
             result = await self.client.query(

@@ -51,6 +51,7 @@ class MainControlExtension(AsyncExtension):
         self.session_id: str = "0"
         self._context_source: str = ""
         self._turn: asyncio.Task | None = None
+        self._unsent: list[str] = []
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -103,7 +104,8 @@ class MainControlExtension(AsyncExtension):
         await self._send_transcript("user", event.text, event.final, stream_id)
         if event.final:
             self.turn_id += 1
-            self._turn = asyncio.create_task(self._queue_turn(event.text))
+            self._unsent.append(event.text)
+            self._turn = asyncio.create_task(self._queue_turn())
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
@@ -214,10 +216,13 @@ class MainControlExtension(AsyncExtension):
             f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}"
         )
 
-    async def _queue_turn(self, text: str):
-        """Queues the turn off the ASR queue, so new speech can cancel it."""
+    async def _queue_turn(self):
+        """Sends unsent final text to the LLM, off the ASR queue.
+        New speech cancels it, and that text goes with the next turn."""
         try:
+            text = " ".join(self._unsent)
             await self.agent.queue_llm_input(await self._with_context(text))
+            self._unsent.clear()
         except Exception as e:
             self.ten_env.log_error(f"[MainControlExtension] Turn failed: {e}")
 

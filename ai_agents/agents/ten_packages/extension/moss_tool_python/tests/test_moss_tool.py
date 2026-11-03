@@ -30,6 +30,13 @@ class FakeToolBase:
     async def on_stop(self, _ten_env):
         pass
 
+    async def call_tool(self, ten_env, name, args):
+        """Runs a tool call as the real on_cmd does, catching only Exception."""
+        try:
+            return await asyncio.create_task(self.run_tool(ten_env, name, args))
+        except Exception:
+            return "error"
+
 
 class FakeClient:
     """Plays back an index load and a search, and records each search."""
@@ -179,6 +186,22 @@ async def test_failed_search_returns_no_passages():
         NO_PASSAGES
     )
     assert env.errors == ["Moss search failed: index closed"]
+
+
+@pytest.mark.asyncio
+async def test_stop_during_load_answers_waiting_searches():
+    FakeClient.gate = asyncio.Event()
+    tool, env = await start_tool()
+    search = asyncio.create_task(
+        tool.call_tool(env, TOOL_NAME, {"query": "hours"})
+    )
+    for _ in range(3):
+        await asyncio.sleep(0)
+    assert not search.done()
+
+    await tool.on_stop(env)
+    assert await search == NO_PASSAGES
+    assert tool.client.closed
 
 
 @pytest.mark.asyncio
