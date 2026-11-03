@@ -89,7 +89,6 @@ class HumeAiTTS(AsyncTTS2HttpClient):
                 yield None, TTS2HttpResponseEventType.FLUSH
                 return
 
-            self.record_text_sent()
             async for snippet in self.connection.tts.synthesize_json_streaming(
                 utterances=[
                     PostedUtterance(
