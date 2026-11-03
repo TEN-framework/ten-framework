@@ -1,0 +1,3 @@
+spatialreal>=0.2.3,<0.3
+agora-token-builder>=1.0.0
+audioop-lts>=0.2.1; python_version >= "3.13"
