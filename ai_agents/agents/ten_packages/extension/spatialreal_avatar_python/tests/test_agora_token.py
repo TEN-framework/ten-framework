@@ -19,7 +19,7 @@ from agora_token_builder.AccessToken import (
     kPublishVideoStream,
 )
 
-from agora_token import build_agora_token
+from spatialreal_avatar_python.agora_token import build_agora_token
 
 # AccessToken.fromString slices a fixed-width App ID, so the fake one has
 # the real width. It is a test literal, not a credential.

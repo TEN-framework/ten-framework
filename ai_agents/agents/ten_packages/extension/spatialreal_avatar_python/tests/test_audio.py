@@ -14,7 +14,12 @@ import struct
 
 import pytest
 
-from audio import ACCEPTED_RATES, Resampler, duration_ms, silence
+from spatialreal_avatar_python.audio import (
+    ACCEPTED_RATES,
+    Resampler,
+    duration_ms,
+    silence,
+)
 
 
 def _tone(rate: int, ms: int, step: int = 7) -> bytes:

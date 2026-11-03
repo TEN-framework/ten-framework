@@ -34,7 +34,7 @@ import math
 import time
 from typing import Awaitable, Callable, Optional, Protocol
 
-from audio import duration_ms, silence
+from .audio import duration_ms, silence
 
 PAD_FLOOR_MS = 600
 PAD_TICK_MS = 100

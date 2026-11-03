@@ -15,8 +15,8 @@ import math
 
 import pytest
 
-from audio import duration_ms
-from pacer import Pacer
+from spatialreal_avatar_python.audio import duration_ms
+from spatialreal_avatar_python.pacer import Pacer
 
 pytestmark = pytest.mark.asyncio
 

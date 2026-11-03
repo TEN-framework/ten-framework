@@ -8,9 +8,23 @@
 Nothing here imports ``ten_runtime``, ``ten_ai_base`` or ``spatialreal`` so
 these tests run on any laptop with pytest. Runtime tests that need the TEN
 runtime live under ``tests/runtime/`` behind an ``importorskip`` guard.
+
+The pure modules import their siblings relatively (``from .audio import``),
+the way the TEN addon loader imports the extension as a package. The tests
+reach them as ``spatialreal_avatar_python.<module>`` through a stub package
+whose ``__path__`` is the extension directory, so the real ``__init__``
+(which imports ``ten_runtime``) never runs here.
 """
 
+import pathlib
+import sys
+import types
+
 import pytest
+
+_pkg = types.ModuleType("spatialreal_avatar_python")
+_pkg.__path__ = [str(pathlib.Path(__file__).resolve().parents[1])]
+sys.modules.setdefault("spatialreal_avatar_python", _pkg)
 
 
 class FakeClock:
