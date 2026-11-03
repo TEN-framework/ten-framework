@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 
 import dashscope
+# pylint: disable-next=import-error,no-name-in-module
 from dashscope.audio.tts_v2 import (
     SpeechSynthesizer,
     AudioFormat,

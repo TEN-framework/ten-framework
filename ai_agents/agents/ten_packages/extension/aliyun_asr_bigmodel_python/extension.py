@@ -34,6 +34,7 @@ from .reconnect_manager import ReconnectManager
 from .config import AliyunASRBigmodelConfig
 
 import dashscope
+# pylint: disable-next=import-error,no-name-in-module
 from dashscope.audio.asr import (
     Recognition,
     RecognitionCallback,

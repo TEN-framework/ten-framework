@@ -240,6 +240,8 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     and self.client is client
                     and client.connected
                 )
+                if ready_to_report_connected:
+                    await self._dump_audio(flushed_audio)
             finally:
                 self._connection_swap_depth -= 1
         if ready_to_report_connected:
@@ -253,7 +255,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     * 1000
                 )
             )
-            await self._dump_audio(flushed_audio)
 
     @override
     async def stop_connection(self) -> None:
@@ -842,7 +843,8 @@ class QwenASRExtension(AsyncASRBaseExtension):
             self.buffered_frames_size -= frame_size
             if self.first_audio_time is None:
                 self.first_audio_time = asyncio.get_event_loop().time()
-        self._buffer_flush_head = pending
+        if pending is not None:
+            self._buffer_flush_head = pending
         self.buffered_frames_size = max(0, self.buffered_frames_size)
         return flushed_audio
 

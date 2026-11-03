@@ -293,6 +293,31 @@ def test_post_connect_flush_failure_reports_disconnect_and_reconnects(
     asyncio.run(run())
 
 
+def test_flush_send_false_preserves_head_without_clearing():
+    async def run():
+        extension = connection_extension()
+        frame = AudioFrame.create("pcm_frame")
+        frame.alloc_buf(4)
+        extension.buffered_frames.put_nowait(frame)
+        extension.buffered_frames_size = 4
+
+        client = fake_client()
+        client.send_audio = AsyncMock(return_value=None)
+        extension.client = client
+        extension.connected = True
+
+        extension._send_audio_locked = AsyncMock(return_value=False)
+
+        async with extension._send_lock:
+            await extension._flush_buffered_frames_locked()
+
+        assert extension._buffer_flush_head is frame
+        assert extension.buffered_frames.empty()
+        assert extension.buffered_frames_size == 4
+
+    asyncio.run(run())
+
+
 def test_flush_send_failure_keeps_failed_frame_as_head(monkeypatch):
     async def run():
         extension = connection_extension()
