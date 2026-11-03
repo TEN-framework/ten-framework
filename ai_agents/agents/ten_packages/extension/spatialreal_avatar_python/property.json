@@ -1,0 +1,23 @@
+{
+  "channel": "",
+  "agora_uid": "",
+  "agora_token": "",
+  "agora_appid": "${env:AGORA_APP_ID|}",
+  "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+  "agora_channel": "",
+  "params": {
+    "spatialreal_api_key": "${env:SPATIALREAL_API_KEY|}",
+    "spatialreal_avatar_id": "${env:SPATIALREAL_AVATAR_ID|}",
+    "spatialreal_app_id": "${env:SPATIALREAL_APP_ID|}",
+    "environment": "us-west",
+    "console_endpoint_url": "",
+    "ingress_endpoint_url": "",
+    "sample_rate": 24000,
+    "egress_idle_reconnect_ms": 1080000,
+    "agora_uid": "",
+    "agora_token": "",
+    "agora_appid": "",
+    "agora_appcert": "",
+    "agora_channel": ""
+  }
+}
