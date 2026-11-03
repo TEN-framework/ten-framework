@@ -9,8 +9,9 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-# `pytest tests/` from this directory: import the pure modules from here and
-# stop collection at tests/ so the package __init__ (which needs ten_runtime)
-# is not imported on a laptop without the TEN runtime.
-pythonpath = ["."]
+# `pytest tests/` from this directory: stop conftest lookup at tests/ so the
+# package __init__ (which needs ten_runtime) is not imported on a laptop
+# without the TEN runtime. The extension directory is deliberately not on
+# sys.path: the modules import each other relatively, as the TEN addon loader
+# requires, and tests/conftest.py exposes them as a package.
 addopts = "--confcutdir=tests"
