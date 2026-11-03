@@ -13,8 +13,8 @@ All settings live under `params` in `property.json`:
 {
   "params": {
     "api_key": "${env:SMALLEST_API_KEY|}",
-    "model": "lightning_v3.1",
-    "voice_id": "magnus",
+    "model": "lightning_v3.1_pro",
+    "voice_id": "blake",
     "sample_rate": 24000
   }
 }
@@ -24,8 +24,8 @@ All settings live under `params` in `property.json`:
 | --- | --- | --- |
 | `api_key` | — | Smallest AI API key (get one at [app.smallest.ai](https://app.smallest.ai)). Required. |
 | `base_url` | `https://api.smallest.ai` | API base URL. The streaming path `/waves/v1/tts/live` is appended. |
-| `model` | `lightning_v3.1` | `lightning_v3.1` (multilingual, cloning) or `lightning_v3.1_pro` (premium voices, English + Hindi). |
-| `voice_id` | `magnus` | Catalog voice or cloned voice (`voice_*`). Pair Pro voices with the Pro model. |
+| `model` | `lightning_v3.1_pro` | `lightning_v3.1_pro` (premium voices, 31 languages). `lightning_v3.1` is retired on 2026-11-30 and is served by `lightning_v3.1_pro` after that. |
+| `voice_id` | `blake` | Lightning v3.1 Pro voice (e.g. `blake`, `kaitlyn`, `meher`) or cloned voice (`voice_*`). See the [voice catalog](https://docs.smallest.ai/waves/model-cards/text-to-speech/lightning-v-3-1-pro). |
 | `sample_rate` | `24000` | Output PCM sample rate in Hz (8000-44100). |
 | `speed` | `1.0` | Speech speed (0.5-2.0). |
 
