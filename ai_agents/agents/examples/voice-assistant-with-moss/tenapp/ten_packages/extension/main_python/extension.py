@@ -50,6 +50,7 @@ class MainControlExtension(AsyncExtension):
         self.turn_id: int = 0
         self.session_id: str = "0"
         self._context_source: str = ""
+        self._turn: asyncio.Task | None = None
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -102,9 +103,7 @@ class MainControlExtension(AsyncExtension):
         await self._send_transcript("user", event.text, event.final, stream_id)
         if event.final:
             self.turn_id += 1
-            await self.agent.queue_llm_input(
-                await self._with_context(event.text)
-            )
+            self._turn = asyncio.create_task(self._queue_turn(event.text))
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
@@ -134,6 +133,8 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        if self._turn:
+            self._turn.cancel()
         await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
@@ -213,6 +214,13 @@ class MainControlExtension(AsyncExtension):
             f"[MainControlExtension] Sent to TTS: is_final={is_final}, text={text}"
         )
 
+    async def _queue_turn(self, text: str):
+        """Queues the turn off the ASR queue, so new speech can cancel it."""
+        try:
+            await self.agent.queue_llm_input(await self._with_context(text))
+        except Exception as e:
+            self.ten_env.log_error(f"[MainControlExtension] Turn failed: {e}")
+
     async def _with_context(self, text: str) -> str:
         """Prepends what the context tool returns, kept for this turn only."""
         if not self._context_source:
@@ -249,6 +257,8 @@ class MainControlExtension(AsyncExtension):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
+        if self._turn:
+            self._turn.cancel()
         self.sentence_fragment = ""
         await self.agent.flush_llm()
         await _send_data(
