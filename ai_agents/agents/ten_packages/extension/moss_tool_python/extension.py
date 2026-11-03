@@ -3,6 +3,8 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
+
 from moss import MossClient, QueryOptions
 from pydantic import BaseModel
 from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
@@ -30,10 +32,23 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
         super().__init__(name)
         self.config = MossToolConfig()
         self.client: MossClient | None = None
+        self.loading: asyncio.Task[bool] | None = None
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MossToolConfig.model_validate_json(config_json)
+        self.loading = asyncio.create_task(self._load_index(ten_env))
+        await super().on_start(ten_env)
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        if self.loading:
+            self.loading.cancel()
+        if self.client:
+            await self.client.close()
+        await super().on_stop(ten_env)
+
+    async def _load_index(self, ten_env: AsyncTenEnv) -> bool:
+        """Loads the index in the background. A search waits for it."""
         try:
             self.client = MossClient(
                 self.config.project_id, self.config.project_key
@@ -42,14 +57,9 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
                 self.config.index_name, auto_refresh=True
             )
         except Exception as e:
-            ten_env.log_error(f"Moss index not loaded, tool disabled: {e}")
-            return
-        await super().on_start(ten_env)
-
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        if self.client:
-            await self.client.close()
-        await super().on_stop(ten_env)
+            ten_env.log_error(f"Moss index not loaded, no results: {e}")
+            return False
+        return True
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         return [
@@ -70,11 +80,18 @@ class MossToolExtension(AsyncLLMToolBaseExtension):
     async def run_tool(
         self, ten_env: AsyncTenEnv, name: str, args: dict
     ) -> LLMToolResult | None:
-        result = await self.client.query(
-            self.config.index_name,
-            args.get("query", ""),
-            QueryOptions(top_k=self.config.top_k),
-        )
+        query = args.get("query", "")
+        if name != TOOL_NAME or not query or not await self.loading:
+            return {"type": "llmresult", "content": ""}
+        try:
+            result = await self.client.query(
+                self.config.index_name,
+                query,
+                QueryOptions(top_k=self.config.top_k),
+            )
+        except Exception as e:
+            ten_env.log_error(f"Moss search failed: {e}")
+            return {"type": "llmresult", "content": ""}
         ten_env.log_info(
             f"Moss: {len(result.docs)} results in {result.time_taken_ms} ms"
         )

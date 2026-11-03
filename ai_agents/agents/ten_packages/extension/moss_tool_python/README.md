@@ -25,8 +25,9 @@ makes no network request.
 
 Create a project and an index in the [Moss portal](https://portal.usemoss.dev), from documents,
 files or a website. The extension checks Moss for a new version of the index every 10 minutes.
-If the index fails to load, the extension logs the error and does not register the tool,
-so the agent keeps running without it.
+It registers the tool at once and loads the index in the background, and a search that
+arrives during the load waits for it. If the index fails to load, the extension logs the error
+and every search returns no passages, so the agent keeps running without them.
 
 ## Maintenance
 

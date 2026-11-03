@@ -55,7 +55,10 @@
                 "query": {
                   "type": "string"
                 }
-              }
+              },
+              "required": [
+                "query"
+              ]
             }
           },
           "required": [
