@@ -16,11 +16,12 @@ def endpoint(url):
 class ObservedWebSockets:
     """Delegate the library except for a case's matching connect calls."""
 
-    def __init__(self, library, url, observer, match_path=True):
+    def __init__(self, library, url, observer, match_path=True, observer_factory=None):
         self.library = library
         self.endpoint = endpoint(url)
         self.observer = observer
         self.match_path = match_path
+        self.observer_factory = observer_factory
 
     def __getattr__(self, name):
         return getattr(self.library, name)
@@ -32,7 +33,11 @@ class ObservedWebSockets:
         ):
             return self.library.connect(uri, *args, **kwargs)
         base = kwargs.get("create_connection") or self.library.ClientConnection
-        observer = self.observer
+        observer = (
+            self.observer_factory()
+            if self.observer_factory is not None
+            else self.observer
+        )
 
         class ObservedConnection(base):
             """Keep the original connection API and cancellation behavior."""

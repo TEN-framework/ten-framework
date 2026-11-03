@@ -5,6 +5,9 @@ description: Review implementation changes inside TEN Framework TTS extension di
 
 # TEN TTS review
 
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `11562f89409198d942a1f4eb05bec6c7bd01cb53`
+
 Find defects that can affect users or make the TTS contract unreliable. Prefer a
 small number of high-confidence findings over a broad checklist report.
 
@@ -21,7 +24,10 @@ small number of high-confidence findings over a broad checklist report.
    `config.py`, `manifest.json`, `property.json`, dependency files, and
    extension-local tests are in scope. README-only changes do not trigger this
    skill. Ignore every changed path outside that extension directory, including
-   `ten_ai_base`, `integration_tests/tts_guarder`, examples, and graphs.
+   `ten_ai_base`, `integration_tests/tts_guarder`, examples, and graphs. The
+   narrow exception is read-only inspection of guarder timing hooks and
+   registration needed to verify the touched extension's mandatory coverage;
+   do not expand this into a review of unrelated guarder code.
 4. Determine whether each in-scope TTS extension is new by checking whether its
    extension directory exists at the pull request merge base. Do not infer this
    from the number of added files: a replacement, rename, or large update to an
@@ -37,8 +43,9 @@ small number of high-confidence findings over a broad checklist report.
    - WebSocket/custom: [references/websocket.md](references/websocket.md)
    If a pull request changes multiple TTS extensions, classify and review each
    independently; load both transport guides only when both shapes are present.
-   For every new TTS extension, also load and apply
-   [references/guarder.md](references/guarder.md).
+   For every touched TTS extension, load the hook coverage checks in
+   [references/guarder.md](references/guarder.md). Apply its full-suite screenshot
+   and PCM evidence gate only to new extensions.
 7. Read the changed functions in full. You may inspect the installed base-class
    methods they call to understand the contract, but do not review `ten_ai_base`
    itself or ask the pull request to change it. Compare with one recent extension
@@ -56,15 +63,21 @@ small number of high-confidence findings over a broad checklist report.
    `references/tests.md`; shared guarder or integration tests do not substitute
    for them. Report a missing suite or mandatory category even when the
    production defect has not yet been demonstrated.
-11. For each new TTS extension, inspect pull request comments and enforce the
-   guarder evidence gate. The full guarder suite must pass against the current
+11. For each touched extension, verify an independent TTFB hook exists, is
+    registered for the actual transport/model and returns a usable reference.
+    A generic tester elapsed-time bound or unsupported observer is insufficient.
+    Require a subtitle alignment hook only if the adapter supplies subtitle
+    timestamps; record unsupported capability as not applicable. Then, for each
+    new TTS extension, inspect pull request comments and enforce the
+    guarder evidence gate. The full guarder suite must pass against the current
    pull request HEAD, and a comment must include both a result screenshot and a
    downloadable non-empty PCM output file. Guarder evidence does not replace
    extension-local tests.
 12. Report implementation issues only when introduced or made materially worse
    by in-scope diff hunks. The testing baselines are explicit exceptions: report
    extension-local test gaps for every touched TTS extension and guarder-evidence
-   gaps for every new TTS extension.
+   gaps for every new TTS extension, plus mandatory TTFB hook gaps for every
+   touched extension and subtitle hook gaps where subtitles are supported.
    Verify each finding against surrounding code; do not flag style, preferences,
    or purely hypothetical risks.
 
@@ -94,7 +107,9 @@ If any answer is missing, investigate further or omit the finding.
   current, passing guarder evidence and both required comment attachments is P1.
 - **P2**: a realistic edge case produces wrong audio/events/metrics or resource
   leakage with meaningful impact, or the mandatory local-test matrix is
-  materially incomplete.
+  materially incomplete. Missing, unregistered or unsupported TTFB hooks for a
+  touched extension, or missing subtitle alignment hooks for an adapter that
+  supplies timestamped subtitles, are P2 coverage findings.
 - **P3**: limited but concrete correctness or maintainability defect worth fixing.
 
 Do not inflate severity because code is concurrent or vendor-facing.

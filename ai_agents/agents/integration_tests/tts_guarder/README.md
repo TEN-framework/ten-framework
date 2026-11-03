@@ -1,6 +1,7 @@
 # TTS Guarder Test Guide
 
-As of: 2026-10-13
+As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `a452b6d9ed66f9c57fa1d4a80cf5f3473f61b170`
 
 This document describes how to run Guarder Test for TTS
 
@@ -68,3 +69,8 @@ their behavior. `soul_tts_python` and `azure_tts` use the strengthened generic
 alignment checks without a vendor hook. `azure_tts` is
 a C++ extension that is not part of this checkout, so its runs use a guarder
 copy in the conversational agent tree.
+
+## TTFB regression verification
+
+See [the repeatable TTFB procedure](tests/TTFB_TESTING.md) for the seven
+first-batch configurations, isolated runner, screenshot evidence and limitations.

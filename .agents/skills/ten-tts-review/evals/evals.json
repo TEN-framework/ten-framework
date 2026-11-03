@@ -62,6 +62,43 @@
         "The review checks success, partial error, interruption, and no-audio terminal paths",
         "Findings remain limited to the cosy_tts_python extension directory"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Review a change to an existing HTTP TTS extension. Its local tests pass and the generic guarder tester bound passes, but no provider TTFB hook is registered; the observer reports unsupported. The adapter does not emit timestamped subtitles.",
+      "expected_output": "Report a P2 TTFB hook coverage gap on the touched extension. Do not require a subtitle alignment hook or new-extension screenshot/PCM evidence.",
+      "files": [],
+      "expectations": [
+        "Checks both TTFB observer implementation and actual registry selection",
+        "Does not accept unsupported observation or a tester upper bound as independent timing coverage",
+        "Requires a public HTTP/SDK send and first-audio boundary with stated limitations",
+        "Accepts subtitle alignment as not applicable because timestamped subtitles are unsupported",
+        "Keeps unrelated guarder code out of review scope"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Review a new WebSocket TTS extension that emits timestamped tts_text_result. Its hook file exists but is unregistered and copies production request_start_time. Its subtitle hook is absent. Full current guarder screenshot and PCM evidence is attached.",
+      "expected_output": "Report the unusable independent TTFB observation and missing supported-subtitle alignment coverage, grouped as an extension coverage finding. Do not mistake full-run attachments for hook correctness.",
+      "files": [],
+      "expectations": [
+        "Rejects production timing fields as an independent reference",
+        "Checks registration rather than accepting hook file existence",
+        "Requires a subtitle alignment hook because timestamped subtitles are supplied",
+        "Preserves the new-extension full guarder evidence gate without requesting duplicate valid evidence"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Review a touched TTS implementation whose TTFB hook synchronously decodes large Base64 audio before returning recv() to production. The reported TTFB exceeds the 1 ms reference tolerance. The author proposes widening the tolerance.",
+      "expected_output": "Identify observation interference and require capture-time reference processing outside the production send/receive path, without widening tolerance merely to pass.",
+      "files": [],
+      "expectations": [
+        "Uses monotonic capture timestamps and captured request identity",
+        "Preserves control/empty audio filtering and request/connection isolation when deferring parsing",
+        "Does not use later parsing time as arrival time",
+        "Requires protocol and transport regression validation and actual reference-enabled evidence"
+      ]
     }
   ]
 }
