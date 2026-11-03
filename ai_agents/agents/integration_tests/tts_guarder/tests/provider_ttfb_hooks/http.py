@@ -1,4 +1,4 @@
-"""HTTPX request-body tracing and deferred protocol/audio decoding."""
+"""HTTPX request-start observation and deferred protocol/audio decoding."""
 
 import base64
 import json
@@ -110,18 +110,7 @@ class HttpxHook:
                 super().__init__(*args, **kwargs)
 
                 async def request_hook(request):
-                    previous = request.extensions.get("trace")
-
-                    async def trace(event, info):
-                        if event in {
-                            "http11.send_request_body.started",
-                            "http2.send_request_body.started",
-                        }:
-                            reference.capture("text")
-                        if previous is not None:
-                            await previous(event, info)
-
-                    request.extensions["trace"] = trace
+                    reference.capture("text")
 
                 async def response_hook(response):
                     if response.status_code == 200:

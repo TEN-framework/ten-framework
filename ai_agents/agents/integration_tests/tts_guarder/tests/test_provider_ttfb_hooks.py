@@ -80,7 +80,6 @@ async def test_http_hook_preserves_data_and_defers_recognition(
     class Transport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
             clock[0] = 150_000_000
-            await request.extensions["trace"]("http11.send_request_body.started", {})
             return httpx.Response(
                 200, headers={"content-type": content_type}, stream=Stream()
             )
@@ -96,7 +95,7 @@ async def test_http_hook_preserves_data_and_defers_recognition(
             response = await client.post("https://local.invalid/tts", content="Hello")
             assert response.content == response_bytes
         assert reference.audio == {}  # No parsing happened in the receive callback.
-        assert reference.elapsed_ms("first") == 20
+        assert reference.elapsed_ms("first") == 170
     assert (
         target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
     ) is original
@@ -175,7 +174,6 @@ async def test_additional_http_hooks(monkeypatch, clock, name):
     class Transport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
             clock[0] = 150_000_000
-            await request.extensions["trace"]("http11.send_request_body.started", {})
             return httpx.Response(
                 200,
                 headers={
@@ -195,7 +193,7 @@ async def test_additional_http_hooks(monkeypatch, clock, name):
             response = await client.post("https://local.invalid/tts", content="Hello")
             assert response.content
         assert reference.audio == {}
-        assert reference.elapsed_ms("first") == 20
+        assert reference.elapsed_ms("first") == 170
     assert (
         target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
     ) is original

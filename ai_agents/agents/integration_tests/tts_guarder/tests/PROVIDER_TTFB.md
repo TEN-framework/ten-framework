@@ -1,7 +1,7 @@
 # Second-stage provider TTFB hooks
 
-As of: 2026-10-28 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `56f790d47`
+As of: 2026-11-03 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `a7f0b3d77`
 
 ## Scope
 
@@ -19,14 +19,14 @@ Providers without a hook retain the first-stage tester bound and are marked
 
 | Provider module | Observed start | Observed end |
 |---|---|---|
-| generic_http | HTTPX body send trace | first raw PCM response chunk |
-| gemini | HTTPX body send trace | valid audio MIME inlineData in JSON/SSE |
+| generic_http | HTTPX request hook, before connection setup | first raw PCM response chunk |
+| gemini | HTTPX request hook, before connection setup | valid audio MIME inlineData in JSON/SSE |
 | azure | compile-time mock SDK first synthesis call | compile-time mock SDK first audio; live native reference unavailable |
-| openai | HTTPX body send trace, after connection admission | first raw audio response chunk |
-| mistral | HTTPX body send trace | SSE audio_data payload |
-| smallest | HTTPX body send trace | SSE audio payload |
-| ezai | HTTPX body send trace | JSON audio payload |
-| sarvam | HTTPX body send trace | JSON audios payload |
+| openai | HTTPX request hook, before connection setup | first raw audio response chunk |
+| mistral | HTTPX request hook, before connection setup | SSE audio_data payload |
+| smallest | HTTPX request hook, before connection setup | SSE audio payload |
+| ezai | HTTPX request hook, before connection setup | JSON audio payload |
+| sarvam | HTTPX request hook, before connection setup | JSON audios payload |
 | hume | HTTPX client injected through the SDK's supported parameter | JSON/NDJSON audio payload |
 | typecast | aiohttp request chunk sent trace | first nonempty public SDK stream chunk |
 | google | SDK consumes the first nonempty text input | first nonempty audio_content response |
@@ -129,3 +129,5 @@ an actual native Azure extension built against the SDK fixture passed a
 request containing two text chunks followed by a single-final-text request,
 using the new NativeReference with a 1 ms comparison. Azure production SDK
 online timing is not independently verified by this result.
+
+HTTP timing includes connection-pool waiting and DNS/TCP/TLS setup after request initiation. The end remains the first valid audio payload; response headers and control messages do not complete TTFB.

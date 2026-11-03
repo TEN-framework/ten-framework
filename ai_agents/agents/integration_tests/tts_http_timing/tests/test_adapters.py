@@ -86,8 +86,8 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
 
     class Provider(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
-            await asyncio.sleep(0.05)
             reference.text_sent()
+            await asyncio.sleep(0.05)
             trace = request.extensions.get("trace")
             if trace:
                 await trace("http11.send_request_body.started", {})
