@@ -423,6 +423,7 @@ async def test_words_are_published_once_on_the_pcm_clock(
 def test_empty_sentence_begin_keeps_pcm_origin() -> None:
     """Empty sentence-begin words must not move request-relative timestamps."""
     queue = __import__("asyncio").Queue()
+
     class ImmediateLoop:
         def is_closed(self) -> bool:
             return False
