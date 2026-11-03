@@ -432,9 +432,9 @@ def test_empty_sentence_begin_keeps_pcm_origin() -> None:
             function(item)
 
     callback = AsyncIteratorCallback(
-        ImmediateLoop(),
-        queue,
         MagicMock(),
+        queue,
+        ImmediateLoop(),
         "request",
         sample_rate=SAMPLE_RATE,
         words_enabled=True,
@@ -442,20 +442,24 @@ def test_empty_sentence_begin_keeps_pcm_origin() -> None:
     callback._pcm_samples = SAMPLE_RATE * 1600 // 1000
     callback._handle_output(
         {
-            "type": "sentence-begin",
-            "sentence": {"index": 0, "words": []},
+            "output": {
+                "type": "sentence-begin",
+                "sentence": {"index": 1, "words": []},
+            }
         }
     )
     callback._pcm_samples += SAMPLE_RATE * 600 // 1000
     callback._handle_output(
         {
-            "type": "sentence-end",
-            "sentence": {
-                "index": 0,
-                "words": [
-                    {"text": "hello", "begin_time": 1600, "end_time": 1800}
-                ],
-            },
+            "output": {
+                "type": "sentence-end",
+                "sentence": {
+                    "index": 1,
+                    "words": [
+                        {"text": "hello", "begin_time": 1600, "end_time": 1800}
+                    ],
+                },
+            }
         }
     )
     item = queue.get_nowait()
