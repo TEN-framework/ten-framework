@@ -370,9 +370,9 @@ class SpatialRealAvatarExtension(AsyncExtension):
                     continue
                 await self.pacer.push_audio(converted)
                 self._note_request_state()
-            except asyncio.CancelledError:
-                raise
             except Exception:
+                # CancelledError derives from BaseException, so cancelling
+                # the sender task still propagates past this handler.
                 self.ten_env.log_error(f"send audio: {traceback.format_exc()}")
 
     def _resample(self, pcm: bytes, rate: int) -> bytes:
