@@ -600,6 +600,11 @@ class AsyncIteratorCallback(ResultCallback):
             sentence = {}
 
         index = self._sentence_index(event_type, sentence)
+        # sentence-begin marks the PCM origin even when the provider has not
+        # attached words yet. Later request-relative timestamps must use this
+        # origin rather than the position of the first non-empty word event.
+        if event_type == "sentence-begin":
+            self._sentence_origin_samples.setdefault(index, self._pcm_samples)
         words = self._parse_words(sentence.get("words"))
         if not words:
             # An empty list marks an audio chunk; it carries no word data.

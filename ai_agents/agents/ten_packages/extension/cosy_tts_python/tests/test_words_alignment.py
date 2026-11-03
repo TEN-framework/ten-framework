@@ -10,12 +10,15 @@ import socket
 import threading
 from dataclasses import dataclass, field
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_ten import TenTestContext, ten_test
 from ten_ai_base.struct import TTSTextInput
 from ten_runtime import AudioFrame, Data
 from websockets.sync.server import Server, ServerConnection, serve
+
+from ..cosy_tts import AsyncIteratorCallback, MESSAGE_TYPE_TEXT_RESULT
 
 SAMPLE_RATE = 16000
 BYTES_PER_SAMPLE = 2
@@ -415,6 +418,41 @@ async def test_words_are_published_once_on_the_pcm_clock(
     assert terminal["text_result_end"] is True
     assert terminal["metadata"]["turn_status"] == 1
     assert terminal["metadata"]["turn_seq_id"] == len(results)
+
+
+def test_empty_sentence_begin_keeps_pcm_origin() -> None:
+    """Empty sentence-begin words must not move request-relative timestamps."""
+    queue = __import__("asyncio").Queue()
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        queue,
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    callback._pcm_samples = SAMPLE_RATE * 1600 // 1000
+    callback._handle_output(
+        {
+            "type": "sentence-begin",
+            "sentence": {"index": 0, "words": []},
+        }
+    )
+    callback._pcm_samples += SAMPLE_RATE * 600 // 1000
+    callback._handle_output(
+        {
+            "type": "sentence-end",
+            "sentence": {
+                "index": 0,
+                "words": [
+                    {"text": "hello", "begin_time": 1600, "end_time": 1800}
+                ],
+            },
+        }
+    )
+    item = queue.get_nowait()
+    assert item.message_type == MESSAGE_TYPE_TEXT_RESULT
+    assert item.payload.words[0].start_ms == 1600
 
 
 @ten_test(
