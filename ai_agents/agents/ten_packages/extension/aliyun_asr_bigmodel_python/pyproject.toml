@@ -2,4 +2,4 @@
 name = "aliyun-asr-bigmodel-python"
 version = "0.2.9"
 requires-python = ">=3.10"
-dependencies = ["dashscope>=1.26.0", "pydantic>=2.13.4"]
+dependencies = ["dashscope>=1.26.0,<2", "pydantic>=2.13.4"]
