@@ -33,6 +33,7 @@ jobs:
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-latest
     strategy:
+      fail-fast: false
       matrix:
         build_type: [debug, release]
     steps:
