@@ -1,2 +1,3 @@
-dashscope>=1.26.0
+# Keep the statically importable audio API; DashScope 2.x uses dynamic aliases.
+dashscope>=1.26.0,<2
 pydantic
