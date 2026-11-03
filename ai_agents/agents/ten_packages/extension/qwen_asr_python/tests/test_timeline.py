@@ -106,6 +106,8 @@ def test_finalize_preserves_cumulative_metrics_and_next_task_timestamps(
             await extension._send_audio_actual_send_metrics()
             assert await extension.send_audio(audio_frame(250), "session-1")
             await extension.finalize("session-1")
+            if extension._task_start_task is not None:
+                await extension._task_start_task
             await extension._send_audio_actual_send_metrics()
             assert extension.audio_timeline is timeline
             assert timeline.total_user_audio_duration == (turn + 1) * 1250
@@ -125,7 +127,7 @@ def test_finalize_preserves_cumulative_metrics_and_next_task_timestamps(
         ] * 3
         assert sum(item["actual_send_delta"] for item in metrics) == 3750
         assert extension.client is client
-        assert client.start_task.await_count == 2
+        assert client.start_task.await_count == 3
         assert client.finish_task.await_count == 3
         client.close.assert_not_awaited()
         assert extension.send_asr_finalize_end.await_count == 3
@@ -226,6 +228,8 @@ def test_new_task_origin_is_committed_only_after_success(extension):
         client.start_task.side_effect = start_task
         assert not extension.is_connected()
         await extension.start_connection()
+        if extension._task_start_task is not None:
+            await extension._task_start_task
         assert await extension.send_audio(audio_frame(500), "session-1")
         assert extension._timeline_time(100) == 1100
         assert extension.audio_timeline.total_user_audio_duration == 1500

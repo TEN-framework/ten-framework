@@ -68,7 +68,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self._task_starting = False
         self._task_start_task: asyncio.Task[None] | None = None
         self._task_recovery_task: asyncio.Task[None] | None = None
-        self._final_received_during_finalize = False
         self._buffer_flush_head: AudioFrame | None = None
         self._dump_lock = asyncio.Lock()
 
@@ -187,14 +186,21 @@ class QwenASRExtension(AsyncASRBaseExtension):
         flushed_audio: list[bytes] = []
         ready_to_report_connected = False
         generation = 0
+        if self._task_start_task and not self._task_start_task.done():
+            self._task_start_task.cancel()
+            try:
+                await self._task_start_task
+            except asyncio.CancelledError:
+                pass
+            self._task_start_task = None
+            self._task_starting = False
         async with self._swap_lock:
             self._connection_swap_depth += 1
             try:
                 self._connection_start = asyncio.get_event_loop().time()
                 generation = self._generation + 1
                 self._generation = generation
-                async with self._send_lock:
-                    await self._stop_connection_locked()
+                await self._stop_connection_locked()
                 client = QwenASRClient(
                     url=self.config.url,
                     api_key=self.config.api_key,
@@ -227,10 +233,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     await self._abort_connection_attempt(generation, exc)
                     return
                 try:
-                    async with self._send_lock:
-                        flushed_audio = (
-                            await self._flush_buffered_frames_locked()
-                        )
+                    flushed_audio = await self._flush_buffered_frames_locked()
                 except Exception as exc:
                     await self._abort_connection_attempt(generation, exc)
                     return
@@ -248,10 +251,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
             await self.on_connected()
             await self.send_connect_delay_metrics(
                 int(
-                    (
-                        asyncio.get_event_loop().time()
-                        - self._connection_start
-                    )
+                    (asyncio.get_event_loop().time() - self._connection_start)
                     * 1000
                 )
             )
@@ -261,8 +261,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         async with self._swap_lock:
             self._connection_swap_depth += 1
             try:
-                async with self._send_lock:
-                    await self._stop_connection_locked()
+                await self._stop_connection_locked()
             finally:
                 self._connection_swap_depth -= 1
 
@@ -305,22 +304,32 @@ class QwenASRExtension(AsyncASRBaseExtension):
             async with self._swap_lock:
                 client = self.client
                 task_start_task = self._task_start_task
-                connected = self.is_connected()
-            if not connected and task_start_task is not None:
-                await task_start_task
-                async with self._swap_lock:
-                    client = self.client
-                    if not self.is_connected() or client is None:
-                        return False
-            elif not connected or client is None:
-                return False
-            async with self._send_lock:
-                if client is not self.client or not self.connected:
-                    return False
-                if not await self._send_audio_locked(
-                    audio_data, frame_metadata, frame_session_id
+                if (
+                    client is None
+                    or not self.is_connected()
+                    or self._task_starting
+                    or (
+                        task_start_task is not None
+                        and not task_start_task.done()
+                    )
                 ):
                     return False
+                if not await self._prepare_task_for_session_locked(
+                    client, frame_session_id
+                ):
+                    return False
+                async with self._send_lock:
+                    if (
+                        client is not self.client
+                        or not self.connected
+                        or not client.connected
+                        or not client.task_ready
+                    ):
+                        return False
+                    if not await self._send_audio_locked(
+                        audio_data, frame_metadata, frame_session_id
+                    ):
+                        return False
             await self._dump_audio([audio_data])
             return True
         except Exception as exc:
@@ -344,43 +353,29 @@ class QwenASRExtension(AsyncASRBaseExtension):
     async def _finalize_impl(self, session_id: str | None) -> None:
         finalize_id = self.finalize_id
         finalize_metadata = copy.deepcopy(self.metadata or {})
-        self._final_received_during_finalize = False
         try:
             async with self._swap_lock:
-                async with self._send_lock:
-                    client = self.client
-                    if self.is_connected() and client is not None:
-                        try:
-                            await asyncio.wait_for(
-                                client.finish_task(),
-                                timeout=(
-                                    (self.config.finalize_timeout_ms / 1000)
-                                    if self.config
-                                    else 5
-                                ),
-                            )
-                            self._clear_active_task(client)
-                            self._schedule_task_start(client)
-                        except asyncio.CancelledError:
-                            client.task_ready = False
-                            raise
-                        except Exception as exc:
-                            client.task_ready = False
-                            fatal = self._is_fatal_exception(exc)
-                            self._schedule_task_recovery(client, exc, fatal)
+                client = self.client
+                if self.is_connected() and client is not None:
+                    try:
+                        await asyncio.wait_for(
+                            client.finish_task(),
+                            timeout=(
+                                (self.config.finalize_timeout_ms / 1000)
+                                if self.config
+                                else 5
+                            ),
+                        )
+                        self._clear_active_task(client)
+                        self._schedule_task_start(client)
+                    except asyncio.CancelledError:
+                        client.task_ready = False
+                        raise
+                    except Exception as exc:
+                        client.task_ready = False
+                        fatal = self._is_fatal_exception(exc)
+                        self._schedule_task_recovery(client, exc, fatal)
         finally:
-            if (
-                self._final_received_during_finalize
-                and self.last_finalize_time is not None
-            ):
-                ttlw = int(
-                    (asyncio.get_event_loop().time() - self.last_finalize_time)
-                    * 1000
-                )
-                await self._send_metrics_ttlw(ttlw)
-                self.last_finalize_time = None
-            self._final_received_during_finalize = False
-            self.last_finalize_time = None
             self.finalize_id = finalize_id
             self.metadata = finalize_metadata
             if session_id is not None:
@@ -433,8 +428,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
         if not text:
             return
         final = bool(sentence.get("sentence_end", False))
-        if final and self._finalize_dispatch_active.get():
-            self._final_received_during_finalize = True
         begin_time = int(sentence.get("begin_time") or 0)
         end_time = sentence.get("end_time")
         start_ms = self._timeline_time(begin_time)
@@ -564,10 +557,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 try:
                     await client.start_task()
                     self._start_task_timeline()
-                    async with self._send_lock:
-                        flushed_audio = (
-                            await self._flush_buffered_frames_locked()
-                        )
+                    flushed_audio = await self._flush_buffered_frames_locked()
                 finally:
                     self._task_starting = False
                     self._connection_swap_depth -= 1
@@ -607,13 +597,10 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 try:
                     if self.client is not client:
                         return
-                    async with self._send_lock:
-                        if self.client is not client:
-                            return
-                        self.client = None
-                        self.connected = False
-                        self._clear_active_task(client)
-                        await client.close()
+                    self.client = None
+                    self.connected = False
+                    self._clear_active_task(client)
+                    await client.close()
                 finally:
                     self._connection_swap_depth -= 1
             if self._stop_requested or self._generation != recovery_generation:
@@ -656,12 +643,11 @@ class QwenASRExtension(AsyncASRBaseExtension):
             try:
                 if generation != self._generation or self._stop_requested:
                     return
-                async with self._send_lock:
-                    client = self.client
-                    self.connected = False
-                    self.client = None
-                    if client is not None:
-                        await client.close()
+                client = self.client
+                self.connected = False
+                self.client = None
+                if client is not None:
+                    await client.close()
             finally:
                 self._connection_swap_depth -= 1
         clean_close = isinstance(exc, ConnectionClosedOK)
@@ -779,20 +765,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
         client = self.client
         if not self.connected or client is None or not client.connected:
             return False
-        if (
-            client.task_ready
-            and self._active_session_id is not None
-            and self._active_session_id != session_id
-        ):
-            await client.finish_task()
-            self._clear_active_task(client)
-        if not client.task_ready:
-            self._task_starting = True
-            try:
-                await client.start_task()
-                self._start_task_timeline()
-            finally:
-                self._task_starting = False
         task_id = getattr(client, "task_id", None)
         if not isinstance(task_id, str):
             task_id = None
@@ -812,6 +784,33 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self.session_id = session_id
         return True
 
+    async def _prepare_task_for_session_locked(
+        self, client: QwenASRClient | None, session_id: str | None
+    ) -> bool:
+        """Swap vendor tasks while holding the connection swap lock only."""
+        if (
+            client is None
+            or self.client is not client
+            or not self.connected
+            or not client.connected
+        ):
+            return False
+        if (
+            client.task_ready
+            and self._active_session_id is not None
+            and self._active_session_id != session_id
+        ):
+            await client.finish_task()
+            self._clear_active_task(client)
+        if not client.task_ready:
+            self._task_starting = True
+            try:
+                await client.start_task()
+                self._start_task_timeline()
+            finally:
+                self._task_starting = False
+        return client.task_ready
+
     async def _flush_buffered_frames_locked(self) -> list[bytes]:
         flushed_audio: list[bytes] = []
         pending = self._buffer_flush_head
@@ -828,11 +827,17 @@ class QwenASRExtension(AsyncASRBaseExtension):
             audio_data = bytes(buffered_frame.get_buf())
             frame_size = len(audio_data)
             try:
-                sent = await self._send_audio_locked(
-                    audio_data,
-                    frame_metadata,
-                    frame_session_id,
-                )
+                if not await self._prepare_task_for_session_locked(
+                    self.client, frame_session_id
+                ):
+                    sent = False
+                else:
+                    async with self._send_lock:
+                        sent = await self._send_audio_locked(
+                            audio_data,
+                            frame_metadata,
+                            frame_session_id,
+                        )
             except Exception:
                 self._buffer_flush_head = buffered_frame
                 raise
@@ -854,8 +859,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         if generation != self._generation or self._stop_requested:
             return
         self.connected = False
-        async with self._send_lock:
-            await self._stop_connection_locked()
+        await self._stop_connection_locked()
         fatal = self._is_fatal_exception(exc)
         self._fatal_error = self._fatal_error or fatal
         await self._send_vendor_error(exc, fatal=fatal)
