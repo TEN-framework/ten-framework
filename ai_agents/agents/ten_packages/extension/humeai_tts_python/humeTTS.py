@@ -34,7 +34,6 @@ class HumeAiTTS(AsyncTTS2HttpClient):
             init_params["base_url"] = config.params["base_url"]
         # Match AsyncHumeClient's default timeout and redirect behavior.
         self.http = httpx.AsyncClient(timeout=60, follow_redirects=True)
-        self.observe_http_ttfb(self.http)
         self.connection = AsyncHumeClient(**init_params, httpx_client=self.http)
         self._is_cancelled = False
 
@@ -111,8 +110,6 @@ class HumeAiTTS(AsyncTTS2HttpClient):
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return
 
-                if snippet.audio:
-                    self.record_audio_received()
                 audio_bytes = base64.b64decode(snippet.audio)
 
                 # Final check before yielding audio data

@@ -1,9 +1,8 @@
-"""Gemini inlineData audio in JSON/SSE provider responses."""
+"""Observe gemini HTTP adapter request and audio boundaries."""
 
-from .http import HttpxHook
+from .http import HttpAdapterHook
 
 
-class Hook(HttpxHook):
+class Hook(HttpAdapterHook):
     module_name = "ten_packages.extension.gemini_tts_python.gemini_tts"
-    audio_keys = {"inlineData", "inline_data"}
-    binding = "httpx"
+    client_class = "GeminiTTSClient"

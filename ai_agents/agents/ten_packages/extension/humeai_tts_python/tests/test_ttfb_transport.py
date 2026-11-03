@@ -13,7 +13,7 @@ from .test_ttfb_boundary import TimingTester
 
 
 @pytest.mark.api
-def test_ttfb_excludes_sdk_http_connection():
+def test_ttfb_includes_sdk_http_connection():
     times = {}
 
     class Audio(httpx.AsyncByteStream):
@@ -36,8 +36,8 @@ def test_ttfb_excludes_sdk_http_connection():
 
     class Provider(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
-            await asyncio.sleep(0.12)
             times["sent"] = time.monotonic_ns()
+            await asyncio.sleep(0.12)
             trace = request.extensions.get("trace")
             if trace is not None:
                 await trace("http11.send_request_body.started", {})
@@ -72,7 +72,9 @@ def test_ttfb_excludes_sdk_http_connection():
             assert error is None, error.error_message()
             expected = (times["received"] - times["sent"]) / 1_000_000
             assert len(tester.reported) == 1
-            assert abs(tester.reported[0] - expected) <= 5, (
+            # SDK preparation and audio decoding are included by the adapter contract.
+            # Allow integer-millisecond truncation of the measured interval.
+            assert tester.reported[0] + 1 >= expected, (
                 tester.reported,
                 expected,
             )

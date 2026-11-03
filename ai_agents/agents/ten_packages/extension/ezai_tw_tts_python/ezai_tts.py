@@ -15,7 +15,6 @@ from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
-
 BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
@@ -59,7 +58,6 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
             ),
             http2=True,  # Enable HTTP/2 if server supports it
         )
-        self.observe_http_ttfb(self.client)
 
     async def cancel(self):
         self.ten_env.log_debug("EZAITWTTSClient: cancel() called.")
@@ -130,8 +128,6 @@ class EZAITWTTSClient(AsyncTTS2HttpClient):
 
                 # Decode WAV (PCM24) → PCM16 raw frames
                 audio_bytes = base64.b64decode(j["audio"])
-                if audio_bytes:
-                    self.record_audio_received()
                 pcm16_bytes = self.pcm24topcm16(audio_bytes)
                 self.ten_env.log_info(
                     f"EZAITWTTSClient: tts input:|{sent}| output:{j.get('text', '')}",

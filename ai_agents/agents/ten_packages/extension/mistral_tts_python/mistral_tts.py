@@ -36,7 +36,6 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
 from .config import MistralTTSConfig
 
-
 # ============================================================================
 # Performance Optimization: Module-level pre-creation of SSL context
 # ============================================================================
@@ -130,7 +129,6 @@ class MistralTTSClient(AsyncTTS2HttpClient):
             http2=True,
             verify=_GLOBAL_SSL_CONTEXT,
         )
-        self.observe_http_ttfb(self.client)
         _elapsed_ms = (time.time() - _start_time) * 1000
         ten_env.log_debug(f"http client initialized in {_elapsed_ms:.2f}ms")
 
@@ -272,7 +270,6 @@ class MistralTTSClient(AsyncTTS2HttpClient):
                         if not audio_data:
                             continue
 
-                        self.record_audio_received()
                         pcm = converter.feed(
                             base64.b64decode(audio_data, validate=True)
                         )

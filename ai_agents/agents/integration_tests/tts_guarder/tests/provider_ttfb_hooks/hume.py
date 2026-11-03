@@ -1,9 +1,8 @@
-"""Independent hume HTTP provider TTFB observer."""
+"""Observe hume HTTP adapter request and audio boundaries."""
 
-from .http import HttpxHook
+from .http import HttpAdapterHook
 
 
-class Hook(HttpxHook):
+class Hook(HttpAdapterHook):
     module_name = "ten_packages.extension.humeai_tts_python.humeTTS"
-    audio_keys = {"audio"}
-    binding = "httpx"
+    client_class = "HumeAiTTS"

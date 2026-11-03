@@ -1,17 +1,11 @@
 """Public transport/SDK fixture checks for every second-stage provider hook."""
 
-import asyncio
-import base64
-import io
-import json
-import wave
 from importlib import import_module
 from types import SimpleNamespace
 
-import httpx
 import pytest
 
-from .provider_ttfb_hooks import HOOKS, install_hook
+from .provider_ttfb_hooks import install_hook
 from .provider_ttfb_hooks.reference import Reference
 
 
@@ -22,83 +16,6 @@ def clock(monkeypatch):
         "tests.provider_ttfb_hooks.reference.time.monotonic_ns", lambda: now[0]
     )
     return now
-
-
-def wav_bytes():
-    output = io.BytesIO()
-    with wave.open(output, "wb") as stream:
-        stream.setnchannels(1)
-        stream.setsampwidth(2)
-        stream.setframerate(16000)
-        stream.writeframes(b"\x01\x00")
-    return output.getvalue()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "name,content_type,key",
-    [
-        ("openai_tts2_python", "audio/pcm", None),
-        ("mistral_tts_python", "text/event-stream", "audio_data"),
-        ("ezai_tw_tts_python", "application/json", "audio"),
-        ("humeai_tts_python", "application/json", "audio"),
-    ],
-)
-async def test_http_hook_preserves_data_and_defers_recognition(
-    monkeypatch, clock, name, content_type, key
-):
-    module = import_module(f".provider_ttfb_hooks.{HOOKS[name]}", __package__)
-    hook = module.Hook()
-    target = import_module(hook.module_name)
-    original = target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
-    response_bytes = b""
-
-    class Stream(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            nonlocal response_bytes
-            clock[0] = 155_000_000
-            if key:
-                empty = json.dumps({key: [] if key == "audios" else ""}).encode()
-                if "event-stream" in content_type:
-                    empty = b"data: " + empty + b"\n\n"
-                elif "json" in content_type:
-                    empty += b"\n"
-                response_bytes += empty
-                yield empty
-            clock[0] = 170_000_000
-            audio = "AQA="
-            body = (
-                json.dumps({key: [audio] if key == "audios" else audio}).encode()
-                if key
-                else b"\x01\x00"
-            )
-            if "event-stream" in content_type:
-                body = b"data: " + body + b"\n\n"
-            response_bytes += body
-            yield body
-
-    class Transport(httpx.AsyncBaseTransport):
-        async def handle_async_request(self, request):
-            clock[0] = 150_000_000
-            return httpx.Response(
-                200, headers={"content-type": content_type}, stream=Stream()
-            )
-
-    with install_hook(name, {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        client_class = (
-            target.AsyncClient
-            if hook.binding == "AsyncClient"
-            else target.httpx.AsyncClient
-        )
-        async with client_class(transport=Transport()) as client:
-            response = await client.post("https://local.invalid/tts", content="Hello")
-            assert response.content == response_bytes
-        assert reference.audio == {}  # No parsing happened in the receive callback.
-        assert reference.elapsed_ms("first") == 170
-    assert (
-        target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
-    ) is original
 
 
 def test_google_public_lazy_iterator(monkeypatch, clock):
@@ -128,9 +45,6 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
-
-
-
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
     reference = Reference()
     reference.begin_request("first")
@@ -147,56 +61,6 @@ def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
     assert reference.sent == {} and reference.audio == {}
     assert reference.elapsed_ms("first") == 20
     assert reference.elapsed_ms("second") == 25
-
-
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("name", ["generic_tts_http_python", "gemini_tts_python"])
-async def test_additional_http_hooks(monkeypatch, clock, name):
-    spec = import_module(f".provider_ttfb_hooks.{HOOKS[name]}", __package__)
-    hook = spec.Hook()
-    target = import_module(hook.module_name)
-    original = target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
-    gemini = name == "gemini_tts_python"
-
-    class Stream(httpx.AsyncByteStream):
-        async def __aiter__(self):
-            clock[0] = 155_000_000
-            if gemini:
-                yield b'data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"image/png","data":"AQA="}}]}}]}\n\n'
-            clock[0] = 170_000_000
-            if gemini:
-                yield b'data: {"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"audio/L16;rate=24000","data":"AQA="}}]}}]}\n\n'
-            else:
-                yield b"\x01\x00"
-
-    class Transport(httpx.AsyncBaseTransport):
-        async def handle_async_request(self, request):
-            clock[0] = 150_000_000
-            return httpx.Response(
-                200,
-                headers={
-                    "content-type": "text/event-stream" if gemini else "audio/pcm"
-                },
-                stream=Stream(),
-            )
-
-    with install_hook(name, {}, monkeypatch) as reference:
-        reference.begin_request("first")
-        client_type = (
-            target.AsyncClient
-            if hook.binding == "AsyncClient"
-            else target.httpx.AsyncClient
-        )
-        async with client_type(transport=Transport()) as client:
-            response = await client.post("https://local.invalid/tts", content="Hello")
-            assert response.content
-        assert reference.audio == {}
-        assert reference.elapsed_ms("first") == 170
-    assert (
-        target.AsyncClient if hook.binding == "AsyncClient" else target.httpx
-    ) is original
 
 
 def test_azure_mock_reference_uses_sdk_timestamps(monkeypatch):
@@ -234,3 +98,38 @@ def test_azure_live_sdk_is_not_claimed_as_independent_reference():
 
     with pytest.raises(ValueError, match="cannot be intercepted"):
         Hook().install(None, None, {})
+
+
+@pytest.mark.asyncio
+async def test_http_adapter_hook_tracks_input_and_first_audio(monkeypatch, clock):
+    from .provider_ttfb_hooks.http import HttpAdapterHook
+    from ten_ai_base.struct import TTS2HttpResponseEventType as Event
+
+    class Client:
+        async def get(self, text, request_id):
+            clock[0] = 150_000_000
+            yield b"", Event.RESPONSE
+            clock[0] = 170_000_000
+            yield b"audio", Event.RESPONSE
+            clock[0] = 270_000_000
+            yield b"tail", Event.RESPONSE
+            yield None, Event.END
+
+    module = SimpleNamespace(Client=Client)
+    monkeypatch.setattr(
+        "tests.provider_ttfb_hooks.http.import_module", lambda name: module
+    )
+    hook = HttpAdapterHook()
+    hook.client_class = "Client"
+    reference = Reference()
+    reference.begin_request("first")
+    hook.install(monkeypatch, reference, {})
+    stream = Client().get("Hello", "first")
+    outputs = [event async for event in stream]
+    assert outputs == [
+        (b"", Event.RESPONSE),
+        (b"audio", Event.RESPONSE),
+        (b"tail", Event.RESPONSE),
+        (None, Event.END),
+    ]
+    assert reference.elapsed_ms("first") == 170

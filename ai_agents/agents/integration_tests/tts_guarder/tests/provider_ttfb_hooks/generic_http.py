@@ -1,9 +1,8 @@
-"""Generic HTTP raw audio response and request-body transport boundaries."""
+"""Observe generic_http HTTP adapter request and audio boundaries."""
 
-from .http import HttpxHook
+from .http import HttpAdapterHook
 
 
-class Hook(HttpxHook):
+class Hook(HttpAdapterHook):
     module_name = "ten_packages.extension.generic_tts_http_python.generic_tts"
-    # This adapter's contract is raw PCM, not an arbitrary JSON TTS envelope.
-    audio_keys = set()
+    client_class = "GenericTTSClient"

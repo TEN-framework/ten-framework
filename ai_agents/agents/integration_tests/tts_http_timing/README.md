@@ -1,16 +1,14 @@
 # HTTP TTFB adapter mocks
 
-As of: 2026-10-27 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `1493ed239`
+As of: 2026-11-03 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `10c89b121`
 
-This directory is independent of the first-stage tts_guarder PR. It checks
-OpenAI, Mistral, Smallest, EZAI and Sarvam adapters through TEN text inputs,
-audio outputs, completion and TTFB metrics. An injected HTTPX provider delays
-connection admission, supplies first audio and delayed response completion,
-and timestamps those provider boundaries. Each test sends two request IDs,
-with one final-text second request. The outer tester bound is strict; the
-provider hook reference allows 1 ms; the separately captured local mock
-reference audits the hook within 5 ms for scheduling and rounding.
+These TEN mocks check two sequential request IDs through text inputs, audio,
+completion and TTFB metrics. HTTP timing starts at client.get() and ends at its
+first nonempty audio RESPONSE, including connection delay and conversion.
+The guarder adapter reference allows 1 ms and the tester outer bound is strict.
+The wire-level fixture interval is a lower bound, not an equal interval, because
+it excludes adapter parsing and conversion.
 
 ## Run
 

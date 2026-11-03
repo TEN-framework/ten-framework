@@ -69,7 +69,7 @@ class TimingTester(ExtensionTester):
             env.stop_test()
 
 
-def test_ttfb_excludes_connection_and_tail_audio_wait():
+def test_ttfb_includes_connection_and_excludes_tail_audio_wait():
     times = {}
 
     class AudioStream(httpx.AsyncByteStream):
@@ -82,8 +82,8 @@ def test_ttfb_excludes_connection_and_tail_audio_wait():
 
     class Transport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
-            await asyncio.sleep(0.15)
             times["sent"] = time.monotonic_ns()
+            await asyncio.sleep(0.15)
             trace = request.extensions.get("trace")
             if trace:
                 await trace("http11.send_request_body.started", {})

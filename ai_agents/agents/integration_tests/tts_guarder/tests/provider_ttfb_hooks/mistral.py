@@ -1,9 +1,8 @@
-"""Independent mistral HTTP provider TTFB observer."""
+"""Observe mistral HTTP adapter request and audio boundaries."""
 
-from .http import HttpxHook
+from .http import HttpAdapterHook
 
 
-class Hook(HttpxHook):
+class Hook(HttpAdapterHook):
     module_name = "ten_packages.extension.mistral_tts_python.mistral_tts"
-    audio_keys = {"audio_data"}
-    binding = "AsyncClient"
+    client_class = "MistralTTSClient"

@@ -1,9 +1,8 @@
-"""Independent ezai HTTP provider TTFB observer."""
+"""Observe ezai HTTP adapter request and audio boundaries."""
 
-from .http import HttpxHook
+from .http import HttpAdapterHook
 
 
-class Hook(HttpxHook):
+class Hook(HttpAdapterHook):
     module_name = "ten_packages.extension.ezai_tw_tts_python.ezai_tts"
-    audio_keys = {"audio"}
-    binding = "AsyncClient"
+    client_class = "EZAITWTTSClient"
