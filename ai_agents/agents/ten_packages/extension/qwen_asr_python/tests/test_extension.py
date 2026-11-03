@@ -255,6 +255,109 @@ def test_connection_status_serializes_redacted_vendor_metadata():
     asyncio.run(run())
 
 
+def test_post_connect_flush_failure_reports_disconnect_and_reconnects(
+    monkeypatch,
+):
+    async def run():
+        extension = connection_extension()
+        frame = AudioFrame.create("pcm_frame")
+        frame.alloc_buf(320)
+        extension.buffered_frames.put_nowait(frame)
+        extension.buffered_frames_size = 320
+
+        client = fake_client()
+        client.send_audio = AsyncMock(
+            side_effect=QwenProtocolError("timeout", "timeout")
+        )
+        monkeypatch.setattr(
+            "qwen_asr_python.extension.QwenASRClient",
+            MagicMock(return_value=client),
+        )
+
+        await extension.start_connection()
+
+        statuses = [
+            event["current"]
+            for event in emitted_payloads(
+                extension, "connection_status_changed"
+            )
+        ]
+        assert statuses == ["connecting", "disconnected"]
+        assert extension._buffer_flush_head is frame
+        assert extension.buffered_frames_size == 320
+        assert extension._reconnect_task is not None
+        extension._reconnect_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await extension._reconnect_task
+
+    asyncio.run(run())
+
+
+def test_flush_send_failure_keeps_failed_frame_as_head(monkeypatch):
+    async def run():
+        extension = connection_extension()
+        first = AudioFrame.create("pcm_frame")
+        first.alloc_buf(4)
+        first.get_buf()[:] = b"aaaa"
+        second = AudioFrame.create("pcm_frame")
+        second.alloc_buf(4)
+        second.get_buf()[:] = b"bbbb"
+        extension.buffered_frames.put_nowait(first)
+        extension.buffered_frames.put_nowait(second)
+        extension.buffered_frames_size = 8
+
+        client = fake_client()
+        client.send_audio = AsyncMock(
+            side_effect=[
+                None,
+                QwenProtocolError("timeout", "timeout"),
+            ]
+        )
+        extension.client = client
+        extension.connected = True
+        extension._generation = 1
+
+        with pytest.raises(QwenProtocolError):
+            async with extension._send_lock:
+                await extension._flush_buffered_frames_locked()
+
+        assert extension._buffer_flush_head is second
+        assert extension.buffered_frames.empty()
+        assert extension.buffered_frames_size == 4
+        assert client.send_audio.await_count == 2
+
+    asyncio.run(run())
+
+
+def test_stale_recovery_skips_disconnect_after_replacement(monkeypatch):
+    async def run():
+        extension = connection_extension()
+        old_client = fake_client()
+        new_client = fake_client()
+        extension.client = old_client
+        extension.connected = True
+        extension._generation = 2
+        extension.on_disconnected = AsyncMock()
+        extension._schedule_reconnect = MagicMock()
+
+        async def slow_error(*_args, **_kwargs):
+            extension.client = new_client
+            extension.connected = True
+            extension._generation = 3
+            await asyncio.sleep(0)
+
+        extension.send_asr_error = AsyncMock(side_effect=slow_error)
+
+        await extension._recover_client(
+            old_client, QwenProtocolError("timeout", "timeout"), False
+        )
+
+        extension.on_disconnected.assert_not_awaited()
+        extension._schedule_reconnect.assert_not_called()
+
+    asyncio.run(run())
+
+
 def test_recovery_flushes_each_buffered_frame_with_its_session_metadata(
     monkeypatch,
 ):

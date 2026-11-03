@@ -47,9 +47,6 @@ class QwenASRConfig(BaseModel):
     dump_path: str = "/tmp"
     finalize_timeout_ms: int = 5000
     connect_timeout_s: int = 10
-    # Schema-compatible only. Non-fatal reconnect is unbounded (backoff until
-    # recover / stop / fatal); this value is not used as a retry ceiling.
-    reconnect_max_attempts: int = 0
     params: dict[str, Any] = Field(default_factory=dict)
 
     def apply_defaults(self) -> None:
@@ -142,8 +139,6 @@ class QwenASRConfig(BaseModel):
             raise ValueError("configure vocabulary_id or vocabulary, not both")
         if self.finalize_timeout_ms <= 0 or self.connect_timeout_s <= 0:
             raise ValueError("timeouts must be positive")
-        if self.reconnect_max_attempts < 0:
-            raise ValueError("reconnect_max_attempts cannot be negative")
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         value = self.model_dump()

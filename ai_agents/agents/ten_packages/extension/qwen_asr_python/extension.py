@@ -68,7 +68,9 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self._task_starting = False
         self._task_start_task: asyncio.Task[None] | None = None
         self._task_recovery_task: asyncio.Task[None] | None = None
-        self._final_result_ready = False
+        self._final_received_during_finalize = False
+        self._buffer_flush_head: AudioFrame | None = None
+        self._dump_lock = asyncio.Lock()
 
     @override
     def vendor(self) -> str:
@@ -182,9 +184,11 @@ class QwenASRExtension(AsyncASRBaseExtension):
         if self._init_failed or self._stop_requested or self._fatal_error:
             return
         assert self.config is not None
+        flushed_audio: list[bytes] = []
+        ready_to_report_connected = False
+        generation = 0
         async with self._swap_lock:
             self._connection_swap_depth += 1
-            swap_active = True
             try:
                 self._connection_start = asyncio.get_event_loop().time()
                 generation = self._generation + 1
@@ -220,46 +224,36 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 except Exception as exc:
                     if generation != self._generation:
                         return
-                    self.connected = False
-                    await self._stop_connection_locked()
-                    fatal = self._is_fatal_exception(exc)
-                    self._fatal_error = self._fatal_error or fatal
-                    await self._send_vendor_error(exc, fatal=fatal)
-                    await self.on_disconnected(
-                        code=(
-                            ModuleErrorCode.FATAL_ERROR.value
-                            if fatal
-                            else ModuleErrorCode.NON_FATAL_ERROR.value
-                        ),
-                        message=redact_url(str(exc)),
-                    )
-                    if not fatal and not self._stop_requested:
-                        self._schedule_reconnect()
-                if (
-                    self.connected
-                    and self.client is client
-                    and client.connected
-                ):
+                    await self._abort_connection_attempt(generation, exc)
+                    return
+                try:
                     async with self._send_lock:
                         flushed_audio = (
                             await self._flush_buffered_frames_locked()
                         )
-                    self._connection_swap_depth -= 1
-                    swap_active = False
-                    await self.on_connected()
-                    await self.send_connect_delay_metrics(
-                        int(
-                            (
-                                asyncio.get_event_loop().time()
-                                - self._connection_start
-                            )
-                            * 1000
-                        )
-                    )
-                    await self._dump_audio(flushed_audio)
+                except Exception as exc:
+                    await self._abort_connection_attempt(generation, exc)
+                    return
+                ready_to_report_connected = (
+                    generation == self._generation
+                    and self.connected
+                    and self.client is client
+                    and client.connected
+                )
             finally:
-                if swap_active:
-                    self._connection_swap_depth -= 1
+                self._connection_swap_depth -= 1
+        if ready_to_report_connected:
+            await self.on_connected()
+            await self.send_connect_delay_metrics(
+                int(
+                    (
+                        asyncio.get_event_loop().time()
+                        - self._connection_start
+                    )
+                    * 1000
+                )
+            )
+            await self._dump_audio(flushed_audio)
 
     @override
     async def stop_connection(self) -> None:
@@ -349,6 +343,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
     async def _finalize_impl(self, session_id: str | None) -> None:
         finalize_id = self.finalize_id
         finalize_metadata = copy.deepcopy(self.metadata or {})
+        self._final_received_during_finalize = False
         try:
             async with self._swap_lock:
                 async with self._send_lock:
@@ -373,14 +368,17 @@ class QwenASRExtension(AsyncASRBaseExtension):
                             fatal = self._is_fatal_exception(exc)
                             self._schedule_task_recovery(client, exc, fatal)
         finally:
-            if self._final_result_ready and self.last_finalize_time is not None:
+            if (
+                self._final_received_during_finalize
+                and self.last_finalize_time is not None
+            ):
                 ttlw = int(
                     (asyncio.get_event_loop().time() - self.last_finalize_time)
                     * 1000
                 )
                 await self._send_metrics_ttlw(ttlw)
                 self.last_finalize_time = None
-            self._final_result_ready = False
+            self._final_received_during_finalize = False
             self.last_finalize_time = None
             self.finalize_id = finalize_id
             self.metadata = finalize_metadata
@@ -434,8 +432,8 @@ class QwenASRExtension(AsyncASRBaseExtension):
         if not text:
             return
         final = bool(sentence.get("sentence_end", False))
-        if final:
-            self._final_result_ready = True
+        if final and self._finalize_dispatch_active.get():
+            self._final_received_during_finalize = True
         begin_time = int(sentence.get("begin_time") or 0)
         end_time = sentence.get("end_time")
         start_ms = self._timeline_time(begin_time)
@@ -508,7 +506,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
         )
 
     def _start_task_timeline(self) -> None:
-        self._final_result_ready = False
         self._task_audio_start_ms = (
             self.audio_timeline.total_user_audio_duration
             + self.audio_timeline.total_silence_audio_duration
@@ -523,16 +520,17 @@ class QwenASRExtension(AsyncASRBaseExtension):
             self._active_session_id = None
 
     async def _dump_audio(self, audio_chunks: list[bytes]) -> None:
-        if not self.audio_dumper:
+        if not self.audio_dumper or not audio_chunks:
             return
-        for audio_data in audio_chunks:
-            try:
-                await self.audio_dumper.push_bytes(audio_data)
-            except Exception as exc:
-                self.ten_env.log_error(
-                    f"qwen audio dump failed: {redact_url(str(exc))}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+        async with self._dump_lock:
+            for audio_data in audio_chunks:
+                try:
+                    await self.audio_dumper.push_bytes(audio_data)
+                except Exception as exc:
+                    self.ten_env.log_error(
+                        f"qwen audio dump failed: {redact_url(str(exc))}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
 
     def _schedule_task_recovery(
         self, client: QwenASRClient, exc: BaseException, fatal: bool
@@ -601,6 +599,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
     async def _recover_client(
         self, client: QwenASRClient, exc: BaseException, fatal: bool
     ) -> None:
+        recovery_generation = self._generation
         try:
             async with self._swap_lock:
                 self._connection_swap_depth += 1
@@ -616,9 +615,15 @@ class QwenASRExtension(AsyncASRBaseExtension):
                         await client.close()
                 finally:
                     self._connection_swap_depth -= 1
-            if self._stop_requested:
+            if self._stop_requested or self._generation != recovery_generation:
+                return
+            if self.client is not None and self.client is not client:
                 return
             await self._send_vendor_error(exc, fatal=fatal)
+            if self._stop_requested or self._generation != recovery_generation:
+                return
+            if self.client is not None and self.client is not client:
+                return
             await self.on_disconnected(
                 code=(
                     ModuleErrorCode.FATAL_ERROR.value
@@ -627,7 +632,11 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 ),
                 message=redact_url(str(exc)),
             )
-            if not fatal:
+            if (
+                not fatal
+                and self._generation == recovery_generation
+                and not self.is_connected()
+            ):
                 self._schedule_reconnect()
         finally:
             if self._task_recovery_task is asyncio.current_task():
@@ -675,7 +684,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     else ModuleErrorCode.NON_FATAL_ERROR.value
                 )
             ),
-            message=reason,
+            message=redact_url(reason),
             vendor_info=vendor_info,
         )
         # Normal idle closes (1000/1001) must not enter ASR error stats.
@@ -804,26 +813,60 @@ class QwenASRExtension(AsyncASRBaseExtension):
 
     async def _flush_buffered_frames_locked(self) -> list[bytes]:
         flushed_audio: list[bytes] = []
+        pending = self._buffer_flush_head
         while True:
-            try:
-                buffered_frame = self.buffered_frames.get_nowait()
-            except asyncio.QueueEmpty:
-                break
+            if pending is None:
+                try:
+                    pending = self.buffered_frames.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+            buffered_frame = pending
+            pending = None
             frame_metadata = self._frame_metadata(buffered_frame)
             frame_session_id = frame_metadata.get("session_id", self.session_id)
-            if not await self._send_audio_locked(
-                bytes(buffered_frame.get_buf()),
-                frame_metadata,
-                frame_session_id,
-            ):
-                self.buffered_frames.put_nowait(buffered_frame)
+            audio_data = bytes(buffered_frame.get_buf())
+            frame_size = len(audio_data)
+            try:
+                sent = await self._send_audio_locked(
+                    audio_data,
+                    frame_metadata,
+                    frame_session_id,
+                )
+            except Exception:
+                self._buffer_flush_head = buffered_frame
+                raise
+            if not sent:
+                self._buffer_flush_head = buffered_frame
                 break
-            flushed_audio.append(bytes(buffered_frame.get_buf()))
-            self.buffered_frames_size -= len(buffered_frame.get_buf())
+            flushed_audio.append(audio_data)
+            self.buffered_frames_size -= frame_size
             if self.first_audio_time is None:
                 self.first_audio_time = asyncio.get_event_loop().time()
+        self._buffer_flush_head = pending
         self.buffered_frames_size = max(0, self.buffered_frames_size)
         return flushed_audio
+
+    async def _abort_connection_attempt(
+        self, generation: int, exc: BaseException
+    ) -> None:
+        if generation != self._generation or self._stop_requested:
+            return
+        self.connected = False
+        async with self._send_lock:
+            await self._stop_connection_locked()
+        fatal = self._is_fatal_exception(exc)
+        self._fatal_error = self._fatal_error or fatal
+        await self._send_vendor_error(exc, fatal=fatal)
+        await self.on_disconnected(
+            code=(
+                ModuleErrorCode.FATAL_ERROR.value
+                if fatal
+                else ModuleErrorCode.NON_FATAL_ERROR.value
+            ),
+            message=redact_url(str(exc)),
+        )
+        if not fatal and not self._stop_requested:
+            self._schedule_reconnect()
 
     @staticmethod
     def _is_fatal_vendor_code(code: str) -> bool:
@@ -863,7 +906,10 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 await asyncio.sleep(min(2 ** (attempt - 1), 8))
                 if self._stop_requested or self._fatal_error:
                     return
-                await self.start_connection()
+                try:
+                    await self.start_connection()
+                except Exception:
+                    continue
                 if self.is_connected():
                     return
         finally:

@@ -26,7 +26,6 @@
         "dump_path": {"type": "string"},
         "finalize_timeout_ms": {"type": "int32"},
         "connect_timeout_s": {"type": "int32"},
-        "reconnect_max_attempts": {"type": "int32"},
         "params": {
           "type": "object",
           "properties": {

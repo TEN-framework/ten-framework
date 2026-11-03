@@ -3,7 +3,6 @@
   "dump_path": "/tmp",
   "finalize_timeout_ms": 5000,
   "connect_timeout_s": 10,
-  "reconnect_max_attempts": 5,
   "params": {
     "api_key": "${env:DASHSCOPE_API_KEY}",
     "url": "wss://dashscope.aliyuncs.com/api-ws/v1/inference",
