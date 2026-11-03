@@ -512,6 +512,16 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self.metadata = copy.deepcopy(metadata)
         self.metadata.pop("asr_info", None)
         self.session_id = context_session_id
+        vendor_language = (
+            QwenASRConfig.asr_result_language_from_vendor(
+                payload, output, sentence
+            )
+            if self.config
+            else None
+        )
+        result_language = vendor_language or (
+            self.config.normalized_language if self.config else "zh-CN"
+        )
         try:
             await self.send_asr_result(
                 ASRResult(
@@ -519,11 +529,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     final=final,
                     start_ms=start_ms,
                     duration_ms=duration,
-                    language=(
-                        self.config.asr_result_language
-                        if self.config
-                        else "zh-CN"
-                    ),
+                    language=result_language,
                     words=words,
                     metadata=metadata,
                 )

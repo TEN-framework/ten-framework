@@ -33,7 +33,8 @@ def extension(monkeypatch):
     instance.ten_env = MagicMock()
     instance.ten_env.send_data = AsyncMock()
     instance.config = QwenASRConfig(
-        params={"api_key": "test-key", "language": "en-US"}
+        language="en-US",
+        params={"api_key": "test-key"},
     )
     instance.config.apply_defaults()
     instance.config.validate_config()

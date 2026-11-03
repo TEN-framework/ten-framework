@@ -10,8 +10,11 @@ from qwen_asr_python.config import (
 )
 
 
-def make_config(**params):
-    config = QwenASRConfig(params={"api_key": "secret", **params})
+def make_config(language: str = "zh-CN", **params):
+    config = QwenASRConfig(
+        language=language,
+        params={"api_key": "secret", **params},
+    )
     config.apply_defaults()
     config.validate_config()
     return config
@@ -70,10 +73,6 @@ def test_context_is_nested_under_input():
         ),
         ({"api_key": "secret", "format": "wav"}, "pcm"),
         ({"api_key": "secret", "max_sentence_silence": 100}, "between"),
-        (
-            {"api_key": "secret", "language_hints": ["en"]},
-            "language_hints is not configurable",
-        ),
     ],
 )
 def test_invalid_configuration_is_rejected(params, message):
@@ -89,10 +88,9 @@ def test_sensitive_config_is_redacted():
     assert "secret" not in json.dumps(redacted)
 
 
-def test_default_asr_result_language_is_zh_cn():
+def test_default_normalized_language_is_zh_cn():
     config = make_config()
     assert config.normalized_language == "zh-CN"
-    assert config.asr_result_language == "zh-CN"
 
 
 @pytest.mark.parametrize(
@@ -100,28 +98,60 @@ def test_default_asr_result_language_is_zh_cn():
     sorted(LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.items()),
 )
 def test_language_param_iso_maps_to_bcp47(hint, expected):
-    config = make_config(language=hint)
+    config = make_config(language=hint)  # property.language
     assert config.normalized_language == expected
-    assert config.asr_result_language == expected
     assert config.params["language_hints"] == [hint]
 
 
 def test_zh_cn_maps_to_language_hint_zh():
     config = make_config(language="zh-CN")
-    assert config.asr_result_language == "zh-CN"
     assert config.params["language_hints"] == ["zh"]
 
 
 def test_unknown_asr_language_yields_empty_language_hints():
     config = make_config(language="zz-ZZ")
-    assert config.asr_result_language == "zz-ZZ"
+    assert config.normalized_language == "zz-ZZ"
     assert config.params["language_hints"] == []
 
 
 def test_en_us_maps_to_language_hint_en():
     config = make_config(language="en-US")
-    assert config.asr_result_language == "en-US"
     assert config.params["language_hints"] == ["en"]
+
+
+def test_params_language_hints_override_property_language():
+    config = make_config(language="zh-CN", language_hints=["en"])
+    assert config.params["language_hints"] == ["en"]
+    request = config.build_run_task("task-1")
+    assert request["payload"]["parameters"]["language_hints"] == ["en"]
+
+
+@pytest.mark.parametrize(
+    "payload,output,sentence,expected",
+    [
+        ({}, {}, {"language": "en"}, "en-US"),
+        ({}, {"language_hints": ["ja"]}, {}, "ja-JP"),
+        ({"language": "zh-CN"}, {}, {}, "zh-CN"),
+    ],
+)
+def test_vendor_language_maps_to_asr_result_language(
+    payload, output, sentence, expected
+):
+    assert (
+        QwenASRConfig.asr_result_language_from_vendor(payload, output, sentence)
+        == expected
+    )
+
+
+def test_property_json_uses_top_level_language():
+    fixture = Path(__file__).parent / "configs" / "property_en.json"
+    config = QwenASRConfig.model_validate_json(fixture.read_text())
+    config.apply_defaults()
+    config.validate_config()
+    assert config.language == "en-US"
+    assert config.normalized_language == "en-US"
+    assert config.params["language_hints"] == ["en"]
+    assert "language" not in config.params
 
 
 def test_sensitive_config_redacts_url_query_credentials():

@@ -1,6 +1,6 @@
 [project]
 name = "qwen-asr-python"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.10"
 dependencies = [
   "aiofiles>=23.0.0",

@@ -36,7 +36,8 @@ def configured_extension():
     extension.ten_env = MagicMock()
     extension.audio_timeline = FakeTimeline()
     extension.config = QwenASRConfig(
-        params={"api_key": "secret", "language": "zh-CN"}
+        language="zh-CN",
+        params={"api_key": "secret"},
     )
     extension.config.apply_defaults()
     extension.config.validate_config()
@@ -83,10 +84,32 @@ def test_result_maps_sentence_words_and_metadata():
         assert result.final is True
         assert result.start_ms == 160
         assert result.duration_ms == 1480
-        assert result.language == "zh-CN"
+        assert result.language == "zh-CN"  # fallback when vendor omits language
         assert result.metadata["session_id"] == "session-1"
         assert result.metadata["asr_info"]["request_id"] == "request-1"
         assert result.words[0].stable is True
+
+    asyncio.run(run())
+
+
+def test_result_language_uses_vendor_language_hints():
+    async def run():
+        extension = configured_extension()
+        await extension._handle_result(
+            {
+                "payload": {
+                    "output": {
+                        "language_hints": ["en"],
+                        "sentence": {
+                            "text": "hello",
+                            "sentence_end": True,
+                        },
+                    },
+                }
+            }
+        )
+        result = extension.send_asr_result.await_args.args[0]
+        assert result.language == "en-US"
 
     asyncio.run(run())
 

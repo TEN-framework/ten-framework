@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "qwen_asr_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -22,26 +22,71 @@
     ],
     "property": {
       "properties": {
-        "dump": {"type": "bool"},
-        "dump_path": {"type": "string"},
-        "finalize_timeout_ms": {"type": "int32"},
-        "connect_timeout_s": {"type": "int32"},
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "finalize_timeout_ms": {
+          "type": "int32"
+        },
+        "connect_timeout_s": {
+          "type": "int32"
+        },
+        "language": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
-            "api_key": {"type": "string"},
-            "url": {"type": "string"},
-            "model": {"type": "string"},
-            "format": {"type": "string"},
-            "sample_rate": {"type": "int32"},
-            "vad_model": {"type": "string"},
-            "max_sentence_silence": {"type": "int32"},
-            "keep_dialect": {"type": "bool"},
-            "heartbeat": {"type": "bool"},
-            "language": {"type": "string"},
-            "vocabulary_id": {"type": "string"},
-            "vocabulary": {"type": "object", "properties": {}},
-            "context": {"type": "array", "items": {"type": "object", "properties": {}}}
+            "api_key": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "format": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            },
+            "vad_model": {
+              "type": "string"
+            },
+            "max_sentence_silence": {
+              "type": "int32"
+            },
+            "keep_dialect": {
+              "type": "bool"
+            },
+            "heartbeat": {
+              "type": "bool"
+            },
+            "vocabulary_id": {
+              "type": "string"
+            },
+            "vocabulary": {
+              "type": "object",
+              "properties": {}
+            },
+            "language_hints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "context": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {}
+              }
+            }
           }
         }
       }

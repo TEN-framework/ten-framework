@@ -53,14 +53,11 @@ class QwenASRConfig(BaseModel):
     dump_path: str = "/tmp"
     finalize_timeout_ms: int = 5000
     connect_timeout_s: int = 10
+    language: str = "zh-CN"
     params: dict[str, Any] = Field(default_factory=dict)
 
     def apply_defaults(self) -> None:
         normalized = dict(self.params or {})
-        if "language_hints" in normalized:
-            raise ValueError(
-                "params.language_hints is not configurable; use params.language"
-            )
         defaults = {
             "api_key": "",
             "url": DEFAULT_URL,
@@ -71,7 +68,6 @@ class QwenASRConfig(BaseModel):
             "max_sentence_silence": 240,
             "keep_dialect": False,
             "heartbeat": False,
-            "language": "zh-CN",
         }
         for key, value in defaults.items():
             normalized.setdefault(key, value)
@@ -191,7 +187,7 @@ class QwenASRConfig(BaseModel):
         return LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.get(code, code)
 
     def _language_hint_from_configured_language(self) -> str | None:
-        raw = str(self.params.get("language") or "").strip()
+        raw = str(self.language or "").strip()
         if not raw:
             return None
         bcp47 = self._map_language_code_to_bcp47(raw)
@@ -203,21 +199,36 @@ class QwenASRConfig(BaseModel):
         return None
 
     def _sync_language_hints_from_language(self) -> None:
-        """Derive Qwen language_hints from asr.language (params.language)."""
+        """Fill language_hints from property.language when params has none."""
+        explicit = self.params.get("language_hints")
+        if isinstance(explicit, list) and len(explicit) > 0:
+            return
         hint = self._language_hint_from_configured_language()
         self.params["language_hints"] = [hint] if hint else []
 
     @property
     def normalized_language(self) -> str:
-        """TEN-facing asr.language (params.language), normalized to BCP-47."""
-        return self._map_language_code_to_bcp47(
-            str(self.params.get("language") or "zh-CN")
-        )
+        """TEN-facing asr.language (property.language), normalized to BCP-47."""
+        return self._map_language_code_to_bcp47(str(self.language or "zh-CN"))
 
-    @property
-    def asr_result_language(self) -> str:
-        """ASRResult.language always follows asr.language (params.language)."""
-        return self.normalized_language
+    @staticmethod
+    def asr_result_language_from_vendor(
+        payload: dict[str, Any],
+        output: dict[str, Any],
+        sentence: dict[str, Any],
+    ) -> str | None:
+        """Map vendor-reported language or language_hints to BCP-47."""
+        for container in (sentence, output, payload):
+            for key in ("language", "lang"):
+                value = container.get(key)
+                if isinstance(value, str) and value.strip():
+                    return QwenASRConfig._map_language_code_to_bcp47(value)
+            hints = container.get("language_hints")
+            if isinstance(hints, list) and hints:
+                first = hints[0]
+                if isinstance(first, str) and first.strip():
+                    return QwenASRConfig._map_language_code_to_bcp47(first)
+        return None
 
     def build_run_task(self, task_id: str) -> dict[str, Any]:
         params = self.params
