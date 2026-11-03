@@ -43,6 +43,9 @@ LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE: dict[str, str] = {
     "sk": "sk-SK",
 }
 SUPPORTED_LANGUAGES = set(LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE)
+ASR_RESULT_LANGUAGE_TO_HINT: dict[str, str] = {
+    bcp47: hint for hint, bcp47 in LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.items()
+}
 
 
 class QwenASRConfig(BaseModel):
@@ -53,6 +56,11 @@ class QwenASRConfig(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
     def apply_defaults(self) -> None:
+        normalized = dict(self.params or {})
+        if "language_hints" in normalized:
+            raise ValueError(
+                "params.language_hints is not configurable; use params.language"
+            )
         defaults = {
             "api_key": "",
             "url": DEFAULT_URL,
@@ -63,12 +71,12 @@ class QwenASRConfig(BaseModel):
             "max_sentence_silence": 240,
             "keep_dialect": False,
             "heartbeat": False,
-            "language_hints": [],
+            "language": "zh-CN",
         }
-        normalized = dict(self.params or {})
         for key, value in defaults.items():
             normalized.setdefault(key, value)
         self.params = normalized
+        self._sync_language_hints_from_language()
 
     def validate_config(self) -> None:
         params = self.params
@@ -173,13 +181,43 @@ class QwenASRConfig(BaseModel):
     def sample_rate(self) -> int:
         return int(self.params["sample_rate"])
 
+    @staticmethod
+    def _map_language_code_to_bcp47(language_code: str) -> str:
+        code = language_code.strip()
+        if not code:
+            return "zh-CN"
+        if "-" in code:
+            return code
+        return LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.get(code, code)
+
+    def _language_hint_from_configured_language(self) -> str | None:
+        raw = str(self.params.get("language") or "").strip()
+        if not raw:
+            return None
+        bcp47 = self._map_language_code_to_bcp47(raw)
+        hint = ASR_RESULT_LANGUAGE_TO_HINT.get(bcp47)
+        if hint is not None:
+            return hint
+        if bcp47 in SUPPORTED_LANGUAGES:
+            return bcp47
+        return None
+
+    def _sync_language_hints_from_language(self) -> None:
+        """Derive Qwen language_hints from asr.language (params.language)."""
+        hint = self._language_hint_from_configured_language()
+        self.params["language_hints"] = [hint] if hint else []
+
     @property
-    def language(self) -> str:
-        hints = self.params.get("language_hints") or []
-        if not hints:
-            return "und"
-        hint = hints[0]
-        return LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.get(hint, hint)
+    def normalized_language(self) -> str:
+        """TEN-facing asr.language (params.language), normalized to BCP-47."""
+        return self._map_language_code_to_bcp47(
+            str(self.params.get("language") or "zh-CN")
+        )
+
+    @property
+    def asr_result_language(self) -> str:
+        """ASRResult.language always follows asr.language (params.language)."""
+        return self.normalized_language
 
     def build_run_task(self, task_id: str) -> dict[str, Any]:
         params = self.params

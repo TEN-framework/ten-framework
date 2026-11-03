@@ -404,8 +404,6 @@ class QwenASRExtension(AsyncASRBaseExtension):
             if finalize_swap_gated and self._task_start_task is not None:
                 try:
                     await self._task_start_task
-                except asyncio.CancelledError:
-                    raise
                 except Exception:
                     pass
         finally:
@@ -521,7 +519,11 @@ class QwenASRExtension(AsyncASRBaseExtension):
                     final=final,
                     start_ms=start_ms,
                     duration_ms=duration,
-                    language=self.config.language if self.config else "und",
+                    language=(
+                        self.config.asr_result_language
+                        if self.config
+                        else "zh-CN"
+                    ),
                     words=words,
                     metadata=metadata,
                 )

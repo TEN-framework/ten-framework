@@ -31,6 +31,7 @@ def test_recommended_request_uses_qwen_report_settings():
     assert request["payload"]["parameters"]["sample_rate"] == 16000
     assert request["payload"]["parameters"]["vad_model"] == "near_meeting_16k"
     assert request["payload"]["parameters"]["max_sentence_silence"] == 240
+    assert request["payload"]["parameters"]["language_hints"] == ["zh"]
     assert request["payload"]["input"] == {}
 
 
@@ -69,13 +70,16 @@ def test_context_is_nested_under_input():
         ),
         ({"api_key": "secret", "format": "wav"}, "pcm"),
         ({"api_key": "secret", "max_sentence_silence": 100}, "between"),
-        ({"api_key": "secret", "language_hints": ["xx"]}, "unsupported"),
+        (
+            {"api_key": "secret", "language_hints": ["en"]},
+            "language_hints is not configurable",
+        ),
     ],
 )
 def test_invalid_configuration_is_rejected(params, message):
     config = QwenASRConfig(params=params)
-    config.apply_defaults()
     with pytest.raises(ValueError, match=message):
+        config.apply_defaults()
         config.validate_config()
 
 
@@ -85,18 +89,39 @@ def test_sensitive_config_is_redacted():
     assert "secret" not in json.dumps(redacted)
 
 
-def test_empty_language_hints_falls_back_to_unknown_language():
-    config = make_config(language_hints=[])
-    assert config.language == "und"
+def test_default_asr_result_language_is_zh_cn():
+    config = make_config()
+    assert config.normalized_language == "zh-CN"
+    assert config.asr_result_language == "zh-CN"
 
 
 @pytest.mark.parametrize(
     "hint,expected",
     sorted(LANGUAGE_HINT_TO_ASR_RESULT_LANGUAGE.items()),
 )
-def test_language_hints_map_to_asr_result_language(hint, expected):
-    config = make_config(language_hints=[hint])
-    assert config.language == expected
+def test_language_param_iso_maps_to_bcp47(hint, expected):
+    config = make_config(language=hint)
+    assert config.normalized_language == expected
+    assert config.asr_result_language == expected
+    assert config.params["language_hints"] == [hint]
+
+
+def test_zh_cn_maps_to_language_hint_zh():
+    config = make_config(language="zh-CN")
+    assert config.asr_result_language == "zh-CN"
+    assert config.params["language_hints"] == ["zh"]
+
+
+def test_unknown_asr_language_yields_empty_language_hints():
+    config = make_config(language="zz-ZZ")
+    assert config.asr_result_language == "zz-ZZ"
+    assert config.params["language_hints"] == []
+
+
+def test_en_us_maps_to_language_hint_en():
+    config = make_config(language="en-US")
+    assert config.asr_result_language == "en-US"
+    assert config.params["language_hints"] == ["en"]
 
 
 def test_sensitive_config_redacts_url_query_credentials():

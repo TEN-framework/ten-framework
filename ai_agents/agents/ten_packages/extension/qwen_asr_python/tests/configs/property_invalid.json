@@ -7,6 +7,6 @@
     "sample_rate": 16000,
     "vad_model": "near_meeting_16k",
     "max_sentence_silence": 240,
-    "language_hints": ["en"]
+    "language": "en-US"
   }
 }

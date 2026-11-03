@@ -36,7 +36,7 @@ def configured_extension():
     extension.ten_env = MagicMock()
     extension.audio_timeline = FakeTimeline()
     extension.config = QwenASRConfig(
-        params={"api_key": "secret", "language_hints": ["zh"]}
+        params={"api_key": "secret", "language": "zh-CN"}
     )
     extension.config.apply_defaults()
     extension.config.validate_config()

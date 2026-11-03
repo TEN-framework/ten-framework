@@ -13,6 +13,6 @@
     "max_sentence_silence": 240,
     "keep_dialect": false,
     "heartbeat": false,
-    "language_hints": ["zh"]
+    "language": "zh-CN"
   }
 }

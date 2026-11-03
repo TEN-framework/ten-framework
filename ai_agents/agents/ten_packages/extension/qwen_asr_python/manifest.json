@@ -38,7 +38,7 @@
             "max_sentence_silence": {"type": "int32"},
             "keep_dialect": {"type": "bool"},
             "heartbeat": {"type": "bool"},
-            "language_hints": {"type": "array", "items": {"type": "string"}},
+            "language": {"type": "string"},
             "vocabulary_id": {"type": "string"},
             "vocabulary": {"type": "object", "properties": {}},
             "context": {"type": "array", "items": {"type": "object", "properties": {}}}
