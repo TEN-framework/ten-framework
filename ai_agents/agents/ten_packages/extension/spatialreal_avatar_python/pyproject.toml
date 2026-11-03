@@ -7,3 +7,10 @@ dependencies = [
     "agora-token-builder>=1.0.0",
     "audioop-lts>=0.2.1; python_version >= \"3.13\"",
 ]
+
+[tool.pytest.ini_options]
+# `pytest tests/` from this directory: import the pure modules from here and
+# stop collection at tests/ so the package __init__ (which needs ten_runtime)
+# is not imported on a laptop without the TEN runtime.
+pythonpath = ["."]
+addopts = "--confcutdir=tests"
