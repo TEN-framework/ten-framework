@@ -18,9 +18,10 @@ idempotent.
 Padding keeps egress's playout buffer from running dry inside a request:
 the virtual playhead is ``ahead_ms = sent_ms - (now - first_send)`` and a
 tick sends enough 100 ms silence chunks to return it to ``pad_floor_ms``
-whenever it dips below. ``pad_max_ms`` of contiguous padding with no new
-real audio closes the request; ``turn_stall_ms`` after the real audio
-drained is the outer backstop.
+(zero by default) only after it dips below. Positive lead is left alone so
+the next speech chunk can follow without inserted silence.
+``pad_max_ms`` of contiguous padding with no new real audio closes the
+request; ``turn_stall_ms`` after the real audio drained is the outer backstop.
 
 A new request whose predecessor is still less than ``gate_ms`` past drained
 waits before its first chunk so the predecessor's tail is not cut by the
@@ -44,7 +45,9 @@ from typing import Awaitable, Callable, Optional, Protocol
 
 from .audio import duration_ms, silence
 
-PAD_FLOOR_MS = 600
+# Refill only after the virtual playhead drains. A positive reserve inserts
+# silence between speech chunks even when the next chunk arrives in time.
+PAD_FLOOR_MS = 0
 PAD_TICK_MS = 100
 PAD_MAX_MS = 3000
 TURN_STALL_MS = 15000

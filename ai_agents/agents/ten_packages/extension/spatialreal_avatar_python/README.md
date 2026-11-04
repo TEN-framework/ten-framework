@@ -169,12 +169,14 @@ task check              # black, line length 80
   code `4003`) is reported as `1001` and retried on a slow schedule (30, 60,
   120, 300 s, ten attempts) before the extension gives up with `-1`.
 - Padding: the server auto-ends a request after 400 ms of empty playout
-  buffer, so the extension keeps a virtual playhead and inserts silence when
-  the buffered audio falls below `PAD_FLOOR_MS` (600 ms). Silence costs the
-  same inference time as speech, which is why it is bounded: `PAD_MAX_MS`
+  buffer, so the extension keeps a virtual playhead and inserts 100 ms
+  silence chunks only after the sent audio drains (`PAD_FLOOR_MS`, 0 ms).
+  It leaves positive lead alone: filling a reserve there would splice
+  silence between speech chunks that arrive in time. Silence costs the same
+  inference time as speech, which is why it is bounded: `PAD_MAX_MS`
   (3000 ms of contiguous padding) closes the request, and `TURN_STALL_MS`
-  (15 s) closes a request that is open but never saw audio. All four are
-  constants in `pacer.py`.
+  (15 s after real audio drains) is the outer backstop. These are constants
+  in `pacer.py`.
 - Audio that arrives while the session is down is queued for at most 10 s of
   playout time; older frames are dropped with one warning.
 - A session is billed on connection time and holds one concurrency slot for as

@@ -147,6 +147,36 @@ async def test_ahead_goes_negative_once_drained(clock):
     assert pacer.ahead_ms == pytest.approx(-300.0)
 
 
+@pytest.mark.parametrize(
+    "first_ms,tick_ms,next_chunk_at_ms",
+    [(139, 62, 66), (139, 37, 65), (325, 28, 77)],
+)
+async def test_tick_preserves_speech_when_next_chunk_arrives_before_drain(
+    clock, first_ms, tick_ms, next_chunk_at_ms
+):
+    """A ticker must not splice silence into speech that has not run out."""
+    sink = FakeSink()
+    pacer = _pacer(clock, sink)
+    first = _speech(first_ms)
+    second = _speech(200)
+    await pacer.push_audio(first)
+
+    clock.advance(tick_ms)
+    assert pacer.ahead_ms > 0
+    await pacer.tick()
+    assert sink.calls == [("audio", first, False)]
+
+    clock.advance(next_chunk_at_ms - tick_ms)
+    assert pacer.ahead_ms > 0
+    await pacer.push_audio(second)
+    await pacer.end_request("tts_audio_end")
+    assert sink.calls == [
+        ("audio", first, False),
+        ("audio", second, False),
+        ("audio", b"", True),
+    ]
+
+
 async def test_padding_when_ahead_below_floor(clock):
     sink = FakeSink()
     pacer = _pacer(clock, sink)
@@ -156,10 +186,10 @@ async def test_padding_when_ahead_below_floor(clock):
 
     await pacer.tick()
 
-    # ceil((600 - (-200)) / 100) = 8 chunks of 100 ms silence.
-    assert sink.audio_ms(silent=True) == 800.0
-    assert len(sink.silence_chunks()) == 8
-    assert pacer.ahead_ms == pytest.approx(600.0)
+    # Catch up the actual deficit, without creating a reserve inside speech.
+    assert sink.audio_ms(silent=True) == 200.0
+    assert len(sink.silence_chunks()) == 2
+    assert pacer.ahead_ms == pytest.approx(0.0, abs=1e-6)
     assert pacer.request_open
     assert sink.ends == 0
 
@@ -209,11 +239,11 @@ async def test_padding_resumes_after_real_audio(clock):
     sink = FakeSink()
     pacer = _pacer(clock, sink)
     await pacer.push_audio(_speech(200))
-    for _ in range(25):  # 2.5 s of padding, short of the 3 s bound
+    for _ in range(25):  # 200 ms of speech, then 2.3 s of bounded padding
         clock.advance(100)
         await pacer.tick()
     assert pacer.request_open
-    assert sink.audio_ms(silent=True) >= 2500.0
+    assert sink.audio_ms(silent=True) == 2300.0
 
     await pacer.push_audio(_speech(100))
     for _ in range(25):
