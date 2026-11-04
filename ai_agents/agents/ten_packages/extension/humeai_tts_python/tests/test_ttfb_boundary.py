@@ -86,7 +86,7 @@ def test_ttfb_measured_before_output_processing():
             )
 
     provider = SimpleNamespace(tts=Provider())
-    target = "ten_packages.extension.humeai_tts_python.humeTTS.AsyncHumeClient"
+    target = "humeai_tts_python.humeTTS.AsyncHumeClient"
     replacement = lambda **kwargs: provider
     config = {"params": {"key": "mock", "voice": {"name": "mock"}}}
     with patch(target, replacement):
