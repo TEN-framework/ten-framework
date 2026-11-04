@@ -24,14 +24,16 @@ drained is the outer backstop.
 
 A new request whose predecessor is still less than ``gate_ms`` past drained
 waits before its first chunk so the predecessor's tail is not cut by the
-new server-side session. Design D6: ``flush`` cancels that wait, closes the
-open request locally without ``end=True``, interrupts the sink and waives
-the gate for the next request.
+new server-side session. Design D6: ``flush`` cancels that wait and the
+frame that was waiting (``push_audio`` returns ``PushResult.CANCELLED``
+without sending), closes the open request locally without ``end=True``,
+interrupts the sink and waives the gate for the next request.
 """
 
 import asyncio
 import math
 import time
+from enum import Enum
 from typing import Awaitable, Callable, Optional, Protocol
 
 from .audio import duration_ms, silence
@@ -43,6 +45,15 @@ TURN_STALL_MS = 15000
 GATE_MS = 2000
 
 _EPS_MS = 1e-3
+
+
+class PushResult(Enum):
+    """What became of a ``push_audio`` call."""
+
+    SENT = "sent"
+    # A flush landed while the chunk waited at the gate: it belonged to the
+    # cancelled turn and was not sent.
+    CANCELLED = "cancelled"
 
 
 class PacerSink(Protocol):
@@ -100,6 +111,9 @@ class Pacer:
         self._flush_seen = False
         self._gate_waiver = False
         self._gate_abort = asyncio.Event()
+        # Bumped by every flush; a gate wait that started under an older
+        # value was cancelled by it.
+        self._cancel_gen = 0
 
     # -- observable state ---------------------------------------------------
 
@@ -120,12 +134,17 @@ class Pacer:
 
     # -- audio in -----------------------------------------------------------
 
-    async def push_audio(self, pcm: bytes) -> None:
-        """Send one chunk at the session rate, opening a request if idle."""
+    async def push_audio(self, pcm: bytes) -> PushResult:
+        """Send one chunk at the session rate, opening a request if idle.
+
+        An empty chunk is a no-op reported as sent. A chunk that a flush
+        cancels while it waits at the gate is not sent.
+        """
         if not pcm:
-            return
+            return PushResult.SENT
         if not self._req_open:
-            await self._wait_for_gate()
+            if not await self._wait_for_gate():
+                return PushResult.CANCELLED
             self._open()
         await self._sink.send_audio(pcm, end=False)
         now = self._clock()
@@ -134,6 +153,7 @@ class Pacer:
         self._real_sent_ms += ms
         self._padded_ms_contiguous = 0.0
         self._last_real_audio_at = now
+        return PushResult.SENT
 
     def _open(self) -> None:
         now = self._clock()
@@ -145,19 +165,22 @@ class Pacer:
         self._last_real_audio_at = now
         self._gate_waiver = False
 
-    async def _wait_for_gate(self) -> None:
+    async def _wait_for_gate(self) -> bool:
         """Block while the previous request may still be playing out.
 
         The wait is a race between the injected ``sleep`` and the abort
         event ``flush`` and ``on_session_reset`` set; whichever finishes
         first, the loop re-reads the waiver and the playhead, so an early
-        wake never sends too soon.
+        wake never sends too soon. Returns False when a flush landed during
+        the wait: the chunk belongs to the cancelled turn. The waiver the
+        flush set stays for the next request's first chunk.
         """
+        gen = self._cancel_gen
         self._gate_abort.clear()
         while not self._gate_waiver:
             remaining_ms = self.ahead_ms + self._gate_ms
             if remaining_ms <= 0:
-                return
+                return True
             sleeper = asyncio.ensure_future(self._sleep(remaining_ms / 1000.0))
             aborter = asyncio.ensure_future(self._gate_abort.wait())
             try:
@@ -167,6 +190,9 @@ class Pacer:
             finally:
                 sleeper.cancel()
                 aborter.cancel()
+            if gen != self._cancel_gen:
+                return False
+        return True
 
     # -- request end --------------------------------------------------------
 
@@ -201,9 +227,13 @@ class Pacer:
         return await self.end_request(f"tts_audio_end reason={reason}")
 
     async def flush(self) -> None:
-        """D6: drop the open request locally, interrupt, waive the gate."""
+        """D6: drop the open request locally, interrupt, waive the gate.
+
+        A chunk waiting at the gate is cancelled rather than released.
+        """
         self._flush_seen = True
         self._gate_waiver = True
+        self._cancel_gen += 1
         self._gate_abort.set()
         if self._req_open:
             self._req_open = False
