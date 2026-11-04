@@ -19,7 +19,9 @@ class TTSRequestTiming:
                 self._sent_ns = timestamp
                 self._received_ns = None
 
-    def audio_received(self, request_id: str, received_ns: int | None = None) -> None:
+    def audio_received(
+        self, request_id: str, received_ns: int | None = None
+    ) -> None:
         timestamp = time.monotonic_ns() if received_ns is None else received_ns
         with self._lock:
             if request_id == self._request_id and self._received_ns is None:

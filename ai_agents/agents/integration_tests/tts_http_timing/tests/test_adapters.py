@@ -39,7 +39,6 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     import_module(f"ten_packages.extension.{extension_name}")
     reference = ProviderReference()
     pcm = base64.b64encode(b"\x01\x00" * 1600).decode()
-    wav16 = base64.b64encode(_wav(2)).decode()
     wav24 = base64.b64encode(_wav(3)).decode()
     is_sse = extension_name in {
         "gemini_tts_python",
