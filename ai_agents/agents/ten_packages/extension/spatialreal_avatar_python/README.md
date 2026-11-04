@@ -30,7 +30,9 @@ Limits). Errors are reported as `ten_ai_base.message.ModuleError` on data
 good (credits exhausted, authentication refused, reconnection given up),
 `1001` while the extension is reconnecting or degraded. `vendor_info.vendor`
 is `spatialreal` and `vendor_info.code` carries the server's WebSocket close
-code (for example `4001`) or the exception class name.
+code (for example `4001`), the HTTP status of a failed session-token exchange
+(`401` or `403` for a refused API key, reported once as `-1`) or the exception
+class name.
 
 ## Configuration
 

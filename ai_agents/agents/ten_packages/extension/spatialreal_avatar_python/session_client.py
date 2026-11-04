@@ -17,8 +17,9 @@ follows the observable event:
 * ``start()`` refused: 4001/4010 are fatal, 4003 takes the slow schedule
   (30, 60, 120, 300… s, ten attempts, then fatal), 4503 and transport
   failures the fast schedule (1, 2, 4, 8, 15, 30… s while running);
-* ``init()`` refused with HTTP 400: configuration error, stop; other
-  token failures take the fast schedule;
+* ``init()`` refused with HTTP 400: configuration error, stop; HTTP 401 or
+  403 (the API key is invalid or revoked): fatal, stop; other token
+  failures (5xx, network) take the fast schedule;
 * ``on_error`` mid-session: retryable codes and errors with no close code
   take the fast schedule; a 4010 relayed as a server error while the
   session continues is reported without a reconnect; anything else
@@ -70,6 +71,9 @@ CODE_NON_FATAL = 1001
 _CLOSE_CREDITS = 4001
 _CLOSE_CONCURRENCY = 4003
 _CLOSE_AUTH = 4010
+# Token exchange (console API) statuses that retrying cannot change.
+_TOKEN_BAD_REQUEST = 400
+_TOKEN_REFUSED = (401, 403)
 
 
 @dataclass
@@ -96,7 +100,9 @@ class ErrorReport:
     """What the glue turns into a ``ModuleError`` (D8)."""
 
     code: int  # CODE_FATAL | CODE_NON_FATAL | CODE_CONFIG
-    vendor_code: str  # WS close code as a string, or the exception class
+    # WS close code or token-exchange HTTP status as a string, or the
+    # exception class name.
+    vendor_code: str
     message: str
     session_id: str = ""
 
@@ -113,6 +119,8 @@ def _vendor_code(exc: Exception) -> str:
     close_code = getattr(exc, "close_code", None)
     if close_code is not None:
         return str(close_code)
+    if isinstance(exc, SessionTokenError) and exc.http_status is not None:
+        return str(exc.http_status)
     return type(exc).__name__
 
 
@@ -120,8 +128,12 @@ def classify_start_error(exc: Exception) -> tuple[Decision, int, str]:
     """Decide on an exception from ``init()`` or ``start()`` (D7)."""
     vendor = _vendor_code(exc)
     if isinstance(exc, SessionTokenError):
-        if exc.http_status == 400:
+        if exc.http_status == _TOKEN_BAD_REQUEST:
             return Decision.CONFIG, CODE_CONFIG, vendor
+        if exc.http_status in _TOKEN_REFUSED:
+            # The console refused the API key: no session will ever be
+            # minted with it, so the 4010 handling downstream never runs.
+            return Decision.STOP, CODE_FATAL, vendor
         return Decision.FAST, CODE_NON_FATAL, vendor
     if isinstance(exc, AvatarSDKError):
         if exc.close_code is None:
