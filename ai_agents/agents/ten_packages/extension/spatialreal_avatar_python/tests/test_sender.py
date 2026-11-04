@@ -119,6 +119,7 @@ class FakeClient:
 
     def __init__(self):
         self.connected = False
+        self.refuse_sends = False
         self.sessions: dict[str, list[tuple[bytes, bool]]] = {}
         self.interrupts = 0
         self._current = ""
@@ -133,7 +134,7 @@ class FakeClient:
         self._current = ""
 
     async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
-        if not self.connected:
+        if not self.connected or self.refuse_sends:
             return False
         self.sessions[self._current].append((pcm, end))
         return True
@@ -413,3 +414,25 @@ async def test_frame_held_for_reconnect_is_dropped_by_a_flush(clock):
         await settle()
         assert client.sessions["conn-1"] == []
         assert not h.sender.request_open
+
+
+async def test_frame_refused_while_the_session_is_up_is_dropped(clock):
+    """A send that fails without the session going down is not retried: the
+    frame is dropped with a warning and the sender moves on."""
+    client = FakeClient()
+    async with Harness(clock, sink=client) as h:
+        client.connect("conn-0")
+        h.sender.session_up()
+        client.refuse_sends = True
+        h.sender.put_audio(_speech(300), RATE)
+        await settle()
+        assert client.sessions["conn-0"] == []
+        assert not h.sender.request_open
+        assert len(h.log.level("warn")) == 1
+
+        client.refuse_sends = False
+        pcm = _speech(100)
+        h.sender.put_audio(pcm, RATE)
+        await settle()
+        assert client.sessions["conn-0"] == [(pcm, False)]
+        assert h.sender.request_open

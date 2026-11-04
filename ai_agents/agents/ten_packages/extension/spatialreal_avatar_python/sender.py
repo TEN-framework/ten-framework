@@ -273,11 +273,17 @@ class AudioSender:
                     "flush: dropped the frame waiting at the gate"
                 )
                 return
-            # NOT_SENT: the session went down between the readiness check
-            # and the send (a gate wait can last seconds). ``session_down``
-            # has cleared the event; the frame waits for the next session.
+            if self._connected.is_set():
+                # Refused while the session is still up: a send failure,
+                # not an outage. There is no reconnect to wait for.
+                self._log.log_warn(
+                    "send failed while the session is up: dropping the frame"
+                )
+                return
+            # The session went down between the readiness check and the
+            # send (a gate wait can last seconds); the frame waits for the
+            # next session.
             self._log.log_debug("send failed: holding the frame for reconnect")
-            await asyncio.sleep(0)
 
     async def _apply_end(self, end: End) -> None:
         if end.tts_reason is None:
