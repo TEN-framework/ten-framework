@@ -289,11 +289,9 @@ def _error_response(status, code="UPSTREAM_SERVICE_UNAVAILABLE"):
 
 
 @pytest.mark.parametrize("status", [502, 503, 504])
-@patch(
-    "breezeblue_tts_python.breezeblue_tts.asyncio.sleep", new_callable=AsyncMock
-)
+@patch("breezeblue_tts_python.breezeblue_tts._RETRY_DELAYS_S", (0, 0))
 @patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
-def test_transient_upstream_error_is_retried(MockAsyncClient, _sleep, status):
+def test_transient_upstream_error_is_retried(MockAsyncClient, status):
     client, http = _make_client(MockAsyncClient, chunks=[b"\x01\x00" * 4])
     ok = http.stream.return_value
     http.stream = MagicMock(side_effect=[_error_response(status), ok])
@@ -303,13 +301,9 @@ def test_transient_upstream_error_is_retried(MockAsyncClient, _sleep, status):
     assert [e for _, e in events] == [Ev.RESPONSE, Ev.END]
 
 
-@patch(
-    "breezeblue_tts_python.breezeblue_tts.asyncio.sleep", new_callable=AsyncMock
-)
+@patch("breezeblue_tts_python.breezeblue_tts._RETRY_DELAYS_S", (0, 0))
 @patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
-def test_persistent_upstream_error_gives_up_after_retries(
-    MockAsyncClient, _sleep
-):
+def test_persistent_upstream_error_gives_up_after_retries(MockAsyncClient):
     client, http = _make_client(MockAsyncClient)
     http.stream = MagicMock(side_effect=lambda *a, **k: _error_response(502))
     events = asyncio.run(_collect(client))
@@ -319,11 +313,9 @@ def test_persistent_upstream_error_gives_up_after_retries(
 
 
 @pytest.mark.parametrize("status", [401, 422, 429])
-@patch(
-    "breezeblue_tts_python.breezeblue_tts.asyncio.sleep", new_callable=AsyncMock
-)
+@patch("breezeblue_tts_python.breezeblue_tts._RETRY_DELAYS_S", (0, 0))
 @patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
-def test_client_errors_are_not_retried(MockAsyncClient, _sleep, status):
+def test_client_errors_are_not_retried(MockAsyncClient, status):
     client, http = _make_client(MockAsyncClient)
     http.stream = MagicMock(
         side_effect=lambda *a, **k: _error_response(status, "X")
@@ -353,3 +345,178 @@ def test_422_with_wellformed_key_stays_a_general_error(MockAsyncClient):
     events = asyncio.run(_collect(client))
 
     assert [e for _, e in events] == [Ev.ERROR]
+
+
+# ================ cancellation at every stage ================
+class BlockedStream:
+    """A request that never gets response headers (connect / TTFB wait)."""
+
+    def __init__(self):
+        self.entered = asyncio.Event()
+        self.interrupted = False
+
+    async def __aenter__(self):
+        self.entered.set()
+        try:
+            await asyncio.sleep(3600)
+        except asyncio.CancelledError:
+            self.interrupted = True
+            raise
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+def test_cancel_while_waiting_for_headers_flushes_and_next_request_works():
+    """The next utterance must not wait for the vendor (or the 60 s timeout)
+    after a flush that arrived before any response existed."""
+    from breezeblue_tts_python.config import BreezeBlueTTSConfig
+    from breezeblue_tts_python.breezeblue_tts import BreezeBlueTTSClient
+
+    async def run_case():
+        blocked = BlockedStream()
+        ok = AsyncMock()
+        ok.status_code = 200
+        ok.headers = {"content-type": "audio/pcm"}
+
+        async def aiter_bytes():
+            yield b"\x01\x00" * 100
+
+        ok.aiter_bytes = aiter_bytes
+        ok.__aenter__ = AsyncMock(return_value=ok)
+        ok.__aexit__ = AsyncMock(return_value=None)
+
+        with patch(
+            "breezeblue_tts_python.breezeblue_tts.AsyncClient"
+        ) as MockAsyncClient:
+            http = AsyncMock()
+            http.stream = MagicMock(side_effect=[blocked, ok])
+            MockAsyncClient.return_value = http
+            config = BreezeBlueTTSConfig(
+                params={"api_key": "brz_k", "voice_id": "voc_1"}
+            )
+            config.update_params()
+            client = BreezeBlueTTSClient(config, MagicMock())
+
+            first = asyncio.ensure_future(_collect(client, "first"))
+            await asyncio.wait_for(blocked.entered.wait(), timeout=2)
+            assert client._response is None  # nothing to close yet
+            start = asyncio.get_running_loop().time()
+            await client.cancel()
+            first_events = await asyncio.wait_for(first, timeout=2)
+            waited = asyncio.get_running_loop().time() - start
+
+            second_events = await asyncio.wait_for(
+                _collect(client, "second"), timeout=2
+            )
+            return blocked, first_events, waited, second_events
+
+    blocked, first_events, waited, second_events = asyncio.run(run_case())
+
+    assert blocked.interrupted
+    assert first_events == [(None, Ev.FLUSH)]
+    assert waited < 1.0
+    assert [e for _, e in second_events] == [Ev.RESPONSE, Ev.END]
+
+
+@patch("breezeblue_tts_python.breezeblue_tts._RETRY_DELAYS_S", (30, 30))
+@patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
+def test_cancel_during_retry_backoff_wakes_up_and_does_not_reopen(
+    MockAsyncClient,
+):
+    client, http = _make_client(MockAsyncClient)
+    http.stream = MagicMock(side_effect=lambda *a, **k: _error_response(502))
+
+    async def run_case():
+        task = asyncio.ensure_future(_collect(client))
+        for _ in range(100):  # wait until the first attempt has failed
+            await asyncio.sleep(0.01)
+            if http.stream.call_count >= 1:
+                break
+        await asyncio.sleep(0.05)  # now inside the 30 s back-off
+        start = asyncio.get_running_loop().time()
+        await client.cancel()
+        events = await asyncio.wait_for(task, timeout=2)
+        return events, asyncio.get_running_loop().time() - start
+
+    events, waited = asyncio.run(run_case())
+
+    assert events == [(None, Ev.FLUSH)]
+    assert waited < 1.0  # did not sit out the 30 s back-off
+    assert http.stream.call_count == 1  # and did not retry after the flush
+
+
+@patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
+def test_cancel_between_split_pieces_does_not_open_next_request(
+    MockAsyncClient,
+):
+    client, http = _make_client(MockAsyncClient, chunks=[b"\x01\x00" * 10])
+    text = "A short sentence. " * 100  # 1800 chars -> 2 requests
+
+    async def run_case():
+        events = []
+        async for item in client.get(text, "r1"):
+            events.append(item)
+            if len(events) == 1:
+                await client.cancel()
+        return events
+
+    events = asyncio.run(run_case())
+
+    assert http.stream.call_count == 1
+    assert events[-1] == (None, Ev.FLUSH)
+    assert all(e != Ev.END for _, e in events)
+
+
+@patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
+def test_external_task_cancellation_is_not_swallowed(MockAsyncClient):
+    """Only cancel() turns a CancelledError into a flush; a real task
+    cancellation (shutdown) must propagate."""
+    client, http = _make_client(MockAsyncClient)
+    http.stream = MagicMock(return_value=BlockedStream())
+
+    async def run_case():
+        task = asyncio.ensure_future(_collect(client))
+        await asyncio.sleep(0.05)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(run_case())
+
+
+# ================ credential redaction ================
+@pytest.mark.parametrize(
+    "header", ["xi-api-key", "XI-API-KEY", "Authorization", "authorization"]
+)
+def test_to_str_redacts_credentials_sent_as_headers(header):
+    from breezeblue_tts_python.config import BreezeBlueTTSConfig
+
+    secret = "brz_HEADER_SECRET_0123456789abcdef"
+    config = BreezeBlueTTSConfig(
+        headers={header: f"Bearer {secret}", "Content-Type": "audio/pcm"},
+        params={"voice_id": "voc_1"},
+    )
+    config.update_params()
+
+    text = config.to_str()
+    assert secret not in text
+    assert "audio/pcm" in text  # unrelated headers stay readable
+    # The original object is untouched (redaction works on a copy).
+    assert config.headers[header].endswith(secret)
+    # sensitive_handling=False is the explicit opt-out.
+    assert secret in config.to_str(sensitive_handling=False)
+
+
+def test_to_str_redacts_params_and_headers_together():
+    from breezeblue_tts_python.config import BreezeBlueTTSConfig
+
+    config = BreezeBlueTTSConfig(
+        headers={"xi-api-key": "brz_in_header_000000000000"},
+        params={"api_key": "brz_in_params_000000000000", "voice_id": "v"},
+    )
+    config.update_params()
+
+    text = config.to_str()
+    assert "brz_in_header_000000000000" not in text
+    assert "brz_in_params_000000000000" not in text

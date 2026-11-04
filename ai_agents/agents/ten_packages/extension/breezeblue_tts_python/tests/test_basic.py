@@ -213,6 +213,8 @@ class ExtensionTesterFlush(ExtensionTester):
         self.bytes_per_sample = 2  # 16-bit
         self.channels = 1
         self.audio_received_after_flush_end = False
+        self.unexpected_errors: list[dict] = []
+        self.audio_end_payload: dict = {}
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         self.ten_env = ten_env_tester
@@ -261,12 +263,20 @@ class ExtensionTesterFlush(ExtensionTester):
         payload = json.loads(json_str)
         ten_env.log_info(f"on_data payload: {payload}")
 
+        if name == "error":
+            # Nothing in this scenario is allowed to fail: an init or vendor
+            # error would let the test "pass" without ever exercising flush.
+            self.unexpected_errors.append(payload)
+            ten_env.stop_test()
+            return
+
         if name == "tts_flush_start":
             self.flush_start_received = True
             return
 
         if name == "tts_audio_end":
             self.audio_end_received = True
+            self.audio_end_payload = payload
             self.audio_end_reason = payload.get("reason")
             self.total_audio_duration_from_event = payload.get(
                 "request_total_audio_duration_ms"
@@ -333,8 +343,10 @@ def test_flush_logic(MockAsyncClient):
     MockAsyncClient.return_value = mock_client_instance
 
     config = {
-        "api_key": "test_api_key",
-        "voice_id": "voc_test",
+        "params": {
+            "api_key": "test_api_key",
+            "voice_id": "voc_test",
+        },
     }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single("breezeblue_tts_python", json.dumps(config))
@@ -343,6 +355,9 @@ def test_flush_logic(MockAsyncClient):
     tester.run()
     print("Flush logic test completed.")
 
+    assert (
+        not tester.unexpected_errors
+    ), f"Unexpected error events: {tester.unexpected_errors}"
     assert tester.audio_start_received, "Did not receive tts_audio_start."
     assert tester.first_audio_frame_received, "Did not receive any audio frame."
     assert tester.audio_end_received, "Did not receive tts_audio_end."
@@ -356,8 +371,13 @@ def test_flush_logic(MockAsyncClient):
     print(
         f"calculated_duration: {calculated_duration}, event_duration: {event_duration}"
     )
+    # Exact: the event must count precisely the bytes emitted before the flush.
     assert (
-        abs(calculated_duration - event_duration) < 10
+        calculated_duration == event_duration
     ), f"Mismatch in audio duration. Calculated: {calculated_duration}ms, From event: {event_duration}ms"
+    interval = tester.audio_end_payload.get("request_event_interval_ms")
+    assert (
+        isinstance(interval, int) and interval >= 0
+    ), f"Bad request_event_interval_ms: {interval!r}"
 
     print("✅ Flush logic test passed successfully.")

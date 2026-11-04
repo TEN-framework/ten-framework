@@ -368,10 +368,7 @@ def test_json_200_is_an_error_never_played_as_pcm(Mock):
 
 @patch("breezeblue_tts_python.breezeblue_tts.AsyncClient")
 def test_transient_502_is_retried_transparently(Mock):
-    with patch(
-        "breezeblue_tts_python.breezeblue_tts.asyncio.sleep",
-        new_callable=AsyncMock,
-    ):
+    with patch("breezeblue_tts_python.breezeblue_tts._RETRY_DELAYS_S", (0, 0)):
         tester, client = run(
             ["hello"],
             [

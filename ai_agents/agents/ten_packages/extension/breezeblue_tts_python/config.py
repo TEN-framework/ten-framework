@@ -18,6 +18,8 @@ DEFAULT_MAX_TEXT_LENGTH = 1000
 # The BreezeBlue request schema is `additionalProperties: false`, so unknown
 # fields are rejected with a 422. Only these keys are ever forwarded.
 BODY_FIELDS = ("model_id", "language_code", "instructions")
+# Headers that carry credentials and must never be logged in clear.
+AUTH_HEADERS = ("xi-api-key", "authorization", "x-api-key")
 VOICE_SETTING_FIELDS = (
     "guidance_scale",
     "speed",
@@ -107,6 +109,7 @@ class BreezeBlueTTSConfig(AsyncTTS2HttpConfig):
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
+        # pylint: disable=no-member,unsubscriptable-object,unsupported-membership-test
         if not sensitive_handling:
             return f"{self}"
 
@@ -115,6 +118,12 @@ class BreezeBlueTTSConfig(AsyncTTS2HttpConfig):
         # Encrypt sensitive fields in params
         if config.params and "api_key" in config.params:
             config.params["api_key"] = utils.encrypt(config.params["api_key"])
+
+        # Credentials can also arrive as headers (see validate()). Header names
+        # are case-insensitive.
+        for name in list(config.headers):
+            if name.lower() in AUTH_HEADERS and config.headers[name]:
+                config.headers[name] = utils.encrypt(str(config.headers[name]))
 
         return f"{config}"
 

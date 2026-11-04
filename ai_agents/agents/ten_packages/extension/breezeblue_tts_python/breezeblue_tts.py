@@ -12,6 +12,7 @@ two frames.
 from collections.abc import Mapping
 from typing import Any, AsyncIterator, Tuple
 import asyncio
+from contextlib import AsyncExitStack
 import json
 import re
 import ssl
@@ -99,6 +100,11 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
         self.config = config
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
+        # Set by cancel() so a retry back-off sleep wakes up immediately.
+        self._cancel_event = asyncio.Event()
+        # Task still connecting / waiting for response headers. cancel() can
+        # interrupt it before any response object exists.
+        self._open_task: asyncio.Future | None = None
         # Response currently being streamed, so cancel() can close it instead
         # of waiting for the next chunk boundary.
         self._response: httpx.Response | None = None
@@ -130,14 +136,22 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
         )
 
     async def cancel(self):
-        """Cancel the current TTS request."""
+        """Cancel the current TTS request, whatever stage it is in."""
         self.ten_env.log_debug("BreezeBlueTTS: cancel() called.")
         self._is_cancelled = True
+        self._cancel_event.set()
+
+        # 1. Still connecting or waiting for response headers: no response
+        #    object exists yet, so interrupt the pending open itself.
+        opener = self._open_task
+        if opener is not None and not opener.done():
+            opener.cancel()
+
+        # 2. Streaming: stop the transfer now; the loop sees the flag and
+        #    flushes. Closing is idempotent and may race with normal
+        #    completion, so errors here are not interesting.
         response = self._response
         if response is not None:
-            # Stop the transfer now; the streaming loop sees the flag and
-            # flushes. Closing is idempotent and may race with normal
-            # completion, so errors here are not interesting.
             try:
                 await response.aclose()
             except Exception:  # pylint: disable=broad-except
@@ -158,6 +172,7 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
             - (bytes, INVALID_KEY_ERROR): Authentication error
         """
         self._is_cancelled = False
+        self._cancel_event.clear()
 
         if len(text.strip()) == 0:
             self.ten_env.log_warn(
@@ -194,18 +209,42 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
             payload = self.config.build_request_body(text)
 
             for attempt in range(len(_RETRY_DELAYS_S) + 1):
+                # Checked before every connection attempt: a flush between
+                # split pieces or during a retry must not open a new request.
+                if self._is_cancelled:
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    return
+
                 self.ten_env.log_debug(
                     f"BreezeBlueTTS: sending request for request_id: {request_id}"
                 )
                 leftover = b""
                 sent_audio = False
-                async with self.client.stream(
-                    "POST",
-                    self.config.url,
-                    params={"output_format": DEFAULT_OUTPUT_FORMAT},
-                    headers=self.headers,
-                    json=payload,
-                ) as response:
+                async with AsyncExitStack() as stack:
+                    # Open the stream in its own task so cancel() can abort a
+                    # request that is still waiting for response headers.
+                    opener = asyncio.ensure_future(
+                        stack.enter_async_context(
+                            self.client.stream(
+                                "POST",
+                                self.config.url,
+                                params={"output_format": DEFAULT_OUTPUT_FORMAT},
+                                headers=self.headers,
+                                json=payload,
+                            )
+                        )
+                    )
+                    self._open_task = opener
+                    try:
+                        response = await opener
+                    except asyncio.CancelledError:
+                        if self._is_cancelled:
+                            yield None, TTS2HttpResponseEventType.FLUSH
+                            return
+                        raise
+                    finally:
+                        self._open_task = None
+
                     self._response = response
                     if self._is_cancelled:
                         yield None, TTS2HttpResponseEventType.FLUSH
@@ -226,7 +265,11 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
                                 f"for request_id: {request_id}",
                                 category=LOG_CATEGORY_VENDOR,
                             )
-                            await asyncio.sleep(_RETRY_DELAYS_S[attempt])
+                            if await self._sleep_or_cancel(
+                                _RETRY_DELAYS_S[attempt]
+                            ):
+                                yield None, TTS2HttpResponseEventType.FLUSH
+                                return
                             continue
 
                         self.ten_env.log_error(
@@ -305,6 +348,14 @@ class BreezeBlueTTSClient(AsyncTTS2HttpClient):
             yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
         finally:
             self._response = None
+
+    async def _sleep_or_cancel(self, delay: float) -> bool:
+        """Back-off sleep that wakes immediately on cancel(). True if cancelled."""
+        try:
+            await asyncio.wait_for(self._cancel_event.wait(), timeout=delay)
+            return True
+        except asyncio.TimeoutError:
+            return False
 
     def _is_invalid_key(self, status_code: int) -> bool:
         """401/403 are auth failures. The API also answers a malformed key
