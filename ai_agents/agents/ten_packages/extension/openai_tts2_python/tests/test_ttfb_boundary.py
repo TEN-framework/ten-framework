@@ -91,7 +91,7 @@ def test_ttfb_includes_connection_and_excludes_tail_audio_wait():
 
     real_client = httpx.AsyncClient
     with patch(
-        "ten_packages.extension.openai_tts2_python.openai_tts.AsyncClient",
+        "openai_tts2_python.openai_tts.AsyncClient",
         side_effect=lambda **kwargs: real_client(transport=Transport()),
     ):
         tester = TimingTester()
