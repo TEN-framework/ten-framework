@@ -48,11 +48,39 @@ class SenderLog(Protocol):
 
 
 @dataclass(frozen=True)
+class Turn:
+    """The identity carried by TEN TTS PCM and end metadata.
+
+    PCM has no standard request_id. A turn may contain multiple TTS
+    requests, so normal request completion does not retire the turn.
+    """
+
+    session_id: str
+    turn_id: int
+
+    @classmethod
+    def from_metadata(cls, metadata) -> Optional["Turn"]:
+        """Accept the actual metadata fields, including turn zero."""
+        if not isinstance(metadata, dict):
+            return None
+        session_id = metadata.get("session_id", "")
+        turn_id = metadata.get("turn_id")
+        if (
+            not isinstance(session_id, str)
+            or not isinstance(turn_id, int)
+            or isinstance(turn_id, bool)
+        ):
+            return None
+        return cls(session_id, turn_id)
+
+
+@dataclass(frozen=True)
 class Frame:
     """One audio frame as it arrived: PCM int16 mono at ``rate``."""
 
     pcm: bytes
     rate: int
+    turn: Optional[Turn] = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +94,8 @@ class End:
 
     label: str
     tts_reason: Optional[int] = None
+    turn: Optional[Turn] = None
+    request_id: str = ""
 
 
 QueueItem = Union[Frame, End]
@@ -94,9 +124,16 @@ class InputQueue:
     def queued_ms(self) -> float:
         return self._queued_ms
 
-    def put_audio(self, pcm: bytes, rate: int) -> bool:
+    @property
+    def turns(self) -> set[Turn]:
+        """Identified turns still queued, including end-only requests."""
+        return {item.turn for item in self._items if item.turn is not None}
+
+    def put_audio(
+        self, pcm: bytes, rate: int, turn: Optional[Turn] = None
+    ) -> bool:
         """Queue a frame; True when this put started dropping old frames."""
-        self._items.append(Frame(pcm, rate))
+        self._items.append(Frame(pcm, rate, turn))
         self._frames += 1
         self._queued_ms += duration_ms(pcm, rate)
         first_drop = False
@@ -172,6 +209,14 @@ class AudioSender:
         self._connected = asyncio.Event()
         self._resampler: Optional[Resampler] = None
         self._flush_gen = 0
+        self._active_turn: Optional[Turn] = None
+        self._inflight_turn: Optional[Turn] = None
+        self._retired_turns: set[Turn] = set()
+        self._latest_turn_ids: dict[str, int] = {}
+        self._ended_requests: set[tuple[Optional[Turn], str]] = set()
+        self._flushing = 0
+        self._flush_done = asyncio.Event()
+        self._flush_done.set()
 
     # -- observable state ---------------------------------------------------
 
@@ -186,10 +231,15 @@ class AudioSender:
 
     # -- hooks --------------------------------------------------------------
 
-    def put_audio(self, pcm: bytes, rate: int) -> None:
+    def put_audio(
+        self, pcm: bytes, rate: int, turn: Optional[Turn] = None
+    ) -> None:
         if not pcm:
             return
-        if self._queue.put_audio(pcm, rate):
+        if turn is not None and turn in self._retired_turns:
+            self._log.log_debug("audio ignored: retired turn")
+            return
+        if self._queue.put_audio(pcm, rate, turn):
             self._log.log_warn(
                 f"input queue over {self._max_queue_ms} ms while the session "
                 "is not up: dropping the oldest audio"
@@ -201,16 +251,31 @@ class AudioSender:
     async def flush(self) -> None:
         """D6: drop everything queued, cancel the turn, interrupt the avatar."""
         self._flush_gen += 1
+        self._flushing += 1
+        self._flush_done.clear()
+        self._retired_turns.update(self._queue.turns)
+        for turn in (self._active_turn, self._inflight_turn):
+            if turn is not None:
+                self._retired_turns.add(turn)
+        self._active_turn = None
         dropped = self._queue.clear()
         if dropped:
             self._log.log_debug(f"flush: dropped {dropped} queued items")
         self._reset_resampler()
-        await self._pacer.flush()
-        self._note_request_state()
+        try:
+            await self._pacer.flush()
+        finally:
+            self._note_request_state()
+            self._flushing -= 1
+            if not self._flushing:
+                self._flush_done.set()
 
     def clear(self) -> None:
         """Drop the queue without touching the pacer (used at stop)."""
         self._queue.clear()
+        self._retired_turns.clear()
+        self._latest_turn_ids.clear()
+        self._ended_requests.clear()
 
     # -- session ------------------------------------------------------------
 
@@ -245,16 +310,48 @@ class AudioSender:
                 if isinstance(item, End):
                     await self._apply_end(item)
                 else:
+                    self._inflight_turn = item.turn
                     await self._send_frame(item)
             except Exception:
                 # CancelledError derives from BaseException, so cancelling
                 # the sender task still propagates past this handler.
                 self._log.log_error(f"sender: {traceback.format_exc()}")
+            finally:
+                self._inflight_turn = None
 
     async def _send_frame(self, frame: Frame) -> None:
+        gen = self._flush_gen
+        # New audio must follow the actual interrupt send. Otherwise an
+        # awaited old interrupt could reach the sink after the new audio.
+        await self._flush_done.wait()
+        if gen != self._flush_gen:
+            return
+        if frame.turn is not None:
+            latest = self._latest_turn_ids.get(frame.turn.session_id)
+            if frame.turn in self._retired_turns or (
+                latest is not None and frame.turn.turn_id < latest
+            ):
+                self._log.log_debug("audio ignored: retired turn")
+                return
+            # TEN's controller increments turn_id within a session. A
+            # cancelled turn's first PCM can arrive only after its successor
+            # starts, so it need not appear in the retired set yet. Update
+            # on dequeue, not admission: already-queued earlier audio is valid.
+            self._latest_turn_ids[frame.turn.session_id] = frame.turn.turn_id
+            if (
+                self._active_turn is not None
+                and frame.turn != self._active_turn
+            ):
+                # The next identified turn is an actual boundary, even if
+                # its predecessor's end was delayed or never delivered.
+                self._retired_turns.add(self._active_turn)
+                await self._pacer.end_request("turn changed")
+                if gen != self._flush_gen:
+                    return
+                self._reset_resampler()
+            self._active_turn = frame.turn
         converted: Optional[bytes] = None
         while True:
-            gen = self._flush_gen
             await self._connected.wait()
             if gen != self._flush_gen:
                 # A flush landed while this frame waited for the session: it
@@ -286,7 +383,28 @@ class AudioSender:
             self._log.log_debug("send failed: holding the frame for reconnect")
 
     async def _apply_end(self, end: End) -> None:
-        if end.tts_reason is None:
+        gen = self._flush_gen
+        await self._flush_done.wait()
+        if gen != self._flush_gen:
+            return
+        if end.turn is not None and (
+            end.turn in self._retired_turns
+            or (self._active_turn is not None and end.turn != self._active_turn)
+        ):
+            self._log.log_debug(f"end ignored: stale turn; {end.label}")
+            return
+        key = (end.turn, end.request_id)
+        if end.request_id and key in self._ended_requests:
+            self._log.log_debug(f"end ignored: duplicate request; {end.label}")
+            return
+        if end.request_id:
+            self._ended_requests.add(key)
+        # A matching identified end belongs to this turn, including reason
+        # 2 after a prior flush. Keep the legacy reason guard only when no
+        # common turn identity is available.
+        if end.tts_reason is None or (
+            end.turn is not None and end.turn == self._active_turn
+        ):
             closed = await self._pacer.end_request(end.label)
         else:
             closed = await self._pacer.on_tts_audio_end(end.tts_reason)

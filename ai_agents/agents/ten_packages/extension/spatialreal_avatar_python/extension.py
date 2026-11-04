@@ -44,7 +44,7 @@ from ten_ai_base.utils import encrypt  # pylint: disable=import-error
 
 from .config import ResolvedConfig, resolve_config
 from .pacer import Pacer
-from .sender import AudioSender, End
+from .sender import AudioSender, End, Turn
 from .session_client import (
     CODE_CONFIG,
     CODE_FATAL,
@@ -211,7 +211,14 @@ class SpatialRealAvatarExtension(AsyncExtension):
             if data_name == "tts_audio_end":
                 self._on_tts_audio_end(ten_env, data)
             elif data_name == "finalize":
-                self.sender.put_end(End("finalize"))
+                payload = _payload(data)
+                self.sender.put_end(
+                    End(
+                        "finalize",
+                        turn=Turn.from_metadata(payload.get("metadata")),
+                        request_id=_request_id(payload),
+                    )
+                )
         except Exception:
             ten_env.log_error(f"on_data {data_name}: {traceback.format_exc()}")
 
@@ -223,6 +230,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
         try:
             buf = audio_frame.get_buf()
             rate = audio_frame.get_sample_rate()
+            turn = Turn.from_metadata(_payload(audio_frame, "metadata"))
         except Exception:
             ten_env.log_error(f"audio frame: {traceback.format_exc()}")
             return
@@ -230,7 +238,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
             return
         if rate <= 0 and self.config is not None:
             rate = self.config.sample_rate
-        self.sender.put_audio(bytes(buf), rate)
+        self.sender.put_audio(bytes(buf), rate, turn)
 
     # -- request signals ----------------------------------------------------
 
@@ -246,14 +254,13 @@ class SpatialRealAvatarExtension(AsyncExtension):
             # The pacer treats an unknown reason as "close"; keep what came
             # in out of the arithmetic and log it as such.
             reason = -1
-        request_id = payload.get("request_id", "")
-        metadata = payload.get("metadata") or {}
-        turn_id = metadata.get("turn_id")
-        if isinstance(turn_id, int) and not isinstance(turn_id, bool):
-            self._turn_id = turn_id
+        request_id = _request_id(payload)
+        turn = Turn.from_metadata(payload.get("metadata"))
+        if turn is not None:
+            self._turn_id = turn.turn_id
         label = f"tts_audio_end request_id={request_id} reason={reason}"
         ten_env.log_debug(f"queued end: {label}")
-        self.sender.put_end(End(label, tts_reason=reason))
+        self.sender.put_end(End(label, reason, turn, request_id))
 
     # -- session callbacks --------------------------------------------------
 
@@ -340,8 +347,13 @@ class SpatialRealAvatarExtension(AsyncExtension):
         return task
 
 
-def _payload(data: Data) -> dict:
-    json_str, _ = data.get_property_to_json(None)
+def _request_id(payload: dict) -> str:
+    value = payload.get("request_id", "")
+    return value if isinstance(value, str) else ""
+
+
+def _payload(data, path=None) -> dict:
+    json_str, _ = data.get_property_to_json(path)
     if not json_str:
         return {}
     try:

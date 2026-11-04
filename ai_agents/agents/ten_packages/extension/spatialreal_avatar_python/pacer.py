@@ -130,6 +130,9 @@ class Pacer:
         # Bumped by every flush; a gate wait that started under an older
         # value was cancelled by it.
         self._cancel_gen = 0
+        # An awaited send may finish after end, flush or reconnect and after
+        # a new request has opened. Its accounting belongs only to its epoch.
+        self._request_gen = 0
 
     # -- observable state ---------------------------------------------------
 
@@ -180,6 +183,7 @@ class Pacer:
 
     def _open(self) -> None:
         now = self._clock()
+        self._request_gen += 1
         self._req_open = True
         self._first_send = now
         self._sent_ms = 0.0
@@ -229,6 +233,7 @@ class Pacer:
         del reason  # the caller logs it; the pacer keeps no history
         if not self._req_open:
             return False
+        self._request_gen += 1
         self._req_open = False
         self._padded_ms_contiguous = 0.0
         # An end signal closes the window in which a late reason 2 could
@@ -257,6 +262,7 @@ class Pacer:
         self._flush_seen = True
         self._gate_waiver = True
         self._cancel_gen += 1
+        self._request_gen += 1
         self._gate_abort.set()
         if self._req_open:
             self._req_open = False
@@ -269,11 +275,12 @@ class Pacer:
         """One padding/stall step; ``run`` calls it every ``pad_tick_ms``."""
         if not self._req_open:
             return
+        gen = self._request_gen
         now = self._clock()
         if self._stalled(now):
             await self.end_request("turn stall")
             return
-        while self._req_open:
+        while self._req_open and gen == self._request_gen:
             # Real audio can arrive during an awaited padding send. Recheck
             # its lead before each chunk instead of sending a stale batch.
             # The tolerance avoids an extra chunk from float clock drift.
@@ -282,6 +289,8 @@ class Pacer:
                 return
             if not await self._sink.send_audio(self._pad_chunk, end=False):
                 # Session gone; the reset that follows forgets the request.
+                return
+            if gen != self._request_gen:
                 return
             self._sent_ms += self._pad_tick_ms
             self._padded_ms_contiguous += self._pad_tick_ms
@@ -317,6 +326,7 @@ class Pacer:
 
     def _forget_request(self) -> None:
         """No request and no playhead: the server-side state is gone."""
+        self._request_gen += 1
         self._req_open = False
         self._first_send = None
         self._sent_ms = 0.0

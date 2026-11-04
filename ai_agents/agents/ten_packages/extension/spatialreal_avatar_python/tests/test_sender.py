@@ -15,7 +15,7 @@ import asyncio
 import pytest
 
 from spatialreal_avatar_python.pacer import Pacer
-from spatialreal_avatar_python.sender import AudioSender, End, InputQueue
+from spatialreal_avatar_python.sender import AudioSender, End, InputQueue, Turn
 
 pytestmark = pytest.mark.asyncio
 
@@ -271,6 +271,212 @@ async def test_end_with_nothing_open_is_a_noop(clock):
 
 
 # -- flush ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("reason", [1, 2, 3, -1, None])
+async def test_old_turn_end_cannot_close_the_turn_after_flush(clock, reason):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        a, b = Turn("session", 1), Turn("session", 2)
+        h.sender.put_audio(_speech(100), RATE, a)
+        await settle()
+        await h.sender.flush()
+        h.sender.put_audio(_speech(100), RATE, b)
+        h.sender.put_end(End("late A", reason, a, "request-a"))
+        await settle()
+        assert h.sender.request_open
+        assert h.sink.ends == 0
+        h.sender.put_end(End("B", 1, b, "request-b"))
+        await settle()
+        assert not h.sender.request_open
+        assert h.sink.ends == 1
+
+
+async def test_identified_interrupted_end_closes_the_current_turn(clock):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        await h.sender.flush()
+        b = Turn("session", 2)
+        h.sender.put_audio(_speech(100), RATE, b)
+        h.sender.put_end(End("B interrupted", 2, b, "request-b"))
+        await settle()
+        assert not h.sender.request_open
+        assert h.sink.ends == 1
+
+
+async def test_late_cancelled_pcm_cannot_restart_or_contaminate_next_turn(
+    clock,
+):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        a, b = Turn("session", 1), Turn("session", 2)
+        first, cancelled, second = _speech(100), _speech(200), _speech(300)
+        h.sender.put_audio(first, RATE, a)
+        await settle()
+        await h.sender.flush()
+        h.sender.put_audio(cancelled, RATE, a)
+        h.sender.put_audio(second, RATE, b)
+        h.sender.put_audio(cancelled, RATE, a)
+        h.sender.put_end(End("B", 1, b, "request-b"))
+        await settle()
+        assert h.sink.audio() == [first, second]
+        assert h.sink.ends == 1
+
+
+async def test_duplicate_end_does_not_close_another_request_in_the_same_turn(
+    clock,
+):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        turn = Turn("session", 1)
+        h.sender.put_audio(_speech(100), RATE, turn)
+        h.sender.put_end(End("A", 1, turn, "request-a"))
+        await settle()
+        h.sender.put_audio(_speech(200), RATE, turn)
+        h.sender.put_end(End("A duplicate", 1, turn, "request-a"))
+        await settle()
+        h.sleep.release()
+        await settle()
+        assert h.sender.request_open
+        assert h.sink.ends == 1
+        h.sender.put_end(End("B", 1, turn, "request-b"))
+        await settle()
+        assert h.sink.ends == 2
+
+
+async def test_flush_retires_queued_and_inflight_turns(clock):
+    async with Harness(clock) as h:
+        a, b = Turn("session", 1), Turn("session", 2)
+        h.sender.put_audio(_speech(100), RATE, a)
+        h.sender.put_audio(_speech(100), RATE, b)
+        await settle()
+        await h.sender.flush()
+        h.sender.session_up()
+        h.sender.put_audio(_speech(100), RATE, a)
+        h.sender.put_audio(_speech(100), RATE, b)
+        h.sender.put_audio(_speech(300), RATE, Turn("session", 3))
+        await settle()
+        assert h.sink.audio() == [_speech(300)]
+
+
+async def test_new_turn_closes_predecessor_and_ignores_its_late_events(clock):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        a, b = Turn("session", 1), Turn("session", 2)
+        first, second = _speech(100), _speech(200)
+        h.sender.put_audio(first, RATE, a)
+        h.sender.put_audio(second, RATE, b)
+        h.sender.put_audio(_speech(300), RATE, a)
+        h.sender.put_end(End("late A", 1, a, "request-a"))
+        await settle()
+        assert h.sink.calls == [("audio", first, False), ("audio", b"", True)]
+        h.sleep.release()
+        await settle()
+        assert h.sink.audio() == [first, second]
+        assert h.sender.request_open
+        assert h.sink.ends == 1
+        h.sender.put_end(End("B", 1, b, "request-b"))
+        await settle()
+        assert h.sink.ends == 2
+
+
+async def test_turn_zero_in_another_session_survives_flush(clock):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        a, b = Turn("old-session", 0), Turn("new-session", 0)
+        h.sender.put_audio(_speech(100), RATE, a)
+        h.sender.put_end(End("A", 1, a, "request-0"))
+        await settle()
+        await h.sender.flush()
+        h.sender.put_audio(_speech(200), RATE, b)
+        h.sender.put_end(End("B", 1, b, "request-0"))
+        await settle()
+        assert h.sink.audio() == [_speech(100), _speech(200)]
+        assert h.sink.ends == 2
+
+
+async def test_new_turn_waits_until_the_old_interrupt_has_been_sent(clock):
+    class SlowInterrupt(FakeSink):
+        def __init__(self):
+            super().__init__()
+            self.started = asyncio.Event()
+            self.release = asyncio.Event()
+
+        async def interrupt(self):
+            self.started.set()
+            await self.release.wait()
+            return await super().interrupt()
+
+    sink = SlowInterrupt()
+    async with Harness(clock, sink=sink) as h:
+        h.sender.session_up()
+        a, b = Turn("session", 1), Turn("session", 2)
+        first, second = _speech(100), _speech(200)
+        h.sender.put_audio(first, RATE, a)
+        await settle()
+        flushing = asyncio.create_task(h.sender.flush())
+        await asyncio.wait_for(sink.started.wait(), timeout=1)
+        try:
+            h.sender.put_audio(second, RATE, b)
+            h.sender.put_end(End("B", 1, b, "request-b"))
+            await settle()
+            assert sink.audio() == [first]
+        finally:
+            sink.release.set()
+            await asyncio.wait_for(flushing, timeout=1)
+        await settle()
+        assert sink.calls == [
+            ("audio", first, False),
+            ("interrupt",),
+            ("audio", second, False),
+            ("audio", b"", True),
+        ]
+
+
+async def test_unseen_old_turn_first_pcm_cannot_supersede_new_turn(clock):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        await h.sender.flush()  # A has not delivered its first PCM yet.
+        a, b = Turn("session", 1), Turn("session", 2)
+        first, second = _speech(100), _speech(300)
+        h.sender.put_audio(first, RATE, b)
+        # Queue A before B has been processed, to exercise dequeue checks.
+        h.sender.put_audio(_speech(200), RATE, a)
+        h.sender.put_audio(second, RATE, b)
+        h.sender.put_end(End("B", 1, b, "request-b"))
+        await settle()
+        assert h.sink.audio() == [first, second]
+        assert h.sink.ends == 1
+        assert not h.sender.request_open
+
+
+async def test_turn_order_check_preserves_earlier_audio_already_in_queue(clock):
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        a, b = Turn("session", 1), Turn("session", 2)
+        first, second = _speech(100), _speech(200)
+        h.sender.put_audio(first, RATE, a)
+        h.sender.put_end(End("A", 1, a, "request-a"))
+        h.sender.put_audio(second, RATE, b)
+        h.sender.put_end(End("B", 1, b, "request-b"))
+        await settle()
+        assert h.sink.audio() == [first]
+        h.sleep.release()
+        await settle()
+        assert h.sink.audio() == [first, second]
+        assert h.sink.ends == 2
+
+
+@pytest.mark.parametrize(
+    "metadata", [None, [], {}, {"turn_id": True}, {"turn_id": "1"}]
+)
+def test_invalid_turn_metadata_is_unscoped(metadata):
+    assert Turn.from_metadata(metadata) is None
+
+
+def test_turn_zero_and_session_identity_are_preserved():
+    assert Turn.from_metadata({"session_id": "s", "turn_id": 0}) == Turn("s", 0)
+    assert Turn("s", 0) != Turn("another-session", 0)
 
 
 async def test_flush_drops_queued_audio_and_markers(clock):

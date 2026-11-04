@@ -656,3 +656,29 @@ async def test_run_ticks_every_pad_tick(clock):
     assert all(s == pytest.approx(0.1) for s in sleep.calls)
     assert sink.ends == 1
     assert sink.audio_ms(silent=True) == 3000.0
+
+
+@pytest.mark.parametrize("boundary", ["end", "flush", "session_reset"])
+async def test_old_padding_completion_cannot_advance_new_request(
+    clock, boundary
+):
+    sink = PausingPaddingSink()
+    pacer = _pacer(clock, sink)
+    await pacer.push_audio(_speech(100))
+    clock.advance(200)
+    tick = asyncio.create_task(pacer.tick())
+    await asyncio.wait_for(sink.padding_started.wait(), timeout=1)
+    try:
+        if boundary == "end":
+            await pacer.end_request("A end")
+        elif boundary == "flush":
+            await pacer.flush()
+        else:
+            pacer.on_session_reset()
+        await pacer.push_audio(_speech(100))
+        assert pacer.ahead_ms == pytest.approx(100)
+    finally:
+        sink.release_padding.set()
+        await asyncio.wait_for(tick, timeout=1)
+    assert pacer.request_open
+    assert pacer.ahead_ms == pytest.approx(100)

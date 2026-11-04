@@ -17,12 +17,34 @@ black 64x64 picture. Nothing flows back into the graph: the extension emits
 no audio or video frames, only `flush` (forwarded downstream) and `error`.
 
 One SpatialReal request is opened per TTS request: the first `pcm_frame` after
-idle opens it and the first of data `tts_audio_end` (reason `REQUEST_END`,
-`ERROR` or unknown; `INTERRUPTED` only when no `flush` has been processed since
-the request opened) or data `finalize` closes it. End signals are queued in
+idle opens it and data `tts_audio_end` or `finalize` closes it. End signals are queued in
 order behind the audio that preceded them, so a request is closed only after
 all of its audio has been sent. A `flush` command drops the queued audio and
-end signals, interrupts the avatar and continues downstream. Within a request
+end signals, interrupts the avatar and continues downstream.
+
+Preserve `metadata.session_id` and `metadata.turn_id` on both PCM and end
+messages. TEN's TTS PCM carries this metadata, not a standard `request_id`.
+Turn IDs must increase within each session, as in TEN's main controller;
+the sender rejects an older turn even when its first PCM arrives late.
+Different sessions have independent turn counters.
+The sender rejects audio and ends from flushed or superseded turns, and an
+end for another identified turn cannot close the current one. A matching
+`INTERRUPTED` end closes the current request even after an earlier flush.
+The `request_id` on end messages suppresses duplicate ends; completing one
+TTS request does not discard other requests in the same turn. A new identified
+turn closes an unfinished predecessor before its own audio is sent.
+
+Unidentified PCM/end messages remain supported in arrival order. Without a
+shared turn identity, stale events cannot be distinguished: the legacy guard
+ignores `INTERRUPTED` after a flush until an end closes a request. A `finalize`
+without metadata applies to the current request. PCM from two requests in the
+same turn cannot be distinguished by metadata alone; keep each request's PCM
+before its own end and do not interleave those requests.
+If a flush arrives before any identity for the cancelled turn, and that turn's
+first PCM arrives before a newer turn is known, the unscoped flush alone cannot
+identify that PCM as stale. The producer must stop cancelled output.
+
+Within a request
 audio is sent as fast as it arrives; a small amount of silence is inserted when
 the sentence gap would otherwise let the server's playout buffer run dry (see
 Limits). Errors are reported as `ten_ai_base.message.ModuleError` on data
