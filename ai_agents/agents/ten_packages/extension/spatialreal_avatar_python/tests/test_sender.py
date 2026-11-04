@@ -110,11 +110,46 @@ def _speech(ms: int, rate: int = RATE) -> bytes:
     return b"\x01\x01" * (rate * ms // 1000)
 
 
+class FakeClient:
+    """A session client whose sessions the test opens and drops by hand.
+
+    ``send_audio`` answers False once the session is gone, as the real
+    client does; what each session received is kept per connection id.
+    """
+
+    def __init__(self):
+        self.connected = False
+        self.sessions: dict[str, list[tuple[bytes, bool]]] = {}
+        self.interrupts = 0
+        self._current = ""
+
+    def connect(self, connection_id: str) -> None:
+        self.connected = True
+        self._current = connection_id
+        self.sessions[connection_id] = []
+
+    def disconnect(self) -> None:
+        self.connected = False
+        self._current = ""
+
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
+        if not self.connected:
+            return False
+        self.sessions[self._current].append((pcm, end))
+        return True
+
+    async def interrupt(self) -> bool:
+        if not self.connected:
+            return False
+        self.interrupts += 1
+        return True
+
+
 class Harness:
     """A sender over the real pacer, with the sender task running."""
 
-    def __init__(self, clock, *, sleep=None, max_queue_ms=10_000):
-        self.sink = FakeSink()
+    def __init__(self, clock, *, sink=None, sleep=None, max_queue_ms=10_000):
+        self.sink = sink or FakeSink()
         self.log = FakeLog()
         self.sleep = sleep or ControlledSleep(clock)
         self.states: list[bool] = []
@@ -315,3 +350,66 @@ async def test_flush_drops_the_frame_waiting_at_the_gate(clock):
         )
         assert h.sender.request_open
         assert len(h.sleep.calls) == 1
+
+
+# -- reconnect ------------------------------------------------------------------
+
+
+async def test_frame_waiting_at_the_gate_survives_a_reconnect(clock):
+    """The session drops while a frame waits at the gate: the woken send is
+    refused, the frame is held, and the replacement session receives it."""
+    client = FakeClient()
+    async with Harness(clock, sink=client) as h:
+        client.connect("conn-0")
+        h.sender.session_up()
+        pcm_a = _speech(2000)
+        h.sender.put_audio(pcm_a, RATE)
+        h.sender.put_end(End("finalize"))
+        await settle()
+        assert client.sessions["conn-0"] == [(pcm_a, False), (b"", True)]
+
+        pcm_b = _speech(300)
+        h.sender.put_audio(pcm_b, RATE)
+        await settle()
+        assert h.sleep.calls == [pytest.approx(4.0)]
+
+        # The reset wakes the gate; the send that follows is refused because
+        # the session is gone. Nothing is counted and the frame is held.
+        client.disconnect()
+        h.sender.session_down()
+        await settle()
+        assert client.sessions["conn-0"] == [(pcm_a, False), (b"", True)]
+        assert not h.sender.request_open
+        assert h.sender.queued == 0
+
+        client.connect("conn-1")
+        h.sender.session_up()
+        await settle()
+        assert client.sessions["conn-1"] == [(pcm_b, False)]
+        assert h.sender.request_open
+        assert h.pacer.ahead_ms == pytest.approx(300.0)
+        assert len(h.sleep.calls) == 1
+
+
+async def test_frame_held_for_reconnect_is_dropped_by_a_flush(clock):
+    client = FakeClient()
+    async with Harness(clock, sink=client) as h:
+        client.connect("conn-0")
+        h.sender.session_up()
+        h.sender.put_audio(_speech(2000), RATE)
+        h.sender.put_end(End("finalize"))
+        await settle()
+        h.sender.put_audio(_speech(300), RATE)
+        await settle()
+        assert len(h.sleep.calls) == 1
+
+        client.disconnect()
+        h.sender.session_down()
+        await settle()
+        await h.sender.flush()
+
+        client.connect("conn-1")
+        h.sender.session_up()
+        await settle()
+        assert client.sessions["conn-1"] == []
+        assert not h.sender.request_open
