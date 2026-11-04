@@ -19,8 +19,10 @@ no audio or video frames, only `flush` (forwarded downstream) and `error`.
 One SpatialReal request is opened per TTS request: the first `pcm_frame` after
 idle opens it and the first of data `tts_audio_end` (reason `REQUEST_END`,
 `ERROR` or unknown; `INTERRUPTED` only when no `flush` has been processed since
-the request opened) or data `finalize` closes it. A `flush` command drops the
-queued audio, interrupts the avatar and continues downstream. Within a request
+the request opened) or data `finalize` closes it. End signals are queued in
+order behind the audio that preceded them, so a request is closed only after
+all of its audio has been sent. A `flush` command drops the queued audio and
+end signals, interrupts the avatar and continues downstream. Within a request
 audio is sent as fast as it arrives; a small amount of silence is inserted when
 the sentence gap would otherwise let the server's playout buffer run dry (see
 Limits). Errors are reported as `ten_ai_base.message.ModuleError` on data

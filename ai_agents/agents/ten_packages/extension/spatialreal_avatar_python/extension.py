@@ -8,9 +8,10 @@
 Everything TEN-specific lives here: the property dataclass, the hook
 dispatch (audio frames, ``tts_audio_end``/``finalize`` data, the ``flush``
 command) and ``ModuleError`` emission (design D8). The work is delegated to
-the pure modules: ``config`` validates the properties, ``audio`` resamples
-to the session rate, ``pacer`` owns request boundaries and padding, and
-``session_client`` keeps the SpatialReal session up.
+the pure modules: ``config`` validates the properties, ``sender`` queues
+frames and end markers in order and resamples to the session rate,
+``pacer`` owns request boundaries and padding, and ``session_client`` keeps
+the SpatialReal session up.
 
 Nothing raises out of a hook (an uncaught exception ends the TEN process):
 a configuration failure is reported as a ``-1012`` error and the extension
@@ -21,7 +22,6 @@ simply has nowhere to send until it reconnects.
 import asyncio
 import json
 import traceback
-from collections import deque
 from dataclasses import asdict, dataclass, field
 from typing import Any, Mapping, Optional
 
@@ -42,9 +42,9 @@ from ten_ai_base.message import (  # pylint: disable=import-error
 )
 from ten_ai_base.utils import encrypt  # pylint: disable=import-error
 
-from .audio import Resampler, duration_ms
 from .config import ResolvedConfig, resolve_config
 from .pacer import Pacer
+from .sender import AudioSender, End
 from .session_client import (
     CODE_CONFIG,
     CODE_FATAL,
@@ -55,8 +55,6 @@ from .session_client import (
 )
 
 VENDOR = "spatialreal"
-# D4: audio arriving before the session is up is queued, bounded to 10 s.
-INPUT_QUEUE_MAX_MS = 10_000
 # Property keys whose values are secrets; redacted wherever config is logged.
 SECRET_KEYS = frozenset({"spatialreal_api_key", "agora_token", "agora_appcert"})
 # ``ResolvedConfig`` fields whose name differs from their property key.
@@ -97,54 +95,6 @@ def redacted_params(channel: str, params: dict) -> dict:
     return {"channel": channel, "params": _masked(params or {})}
 
 
-class _InputQueue:
-    """Audio frames waiting for the sender, bounded by playout time (D4).
-
-    When more than ``max_ms`` is queued the oldest frames are dropped; the
-    caller is told once per overflow episode so the log is not flooded.
-    """
-
-    def __init__(self, max_ms: int = INPUT_QUEUE_MAX_MS) -> None:
-        self._max_ms = max_ms
-        self._frames: deque[tuple[bytes, int]] = deque()
-        self._queued_ms = 0.0
-        self._ready = asyncio.Event()
-        self._overflowing = False
-
-    def put(self, pcm: bytes, rate: int) -> bool:
-        """Queue a frame; True when this put started dropping old frames."""
-        self._frames.append((pcm, rate))
-        self._queued_ms += duration_ms(pcm, rate)
-        first_drop = False
-        while self._queued_ms > self._max_ms and len(self._frames) > 1:
-            old_pcm, old_rate = self._frames.popleft()
-            self._queued_ms -= duration_ms(old_pcm, old_rate)
-            if not self._overflowing:
-                self._overflowing = True
-                first_drop = True
-        self._ready.set()
-        return first_drop
-
-    async def get(self) -> tuple[bytes, int]:
-        while not self._frames:
-            self._ready.clear()
-            await self._ready.wait()
-        pcm, rate = self._frames.popleft()
-        self._queued_ms -= duration_ms(pcm, rate)
-        if not self._frames:
-            self._queued_ms = 0.0
-            self._overflowing = False
-        return pcm, rate
-
-    def clear(self) -> int:
-        count = len(self._frames)
-        self._frames.clear()
-        self._queued_ms = 0.0
-        self._overflowing = False
-        self._ready.clear()
-        return count
-
-
 class SpatialRealAvatarExtension(AsyncExtension):
     """Drives one SpatialReal avatar into the Agora channel from TTS audio."""
 
@@ -154,14 +104,11 @@ class SpatialRealAvatarExtension(AsyncExtension):
         self.config: Optional[ResolvedConfig] = None
         self.client: Optional[SessionClient] = None
         self.pacer: Optional[Pacer] = None
-        self._resampler: Optional[Resampler] = None
-        self._queue = _InputQueue()
-        self._connected = asyncio.Event()
+        self.sender: Optional[AudioSender] = None
         self._tasks: set[asyncio.Task] = set()
         self._sender_task: Optional[asyncio.Task] = None
         self._ticker_task: Optional[asyncio.Task] = None
         self._turn_id = 0
-        self._flush_gen = 0
         self._stopping = False
 
     # -- lifecycle ----------------------------------------------------------
@@ -209,7 +156,13 @@ class SpatialRealAvatarExtension(AsyncExtension):
             on_disconnected=self._on_disconnected,
         )
         self.pacer = Pacer(sink=self.client, sample_rate=cfg.sample_rate)
-        self._sender_task = self._spawn(self._sender_loop())
+        self.sender = AudioSender(
+            self.pacer,
+            cfg.sample_rate,
+            self.ten_env,
+            on_request_state=self.client.note_request_state,
+        )
+        self._sender_task = self._spawn(self.sender.run())
         self._ticker_task = self._spawn(self.pacer.run())
         self._spawn(self.client.start())
 
@@ -228,7 +181,8 @@ class SpatialRealAvatarExtension(AsyncExtension):
                 ten_env.log_error(f"client stop: {traceback.format_exc()}")
         for task in list(self._tasks):
             task.cancel()
-        self._queue.clear()
+        if self.sender is not None:
+            self.sender.clear()
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
@@ -240,7 +194,8 @@ class SpatialRealAvatarExtension(AsyncExtension):
         ten_env.log_debug(f"on_cmd name={cmd_name}")
         if cmd_name == "flush":
             try:
-                await self._flush()
+                if self.sender is not None:
+                    await self.sender.flush()
             except Exception:
                 ten_env.log_error(f"flush: {traceback.format_exc()}")
             # D6: the flush continues downstream.
@@ -250,20 +205,20 @@ class SpatialRealAvatarExtension(AsyncExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
         ten_env.log_debug(f"on_data name={data_name}")
-        if self.pacer is None:
+        if self.sender is None:
             return
         try:
             if data_name == "tts_audio_end":
-                await self._on_tts_audio_end(ten_env, data)
+                self._on_tts_audio_end(ten_env, data)
             elif data_name == "finalize":
-                await self._end_request("finalize")
+                self.sender.put_end(End("finalize"))
         except Exception:
             ten_env.log_error(f"on_data {data_name}: {traceback.format_exc()}")
 
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
-        if self.pacer is None or self._stopping:
+        if self.sender is None or self._stopping:
             return
         try:
             buf = audio_frame.get_buf()
@@ -275,15 +230,16 @@ class SpatialRealAvatarExtension(AsyncExtension):
             return
         if rate <= 0 and self.config is not None:
             rate = self.config.sample_rate
-        if self._queue.put(bytes(buf), rate):
-            ten_env.log_warn(
-                f"input queue over {INPUT_QUEUE_MAX_MS} ms while the session "
-                "is not up: dropping the oldest audio"
-            )
+        self.sender.put_audio(bytes(buf), rate)
 
     # -- request signals ----------------------------------------------------
 
-    async def _on_tts_audio_end(self, ten_env: AsyncTenEnv, data: Data) -> None:
+    def _on_tts_audio_end(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        """Queue the end as a marker behind the audio already queued.
+
+        The pacer applies the D5 reason rules when the marker is reached;
+        the turn id is taken at once because it only labels error reports.
+        """
         payload = _payload(data)
         reason = payload.get("reason")
         if not isinstance(reason, int) or isinstance(reason, bool):
@@ -295,100 +251,21 @@ class SpatialRealAvatarExtension(AsyncExtension):
         turn_id = metadata.get("turn_id")
         if isinstance(turn_id, int) and not isinstance(turn_id, bool):
             self._turn_id = turn_id
-        closed = await self.pacer.on_tts_audio_end(reason)
-        self._note_request_state()
-        if closed:
-            self._reset_resampler()
-            ten_env.log_info(
-                f"request closed: tts_audio_end request_id={request_id} "
-                f"reason={reason}"
-            )
-        else:
-            ten_env.log_debug(
-                f"tts_audio_end ignored: request_id={request_id} "
-                f"reason={reason} request_open={self.pacer.request_open}"
-            )
-
-    async def _end_request(self, reason: str) -> None:
-        closed = await self.pacer.end_request(reason)
-        self._note_request_state()
-        if closed:
-            self._reset_resampler()
-            self.ten_env.log_info(f"request closed: {reason}")
-
-    async def _flush(self) -> None:
-        self._flush_gen += 1
-        dropped = self._queue.clear()
-        if dropped:
-            self.ten_env.log_debug(f"flush: dropped {dropped} queued frames")
-        self._reset_resampler()
-        if self.pacer is not None:
-            await self.pacer.flush()
-            self._note_request_state()
-
-    def _note_request_state(self) -> None:
-        if self.client is not None and self.pacer is not None:
-            self.client.note_request_state(self.pacer.request_open)
-
-    def _reset_resampler(self) -> None:
-        if self._resampler is not None:
-            self._resampler.reset()
-
-    # -- sender -------------------------------------------------------------
-
-    async def _sender_loop(self) -> None:
-        """Resample queued frames and push them through the pacer.
-
-        Waits for the session before sending, so audio queued during a
-        reconnect goes out (bounded by the queue) instead of being lost.
-        """
-        while True:
-            pcm, rate = await self._queue.get()
-            gen = self._flush_gen
-            await self._connected.wait()
-            if gen != self._flush_gen:
-                # A flush landed while this frame waited for the session:
-                # it belongs to the cancelled turn.
-                continue
-            try:
-                converted = self._resample(pcm, rate)
-                if not converted:
-                    continue
-                await self.pacer.push_audio(converted)
-                self._note_request_state()
-            except Exception:
-                # CancelledError derives from BaseException, so cancelling
-                # the sender task still propagates past this handler.
-                self.ten_env.log_error(f"send audio: {traceback.format_exc()}")
-
-    def _resample(self, pcm: bytes, rate: int) -> bytes:
-        dst = self.config.sample_rate
-        if self._resampler is None or self._resampler.src_rate != rate:
-            if self._resampler is not None:
-                self.ten_env.log_info(
-                    f"input sample rate changed "
-                    f"{self._resampler.src_rate} -> {rate}"
-                )
-            self._resampler = Resampler(rate, dst)
-        return self._resampler.convert(pcm)
+        label = f"tts_audio_end request_id={request_id} reason={reason}"
+        ten_env.log_debug(f"queued end: {label}")
+        self.sender.put_end(End(label, tts_reason=reason))
 
     # -- session callbacks --------------------------------------------------
 
     def _on_connected(self, connection_id: str) -> None:
         self.ten_env.log_info(f"session connected: {connection_id}")
-        if self.pacer is not None:
-            self.pacer.on_session_reset()
-        self._reset_resampler()
-        self._note_request_state()
-        self._connected.set()
+        if self.sender is not None:
+            self.sender.session_up()
 
     def _on_disconnected(self) -> None:
         self.ten_env.log_info("session disconnected")
-        self._connected.clear()
-        if self.pacer is not None:
-            self.pacer.on_session_reset()
-        self._reset_resampler()
-        self._note_request_state()
+        if self.sender is not None:
+            self.sender.session_down()
 
     def _on_report(self, report: ErrorReport) -> None:
         # The report carries the id of the session it is about; by the time
