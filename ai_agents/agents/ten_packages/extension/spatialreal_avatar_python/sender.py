@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, Protocol, Union
 
 from .audio import Resampler, duration_ms
-from .pacer import Pacer
+from .pacer import Pacer, PushResult
 
 INPUT_QUEUE_MAX_MS = 10_000
 
@@ -233,9 +233,10 @@ class AudioSender:
 
         A frame waits for the session before it is sent, so audio queued
         during a reconnect goes out (bounded by the queue) instead of being
-        lost; a flush that lands during that wait drops it. A marker never
-        waits: every frame queued before it has already been sent or
-        dropped by the time it is dequeued.
+        lost; a flush that lands during that wait, or while the frame waits
+        at the pacer's gate, drops it. A marker never waits: every frame
+        queued before it has already been sent or dropped by the time it is
+        dequeued.
         """
         while True:
             item = await self._queue.get()
@@ -259,8 +260,10 @@ class AudioSender:
         converted = self._resample(frame.pcm, frame.rate)
         if not converted:
             return
-        await self._pacer.push_audio(converted)
+        result = await self._pacer.push_audio(converted)
         self._note_request_state()
+        if result is PushResult.CANCELLED:
+            self._log.log_debug("flush: dropped the frame waiting at the gate")
 
     async def _apply_end(self, end: End) -> None:
         if end.tts_reason is None:

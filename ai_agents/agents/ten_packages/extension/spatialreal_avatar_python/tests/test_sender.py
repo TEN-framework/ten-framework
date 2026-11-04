@@ -279,3 +279,39 @@ async def test_sender_warns_once_per_overflow(clock):
             h.sender.put_audio(_speech(400), RATE)
         await settle()
         assert len(h.log.level("warn")) == 1
+
+
+async def test_flush_drops_the_frame_waiting_at_the_gate(clock):
+    """The sender checked the flush generation before entering the pacer; a
+    flush that lands while the frame waits at the gate must still drop it,
+    so the cancelled turn does not restart after the interrupt."""
+    async with Harness(clock) as h:
+        h.sender.session_up()
+        pcm_a = _speech(2000)
+        h.sender.put_audio(pcm_a, RATE)
+        h.sender.put_end(End("finalize"))
+        await settle()
+        assert h.sink.ends == 1
+
+        pcm_b = _speech(300)
+        h.sender.put_audio(pcm_b, RATE)
+        await settle()
+        assert h.sleep.calls == [pytest.approx(4.0)]
+        assert h.sink.audio() == [pcm_a]
+
+        await h.sender.flush()
+        await settle()
+        assert h.sink.audio() == [pcm_a]
+        assert h.sink.interrupts == 1
+        assert not h.sender.request_open
+
+        # The next turn goes out at once, after the interrupt.
+        pcm_c = _speech(100)
+        h.sender.put_audio(pcm_c, RATE)
+        await settle()
+        assert h.sink.audio() == [pcm_a, pcm_c]
+        assert h.sink.calls.index(("interrupt",)) < h.sink.calls.index(
+            ("audio", pcm_c, False)
+        )
+        assert h.sender.request_open
+        assert len(h.sleep.calls) == 1

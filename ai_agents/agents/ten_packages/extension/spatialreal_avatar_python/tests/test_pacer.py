@@ -16,7 +16,7 @@ import math
 import pytest
 
 from spatialreal_avatar_python.audio import duration_ms
-from spatialreal_avatar_python.pacer import Pacer
+from spatialreal_avatar_python.pacer import Pacer, PushResult
 
 pytestmark = pytest.mark.asyncio
 
@@ -112,7 +112,7 @@ async def test_first_audio_opens_request_and_sends(clock):
     assert pacer.ahead_ms == -math.inf
 
     pcm = _speech(200)
-    await pacer.push_audio(pcm)
+    assert await pacer.push_audio(pcm) is PushResult.SENT
 
     assert pacer.request_open
     assert sink.calls == [("audio", pcm, False)]
@@ -352,9 +352,10 @@ async def test_no_gate_when_predecessor_drained(clock):
     assert pacer.request_open
 
 
-async def test_flush_bypasses_gate_and_interrupts(clock):
-    """Review Focus 3: flush during the gate wait cancels it, interrupts,
-    and the pending audio opens a new request immediately."""
+async def test_flush_cancels_the_chunk_waiting_at_the_gate(clock):
+    """Flush during the gate wait: the wait ends, the sink is interrupted,
+    and the chunk that was waiting is dropped, not sent (it belongs to the
+    turn the flush cancelled). The next turn's first chunk skips the gate."""
     sink = FakeSink()
     sleep = HangingSleep()
     pacer = _pacer(clock, sink, sleep)
@@ -372,13 +373,18 @@ async def test_flush_bypasses_gate_and_interrupts(clock):
     assert not sender.done()
 
     await pacer.flush()
-    await asyncio.wait_for(sender, timeout=1.0)
+    assert await asyncio.wait_for(sender, timeout=1.0) is PushResult.CANCELLED
 
     assert sink.interrupts == 1
-    assert sink.calls.index(("interrupt",)) < sink.calls.index(
-        ("audio", pcm_b, False)
-    )
+    assert ("audio", pcm_b, False) not in sink.calls
     assert sink.ends == 1  # only A's; flush never sends end=True
+    assert not pacer.request_open
+    assert len(sleep.calls) == 1
+
+    # The new turn's first chunk opens a request at once (waiver).
+    pcm_c = _speech(100)
+    assert await pacer.push_audio(pcm_c) is PushResult.SENT
+    assert sink.calls[-1] == ("audio", pcm_c, False)
     assert pacer.request_open
     assert len(sleep.calls) == 1
 
