@@ -14,7 +14,7 @@ a wire-level latency measurement. It requires agreement within 1 ms and the
 strict tester send-to-first-audio outer bound for two sequential requests.
 Empty responses and non-audio events do not finish the interval.
 
-HTTP coverage: OpenAI, Mistral, EZAI, Hume, Generic HTTP and Gemini HTTP.
+HTTP coverage: OpenAI, Mistral, Hume, Generic HTTP and Gemini HTTP.
 Google and Cosy retain their public SDK observers. Azure requires a prepared
 native mock SDK library; no independent live Azure reference is claimed.
 

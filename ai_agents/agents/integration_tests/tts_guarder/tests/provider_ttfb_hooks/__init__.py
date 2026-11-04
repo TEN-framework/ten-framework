@@ -11,7 +11,6 @@ HOOKS = {
     "generic_tts_http_python": "generic_http",
     "openai_tts2_python": "openai",
     "mistral_tts_python": "mistral",
-    "ezai_tw_tts_python": "ezai",
     "humeai_tts_python": "hume",
     "google_tts_python": "google",
     "cosy_tts_python": "cosy",

@@ -19,7 +19,6 @@ SUPPORTED = {
     "gemini_tts_python",
     "openai_tts2_python",
     "mistral_tts_python",
-    "ezai_tw_tts_python",
 }
 
 
@@ -70,8 +69,6 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                         }
                     ]
                 }
-            elif extension_name == "ezai_tw_tts_python":
-                payload = {"audio": wav24}
             else:
                 reference.audio_received()
                 yield b"\x01\x00" * 1600
@@ -95,7 +92,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                 if is_sse
                 else (
                     "application/json"
-                    if extension_name in {"ezai_tw_tts_python"}
+                    if False
                     else "audio/pcm"
                 )
             )
@@ -118,7 +115,6 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
         "gemini_tts_python": "gemini_tts",
         "openai_tts2_python": "openai_tts",
         "mistral_tts_python": "mistral_tts",
-        "ezai_tw_tts_python": "ezai_tts",
     }
     module = import_module(
         f"ten_packages.extension.{extension_name}.{filenames[extension_name]}"

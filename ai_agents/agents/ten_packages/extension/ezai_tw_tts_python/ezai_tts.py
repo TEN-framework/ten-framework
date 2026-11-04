@@ -15,6 +15,7 @@ from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
+
 BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
