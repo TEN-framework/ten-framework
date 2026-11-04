@@ -6,7 +6,7 @@
 > changes to existing ASR lifecycle, connection, reconnection, finalize, result,
 > metrics, or protocol behavior.
 >
-> **Last Reviewed:** 2026-09-16
+> **Last Reviewed:** 2026-11-03
 
 ## 1. Requirement Levels
 
@@ -463,6 +463,17 @@ The following patterns cause reconnect storms and are prohibited:
 
 - Transient network failures **MUST** use `NON_FATAL_ERROR` and a backoff
   policy.
+- **Default:** After a non-fatal disconnect or connect failure, the plugin
+  **SHOULD** keep reconnecting with exponential backoff (cap the sleep interval
+  so a single wait is bounded) until the session recovers, `on_stop`/deinit
+  runs, or a fatal latch is set. There is **no default retry count ceiling**;
+  indefinite retry is the expected production behavior for transient failures.
+- **Optional bounded retry:** If the plugin exposes an explicit limit (for
+  example `reconnect_max_attempts` with a positive value), reaching that ceiling
+  **MUST** escalate to `FATAL_ERROR` and **MUST NOT** start further reconnect
+  attempts. A value of `0` or omission **SHOULD** mean unlimited non-fatal
+  retries. If the field exists in `manifest.json` but is unused, document that
+  in config comments or remove it to avoid misleading operators.
 - `websockets.exceptions.ConnectionClosedOK` **MUST NOT** emit an ASR
   `error`, including normal code-1000 and code-1001 handshakes. Still report
   the disconnected connection state and apply the session reconnect policy;
@@ -473,9 +484,8 @@ The following patterns cause reconnect storms and are prohibited:
   exempts `ConnectionClosedOK` from the transient-failure error requirement.
 - Authentication, authorization, and invalid configuration **MUST** use
   `FATAL_ERROR` and must not retry indefinitely.
-- A bounded retry strategy **MUST** escalate to fatal when its ceiling is
-  reached.
-- A successful handshake **MUST** reset the retry counter.
+- A successful handshake **MUST** reset the retry attempt counter used for
+  backoff and observability.
 - `on_stop`, a fatal latch, or an expected close **MUST NOT** create a new
   reconnect task.
 - Every background reconnect task **MUST** be cancelled and awaited, or
@@ -521,7 +531,7 @@ Use only these framework-level severities:
 | Invalid or missing config, 401/403, unrecoverable protocol error | `FATAL_ERROR` (`-1000`) |
 | Abnormal network disconnect, timeout, temporary server failure | `NON_FATAL_ERROR` (`1000`) |
 | Completed normal WebSocket close (`ConnectionClosedOK`) | No ASR error; report disconnected state |
-| Retry ceiling reached | `FATAL_ERROR` (`-1000`) |
+| Optional bounded reconnect limit exhausted (when configured) | `FATAL_ERROR` (`-1000`) |
 
 Vendor-originated errors **MUST** include:
 
@@ -634,7 +644,7 @@ initialization without raising a secondary failure.
 | `test_asr_result` | Required fields, session, language, final/partial, emitted JSON |
 | `test_finalize` | Success, no result, disconnected, timeout, finalize ID and session echo |
 | `test_connection_status` | connecting -> connected -> disconnected, payload, redaction |
-| `test_reconnect` | Transient retry, no retry after fatal, counter reset after success |
+| `test_reconnect` | Transient retry (including continued retry without fatal), no retry after fatal, counter reset after success; optional ceiling test when bounded retry is supported |
 | `test_reconnect_lifecycle` | Expected close, no reconnect during stop, stale callback ignored |
 | `test_invalid_params` | One fatal error and no later connection attempt |
 | `test_vendor_error` | Correct separation of framework severity and `vendor_info` |
@@ -736,7 +746,7 @@ Copy this section into the PR:
 - [ ] `start_connection()` reports connected only after vendor handshake
 - [ ] All connect failures/closures close the base connection state
 - [ ] Expected close, unexpected close, stop, and config swap are distinguished
-- [ ] Reconnect has one owner, bounded backoff policy, stop/fatal cancellation
+- [ ] Reconnect has one owner, exponential backoff (unlimited non-fatal retries by default), stop/fatal cancellation; optional retry ceiling documented and tested if enabled
 - [ ] Stale callbacks from old clients are ignored
 - [ ] send/finalize/stop/config swap cannot race the same client
 - [ ] Audio buffer policy is explicit, bounded, session-safe, and flushes after recovery

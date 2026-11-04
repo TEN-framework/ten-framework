@@ -93,7 +93,7 @@ Guarders are not a substitute for these.
 | ---- | ------------------ |
 | `test_asr_result` | Emits valid `ASRResult` shape including `metadata.session_id` |
 | `test_finalize` | Finalize sends vendor flush and emits `asr_finalize_end` |
-| `test_reconnect` | Non-fatal retries, fatal retry ceiling, counter reset after success |
+| `test_reconnect` | Non-fatal retries continue until recovery (default), no retry after fatal, counter reset after success; test retry ceiling only when the extension implements a bounded limit |
 | `test_invalid_params` | Invalid config emits fatal error and does not crash |
 | `test_vendor_error` | Vendor-originated error includes `vendor_info` |
 | `test_dump` | Input audio dump path is written when enabled |
