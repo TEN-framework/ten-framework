@@ -69,6 +69,23 @@ class FakeSink:
         ]
 
 
+class PausingPaddingSink(FakeSink):
+    """Let another pacer operation run during the first padding send."""
+
+    def __init__(self):
+        super().__init__()
+        self.padding_started = asyncio.Event()
+        self.release_padding = asyncio.Event()
+
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
+        result = await super().send_audio(pcm, end=end)
+        if pcm and not pcm.strip(b"\x00"):
+            if not self.padding_started.is_set():
+                self.padding_started.set()
+                await self.release_padding.wait()
+        return result
+
+
 class FakeSleep:
     """Records each requested sleep and advances the clock by it.
 
@@ -173,6 +190,60 @@ async def test_tick_preserves_speech_when_next_chunk_arrives_before_drain(
     assert sink.calls == [
         ("audio", first, False),
         ("audio", second, False),
+        ("audio", b"", True),
+    ]
+
+
+async def test_padding_rechecks_lead_after_real_audio_arrives_during_send(
+    clock,
+):
+    sink = PausingPaddingSink()
+    pacer = _pacer(clock, sink)
+    first, second, third = _speech(20), _speech(1000), _speech(100)
+    await pacer.push_audio(first)
+    clock.advance(270)
+    assert pacer.ahead_ms == pytest.approx(-250)
+
+    ticker = asyncio.create_task(pacer.tick())
+    try:
+        await asyncio.wait_for(sink.padding_started.wait(), timeout=1)
+        await pacer.push_audio(second)
+        assert pacer.ahead_ms > 0
+    finally:
+        sink.release_padding.set()
+        await asyncio.wait_for(ticker, timeout=1)
+
+    await pacer.push_audio(third)
+    await pacer.end_request("tts_audio_end")
+    assert sink.calls == [
+        ("audio", first, False),
+        ("audio", bytes(RATE // 10 * 2), False),
+        ("audio", second, False),
+        ("audio", third, False),
+        ("audio", b"", True),
+    ]
+
+
+async def test_end_during_padding_send_stops_padding_after_that_send(clock):
+    sink = PausingPaddingSink()
+    pacer = _pacer(clock, sink)
+    first = _speech(20)
+    await pacer.push_audio(first)
+    clock.advance(270)
+
+    ticker = asyncio.create_task(pacer.tick())
+    try:
+        await asyncio.wait_for(sink.padding_started.wait(), timeout=1)
+        assert await pacer.end_request("tts_audio_end") is True
+        assert await pacer.end_request("finalize") is False
+    finally:
+        sink.release_padding.set()
+        await asyncio.wait_for(ticker, timeout=1)
+
+    assert not pacer.request_open
+    assert sink.calls == [
+        ("audio", first, False),
+        ("audio", bytes(RATE // 10 * 2), False),
         ("audio", b"", True),
     ]
 

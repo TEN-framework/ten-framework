@@ -273,15 +273,12 @@ class Pacer:
         if self._stalled(now):
             await self.end_request("turn stall")
             return
-        # A microsecond of tolerance: float drift in (now - first_send)
-        # otherwise makes a playhead sitting exactly on the floor look one
-        # whole chunk short.
-        deficit_ms = self._pad_floor_ms - self.ahead_ms - _EPS_MS
-        if deficit_ms <= 0:
-            return
-        chunks = math.ceil(deficit_ms / self._pad_tick_ms)
-        for _ in range(chunks):
-            if not self._req_open:
+        while self._req_open:
+            # Real audio can arrive during an awaited padding send. Recheck
+            # its lead before each chunk instead of sending a stale batch.
+            # The tolerance avoids an extra chunk from float clock drift.
+            deficit_ms = self._pad_floor_ms - self.ahead_ms - _EPS_MS
+            if deficit_ms <= 0:
                 return
             if not await self._sink.send_audio(self._pad_chunk, end=False):
                 # Session gone; the reset that follows forgets the request.
