@@ -248,11 +248,23 @@ async def connected_harness(vt: VirtualTime, **overrides) -> Harness:
         ),
         (
             SessionTokenError("bad request", http_status=400),
-            (Decision.CONFIG, CODE_CONFIG, "SessionTokenError"),
+            (Decision.CONFIG, CODE_CONFIG, "400"),
+        ),
+        (
+            SessionTokenError("unauthorized", http_status=401),
+            (Decision.STOP, CODE_FATAL, "401"),
+        ),
+        (
+            SessionTokenError("forbidden", http_status=403),
+            (Decision.STOP, CODE_FATAL, "403"),
         ),
         (
             SessionTokenError("unavailable", http_status=503),
-            (Decision.FAST, CODE_NON_FATAL, "SessionTokenError"),
+            (Decision.FAST, CODE_NON_FATAL, "503"),
+        ),
+        (
+            SessionTokenError("unavailable", http_status=502),
+            (Decision.FAST, CODE_NON_FATAL, "502"),
         ),
         (
             SessionTokenError(
@@ -403,10 +415,53 @@ async def test_init_400_is_a_config_error_and_stops(vt):
     await h.client.start()
     await settle()
 
-    assert h.codes == [(CODE_CONFIG, "SessionTokenError")]
+    assert h.codes == [(CODE_CONFIG, "400")]
     assert vt.pending == []
     await vt.advance(3600)
     assert len(factory.sessions) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [401, 403])
+async def test_init_401_and_403_are_fatal_and_stop(vt, status):
+    """An invalid or revoked API key fails the token exchange before any
+    session exists: one fatal report, no retry, no 4010 to wait for."""
+    factory = FakeFactory(
+        init_error=lambda i: SessionTokenError(
+            "api key refused", http_status=status
+        )
+    )
+    h = Harness(factory, vt)
+    await h.client.start()
+    await settle()
+
+    assert h.codes == [(CODE_FATAL, str(status))]
+    assert h.reports[0].session_id == ""
+    assert not h.client.connected
+    assert vt.pending == []
+    await vt.advance(3600)
+    assert len(factory.sessions) == 1
+    assert h.codes == [(CODE_FATAL, str(status))]
+
+
+@pytest.mark.asyncio
+async def test_init_5xx_keeps_the_fast_schedule(vt):
+    factory = FakeFactory(
+        init_error=lambda i: (
+            SessionTokenError("unavailable", http_status=503) if i < 2 else None
+        )
+    )
+    h = Harness(factory, vt)
+    await h.client.start()
+    await settle()
+
+    assert h.codes == [(CODE_NON_FATAL, "503")]
+    for delay in (1, 2):
+        assert vt.pending == [delay]
+        await vt.advance(delay)
+    assert h.client.connected
+    assert len(factory.sessions) == 3
+    assert h.codes == [(CODE_NON_FATAL, "503")]
 
 
 # -- mid-session events -------------------------------------------------------
