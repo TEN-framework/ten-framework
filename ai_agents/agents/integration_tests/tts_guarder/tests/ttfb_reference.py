@@ -31,7 +31,10 @@ class TTFBReference:
 
     def audio_received(self, request_id, timestamp):
         with self.lock:
-            if request_id == self.current_request_id and request_id in self.sent:
+            if (
+                request_id == self.current_request_id
+                and request_id in self.sent
+            ):
                 self.received.setdefault(request_id, timestamp)
 
     def defer_event(self, consumer, raw, timestamp):
@@ -48,7 +51,9 @@ class TTFBReference:
         with self.lock:
             if request_id not in self.sent or request_id not in self.received:
                 return None
-            return (self.received[request_id] - self.sent[request_id]) / 1_000_000
+            return (
+                self.received[request_id] - self.sent[request_id]
+            ) / 1_000_000
 
 
 HOOKS = {
@@ -106,7 +111,11 @@ def resolve_environment(value):
         return {key: resolve_environment(item) for key, item in value.items()}
     if isinstance(value, list):
         return [resolve_environment(item) for item in value]
-    if isinstance(value, str) and value.startswith("${env:") and value.endswith("}"):
+    if (
+        isinstance(value, str)
+        and value.startswith("${env:")
+        and value.endswith("}")
+    ):
         variable, _, fallback = value[6:-1].partition("|")
         return os.environ.get(variable, fallback)
     return value
@@ -143,9 +152,15 @@ def install_ttfb_reference(extension_name, config, monkeypatch):
             filename = "elevenlabs_ttd"
         url = url or normalized.params.get("base_url") or default
     if not url:
-        raise ValueError(f"No provider URL for supported TTFB hook: {extension_name}")
-    module = import_module(f"ten_packages.extension.{extension_name}.{filename}")
-    hook = getattr(import_module(f".ttfb_hooks.{hook_module}", __package__), hook_class)
+        raise ValueError(
+            f"No provider URL for supported TTFB hook: {extension_name}"
+        )
+    module = import_module(
+        f"ten_packages.extension.{extension_name}.{filename}"
+    )
+    hook = getattr(
+        import_module(f".ttfb_hooks.{hook_module}", __package__), hook_class
+    )
     reference = TTFBReference()
     with monkeypatch.context() as scoped:
         scoped.setattr(
@@ -155,7 +170,8 @@ def install_ttfb_reference(extension_name, config, monkeypatch):
                 module.websockets,
                 url,
                 None,
-                match_path=extension_name != "elevenlabs_multiple_context_tts_python",
+                match_path=extension_name
+                != "elevenlabs_multiple_context_tts_python",
                 observer_factory=lambda: hook(reference),
             ),
         )

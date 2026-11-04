@@ -48,5 +48,7 @@ class WebSocketHook:
         patch.setattr(
             module,
             "websockets",
-            ObservedWebSockets(module.websockets, url, Observer(), match_path=False),
+            ObservedWebSockets(
+                module.websockets, url, Observer(), match_path=False
+            ),
         )

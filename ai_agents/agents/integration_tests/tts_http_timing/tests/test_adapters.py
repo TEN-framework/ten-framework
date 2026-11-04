@@ -2,17 +2,17 @@
 
 import asyncio
 import base64
-import io
 import json
 from importlib import import_module
 import struct
-import wave
 
 import httpx
 import pytest
 
 from .boundary import ProviderReference
-from integration_tests.tts_guarder.tests.test_metrics import SequentialTTFBTester
+from integration_tests.tts_guarder.tests.test_metrics import (
+    SequentialTTFBTester,
+)
 
 SUPPORTED = {
     "generic_tts_http_python",
@@ -22,23 +22,12 @@ SUPPORTED = {
 }
 
 
-def _wav(width):
-    output = io.BytesIO()
-    with wave.open(output, "wb") as audio:
-        audio.setnchannels(1)
-        audio.setsampwidth(width)
-        audio.setframerate(16000)
-        audio.writeframes(b"\x01" + b"\x00" * (width - 1))
-    return output.getvalue()
-
-
 def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     if extension_name not in SUPPORTED:
         pytest.skip("This case covers the HTTPX TTS adapters only")
     import_module(f"ten_packages.extension.{extension_name}")
     reference = ProviderReference()
     pcm = base64.b64encode(b"\x01\x00" * 1600).decode()
-    wav24 = base64.b64encode(_wav(3)).decode()
     is_sse = extension_name in {
         "gemini_tts_python",
         "mistral_tts_python",
@@ -50,7 +39,9 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                 yield b'data: {"status":"started"}\n\n'
             await asyncio.sleep(0.02)
             if extension_name == "mistral_tts_python":
-                encoded = base64.b64encode(struct.pack("<f", 0.1) * 800).decode()
+                encoded = base64.b64encode(
+                    struct.pack("<f", 0.1) * 800
+                ).decode()
                 payload = {"type": "speech.audio.delta", "audio_data": encoded}
             elif extension_name == "gemini_tts_python":
                 payload = {
@@ -87,15 +78,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             trace = request.extensions.get("trace")
             if trace:
                 await trace("http11.send_request_body.started", {})
-            content_type = (
-                "text/event-stream"
-                if is_sse
-                else (
-                    "application/json"
-                    if False
-                    else "audio/pcm"
-                )
-            )
+            content_type = "text/event-stream" if is_sse else "audio/pcm"
             return httpx.Response(
                 200,
                 headers={"content-type": content_type},
@@ -132,7 +115,9 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
         install_ttfb_reference,
     )
 
-    with install_ttfb_reference(extension_name, config, monkeypatch) as hook_reference:
+    with install_ttfb_reference(
+        extension_name, config, monkeypatch
+    ) as hook_reference:
         tester = SequentialTTFBTester(hook_reference)
         # The fixture separately timestamps provider sends to audit the hook.
         original_begin = hook_reference.begin_request
@@ -147,9 +132,9 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
         assert error is None, error.error_message() if error else ""
         for request_id in tester.request_ids:
             # Adapter timing also includes parsing/conversion after wire audio.
-            assert hook_reference.elapsed_ms(request_id) >= reference.elapsed_ms(
+            assert hook_reference.elapsed_ms(
                 request_id
-            )
+            ) >= reference.elapsed_ms(request_id)
 
 
 pytestmark = pytest.mark.api

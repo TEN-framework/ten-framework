@@ -24,7 +24,13 @@ class Reference:
         timestamp = time.monotonic_ns()
         with self.lock:
             self.events.append(
-                (timestamp, request_id or self.request_id, kind, payload, predicate)
+                (
+                    timestamp,
+                    request_id or self.request_id,
+                    kind,
+                    payload,
+                    predicate,
+                )
             )
 
     def elapsed_ms(self, request_id):

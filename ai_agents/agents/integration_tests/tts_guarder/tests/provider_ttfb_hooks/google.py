@@ -5,7 +5,9 @@ from importlib import import_module
 
 class Hook:
     def install(self, patch, reference, config):
-        module = import_module("ten_packages.extension.google_tts_python.google_tts")
+        module = import_module(
+            "ten_packages.extension.google_tts_python.google_tts"
+        )
         original = module.texttospeech.TextToSpeechClient
 
         class Client(original):
@@ -16,7 +18,9 @@ class Hook:
                             reference.capture("text")
                         yield request
 
-                for response in super().streaming_synthesize(inputs(), *args, **kwargs):
+                for response in super().streaming_synthesize(
+                    inputs(), *args, **kwargs
+                ):
                     reference.capture("audio", response.audio_content)
                     yield response
 

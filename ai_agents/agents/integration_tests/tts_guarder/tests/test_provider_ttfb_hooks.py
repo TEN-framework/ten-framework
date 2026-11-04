@@ -19,7 +19,9 @@ def clock(monkeypatch):
 
 
 def test_google_public_lazy_iterator(monkeypatch, clock):
-    module = import_module("ten_packages.extension.google_tts_python.google_tts")
+    module = import_module(
+        "ten_packages.extension.google_tts_python.google_tts"
+    )
 
     class Client:
         def streaming_synthesize(self, requests):
@@ -84,9 +86,13 @@ def test_azure_mock_reference_uses_sdk_timestamps(monkeypatch):
     monkeypatch.setattr(
         "tests.provider_ttfb_hooks.azure.ctypes.CDLL", lambda path: library
     )
-    reference = Hook().install(None, None, {"ttfb_mock_sdk_library": "/mock/library"})
+    reference = Hook().install(
+        None, None, {"ttfb_mock_sdk_library": "/mock/library"}
+    )
     reference.begin_request("first")
-    count[0] = 2  # First request had two text chunks; retain its first SDK call.
+    count[0] = (
+        2  # First request had two text chunks; retain its first SDK call.
+    )
     reference.begin_request("second")
     assert reference.elapsed_ms("first") == 20
     assert reference.elapsed_ms("second") == 30
@@ -101,7 +107,9 @@ def test_azure_live_sdk_is_not_claimed_as_independent_reference():
 
 
 @pytest.mark.asyncio
-async def test_http_adapter_hook_tracks_input_and_first_audio(monkeypatch, clock):
+async def test_http_adapter_hook_tracks_input_and_first_audio(
+    monkeypatch, clock
+):
     from .provider_ttfb_hooks.http import HttpAdapterHook
     from ten_ai_base.struct import TTS2HttpResponseEventType as Event
 
@@ -133,3 +141,41 @@ async def test_http_adapter_hook_tracks_input_and_first_audio(monkeypatch, clock
         (None, Event.END),
     ]
     assert reference.elapsed_ms("first") == 170
+
+
+def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
+    from .provider_ttfb_hooks.cosy import Hook
+
+    received = []
+
+    class Synthesizer:
+        def streaming_call(self, text):
+            clock[0] = 20_000_000
+            self.callback.on_data(b"audio")
+
+    class Pool:
+        def __init__(self):
+            self.synthesizer = Synthesizer()
+
+        def borrow_synthesizer(self, callback):
+            self.synthesizer.callback = callback
+            return self.synthesizer
+
+    module = SimpleNamespace(
+        SpeechSynthesizer=Synthesizer,
+        SpeechSynthesizerObjectPool=Pool,
+        ResultCallback=object,
+    )
+    monkeypatch.setattr(
+        "tests.provider_ttfb_hooks.cosy.import_module", lambda name: module
+    )
+    pool = (
+        Pool()
+    )  # The instance predates hook installation, as in the SDK pool.
+    reference = Reference()
+    reference.begin_request("first")
+    Hook().install(monkeypatch, reference, {})
+    pool.borrow_synthesizer(callback=SimpleNamespace(on_data=received.append))
+    pool.synthesizer.streaming_call("Hello")
+    assert received == [b"audio"]
+    assert reference.elapsed_ms("first") == 20

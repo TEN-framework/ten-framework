@@ -87,7 +87,10 @@ def test_ttfb_measured_before_output_processing():
 
     provider = SimpleNamespace(tts=Provider())
     target = "humeai_tts_python.humeTTS.AsyncHumeClient"
-    replacement = lambda **kwargs: provider
+
+    def replacement(**kwargs):
+        return provider
+
     config = {"params": {"key": "mock", "voice": {"name": "mock"}}}
     with patch(target, replacement):
         tester = TimingTester()

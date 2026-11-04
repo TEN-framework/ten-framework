@@ -7,7 +7,6 @@ import threading
 import time
 import asyncio
 import httpx
-from types import SimpleNamespace
 from unittest.mock import patch
 
 from ten_runtime import Data, ExtensionTester, TenError, TenErrorCode

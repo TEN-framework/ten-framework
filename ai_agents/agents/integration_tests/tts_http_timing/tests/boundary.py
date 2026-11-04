@@ -180,13 +180,17 @@ class SequentialTTFBTester(AsyncExtensionTester):
                 if request_id == self.request_ids[0]:
                     # Separate the requests enough to expose reuse of the old start.
                     await asyncio.sleep(0.15)
-                    await self._send(ten_env, self.request_ids[1], "Hello again.", True)
+                    await self._send(
+                        ten_env, self.request_ids[1], "Hello again.", True
+                    )
                 self._check(ten_env)
 
     @override
     async def on_audio_frame(self, ten_env, frame):
         if frame.get_buf() and self.audio_request_id is not None:
-            self.first_audio_at.setdefault(self.audio_request_id, time.monotonic())
+            self.first_audio_at.setdefault(
+                self.audio_request_id, time.monotonic()
+            )
             self._check(ten_env)
 
     @override

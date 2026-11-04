@@ -1,7 +1,7 @@
 # HTTP TTFB adapter mocks
 
-As of: 2026-11-03 (Asia/Shanghai, UTC+08:00)
-Codebase commit: `10c89b121`
+As of: 2026-11-04 (Asia/Shanghai, UTC+08:00)
+Codebase commit: `8a9b75683`
 
 These TEN mocks check two sequential request IDs through text inputs, audio,
 completion and TTFB metrics. HTTP timing starts at client.get() and ends at its
@@ -28,22 +28,15 @@ uv run --no-project --python /path/to/python python -m pytest \
   --extension_name openai_tts2_python --config_dir /tmp -q --tb=short
 ```
 
-Repeat with `mistral_tts_python`, `smallest_tts_python`,
-`sarvam_http_tts`, `generic_tts_http_python` and `gemini_tts_python`.
-The last two require their packages to be supplied by the prepared app. The extension must exist in the prepared app; collection
-from an unprepared checkout is not a valid installation test.
+Repeat with `mistral_tts_python`, `generic_tts_http_python` and
+`gemini_tts_python`. The latter two require externally prepared extension
+packages. The app must contain the updated base implementation (0.7.64 or
+later) and the matching runtime.
 
-Other second-stage adapters have focused extension-local `test_ttfb_boundary.py`
-cases: Google, Oracle, Murf, Cosy, StepFun, Hume, Polly, Typecast and OpenAI.
-Hume and Typecast additionally have `test_ttfb_transport.py`. Those SDK transport
-fixtures use local providers and public SDK boundaries. SDK-internal timing
-that is not exposed by a supported hook remains out of scope.
+Google, Hume and OpenAI also have extension-local timing cases. Cosy uses
+main's existing tests, including `tests/test_metrics.py` for vendor TTFB and
+`tests/test_connection_reuse.py` for request isolation and connection reuse.
+The obsolete pre-pool Cosy fixture and unused timing helper have been removed.
 
-All five HTTP mock invocations and the listed adapter/SDK tests passed in the
-prepared development container. The shared base also passed raw audio and
-partial-JSON-envelope native TEN tests. All touched package versions were
-bumped for subsequent publication. These PRs depend on publication of the
-shared base 0.7.63; no package is published by running these tests.
-
-All thirteen provider hooks and the reusable live guarder case are documented
-in [PROVIDER_TTFB.md](../tts_guarder/tests/PROVIDER_TTFB.md).
+The guarder references and current timing contract are documented in
+[PROVIDER_TTFB.md](../tts_guarder/tests/PROVIDER_TTFB.md).

@@ -5,8 +5,11 @@ from importlib import import_module
 
 class Hook:
     def install(self, patch, reference, config):
-        module = import_module("ten_packages.extension.cosy_tts_python.cosy_tts")
-        original = module.SpeechSynthesizer
+        module = import_module(
+            "ten_packages.extension.cosy_tts_python.cosy_tts"
+        )
+        original_call = module.SpeechSynthesizer.streaming_call
+        original_borrow = module.SpeechSynthesizerObjectPool.borrow_synthesizer
 
         class Callback(module.ResultCallback):
             def __init__(self, callback):
@@ -31,13 +34,17 @@ class Hook:
             def on_event(self, message):
                 return self.callback.on_event(message)
 
-        class Synthesizer(original):
-            def __init__(self, *args, **kwargs):
-                kwargs["callback"] = Callback(kwargs["callback"])
-                super().__init__(*args, **kwargs)
+        def borrow(pool, *args, **kwargs):
+            kwargs["callback"] = Callback(kwargs["callback"])
+            return original_borrow(pool, *args, **kwargs)
 
-            def streaming_call(self, text, *args, **kwargs):
-                reference.capture("text", text)
-                return super().streaming_call(text, *args, **kwargs)
+        def streaming_call(synthesizer, text, *args, **kwargs):
+            reference.capture("text", text)
+            return original_call(synthesizer, text, *args, **kwargs)
 
-        patch.setattr(module, "SpeechSynthesizer", Synthesizer)
+        patch.setattr(
+            module.SpeechSynthesizerObjectPool, "borrow_synthesizer", borrow
+        )
+        patch.setattr(
+            module.SpeechSynthesizer, "streaming_call", streaming_call
+        )
