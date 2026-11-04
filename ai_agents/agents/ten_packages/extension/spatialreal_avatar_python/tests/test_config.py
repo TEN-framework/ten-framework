@@ -11,9 +11,12 @@ session needs, or raises ``ValueError`` with a message that names the
 offending key. The glue turns that message into the ``-1012`` ModuleError.
 """
 
+from dataclasses import asdict, fields
+
 import pytest
 
 from spatialreal_avatar_python.config import ResolvedConfig, resolve_config
+from spatialreal_avatar_python.session_client import SessionSettings
 
 # Test literals, not credentials.
 APP_ID = "a" * 32
@@ -171,3 +174,13 @@ def test_non_string_values_are_rejected_not_coerced():
     with pytest.raises(ValueError) as exc_info:
         resolve_config("room", params(spatialreal_api_key={"k": 1}))
     assert "spatialreal_api_key" in str(exc_info.value)
+
+
+def test_resolved_config_maps_onto_session_settings_field_for_field():
+    # The glue builds ``SessionSettings(**asdict(cfg))``: the two dataclasses
+    # must keep the same field names or a connect loses a setting silently.
+    assert [f.name for f in fields(ResolvedConfig)] == [
+        f.name for f in fields(SessionSettings)
+    ]
+    cfg = resolve_config("room", params(agora_token="t", environment="dev"))
+    assert asdict(SessionSettings(**asdict(cfg))) == asdict(cfg)
