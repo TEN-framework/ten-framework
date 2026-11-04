@@ -22,8 +22,8 @@ import asyncio
 import json
 import traceback
 from collections import deque
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import asdict, dataclass, field
+from typing import Any, Mapping, Optional
 
 from ten_runtime import (  # pylint: disable=import-error
     AsyncExtension,
@@ -59,6 +59,8 @@ VENDOR = "spatialreal"
 INPUT_QUEUE_MAX_MS = 10_000
 # Property keys whose values are secrets; redacted wherever config is logged.
 SECRET_KEYS = frozenset({"spatialreal_api_key", "agora_token", "agora_appcert"})
+# ``ResolvedConfig`` fields whose name differs from their property key.
+_PROPERTY_KEY_OF_FIELD = {"api_key": "spatialreal_api_key"}
 
 
 @dataclass
@@ -70,32 +72,29 @@ class SpatialRealAvatarConfig(BaseConfig):
     params: dict = field(default_factory=dict)
 
 
+def _masked(values: Mapping[str, Any], property_key_of=None) -> dict:
+    """``values`` with every ``SECRET_KEYS`` entry replaced by its mask."""
+    property_key_of = property_key_of or (lambda name: name)
+    return {
+        name: (
+            encrypt(str(value))
+            if property_key_of(name) in SECRET_KEYS
+            else value
+        )
+        for name, value in values.items()
+    }
+
+
 def redacted(cfg: ResolvedConfig) -> dict:
     """The resolved config as a loggable dict; secrets masked."""
-    return {
-        "api_key": encrypt(cfg.api_key),
-        "avatar_id": cfg.avatar_id,
-        "app_id": cfg.app_id,
-        "environment": cfg.environment,
-        "console_endpoint_url": cfg.console_endpoint_url,
-        "ingress_endpoint_url": cfg.ingress_endpoint_url,
-        "sample_rate": cfg.sample_rate,
-        "channel": cfg.channel,
-        "uid": cfg.uid,
-        "agora_appid": cfg.agora_appid,
-        "agora_appcert": encrypt(cfg.agora_appcert),
-        "agora_token": encrypt(cfg.agora_token),
-        "egress_idle_reconnect_ms": cfg.egress_idle_reconnect_ms,
-    }
+    return _masked(
+        asdict(cfg), lambda name: _PROPERTY_KEY_OF_FIELD.get(name, name)
+    )
 
 
 def redacted_params(channel: str, params: dict) -> dict:
     """The raw properties as a loggable dict, for the validation-failed log."""
-    masked = {
-        key: encrypt(str(value)) if key in SECRET_KEYS else value
-        for key, value in (params or {}).items()
-    }
-    return {"channel": channel, "params": masked}
+    return {"channel": channel, "params": _masked(params or {})}
 
 
 class _InputQueue:
@@ -201,21 +200,8 @@ class SpatialRealAvatarExtension(AsyncExtension):
             await self._send_error(CODE_FATAL, type(exc).__name__, str(exc))
 
     def _start_session(self, cfg: ResolvedConfig) -> None:
-        settings = SessionSettings(
-            api_key=cfg.api_key,
-            avatar_id=cfg.avatar_id,
-            app_id=cfg.app_id,
-            environment=cfg.environment,
-            console_endpoint_url=cfg.console_endpoint_url,
-            ingress_endpoint_url=cfg.ingress_endpoint_url,
-            sample_rate=cfg.sample_rate,
-            channel=cfg.channel,
-            uid=cfg.uid,
-            agora_appid=cfg.agora_appid,
-            agora_appcert=cfg.agora_appcert,
-            agora_token=cfg.agora_token,
-            egress_idle_reconnect_ms=cfg.egress_idle_reconnect_ms,
-        )
+        # ResolvedConfig and SessionSettings share their field names 1:1.
+        settings = SessionSettings(**asdict(cfg))
         self.client = SessionClient(
             settings,
             on_report=self._on_report,
