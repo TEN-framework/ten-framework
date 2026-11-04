@@ -24,16 +24,30 @@ def test_update_params_defaults():
     config = SmallestTTSConfig(params={"api_key": "test_key"})
     config.update_params()
 
-    assert config.params["model"] == "lightning_v3.1"
+    assert config.params["model"] == "lightning_v3.1_pro"
     # Always raw PCM16 `pcm` regardless of what the caller passed.
     assert config.params["output_format"] == "pcm"
     # A default voice_id is injected — voice_id is required for Lightning.
-    assert config.params["voice_id"] == "magnus"
+    assert config.params["voice_id"] == "kaitlyn"
     # A default sample_rate is injected as well.
     assert config.params["sample_rate"] == 24000
     # Default endpoint is the Smallest Lightning SSE streaming endpoint.
     assert config.url == "https://api.smallest.ai/waves/v1/tts/live"
     print("✅ Defaults test passed.")
+
+
+def test_update_params_legacy_model_gets_compatible_voice():
+    """An explicit legacy model without voice_id gets a standard-pool voice, not the Pro default."""
+    from smallest_tts_python.config import SmallestTTSConfig
+
+    config = SmallestTTSConfig(
+        params={"api_key": "test_key", "model": "lightning_v3.1"}
+    )
+    config.update_params()
+
+    assert config.params["model"] == "lightning_v3.1"
+    assert config.params["voice_id"] == "magnus"
+    print("✅ Legacy model fallback voice test passed.")
 
 
 def test_output_format_is_forced_to_pcm():
@@ -68,7 +82,7 @@ def test_url_and_base_url_configuration(
     for attr in ("log_info", "log_debug", "log_error", "log_warn"):
         setattr(mock_ten_env, attr, MagicMock())
 
-    common_params = {"api_key": "test_key", "model": "lightning_v3.1"}
+    common_params = {"api_key": "test_key", "model": "lightning_v3.1_pro"}
 
     # Case 1: explicit top-level url wins.
     cfg = SmallestTTSConfig(
@@ -129,7 +143,7 @@ def test_headers_configuration(MockLimits, MockTimeout, MockAsyncClient):
 
     common_params = {
         "api_key": "test_api_key_123",
-        "model": "lightning_v3.1",
+        "model": "lightning_v3.1_pro",
     }
 
     # Defaults.
@@ -168,20 +182,22 @@ def test_validate():
     from smallest_tts_python.config import SmallestTTSConfig
 
     # api_key in params -> ok.
-    cfg = SmallestTTSConfig(params={"api_key": "k", "model": "lightning_v3.1"})
+    cfg = SmallestTTSConfig(
+        params={"api_key": "k", "model": "lightning_v3.1_pro"}
+    )
     cfg.update_params()
     cfg.validate()
 
     # Authorization header instead of api_key -> ok.
     cfg = SmallestTTSConfig(
-        params={"model": "lightning_v3.1"},
+        params={"model": "lightning_v3.1_pro"},
         headers={"Authorization": "Bearer t"},
     )
     cfg.update_params()
     cfg.validate()
 
     # Neither -> error.
-    cfg = SmallestTTSConfig(params={"model": "lightning_v3.1"})
+    cfg = SmallestTTSConfig(params={"model": "lightning_v3.1_pro"})
     cfg.update_params()
     try:
         cfg.validate()
@@ -190,7 +206,7 @@ def test_validate():
         assert "API key or Authorization header is required" in str(e)
 
     # voice_id is required, but update_params() injects the default
-    # ("magnus"), so a bare api_key config still validates.
+    # ("kaitlyn"), so a bare api_key config still validates.
     cfg = SmallestTTSConfig(params={"api_key": "k"})
     cfg.update_params()
     cfg.validate()  # should not raise
