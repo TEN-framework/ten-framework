@@ -28,6 +28,12 @@ new server-side session. Design D6: ``flush`` cancels that wait and the
 frame that was waiting (``push_audio`` returns ``PushResult.CANCELLED``
 without sending), closes the open request locally without ``end=True``,
 interrupts the sink and waives the gate for the next request.
+
+The sink reports whether a send went out. A send that did not (the session
+dropped between the sender's readiness check and the send, possibly after a
+long gate wait) is not counted: ``push_audio`` returns
+``PushResult.NOT_SENT`` and forgets the request it may just have opened, so
+the caller can hold the chunk for the replacement session.
 """
 
 import asyncio
@@ -54,14 +60,21 @@ class PushResult(Enum):
     # A flush landed while the chunk waited at the gate: it belonged to the
     # cancelled turn and was not sent.
     CANCELLED = "cancelled"
+    # The sink could not send (session gone): the chunk is still owed.
+    NOT_SENT = "not_sent"
 
 
 class PacerSink(Protocol):
-    """What the pacer needs from the session: audio out and interrupt."""
+    """What the pacer needs from the session: audio out and interrupt.
 
-    async def send_audio(self, pcm: bytes, end: bool = False) -> None: ...
+    ``send_audio`` returns False when nothing went out because the session
+    is not connected or the send failed; by then the session has told the
+    extension it is down (``on_session_reset``) or is about to.
+    """
 
-    async def interrupt(self) -> None: ...
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool: ...
+
+    async def interrupt(self) -> bool: ...
 
 
 class Pacer:
@@ -138,15 +151,22 @@ class Pacer:
         """Send one chunk at the session rate, opening a request if idle.
 
         An empty chunk is a no-op reported as sent. A chunk that a flush
-        cancels while it waits at the gate is not sent.
+        cancels while it waits at the gate is not sent. A chunk the sink
+        could not send is ``NOT_SENT``: nothing is counted, and a request
+        opened for it is forgotten so the next chunk opens a fresh one.
         """
         if not pcm:
             return PushResult.SENT
+        opened = False
         if not self._req_open:
             if not await self._wait_for_gate():
                 return PushResult.CANCELLED
             self._open()
-        await self._sink.send_audio(pcm, end=False)
+            opened = True
+        if not await self._sink.send_audio(pcm, end=False):
+            if opened:
+                self._forget_request()
+            return PushResult.NOT_SENT
         now = self._clock()
         ms = duration_ms(pcm, self._rate)
         self._sent_ms += ms
@@ -260,7 +280,9 @@ class Pacer:
         for _ in range(chunks):
             if not self._req_open:
                 return
-            await self._sink.send_audio(self._pad_chunk, end=False)
+            if not await self._sink.send_audio(self._pad_chunk, end=False):
+                # Session gone; the reset that follows forgets the request.
+                return
             self._sent_ms += self._pad_tick_ms
             self._padded_ms_contiguous += self._pad_tick_ms
             if self._padded_ms_contiguous >= self._pad_max_ms:
@@ -290,6 +312,11 @@ class Pacer:
         A sender waiting at the gate for the old request's tail is woken:
         with no playhead left there is nothing to wait for.
         """
+        self._forget_request()
+        self._gate_abort.set()
+
+    def _forget_request(self) -> None:
+        """No request and no playhead: the server-side state is gone."""
         self._req_open = False
         self._first_send = None
         self._sent_ms = 0.0
@@ -298,4 +325,3 @@ class Pacer:
         self._last_real_audio_at = None
         self._flush_seen = False
         self._gate_waiver = False
-        self._gate_abort.set()

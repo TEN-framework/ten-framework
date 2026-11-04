@@ -24,16 +24,23 @@ RATE = 24000
 
 
 class FakeSink:
-    """Records every call the pacer makes, in order."""
+    """Records every call the pacer makes, in order.
+
+    ``connected`` is what ``send_audio`` returns, as the session client
+    answers False once the session is gone.
+    """
 
     def __init__(self):
         self.calls: list[tuple] = []
+        self.connected = True
 
-    async def send_audio(self, pcm: bytes, end: bool = False) -> None:
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
         self.calls.append(("audio", pcm, end))
+        return self.connected
 
-    async def interrupt(self) -> None:
+    async def interrupt(self) -> bool:
         self.calls.append(("interrupt",))
+        return self.connected
 
     @property
     def ends(self) -> int:
@@ -499,6 +506,35 @@ async def test_session_reset_wakes_sender_waiting_at_gate(clock):
     assert pacer.ahead_ms == pytest.approx(300.0)
     # Woken by the reset, not by a second sleep.
     assert len(sleep.calls) == 1
+
+
+async def test_failed_send_is_not_counted_and_forgets_the_request(clock):
+    """A send the sink refuses (session gone) leaves no request open and no
+    playhead, so the chunk can be retried on the next session without a
+    gate wait; a refused padding chunk is not counted either."""
+    sink = FakeSink()
+    sleep = FakeSleep(clock)
+    pacer = _pacer(clock, sink, sleep)
+    sink.connected = False
+
+    pcm = _speech(300)
+    assert await pacer.push_audio(pcm) is PushResult.NOT_SENT
+    assert sink.calls == [("audio", pcm, False)]
+    assert not pacer.request_open
+    assert pacer.ahead_ms == -math.inf
+
+    sink.connected = True
+    assert await pacer.push_audio(pcm) is PushResult.SENT
+    assert sleep.calls == []
+    assert pacer.request_open
+    assert pacer.ahead_ms == pytest.approx(300.0)
+
+    # Padding that the sink refuses does not move the playhead.
+    sink.connected = False
+    clock.advance(500)
+    await pacer.tick()
+    assert pacer.ahead_ms == pytest.approx(-200.0)
+    assert len(sink.silence_chunks()) == 1
 
 
 async def test_run_ticks_every_pad_tick(clock):

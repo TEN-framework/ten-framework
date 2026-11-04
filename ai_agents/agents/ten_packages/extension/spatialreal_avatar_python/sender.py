@@ -234,9 +234,10 @@ class AudioSender:
         A frame waits for the session before it is sent, so audio queued
         during a reconnect goes out (bounded by the queue) instead of being
         lost; a flush that lands during that wait, or while the frame waits
-        at the pacer's gate, drops it. A marker never waits: every frame
-        queued before it has already been sent or dropped by the time it is
-        dequeued.
+        at the pacer's gate, drops it. A frame the session could not take
+        (it dropped during the gate wait) is held for the next session. A
+        marker never waits: every frame queued before it has already been
+        sent or dropped by the time it is dequeued.
         """
         while True:
             item = await self._queue.get()
@@ -251,19 +252,32 @@ class AudioSender:
                 self._log.log_error(f"sender: {traceback.format_exc()}")
 
     async def _send_frame(self, frame: Frame) -> None:
-        gen = self._flush_gen
-        await self._connected.wait()
-        if gen != self._flush_gen:
-            # A flush landed while this frame waited for the session: it
-            # belongs to the cancelled turn.
-            return
-        converted = self._resample(frame.pcm, frame.rate)
-        if not converted:
-            return
-        result = await self._pacer.push_audio(converted)
-        self._note_request_state()
-        if result is PushResult.CANCELLED:
-            self._log.log_debug("flush: dropped the frame waiting at the gate")
+        converted: Optional[bytes] = None
+        while True:
+            gen = self._flush_gen
+            await self._connected.wait()
+            if gen != self._flush_gen:
+                # A flush landed while this frame waited for the session: it
+                # belongs to the cancelled turn.
+                return
+            if converted is None:
+                converted = self._resample(frame.pcm, frame.rate)
+                if not converted:
+                    return
+            result = await self._pacer.push_audio(converted)
+            self._note_request_state()
+            if result is PushResult.SENT:
+                return
+            if result is PushResult.CANCELLED:
+                self._log.log_debug(
+                    "flush: dropped the frame waiting at the gate"
+                )
+                return
+            # NOT_SENT: the session went down between the readiness check
+            # and the send (a gate wait can last seconds). ``session_down``
+            # has cleared the event; the frame waits for the next session.
+            self._log.log_debug("send failed: holding the frame for reconnect")
+            await asyncio.sleep(0)
 
     async def _apply_end(self, end: End) -> None:
         if end.tts_reason is None:
