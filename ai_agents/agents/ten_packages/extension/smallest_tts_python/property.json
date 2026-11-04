@@ -2,7 +2,7 @@
   "params": {
     "api_key": "${env:SMALLEST_API_KEY|}",
     "model": "lightning_v3.1_pro",
-    "voice_id": "blake",
+    "voice_id": "kaitlyn",
     "sample_rate": 24000
   }
 }

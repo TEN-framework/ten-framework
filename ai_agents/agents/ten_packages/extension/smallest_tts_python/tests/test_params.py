@@ -28,7 +28,7 @@ def test_update_params_defaults():
     # Always raw PCM16 `pcm` regardless of what the caller passed.
     assert config.params["output_format"] == "pcm"
     # A default voice_id is injected — voice_id is required for Lightning.
-    assert config.params["voice_id"] == "blake"
+    assert config.params["voice_id"] == "kaitlyn"
     # A default sample_rate is injected as well.
     assert config.params["sample_rate"] == 24000
     # Default endpoint is the Smallest Lightning SSE streaming endpoint.
@@ -168,7 +168,9 @@ def test_validate():
     from smallest_tts_python.config import SmallestTTSConfig
 
     # api_key in params -> ok.
-    cfg = SmallestTTSConfig(params={"api_key": "k", "model": "lightning_v3.1_pro"})
+    cfg = SmallestTTSConfig(
+        params={"api_key": "k", "model": "lightning_v3.1_pro"}
+    )
     cfg.update_params()
     cfg.validate()
 
@@ -190,7 +192,7 @@ def test_validate():
         assert "API key or Authorization header is required" in str(e)
 
     # voice_id is required, but update_params() injects the default
-    # ("blake"), so a bare api_key config still validates.
+    # ("kaitlyn"), so a bare api_key config still validates.
     cfg = SmallestTTSConfig(params={"api_key": "k"})
     cfg.update_params()
     cfg.validate()  # should not raise

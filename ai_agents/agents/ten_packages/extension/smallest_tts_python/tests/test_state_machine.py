@@ -255,7 +255,7 @@ def test_sequential_requests_state_machine(MockAsyncClient):
         "params": {
             "api_key": "test_api_key_for_state_machine",
             "model": "lightning_v3.1_pro",
-            "voice_id": "blake",
+            "voice_id": "kaitlyn",
         },
     }
 
@@ -336,7 +336,7 @@ def test_request_state_transitions(MockAsyncClient):
         "params": {
             "api_key": "test_api_key_for_state_transitions",
             "model": "lightning_v3.1_pro",
-            "voice_id": "blake",
+            "voice_id": "kaitlyn",
         },
     }
 

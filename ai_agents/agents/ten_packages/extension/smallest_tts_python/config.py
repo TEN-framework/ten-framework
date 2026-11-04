@@ -9,7 +9,7 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 # Smallest AI (Lightning) TTS defaults.
 DEFAULT_BASE_URL = "https://api.smallest.ai"
 DEFAULT_MODEL = "lightning_v3.1_pro"
-DEFAULT_VOICE_ID = "blake"
+DEFAULT_VOICE_ID = "kaitlyn"
 DEFAULT_SAMPLE_RATE = 24000
 # Lightning emits raw signed 16-bit LE mono PCM when `output_format` is
 # `pcm`, which is exactly the TEN `pcm_frame` contract — no conversion
