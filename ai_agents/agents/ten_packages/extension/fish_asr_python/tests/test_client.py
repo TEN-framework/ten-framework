@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 import ormsgpack
+from websockets.exceptions import ConnectionClosedError
 
 from .. import websocket
 from ..websocket import FishAudioASRClient
@@ -149,5 +150,28 @@ def test_connect_waits_until_the_session_callback_finishes():
                 release.set()
                 await client.close(graceful=False)
                 await asyncio.gather(connection, return_exceptions=True)
+
+    asyncio.run(run())
+
+
+def test_close_callback_preserves_connection_closed_exception_type():
+    async def run():
+        closed = []
+
+        async def on_close(code, message, close_exception):
+            closed.append((code, message, close_exception))
+
+        client = FishAudioASRClient(
+            url="wss://api.fish.audio/v1/asr/realtime",
+            api_key="test-key",
+            model="transcribe-stream-1",
+            config_message={"type": "config"},
+            on_message=AsyncMock(),
+            on_close=on_close,
+        )
+        close_exception = ConnectionClosedError(None, None)
+        await client._notify_close(1000, "incomplete", close_exception)
+
+        assert closed == [(1000, "incomplete", close_exception)]
 
     asyncio.run(run())

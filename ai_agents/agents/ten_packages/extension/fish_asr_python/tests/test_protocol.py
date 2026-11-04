@@ -82,3 +82,20 @@ def test_config_redacts_keys_only_when_requested():
     assert "nested-secret" in config.to_str(sensitive_handling=False)
     assert "secret" not in config.to_str(sensitive_handling=True)
     assert "nested-secret" not in config.to_str(sensitive_handling=True)
+
+
+def test_config_urls_redact_userinfo_and_signed_queries():
+    url = (
+        "wss://url-user:url-password@example.test/realtime?"
+        "token=signed-token&X-Amz-Signature=signature-value&region=us"
+    )
+    config = FishAudioASRConfig(
+        api_key="secret", url=url, params={"endpoint_url": url}
+    )
+    redacted = config.to_str(sensitive_handling=True)
+
+    assert "url-user" not in redacted
+    assert "url-password" not in redacted
+    assert "signed-token" not in redacted
+    assert "signature-value" not in redacted
+    assert "region=us" in redacted

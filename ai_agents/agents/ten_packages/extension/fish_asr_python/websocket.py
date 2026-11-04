@@ -1,17 +1,22 @@
 """Small MessagePack WebSocket client for Fish Audio realtime ASR."""
 
 import asyncio
+import inspect
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 import ormsgpack
 from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import (
+    ConnectionClosed,
+    ConnectionClosedError,
+    ConnectionClosedOK,
+)
 
 
 MessageCallback = Callable[[dict[str, Any]], Awaitable[None]]
-CloseCallback = Callable[[int, str], Awaitable[None]]
+CloseCallback = Callable[..., Awaitable[None]]
 
 
 def pack_message(message: dict[str, Any]) -> bytes:
@@ -83,6 +88,7 @@ class FishAudioASRClient:
     async def _receive_loop(self) -> None:
         code = 0
         message = "closed"
+        close_exception: BaseException | None = None
         try:
             assert self.websocket is not None
             async for frame in self.websocket:
@@ -96,10 +102,20 @@ class FishAudioASRClient:
                 await self.on_message(event)
                 if event.get("type") == "session_started":
                     self.ready.set()
+        except ConnectionClosedOK as error:
+            close_exception = error
+            code = error.code
+            message = error.reason or "closed"
+        except ConnectionClosedError as error:
+            close_exception = error
+            code = error.code
+            message = error.reason or "closed"
         except ConnectionClosed as error:
+            close_exception = error
             code = error.code
             message = error.reason or "closed"
         except Exception as error:
+            close_exception = error
             code = -1
             message = str(error)
             if not self.ready.is_set():
@@ -112,7 +128,46 @@ class FishAudioASRClient:
                 self.ready.set()
             self.connected = False
             if not self._closing:
-                await self.on_close(code, message)
+                await self._notify_close(code, message, close_exception)
+
+    async def _notify_close(
+        self,
+        code: int,
+        message: str,
+        close_exception: BaseException | None,
+    ) -> None:
+        """Notify callers and retain compatibility with old hooks."""
+        try:
+            parameters = list(
+                inspect.signature(self.on_close).parameters.values()
+            )
+        except (TypeError, ValueError):
+            parameters = []
+
+        positional = [
+            parameter
+            for parameter in parameters
+            if parameter.kind
+            in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+        ]
+        accepts_varargs = any(
+            parameter.kind == inspect.Parameter.VAR_POSITIONAL
+            for parameter in parameters
+        )
+        accepts_keyword = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters
+        ) or "close_exception" in {parameter.name for parameter in parameters}
+
+        if accepts_varargs or len(positional) >= 3:
+            await self.on_close(code, message, close_exception)
+        elif accepts_keyword:
+            await self.on_close(code, message, close_exception=close_exception)
+        else:
+            await self.on_close(code, message)
 
     async def send(self, message: dict[str, Any]) -> None:
         """Send one MessagePack protocol map over the active socket."""

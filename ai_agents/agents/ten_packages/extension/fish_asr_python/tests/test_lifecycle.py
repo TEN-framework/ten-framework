@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from ten_runtime import Data
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
 from .. import extension as extension_module
 from ..config import FishAudioASRConfig
@@ -188,7 +189,7 @@ def test_capacity_refusals_schedule_recovery(status):
     asyncio.run(run())
 
 
-def test_handshake_drains_saved_frames_with_their_own_metadata():
+def test_handshake_discards_stale_buffered_frames_at_session_boundary():
     async def run():
         extension, _env = make_extension()
         first = b"\x01\x02" * 320
@@ -215,13 +216,15 @@ def test_handshake_drains_saved_frames_with_their_own_metadata():
         ):
             try:
                 await extension.start_connection()
-                assert observed == [
-                    (first, "first-session"),
-                    (second, "second-session"),
-                ]
+                assert observed == [(second, "second-session")]
                 assert extension.buffered_frames.empty()
                 assert extension.buffered_frames_size == 0
-                assert extension.sent_buffer_length == len(first + second)
+                assert extension.sent_buffer_length == len(second)
+                await extension._handle_message(committed(text="second"))
+                assert (
+                    output(_env, "asr_result")[-1]["metadata"]["session_id"]
+                    == "second-session"
+                )
                 assert extension.first_audio_time is not None
                 assert (
                     extension.audio_timeline.get_total_user_audio_duration()
@@ -231,6 +234,105 @@ def test_handshake_drains_saved_frames_with_their_own_metadata():
                 await extension.stop_connection()
 
     asyncio.run(run())
+
+
+def test_disconnected_finalize_discards_audio_before_reconnect():
+    async def run():
+        extension, env = make_extension()
+        old_audio = b"old" * 320
+        next_audio = b"new" * 320
+        await extension._handle_audio_frame(
+            env, audio_frame(old_audio, "turn-session")
+        )
+        assert extension.buffered_frames.qsize() == 1
+
+        await extension.on_data(env, finalize_data("finish", "turn-session"))
+        assert extension.buffered_frames.empty()
+        assert output(env, "asr_finalize_end") == [
+            {
+                "finalize_id": "finish",
+                "metadata": {"session_id": "turn-session"},
+            }
+        ]
+
+        with patch.object(extension_module, "FishAudioASRClient", FakeClient):
+            try:
+                await extension.start_connection()
+                await extension._handle_audio_frame(
+                    env, audio_frame(next_audio, "next-session")
+                )
+                assert extension.client.send_audio.call_args.args == (
+                    next_audio,
+                )
+            finally:
+                await extension.stop_connection()
+
+    asyncio.run(run())
+
+
+def test_unlisted_close_code_reconnects_with_backoff():
+    async def run():
+        extension, env = make_extension()
+        real_sleep = asyncio.sleep
+
+        async def fast_sleep(_delay):
+            await real_sleep(0)
+
+        with (
+            patch.object(extension_module, "FishAudioASRClient", FakeClient),
+            patch.object(extension_module.asyncio, "sleep", fast_sleep),
+        ):
+            try:
+                await extension.start_connection()
+                previous_client = extension.client
+                previous_client.connected = False
+                await previous_client.on_close(1014, "bad gateway")
+                recovery = extension._reconnect_task
+                assert recovery is not None
+                await asyncio.wait_for(recovery, timeout=1)
+                assert extension.is_connected()
+                assert extension.client is not previous_client
+                assert output(env, "error")[0]["code"] == 1000
+            finally:
+                await extension.stop_connection()
+
+    asyncio.run(run())
+
+
+def test_close_exception_type_controls_normal_close_classification():
+    async def run():
+        normal_extension, normal_env = make_extension()
+        await normal_extension._handle_close(
+            1000,
+            "complete",
+            close_exception=ConnectionClosedOK(None, None),
+        )
+        assert output(normal_env, "error") == []
+        await normal_extension.stop_connection()
+
+        error_extension, error_env = make_extension()
+        await error_extension._handle_close(
+            1000,
+            "incomplete",
+            close_exception=ConnectionClosedError(None, None),
+        )
+        assert output(error_env, "error")[0]["code"] == 1000
+        await error_extension.stop_connection()
+
+    asyncio.run(run())
+
+
+def test_vendor_metadata_redacts_signed_url():
+    extension, _env = make_extension()
+    extension.config.url = (
+        "wss://url-user:url-password@example.test/realtime?"
+        "token=signed-token&signature=signature-value"
+    )
+    metadata = extension.vendor_metadata()
+    assert "url-user" not in metadata["url"]
+    assert "url-password" not in metadata["url"]
+    assert "signed-token" not in metadata["url"]
+    assert "signature-value" not in metadata["url"]
 
 
 def test_live_frame_cannot_duplicate_the_handshake_drain():

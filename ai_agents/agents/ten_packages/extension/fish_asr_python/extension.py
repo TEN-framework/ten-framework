@@ -22,8 +22,9 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import ASRResult, ASRWord
 from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
+from websockets.exceptions import ConnectionClosedOK
 
-from .config import FishAudioASRConfig
+from .config import FishAudioASRConfig, redact_configured_url
 from .websocket import FishAudioASRClient
 
 MODULE_NAME_ASR = "fish_asr"
@@ -72,6 +73,9 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         self._finalize_waiter: asyncio.Future[None] | None = None
         self._session_fatal = False
         self._reconnect_task: asyncio.Task[None] | None = None
+        self._stream_session_id: str | None = None
+        self._stream_metadata: dict[str, Any] | None = None
+        self._buffered_session_id: str | None = None
         self.auto_connect = True
 
     @override
@@ -84,7 +88,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             return {}
         return {
             "api_key": self.config.api_key,
-            "url": self.config.url,
+            "url": redact_configured_url(self.config.url),
             "model": self.config.model,
         }
 
@@ -221,6 +225,8 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             client = self.client
             self.client = None
             self._generation += 1
+            self._stream_session_id = None
+            self._stream_metadata = None
             self._finish_finalize_waiter()
         if client:
             await client.close()
@@ -259,7 +265,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         async with self._audio_lock:
             if not self.is_connected():
                 return False
-            return await self._send_audio_locked(frame)
+            return await self._send_audio_locked(frame, _session_id)
 
     async def _handle_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
@@ -270,34 +276,123 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         async with self._audio_lock:
             if self.is_connected():
                 if await self._flush_buffered_frames_locked():
-                    if await self._send_audio_locked(audio_frame):
+                    session_id = self._frame_session_id(audio_frame)
+                    if (
+                        self._stream_metadata is not None
+                        and session_id != self._stream_session_id
+                    ):
+                        # A Fish stream has one result owner. Do not put a
+                        # frame from a new TEN session on the old stream.
+                        self._drop_audio_frame_locked(audio_frame)
                         return
-            # The base owns the bounded Keep buffer while disconnected.
-            await super()._handle_audio_frame(ten_env, audio_frame)
+                    if await self._send_audio_locked(audio_frame, session_id):
+                        return
+            await self._buffer_frame_locked(ten_env, audio_frame)
 
-    def _apply_frame_metadata(self, frame: AudioFrame) -> None:
+    def _frame_metadata(self, frame: AudioFrame) -> dict[str, Any]:
         getter = getattr(frame, "get_property_to_json", None)
         if getter is None:
-            return
-        raw, error = getter("metadata")
+            return {}
+        try:
+            raw, error = getter("metadata")
+        except Exception as error:
+            self.ten_env.log_warn(f"failed to read audio metadata: {error}")
+            return {}
         if error or not raw:
-            return
+            return {}
         try:
             metadata = json.loads(raw)
             if isinstance(metadata, dict):
-                self.metadata = copy.deepcopy(metadata)
-                self.session_id = metadata.get("session_id", self.session_id)
+                return copy.deepcopy(metadata)
         except (TypeError, json.JSONDecodeError) as error:
             self.ten_env.log_warn(f"invalid audio metadata: {error}")
+        return {}
 
-    async def _send_audio_locked(self, frame: AudioFrame) -> bool:
+    def _frame_session_id(self, frame: AudioFrame) -> str | None:
+        metadata = self._frame_metadata(frame)
+        return self._metadata_session_id(metadata)
+
+    def _metadata_session_id(self, metadata: dict[str, Any]) -> str | None:
+        session_id = metadata.get("session_id", self.session_id)
+        return session_id if isinstance(session_id, str) else None
+
+    async def _buffer_frame_locked(
+        self, ten_env: AsyncTenEnv, frame: AudioFrame
+    ) -> None:
+        frame_metadata = self._frame_metadata(frame)
+        session_id = self._metadata_session_id(frame_metadata)
+        if (
+            not self.buffered_frames.empty()
+            and session_id != self._buffered_session_id
+        ):
+            # A Keep queue cannot safely contain audio for two vendor result
+            # owners. The newer session supersedes stale disconnected audio.
+            self._discard_buffered_frames_locked()
+        self._buffered_session_id = session_id
+        if frame_metadata:
+            self.metadata = copy.deepcopy(frame_metadata)
+            if session_id is not None:
+                self.session_id = session_id
+        await super()._handle_audio_frame(ten_env, frame)
+
+    def _drop_audio_frame_locked(self, frame: AudioFrame) -> None:
+        frame_size = len(frame.get_buf())
+        self.audio_timeline.add_dropped_audio(
+            self._audio_duration_ms(frame_size)
+        )
+        self.dropped_audio_frames += 1
+
+    def _discard_buffered_frames_locked(self) -> None:
+        while not self.buffered_frames.empty():
+            frame = self.buffered_frames.get_nowait()
+            self._drop_audio_frame_locked(frame)
+        self.buffered_frames_size = 0
+        self._buffered_session_id = None
+
+    def _audio_duration_ms(self, byte_count: int) -> int:
+        return int(
+            byte_count
+            * 1000
+            / (
+                self.input_audio_sample_rate()
+                * self.input_audio_channels()
+                * self.input_audio_sample_width()
+            )
+        )
+
+    async def _send_audio_locked(
+        self, frame: AudioFrame, session_id: str | None = None
+    ) -> bool:
         if not self.client or not self.client.connected:
             return False
         buf = frame.get_buf()
         if not buf:
             return False
         data = bytes(buf)
-        self._apply_frame_metadata(frame)
+        frame_metadata = self._frame_metadata(frame)
+        if "session_id" in frame_metadata:
+            frame_session_id = self._metadata_session_id(frame_metadata)
+        elif session_id is not None:
+            frame_session_id = session_id
+        else:
+            frame_session_id = self._metadata_session_id(frame_metadata)
+        if self._stream_metadata is None:
+            stream_metadata = frame_metadata or copy.deepcopy(
+                self.metadata or {}
+            )
+            if frame_session_id is not None:
+                stream_metadata.setdefault("session_id", frame_session_id)
+            self._stream_metadata = stream_metadata
+            self._stream_session_id = self._metadata_session_id(stream_metadata)
+        elif frame_session_id != self._stream_session_id:
+            return False
+        elif frame_metadata:
+            merged_metadata = copy.deepcopy(self._stream_metadata)
+            merged_metadata.update(frame_metadata)
+            self._stream_metadata = merged_metadata
+        self.metadata = copy.deepcopy(self._stream_metadata)
+        if self._stream_session_id is not None:
+            self.session_id = self._stream_session_id
         try:
             await self.client.send_audio(data)
         except Exception as error:
@@ -322,19 +417,38 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         return True
 
     async def _flush_buffered_frames_locked(self) -> bool:
+        frames = []
         while not self.buffered_frames.empty():
-            frame = self.buffered_frames.get_nowait()
-            self.buffered_frames_size -= len(frame.get_buf())
-            if not await self._send_audio_locked(frame):
+            frames.append(self.buffered_frames.get_nowait())
+        self.buffered_frames_size = 0
+        if not frames:
+            self._buffered_session_id = None
+            return True
+
+        owner_session_id = self._frame_session_id(frames[0])
+        self._buffered_session_id = owner_session_id
+        for index, frame in enumerate(frames):
+            if self._frame_session_id(frame) != owner_session_id:
+                self._drop_audio_frame_locked(frame)
+                continue
+            if not await self._send_audio_locked(frame, owner_session_id):
                 # Preserve FIFO order when a drain is interrupted by a send
-                # failure; the next connection will retry the unsent frame.
-                pending = [frame]
-                while not self.buffered_frames.empty():
-                    pending.append(self.buffered_frames.get_nowait())
+                # failure; the next connection will retry unsent frames for
+                # this owner. Frames from another owner are discarded.
+                pending = []
+                for pending_frame in frames[index:]:
+                    if (
+                        self._frame_session_id(pending_frame)
+                        == owner_session_id
+                    ):
+                        pending.append(pending_frame)
+                    else:
+                        self._drop_audio_frame_locked(pending_frame)
                 for pending_frame in pending:
                     self.buffered_frames.put_nowait(pending_frame)
-                self.buffered_frames_size += len(frame.get_buf())
+                    self.buffered_frames_size += len(pending_frame.get_buf())
                 return False
+        self._buffered_session_id = None
         return True
 
     @override
@@ -380,8 +494,13 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             async with self._lifecycle_lock:
                 async with self._audio_lock:
                     if not self.is_connected():
+                        # A finalize acknowledgement closes the caller's
+                        # turn. Never replay its Keep-buffered audio after a
+                        # later reconnect.
+                        self._discard_buffered_frames_locked()
                         return
                     if not await self._flush_buffered_frames_locked():
+                        self._discard_buffered_frames_locked()
                         return
                     waiter = asyncio.get_running_loop().create_future()
                     self._finalize_waiter = waiter
@@ -426,7 +545,12 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             self._finalize_waiter.set_result(None)
 
     async def _handle_close(
-        self, code: int, message: str, *, generation: int | None = None
+        self,
+        code: int,
+        message: str,
+        *,
+        generation: int | None = None,
+        close_exception: BaseException | None = None,
     ) -> None:
         if (
             self.stopped
@@ -435,12 +559,13 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         ):
             return
         self._finish_finalize_waiter()
-        normal_session = bool(self.client and self.client.session_done.is_set())
         self.ten_env.log_warn(
             f"Fish Audio WebSocket closed: {code} {message}",
             category=LOG_CATEGORY_VENDOR,
         )
-        normal_close = code in {0, 1000, 1001}
+        normal_close = isinstance(close_exception, ConnectionClosedOK) or (
+            close_exception is None and code in {0, 1000, 1001}
+        )
         severity = (
             ModuleErrorCode.FATAL_ERROR.value
             if self._session_fatal
@@ -467,25 +592,10 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                 )
             ),
         )
-        reconnectable = code in {
-            0,
-            -1,
-            1000,
-            1001,
-            1006,
-            1011,
-            1012,
-            1013,
-            4408,
-            4413,
-            4500,
-        }
-        if (
-            not normal_session
-            and reconnectable
-            and not self._session_fatal
-            and not self.stopped
-        ):
+        # Every vendor close is recoverable with backoff, including normal
+        # session completion and newly introduced gateway codes.
+        reconnectable = True
+        if reconnectable and not self._session_fatal and not self.stopped:
             self._schedule_reconnect()
 
     def _schedule_reconnect(self) -> None:
@@ -541,6 +651,8 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                 return
             await self.on_connected()
             async with self._audio_lock:
+                self._stream_session_id = None
+                self._stream_metadata = None
                 await self._flush_buffered_frames_locked()
                 self._opening = False
             return
@@ -553,7 +665,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             self._user_turns.add(turn_index)
             draft = self._last_draft.get(turn_index)
             if draft:
-                await self._send_draft(draft)
+                await self._send_draft(draft, generation=generation)
             return
         if event_type == "draft":
             turn_index = int(event.get("turn_index", 0))
@@ -561,7 +673,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             if (
                 self.config is not None and self.config.turn_mode != "auto"
             ) or turn_index in self._user_turns:
-                await self._send_draft(event)
+                await self._send_draft(event, generation=generation)
             return
         if event_type == "eager_end_of_turn":
             turn_index = int(event.get("turn_index", 0))
@@ -585,6 +697,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                         "turn_index": turn_index,
                         "eager_end_of_turn": True,
                     },
+                    generation=generation,
                 )
             return
         if event_type == "turn_resumed":
@@ -604,7 +717,9 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                 not event.get("recoverable", False)
                 or event.get("error_type") == "server_restarting"
             )
-            await self._handle_vendor_error(event, reconnect_error)
+            await self._handle_vendor_error(
+                event, reconnect_error, generation=generation
+            )
             return
         if event_type == "committed":
             turn_index = int(event.get("turn_index", 0))
@@ -630,7 +745,10 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                         "reason": event.get("reason", ""),
                         "degraded": bool(event.get("degraded", False)),
                     },
+                    generation=generation,
                 )
+            if generation is not None and generation != self._generation:
+                return
             self._last_draft.pop(turn_index, None)
             self._user_turns.discard(turn_index)
             self._turn_start_ms.pop(turn_index, None)
@@ -640,7 +758,9 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         if event_type == "session_done":
             self._finish_finalize_waiter()
 
-    async def _send_draft(self, event: dict[str, Any]) -> None:
+    async def _send_draft(
+        self, event: dict[str, Any], *, generation: int | None = None
+    ) -> None:
         text = str(event.get("text", ""))
         if not text:
             return
@@ -655,11 +775,18 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                 "turn_index": turn_index,
                 "settled_text": event.get("settled_text", ""),
             },
+            generation=generation,
         )
 
     async def _handle_vendor_error(
-        self, event: dict[str, Any], reconnect_error: bool = False
+        self,
+        event: dict[str, Any],
+        reconnect_error: bool = False,
+        *,
+        generation: int | None = None,
     ) -> None:
+        if generation is not None and generation != self._generation:
+            return
         code = str(event.get("error_type", event.get("code", "unknown")))
         message = str(event.get("message", "Fish Audio realtime ASR error"))
         await self.send_asr_error(
@@ -687,8 +814,13 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
         language_code: str | None,
         words: list[dict[str, Any]] | None = None,
         metadata: dict[str, Any] | None = None,
+        generation: int | None = None,
     ) -> None:
+        if generation is not None and generation != self._generation:
+            return
         async with self._audio_lock:
+            if generation is not None and generation != self._generation:
+                return
             start_ms = max(0, self._turn_start_ms.get(turn_index, 0))
             word_results = None
             if words:
@@ -704,7 +836,15 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                             stable=final,
                         )
                     )
-            source_metadata = self.metadata
+            # Results can arrive after later frames have been sent. The
+            # stream owner snapshot is stable for the lifetime of this
+            # vendor session, unlike the base class's latest-frame metadata.
+            previous_metadata = self.metadata
+            source_metadata = (
+                self._stream_metadata
+                if self._stream_metadata is not None
+                else self.metadata
+            )
             result_metadata = copy.deepcopy(source_metadata or {})
             asr_info = result_metadata.get("asr_info")
             if not isinstance(asr_info, dict):
@@ -729,7 +869,7 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
                     )
                 )
             finally:
-                self.metadata = source_metadata
+                self.metadata = previous_metadata
 
     @staticmethod
     def _language_locale(language_code: str | None) -> str:

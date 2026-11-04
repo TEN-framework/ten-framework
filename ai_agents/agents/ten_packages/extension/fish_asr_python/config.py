@@ -1,8 +1,86 @@
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
+
+
+def _redact_configured_url(value: str) -> str:
+    """Remove URL userinfo and sensitive query values."""
+    if not value:
+        return value
+    try:
+        parsed = urlsplit(value)
+        if parsed.hostname is None:
+            return "[REDACTED_URL]"
+
+        hostname = parsed.hostname
+        if ":" in hostname and not hostname.startswith("["):
+            hostname = f"[{hostname}]"
+        netloc = hostname
+        if parsed.port is not None:
+            netloc = f"{netloc}:{parsed.port}"
+        query = []
+        for key, query_value in parse_qsl(parsed.query, keep_blank_values=True):
+            normalized_key = "".join(
+                character for character in key.lower() if character.isalnum()
+            )
+            sensitive = any(
+                marker in normalized_key
+                for marker in (
+                    "key",
+                    "token",
+                    "secret",
+                    "signature",
+                    "sig",
+                    "auth",
+                    "credential",
+                    "password",
+                    "passwd",
+                    "pass",
+                    "expires",
+                    "expiry",
+                )
+            )
+            query.append((key, "[REDACTED]" if sensitive else query_value))
+        sanitized = urlunsplit(
+            (
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                urlencode(query, doseq=True),
+                "",
+            )
+        )
+        return sanitized
+    except (TypeError, ValueError):
+        # Validation reports malformed URLs separately. Keep logging safe even
+        # when it is called before validation has completed.
+        return "[REDACTED_URL]"
+
+
+def _is_url_field(key: str) -> bool:
+    normalized = key.lower()
+    return (
+        "url" in normalized
+        or normalized.endswith("uri")
+        or normalized.endswith("endpoint")
+    )
+
+
+def _redact_urls(value: Any, key: str | None = None) -> Any:
+    if isinstance(value, str):
+        if key and _is_url_field(key):
+            return _redact_configured_url(value)
+        return value
+    if isinstance(value, dict):
+        return {
+            item_key: _redact_urls(item, str(item_key))
+            for item_key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_urls(item) for item in value]
+    return value
 
 
 class FishAudioASRConfig(BaseModel):
@@ -89,12 +167,15 @@ class FishAudioASRConfig(BaseModel):
             )
 
     def to_str(self, sensitive_handling: bool = True) -> str:
-        """Serialize configuration, redacting the API key when requested."""
+        """Serialize configuration with credentials and URLs redacted."""
         config = self.model_copy(deep=True)
-        if sensitive_handling and config.api_key:
-            config.api_key = encrypt(config.api_key)
-        if sensitive_handling and config.params and "api_key" in config.params:
-            config.params["api_key"] = encrypt(config.params["api_key"])
+        if sensitive_handling:
+            if config.api_key:
+                config.api_key = encrypt(config.api_key)
+            if config.params and "api_key" in config.params:
+                config.params["api_key"] = encrypt(config.params["api_key"])
+            config.url = _redact_configured_url(config.url)
+            config.params = _redact_urls(config.params)
         return config.model_dump_json()
 
     def build_config_message(self) -> dict[str, Any]:
@@ -134,3 +215,8 @@ class FishAudioASRConfig(BaseModel):
         if self.client_reference_id:
             message["client_reference_id"] = self.client_reference_id
         return message
+
+
+def redact_configured_url(value: str) -> str:
+    """Public URL redactor used by status metadata as well as config logs."""
+    return _redact_configured_url(value)
