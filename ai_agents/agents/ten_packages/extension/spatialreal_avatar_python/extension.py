@@ -405,18 +405,35 @@ class SpatialRealAvatarExtension(AsyncExtension):
         self._note_request_state()
 
     def _on_report(self, report: ErrorReport) -> None:
+        # The report carries the id of the session it is about; by the time
+        # the spawned task runs, the client may already have cleared its own.
         self._spawn(
-            self._send_error(report.code, report.vendor_code, report.message)
+            self._send_error(
+                report.code,
+                report.vendor_code,
+                report.message,
+                session_id=report.session_id,
+            )
         )
 
     # -- errors -------------------------------------------------------------
 
     async def _send_error(
-        self, code: int, vendor_code: str, message: str
+        self,
+        code: int,
+        vendor_code: str,
+        message: str,
+        session_id: Optional[str] = None,
     ) -> None:
-        """Emit the D8 ``ModuleError`` on data ``error``."""
+        """Emit the D8 ``ModuleError`` on data ``error``.
+
+        ``session_id`` defaults to the client's current connection id; a
+        report from the client names the session it is about instead.
+        """
         if self.ten_env is None:
             return
+        if session_id is None:
+            session_id = self.client.connection_id if self.client else ""
         error = ModuleError(
             id=str(self._turn_id or 0),
             module=ModuleType.AVATAR.value,
@@ -426,9 +443,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
                 vendor=VENDOR, code=vendor_code, message=message
             ),
             metadata={
-                "session_id": (
-                    self.client.connection_id if self.client else ""
-                ),
+                "session_id": session_id,
                 "vendor_metadata": self._vendor_metadata(),
             },
         )
