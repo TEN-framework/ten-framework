@@ -58,7 +58,7 @@ def test_basic():
 
 
 class ExtensionTesterConfigError(AsyncExtensionTester):
-    """Starts the extension with empty params and waits for data ``error``."""
+    """Starts the extension with invalid params and waits for data ``error``."""
 
     def __init__(self):
         super().__init__()
@@ -77,21 +77,24 @@ class ExtensionTesterConfigError(AsyncExtensionTester):
 
 
 def test_config_error_uses_module_error():
-    # Every key the operator must set is empty, so on_start reports the
-    # design D8 configuration error and leaves the extension idle; the
-    # extension must not raise and must not try to connect.
-    empty_params = {
-        "channel": "",
+    # The SpatialReal keys and the channel are set, so validation gets past
+    # the first checks and fails on ``agora_uid``. An empty ``params`` dict
+    # would fail on ``spatialreal_api_key`` instead, so a message naming
+    # ``agora_uid`` proves the ``params`` object reached ``resolve_config``
+    # as a dict. on_start reports the design D8 configuration error and
+    # leaves the extension idle; it must not raise and must not connect.
+    invalid_params = {
+        "channel": "test-channel",
         "params": {
-            "spatialreal_api_key": "",
-            "spatialreal_avatar_id": "",
-            "agora_appid": "",
-            "agora_uid": "",
+            "spatialreal_api_key": "test-api-key-not-real",
+            "spatialreal_avatar_id": "test-avatar-id",
+            "agora_appid": "test-appid",
+            "agora_uid": "abc",
         },
     }
     tester = ExtensionTesterConfigError()
     tester.set_test_mode_single(
-        "spatialreal_avatar_python", json.dumps(empty_params)
+        "spatialreal_avatar_python", json.dumps(invalid_params)
     )
     error = tester.run()
     assert error is None, error.error_message()
@@ -99,7 +102,8 @@ def test_config_error_uses_module_error():
     assert tester.error is not None
     assert tester.error["module"] == "avatar"
     assert tester.error["code"] == -1012
-    assert "spatialreal_api_key" in tester.error["message"]
+    assert "agora_uid" in tester.error["message"]
+    assert "spatialreal_api_key" not in tester.error["message"]
     vendor_info = tester.error["vendor_info"]
     assert vendor_info["vendor"] == "spatialreal"
     assert vendor_info["code"] == "ValueError"
