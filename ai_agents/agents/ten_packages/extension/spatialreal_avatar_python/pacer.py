@@ -149,8 +149,9 @@ class Pacer:
         """Block while the previous request may still be playing out.
 
         The wait is a race between the injected ``sleep`` and the abort
-        event ``flush`` sets; whichever finishes first, the loop re-reads the
-        waiver and the playhead, so an early wake never sends too soon.
+        event ``flush`` and ``on_session_reset`` set; whichever finishes
+        first, the loop re-reads the waiver and the playhead, so an early
+        wake never sends too soon.
         """
         self._gate_abort.clear()
         while not self._gate_waiver:
@@ -254,7 +255,11 @@ class Pacer:
     # -- session ------------------------------------------------------------
 
     def on_session_reset(self) -> None:
-        """After a reconnect: the server has no request, forget the playhead."""
+        """After a reconnect: the server has no request, forget the playhead.
+
+        A sender waiting at the gate for the old request's tail is woken:
+        with no playhead left there is nothing to wait for.
+        """
         self._req_open = False
         self._first_send = None
         self._sent_ms = 0.0
@@ -263,3 +268,4 @@ class Pacer:
         self._last_real_audio_at = None
         self._flush_seen = False
         self._gate_waiver = False
+        self._gate_abort.set()

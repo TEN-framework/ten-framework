@@ -465,6 +465,36 @@ async def test_session_reset_clears_playhead(clock):
     assert pacer.request_open
 
 
+async def test_session_reset_wakes_sender_waiting_at_gate(clock):
+    """A reconnect while a sender waits at the gate: the old request's tail
+    is gone with the old session, so the pending audio goes out at once."""
+    sink = FakeSink()
+    sleep = HangingSleep()
+    pacer = _pacer(clock, sink, sleep)
+
+    await pacer.push_audio(_speech(2000))
+    await pacer.end_request("tts_audio_end")
+
+    pcm_b = _speech(300)
+    sender = asyncio.create_task(pacer.push_audio(pcm_b))
+    for _ in range(10):
+        await asyncio.sleep(0)
+        if sleep.calls:
+            break
+    assert sleep.calls == [pytest.approx(4.0)]
+    assert not sender.done()
+
+    pacer.on_session_reset()
+    await asyncio.wait_for(sender, timeout=1.0)
+
+    assert sink.calls[-1] == ("audio", pcm_b, False)
+    assert sink.interrupts == 0
+    assert pacer.request_open
+    assert pacer.ahead_ms == pytest.approx(300.0)
+    # Woken by the reset, not by a second sleep.
+    assert len(sleep.calls) == 1
+
+
 async def test_run_ticks_every_pad_tick(clock):
     sink = FakeSink()
     sleep = FakeSleep(clock)
