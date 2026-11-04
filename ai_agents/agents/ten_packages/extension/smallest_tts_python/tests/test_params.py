@@ -36,6 +36,20 @@ def test_update_params_defaults():
     print("✅ Defaults test passed.")
 
 
+def test_update_params_legacy_model_gets_compatible_voice():
+    """An explicit legacy model without voice_id gets a standard-pool voice, not the Pro default."""
+    from smallest_tts_python.config import SmallestTTSConfig
+
+    config = SmallestTTSConfig(
+        params={"api_key": "test_key", "model": "lightning_v3.1"}
+    )
+    config.update_params()
+
+    assert config.params["model"] == "lightning_v3.1"
+    assert config.params["voice_id"] == "magnus"
+    print("✅ Legacy model fallback voice test passed.")
+
+
 def test_output_format_is_forced_to_pcm():
     """Even if the caller asks for wav/mp3, we override to pcm."""
     from smallest_tts_python.config import SmallestTTSConfig

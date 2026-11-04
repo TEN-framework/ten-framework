@@ -10,6 +10,11 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 DEFAULT_BASE_URL = "https://api.smallest.ai"
 DEFAULT_MODEL = "lightning_v3.1_pro"
 DEFAULT_VOICE_ID = "kaitlyn"
+# lightning_v3.1 retires on 2026-11-30 and is served by lightning_v3.1_pro
+# after that, but until then an explicit lightning_v3.1 config needs its own
+# standard-pool voice default — kaitlyn is Pro-only and silently mispairs.
+LEGACY_MODEL = "lightning_v3.1"
+LEGACY_DEFAULT_VOICE_ID = "magnus"
 DEFAULT_SAMPLE_RATE = 24000
 # Lightning emits raw signed 16-bit LE mono PCM when `output_format` is
 # `pcm`, which is exactly the TEN `pcm_frame` contract — no conversion
@@ -45,7 +50,13 @@ class SmallestTTSConfig(AsyncTTS2HttpConfig):
         if "model" not in self.params:
             self.params["model"] = DEFAULT_MODEL
         if "voice_id" not in self.params:
-            self.params["voice_id"] = DEFAULT_VOICE_ID
+            # An explicit legacy model needs a compatible standard-pool voice;
+            # DEFAULT_VOICE_ID is Pro-only and silently mispairs with it.
+            self.params["voice_id"] = (
+                LEGACY_DEFAULT_VOICE_ID
+                if self.params["model"] == LEGACY_MODEL
+                else DEFAULT_VOICE_ID
+            )
         if "sample_rate" not in self.params:
             self.params["sample_rate"] = DEFAULT_SAMPLE_RATE
 
