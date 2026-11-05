@@ -187,3 +187,45 @@ def test_idle_socket_closed_by_server_is_reopened():
         assert audio_of(events) == server.audio
 
     asyncio.run(_run())
+
+
+def test_empty_and_half_sample_frames_do_not_start_ttfb():
+    async def respond(_query, ws, server):
+        await server.send(ws, {"status": "started-byte-stream"})
+        await ws.send(b"")
+        await ws.send(b"\x01")
+        await ws.send(b"\x02" + b"\x03\x04" * 10)
+        await server.send(ws, {"type": "finished-byte-stream"})
+
+    async def _run():
+        async with MockBlazeTTSServer(respond=respond) as server:
+            client = make_client(server)
+            events = await collect(client, "xin chào")
+            await client.stop()
+
+        kinds = [e for _, e in events]
+        assert kinds == [
+            EVENT_TTS_TTFB_METRIC,
+            EVENT_TTS_RESPONSE,
+            EVENT_TTS_END,
+        ]
+        assert audio_of(events) == b"\x01\x02" + b"\x03\x04" * 10
+
+    asyncio.run(_run())
+
+
+def test_empty_frames_with_no_audio_never_report_ttfb():
+    async def respond(_query, ws, server):
+        await server.send(ws, {"status": "started-byte-stream"})
+        await ws.send(b"")
+        await server.send(ws, {"type": "finished-byte-stream"})
+
+    async def _run():
+        async with MockBlazeTTSServer(respond=respond) as server:
+            client = make_client(server)
+            events = await collect(client, "xin chào")
+            await client.stop()
+
+        assert events == [(None, EVENT_TTS_END)]
+
+    asyncio.run(_run())

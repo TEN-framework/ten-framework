@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import array
 import asyncio
 import contextvars
 import copy
@@ -38,9 +39,12 @@ from .config import BlazeSTTConfig
 from .const import (
     AUDIO_BUFFER_BYTE_LIMIT,
     DUMP_FILE_NAME,
+    FINAL_COVERAGE_TOLERANCE_MS,
+    FINALIZE_SILENCE_STEP_MS,
     MODULE_NAME_ASR,
     RECONNECT_BASE_DELAY_SECONDS,
     RECONNECT_MAX_DELAY_SECONDS,
+    VOICED_MEAN_ABS_THRESHOLD,
     WS_CLOSE_POLICY_VIOLATION,
 )
 from .recognition import BlazeSTTAuthError, BlazeSTTRecognition
@@ -51,6 +55,16 @@ DATA_OUT_ASR_FINALIZE_END = "asr_finalize_end"
 
 def _now_ms() -> int:
     return int(time.time() * 1000)
+
+
+def _is_voiced(pcm: bytes) -> bool:
+    """True when a PCM16 frame carries more than background-level energy."""
+    samples = array.array("h")
+    samples.frombytes(pcm[: len(pcm) - len(pcm) % 2])
+    if not samples:
+        return False
+    mean_abs = sum(abs(sample) for sample in samples) / len(samples)
+    return mean_abs >= VOICED_MEAN_ABS_THRESHOLD
 
 
 class BlazeSTTExtension(AsyncASRBaseExtension):
@@ -91,9 +105,16 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         # Audio timeline: Blaze timestamps restart with every socket.
         self.sent_user_audio_duration_ms_before_last_reset = 0
         self._total_user_bytes = 0
+        # Per-socket stream position in ms (user audio plus injected
+        # silence), the same clock as Blaze's start_ms / end_ms.
+        self._socket_bytes = 0
+        # Finalization watermark: the end of the latest final, and the end
+        # of the latest frame that carried speech energy. Speech after the
+        # watermark is still waiting for its final.
         self._last_final_end_ms = 0
-        # User audio was sent after the last final result.
-        self._unfinalized_audio = False
+        self._last_voiced_end_ms: int | None = None
+        self._final_seen = False
+        self._partial_since_final = False
         self._final_event = asyncio.Event()
 
     @override
@@ -204,8 +225,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             self.audio_timeline.get_total_user_audio_duration()
         )
         self.audio_timeline.reset()
+        self._socket_bytes = 0
         self._last_final_end_ms = 0
-        self._unfinalized_audio = False
+        self._last_voiced_end_ms = None
+        self._final_seen = False
+        self._partial_since_final = False
         await self.on_connected()
         async with self._audio_lock:
             # Frames that arrive during the drain are buffered because
@@ -227,8 +251,8 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         vendor_info = ModuleErrorVendorInfo(
             vendor=self.vendor(),
             code=(
-                str(BlazeSTTAuthError.status_code)
-                if fatal
+                str(error.status_code)
+                if isinstance(error, BlazeSTTAuthError)
                 else type(error).__name__
             ),
             message=str(error),
@@ -237,7 +261,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             f"vendor_error: Blaze STT connect failed: {error}",
             category=LOG_CATEGORY_VENDOR,
         )
-        if not self.stopped:
+        if not self.stopped and not self._connection_stopping:
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR, code=severity, message=str(error)
@@ -252,6 +276,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
     async def stop_connection(self) -> None:
         self._connection_stopping = True
         try:
+            # Abort a handshake in progress rather than waiting for its
+            # deadline while it holds the lifecycle lock.
+            opening_client = self.client
+            if opening_client is not None and self._opening:
+                await opening_client.close()
             reconnect_task = self._reconnect_task
             self._reconnect_task = None
             if (
@@ -305,6 +334,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         # Handle each socket's close once (a failed send and the receive
         # loop can both report it).
         self._generation += 1
+        # The socket is unusable now even if its receive loop has not
+        # noticed yet: stop sending to it so audio is buffered instead and
+        # recovery does not mistake it for a live connection.
+        if self.client is not None:
+            self.client.connected = False
         self._final_event.set()
         self.ten_env.log_info(
             f"vendor_status_changed: closed {code} {message}",
@@ -417,10 +451,34 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             return False
         # Count audio only after Blaze has it.
         self._add_user_audio(len(audio_data))
-        self._unfinalized_audio = True
+        stream_end_ms = self._advance_socket(len(audio_data))
+        if _is_voiced(audio_data):
+            self._last_voiced_end_ms = stream_end_ms
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
         return True
+
+    def _advance_socket(self, byte_count: int) -> int:
+        """Advance this socket's stream clock; return its new end in ms."""
+        self._socket_bytes += byte_count
+        return self._socket_bytes * 1000 // (self.input_audio_sample_rate() * 2)
+
+    def _has_pending_speech(self) -> bool:
+        """Speech was sent that no final has covered yet.
+
+        Compared on the vendor stream clock, so a late final for an
+        earlier utterance does not cover speech sent after it.
+        """
+        if self._partial_since_final:
+            return True
+        if self._last_voiced_end_ms is None:
+            return False
+        if not self._final_seen:
+            return True
+        return (
+            self._last_voiced_end_ms
+            > self._last_final_end_ms + FINAL_COVERAGE_TOLERANCE_MS
+        )
 
     def _add_user_audio(self, byte_count: int) -> None:
         bytes_per_second = self.input_audio_sample_rate() * 2
@@ -441,9 +499,15 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
                 self.metadata = metadata
                 self.session_id = metadata.get("session_id", self.session_id)
             if not await self._send_audio_locked(frame):
-                # Keep the frame for the next connection.
-                self.buffered_frames.put_nowait(frame)
-                self.buffered_frames_size += len(frame.get_buf())
+                # Keep the frame, in order, ahead of everything still queued.
+                pending = [frame]
+                while not self.buffered_frames.empty():
+                    pending.append(self.buffered_frames.get_nowait())
+                for kept in pending:
+                    self.buffered_frames.put_nowait(kept)
+                self.buffered_frames_size = sum(
+                    len(kept.get_buf()) for kept in pending
+                )
                 return False
             self.sent_buffer_length += len(frame.get_buf())
             if self.first_audio_time is None:
@@ -513,35 +577,32 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         started_ms = _now_ms()
         wait_for_final = False
         try:
-            async with self._lifecycle_lock:
-                async with self._audio_lock:
-                    if not self.is_connected():
-                        # This turn is closed now; never replay its kept
-                        # audio after a later reconnect.
-                        self._discard_buffered_frames_locked()
-                        return
-                    if not await self._flush_buffered_frames_locked():
-                        self._discard_buffered_frames_locked()
-                        return
-                    if not self._unfinalized_audio:
-                        # Blaze already emitted the final for all audio.
-                        return
-                    assert self.config is not None
-                    self._final_event.clear()
-                    # Blaze has no flush message: trailing silence lets
-                    # its endpointing close the utterance.
-                    await self._send_silence_locked(
-                        self.config.finalize_silence_ms
-                    )
-                    wait_for_final = True
+            # Only the audio lock: a handshake in progress (which holds the
+            # lifecycle lock) must not delay asr_finalize_end. While opening,
+            # is_connected() is False and finalize ends immediately.
+            async with self._audio_lock:
+                if not self.is_connected():
+                    # This turn is closed now; never replay its kept
+                    # audio after a later reconnect.
+                    self._discard_buffered_frames_locked()
+                    return
+                if not await self._flush_buffered_frames_locked():
+                    self._discard_buffered_frames_locked()
+                    return
+                if not self._has_pending_speech():
+                    # Every utterance sent so far already has its final.
+                    return
+                assert self.config is not None
+                self._final_event.clear()
+                # Blaze has no flush message: trailing silence lets
+                # its endpointing close the utterance.
+                await self._send_silence_locked(self.config.finalize_silence_ms)
+                wait_for_final = True
             if wait_for_final:
                 assert self.config is not None
-                try:
-                    await asyncio.wait_for(
-                        self._final_event.wait(),
-                        self.config.finalize_timeout_ms / 1000,
-                    )
-                except asyncio.TimeoutError:
+                if not await self._wait_for_final_keeping_stream_alive(
+                    self.config.finalize_timeout_ms / 1000
+                ):
                     self.ten_env.log_warn(
                         "asr_finalize: no final result before timeout",
                         category=LOG_CATEGORY_KEY_POINT,
@@ -554,6 +615,37 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             self.last_finalize_time = None
             await self._send_finalize_end(finalize_id, metadata, started_ms)
 
+    async def _wait_for_final_keeping_stream_alive(
+        self, timeout_seconds: float
+    ) -> bool:
+        """Wait for the final; True if it arrived before the timeout.
+
+        Blaze's endpointing only advances while audio arrives. If the input
+        stream goes idle, keep sending real-time silence so the final is not
+        held back; while user audio still flows, add nothing.
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout_seconds
+        step_seconds = FINALIZE_SILENCE_STEP_MS / 1000
+        last_socket_bytes = self._socket_bytes
+        while True:
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                return False
+            try:
+                await asyncio.wait_for(
+                    self._final_event.wait(), min(step_seconds, remaining)
+                )
+                return self._final_event.is_set() and self.is_connected()
+            except asyncio.TimeoutError:
+                pass
+            async with self._audio_lock:
+                if not self.is_connected():
+                    return False
+                if self._socket_bytes == last_socket_bytes:
+                    await self._send_silence_locked(FINALIZE_SILENCE_STEP_MS)
+                last_socket_bytes = self._socket_bytes
+
     async def _send_silence_locked(self, duration_ms: int) -> None:
         client = self.client
         if client is None or not client.connected:
@@ -564,6 +656,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         await client.send_audio(b"\x00" * byte_count)
         # Silence is not user audio and is not dumped.
         self.audio_timeline.add_silence_audio(duration_ms)
+        self._advance_socket(byte_count)
 
     async def _send_finalize_end(
         self, finalize_id: str | None, metadata: dict[str, Any], started_ms: int
@@ -607,7 +700,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             self._session_fatal = True
             await self._on_vendor_error(
                 str(event.get("message") or "authentication failed"),
-                str(BlazeSTTAuthError.status_code),
+                "401",
                 fatal=True,
             )
 
@@ -615,6 +708,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         text = str(event.get("text") or "").strip()
         if not text:
             return
+        self._partial_since_final = True
         await self._emit_asr_result(
             text,
             final=False,
@@ -625,8 +719,14 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
     async def _on_final(self, event: dict[str, Any]) -> None:
         text = str(event.get("text") or "").strip()
         start = int(event.get("start_ms") or self._last_final_end_ms)
-        end = int(event.get("end_ms") or start)
+        if event.get("end_ms") is not None:
+            end = int(event["end_ms"])
+        else:
+            # Without an end, the final covers everything sent so far.
+            end = max(start, self._advance_socket(0))
         self._last_final_end_ms = max(end, self._last_final_end_ms)
+        self._final_seen = True
+        self._partial_since_final = False
         if text:
             actual_start = self._actual_ms(start)
             await self._emit_asr_result(
@@ -635,9 +735,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
                 start_ms=actual_start,
                 duration_ms=self._actual_ms(end) - actual_start,
             )
-        # Release a waiting finalize after the result is out.
-        self._unfinalized_audio = False
-        self._final_event.set()
+        # Release a waiting finalize after the result is out, but only once
+        # the final covers all speech sent: a late final for an earlier
+        # utterance must not acknowledge newer speech.
+        if not self._has_pending_speech():
+            self._final_event.set()
 
     async def _on_vendor_error(
         self, message: str, code: str, *, fatal: bool

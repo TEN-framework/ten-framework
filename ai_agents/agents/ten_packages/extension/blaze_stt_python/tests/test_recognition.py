@@ -146,3 +146,31 @@ def test_local_close_does_not_report_a_vendor_close():
             assert recorder.closes == []
 
     asyncio.run(_run())
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_http_auth_rejection_raises_auth_error_with_status(status):
+    async def _run():
+        async with MockBlazeSTTServer(reject_status=status) as server:
+            client, recorder = _client(server)
+            with pytest.raises(BlazeSTTAuthError) as raised:
+                await client.connect()
+            assert raised.value.status_code == status
+            assert recorder.closes == []
+
+    asyncio.run(_run())
+
+
+def test_handshake_has_one_overall_deadline():
+    async def _run():
+        async with MockBlazeSTTServer(stall_handshake=True) as server:
+            client, _ = _client(server)
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            with pytest.raises(asyncio.TimeoutError):
+                await client.connect(timeout=0.3)
+            # Progress messages arrive every 20 ms but do not extend it.
+            assert loop.time() - started < 1.0
+            assert not client.connected
+
+    asyncio.run(_run())

@@ -181,7 +181,14 @@ class BlazeTTSClient:
                     if self._is_cancelled:
                         self.ten_env.log_debug("Dropping audio (cancelled)")
                         return
-                    # TTFB on first audio chunk
+                    # Keep PCM16 samples whole across chunk boundaries.
+                    data = carry + message
+                    cut = len(data) - (len(data) % 2)
+                    carry = data[cut:]
+                    if not cut:
+                        # Empty or half-sample frames are not audio yet.
+                        continue
+                    # TTFB on the first non-empty, whole-sample PCM payload.
                     if self._sent_ts and not self._ttfb_sent:
                         ttfb_ms = int(
                             (datetime.now() - self._sent_ts).total_seconds()
@@ -189,12 +196,7 @@ class BlazeTTSClient:
                         )
                         yield ttfb_ms, EVENT_TTS_TTFB_METRIC
                         self._ttfb_sent = True
-                    # Keep PCM16 samples whole across chunk boundaries.
-                    data = carry + message
-                    cut = len(data) - (len(data) % 2)
-                    carry = data[cut:]
-                    if cut:
-                        yield data[:cut], EVENT_TTS_RESPONSE
+                    yield data[:cut], EVENT_TTS_RESPONSE
                     continue
 
                 data = json.loads(message)

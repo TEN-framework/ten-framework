@@ -105,3 +105,19 @@ def test_send_failure_and_later_close_start_one_recovery():
             assert len(FakeClient.instances) == 2
 
     asyncio.run(_run())
+
+
+def test_http_forbidden_upgrade_is_fatal_with_its_status():
+    async def _run():
+        rejected = BlazeSTTAuthError("HTTP 403", status_code=403)
+        with patch_client(connect_errors=[rejected]):
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            await asyncio.sleep(0.05)
+
+            (error,) = outputs(env, "error")
+            assert error["code"] == FATAL
+            assert error["vendor_info"]["code"] == "403"
+            assert len(FakeClient.instances) == 1
+
+    asyncio.run(_run())

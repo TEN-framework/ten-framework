@@ -28,7 +28,7 @@ from typing import Any
 
 import websockets
 from websockets.asyncio.client import ClientConnection
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
@@ -36,15 +36,20 @@ from ten_runtime import AsyncTenEnv
 from .config import BlazeSTTConfig
 from .const import READY_TIMEOUT_SECONDS, WS_CLOSE_POLICY_VIOLATION
 
+# HTTP statuses on the WebSocket upgrade that retrying cannot fix.
+AUTH_HTTP_STATUSES = (401, 403)
+
 MessageCallback = Callable[[dict[str, Any]], Awaitable[None]]
 # on_close(code, message, close_exception)
 CloseCallback = Callable[[int, str, BaseException | None], Awaitable[None]]
 
 
 class BlazeSTTAuthError(Exception):
-    """Raised when Blaze rejects the token."""
+    """Raised when Blaze rejects the token or the upgrade request."""
 
-    status_code = 401
+    def __init__(self, message: str, status_code: int = 401):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 class BlazeSTTRecognition:
@@ -75,11 +80,18 @@ class BlazeSTTRecognition:
             category=LOG_CATEGORY_VENDOR,
         )
         try:
-            self.websocket = await websockets.connect(
-                url, open_timeout=timeout, max_size=None
-            )
-            await self.websocket.send(json.dumps(self.config.init_message()))
-            await self._wait_ready(timeout)
+            # One deadline covers the whole handshake, so a peer that keeps
+            # sending other messages but never "ready" cannot stall it.
+            await asyncio.wait_for(self._open_and_wait_ready(), timeout)
+        except InvalidStatus as e:
+            await self.close()
+            status = e.response.status_code
+            if status in AUTH_HTTP_STATUSES:
+                raise BlazeSTTAuthError(
+                    f"Blaze STT rejected the connection: HTTP {status}",
+                    status_code=status,
+                ) from e
+            raise
         except ConnectionClosed as e:
             await self.close()
             if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
@@ -93,10 +105,13 @@ class BlazeSTTRecognition:
         self.connected = True
         self.receive_task = asyncio.create_task(self._receive_loop())
 
-    async def _wait_ready(self, timeout: float) -> None:
-        assert self.websocket is not None
+    async def _open_and_wait_ready(self) -> None:
+        self.websocket = await websockets.connect(
+            self.config.ws_url(), max_size=None
+        )
+        await self.websocket.send(json.dumps(self.config.init_message()))
         while True:
-            raw = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
+            raw = await self.websocket.recv()
             if isinstance(raw, bytes):
                 continue
             event = json.loads(raw)

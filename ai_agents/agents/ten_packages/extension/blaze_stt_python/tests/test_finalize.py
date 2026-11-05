@@ -145,3 +145,161 @@ def test_disconnected_finalize_discards_kept_audio():
         assert len(outputs(env, "asr_finalize_end")) == 1
 
     asyncio.run(_run())
+
+
+QUIET = b"\x01\x00" * 1600  # 100 ms of background-level audio at 16 kHz
+
+
+def test_late_final_for_an_earlier_utterance_does_not_ack_newer_speech():
+    async def _run():
+        with patch_client():
+            extension, env, client = await _connected()
+            # Utterance A (0-100 ms), a pause, then utterance B (800-1100).
+            await extension.send_audio(FakeFrame(SPEECH), "s1")
+            for _ in range(7):
+                await extension.send_audio(FakeFrame(QUIET), "s1")
+            for _ in range(3):
+                await extension.send_audio(FakeFrame(SPEECH), "s1")
+            # A's final arrives only now, after B was already sent.
+            await vendor_event(
+                extension,
+                {"type": "final", "text": "một", "start_ms": 0, "end_ms": 100},
+            )
+
+            async def finals_during_wait():
+                await asyncio.sleep(0.03)
+                # A repeated stale final must not release the finalize.
+                await vendor_event(
+                    extension,
+                    {"type": "final", "text": "", "start_ms": 0, "end_ms": 100},
+                )
+                await asyncio.sleep(0.03)
+                await vendor_event(
+                    extension,
+                    {
+                        "type": "final",
+                        "text": "hai",
+                        "start_ms": 800,
+                        "end_ms": 1100,
+                    },
+                )
+
+            asyncio.create_task(finals_during_wait())
+            await extension.on_data(env, finalize_data("f-b", "s1"))
+
+            assert _silence_sent(client)
+            names = [
+                (
+                    call.args[0].get_name(),
+                    call.args[0].get_property_to_json("")[0],
+                )
+                for call in env.send_data.call_args_list
+            ]
+            end_index = next(
+                i
+                for i, (name, _) in enumerate(names)
+                if name == "asr_finalize_end"
+            )
+            b_index = next(
+                i
+                for i, (name, payload) in enumerate(names)
+                if name == "asr_result" and '"hai"' in payload
+            )
+            assert b_index < end_index
+
+    asyncio.run(_run())
+
+
+def test_trailing_silence_after_a_final_needs_no_wait():
+    async def _run():
+        with patch_client():
+            extension, env, client = await _connected()
+            await extension.send_audio(FakeFrame(SPEECH), "s1")
+            await vendor_event(
+                extension,
+                {"type": "final", "text": "một", "start_ms": 0, "end_ms": 100},
+            )
+            for _ in range(7):
+                await extension.send_audio(FakeFrame(QUIET), "s1")
+
+            await extension.on_data(env, finalize_data("f-1", "s1"))
+
+            assert not _silence_sent(client)
+            assert len(outputs(env, "asr_finalize_end")) == 1
+
+    asyncio.run(_run())
+
+
+def test_finalize_and_stop_do_not_wait_for_a_stalled_handshake():
+    async def _run():
+        from .mock import MockBlazeSTTServer, wait_until
+
+        async with MockBlazeSTTServer(stall_handshake=True) as server:
+            extension, env = make_extension(base_url=server.base_url)
+            connecting = asyncio.create_task(extension._ensure_connection())
+            await wait_until(lambda: extension._opening)
+
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            await extension.on_data(env, finalize_data("f-1", "s1"))
+            assert loop.time() - started < 0.5
+            assert len(outputs(env, "asr_finalize_end")) == 1
+
+            extension.stopped = True
+            started = loop.time()
+            await extension.stop_connection()
+            await asyncio.wait_for(connecting, 1.0)
+            assert loop.time() - started < 1.0
+
+    asyncio.run(_run())
+
+
+def test_idle_stream_keeps_receiving_silence_until_the_final():
+    async def _run():
+        with patch_client():
+            extension, env, client = await _connected()
+            extension.config.finalize_timeout_ms = 2000
+            await extension.send_audio(FakeFrame(SPEECH), "s1")
+
+            async def final_after_endpointing():
+                # Blaze needs about 600 ms of silence beyond the first 100 ms.
+                await asyncio.sleep(0.6)
+                await vendor_event(
+                    extension,
+                    {"type": "final", "text": "xin chào", "end_ms": 100},
+                )
+
+            asyncio.create_task(final_after_endpointing())
+            loop = asyncio.get_running_loop()
+            started = loop.time()
+            await extension.on_data(env, finalize_data("f-1", "s1"))
+
+            silence_chunks = [c for c in client.sent if c and not any(c)]
+            assert len(silence_chunks) >= 4
+            assert loop.time() - started < 1.0
+            assert len(outputs(env, "asr_finalize_end")) == 1
+
+    asyncio.run(_run())
+
+
+def test_flowing_user_audio_gets_no_extra_silence_while_waiting():
+    async def _run():
+        with patch_client():
+            extension, env, client = await _connected()
+            extension.config.finalize_timeout_ms = 500
+            await extension.send_audio(FakeFrame(SPEECH), "s1")
+
+            async def keep_streaming():
+                for _ in range(10):
+                    await asyncio.sleep(0.04)
+                    await extension.send_audio(FakeFrame(QUIET), "s1")
+
+            streaming = asyncio.create_task(keep_streaming())
+            await extension.on_data(env, finalize_data("f-1", "s1"))
+            await streaming
+
+            silence_chunks = [c for c in client.sent if c and not any(c)]
+            # Only the initial finalize silence; the stream was never idle.
+            assert len(silence_chunks) == 1
+
+    asyncio.run(_run())

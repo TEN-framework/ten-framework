@@ -9,6 +9,7 @@ import asyncio
 import json
 import math
 import struct
+from http import HTTPStatus
 from typing import Any, Awaitable, Callable
 
 import websockets
@@ -19,6 +20,8 @@ class MockBlazeSTTServer:
 
     `script(ws, server)` receives the connection after "ready" is sent; it
     can read audio with `ws.recv()` and push events with `server.send()`.
+    `reject_status` refuses the HTTP upgrade with that status, and
+    `stall_handshake` keeps sending progress messages instead of "ready".
     """
 
     def __init__(
@@ -27,9 +30,13 @@ class MockBlazeSTTServer:
         script: (
             Callable[[Any, "MockBlazeSTTServer"], Awaitable[None]] | None
         ) = None,
+        reject_status: int | None = None,
+        stall_handshake: bool = False,
     ):
         self.valid_token = valid_token
         self.script = script
+        self.reject_status = reject_status
+        self.stall_handshake = stall_handshake
         self.init_messages: list[dict] = []
         self.audio = bytearray()
         self.connections = 0
@@ -41,13 +48,25 @@ class MockBlazeSTTServer:
         return f"http://127.0.0.1:{self.port}"
 
     async def __aenter__(self) -> "MockBlazeSTTServer":
-        self._server = await websockets.serve(self._handler, "127.0.0.1", 0)
+        self._server = await websockets.serve(
+            self._handler,
+            "127.0.0.1",
+            0,
+            process_request=self._process_request,
+        )
         self.port = self._server.sockets[0].getsockname()[1]
         return self
 
     async def __aexit__(self, *_exc) -> None:
         self._server.close()
         await self._server.wait_closed()
+
+    def _process_request(self, connection, _request):
+        if self.reject_status is None:
+            return None
+        return connection.respond(
+            HTTPStatus(self.reject_status), "rejected by mock\n"
+        )
 
     @staticmethod
     async def send(ws, payload: dict) -> None:
@@ -62,6 +81,14 @@ class MockBlazeSTTServer:
             await ws.close(1008, "failed-authentication")
             return
         await self.send(ws, {"type": "successful-authentication"})
+        if self.stall_handshake:
+            try:
+                while True:
+                    await self.send(ws, {"type": "progress"})
+                    await ws.send(b"\x00")
+                    await asyncio.sleep(0.02)
+            except websockets.exceptions.ConnectionClosed:
+                return
         await self.send(ws, {"type": "ready", "text": "ok"})
         if self.script is not None:
             await self.script(ws, self)
@@ -147,6 +174,8 @@ class FakeClient:
         self.closed = False
         self.sent: list[bytes] = []
         self.send_error: BaseException | None = None
+        # Fail only this many sends when send_error is set (None = all).
+        self.send_error_count: int | None = None
         FakeClient.instances.append(self)
 
     async def connect(self):
@@ -155,7 +184,9 @@ class FakeClient:
         self.connected = True
 
     async def send_audio(self, audio: bytes):
-        if self.send_error is not None:
+        if self.send_error is not None and self.send_error_count != 0:
+            if self.send_error_count is not None:
+                self.send_error_count -= 1
             raise self.send_error
         self.sent.append(audio)
 

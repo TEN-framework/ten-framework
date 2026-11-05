@@ -16,7 +16,7 @@ from .mock import (
     wait_until,
 )
 
-MS_100 = b"\x01\x00" * 1600  # 100 ms at 16 kHz
+MS_100 = b"\x01\x02" * 1600  # 100 ms of speech-level audio at 16 kHz
 
 
 def test_only_audio_blaze_received_is_counted():

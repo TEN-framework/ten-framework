@@ -32,7 +32,7 @@ audio; the next request reconnects.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`) |
+| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`); credentials, query and fragment are rejected |
 | `params.api_key` | string | Required | Blaze API token |
 | `params.speaker_id` | string | `HN-Nu-CSKH-HuongGiang` | Blaze voice ID; list voices with `GET /v1/voices` |
 | `params.language` | string | `vi` | Language code |

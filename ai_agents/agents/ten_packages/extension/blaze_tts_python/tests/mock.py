@@ -148,6 +148,8 @@ class MockBlazeTTSServer:
 
     `respond(query, ws, server)` handles each query; the default streams
     `server.audio` in chunks followed by finished-byte-stream.
+    `greeting_delays` maps a 1-based connection number to seconds to wait
+    before the greeting, to hold a client in its handshake.
     """
 
     def __init__(
@@ -156,11 +158,13 @@ class MockBlazeTTSServer:
         audio: bytes = b"\x01\x02" * 2400,
         chunk_size: int = 960,
         respond: Callable[..., Any] | None = None,
+        greeting_delays: dict[int, float] | None = None,
     ):
         self.valid_token = valid_token
         self.audio = audio
         self.chunk_size = chunk_size
         self.respond = respond
+        self.greeting_delays = greeting_delays or {}
         self.queries: list[dict] = []
         self.connections = 0
         self.sockets: list[Any] = []
@@ -195,7 +199,13 @@ class MockBlazeTTSServer:
     async def _handler(self, ws) -> None:
         self.connections += 1
         self.sockets.append(ws)
-        await self.send(ws, {"type": "successful-connection"})
+        delay = self.greeting_delays.get(self.connections)
+        if delay:
+            await asyncio.sleep(delay)
+        try:
+            await self.send(ws, {"type": "successful-connection"})
+        except websockets.exceptions.ConnectionClosed:
+            return
         auth = json.loads(await ws.recv())
         if auth.get("token") != self.valid_token:
             await self.send(ws, {"type": "failed-authentication"})
@@ -212,3 +222,31 @@ class MockBlazeTTSServer:
                     await self.stream(ws)
         except websockets.exceptions.ConnectionClosed:
             pass
+
+
+class ThreadedMockBlazeTTSServer:
+    """Runs MockBlazeTTSServer on its own loop, for extension-level tests
+    where the TEN runtime owns the extension's event loop."""
+
+    def __init__(self, **options):
+        import threading
+
+        self.server = MockBlazeTTSServer(**options)
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._loop.run_forever, daemon=True
+        )
+
+    def __enter__(self) -> MockBlazeTTSServer:
+        self._thread.start()
+        asyncio.run_coroutine_threadsafe(
+            self.server.__aenter__(), self._loop
+        ).result(5)
+        return self.server
+
+    def __exit__(self, *_exc) -> None:
+        asyncio.run_coroutine_threadsafe(
+            self.server.__aexit__(), self._loop
+        ).result(5)
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join(5)

@@ -124,9 +124,12 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(
                 f"Cancelling request {self.current_request_id}"
             )
+            # Finalize first: once the request is marked interrupted, the
+            # closed socket cannot turn it into an error, and any audio
+            # still in flight is dropped.
+            await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
             if self.client:
                 await self.client.cancel()
-            await self._finalize_request(TTSAudioEndReason.INTERRUPTED)
         else:
             self.ten_env.log_warn("No current request, skipping cancel.")
 
@@ -268,6 +271,11 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
             await self._handle_connection_error(e)
 
         except Exception as e:  # pylint: disable=broad-exception-caught
+            if self._request_finalized:
+                # Already ended (for example interrupted by a flush that
+                # closed the socket under this request).
+                self.ten_env.log_debug(f"request_tts ended after finalize: {e}")
+                return
             self.ten_env.log_error(
                 f"Error in request_tts: "
                 f"{traceback.format_exc()}. text: {t.text}",

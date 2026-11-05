@@ -70,11 +70,22 @@ class BlazeTTSConfig(BaseModel):
         if not self.api_key:
             raise ValueError("API key is required")
         parsed = urlparse(self.base_url)
+        # Blaze needs no credentials or query in the URL. Reject them so a
+        # secret can never reach logs, metadata or status events, and do
+        # not echo the URL in the error.
+        if parsed.username or parsed.password or parsed.query:
+            raise ValueError(
+                "Blaze TTS base_url must not contain credentials or a query"
+            )
+        if parsed.fragment:
+            raise ValueError("Blaze TTS base_url must not contain a fragment")
         if (
             parsed.scheme not in ("http", "https", "ws", "wss")
-            or not parsed.netloc
+            or not parsed.hostname
         ):
-            raise ValueError(f"Invalid Blaze TTS base_url: {self.base_url!r}")
+            raise ValueError(
+                "Blaze TTS base_url must be an http(s) or ws(s) URL"
+            )
         if self.sample_rate not in SUPPORTED_SAMPLE_RATES:
             raise ValueError(f"Unsupported sample_rate: {self.sample_rate}")
         if self.audio_speed <= 0:

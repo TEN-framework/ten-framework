@@ -127,3 +127,38 @@ def test_real_socket_close_recovers_on_a_new_socket():
                 await extension.stop_connection()
 
     asyncio.run(_run())
+
+
+def test_failed_drain_keeps_kept_audio_in_order():
+    async def _run():
+        with patch_client():
+            extension, _ = make_extension()
+            frames = [
+                FakeFrame(bytes([index + 1, 0]) * 160, "s-old")
+                for index in range(3)
+            ]
+            await extension._ensure_connection()
+            client = FakeClient.instances[0]
+            for frame in frames:
+                extension.buffered_frames.put_nowait(frame)
+                extension.buffered_frames_size += len(frame.buf)
+            # The first send of the drain fails.
+            client.send_error = ConnectionError("broken pipe")
+            client.send_error_count = 1
+
+            async with extension._audio_lock:
+                assert not await extension._flush_buffered_frames_locked()
+
+            kept = list(extension.buffered_frames._queue)
+            assert kept == frames
+            assert extension.buffered_frames_size == sum(
+                len(frame.buf) for frame in frames
+            )
+
+            # Recovery drains them on the new socket in the original order.
+            await wait_until(extension.is_connected)
+            assert FakeClient.instances[-1].sent == [
+                bytes(frame.buf) for frame in frames
+            ]
+
+    asyncio.run(_run())

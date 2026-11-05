@@ -29,17 +29,23 @@ Endpoint: `wss://api.blaze.vn/v1/stt/realtime` (derived from `base_url`).
    `{"type": "error", "code", "text"}` and are reported as non-fatal.
 
 Blaze has no flush message. On `asr_finalize` the extension sends
-`finalize_silence_ms` of silence so Blaze closes the current utterance, waits
-up to `finalize_timeout_ms` for its final result, then sends exactly one
-`asr_finalize_end` echoing that request's `finalize_id` and session. Finalize
-requests are handled one at a time. When no audio was sent since the last
-final result, or the socket is down, it ends immediately.
+`finalize_silence_ms` of silence so Blaze closes the current utterance. If the
+input stream then goes idle, it keeps sending silence in real-time 100 ms
+steps, because Blaze's endpointing only advances while audio arrives. It waits
+up to `finalize_timeout_ms` for a final that covers the pending speech, then
+sends exactly one `asr_finalize_end` echoing that request's `finalize_id` and
+session. Finalize requests are handled one at a time.
+
+Pending speech is tracked on Blaze's stream clock: frames with speech-level
+energy are compared with the latest final's `end_ms`, so a late final for an
+earlier utterance never acknowledges newer speech. When nothing is pending, or
+the socket is down, finalize ends immediately.
 
 ## Configuration
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`) |
+| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`); credentials, query and fragment are rejected |
 | `params.api_key` | string | Required | Blaze API token |
 | `params.language` | string | `vi` | Recognition language, e.g. `vi`, `en` |
 | `params.model` | string | `stt-stream-1.5` | Realtime STT model |

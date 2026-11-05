@@ -92,3 +92,17 @@ def test_invalid_config_reports_one_fatal_error_and_never_connects():
         assert extension.send_asr_error.await_args.args[0].code == -1000
 
     asyncio.run(_run())
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "https://user:hunter2@api.blaze.vn",
+        "https://api.blaze.vn?token=hunter2",
+        "https://api.blaze.vn#hunter2",
+    ],
+)
+def test_urls_with_secrets_are_rejected_without_echoing_them(base_url):
+    with pytest.raises(ValueError) as raised:
+        _config(base_url=base_url).validate_config()
+    assert "hunter2" not in str(raised.value)
