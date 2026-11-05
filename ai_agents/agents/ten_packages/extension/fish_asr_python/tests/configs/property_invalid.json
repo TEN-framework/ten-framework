@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "model": "transcribe-stream-1",
+    "sample_rate": 16000,
+    "turn_mode": "auto"
+  }
+}
