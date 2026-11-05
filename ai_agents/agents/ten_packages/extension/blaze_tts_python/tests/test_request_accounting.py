@@ -191,3 +191,48 @@ def test_flush_interrupts_once_drops_stale_audio_and_next_request_works():
     req1_end = names.index(("tts_audio_end", "req-1"))
     req2_start = names.index(("tts_audio_start", "req-2"))
     assert ("audio", None) not in names[req1_end:req2_start]
+
+
+def _run_sequential_with_dump(dump_path, flush_error=None):
+    config = {**BASIC_CONFIG, "dump": True, "dump_path": dump_path}
+    with patch("blaze_tts_python.extension.BlazeTTSClient") as client_cls:
+        install_mock_client(client_cls)
+        flush_patch = (
+            patch(
+                "blaze_tts_python.extension.PCMWriter.flush",
+                side_effect=flush_error,
+            )
+            if flush_error is not None
+            else None
+        )
+        if flush_patch:
+            flush_patch.start()
+        try:
+            tester = RecordingTester(
+                [("req-1", "Một.", True), ("req-2", "Hai.", True)],
+                expected_ends=2,
+            )
+            tester.set_test_mode_single("blaze_tts_python", json.dumps(config))
+            tester.run()
+        finally:
+            if flush_patch:
+                flush_patch.stop()
+    return tester
+
+
+def test_dump_directory_is_created_and_next_request_still_runs(tmp_path):
+    dump_path = tmp_path / "not" / "yet" / "created"
+    tester = _run_sequential_with_dump(str(dump_path))
+
+    assert _end(tester, "req-1")["reason"] == REQUEST_END
+    assert _end(tester, "req-2")["reason"] == REQUEST_END
+    assert (dump_path / "blaze_dump_req-1.pcm").stat().st_size > 0
+
+
+def test_dump_flush_failure_does_not_block_the_next_request(tmp_path):
+    tester = _run_sequential_with_dump(
+        str(tmp_path), flush_error=OSError("disk full")
+    )
+
+    assert _end(tester, "req-1")["reason"] == REQUEST_END
+    assert _end(tester, "req-2")["reason"] == REQUEST_END

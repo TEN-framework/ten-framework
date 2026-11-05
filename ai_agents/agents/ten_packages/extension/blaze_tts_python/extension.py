@@ -187,7 +187,12 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
 
         recorder = self.recorder_map.pop(self.current_request_id, None)
         if recorder is not None:
-            await recorder.flush()
+            # A dump failure must never keep the request from finishing,
+            # or every later request would queue behind it.
+            try:
+                await recorder.flush()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                self.ten_env.log_error(f"Dump flush failed: {e}")
 
         await self.finish_request(
             request_id=self.current_request_id,
@@ -423,6 +428,7 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
                 )
 
         if request_id not in self.recorder_map:
+            os.makedirs(self.config.dump_path, exist_ok=True)
             dump_file_path = os.path.join(
                 self.config.dump_path,
                 f"blaze_dump_{request_id}.pcm",
