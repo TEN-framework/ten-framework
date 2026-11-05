@@ -1,125 +1,62 @@
-# Blaze TTS Extension for TEN Framework
+# Blaze TTS Extension
 
-Blaze Text-to-Speech (TTS) extension for [TEN Framework](https://github.com/TEN-framework/ten-framework).
+TEN TTS extension for [Blaze](https://blaze.vn) realtime Text-to-Speech
+(model `2.0-realtime`).
 
-## Installation
+## Features
 
-```bash
-pip install -r requirements.txt
-```
+- Streams raw PCM16 mono over one reusable WebSocket
+- Connects and authenticates at startup, so the first reply has no
+  connection delay
+- Each `tts_text_input` fragment is synthesized as soon as it arrives
+- TTFB metrics, interrupt (flush) support, and per-request audio dumps
 
-Or install dependencies directly:
+## Protocol
 
-```bash
-pip install httpx pydantic
-```
+Endpoint: `wss://api.blaze.vn/v1/tts/realtime` (derived from `base_url`).
+
+1. Receive `successful-connection`.
+2. Send `{"token", "strategy": "request"}`; receive
+   `successful-authentication`. A bad token gets `failed-authentication` and
+   close code 1008, reported as a fatal error.
+3. Per fragment, send a query (`query`, `language`, `speaker_id`, `model`,
+   `audio_format: pcm`, `sample_rate`, ...) and receive `processing-request`,
+   `started-byte-stream`, binary PCM chunks, then `finished-byte-stream`.
+   `failed-request`, `bad-request` and `internal-error` end the fragment with
+   a non-fatal error and the socket is reopened.
+
+Blaze has no cancel message, so an interrupt closes the socket to drop unread
+audio; the next request reconnects.
 
 ## Configuration
 
-### Environment Variables
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`); credentials, query and fragment are rejected |
+| `params.api_key` | string | Required | Blaze API token |
+| `params.speaker_id` | string | `HN-Nu-CSKH-HuongGiang` | Blaze voice ID; list voices with `GET /v1/voices` |
+| `params.language` | string | `vi` | Language code |
+| `params.model` | string | `2.0-realtime` | Realtime TTS model |
+| `params.audio_speed` | float | `1.0` | Speed multiplier |
+| `params.audio_quality` | int | `64` | Audio quality |
+| `params.normalization` | string | `basic` | Text normalization (`no`, `basic`, `advanced`) |
+| `params.sample_rate` | int | `24000` | Output sample rate (8000, 16000, 22050, 24000, 44100, 48000) |
+| `params.<blaze_param>` | scalar | Optional | Other keys are added to each query |
+| `dump` | bool | `false` | Dump synthesized audio per request |
+| `dump_path` | string | `/tmp` | Directory for dump files |
 
-Set the following environment variables:
+## Environment Variables
+
+- `BLAZE_TTS_API_URL` - Blaze base URL
+- `BLAZE_TTS_API_KEY` - Blaze API token (the same token works for STT)
+- `BLAZE_TTS_SPEAKER_ID` - Optional voice ID override
+
+## Running Tests
+
+Inside the `ten_agent_dev` container:
 
 ```bash
-export BLAZE_TTS_API_URL="http://localhost:8000"
-export BLAZE_TTS_API_KEY="your-api-key-here"  # Optional
+cd /app
+task test-extension EXTENSION=agents/ten_packages/extension/blaze_tts_python
+task tts-guarder-test EXTENSION=blaze_tts_python CONFIG_DIR=tests/configs
 ```
-
-### Property.json (TEN Framework)
-
-The extension includes a `property.json` file with default configuration that TEN framework can use:
-
-```json
-{
-    "params": {
-        "api_url": "${env:BLAZE_TTS_API_URL}",
-        "api_key": "${env:BLAZE_TTS_API_KEY}",
-        "language": "vi",
-        "speaker_id": null,
-        "audio_speed": 1.0,
-        "audio_quality": 64,
-        "timeout": 3600
-    }
-}
-```
-
-TEN framework will automatically read this file and use environment variables for configuration.
-
-## Usage
-
-### As TEN Framework Extension
-
-```python
-from blaze_tts_python import BlazeTTSExtension
-
-# Initialize extension (can accept dict config from TEN framework)
-tts = BlazeTTSExtension(config={
-    "api_url": "http://localhost:8000",
-    "api_key": "your-api-key",
-    "speaker_id": "speaker-123",
-})
-
-# Synthesize text using TEN framework interface
-result = tts.process({
-    "text": "Xin chào",
-    "speaker_id": "speaker-123",
-    "language": "vi",
-})
-
-audio_bytes = result.get("audio_data")
-
-# Get extension metadata
-metadata = tts.get_metadata()
-print(metadata)
-```
-
-### As Direct Extension
-
-```python
-from blaze_tts_python import BlazeTTSExtension, BlazeTTSConfig
-
-# Initialize extension
-config = BlazeTTSConfig(
-    api_url="http://localhost:8000",
-    api_key="your-api-key",
-    default_language="vi",
-)
-tts = BlazeTTSExtension(config=config)
-
-# Synthesize text
-result = tts.synthesize(
-    text="Xin chào",
-    speaker_id="speaker-123",
-    language="vi",
-)
-
-# Download audio
-job_id = result["id"]
-audio_bytes = tts.download_audio(job_id)
-```
-
-## API Reference
-
-### BlazeTTSExtension
-
-**TEN Framework Interface Methods:**
-- `process(input_data)` - Process text and return audio (TEN framework interface)
-- `get_metadata()` - Get extension metadata (TEN framework interface)
-
-**Direct Methods:**
-
-- `synthesize(text, speaker_id, language, audio_speed, audio_quality, ...)` - Synthesize text to speech
-- `get_speakers()` - Get list of available speakers
-- `download_audio(job_id, output_path)` - Download generated audio
-- `get_job_info(job_id)` - Get TTS job information
-
-## Supported Formats
-
-- `wav` - WAV format
-- `mp3` - MP3 format
-- `ogg` - OGG format
-
-## License
-
-This extension is provided as-is for use with the TEN Framework and Blaze services.
-
