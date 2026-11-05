@@ -28,7 +28,7 @@ def test_defaults_are_realtime():
     assert config.model == "2.0-realtime"
     assert config.speaker_id == "HN-Nu-CSKH-HuongGiang"
     assert config.normalization == "basic"
-    assert config.ws_url() == "wss://api.blaze.vn/v1/tts/realtime"
+    assert config.ws_url == "wss://api.blaze.vn/v1/tts/realtime"
 
 
 def test_update_params_moves_known_keys():
@@ -48,7 +48,7 @@ def test_empty_env_values_keep_defaults():
 
 def test_ws_url_for_plain_http():
     assert (
-        make_config(base_url="http://localhost:9000").ws_url()
+        make_config(base_url="http://localhost:9000").ws_url
         == "ws://localhost:9000/v1/tts/realtime"
     )
 

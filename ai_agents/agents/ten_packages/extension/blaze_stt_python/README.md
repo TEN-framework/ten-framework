@@ -9,7 +9,11 @@ TEN ASR extension for [Blaze](https://blaze.vn) realtime Speech-to-Text
 - Interim (`final: false`) and final (`final: true`) `asr_result` output
 - Server-side end-of-speech detection, with `start_ms` / `duration_ms` mapped
   to the session's audio timeline
-- Bounded reconnect with backoff; audio is buffered while reconnecting
+- Reports `connecting` / `connected` / `disconnected`; `connected` only after
+  Blaze's `ready` message
+- Reconnects on its own task with capped exponential backoff (0.5 s to 8 s,
+  unlimited retries); auth failures are fatal and never retried. Audio kept
+  during an outage (up to 10 MB) is sent as soon as the new socket is ready
 - Connect-delay metrics and optional input audio dump
 
 ## Protocol
@@ -27,7 +31,9 @@ Endpoint: `wss://api.blaze.vn/v1/stt/realtime` (derived from `base_url`).
 Blaze has no flush message. On `asr_finalize` the extension sends
 `finalize_silence_ms` of silence so Blaze closes the current utterance, waits
 up to `finalize_timeout_ms` for its final result, then sends exactly one
-`asr_finalize_end`. When no speech is pending it ends immediately.
+`asr_finalize_end` echoing that request's `finalize_id` and session. Finalize
+requests are handled one at a time. When no audio was sent since the last
+final result, or the socket is down, it ends immediately.
 
 ## Configuration
 

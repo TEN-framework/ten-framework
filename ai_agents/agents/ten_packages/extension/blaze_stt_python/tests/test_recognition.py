@@ -11,39 +11,23 @@ from unittest.mock import MagicMock
 import pytest
 
 from ..config import BlazeSTTConfig
-from ..recognition import (
-    BlazeSTTAuthError,
-    BlazeSTTRecognition,
-    BlazeSTTRecognitionCallback,
-)
+from ..recognition import BlazeSTTAuthError, BlazeSTTRecognition
 from .mock import MockBlazeSTTServer, wait_until
 
 
-class RecordingCallback(BlazeSTTRecognitionCallback):
+class Recorder:
     def __init__(self):
-        self.opened = 0
-        self.partials: list[dict] = []
-        self.finals: list[dict] = []
-        self.errors: list[tuple] = []
-        self.closed = 0
+        self.messages: list[dict] = []
+        self.closes: list[tuple] = []
 
-    async def on_open(self):
-        self.opened += 1
+    async def on_message(self, event):
+        self.messages.append(event)
 
-    async def on_partial_result(self, message_data):
-        self.partials.append(message_data)
-
-    async def on_final_result(self, message_data):
-        self.finals.append(message_data)
-
-    async def on_error(self, error_msg, error_code=None):
-        self.errors.append((error_msg, error_code))
-
-    async def on_close(self):
-        self.closed += 1
+    async def on_close(self, code, message, close_exception):
+        self.closes.append((code, message, close_exception))
 
 
-def _recognition(server: MockBlazeSTTServer, token: str = "test-key"):
+def _client(server: MockBlazeSTTServer, token: str = "test-key"):
     config = BlazeSTTConfig(
         params={
             "base_url": server.base_url,
@@ -53,23 +37,22 @@ def _recognition(server: MockBlazeSTTServer, token: str = "test-key"):
         }
     )
     config.apply_defaults()
-    callback = RecordingCallback()
-    rec = BlazeSTTRecognition(
+    recorder = Recorder()
+    client = BlazeSTTRecognition(
         config=config,
-        audio_timeline=MagicMock(),
         ten_env=MagicMock(),
-        callback=callback,
+        on_message=recorder.on_message,
+        on_close=recorder.on_close,
     )
-    return rec, callback
+    return client, recorder
 
 
 def test_handshake_sends_token_and_options():
     async def _run():
         async with MockBlazeSTTServer() as server:
-            rec, callback = _recognition(server)
-            await rec.start()
-            assert rec.is_connected()
-            assert callback.opened == 1
+            client, _ = _client(server)
+            await client.connect()
+            assert client.connected
             assert server.init_messages == [
                 {
                     "token": "test-key",
@@ -78,7 +61,7 @@ def test_handshake_sends_token_and_options():
                     "topic": "weather",
                 }
             ]
-            await rec.close()
+            await client.close()
 
     asyncio.run(_run())
 
@@ -86,26 +69,21 @@ def test_handshake_sends_token_and_options():
 def test_bad_token_raises_auth_error():
     async def _run():
         async with MockBlazeSTTServer() as server:
-            rec, callback = _recognition(server, token="wrong")
+            client, recorder = _client(server, token="wrong")
             with pytest.raises(BlazeSTTAuthError):
-                await rec.start()
-            assert not rec.is_connected()
-            assert callback.opened == 0
+                await client.connect()
+            assert not client.connected
+            assert recorder.closes == []
 
     asyncio.run(_run())
 
 
-def test_partial_final_and_error_events_reach_callback():
+def test_events_are_delivered_in_order():
     async def script(ws, server):
         await server.send(ws, {"type": "partial", "text": "xin"})
         await server.send(
             ws,
-            {
-                "type": "final",
-                "text": "xin chào.",
-                "start_ms": 100,
-                "end_ms": 900,
-            },
+            {"type": "final", "text": "xin chào.", "start_ms": 1, "end_ms": 9},
         )
         await server.send(
             ws, {"type": "error", "code": "upstream_error", "text": "busy"}
@@ -114,44 +92,57 @@ def test_partial_final_and_error_events_reach_callback():
 
     async def _run():
         async with MockBlazeSTTServer(script=script) as server:
-            rec, callback = _recognition(server)
-            await rec.start()
-            await wait_until(lambda: callback.errors)
-            assert callback.partials[0]["text"] == "xin"
-            assert callback.finals[0]["end_ms"] == 900
-            assert rec.final_event.is_set()
-            assert callback.errors == [("busy", "upstream_error")]
-            await rec.close()
+            client, recorder = _client(server)
+            await client.connect()
+            await wait_until(lambda: len(recorder.messages) == 3)
+            assert [m["type"] for m in recorder.messages] == [
+                "partial",
+                "final",
+                "error",
+            ]
+            await client.close()
 
     asyncio.run(_run())
 
 
-def test_audio_and_silence_are_streamed():
+def test_audio_is_streamed_as_binary():
     async def _run():
         async with MockBlazeSTTServer() as server:
-            rec, _ = _recognition(server)
-            await rec.start()
-            await rec.send_audio_frame(b"\x01\x02" * 160)  # 10 ms
-            await rec.send_silence(20)  # 640 bytes at 16 kHz
-            await wait_until(lambda: len(server.audio) == 320 + 640)
-            assert server.audio[320:] == b"\x00" * 640
-            rec.audio_timeline.add_user_audio.assert_called_once_with(10)
-            rec.audio_timeline.add_silence_audio.assert_called_once_with(20)
-            await rec.close()
+            client, _ = _client(server)
+            await client.connect()
+            await client.send_audio(b"\x01\x02" * 160)
+            await wait_until(lambda: len(server.audio) == 320)
+            await client.close()
 
     asyncio.run(_run())
 
 
-def test_server_close_calls_on_close():
+def test_server_close_reports_code_once():
     async def script(ws, _server):
-        await ws.close()
+        await ws.close(1011, "internal error")
 
     async def _run():
         async with MockBlazeSTTServer(script=script) as server:
-            rec, callback = _recognition(server)
-            await rec.start()
-            await wait_until(lambda: callback.closed == 1)
-            assert not rec.is_connected()
-            await rec.close()
+            client, recorder = _client(server)
+            await client.connect()
+            await wait_until(lambda: recorder.closes)
+            await asyncio.sleep(0.05)
+            assert len(recorder.closes) == 1
+            assert recorder.closes[0][0] == 1011
+            assert not client.connected
+            with pytest.raises(ConnectionError):
+                await client.send_audio(b"\x00\x00")
+
+    asyncio.run(_run())
+
+
+def test_local_close_does_not_report_a_vendor_close():
+    async def _run():
+        async with MockBlazeSTTServer() as server:
+            client, recorder = _client(server)
+            await client.connect()
+            await client.close()
+            await asyncio.sleep(0.05)
+            assert recorder.closes == []
 
     asyncio.run(_run())

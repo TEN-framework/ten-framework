@@ -4,194 +4,104 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_ai_base.message import ModuleErrorCode
 
-from .. import extension as extension_module
-from ..config import BlazeSTTConfig
-from ..extension import BlazeSTTExtension
 from ..recognition import BlazeSTTAuthError
-from ..reconnect_manager import ReconnectManager
+from .mock import (
+    FakeClient,
+    make_extension,
+    outputs,
+    patch_client,
+    wait_until,
+)
+
+NON_FATAL = int(ModuleErrorCode.NON_FATAL_ERROR.value)
+FATAL = int(ModuleErrorCode.FATAL_ERROR.value)
 
 
-def _manager(max_attempts: int = 4) -> ReconnectManager:
-    return ReconnectManager(
-        base_delay=0, max_delay=0, max_attempts=max_attempts, logger=MagicMock()
-    )
-
-
-def _extension(max_attempts: int = 4) -> BlazeSTTExtension:
-    extension = BlazeSTTExtension("blaze_stt_python")
-    extension.ten_env = MagicMock()
-    # The base class reports connection status through send_data.
-    extension.ten_env.send_data = AsyncMock()
-    extension.config = BlazeSTTConfig(params={"api_key": "k"})
-    extension.config.apply_defaults()
-    extension.reconnect_manager = _manager(max_attempts)
-    extension.send_asr_error = AsyncMock()
-    return extension
-
-
-class FakeRecognition:
-    """Stands in for BlazeSTTRecognition; close() fires on_close like the
-    real message handler does when its socket ends."""
-
-    instances: list["FakeRecognition"] = []
-    fail_start: Exception | None = None
-
-    def __init__(self, config, audio_timeline, ten_env, callback):
-        del config, audio_timeline, ten_env
-        self.callback = callback
-        self.closed = False
-        FakeRecognition.instances.append(self)
-
-    async def start(self):
-        if FakeRecognition.fail_start is not None:
-            raise FakeRecognition.fail_start
-
-    async def close(self):
-        self.closed = True
-        await self.callback.on_close()
-
-    def is_connected(self):
-        return not self.closed
-
-
-def _patch_recognition(fail_start: Exception | None = None):
-    FakeRecognition.instances = []
-    FakeRecognition.fail_start = fail_start
-    return patch.object(
-        extension_module, "BlazeSTTRecognition", FakeRecognition
-    )
-
-
-def test_reconnect_manager_escalates_after_max_attempts():
+def test_transient_failures_keep_retrying_without_going_fatal():
     async def _run():
-        errors = []
-        manager = _manager(max_attempts=4)
+        failures = [OSError("network down") for _ in range(6)]
+        with patch_client(connect_errors=failures):
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            await wait_until(extension.is_connected, timeout=5.0)
 
-        async def failing_connect():
-            raise RuntimeError("disconnect")
-
-        async def error_handler(error, vendor_info=None):
-            errors.append((error.code, vendor_info))
-
-        for _ in range(4):
-            await manager.handle_reconnect(
-                failing_connect,
-                error_handler,
-                vendor_name="blaze",
-                vendor_code="connect_failed",
-            )
-
-        assert [code for code, _ in errors] == [
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.FATAL_ERROR.value),
-        ]
-        assert all(info.vendor == "blaze" for _, info in errors)
-        assert not manager.can_retry()
+            codes = [error["code"] for error in outputs(env, "error")]
+            assert codes == [NON_FATAL] * 6
+            assert len(FakeClient.instances) == 7
 
     asyncio.run(_run())
 
 
-def test_reconnect_counter_resets_after_success():
+def test_unexpected_close_reconnects_on_a_fresh_socket():
     async def _run():
-        manager = _manager(max_attempts=2)
+        with patch_client():
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            first = FakeClient.instances[0]
 
-        async def failing_connect():
-            raise RuntimeError("disconnect")
+            await first.server_close(1006)
+            await wait_until(extension.is_connected)
 
-        await manager.handle_reconnect(failing_connect)
-        assert manager.attempts == 1
-        manager.mark_connection_successful()
-        assert manager.attempts == 0
-        assert manager.can_retry()
-
-    asyncio.run(_run())
-
-
-def test_unexpected_close_reconnects_with_fresh_socket():
-    async def _run():
-        extension = _extension()
-        with _patch_recognition():
-            await extension.start_connection()
-            first = FakeRecognition.instances[0]
-
-            # Server drops the socket.
-            await first.close()
-
-            assert len(FakeRecognition.instances) == 2
-            assert extension.recognition is FakeRecognition.instances[1]
-            assert extension.reconnect_manager.attempts == 1
-            extension.send_asr_error.assert_not_awaited()
-
-    asyncio.run(_run())
-
-
-def test_replacing_socket_does_not_trigger_reconnect_loop():
-    async def _run():
-        extension = _extension()
-        with _patch_recognition():
-            await extension.start_connection()
-            await extension._connect_recognition()
-
-            # Old socket closed once, exactly one replacement, no retries.
-            assert len(FakeRecognition.instances) == 2
-            assert FakeRecognition.instances[0].closed
-            assert extension.reconnect_manager.attempts == 0
-
-    asyncio.run(_run())
-
-
-def test_close_after_stop_connection_does_not_reconnect():
-    async def _run():
-        extension = _extension()
-        with _patch_recognition():
-            await extension.start_connection()
-            await extension.stop_connection()
-
-            assert len(FakeRecognition.instances) == 1
-            assert extension.recognition is None
-            assert extension.reconnect_manager.attempts == 0
-
-    asyncio.run(_run())
-
-
-def test_connect_failure_retries_until_ceiling_then_fatal():
-    async def _run():
-        extension = _extension(max_attempts=3)
-        with _patch_recognition(fail_start=OSError("network down")):
-            await extension.start_connection()
-
-        # First failure is reported by start_connection, then 3 retries.
-        codes = [
-            int(call.args[0].code)
-            for call in extension.send_asr_error.await_args_list
-        ]
-        assert codes == [
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.NON_FATAL_ERROR.value),
-            int(ModuleErrorCode.FATAL_ERROR.value),
-        ]
-        assert not extension.reconnect_manager.can_retry()
+            assert extension.client is FakeClient.instances[1]
+            (error,) = outputs(env, "error")
+            assert error["code"] == NON_FATAL
+            assert error["vendor_info"]["code"] == "1006"
 
     asyncio.run(_run())
 
 
 def test_auth_failure_is_fatal_and_never_retries():
     async def _run():
-        extension = _extension()
-        with _patch_recognition(fail_start=BlazeSTTAuthError("bad token")):
-            await extension.start_connection()
+        with patch_client(connect_errors=[BlazeSTTAuthError("bad token")]):
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            await asyncio.sleep(0.05)
 
-        error, vendor_info = extension.send_asr_error.await_args.args
-        assert extension.send_asr_error.await_count == 1
-        assert int(error.code) == int(ModuleErrorCode.FATAL_ERROR.value)
-        assert vendor_info.code == "401"
-        assert extension.reconnect_manager.attempts == 0
+            (error,) = outputs(env, "error")
+            assert error["code"] == FATAL
+            assert error["vendor_info"]["code"] == "401"
+            assert len(FakeClient.instances) == 1
+            assert extension._reconnect_task is None
+
+    asyncio.run(_run())
+
+
+def test_policy_violation_close_is_fatal_and_never_retries():
+    async def _run():
+        with patch_client():
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            await FakeClient.instances[0].server_close(1008)
+            await asyncio.sleep(0.05)
+
+            (error,) = outputs(env, "error")
+            assert error["code"] == FATAL
+            assert len(FakeClient.instances) == 1
+
+    asyncio.run(_run())
+
+
+def test_send_failure_and_later_close_start_one_recovery():
+    async def _run():
+        with patch_client():
+            extension, env = make_extension()
+            await extension._ensure_connection()
+            first = FakeClient.instances[0]
+            first.send_error = ConnectionError("broken pipe")
+
+            from .mock import FakeFrame
+
+            assert not await extension.send_audio(
+                FakeFrame(b"\x00" * 320), "s1"
+            )
+            # The receive loop reports the same dead socket afterwards.
+            await first.server_close(1006)
+            await wait_until(extension.is_connected)
+
+            assert len(outputs(env, "error")) == 1
+            assert len(FakeClient.instances) == 2
 
     asyncio.run(_run())

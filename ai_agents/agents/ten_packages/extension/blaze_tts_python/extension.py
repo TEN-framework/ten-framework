@@ -165,6 +165,11 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
         self._request_finalized = True
 
         if not self._audio_start_sent:
+            # No audio arrived (error, timeout, cancel or empty request).
+            # The start boundary is this event, so the start-to-end
+            # interval covers only what happens from here, not the time
+            # spent waiting for the vendor.
+            self.sent_ts = datetime.now()
             await self.send_tts_audio_start(
                 request_id=self.current_request_id,
             )

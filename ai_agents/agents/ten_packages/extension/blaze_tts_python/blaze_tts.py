@@ -254,7 +254,7 @@ class BlazeTTSClient:
 
     async def _connect(self) -> None:
         await self._close()
-        url = self.config.ws_url()
+        url = self.config.ws_url
         try:
             self._ws = await websockets.connect(
                 url,

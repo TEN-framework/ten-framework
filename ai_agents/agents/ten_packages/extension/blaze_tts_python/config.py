@@ -80,7 +80,9 @@ class BlazeTTSConfig(BaseModel):
         if self.audio_speed <= 0:
             raise ValueError("audio_speed must be greater than 0")
 
+    @property
     def ws_url(self) -> str:
+        """Realtime endpoint derived from base_url (http(s) -> ws(s))."""
         base = self.base_url
         if base.startswith("https://"):
             base = "wss://" + base[len("https://") :]

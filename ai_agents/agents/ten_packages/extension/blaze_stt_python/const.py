@@ -13,7 +13,10 @@ STT_REALTIME_PATH = "/v1/stt/realtime"
 # cannot grow memory unbounded.
 AUDIO_BUFFER_BYTE_LIMIT = 10 * 1024 * 1024  # 10 MB
 
-RECONNECT_MAX_ATTEMPTS = 10
+# Reconnect backoff for transient failures. Retries are unlimited (the ASR
+# contract default); each wait doubles and is capped.
+RECONNECT_BASE_DELAY_SECONDS = 0.5
+RECONNECT_MAX_DELAY_SECONDS = 8.0
 
 # Seconds to wait for the server's "ready" message after sending the token.
 READY_TIMEOUT_SECONDS = 10.0

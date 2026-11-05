@@ -87,6 +87,12 @@ HOOKS = {
         "minimax_tts",
         "wss://api.minimax.cn/ws/v1/t2a_v2_bidi",
     ),
+    "blaze_tts_python": (
+        "blaze",
+        "BlazeObserver",
+        "blaze_tts",
+        "wss://api.blaze.vn/v1/tts/realtime",
+    ),
     "soul_tts_python": (
         "soul",
         "SoulObserver",
@@ -97,6 +103,7 @@ HOOKS = {
 
 
 CONFIGS = {
+    "blaze_tts_python": ("BlazeTTSConfig", "ws_url"),
     "bytedance_tts": ("TTSConfig", "uri"),
     "bytedance_tts_duplex": ("BytedanceTTSDuplexConfig", "api_url"),
     "elevenlabs_multiple_context_tts_python": ("ElevenLabsTTSConfig", "url"),

@@ -4,42 +4,47 @@
 # See the LICENSE file for more information.
 #
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
 
-from ..extension import BlazeSTTExtension
+from .mock import make_extension, outputs, vendor_event
 
 
-def _send_error(error_msg: str, error_code):
+def _error_for(event: dict) -> tuple[dict, object]:
     async def _run():
-        extension = BlazeSTTExtension("blaze_stt_python")
-        extension.ten_env = MagicMock()
-        extension.send_asr_error = AsyncMock()
-        await extension.on_error(error_msg, error_code)
-        return extension.send_asr_error.await_args.args
+        extension, env = make_extension()
+        await vendor_event(extension, event)
+        (error,) = outputs(env, "error")
+        return error, extension
 
     return asyncio.run(_run())
 
 
 def test_auth_failure_is_fatal_with_vendor_info():
-    error, vendor_info = _send_error("authentication failed", 401)
-
-    assert error.code == -1000
-    assert vendor_info.vendor == "blaze"
-    assert vendor_info.code == "401"
-    assert vendor_info.message == "authentication failed"
+    error, extension = _error_for(
+        {"type": "failed-authentication", "message": "authentication failed"}
+    )
+    assert error["code"] == -1000
+    assert error["vendor_info"] == {
+        "vendor": "blaze",
+        "code": "401",
+        "message": "authentication failed",
+    }
+    assert extension._session_fatal
 
 
 def test_upstream_error_is_non_fatal():
-    error, vendor_info = _send_error(
-        "Something went wrong. Please try again later.", "upstream_error"
+    error, extension = _error_for(
+        {
+            "type": "error",
+            "code": "upstream_error",
+            "text": "Something went wrong. Please try again later.",
+        }
     )
-
-    assert error.code == 1000
-    assert vendor_info.code == "upstream_error"
+    assert error["code"] == 1000
+    assert error["vendor_info"]["code"] == "upstream_error"
+    assert not extension._session_fatal
 
 
 def test_error_without_code_is_non_fatal():
-    error, vendor_info = _send_error("handler error", None)
-
-    assert error.code == 1000
-    assert vendor_info.code == "unknown"
+    error, _ = _error_for({"type": "error", "text": "handler error"})
+    assert error["code"] == 1000
+    assert error["vendor_info"]["code"] == "unknown"

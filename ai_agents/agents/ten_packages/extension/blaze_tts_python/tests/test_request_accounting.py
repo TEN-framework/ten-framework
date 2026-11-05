@@ -1,0 +1,193 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+"""Terminal accounting at the extension boundary with a controlled clock.
+
+The scripted vendor stream advances a fake clock, so start-to-end
+intervals and audio durations are exact rather than "at least" checks.
+"""
+
+import asyncio
+import json
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
+from ten_runtime import Data, TenEnvTester
+
+from blaze_tts_python.blaze_tts import (
+    EVENT_TTS_END,
+    EVENT_TTS_ERROR,
+    EVENT_TTS_RESPONSE,
+    EVENT_TTS_TTFB_METRIC,
+)
+from blaze_tts_python.tests.mock import (
+    AUDIO_CHUNK,
+    BASIC_CONFIG,
+    RecordingTester,
+    install_mock_client,
+    send_text,
+)
+
+REQUEST_END, INTERRUPTED, ERROR = 1, 2, 3
+CHUNK_MS = 20  # AUDIO_CHUNK is 20 ms of 24 kHz PCM16 mono.
+BASE_TIME = datetime(2026, 1, 1)
+
+
+class Clock:
+    def __init__(self):
+        self.ms = 0
+
+    def advance(self, ms: int) -> None:
+        self.ms += ms
+
+    def datetime_class(self):
+        clock = self
+
+        class FakeDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                del tz
+                return BASE_TIME + timedelta(milliseconds=clock.ms)
+
+        return FakeDatetime
+
+
+def _run_with_stream(stream, inputs, expected_ends=1, tester=None):
+    clock = Clock()
+    with patch(
+        "blaze_tts_python.extension.BlazeTTSClient"
+    ) as client_cls, patch(
+        "blaze_tts_python.extension.datetime", clock.datetime_class()
+    ):
+        instance = install_mock_client(client_cls)
+
+        async def scripted_get(text: str):
+            async for item in stream(text, clock):
+                yield item
+
+        instance.get.side_effect = scripted_get
+        tester = tester or RecordingTester(inputs, expected_ends=expected_ends)
+        tester.set_test_mode_single(
+            "blaze_tts_python", json.dumps(BASIC_CONFIG)
+        )
+        tester.run()
+    return tester
+
+
+def _end(tester, request_id):
+    ends = [
+        p
+        for p in tester.payloads("tts_audio_end")
+        if p["request_id"] == request_id
+    ]
+    assert len(ends) == 1, ends
+    return ends[0]
+
+
+def test_success_interval_runs_from_first_audio_to_end():
+    async def stream(_text, clock):
+        clock.advance(100)
+        yield 100, EVENT_TTS_TTFB_METRIC
+        for _ in range(3):
+            yield AUDIO_CHUNK, EVENT_TTS_RESPONSE
+        clock.advance(300)
+        yield None, EVENT_TTS_END
+
+    tester = _run_with_stream(stream, [("req-1", "Xin chào.", True)])
+
+    end = _end(tester, "req-1")
+    assert end["reason"] == REQUEST_END
+    assert end["request_event_interval_ms"] == 300
+    assert end["request_total_audio_duration_ms"] == 3 * CHUNK_MS
+
+
+def test_error_after_partial_audio_keeps_exact_accounting():
+    async def stream(_text, clock):
+        clock.advance(100)
+        yield 100, EVENT_TTS_TTFB_METRIC
+        yield AUDIO_CHUNK, EVENT_TTS_RESPONSE
+        yield AUDIO_CHUNK, EVENT_TTS_RESPONSE
+        clock.advance(50)
+        yield b"internal-error", EVENT_TTS_ERROR
+
+    tester = _run_with_stream(stream, [("req-1", "Xin chào.", True)])
+
+    end = _end(tester, "req-1")
+    assert end["reason"] == ERROR
+    assert end["request_event_interval_ms"] == 50
+    assert end["request_total_audio_duration_ms"] == 2 * CHUNK_MS
+    assert tester.count("error") == 1
+
+
+def test_no_audio_error_has_adjacent_start_and_end():
+    async def stream(_text, clock):
+        # The vendor hangs, then the client times out with no audio.
+        clock.advance(30_000)
+        yield b"Timeout waiting for Blaze TTS audio", EVENT_TTS_ERROR
+
+    tester = _run_with_stream(stream, [("req-1", "Xin chào.", True)])
+
+    end = _end(tester, "req-1")
+    assert end["reason"] == ERROR
+    assert end["request_event_interval_ms"] == 0
+    assert end["request_total_audio_duration_ms"] == 0
+    assert tester.count("tts_audio_start") == 1
+
+
+class FlushTester(RecordingTester):
+    """Flush req-1 after its first audio, then send req-2."""
+
+    def __init__(self):
+        super().__init__([("req-1", "Một câu rất dài.", True)])
+        self.timeline: list[tuple[str, str | None]] = []
+
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        name = data.get_name()
+        json_str, _ = data.get_property_to_json(None)
+        payload = json.loads(json_str) if json_str else {}
+        self.events.append((name, payload))
+        self.timeline.append((name, payload.get("request_id")))
+        if name == "tts_audio_start" and payload["request_id"] == "req-1":
+            flush = Data.create("tts_flush")
+            flush.set_property_from_json(
+                None, json.dumps({"flush_id": "flush-1", "metadata": {}})
+            )
+            ten_env.send_data(flush)
+        if name == "tts_audio_end" and payload["request_id"] == "req-1":
+            send_text(ten_env, "req-2", "Câu sau.", True)
+        if name == "tts_audio_end" and payload["request_id"] == "req-2":
+            ten_env.stop_test()
+
+    def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
+        self.timeline.append(("audio", None))
+        super().on_audio_frame(ten_env, audio_frame)
+
+
+def test_flush_interrupts_once_drops_stale_audio_and_next_request_works():
+    async def stream(text, clock):
+        clock.advance(100)
+        yield 100, EVENT_TTS_TTFB_METRIC
+        if text.startswith("Một"):
+            # A long stream that is still going when the flush arrives.
+            for _ in range(200):
+                yield AUDIO_CHUNK, EVENT_TTS_RESPONSE
+                await asyncio.sleep(0.01)
+        else:
+            yield AUDIO_CHUNK, EVENT_TTS_RESPONSE
+        clock.advance(40)
+        yield None, EVENT_TTS_END
+
+    tester = _run_with_stream(stream, [], tester=FlushTester())
+
+    assert _end(tester, "req-1")["reason"] == INTERRUPTED
+    assert _end(tester, "req-2")["reason"] == REQUEST_END
+    assert tester.count("tts_flush_end") == 1
+
+    # No req-1 audio may follow its end: everything between the req-1
+    # end and the req-2 start must be free of audio frames.
+    names = tester.timeline
+    req1_end = names.index(("tts_audio_end", "req-1"))
+    req2_start = names.index(("tts_audio_start", "req-2"))
+    assert ("audio", None) not in names[req1_end:req2_start]

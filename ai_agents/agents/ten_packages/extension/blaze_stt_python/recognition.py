@@ -15,22 +15,30 @@ Protocol (wss://api.blaze.vn/v1/stt/realtime, model stt-stream-1.5):
      {"type": "error", "code", "text"}.
 Blaze ends utterances with server-side endpointing; it has no flush
 message, so callers send silence to close the current utterance.
+
+The client owns one socket and its receive loop. It never reconnects: it
+reports messages and the final close through callbacks, and the extension
+owns recovery on a separate task.
 """
 
 import asyncio
 import json
-from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import websockets
-from websockets.protocol import State
+from websockets.asyncio.client import ClientConnection
+from websockets.exceptions import ConnectionClosed
 
-from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
-from ten_ai_base.timeline import AudioTimeline
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
 from .config import BlazeSTTConfig
 from .const import READY_TIMEOUT_SECONDS, WS_CLOSE_POLICY_VIOLATION
+
+MessageCallback = Callable[[dict[str, Any]], Awaitable[None]]
+# on_close(code, message, close_exception)
+CloseCallback = Callable[[int, str, BaseException | None], Awaitable[None]]
 
 
 class BlazeSTTAuthError(Exception):
@@ -39,183 +47,130 @@ class BlazeSTTAuthError(Exception):
     status_code = 401
 
 
-class BlazeSTTRecognitionCallback(ABC):
-    @abstractmethod
-    async def on_open(self) -> None:
-        pass
-
-    @abstractmethod
-    async def on_partial_result(self, message_data: dict[str, Any]) -> None:
-        pass
-
-    @abstractmethod
-    async def on_final_result(self, message_data: dict[str, Any]) -> None:
-        pass
-
-    @abstractmethod
-    async def on_error(
-        self, error_msg: str, error_code: int | str | None = None
-    ) -> None:
-        pass
-
-    @abstractmethod
-    async def on_close(self) -> None:
-        pass
-
-
 class BlazeSTTRecognition:
+    """One Blaze realtime STT WebSocket session."""
+
     def __init__(
         self,
         config: BlazeSTTConfig,
-        audio_timeline: AudioTimeline,
         ten_env: AsyncTenEnv,
-        callback: BlazeSTTRecognitionCallback,
+        on_message: MessageCallback,
+        on_close: CloseCallback,
     ):
         self.config = config
-        self.audio_timeline = audio_timeline
         self.ten_env = ten_env
-        self.callback = callback
-        self.websocket = None
-        self.is_started = False
-        self.final_event = asyncio.Event()
-        self._message_task: asyncio.Task | None = None
-        self._bytes_per_ms = config.sample_rate * 2 / 1000
+        self.on_message = on_message
+        self.on_close = on_close
+        self.websocket: ClientConnection | None = None
+        self.receive_task: asyncio.Task[None] | None = None
+        self.connected = False
+        self._send_lock = asyncio.Lock()
+        self._closing = False
 
-    async def start(self, timeout: float = READY_TIMEOUT_SECONDS) -> None:
+    async def connect(self, timeout: float = READY_TIMEOUT_SECONDS) -> None:
+        """Open the socket, authenticate, and wait for "ready"."""
         url = self.config.ws_url()
         self.ten_env.log_info(
             f"vendor_status: connecting to Blaze STT {url}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.websocket = await websockets.connect(
-            url, open_timeout=timeout, max_size=None
-        )
         try:
+            self.websocket = await websockets.connect(
+                url, open_timeout=timeout, max_size=None
+            )
             await self.websocket.send(json.dumps(self.config.init_message()))
-            while True:
-                raw = await asyncio.wait_for(
-                    self.websocket.recv(), timeout=timeout
-                )
-                if isinstance(raw, bytes):
-                    continue
-                event = json.loads(raw)
-                event_type = event.get("type")
-                self.ten_env.log_debug(
-                    f"vendor_result: startup: {event_type}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-                if event_type == "ready":
-                    break
-                if event_type == "failed-authentication":
-                    raise BlazeSTTAuthError(
-                        event.get("message")
-                        or "Blaze STT authentication failed"
-                    )
-                if event_type == "error":
-                    raise RuntimeError(
-                        f"Blaze STT startup error: {event.get('text') or event}"
-                    )
-            self.is_started = True
-            self.final_event.clear()
-            await self.callback.on_open()
-            self._message_task = asyncio.create_task(self._message_handler())
-        except websockets.exceptions.ConnectionClosed as e:
-            await self._close_socket()
+            await self._wait_ready(timeout)
+        except ConnectionClosed as e:
+            await self.close()
             if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
                 raise BlazeSTTAuthError(
                     e.rcvd.reason or "Blaze STT authentication failed"
                 ) from e
             raise
-        except Exception:
-            await self._close_socket()
+        except BaseException:
+            await self.close()
             raise
+        self.connected = True
+        self.receive_task = asyncio.create_task(self._receive_loop())
 
-    async def _message_handler(self) -> None:
-        try:
-            async for message in self.websocket:
-                if isinstance(message, bytes):
-                    continue
-                event = json.loads(message)
-                event_type = event.get("type", "")
-                if event_type == "partial":
-                    await self.callback.on_partial_result(event)
-                elif event_type == "final":
-                    self.ten_env.log_debug(
-                        f"vendor_result: final: {message}",
-                        category=LOG_CATEGORY_TRANSCRIPTS,
-                    )
-                    self.final_event.set()
-                    await self.callback.on_final_result(event)
-                elif event_type == "error":
-                    await self.callback.on_error(
-                        str(event.get("text") or "Unknown Blaze STT error"),
-                        event.get("code"),
-                    )
-                elif event_type == "failed-authentication":
-                    await self.callback.on_error(
-                        str(event.get("message") or "authentication failed"),
-                        BlazeSTTAuthError.status_code,
-                    )
-        except websockets.exceptions.ConnectionClosed as e:
-            self.ten_env.log_info(
-                f"vendor_status: Blaze STT websocket closed: {e}",
+    async def _wait_ready(self, timeout: float) -> None:
+        assert self.websocket is not None
+        while True:
+            raw = await asyncio.wait_for(self.websocket.recv(), timeout=timeout)
+            if isinstance(raw, bytes):
+                continue
+            event = json.loads(raw)
+            event_type = event.get("type")
+            self.ten_env.log_debug(
+                f"vendor_result: startup: {event_type}",
                 category=LOG_CATEGORY_VENDOR,
             )
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            await self.callback.on_error(
-                f"WebSocket message handler error: {e}"
-            )
-        finally:
-            self.is_started = False
-            await self.callback.on_close()
+            if event_type == "ready":
+                return
+            if event_type == "failed-authentication":
+                raise BlazeSTTAuthError(
+                    event.get("message") or "Blaze STT authentication failed"
+                )
+            if event_type == "error":
+                raise RuntimeError(
+                    f"Blaze STT startup error: {event.get('text') or event}"
+                )
 
-    async def send_audio_frame(self, audio_data: bytes) -> None:
-        if not self.is_connected():
-            raise RuntimeError("WebSocket not connected")
-        self.audio_timeline.add_user_audio(
-            int(len(audio_data) / self._bytes_per_ms)
-        )
-        await self.websocket.send(audio_data)
-
-    async def send_silence(self, duration_ms: int) -> None:
-        """Send PCM silence so server-side endpointing ends the utterance."""
-        if not self.is_connected():
-            return
-        self.audio_timeline.add_silence_audio(duration_ms)
-        await self.websocket.send(
-            b"\x00" * int(duration_ms * self._bytes_per_ms)
-        )
-
-    async def wait_for_final(self, timeout_ms: int) -> bool:
+    async def _receive_loop(self) -> None:
+        code = 1000
+        message = "closed"
+        close_exception: BaseException | None = None
         try:
-            await asyncio.wait_for(self.final_event.wait(), timeout_ms / 1000)
-        except asyncio.TimeoutError:
-            return False
-        return True
+            assert self.websocket is not None
+            async for raw in self.websocket:
+                if isinstance(raw, bytes):
+                    continue
+                await self.on_message(json.loads(raw))
+        except ConnectionClosed as e:
+            close_exception = e
+            if e.rcvd is not None:
+                code = e.rcvd.code
+                message = e.rcvd.reason or "closed"
+            else:
+                code = 1006
+                message = str(e)
+        # CancelledError is not an Exception: a cancelled loop exits here
+        # without reporting a vendor close.
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            close_exception = e
+            code = -1
+            message = f"Blaze STT receive error: {e}"
+        else:
+            # Iteration ends quietly only after a normal close handshake
+            # (websockets raises ConnectionClosedError for abnormal ones).
+            websocket = self.websocket
+            if websocket is not None and websocket.close_code is not None:
+                code = websocket.close_code
+                message = websocket.close_reason or "closed"
+        finally:
+            self.connected = False
+        if not self._closing:
+            await self.on_close(code, message, close_exception)
+
+    async def send_audio(self, audio: bytes) -> None:
+        async with self._send_lock:
+            if not self.connected or self.websocket is None:
+                raise ConnectionError("Blaze STT WebSocket is not ready")
+            await self.websocket.send(audio)
 
     async def close(self) -> None:
-        self.is_started = False
-        await self._close_socket()
-        if self._message_task and not self._message_task.done():
-            self._message_task.cancel()
+        """Close the socket and stop the receive loop without callbacks."""
+        self._closing = True
+        self.connected = False
+        websocket = self.websocket
+        self.websocket = None
+        if websocket is not None:
             try:
-                await self._message_task
-            except asyncio.CancelledError:
-                pass
-        self._message_task = None
-
-    async def _close_socket(self) -> None:
-        if self.websocket is None:
-            return
-        try:
-            if self.websocket.state == State.OPEN:
-                await self.websocket.close()
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            self.ten_env.log_info(f"Error closing websocket: {e}")
-
-    def is_connected(self) -> bool:
-        return (
-            self.is_started
-            and self.websocket is not None
-            and self.websocket.state == State.OPEN
-        )
+                await websocket.close()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                self.ten_env.log_info(f"Error closing websocket: {e}")
+        task = self.receive_task
+        self.receive_task = None
+        if task and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
