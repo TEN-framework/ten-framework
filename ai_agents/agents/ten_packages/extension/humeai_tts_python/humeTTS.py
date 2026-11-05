@@ -1,4 +1,5 @@
 import base64
+import httpx
 from typing import Any, AsyncIterator, Tuple
 
 # Only import the specific TTS modules we need to avoid PortAudio dependency
@@ -31,7 +32,9 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         init_params = {"api_key": api_key}
         if "base_url" in config.params:
             init_params["base_url"] = config.params["base_url"]
-        self.connection = AsyncHumeClient(**init_params)
+        # Match AsyncHumeClient's default timeout and redirect behavior.
+        self.http = httpx.AsyncClient(timeout=60, follow_redirects=True)
+        self.connection = AsyncHumeClient(**init_params, httpx_client=self.http)
         self._is_cancelled = False
 
     async def get(
@@ -165,6 +168,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         # In this new model, most cleanup is handled by the connection object's lifecycle.
         # This can be used for any additional cleanup if needed.
         self.ten_env.log_debug("HumeAiTTS: clean() called.")
+        await self.http.aclose()
 
     def get_extra_metadata(self) -> dict[str, Any]:
         """Return extra metadata for metrics."""
