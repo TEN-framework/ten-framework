@@ -75,6 +75,10 @@ class BlazeTTSClient:
 
         self._ws: ClientConnection | None = None
         self._is_cancelled = False
+        # Bumped by cancel()/stop(). A get() that started in an older
+        # generation must not send or yield anything, even when cancel()
+        # ran while the socket was still opening and had nothing to close.
+        self._generation = 0
 
         # TTFB tracking
         self._sent_ts: datetime | None = None
@@ -90,6 +94,7 @@ class BlazeTTSClient:
             self.ten_env.log_error(f"Blaze TTS preheat failed: {e}")
 
     async def stop(self) -> None:
+        self._generation += 1
         self._is_cancelled = True
         await self._close()
 
@@ -100,6 +105,7 @@ class BlazeTTSClient:
         drop unread audio; the next request reconnects.
         """
         self.ten_env.log_debug("Cancelling current TTS task.")
+        self._generation += 1
         self._is_cancelled = True
         self.reset_ttfb()
         await self._close()
@@ -137,21 +143,28 @@ class BlazeTTSClient:
             yield None, EVENT_TTS_END
             return
 
-        await self._ensure_connection()
+        generation = self._generation
+        await self._ensure_connection(generation)
+        if generation != self._generation or self._ws is None:
+            # Cancelled while the socket was opening: drop the request.
+            self.ten_env.log_debug("Cancelled during connect, not sending.")
+            return
 
         if not self._ttfb_sent and self._sent_ts is None:
             self._sent_ts = datetime.now()
 
-        # Clear cancel flag just before sending, not at
-        # method entry — avoids race with concurrent cancel()
+        # This get() still owns the current generation, so any cancel()
+        # that ran before it has already been honoured above.
         self._is_cancelled = False
 
         try:
-            await self._send_query(text)
+            if not await self._send_query(text, generation):
+                self.ten_env.log_debug("Cancelled during reconnect, not sent.")
+                return
         except BlazeTTSConnectionException:
             raise
         except Exception as e:  # pylint: disable=broad-exception-caught
-            await self._close()
+            await self._discard(self._ws)
             self.ten_env.log_error(
                 f"vendor_error: Blaze TTS send failed: {e}",
                 category=LOG_CATEGORY_VENDOR,
@@ -159,18 +172,26 @@ class BlazeTTSClient:
             yield str(e).encode("utf-8"), EVENT_TTS_ERROR
             return
 
+        # This request reads and, on failure, discards only its own socket.
+        # After a cancel, a newer request may already own self._ws.
+        ws = self._ws
         carry = b""
         try:
             while True:
-                if self._is_cancelled or self._ws is None:
+                if (
+                    self._is_cancelled
+                    or generation != self._generation
+                    or ws is None
+                    or self._ws is not ws
+                ):
                     self.ten_env.log_debug("Cancelled, stopping stream.")
                     return
                 try:
                     message = await asyncio.wait_for(
-                        self._ws.recv(), timeout=WS_RECV_TIMEOUT
+                        ws.recv(), timeout=WS_RECV_TIMEOUT
                     )
                 except asyncio.TimeoutError:
-                    await self._close()
+                    await self._discard(ws)
                     yield (
                         b"Timeout waiting for Blaze TTS audio",
                         EVENT_TTS_ERROR,
@@ -178,7 +199,7 @@ class BlazeTTSClient:
                     return
 
                 if isinstance(message, bytes):
-                    if self._is_cancelled:
+                    if self._is_cancelled or generation != self._generation:
                         self.ten_env.log_debug("Dropping audio (cancelled)")
                         return
                     # Keep PCM16 samples whole across chunk boundaries.
@@ -214,14 +235,15 @@ class BlazeTTSClient:
                         category=LOG_CATEGORY_VENDOR,
                     )
                     # The socket does not recover after a failed request.
-                    await self._close()
+                    await self._discard(ws)
                     yield detail.encode("utf-8"), EVENT_TTS_ERROR
                     return
                 # processing-request / started-byte-stream are progress only.
 
         except ConnectionClosed as e:
-            self._ws = None
-            if self._is_cancelled:
+            if self._ws is ws:
+                self._ws = None
+            if self._is_cancelled or generation != self._generation:
                 return
             if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
                 raise BlazeTTSConnectionException(
@@ -233,81 +255,109 @@ class BlazeTTSClient:
             )
             yield str(e).encode("utf-8"), EVENT_TTS_ERROR
 
-    async def _send_query(self, text: str) -> None:
+    async def _send_query(self, text: str, generation: int) -> bool:
+        """Send one query; False if cancelled before it could be sent."""
         payload = json.dumps(self.build_query(text), ensure_ascii=False)
         try:
             await self._ws.send(payload)
+            return True
         except ConnectionClosed:
+            if generation != self._generation:
+                return False
             # Blaze may close an idle socket; reconnect once and resend.
             self.ten_env.log_warn(
                 "Blaze TTS socket was closed, reconnecting",
                 category=LOG_CATEGORY_VENDOR,
             )
-            await self._connect()
+            await self._connect(generation)
+            if generation != self._generation or self._ws is None:
+                return False
             await self._ws.send(payload)
+            return True
 
-    async def _recv_json(self) -> dict[str, Any]:
+    async def _recv_json(self, ws: ClientConnection) -> dict[str, Any]:
         while True:
             raw = await asyncio.wait_for(
-                self._ws.recv(), timeout=WS_HANDSHAKE_TIMEOUT
+                ws.recv(), timeout=WS_HANDSHAKE_TIMEOUT
             )
             if isinstance(raw, str):
                 return json.loads(raw)
 
-    async def _connect(self) -> None:
+    async def _connect(self, generation: int | None = None) -> None:
+        """Open and authenticate a socket, then install it as self._ws.
+
+        The handshake runs on a local socket. When `generation` is given and
+        a cancel() bumped it meanwhile, the new socket is closed instead of
+        installed, so a request cancelled while connecting can neither
+        send on it nor replace a socket a newer request already owns.
+        """
         await self._close()
-        url = self.config.ws_url
+        ws: ClientConnection | None = None
         try:
-            self._ws = await websockets.connect(
-                url,
+            ws = await websockets.connect(
+                self.config.ws_url,
                 max_size=None,
                 ping_interval=None,
                 open_timeout=WS_HANDSHAKE_TIMEOUT,
             )
-            hello = await self._recv_json()
+            hello = await self._recv_json(ws)
             if _event_type(hello) != "successful-connection":
                 raise RuntimeError(f"Unexpected Blaze TTS greeting: {hello}")
-            await self._ws.send(
+            await ws.send(
                 json.dumps(
                     {"token": self.config.api_key, "strategy": "request"}
                 )
             )
-            auth = await self._recv_json()
+            auth = await self._recv_json(ws)
             if _event_type(auth) != "successful-authentication":
                 raise BlazeTTSConnectionException(
                     status_code=401,
                     body=str(auth.get("message") or auth),
                 )
-            self.ten_env.log_debug(
-                "vendor_status: connected to blaze tts",
-                category=LOG_CATEGORY_VENDOR,
-            )
         except BlazeTTSConnectionException:
-            await self._close()
+            await self._discard(ws)
             raise
         except InvalidStatus as e:
-            await self._close()
+            await self._discard(ws)
             raise BlazeTTSConnectionException(
                 status_code=e.response.status_code, body=str(e)
             ) from e
         except ConnectionClosed as e:
-            await self._close()
+            await self._discard(ws)
             if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
                 raise BlazeTTSConnectionException(
                     status_code=401, body=e.rcvd.reason or str(e)
                 ) from e
             raise
-        except Exception:
-            await self._close()
+        except BaseException:
+            # Includes CancelledError: never leak a half-open socket.
+            await self._discard(ws)
             raise
 
-    async def _ensure_connection(self) -> None:
+        if generation is not None and generation != self._generation:
+            self.ten_env.log_debug("Connection opened after cancel, dropped")
+            await self._discard(ws)
+            return
+        previous = self._ws
+        self._ws = ws
+        if previous is not None and previous is not ws:
+            await self._discard(previous)
+        self.ten_env.log_debug(
+            "vendor_status: connected to blaze tts",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+    async def _ensure_connection(self, generation: int | None = None) -> None:
         if not self._ws:
-            await self._connect()
+            await self._connect(generation)
 
     async def _close(self) -> None:
-        ws = self._ws
-        self._ws = None
+        await self._discard(self._ws)
+
+    async def _discard(self, ws: ClientConnection | None) -> None:
+        """Close `ws`; clear self._ws only if it is still that socket."""
+        if self._ws is ws:
+            self._ws = None
         if ws is not None:
             try:
                 await ws.close()

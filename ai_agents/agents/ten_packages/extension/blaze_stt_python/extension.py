@@ -113,9 +113,19 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         # watermark is still waiting for its final.
         self._last_final_end_ms = 0
         self._last_voiced_end_ms: int | None = None
+        # Latest voiced end among frames sent after a final arrived. These
+        # are new speech, so the end-time tolerance never covers them.
+        self._voiced_end_after_final_ms: int | None = None
         self._final_seen = False
         self._partial_since_final = False
         self._final_event = asyncio.Event()
+
+        # Session ownership. The keep-buffer only ever holds one session's
+        # audio, and each socket records which session's metadata owns
+        # each span of its stream clock, so a late result is labelled with
+        # the session whose audio produced it.
+        self._buffered_session_id: str | None = None
+        self._stream_owners: list[tuple[int, dict[str, Any]]] = []
 
     @override
     def vendor(self) -> str:
@@ -228,8 +238,10 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         self._socket_bytes = 0
         self._last_final_end_ms = 0
         self._last_voiced_end_ms = None
+        self._voiced_end_after_final_ms = None
         self._final_seen = False
         self._partial_since_final = False
+        self._stream_owners = []
         await self.on_connected()
         async with self._audio_lock:
             # Frames that arrive during the drain are buffered because
@@ -427,10 +439,73 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
                 return False
             return await self._send_audio_locked(frame)
 
+    @override
+    async def _handle_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
+        """Send or keep one frame, serialized with the handshake drain.
+
+        Replaces the base flow so kept audio is drained in order with
+        per-frame metadata, and the keep-buffer never mixes sessions.
+        """
+        del ten_env  # logging goes through self.ten_env
+        if not audio_frame.get_buf():
+            return
+        async with self._audio_lock:
+            if (
+                self.is_connected()
+                and await self._flush_buffered_frames_locked()
+            ):
+                metadata = self._frame_metadata(audio_frame)
+                if metadata:
+                    self.metadata = metadata
+                    self.session_id = metadata.get(
+                        "session_id", self.session_id
+                    )
+                if await self._send_audio_locked(audio_frame):
+                    self.sent_buffer_length += len(audio_frame.get_buf())
+                    if self.first_audio_time is None:
+                        self.first_audio_time = (
+                            asyncio.get_running_loop().time()
+                        )
+                    return
+            self._buffer_frame_locked(audio_frame)
+
+    def _buffer_frame_locked(self, frame: AudioFrame) -> None:
+        """Keep a frame during an outage, bounded and single-session."""
+        metadata = self._frame_metadata(frame)
+        session_id = metadata.get("session_id", self.session_id)
+        if (
+            not self.buffered_frames.empty()
+            and session_id != self._buffered_session_id
+        ):
+            # One Blaze stream serves the drained audio, so kept audio
+            # from an older session must not be replayed in front of a
+            # newer session's audio. The newer session supersedes it.
+            self.ten_env.log_info(
+                "dropping kept audio of a previous session",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+            self._discard_buffered_frames_locked()
+        self._buffered_session_id = session_id
+        frame_size = len(frame.get_buf())
+        while (
+            not self.buffered_frames.empty()
+            and self.buffered_frames_size + frame_size > AUDIO_BUFFER_BYTE_LIMIT
+        ):
+            dropped = self.buffered_frames.get_nowait()
+            self.buffered_frames_size -= len(dropped.get_buf())
+            self.dropped_audio_frames += 1
+        self.buffered_frames.put_nowait(frame)
+        self.buffered_frames_size += frame_size
+
     async def _send_audio_locked(self, frame: AudioFrame) -> bool:
         client = self.client
         if client is None or not client.connected:
             return False
+        owner = self._frame_metadata(frame) or copy.deepcopy(
+            self.metadata or {}
+        )
         buf = frame.lock_buf()
         try:
             audio_data = bytes(buf)
@@ -450,10 +525,15 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             )
             return False
         # Count audio only after Blaze has it.
+        self._record_stream_owner(owner)
         self._add_user_audio(len(audio_data))
         stream_end_ms = self._advance_socket(len(audio_data))
         if _is_voiced(audio_data):
             self._last_voiced_end_ms = stream_end_ms
+            if self._final_seen:
+                self._voiced_end_after_final_ms = max(
+                    self._voiced_end_after_final_ms or 0, stream_end_ms
+                )
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(audio_data)
         return True
@@ -463,17 +543,47 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         self._socket_bytes += byte_count
         return self._socket_bytes * 1000 // (self.input_audio_sample_rate() * 2)
 
+    def _record_stream_owner(self, owner: dict[str, Any]) -> None:
+        """Note which metadata owns the stream from its current position."""
+        if self._stream_owners and self._stream_owners[-1][1] == owner:
+            return
+        position = self._advance_socket(0)
+        # Spans that end before the latest final can no longer be the
+        # start of a result; keep the one that covers it.
+        while (
+            len(self._stream_owners) > 1
+            and self._stream_owners[1][0] <= self._last_final_end_ms
+        ):
+            self._stream_owners.pop(0)
+        self._stream_owners.append((position, copy.deepcopy(owner)))
+
+    def _owner_at(self, vendor_ms: int) -> dict[str, Any] | None:
+        owner = None
+        for start_ms, metadata in self._stream_owners:
+            if start_ms > vendor_ms:
+                break
+            owner = metadata
+        return owner
+
     def _has_pending_speech(self) -> bool:
         """Speech was sent that no final has covered yet.
 
         Compared on the vendor stream clock, so a late final for an
-        earlier utterance does not cover speech sent after it.
+        earlier utterance does not cover speech sent after it. The
+        tolerance for Blaze's end-time rounding applies only to speech
+        sent before the latest final arrived; anything voiced after it is
+        new speech that still needs its own final.
         """
         if self._partial_since_final:
             return True
         if self._last_voiced_end_ms is None:
             return False
         if not self._final_seen:
+            return True
+        if (
+            self._voiced_end_after_final_ms is not None
+            and self._voiced_end_after_final_ms > self._last_final_end_ms
+        ):
             return True
         return (
             self._last_voiced_end_ms
@@ -513,6 +623,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             if self.first_audio_time is None:
                 self.first_audio_time = asyncio.get_running_loop().time()
         self.buffered_frames_size = 0
+        self._buffered_session_id = None
         return True
 
     def _frame_metadata(self, frame: AudioFrame) -> dict[str, Any]:
@@ -533,6 +644,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             self.buffered_frames.get_nowait()
             self.dropped_audio_frames += 1
         self.buffered_frames_size = 0
+        self._buffered_session_id = None
 
     # Finalize
 
@@ -714,6 +826,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             final=False,
             start_ms=self._actual_ms(self._last_final_end_ms),
             duration_ms=0,
+            owner=self._owner_at(self._last_final_end_ms),
         )
 
     async def _on_final(self, event: dict[str, Any]) -> None:
@@ -727,6 +840,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         self._last_final_end_ms = max(end, self._last_final_end_ms)
         self._final_seen = True
         self._partial_since_final = False
+        if (
+            self._voiced_end_after_final_ms is not None
+            and self._last_final_end_ms >= self._voiced_end_after_final_ms
+        ):
+            self._voiced_end_after_final_ms = None
         if text:
             actual_start = self._actual_ms(start)
             await self._emit_asr_result(
@@ -734,6 +852,7 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
                 final=True,
                 start_ms=actual_start,
                 duration_ms=self._actual_ms(end) - actual_start,
+                owner=self._owner_at(start),
             )
         # Release a waiting finalize after the result is out, but only once
         # the final covers all speech sent: a late final for an earlier
@@ -772,10 +891,11 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
             + self.sent_user_audio_duration_ms_before_last_reset
         )
 
-    def _build_metadata(self) -> dict[str, Any]:
-        base_metadata = (
-            copy.deepcopy(self.metadata) if self.metadata is not None else {}
-        )
+    def _build_metadata(
+        self, owner: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        source = owner if owner is not None else self.metadata
+        base_metadata = copy.deepcopy(source) if source is not None else {}
         session_id = base_metadata.pop("session_id", None)
         metadata: dict[str, Any] = {}
         if session_id is not None:
@@ -788,17 +908,34 @@ class BlazeSTTExtension(AsyncASRBaseExtension):
         return metadata
 
     async def _emit_asr_result(
-        self, text: str, final: bool, start_ms: int, duration_ms: int
+        self,
+        text: str,
+        final: bool,
+        start_ms: int,
+        duration_ms: int,
+        owner: dict[str, Any] | None = None,
     ) -> None:
         assert self.config is not None
-        await self.send_asr_result(
-            ASRResult(
-                text=text,
-                final=final,
-                start_ms=max(0, start_ms),
-                duration_ms=max(0, duration_ms),
-                language=self.config.asr_result_language,
-                words=[],
-                metadata=self._build_metadata(),
-            )
+        result = ASRResult(
+            text=text,
+            final=final,
+            start_ms=max(0, start_ms),
+            duration_ms=max(0, duration_ms),
+            language=self.config.asr_result_language,
+            words=[],
+            metadata=self._build_metadata(owner),
         )
+        if owner is None:
+            await self.send_asr_result(result)
+            return
+        # send_asr_result() merges self.metadata (the latest frame's) into
+        # the result, which would relabel a late result with a newer
+        # session. Make the owner current for that merge.
+        latest = self.metadata
+        swapped = copy.deepcopy(owner)
+        self.metadata = swapped
+        try:
+            await self.send_asr_result(result)
+        finally:
+            if self.metadata is swapped:
+                self.metadata = latest

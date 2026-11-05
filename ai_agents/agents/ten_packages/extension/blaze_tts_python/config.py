@@ -14,6 +14,7 @@ from ten_ai_base import utils
 from pydantic import BaseModel, Field
 
 DEFAULT_BASE_URL = "https://api.blaze.vn"
+_SENSITIVE_SUBSTRINGS = ("key", "token", "secret", "signature", "password")
 DEFAULT_SPEAKER_ID = "HN-Nu-CSKH-HuongGiang"
 SUPPORTED_SAMPLE_RATES = {8000, 16000, 22050, 24000, 44100, 48000}
 
@@ -30,6 +31,25 @@ CONFIG_KEYS = (
     "normalization",
     "sample_rate",
 )
+
+
+def _is_sensitive_key(name: str) -> bool:
+    lowered = name.lower()
+    return any(token in lowered for token in _SENSITIVE_SUBSTRINGS)
+
+
+def _redact_url(url: str) -> str:
+    """Keep only scheme, host, port and path of a URL for logging."""
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+    except ValueError:
+        return "<invalid url>"
+    redacted = f"{parsed.scheme}://{host}{port}{parsed.path}"
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        redacted += " (credentials, query or fragment redacted)"
+    return redacted
 
 
 class BlazeTTSConfig(BaseModel):
@@ -112,6 +132,10 @@ class BlazeTTSConfig(BaseModel):
 
         if config.api_key:
             config.api_key = utils.encrypt(config.api_key)
+        config.base_url = _redact_url(config.base_url)
+        for key, value in list(config.params.items()):
+            if value and _is_sensitive_key(key):
+                config.params[key] = utils.encrypt(str(value))
 
         return f"{config}"
 

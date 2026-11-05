@@ -62,11 +62,13 @@ class BlazeTTSExtension(AsyncTTS2BaseExtension):
 
             self.config = BlazeTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
+            # Validate before logging, so a URL that validation rejects
+            # never reaches the log.
+            self.config.validate_config()
             ten_env.log_info(
                 f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            self.config.validate_config()
 
             self.client = self._create_client(ten_env)
             await self.client.start()

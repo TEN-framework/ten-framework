@@ -176,10 +176,15 @@ class BlazeSTTRecognition:
     async def close(self) -> None:
         """Close the socket and stop the receive loop without callbacks."""
         self._closing = True
+        was_ready = self.connected
         self.connected = False
         websocket = self.websocket
         self.websocket = None
-        if websocket is not None:
+        if websocket is not None and not was_ready:
+            # Aborting a handshake: a stalled peer may never finish a close
+            # handshake, and stop must not wait for close_timeout.
+            websocket.transport.abort()
+        elif websocket is not None:
             try:
                 await websocket.close()
             except Exception as e:  # pylint: disable=broad-exception-caught

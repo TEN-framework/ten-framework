@@ -87,3 +87,23 @@ def test_valid_config_passes():
 def test_invalid_params_raise(params):
     with pytest.raises(ValueError):
         make_config(**params).validate_config()
+
+
+def test_config_log_redacts_url_parts_and_sensitive_params():
+    config = make_config(
+        base_url="https://alice:pw-secret@api.blaze.vn/?sig=sig-secret#frag-secret",
+        access_token="tok-123",
+        style="news",
+    )
+    text = config.to_str(sensitive_handling=True)
+    for secret in (
+        "alice",
+        "pw-secret",
+        "sig-secret",
+        "frag-secret",
+        "tok-123",
+        "test-key",
+    ):
+        assert secret not in text
+    assert "api.blaze.vn" in text
+    assert "news" in text

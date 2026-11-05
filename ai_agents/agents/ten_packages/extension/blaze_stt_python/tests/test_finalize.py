@@ -303,3 +303,77 @@ def test_flowing_user_audio_gets_no_extra_silence_while_waiting():
             assert len(silence_chunks) == 1
 
     asyncio.run(_run())
+
+
+def test_short_turn_after_a_final_waits_for_its_own_final():
+    """Speech sent after a final arrived is new speech, even when it ends
+    inside the end-time tolerance of that final."""
+
+    async def _run():
+        with patch_client():
+            extension, env, client = await _connected()
+            await extension.send_audio(FakeFrame(SPEECH), "s1")  # 0-100
+            await vendor_event(
+                extension,
+                {"type": "final", "text": "một", "start_ms": 0, "end_ms": 100},
+            )
+            # A short second turn (100-200 ms) that Blaze has not shown any
+            # partial for yet when the finalize arrives.
+            await extension.send_audio(FakeFrame(SPEECH), "s1")
+
+            async def final_arrives():
+                await asyncio.sleep(0.05)
+                await vendor_event(
+                    extension,
+                    {
+                        "type": "final",
+                        "text": "ok",
+                        "start_ms": 100,
+                        "end_ms": 200,
+                    },
+                )
+
+            asyncio.create_task(final_arrives())
+            await extension.on_data(env, finalize_data("f-2", "s1"))
+
+            assert _silence_sent(client)
+            names = [
+                (
+                    call.args[0].get_name(),
+                    call.args[0].get_property_to_json("")[0],
+                )
+                for call in env.send_data.call_args_list
+            ]
+            end_index = next(
+                i
+                for i, (name, _) in enumerate(names)
+                if name == "asr_finalize_end"
+            )
+            ok_index = next(
+                i
+                for i, (name, payload) in enumerate(names)
+                if name == "asr_result" and '"ok"' in payload
+            )
+            assert ok_index < end_index
+
+    asyncio.run(_run())
+
+
+def test_stale_final_does_not_cover_speech_sent_after_a_final():
+    async def _run():
+        with patch_client():
+            extension, _, _ = await _connected()
+            await extension.send_audio(FakeFrame(SPEECH), "s1")  # 0-100
+            final = {"type": "final", "text": "", "start_ms": 0, "end_ms": 100}
+            await vendor_event(extension, final)
+            await extension.send_audio(FakeFrame(SPEECH), "s1")  # 100-200
+            # A repeat of the old final does not cover the new speech.
+            await vendor_event(extension, final)
+            assert extension._has_pending_speech()
+            await vendor_event(
+                extension,
+                {"type": "final", "text": "", "start_ms": 100, "end_ms": 200},
+            )
+            assert not extension._has_pending_speech()
+
+    asyncio.run(_run())
