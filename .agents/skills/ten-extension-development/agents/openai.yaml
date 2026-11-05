@@ -1,0 +1,4 @@
+interface:
+  display_name: "TEN Extension Development"
+  short_description: "Create TEN ASR/STT, TTS, or LLM extensions in the repository format"
+  default_prompt: "Use $ten-extension-development to create a TEN ASR, TTS, or LLM extension for this vendor that follows the repository's exact package format, with standalone tests and guarder configs."

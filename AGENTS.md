@@ -68,3 +68,9 @@ sections 6 (generate) and 7 (bootstrap).
   [ten-tts-review](.agents/skills/ten-tts-review/SKILL.md).
 - Do not apply that skill to `ten_ai_base`, `tts_guarder`, examples, graphs, or
   paths outside the TTS extension directory.
+- When creating a new ASR/STT, TTS, or LLM vendor extension under
+  `ai_agents/agents/ten_packages/extension/`, load and follow
+  [ten-extension-development](.agents/skills/ten-extension-development/SKILL.md).
+  For TTS it routes to
+  [ten-tts-extension-development](.agents/skills/ten-tts-extension-development/SKILL.md)
+  for the behavioral contract.
