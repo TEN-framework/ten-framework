@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "fish_asr_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -29,38 +29,74 @@
     ],
     "property": {
       "properties": {
-        "dump": {"type": "bool"},
-        "dump_path": {"type": "string"},
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
-            "api_key": {"type": "string"},
-            "url": {"type": "string"},
-            "model": {"type": "string"},
-            "sample_rate": {"type": "int64"},
-            "turn_mode": {"type": "string"},
-            "eager": {"type": "bool"},
-            "drafts": {"type": "bool"},
-            "ignore_timestamps": {"type": "bool"},
-            "diarize": {"type": "bool"},
-            "vad_events": {"type": "bool"},
-            "eot_events": {"type": "bool"},
-            "silence_timeout_ms": {"type": "int32"},
+            "api_key": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "turn_mode": {
+              "type": "string"
+            },
+            "eager": {
+              "type": "bool"
+            },
+            "drafts": {
+              "type": "bool"
+            },
+            "ignore_timestamps": {
+              "type": "bool"
+            },
+            "diarize": {
+              "type": "bool"
+            },
+            "vad_events": {
+              "type": "bool"
+            },
+            "eot_events": {
+              "type": "bool"
+            },
+            "silence_timeout_ms": {
+              "type": "int32"
+            },
             "context_history": {
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "role": {"type": "string"},
-                  "text": {"type": "string"}
+                  "role": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
                 }
               }
             },
             "context_terms": {
               "type": "array",
-              "items": {"type": "string"}
+              "items": {
+                "type": "string"
+              }
             },
-            "client_reference_id": {"type": "string"}
+            "client_reference_id": {
+              "type": "string"
+            }
           }
         }
       }

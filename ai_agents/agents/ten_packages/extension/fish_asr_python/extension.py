@@ -822,9 +822,8 @@ class FishAudioASRExtension(AsyncASRBaseExtension):
             if generation is not None and generation != self._generation:
                 return
             start_ms = max(0, self._turn_start_ms.get(turn_index, 0))
-            word_results = None
+            word_results: list[ASRWord] = []
             if words:
-                word_results = []
                 for word in words:
                     word_start = max(0, int(word.get("start_ms", start_ms)))
                     word_end = int(word.get("end_ms", word_start))
