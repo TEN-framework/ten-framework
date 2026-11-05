@@ -38,7 +38,7 @@ recent template disagree, follow the template and note it.
     └── test_*.py
 ```
 
-Type-specific additions (ASR `const.py`, `reconnect_manager.py`,
+Type-specific additions (ASR `const.py`, an optional `reconnect_manager.py`,
 `tests/mock.py`) are listed in the type reference.
 
 ## Fixed file contents
@@ -196,6 +196,8 @@ Run `task format && task check && task lint` from `/app` in the container.
 - [ ] No secret, private IP, or signed URL in any committed file.
 - [ ] Config logged once with `config:` prefix and redaction.
 - [ ] Fatal vs non-fatal classification and `vendor_info` on vendor errors.
-- [ ] Nothing outside the package changed unless the user asked.
+- [ ] Nothing outside the package changed unless the user asked, except a
+      new TTS provider's TTFB hook, registry entry and tests in
+      `integration_tests/tts_guarder/tests/`.
 - [ ] `task format`, `task check`, `task lint`, `task test-extension`, and the
       guarder (ASR/TTS) were run, or the reason they could not run is reported.

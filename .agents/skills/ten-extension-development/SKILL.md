@@ -78,6 +78,11 @@ file names, the license header, `from . import addon` in `__init__.py`, and the
 - Generate the extension package and its tests. Touch nothing else unless the
   user asks: no graph edits, no example apps, no `docker-compose.yml`,
   `Taskfile.yml`, `.env.example`, or fixes to unrelated extensions.
+- Exception for TTS: `ten-tts-extension-development` requires an independent
+  TTFB timing hook for every new provider. Add it in
+  `ai_agents/agents/integration_tests/tts_guarder/tests/` (an observer under
+  `ttfb_hooks/` or `provider_ttfb_hooks/`, its registry entry, and its tests)
+  without waiting to be asked. Change nothing else in the guarder.
 - If the user asks for a runnable graph, add a node to an existing example's
   `tenapp/property.json` and a `path` dependency in its `tenapp/manifest.json`
   **after** the package tests pass. Create a new example directory only if the
