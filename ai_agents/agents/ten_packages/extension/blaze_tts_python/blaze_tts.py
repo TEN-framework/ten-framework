@@ -1,441 +1,313 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+"""WebSocket client for Blaze realtime TTS.
+
+Protocol (wss://api.blaze.vn/v1/tts/realtime):
+  1. Receive {"type": "successful-connection"}.
+  2. Send {"token", "strategy": "request"}; receive
+     {"type": "successful-authentication"} or {"type": "failed-authentication"}
+     followed by close code 1008.
+  3. Per text: send a query JSON, receive "processing-request",
+     "started-byte-stream", binary PCM chunks, then "finished-byte-stream".
+     Failures arrive as "failed-request" / "bad-request" / "internal-error".
+One socket serves many sequential queries. Blaze has no cancel message, so
+an interrupted stream drops the socket and the next query reconnects.
 """
-Blaze TTS Extension Implementation
 
-This extension wraps the Blaze TTS API endpoint for use in TEN framework.
-"""
+import asyncio
+import json
+from datetime import datetime
+from typing import Any, AsyncIterator
 
-import os
-import logging
-from typing import Optional, Dict, Any, Union
-from enum import Enum
+import websockets
+from websockets.asyncio.client import ClientConnection
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 
-import httpx
-from pydantic import BaseModel, Field
+from .config import BlazeTTSConfig
+from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
-logger = logging.getLogger(__name__)
+# Event types communicated back to the extension.
+# 4 is reserved (used by other TTS extensions for flush events).
+EVENT_TTS_RESPONSE = 1
+EVENT_TTS_END = 2
+EVENT_TTS_ERROR = 3
+EVENT_TTS_TTFB_METRIC = 5
 
+# Seconds to wait for a handshake message or the next stream message.
+WS_HANDSHAKE_TIMEOUT = 15.0
+WS_RECV_TIMEOUT = 30.0
 
-class AudioFormat(str, Enum):
-    """Audio format options"""
-
-    WAV = "wav"
-    MP3 = "mp3"
-    OGG = "ogg"
-
-
-class MediaType(str, Enum):
-    """Media type options"""
-
-    AUDIO_OGG_CODECS_OPUS = "audio/ogg; codecs=opus"
-    AUDIO_MP3 = "audio/mp3"
-    AUDIO_WAV = "audio/wav"
+WS_CLOSE_POLICY_VIOLATION = 1008
+STREAM_END_EVENTS = {"finished-byte-stream", "completed-request"}
+STREAM_ERROR_EVENTS = {"failed-request", "bad-request", "internal-error"}
 
 
-class Normalization(str, Enum):
-    """Normalization options"""
+class BlazeTTSConnectionException(Exception):
+    """Exception raised when the Blaze TTS connection or auth fails"""
 
-    NO = "no"
-    YES = "yes"
-
-
-class Model(str, Enum):
-    """Model options"""
-
-    V1_5_FLASH = "v1.5_flash"
-    V1_5_PRO = "v1.5_pro"
+    def __init__(self, status_code: int, body: str):
+        self.status_code = status_code
+        self.body = body
+        super().__init__(
+            f"Blaze TTS connection failed (code: {status_code}): {body}"
+        )
 
 
-class BlazeTTSConfig(BaseModel):
-    """Configuration for Blaze TTS Extension"""
-
-    api_url: str = Field(
-        default_factory=lambda: os.getenv(
-            "BLAZE_TTS_API_URL", "http://localhost:8000"
-        ),
-        description="Blaze TTS API base URL",
-    )
-    api_key: Optional[str] = Field(
-        default_factory=lambda: os.getenv("BLAZE_TTS_API_KEY"),
-        description="API key for authentication (Bearer token)",
-    )
-    timeout: int = Field(default=3600, description="Request timeout in seconds")
-    default_language: str = Field(
-        default="vi",
-        description="Default language code (e.g., 'vi' for Vietnamese)",
-    )
-    default_speaker_id: Optional[str] = Field(
-        default=None, description="Default speaker ID"
-    )
-    default_audio_speed: float = Field(
-        default=1.0, description="Default audio speed multiplier"
-    )
-    default_audio_quality: int = Field(
-        default=64, description="Default audio quality (kbps)"
-    )
+def _event_type(data: dict[str, Any]) -> str:
+    # Blaze uses "type" for most events and "status" for stream events.
+    return str(data.get("type") or data.get("status") or "")
 
 
-class BlazeTTSExtension:
-    """
-    Blaze TTS Extension for TEN Framework
-
-    This extension provides Text-to-Speech functionality by wrapping
-    the Blaze TTS API endpoint: /v1/tts
-
-    Implements TEN framework extension interface with process() and get_metadata() methods.
-    """
+class BlazeTTSClient:
+    """Blaze realtime TTS over one reusable WebSocket."""
 
     def __init__(
-        self, config: Optional[Union[BlazeTTSConfig, Dict[str, Any]]] = None
-    ):
-        """
-        Initialize Blaze TTS Extension
-
-        Args:
-            config: Configuration object (BlazeTTSConfig) or dict from TEN framework.
-                   If None, uses environment variables.
-                   If dict, converts to BlazeTTSConfig.
-        """
-        if config is None:
-            self.config = BlazeTTSConfig()
-        elif isinstance(config, dict):
-            # Convert dict from TEN framework to BlazeTTSConfig
-            self.config = BlazeTTSConfig(
-                api_url=config.get("api_url", "http://localhost:8000"),
-                api_key=config.get("api_key"),
-                default_language=config.get("language", "vi"),
-                default_speaker_id=config.get("speaker_id"),
-                default_audio_speed=config.get("audio_speed", 1.0),
-                default_audio_quality=config.get("audio_quality", 64),
-                timeout=config.get("timeout", 3600),
-            )
-        else:
-            self.config = config
-
-        self.base_url = self.config.api_url.rstrip("/")
-        self.endpoint = f"{self.base_url}/v1/tts"
-
-        logger.info(
-            f"Blaze TTS Extension initialized with API URL: {self.base_url}"
-        )
-
-    def synthesize(
         self,
-        text: str,
-        speaker_id: Optional[str] = None,
-        language: Optional[str] = None,
-        audio_speed: Optional[float] = None,
-        audio_quality: Optional[int] = None,
-        audio_format: Union[AudioFormat, str] = AudioFormat.WAV,
-        media_type: Union[MediaType, str] = MediaType.AUDIO_OGG_CODECS_OPUS,
-        normalization: Union[Normalization, str] = Normalization.NO,
-        model: Union[Model, str] = Model.V1_5_PRO,
-    ) -> Dict[str, Any]:
+        config: BlazeTTSConfig,
+        ten_env: AsyncTenEnv,
+    ):
+        self.config = config
+        self.ten_env = ten_env
+
+        self._ws: ClientConnection | None = None
+        self._is_cancelled = False
+
+        # TTFB tracking
+        self._sent_ts: datetime | None = None
+        self._ttfb_sent: bool = False
+
+    async def start(self) -> None:
+        """Preheat: establish and authenticate the connection."""
+        try:
+            await self._connect()
+        except BlazeTTSConnectionException:
+            raise
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            self.ten_env.log_error(f"Blaze TTS preheat failed: {e}")
+
+    async def stop(self) -> None:
+        self._is_cancelled = True
+        await self._close()
+
+    async def cancel(self) -> None:
+        """Cancel current TTS.
+
+        Blaze cannot stop a stream in place, so the socket is closed to
+        drop unread audio; the next request reconnects.
         """
-        Synthesize text to speech
+        self.ten_env.log_debug("Cancelling current TTS task.")
+        self._is_cancelled = True
+        self.reset_ttfb()
+        await self._close()
 
-        Args:
-            text: Text to synthesize
-            speaker_id: Speaker/voice ID. Required if not set in config.
-            language: Language code (e.g., 'vi' for Vietnamese). Defaults to config default.
-            audio_speed: Audio speed multiplier (default: 1.0)
-            audio_quality: Audio quality in kbps (default: 64)
-            audio_format: Audio format (wav, mp3, ogg)
-            media_type: Media type
-            normalization: Normalization option (no, yes)
-            model: Model version to use
+    def reset_ttfb(self) -> None:
+        self._sent_ts = None
+        self._ttfb_sent = False
 
-        Returns:
-            Dict containing TTS result with job_id or audio URL
-
-        Raises:
-            httpx.HTTPError: If the API request fails
-            ValueError: If text is empty or speaker_id is missing
-        """
-        if not text:
-            raise ValueError("text cannot be empty")
-
-        speaker_id = speaker_id or self.config.default_speaker_id
-        if not speaker_id:
-            raise ValueError(
-                "speaker_id is required (either as parameter or in config)"
-            )
-
-        # Use provided values or fall back to config defaults
-        language = language or self.config.default_language
-        audio_speed = (
-            audio_speed
-            if audio_speed is not None
-            else self.config.default_audio_speed
-        )
-        audio_quality = (
-            audio_quality
-            if audio_quality is not None
-            else self.config.default_audio_quality
-        )
-
-        # Convert enum to string if needed
-        if isinstance(audio_format, AudioFormat):
-            audio_format = audio_format.value
-        if isinstance(media_type, MediaType):
-            media_type = media_type.value
-        if isinstance(normalization, Normalization):
-            normalization = normalization.value
-        if isinstance(model, Model):
-            model = model.value
-
-        # Prepare request payload
-        payload = {
+    def build_query(self, text: str) -> dict[str, Any]:
+        query: dict[str, Any] = {
             "query": text,
-            "language": language,
-            "audio_speed": audio_speed,
-            "audio_quality": audio_quality,
-            "audio_format": audio_format,
-            "speaker_id": speaker_id,
-            "media_type": media_type,
-            "normalization": normalization,
-            "model": model,
+            "language": self.config.language,
+            "audio_format": "pcm",
+            "audio_quality": self.config.audio_quality,
+            # Blaze's realtime docs send speed as a string.
+            "audio_speed": str(self.config.audio_speed),
+            "speaker_id": self.config.speaker_id,
+            "normalization": self.config.normalization,
+            "model": self.config.model,
+            "sample_rate": self.config.sample_rate,
         }
+        # Forward additional Blaze params while keeping auth and the
+        # endpoint out of the query.
+        for key, value in self.config.params.items():
+            if key in {"api_key", "base_url"} or value is None:
+                continue
+            query[key] = value
+        return query
 
-        # Prepare headers
-        headers = {
-            "Content-Type": "application/json",
-        }
+    async def get(
+        self, text: str
+    ) -> AsyncIterator[tuple[bytes | int | None, int]]:
+        """Synthesize one text and yield audio events."""
+        if not text.strip():
+            yield None, EVENT_TTS_END
+            return
 
-        if self.config.api_key:
-            headers["Authorization"] = f"Bearer {self.config.api_key}"
+        await self._ensure_connection()
+
+        if not self._ttfb_sent and self._sent_ts is None:
+            self._sent_ts = datetime.now()
+
+        # Clear cancel flag just before sending, not at
+        # method entry — avoids race with concurrent cancel()
+        self._is_cancelled = False
 
         try:
-            with httpx.Client(timeout=self.config.timeout) as client:
-                response = client.post(
-                    self.endpoint,
-                    json=payload,
-                    headers=headers,
+            await self._send_query(text)
+        except BlazeTTSConnectionException:
+            raise
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            await self._close()
+            self.ten_env.log_error(
+                f"vendor_error: Blaze TTS send failed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield str(e).encode("utf-8"), EVENT_TTS_ERROR
+            return
+
+        carry = b""
+        try:
+            while True:
+                if self._is_cancelled or self._ws is None:
+                    self.ten_env.log_debug("Cancelled, stopping stream.")
+                    return
+                try:
+                    message = await asyncio.wait_for(
+                        self._ws.recv(), timeout=WS_RECV_TIMEOUT
+                    )
+                except asyncio.TimeoutError:
+                    await self._close()
+                    yield (
+                        b"Timeout waiting for Blaze TTS audio",
+                        EVENT_TTS_ERROR,
+                    )
+                    return
+
+                if isinstance(message, bytes):
+                    if self._is_cancelled:
+                        self.ten_env.log_debug("Dropping audio (cancelled)")
+                        return
+                    # TTFB on first audio chunk
+                    if self._sent_ts and not self._ttfb_sent:
+                        ttfb_ms = int(
+                            (datetime.now() - self._sent_ts).total_seconds()
+                            * 1000
+                        )
+                        yield ttfb_ms, EVENT_TTS_TTFB_METRIC
+                        self._ttfb_sent = True
+                    # Keep PCM16 samples whole across chunk boundaries.
+                    data = carry + message
+                    cut = len(data) - (len(data) % 2)
+                    carry = data[cut:]
+                    if cut:
+                        yield data[:cut], EVENT_TTS_RESPONSE
+                    continue
+
+                data = json.loads(message)
+                event = _event_type(data)
+                if event in STREAM_END_EVENTS:
+                    self.ten_env.log_debug("BlazeTTS: stream finished")
+                    yield None, EVENT_TTS_END
+                    return
+                if event in STREAM_ERROR_EVENTS:
+                    detail = str(
+                        data.get("details") or data.get("message") or data
+                    )
+                    self.ten_env.log_error(
+                        f"vendor_error: {event}: {detail}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
+                    # The socket does not recover after a failed request.
+                    await self._close()
+                    yield detail.encode("utf-8"), EVENT_TTS_ERROR
+                    return
+                # processing-request / started-byte-stream are progress only.
+
+        except ConnectionClosed as e:
+            self._ws = None
+            if self._is_cancelled:
+                return
+            if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
+                raise BlazeTTSConnectionException(
+                    status_code=401, body=e.rcvd.reason or str(e)
+                ) from e
+            self.ten_env.log_error(
+                f"vendor_error: Blaze TTS socket closed: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield str(e).encode("utf-8"), EVENT_TTS_ERROR
+
+    async def _send_query(self, text: str) -> None:
+        payload = json.dumps(self.build_query(text), ensure_ascii=False)
+        try:
+            await self._ws.send(payload)
+        except ConnectionClosed:
+            # Blaze may close an idle socket; reconnect once and resend.
+            self.ten_env.log_warn(
+                "Blaze TTS socket was closed, reconnecting",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            await self._connect()
+            await self._ws.send(payload)
+
+    async def _recv_json(self) -> dict[str, Any]:
+        while True:
+            raw = await asyncio.wait_for(
+                self._ws.recv(), timeout=WS_HANDSHAKE_TIMEOUT
+            )
+            if isinstance(raw, str):
+                return json.loads(raw)
+
+    async def _connect(self) -> None:
+        await self._close()
+        url = self.config.ws_url()
+        try:
+            self._ws = await websockets.connect(
+                url,
+                max_size=None,
+                ping_interval=None,
+                open_timeout=WS_HANDSHAKE_TIMEOUT,
+            )
+            hello = await self._recv_json()
+            if _event_type(hello) != "successful-connection":
+                raise RuntimeError(f"Unexpected Blaze TTS greeting: {hello}")
+            await self._ws.send(
+                json.dumps(
+                    {"token": self.config.api_key, "strategy": "request"}
                 )
-                response.raise_for_status()
-                return response.json()
-
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Blaze TTS API error: {e.response.status_code} - {e.response.text}"
             )
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"Blaze TTS request error: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error in Blaze TTS: {str(e)}")
-            raise
-
-    def get_speakers(self) -> Dict[str, Any]:
-        """
-        Get list of available speakers/voices
-
-        Returns:
-            Dict containing list of speakers
-        """
-        headers = {}
-        if self.config.api_key:
-            headers["Authorization"] = f"Bearer {self.config.api_key}"
-
-        endpoint = f"{self.base_url}/v1/tts/list-speaker-ids"
-
-        try:
-            with httpx.Client(timeout=30) as client:
-                response = client.get(endpoint, headers=headers)
-                response.raise_for_status()
-                return response.json()
-
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Blaze TTS speakers error: {e.response.status_code} - {e.response.text}"
+            auth = await self._recv_json()
+            if _event_type(auth) != "successful-authentication":
+                raise BlazeTTSConnectionException(
+                    status_code=401,
+                    body=str(auth.get("message") or auth),
+                )
+            self.ten_env.log_debug(
+                "vendor_status: connected to blaze tts",
+                category=LOG_CATEGORY_VENDOR,
             )
+        except BlazeTTSConnectionException:
+            await self._close()
             raise
-        except httpx.RequestError as e:
-            logger.error(f"Blaze TTS request error: {str(e)}")
+        except InvalidStatus as e:
+            await self._close()
+            raise BlazeTTSConnectionException(
+                status_code=e.response.status_code, body=str(e)
+            ) from e
+        except ConnectionClosed as e:
+            await self._close()
+            if e.rcvd and e.rcvd.code == WS_CLOSE_POLICY_VIOLATION:
+                raise BlazeTTSConnectionException(
+                    status_code=401, body=e.rcvd.reason or str(e)
+                ) from e
             raise
-
-    def download_audio(
-        self, job_id: str, output_path: Optional[str] = None
-    ) -> bytes:
-        """
-        Download generated audio file
-
-        Args:
-            job_id: Job ID returned from synthesize
-            output_path: Optional path to save the audio file. If None, returns bytes.
-
-        Returns:
-            Audio file bytes
-        """
-        headers = {}
-        if self.config.api_key:
-            headers["Authorization"] = f"Bearer {self.config.api_key}"
-
-        endpoint = f"{self.base_url}/v1/tts/{job_id}/download"
-
-        try:
-            with httpx.Client(timeout=self.config.timeout) as client:
-                response = client.get(endpoint, headers=headers)
-                response.raise_for_status()
-
-                audio_bytes = response.content
-
-                if output_path:
-                    with open(output_path, "wb") as f:
-                        f.write(audio_bytes)
-                    logger.info(f"Audio saved to {output_path}")
-
-                return audio_bytes
-
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Blaze TTS download error: {e.response.status_code} - {e.response.text}"
-            )
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"Blaze TTS request error: {str(e)}")
+        except Exception:
+            await self._close()
             raise
 
-    def get_job_info(self, job_id: str) -> Dict[str, Any]:
-        """
-        Get information about a TTS job
+    async def _ensure_connection(self) -> None:
+        if not self._ws:
+            await self._connect()
 
-        Args:
-            job_id: Job ID returned from synthesize
-
-        Returns:
-            Dict containing job information
-        """
-        headers = {}
-        if self.config.api_key:
-            headers["Authorization"] = f"Bearer {self.config.api_key}"
-
-        endpoint = f"{self.base_url}/v1/tts/{job_id}/info"
-
-        try:
-            with httpx.Client(timeout=30) as client:
-                response = client.get(endpoint, headers=headers)
-                response.raise_for_status()
-                return response.json()
-
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Blaze TTS job info error: {e.response.status_code} - {e.response.text}"
-            )
-            raise
-        except httpx.RequestError as e:
-            logger.error(f"Blaze TTS request error: {str(e)}")
-            raise
-
-    def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process input according to TEN framework interface
-
-        This method implements the TEN framework extension interface.
-
-        Args:
-            input_data: Input dict with:
-                - text (str): Required. Text to synthesize
-                - speaker_id (str): Optional. Speaker ID (default: from config)
-                - language (str): Optional. Language code (default: from config)
-                - audio_speed (float): Optional. Audio speed (default: 1.0)
-                - audio_quality (int): Optional. Audio quality in kbps (default: 64)
-                - audio_format (str): Optional. Audio format (default: "wav")
-                - download_audio (bool): Optional. Download audio immediately (default: True)
-
-        Returns:
-            Output dict with:
-                - audio_data (bytes): Audio bytes if download_audio=True
-                - job_id (str): Job ID
-                - format (str): Audio format
-                - status (str): Job status
-        """
-        text = input_data.get("text")
-        if not text:
-            raise ValueError("text is required in input_data")
-
-        result = self.synthesize(
-            text=text,
-            speaker_id=input_data.get("speaker_id"),
-            language=input_data.get("language"),
-            audio_speed=input_data.get("audio_speed", 1.0),
-            audio_quality=input_data.get("audio_quality", 64),
-            audio_format=input_data.get("audio_format", "wav"),
-            media_type=input_data.get(
-                "media_type", MediaType.AUDIO_OGG_CODECS_OPUS
-            ),
-            normalization=input_data.get("normalization", "no"),
-            model=input_data.get("model", Model.V1_5_PRO),
-        )
-
-        job_id = result.get("id") or result.get("job_id")
-
-        # If immediate result requested, download audio
-        if job_id and input_data.get("download_audio", True):
+    async def _close(self) -> None:
+        ws = self._ws
+        self._ws = None
+        if ws is not None:
             try:
-                audio_bytes = self.download_audio(job_id)
-                return {
-                    "audio_data": audio_bytes,
-                    "job_id": job_id,
-                    "format": input_data.get("audio_format", "mp3"),
-                    "status": "completed",
-                    "size_bytes": len(audio_bytes),
-                }
-            except Exception as e:
-                # If download fails, return job_id for later retrieval
-                return {
-                    "job_id": job_id,
-                    "status": "processing",
-                    "error": str(e),
-                }
-
-        return {
-            "job_id": job_id,
-            "status": "processing",
-        }
-
-    def get_metadata(self) -> Dict[str, Any]:
-        """
-        Return extension metadata for TEN framework
-
-        This method implements the TEN framework extension interface.
-
-        Returns:
-            Dict with extension information
-        """
-        return {
-            "name": "blaze_tts_python",
-            "version": "1.0.0",
-            "description": "Blaze Text-to-Speech extension for TEN framework",
-            "capabilities": ["tts", "synthesis", "text_to_speech"],
-            "supported_formats": [
-                "audio/wav",
-                "audio/mpeg",
-                "audio/ogg",
-            ],
-            "supported_languages": ["vi", "en"],
-            "config_schema": {
-                "api_url": {
-                    "type": "string",
-                    "required": False,
-                    "default": "http://localhost:8000",
-                },
-                "api_key": {"type": "string", "required": False},
-                "language": {
-                    "type": "string",
-                    "required": False,
-                    "default": "vi",
-                },
-                "speaker_id": {"type": "string", "required": False},
-                "audio_speed": {
-                    "type": "float",
-                    "required": False,
-                    "default": 1.0,
-                },
-                "audio_quality": {
-                    "type": "integer",
-                    "required": False,
-                    "default": 64,
-                },
-            },
-        }
+                await ws.close()
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass

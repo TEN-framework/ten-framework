@@ -1,27 +1,7 @@
 {
   "type": "extension",
   "name": "blaze_tts_python",
-  "version": "1.0.1",
-  "display_name": {
-    "locales": {
-      "en-US": {
-        "content": "Blaze TTS Extension"
-      },
-      "vi-VN": {
-        "content": "Blaze TTS Extension"
-      }
-    }
-  },
-  "description": {
-    "locales": {
-      "en-US": {
-        "content": "Blaze Text-to-Speech extension for TEN Framework"
-      },
-      "vi-VN": {
-        "content": "Extension chuyển đổi văn bản thành giọng nói cho TEN Framework"
-      }
-    }
-  },
+  "version": "2.0.0",
   "dependencies": [
     {
       "type": "system",
@@ -38,8 +18,6 @@
     "include": [
       "manifest.json",
       "property.json",
-      "BUILD.gn",
-      "**.tent",
       "**.py",
       "README.md",
       "pyproject.toml",
@@ -54,28 +32,40 @@
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
-            "api_url": {
+            "base_url": {
               "type": "string"
             },
             "api_key": {
               "type": "string"
             },
+            "speaker_id": {
+              "type": "string"
+            },
             "language": {
               "type": "string"
             },
-            "speaker_id": {
+            "model": {
               "type": "string"
             },
             "audio_speed": {
               "type": "float64"
             },
             "audio_quality": {
-              "type": "float64"
+              "type": "int32"
             },
-            "timeout": {
+            "normalization": {
+              "type": "string"
+            },
+            "sample_rate": {
               "type": "int32"
             }
           }

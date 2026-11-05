@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./tests/dump_output/",
+  "params": {
+    "base_url": "${env:BLAZE_STT_API_URL|https://api.blaze.vn}",
+    "api_key": "${env:BLAZE_STT_API_KEY}",
+    "language": "en",
+    "model": "stt-stream-1.5",
+    "sample_rate": 16000
+  }
+}
