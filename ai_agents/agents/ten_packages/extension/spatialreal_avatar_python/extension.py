@@ -44,7 +44,7 @@ from ten_ai_base.utils import encrypt  # pylint: disable=import-error
 
 from .config import ResolvedConfig, resolve_config
 from .pacer import Pacer
-from .sender import AudioSender, End, Turn
+from .sender import AudioSender, End, QueueCapacityError, Turn
 from .session_client import (
     CODE_CONFIG,
     CODE_FATAL,
@@ -219,6 +219,8 @@ class SpatialRealAvatarExtension(AsyncExtension):
                         request_id=_request_id(payload),
                     )
                 )
+        except QueueCapacityError as exc:
+            await self._handle_queue_capacity(exc)
         except Exception:
             ten_env.log_error(f"on_data {data_name}: {traceback.format_exc()}")
 
@@ -238,7 +240,35 @@ class SpatialRealAvatarExtension(AsyncExtension):
             return
         if rate <= 0 and self.config is not None:
             rate = self.config.sample_rate
-        self.sender.put_audio(bytes(buf), rate, turn)
+        try:
+            self.sender.put_audio(bytes(buf), rate, turn)
+        except QueueCapacityError as exc:
+            await self._handle_queue_capacity(exc)
+
+    async def _handle_queue_capacity(self, error: QueueCapacityError) -> None:
+        """Fail closed before yielding; never acknowledge a shortened turn."""
+        turn = error.turn
+        try:
+            try:
+                if self.sender is not None:
+                    # flush retires and clears synchronously before its first
+                    # await, so subsequent hooks cannot race old PCM/end past it.
+                    await self.sender.flush()
+            except Exception:
+                self.ten_env.log_error("input queue overflow: interrupt failed")
+            if not self._stopping:
+                await self._send_error(
+                    CODE_NON_FATAL,
+                    "InputQueueOverflow",
+                    f"{error}; buffered speech cancelled",
+                    session_id=turn.session_id if turn is not None else None,
+                    turn_id=turn.turn_id if turn is not None else None,
+                )
+        except asyncio.CancelledError:
+            # TEN treats an uncaught BaseException in a hook as process fatal.
+            # Cancellation already retired the old turn; stopping must neither
+            # kill the worker nor manufacture a successful normal end.
+            return
 
     # -- request signals ----------------------------------------------------
 
@@ -294,6 +324,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
         vendor_code: str,
         message: str,
         session_id: Optional[str] = None,
+        turn_id: Optional[int] = None,
     ) -> None:
         """Emit the D8 ``ModuleError`` on data ``error``.
 
@@ -305,7 +336,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
         if session_id is None:
             session_id = self.client.connection_id if self.client else ""
         error = ModuleError(
-            id=str(self._turn_id or 0),
+            id=str(turn_id if turn_id is not None else self._turn_id or 0),
             module=ModuleType.AVATAR.value,
             code=code,
             message=message,

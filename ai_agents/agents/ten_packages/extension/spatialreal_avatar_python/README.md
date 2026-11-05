@@ -199,7 +199,20 @@ task check              # black, line length 80
   (3000 ms of contiguous padding) closes the request, and `TURN_STALL_MS`
   (15 s after real audio drains) is the outer backstop. These are constants
   in `pacer.py`.
-- Audio that arrives while the session is down is queued for at most 10 s of
-  playout time; older frames are dropped with one warning.
+- Pending input is preserved in RAM within three hard limits: 120 s of PCM,
+  16 MiB of PCM bytes, and 4096 audio/end items, including the item waiting
+  for a connection or the previous request's gate. A 26 s TTS response can
+  therefore survive a slow initial connection without a missing middle.
+  These are retained-input limits, not a wall-clock reconnect deadline or
+  a bound on total process RSS; resampling and transport also use buffers.
+- Admission beyond any input limit cancels buffered speech and emits a
+  nonfatal avatar error with vendor category `InputQueueOverflow`. It never
+  discards old PCM and then reports a normally completed shortened answer.
+  Identified failed turns stay retired; fresh turns can proceed after the
+  interrupt completes. Older graphs without turn metadata discard that
+  failed request until its ordered End or a stop/reset. If that End has a
+  `request_id`, duplicates cannot close a following request; an unidentified
+  End without any request ID cannot be distinguished from a new boundary.
+  No input PCM is spilled to disk.
 - A session is billed on connection time and holds one concurrency slot for as
   long as the extension runs, idle reconnects included.

@@ -18,9 +18,9 @@ previous request's gate. ``flush`` (design D6) acts at once instead: it
 clears the queue, markers included, because everything queued belongs to
 the cancelled turn.
 
-Design D4: frames that arrive while the session is down are kept for at most
-``INPUT_QUEUE_MAX_MS`` of playout; the oldest frames are dropped beyond
-that, markers are never dropped.
+Frames and ordered end markers are preserved within explicit duration, byte
+and item budgets. Admission beyond a budget raises ``QueueCapacityError``;
+the extension cancels the buffered turn instead of playing truncated speech.
 """
 
 import asyncio
@@ -32,7 +32,20 @@ from typing import Callable, Optional, Protocol, Union
 from .audio import Resampler, duration_ms
 from .pacer import Pacer, PushResult
 
-INPUT_QUEUE_MAX_MS = 10_000
+INPUT_QUEUE_MAX_MS = 120_000
+INPUT_QUEUE_MAX_BYTES = 16 * 1024 * 1024
+INPUT_QUEUE_MAX_ITEMS = 4096
+
+
+class QueueCapacityError(RuntimeError):
+    """An atomic admission failed; its caller must cancel buffered speech."""
+
+    def __init__(self, duration: float, byte_count: int, item_count: int):
+        self.turn: Optional["Turn"] = None
+        super().__init__(
+            "input queue capacity exceeded: "
+            f"duration_ms={duration:.3f} bytes={byte_count} items={item_count}"
+        )
 
 
 class SenderLog(Protocol):
@@ -104,18 +117,24 @@ QueueItem = Union[Frame, End]
 class InputQueue:
     """Frames and end markers waiting for the sender, in arrival order.
 
-    The bound is playout time of the queued frames (D4). When it is exceeded
-    the oldest frames are dropped, never a marker; the caller is told once
-    per overflow episode so the log is not flooded.
+    No admission removes older PCM or moves an end marker. The caller must
+    handle a capacity error as cancellation, never as a normally ended tail.
     """
 
-    def __init__(self, max_ms: int = INPUT_QUEUE_MAX_MS) -> None:
+    def __init__(
+        self,
+        max_ms: int = INPUT_QUEUE_MAX_MS,
+        max_bytes: int = INPUT_QUEUE_MAX_BYTES,
+        max_items: int = INPUT_QUEUE_MAX_ITEMS,
+    ) -> None:
         self._max_ms = max_ms
+        self._max_bytes = max_bytes
+        self._max_items = max_items
         self._items: deque[QueueItem] = deque()
         self._frames = 0
         self._queued_ms = 0.0
+        self._queued_bytes = 0
         self._ready = asyncio.Event()
-        self._overflowing = False
 
     def __len__(self) -> int:
         return len(self._items)
@@ -124,38 +143,46 @@ class InputQueue:
     def queued_ms(self) -> float:
         return self._queued_ms
 
+    def check_capacity(
+        self, duration: float, byte_count: int, item_count: int
+    ) -> None:
+        """Check additional retained data before mutating the FIFO."""
+        duration += self._queued_ms
+        byte_count += self._queued_bytes
+        item_count += len(self._items)
+        if (
+            duration > self._max_ms
+            or byte_count > self._max_bytes
+            or item_count > self._max_items
+        ):
+            raise QueueCapacityError(duration, byte_count, item_count)
+
     @property
     def turns(self) -> set[Turn]:
         """Identified turns still queued, including end-only requests."""
         return {item.turn for item in self._items if item.turn is not None}
 
+    @property
+    def has_unidentified(self) -> bool:
+        """Whether cancellation would include items without turn metadata."""
+        return any(item.turn is None for item in self._items)
+
     def put_audio(
         self, pcm: bytes, rate: int, turn: Optional[Turn] = None
     ) -> bool:
-        """Queue a frame; True when this put started dropping old frames."""
+        """Queue a frame without discarding any earlier item."""
+        self.check_capacity(duration_ms(pcm, rate), len(pcm), 1)
         self._items.append(Frame(pcm, rate, turn))
         self._frames += 1
         self._queued_ms += duration_ms(pcm, rate)
-        first_drop = False
-        while self._queued_ms > self._max_ms and self._frames > 1:
-            self._drop_oldest_frame()
-            if not self._overflowing:
-                self._overflowing = True
-                first_drop = True
+        self._queued_bytes += len(pcm)
         self._ready.set()
-        return first_drop
+        return False
 
     def put_end(self, end: End) -> None:
+        self.check_capacity(0.0, 0, 1)
         self._items.append(end)
         self._ready.set()
-
-    def _drop_oldest_frame(self) -> None:
-        for index, item in enumerate(self._items):
-            if isinstance(item, Frame):
-                del self._items[index]
-                self._frames -= 1
-                self._queued_ms -= duration_ms(item.pcm, item.rate)
-                return
 
     async def get(self) -> QueueItem:
         while not self._items:
@@ -165,9 +192,9 @@ class InputQueue:
         if isinstance(item, Frame):
             self._frames -= 1
             self._queued_ms -= duration_ms(item.pcm, item.rate)
+            self._queued_bytes -= len(item.pcm)
         if self._frames == 0:
             self._queued_ms = 0.0
-            self._overflowing = False
         return item
 
     def clear(self) -> int:
@@ -176,7 +203,7 @@ class InputQueue:
         self._items.clear()
         self._frames = 0
         self._queued_ms = 0.0
-        self._overflowing = False
+        self._queued_bytes = 0
         self._ready.clear()
         return count
 
@@ -199,18 +226,21 @@ class AudioSender:
         *,
         on_request_state: Callable[[bool], None] = lambda open_: None,
         max_queue_ms: int = INPUT_QUEUE_MAX_MS,
+        max_queue_bytes: int = INPUT_QUEUE_MAX_BYTES,
+        max_queue_items: int = INPUT_QUEUE_MAX_ITEMS,
     ) -> None:
         self._pacer = pacer
         self._rate = sample_rate
         self._log = log
         self._on_request_state = on_request_state
-        self._queue = InputQueue(max_queue_ms)
-        self._max_queue_ms = max_queue_ms
+        self._queue = InputQueue(max_queue_ms, max_queue_bytes, max_queue_items)
         self._connected = asyncio.Event()
         self._resampler: Optional[Resampler] = None
         self._flush_gen = 0
         self._active_turn: Optional[Turn] = None
         self._inflight_turn: Optional[Turn] = None
+        self._inflight_item: Optional[QueueItem] = None
+        self._legacy_overflowed = False
         self._retired_turns: set[Turn] = set()
         self._latest_turn_ids: dict[str, int] = {}
         self._ended_requests: set[tuple[Optional[Turn], str]] = set()
@@ -236,17 +266,64 @@ class AudioSender:
     ) -> None:
         if not pcm:
             return
+        if turn is None and self._legacy_overflowed:
+            return
         if turn is not None and turn in self._retired_turns:
             self._log.log_debug("audio ignored: retired turn")
             return
-        if self._queue.put_audio(pcm, rate, turn):
-            self._log.log_warn(
-                f"input queue over {self._max_queue_ms} ms while the session "
-                "is not up: dropping the oldest audio"
-            )
+        self._check_admission(duration_ms(pcm, rate), len(pcm), turn)
+        self._queue.put_audio(pcm, rate, turn)
 
     def put_end(self, end: End) -> None:
+        if end.turn is None and self._legacy_overflowed:
+            # Without shared metadata, only this ordered request boundary
+            # proves that later unidentified PCM can belong to a new request.
+            key = (end.turn, end.request_id)
+            if end.request_id and key in self._ended_requests:
+                return
+            if end.request_id:
+                self._ended_requests.add(key)
+            self._legacy_overflowed = False
+            return
+        if end.turn is not None and end.turn in self._retired_turns:
+            return
+        try:
+            self._check_admission(0.0, 0, end.turn)
+        except QueueCapacityError:
+            if end.turn is None:
+                # The boundary that hit the item budget still terminates
+                # the unidentified failed request; never send it as EOF.
+                self._legacy_overflowed = False
+                if end.request_id:
+                    self._ended_requests.add((end.turn, end.request_id))
+            raise
         self._queue.put_end(end)
+
+    def _check_admission(
+        self, duration: float, byte_count: int, turn: Optional[Turn]
+    ) -> None:
+        held = self._inflight_item
+        if isinstance(held, Frame):
+            duration += duration_ms(held.pcm, held.rate)
+            byte_count += len(held.pcm)
+        try:
+            self._queue.check_capacity(
+                duration, byte_count, 1 + int(held is not None)
+            )
+        except QueueCapacityError as error:
+            # This must precede the extension's awaited cancellation: late
+            # failed-turn PCM/end cannot become a normal shortened request.
+            if (
+                turn is None
+                or self._queue.has_unidentified
+                or (held is not None and held.turn is None)
+                or (self._active_turn is None and self._pacer.request_open)
+            ):
+                self._legacy_overflowed = True
+            if turn is not None:
+                self._retired_turns.add(turn)
+            error.turn = turn
+            raise
 
     async def flush(self) -> None:
         """D6: drop everything queued, cancel the turn, interrupt the avatar."""
@@ -272,7 +349,13 @@ class AudioSender:
 
     def clear(self) -> None:
         """Drop the queue without touching the pacer (used at stop)."""
+        self._flush_gen += 1
         self._queue.clear()
+        self._legacy_overflowed = False
+        self._active_turn = None
+        self._inflight_turn = None
+        self._inflight_item = None
+        self._reset_resampler()
         self._retired_turns.clear()
         self._latest_turn_ids.clear()
         self._ended_requests.clear()
@@ -306,11 +389,12 @@ class AudioSender:
         """
         while True:
             item = await self._queue.get()
+            self._inflight_item = item
+            self._inflight_turn = item.turn
             try:
                 if isinstance(item, End):
                     await self._apply_end(item)
                 else:
-                    self._inflight_turn = item.turn
                     await self._send_frame(item)
             except Exception:
                 # CancelledError derives from BaseException, so cancelling
@@ -318,6 +402,7 @@ class AudioSender:
                 self._log.log_error(f"sender: {traceback.format_exc()}")
             finally:
                 self._inflight_turn = None
+                self._inflight_item = None
 
     async def _send_frame(self, frame: Frame) -> None:
         gen = self._flush_gen
@@ -353,7 +438,9 @@ class AudioSender:
         converted: Optional[bytes] = None
         while True:
             await self._connected.wait()
-            if gen != self._flush_gen:
+            if gen != self._flush_gen or (
+                frame.turn is not None and frame.turn in self._retired_turns
+            ):
                 # A flush landed while this frame waited for the session: it
                 # belongs to the cancelled turn.
                 return
