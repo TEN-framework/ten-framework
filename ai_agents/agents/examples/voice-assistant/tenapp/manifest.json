@@ -188,6 +188,9 @@
     },
     {
       "path": "../../../ten_packages/extension/fish_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/elevenlabs_asr_python"
     }
   ],
   "scripts": {
