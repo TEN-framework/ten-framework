@@ -14,7 +14,9 @@ import type { VoiceType } from "@/types";
 
 export default function AgentVoicePresetSelect() {
   const dispatch = useAppDispatch();
-  const _options = useAppSelector((state) => state.global.options);
+  const agentConnected = useAppSelector(
+    (state) => state.global.agentConnected
+  );
   const voiceType = useAppSelector((state) => state.global.voiceType);
 
   const onVoiceChange = (value: string) => {
@@ -22,7 +24,11 @@ export default function AgentVoicePresetSelect() {
   };
 
   return (
-    <Select value={voiceType} onValueChange={onVoiceChange}>
+    <Select
+      value={voiceType}
+      onValueChange={onVoiceChange}
+      disabled={agentConnected}
+    >
       <SelectTrigger className="w-[180px]">
         <div className="inline-flex items-center gap-2">
           <SelectValue placeholder="Voice" />
