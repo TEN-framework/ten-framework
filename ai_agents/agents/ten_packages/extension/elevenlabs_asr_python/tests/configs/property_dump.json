@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "/tmp",
+    "params": {
+        "api_key": "${env:ELEVENLABS_ASR_KEY}",
+        "model_id": "scribe_v2_realtime",
+        "language_code": "en",
+        "include_timestamps": true,
+        "commit_strategy": "manual"
+    }
+}

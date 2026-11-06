@@ -1,88 +1,120 @@
-from datetime import datetime
+import asyncio
+import copy
+import json
 import os
-from typing import Optional, Dict, Any
+from collections import deque
+from typing import Any, Optional
 
 from typing_extensions import override
-from .const import DUMP_FILE_NAME
+from websockets.exceptions import InvalidStatus
+
 from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import (
-    ModuleError,
-    ModuleErrorVendorInfo,
-    ModuleErrorCode,
-    ModuleType,
-)
-from ten_runtime import (
-    AsyncTenEnv,
-    AudioFrame,
-)
-
 from ten_ai_base.const import (
-    LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
     LOG_CATEGORY_TRANSCRIPTS,
+    LOG_CATEGORY_VENDOR,
 )
-
 from ten_ai_base.dumper import Dumper
-from .reconnect_manager import ReconnectManager
-from .config import ElevenLabsASRConfig
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+    ModuleType,
+)
+from ten_ai_base.struct import ASRWord
+from ten_ai_base.utils import redact_url
+from ten_runtime import AsyncTenEnv, AudioFrame, Data
+
+from .config import DEFAULT_MODEL_ID, ElevenLabsASRConfig
+from .const import DUMP_FILE_NAME
 from .recognition import (
     ElevenLabsWSRecognition,
     ElevenLabsWSRecognitionCallback,
 )
+from .reconnect_manager import ReconnectManager
 
 
 class ElevenLabsASRExtension(
     AsyncASRBaseExtension, ElevenLabsWSRecognitionCallback
 ):
-    """ElevenLabs ASR Extension"""
+    """ElevenLabs Scribe Realtime v2 ASR extension."""
+
+    _FATAL_VENDOR_CODES = {
+        "401",
+        "403",
+        "400",
+        "auth_error",
+        "quota_exceeded",
+        "unaccepted_terms",
+        "invalid_request",
+        "input_error",
+        "invalid_response",
+    }
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.recognition: Optional[ElevenLabsWSRecognition] = None
-        self.config: Optional[ElevenLabsASRConfig] = None
-        self.audio_dumper: Optional[Dumper] = None
-        self.sent_user_audio_duration_ms_before_last_reset: int = 0
-        self.last_finalize_timestamp: int = 0
+        self.recognition: ElevenLabsWSRecognition | None = None
+        self.config: ElevenLabsASRConfig | None = None
+        self.audio_dumper: Dumper | None = None
+        self.reconnect_manager: ReconnectManager | None = None
 
-        self.reconnect_manager: Optional[ReconnectManager] = None
+        self.sent_user_audio_duration_ms_before_last_reset = 0
+        self._connection_epoch = 0
+        self._replacing = False
+        self._stopping = False
+        self._fatal_error = False
+        self._init_failed = False
+        self._reconnect_task: asyncio.Task | None = None
+        self._reported_error_epochs: set[int] = set()
+        self._vendor_session_id: str | None = None
 
-    @override
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_deinit(ten_env)
-        try:
-            if self.audio_dumper:
-                await self.audio_dumper.stop()
-                self.audio_dumper = None
-
-            if self.reconnect_manager:
-                self.reconnect_manager = None
-
-            self.config = None
-
-        except Exception as e:
-            ten_env.log_error(f"Error during deinit: {e}")
+        self._finalize_lock = asyncio.Lock()
+        self._finalize_request_lock = asyncio.Lock()
+        self._finalize_event = asyncio.Event()
+        self._finalize_pending = False
+        self._finalize_completed = False
+        self._pending_committed: deque[dict[str, Any]] = deque()
+        # Retain fallback commits for delayed timestamp pairing, including
+        # repeated text. Bound the history if enrichment messages are lost.
+        self._timestamp_fallbacks: deque[str] = deque(maxlen=256)
+        self._pending_timestamp_task: asyncio.Task | None = None
+        self._finalize_metadata: dict[str, Any] | None = None
 
     @override
     def vendor(self) -> str:
-        """Get ASR vendor name"""
         return "elevenlabs"
+
+    @override
+    def vendor_metadata(self) -> dict[str, Any]:
+        if self.config is None:
+            return {}
+        params = self.config.params
+        result = {
+            "api_key": params.get("api_key"),
+            "token": params.get("token"),
+            "url": redact_url(params.get("ws_url", "")),
+            "model": params.get("model_id", DEFAULT_MODEL_ID),
+            "audio_format": params.get("audio_format"),
+            "language_code": params.get("language_code"),
+        }
+        return {key: value for key, value in result.items() if value}
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
-
         self.reconnect_manager = ReconnectManager(logger=ten_env)
 
         config_json, _ = await ten_env.get_property_to_json("")
         try:
-            self.config = ElevenLabsASRConfig().model_validate_json(config_json)
+            self.config = ElevenLabsASRConfig.model_validate_json(config_json)
+            self.config.validate_config()
             ten_env.log_info(
-                f"ElevenLabs ASR config: {self.config.to_json()}",
+                f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
             if self.config.dump:
@@ -91,346 +123,643 @@ class ElevenLabsASRExtension(
                 )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
-
-        except Exception as e:
-            ten_env.log_error(f"Invalid ElevenLabs ASR config: {e}")
+        except Exception as exc:
+            self._init_failed = True
+            ten_env.log_error(f"Invalid ElevenLabs ASR config: {exc}")
             self.config = ElevenLabsASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
                     module=ModuleType.ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=str(e),
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(exc),
                 ),
             )
 
     @override
-    async def start_connection(self) -> None:
-        """Start ASR connection"""
-        assert self.config is not None
-        self.ten_env.log_info("Starting ElevenLabs ASR connection")
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        self._stopping = True
+        self._cancel_timestamp_task()
+        await self._cancel_reconnect_task()
+        await super().on_stop(ten_env)
 
+    @override
+    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        self._stopping = True
+        self._fatal_error = True
+        self._cancel_timestamp_task()
+        await self._cancel_reconnect_task()
         try:
-            if (
-                not self.config.params.get("api_key")
-                or self.config.params.get("api_key").strip() == ""
-            ):
-                error_msg = "ElevenLabs API key is required but not provided or is empty"
-                self.ten_env.log_error(error_msg)
-                await self.send_asr_error(
-                    ModuleError(
-                        module=ModuleType.ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=error_msg,
-                    ),
-                )
-                return
+            await self.stop_connection()
+            if self.audio_dumper:
+                await self.audio_dumper.stop()
+                self.audio_dumper = None
+        finally:
+            await super().on_deinit(ten_env)
+            self.reconnect_manager = None
+            self.config = None
 
-            if (
-                not self.config.params.get("ws_url")
-                or self.config.params.get("ws_url").strip() == ""
-            ):
-                error_msg = (
-                    "ElevenLabs WS URL is required but not provided or is empty"
-                )
-                self.ten_env.log_error(error_msg)
-                await self.send_asr_error(
-                    ModuleError(
-                        module=ModuleType.ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=error_msg,
-                    ),
-                )
-                return
+    @override
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        """Preserve finalize metadata before the base dispatches the request."""
+        if data.get_name() == "asr_finalize":
+            async with self._finalize_request_lock:
+                metadata_json, error = data.get_property_to_json("metadata")
+                if not error and metadata_json:
+                    try:
+                        parsed = copy.deepcopy(json.loads(metadata_json))
+                        if isinstance(parsed, dict):
+                            self._finalize_metadata = parsed
+                    except (TypeError, ValueError):
+                        ten_env.log_warn(
+                            "ElevenLabs finalize metadata is not valid JSON"
+                        )
+                await super().on_data(ten_env, data)
+            return
+        await super().on_data(ten_env, data)
 
-            if self.is_connected():
-                await self.stop_connection()
+    @override
+    async def start_connection(self) -> None:
+        """Create a client and wait for the vendor session handshake."""
+        if self._stopping:
+            return
+        if self._init_failed or self._fatal_error:
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message="ElevenLabs connection disabled after a fatal error",
+            )
+            return
+        if self.config is None:
+            return
 
+        api_key = self.config.params.get("api_key", "")
+        token = self.config.params.get("token", "")
+        if not (
+            isinstance(api_key, str)
+            and api_key.strip()
+            or isinstance(token, str)
+            and token.strip()
+        ):
+            await self._report_connect_failure(
+                "missing_credentials",
+                "ElevenLabs API key or token is required",
+                fatal=True,
+            )
+            return
+
+        self._replacing = True
+        self._connection_epoch += 1
+        generation = self._connection_epoch
+        old = self.recognition
+        self.recognition = None
+        if old is not None:
+            await old.close(notify=False)
+
+        client = ElevenLabsWSRecognition(
+            audio_timeline=self.audio_timeline,
+            ten_env=self.ten_env,
+            params=self.config.params,
+            callback=self,
+            generation=generation,
+        )
+        self.recognition = client
+        try:
+            await client.start(
+                timeout=float(self.config.params.get("connect_timeout", 10))
+            )
+            if self.recognition is not client or not client.is_connected():
+                raise ConnectionError("ElevenLabs session is no longer active")
             self.ten_env.log_info(
-                f"ElevenLabs ASR config: {self.config.to_json()}"
+                "vendor_status_changed: ElevenLabs session ready",
+                category=LOG_CATEGORY_VENDOR,
             )
-            self.recognition = ElevenLabsWSRecognition(
-                audio_timeline=self.audio_timeline,
-                ten_env=self.ten_env,
-                params=self.config.params,
-                callback=self,
-            )
+        except Exception as exc:
+            if self.recognition is client:
+                self.recognition = None
+            code = self._vendor_code_from_exception(exc)
+            fatal = code in self._FATAL_VENDOR_CODES
+            await self._report_connect_failure(code, str(exc), fatal=fatal)
+        finally:
+            self._replacing = False
+            # The base ASR consumer drains buffered frames before the next
+            # live frame. Keeping that drain in one task preserves PCM dump
+            # ordering and prevents concurrent writes to the async dumper.
 
-            await self.recognition.start()
-            self.ten_env.log_info(
-                "ElevenLabs ASR connection started successfully"
-            )
-
-        except Exception as e:
-            self.ten_env.log_error(
-                f"Failed to start ElevenLabs ASR connection: {e}"
-            )
+    async def _report_connect_failure(
+        self, code: str, message: str, *, fatal: bool
+    ) -> None:
+        if fatal:
+            self._fatal_error = True
+        generation_was_reported = (
+            self._connection_epoch in self._reported_error_epochs
+        )
+        vendor_info = ModuleErrorVendorInfo(
+            vendor=self.vendor(), code=str(code), message=message
+        )
+        if not generation_was_reported:
             await self.send_asr_error(
                 ModuleError(
                     module=ModuleType.ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=str(e),
-                )
+                    code=(
+                        ModuleErrorCode.FATAL_ERROR.value
+                        if fatal
+                        else ModuleErrorCode.NON_FATAL_ERROR.value
+                    ),
+                    message=message,
+                ),
+                vendor_info,
             )
+        await self.on_disconnected(
+            code=(
+                ModuleErrorCode.FATAL_ERROR.value
+                if fatal
+                else ModuleErrorCode.NON_FATAL_ERROR.value
+            ),
+            message=message,
+            vendor_info=vendor_info,
+        )
+        if not fatal and not self._stopping:
+            self._schedule_reconnect()
+
+    @staticmethod
+    def _vendor_code_from_exception(exc: Exception) -> str:
+        if isinstance(exc, InvalidStatus):
+            return str(exc.response.status_code)
+
+        text = str(exc)
+        if ":" in text:
+            return text.split(":", 1)[0].strip()
+        return exc.__class__.__name__
 
     @override
-    async def on_open(self) -> None:
-        """Handle callback when connection is established"""
-        self.ten_env.log_info(
-            "vendor_status_changed: on_open",
-            category=LOG_CATEGORY_VENDOR,
-        )
+    async def on_open(
+        self,
+        generation: int | None = None,
+        session_id: str | None = None,
+        connect_delay_ms: int | None = None,
+    ) -> None:
+        if generation is not None and generation != self._connection_epoch:
+            return
+        # A reconnect creates a new vendor session. Any committed transcript
+        # waiting for delayed timestamps belongs to the previous session and
+        # must not be emitted with the new session's metadata.
+        self._cancel_timestamp_task()
+        self._pending_committed.clear()
+        self._timestamp_fallbacks.clear()
+        self._vendor_session_id = session_id
         if self.reconnect_manager:
             self.reconnect_manager.mark_connection_successful()
-
-            self.sent_user_audio_duration_ms_before_last_reset += (
-                self.audio_timeline.get_total_user_audio_duration()
-            )
-            self.ten_env.log_info(
-                f"ElevenLabs ASR sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
-            )
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
         self.audio_timeline.reset()
+        await self.on_connected()
+        if connect_delay_ms is not None:
+            await self.send_connect_delay_metrics(connect_delay_ms)
 
     @override
-    async def on_result(self, message_data: Dict[str, Any]) -> None:
-        """Handle recognition result callback"""
+    async def on_result(
+        self,
+        message_data: dict[str, Any],
+        generation: int | None = None,
+    ) -> None:
+        if generation is not None and generation != self._connection_epoch:
+            return
+        message_type = message_data.get("message_type", "")
+        text = str(message_data.get("text", "") or "")
         self.ten_env.log_debug(
-            f"ElevenLabs ASR result: {message_data}",
+            f"vendor_result: {message_type} text_length={len(text)}",
             category=LOG_CATEGORY_TRANSCRIPTS,
         )
-        try:
-            message_type = message_data.get("message_type", "")
-            text = message_data.get("text", "")
+
+        if message_type == "partial_transcript":
+            if text:
+                await self._emit_result(message_data, final=False)
+            return
+
+        if message_type == "committed_transcript":
             if not text:
+                if self._finalize_pending:
+                    await self._complete_finalize()
                 return
-
-            # Determine if this is a final result
-            is_final = message_type in ["committed_transcript_with_timestamps"]
-
-            # Handle timestamps if available
-            start_ms = 0
-            end_ms = 0
-            duration_ms = 0
-
-            if message_type == "committed_transcript_with_timestamps":
-                words = message_data.get("words", [])
-                if words:
-                    # Convert seconds to milliseconds for ElevenLabs timestamps
-                    start_ms = int(words[0].get("start", 0) * 1000)
-                    end_ms = int(words[-1].get("end", 0) * 1000)
-                    duration_ms = end_ms - start_ms if end_ms > start_ms else 0
-
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(start_ms)
-                + self.sent_user_audio_duration_ms_before_last_reset
+            pending = dict(message_data)
+            pending["_connection_epoch"] = (
+                generation if generation is not None else self._connection_epoch
             )
-
-            self.ten_env.log_debug(
-                f"ElevenLabs ASR result: {text}, is_final: {is_final}, "
-                f"start_ms: {actual_start_ms}, duration_ms: {duration_ms}",
-                category=LOG_CATEGORY_TRANSCRIPTS,
-            )
-
-            if self.config is not None:
-                await self._handle_asr_result(
-                    text=text,
-                    final=is_final,
-                    start_ms=actual_start_ms,
-                    duration_ms=duration_ms,
-                    language=self.config.normalized_language,
-                )
+            self._pending_committed.append(pending)
+            if self._timestamps_enabled():
+                self._replace_timestamp_task()
             else:
-                self.ten_env.log_error(
-                    "Cannot handle ASR result: config is None"
-                )
+                await self._emit_pending_committed()
+            return
 
-        except Exception as e:
-            self.ten_env.log_error(
-                f"Error processing ElevenLabs ASR result: {e}"
+        if message_type == "committed_transcript_with_timestamps":
+            if not text:
+                if self._finalize_pending:
+                    await self._complete_finalize()
+                return
+            if text in self._timestamp_fallbacks:
+                self._timestamp_fallbacks.remove(text)
+                return
+            for candidate in self._pending_committed:
+                if candidate.get("text") == text:
+                    self._pending_committed.remove(candidate)
+                    break
+            else:
+                # Every enrichment follows a committed_transcript. An
+                # unmatched event has already been delivered or discarded.
+                return
+            if not self._pending_committed:
+                self._cancel_timestamp_task()
+            combined = dict(message_data)
+            combined.setdefault("text", text)
+            await self._emit_result(combined, final=True)
+            return
+
+    def _timestamps_enabled(self) -> bool:
+        assert self.config is not None
+        params = self.config.params
+        return bool(
+            params.get("include_timestamps")
+            or params.get("include_language_detection")
+        )
+
+    def _replace_timestamp_task(self) -> None:
+        if (
+            self._pending_timestamp_task
+            and not self._pending_timestamp_task.done()
+        ):
+            return
+        self._pending_timestamp_task = asyncio.create_task(
+            self._emit_pending_after_timestamp_window()
+        )
+
+    def _cancel_timestamp_task(self) -> None:
+        task = self._pending_timestamp_task
+        self._pending_timestamp_task = None
+        if task and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+
+    async def _emit_pending_after_timestamp_window(self) -> None:
+        try:
+            await asyncio.sleep(0.25)
+            await self._emit_pending_committed()
+        except asyncio.CancelledError:
+            return
+
+    async def _emit_pending_committed(self) -> None:
+        while self._pending_committed:
+            pending = self._pending_committed.popleft()
+            if pending.get("_connection_epoch") != self._connection_epoch:
+                continue
+            if pending.get("text"):
+                if self._timestamps_enabled():
+                    self._timestamp_fallbacks.append(pending["text"])
+                await self._emit_result(pending, final=True)
+
+    def _result_metadata(self) -> dict[str, Any]:
+        metadata = (
+            copy.deepcopy(self.metadata) if self.metadata is not None else {}
+        )
+        if not isinstance(metadata, dict):
+            metadata = {}
+        if "session_id" not in metadata and self.session_id is not None:
+            metadata["session_id"] = self.session_id
+        asr_info = metadata.get("asr_info")
+        if not isinstance(asr_info, dict):
+            asr_info = {}
+        asr_info.update(
+            {
+                "vendor": self.vendor(),
+                "model": self.config.params.get("model_id", DEFAULT_MODEL_ID),
+                "vendor_session_id": self._vendor_session_id,
+            }
+        )
+        metadata["asr_info"] = asr_info
+        return metadata
+
+    async def _emit_result(
+        self, message_data: dict[str, Any], *, final: bool
+    ) -> None:
+        text = str(message_data.get("text", "") or "")
+        if not text:
+            if final and self._finalize_pending:
+                await self._complete_finalize()
+            return
+
+        words = self._parse_words(message_data.get("words", []))
+        if words:
+            start_ms = words[0].start_ms
+            end_ms = max(word.start_ms + word.duration_ms for word in words)
+            duration_ms = max(0, end_ms - start_ms)
+        else:
+            start_ms = 0
+            duration_ms = 0
+        actual_start_ms = int(
+            self.audio_timeline.get_audio_duration_before_time(start_ms)
+            + self.sent_user_audio_duration_ms_before_last_reset
+        )
+        for word in words:
+            word.start_ms = max(
+                0,
+                int(
+                    self.audio_timeline.get_audio_duration_before_time(
+                        word.start_ms
+                    )
+                    + self.sent_user_audio_duration_ms_before_last_reset
+                ),
             )
+
+        assert self.config is not None
+        language = self.config.normalize_language_code(
+            message_data.get("language_code")
+            or self.config.params.get("language_code")
+        )
+        metadata = self._result_metadata()
+        result = ASRResult(
+            text=text,
+            final=final,
+            start_ms=max(0, actual_start_ms),
+            duration_ms=max(0, duration_ms),
+            language=language,
+            words=words,
+            metadata=metadata,
+        )
+        await self.send_asr_result(result)
+        if final and self._finalize_pending and not self._pending_committed:
+            await self._complete_finalize()
+
+    @staticmethod
+    def _parse_words(raw_words: Any) -> list[ASRWord]:
+        if not isinstance(raw_words, list):
+            return []
+        words: list[ASRWord] = []
+        for raw in raw_words:
+            if not isinstance(raw, dict) or raw.get("type") not in (
+                None,
+                "word",
+            ):
+                continue
+            word = str(raw.get("text", "") or "")
+            if not word:
+                continue
+            try:
+                start = max(0, int(float(raw.get("start", 0)) * 1000))
+                end = max(start, int(float(raw.get("end", 0)) * 1000))
+            except (TypeError, ValueError):
+                continue
+            words.append(
+                ASRWord(
+                    word=word,
+                    start_ms=start,
+                    duration_ms=end - start,
+                    stable=True,
+                )
+            )
+        return words
 
     @override
     async def on_error(
-        self, error_msg: str, error_code: Optional[str] = None
+        self,
+        error_msg: str,
+        error_code: Optional[str] = None,
+        generation: int | None = None,
     ) -> None:
-        """Handle error callback"""
+        if generation is not None and generation != self._connection_epoch:
+            return
+        code = str(error_code or "unknown")
+        if generation is not None and generation in self._reported_error_epochs:
+            return
+        if generation is not None:
+            self._reported_error_epochs.add(generation)
+        fatal = code in self._FATAL_VENDOR_CODES
+        if fatal:
+            self._fatal_error = True
         self.ten_env.log_error(
-            f"vendor_error: code: {error_code}, reason: {error_msg}",
+            f"vendor_error: code: {code}, reason: {error_msg}",
             category=LOG_CATEGORY_VENDOR,
         )
-
         await self.send_asr_error(
             ModuleError(
                 module=ModuleType.ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                code=(
+                    ModuleErrorCode.FATAL_ERROR.value
+                    if fatal
+                    else ModuleErrorCode.NON_FATAL_ERROR.value
+                ),
                 message=error_msg,
             ),
             ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=error_code or "unknown",
-                message=error_msg,
+                vendor=self.vendor(), code=code, message=error_msg
             ),
         )
+        if fatal:
+            await self.on_disconnected(
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                message=error_msg,
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor(), code=code, message=error_msg
+                ),
+            )
 
     @override
-    async def on_close(self) -> None:
-        """Handle callback when connection is closed"""
-        self.ten_env.log_info(
-            "vendor_status_changed: on_close",
-            category=LOG_CATEGORY_VENDOR,
-        )
-
-        if not self.stopped:
-            await self._handle_reconnect()
-
-    @override
-    async def on_event(self, message_data: Dict[str, Any]) -> None:
-        """Handle callback when event is received"""
-        self.ten_env.log_info(
-            "vendor_status_changed: on_event message_data: {message_data}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-
-    @override
-    async def finalize(self, session_id: Optional[str]) -> None:
-        """Finalize recognition"""
-        assert self.config is not None
-
-        self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(
-            f"ElevenLabs ASR finalize start at {self.last_finalize_timestamp}"
-        )
-
-        if self.recognition and self.is_connected():
-            await self.recognition.send_final()
-
-    async def _handle_asr_result(
+    async def on_close(
         self,
-        text: str,
-        final: bool,
-        start_ms: int = 0,
-        duration_ms: int = 0,
-        language: str = "",
-    ):
-        """Process ASR recognition result"""
-        assert self.config is not None
-
-        if final:
-            await self._finalize_end()
-
-        asr_result = ASRResult(
-            text=text,
-            final=final,
-            start_ms=start_ms,
-            duration_ms=duration_ms,
-            language=language,
-            words=[],
-        )
-
-        await self.send_asr_result(asr_result)
-
-    async def _handle_reconnect(self):
-        """Handle reconnection"""
-        if not self.reconnect_manager:
-            self.ten_env.log_error("ReconnectManager not initialized")
+        vendor_code: int = 0,
+        vendor_message: str = "closed",
+        generation: int | None = None,
+        _normal: bool = False,
+    ) -> None:
+        if generation is not None and generation != self._connection_epoch:
             return
+        if self._stopping or self._replacing:
+            return
+        await self.on_disconnected(
+            code=vendor_code,
+            message=vendor_message,
+            vendor_info=ModuleErrorVendorInfo(
+                vendor=self.vendor(),
+                code=str(vendor_code),
+                message=vendor_message,
+            ),
+        )
+        if self._finalize_pending:
+            await self._complete_finalize()
+        if not self._fatal_error:
+            self._schedule_reconnect()
 
-        if not self.reconnect_manager.can_retry():
-            self.ten_env.log_warn("No more reconnection attempts allowed")
-            await self.send_asr_error(
-                ModuleError(
-                    module=ModuleType.ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message="No more reconnection attempts allowed",
+    @override
+    async def on_event(
+        self,
+        message_data: dict[str, Any],
+        generation: int | None = None,
+    ) -> None:
+        if generation is not None and generation != self._connection_epoch:
+            return
+        if message_data.get("message_type") == "warning":
+            self.ten_env.log_warn(
+                f"ElevenLabs warning: {message_data.get('warning', '')}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+
+    @override
+    async def finalize(self, _session_id: str | None) -> None:
+        async with self._finalize_lock:
+            self._finalize_pending = True
+            self._finalize_completed = False
+            self._finalize_event.clear()
+            self._cancel_timestamp_task()
+            try:
+                if not self.recognition or not self.is_connected():
+                    await self._complete_finalize()
+                    return
+                if not await self.recognition.send_final():
+                    await self._complete_finalize()
+                    return
+                timeout = float(
+                    (self.config.params if self.config else {}).get(
+                        "finalize_timeout", 5
+                    )
                 )
-            )
+                try:
+                    await asyncio.wait_for(
+                        self._finalize_event.wait(), timeout=timeout
+                    )
+                except asyncio.TimeoutError:
+                    self.ten_env.log_warn(
+                        "ElevenLabs finalize timed out; completing handshake"
+                    )
+                    await self._complete_finalize()
+            except Exception as exc:
+                self.ten_env.log_error(f"ElevenLabs finalize failed: {exc}")
+                await self._complete_finalize()
+
+    async def _complete_finalize(self) -> None:
+        if not self._finalize_pending or self._finalize_completed:
             return
-
-        success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection,
-            error_handler=self.send_asr_error,
-        )
-
-        if success:
-            self.ten_env.log_debug(
-                "Reconnection attempt initiated successfully"
-            )
-        else:
-            info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(
-                f"Reconnection attempt failed. Status: {info}"
-            )
-
-    async def _finalize_end(self) -> None:
-        """Handle finalization end logic"""
-        if self.last_finalize_timestamp != 0:
-            timestamp = int(datetime.now().timestamp() * 1000)
-            latency = timestamp - self.last_finalize_timestamp
-            self.ten_env.log_debug(
-                f"ElevenLabs ASR finalize end at {timestamp}, latency: {latency}ms"
-            )
-            self.last_finalize_timestamp = 0
-            await self.send_asr_finalize_end()
-
-    async def stop_connection(self) -> None:
-        """Stop ASR connection"""
+        self._finalize_completed = True
+        self._finalize_pending = False
+        self._cancel_timestamp_task()
         try:
-            if self.recognition:
-                await self.recognition.close()
-
-            self.ten_env.log_info("ElevenLabs ASR connection stopped")
-
-        except Exception as e:
+            await self._emit_pending_committed()
+        except Exception as exc:
             self.ten_env.log_error(
-                f"Error stopping ElevenLabs ASR connection: {e}"
+                f"ElevenLabs pending final result failed: {exc}"
+            )
+        saved_metadata = self.metadata
+        if self._finalize_metadata is not None:
+            self.metadata = copy.deepcopy(self._finalize_metadata)
+        try:
+            await self.send_asr_finalize_end()
+        except Exception as exc:
+            self.ten_env.log_error(
+                f"ElevenLabs finalize-end delivery failed: {exc}"
             )
         finally:
-            self.recognition = None
+            self.metadata = saved_metadata
+            self._finalize_metadata = None
+            self._finalize_event.set()
+
+    async def _handle_reconnect(self) -> None:
+        if not self.reconnect_manager:
+            return
+        try:
+            while not self._stopping and not self._fatal_error:
+                if not self.reconnect_manager.can_retry():
+                    self._fatal_error = True
+                    await self.send_asr_error(
+                        ModuleError(
+                            module=ModuleType.ASR,
+                            code=ModuleErrorCode.FATAL_ERROR.value,
+                            message="ElevenLabs reconnect attempts exhausted",
+                        ),
+                        ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code="reconnect_exhausted",
+                            message="ElevenLabs reconnect attempts exhausted",
+                        ),
+                    )
+                    return
+                await self.reconnect_manager.handle_reconnect(
+                    self.start_connection
+                )
+                if self.is_connected():
+                    return
+        finally:
+            if self._reconnect_task is asyncio.current_task():
+                self._reconnect_task = None
+
+    def _schedule_reconnect(self) -> None:
+        if self._stopping or self._fatal_error:
+            return
+        if self._reconnect_task and not self._reconnect_task.done():
+            return
+        self._reconnect_task = asyncio.create_task(self._handle_reconnect())
+
+    async def _cancel_reconnect_task(self) -> None:
+        task = self._reconnect_task
+        self._reconnect_task = None
+        if task and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+    @override
+    async def stop_connection(self) -> None:
+        self._replacing = True
+        self._connection_epoch += 1
+        client = self.recognition
+        self.recognition = None
+        try:
+            if self._finalize_pending:
+                await self._complete_finalize()
+            if client:
+                await client.close(notify=False)
+        finally:
+            self._replacing = False
 
     @override
     def is_connected(self) -> bool:
-        """Check connection status"""
-        is_connected = (
-            self.recognition is not None and self.recognition.is_connected()
+        return (
+            not self._replacing
+            and self.recognition is not None
+            and self.recognition.is_connected()
         )
-        return is_connected
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        """Buffer strategy configuration"""
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+        return ASRBufferConfigModeKeep(byte_limit=10 * 1024 * 1024)
 
     @override
     def input_audio_sample_rate(self) -> int:
-        """Input audio sample rate"""
-        assert self.config is not None
+        if self.config is None:
+            return 16000
         return int(self.config.params.get("sample_rate", 16000))
 
     @override
+    def input_audio_channels(self) -> int:
+        return 1
+
+    @override
+    def input_audio_sample_width(self) -> int:
+        return 2
+
+    @override
     async def send_audio(
-        self, frame: AudioFrame, session_id: Optional[str]
+        self, frame: AudioFrame, _session_id: str | None
     ) -> bool:
-        """Send audio data"""
-        assert self.config is not None
-
-        if not self.recognition:
-            self.ten_env.log_error("ElevenLabs ASR recognition not initialized")
+        if not self.recognition or not self.is_connected():
             return False
-
         buf = None
         try:
             buf = frame.lock_buf()
             audio_data = bytes(buf)
-
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
-            await self.recognition.send_audio_frame(audio_data)
-
-            return True
-
-        except Exception as e:
-            self.ten_env.log_error(
-                f"Error sending audio to ElevenLabs ASR: {e}"
-            )
+            return await self.recognition.send_audio_frame(audio_data)
+        except Exception as exc:
+            self.ten_env.log_error(f"Error sending audio to ElevenLabs: {exc}")
             return False
         finally:
             if buf is not None:

@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "elevenlabs_asr_python",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "dependencies": [
     {
       "type": "system",
@@ -22,10 +22,19 @@
     ],
     "property": {
       "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
         "params": {
           "type": "object",
           "properties": {
             "api_key": {
+              "type": "string"
+            },
+            "token": {
               "type": "string"
             },
             "ws_url": {
@@ -43,11 +52,56 @@
             "language_code": {
               "type": "string"
             },
-            "dump": {
+            "include_timestamps": {
               "type": "bool"
             },
-            "dump_path": {
+            "include_language_detection": {
+              "type": "bool"
+            },
+            "secondary_languages": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "commit_strategy": {
               "type": "string"
+            },
+            "vad_threshold": {
+              "type": "float64"
+            },
+            "vad_silence_threshold_secs": {
+              "type": "float64"
+            },
+            "min_speech_duration_ms": {
+              "type": "int64"
+            },
+            "min_silence_duration_ms": {
+              "type": "int64"
+            },
+            "keyterms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "no_verbatim": {
+              "type": "bool"
+            },
+            "filter_background_audio": {
+              "type": "bool"
+            },
+            "keepalive_interval_ms": {
+              "type": "int64"
+            },
+            "enable_logging": {
+              "type": "bool"
+            },
+            "connect_timeout": {
+              "type": "int64"
+            },
+            "finalize_timeout": {
+              "type": "int64"
             }
           }
         }

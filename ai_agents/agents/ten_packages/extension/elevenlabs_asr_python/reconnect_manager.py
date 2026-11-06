@@ -1,50 +1,44 @@
 import asyncio
-from typing import Callable, Awaitable, Optional
-from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleType
+from typing import Awaitable, Callable, Optional
 
 
 class ReconnectManager:
-    """
-    Manages reconnection attempts with fixed retry limit and exponential backoff strategy.
+    """Own one bounded-backoff reconnect policy.
 
-    Features:
-    - Fixed retry limit (default: 5 attempts)
-    - Exponential backoff strategy: 300ms, 600ms, 1.2s, 2.4s, 4.8s
-    - Automatic counter reset after successful connection
-    - Detailed logging for monitoring and debugging
+    ``max_attempts=0`` means retry indefinitely.  A reconnect loop owned by the
+    extension calls this manager once per attempt; this class never starts a
+    second loop or emits framework errors on its own.
     """
 
     def __init__(
         self,
-        max_attempts: int = 5,
-        base_delay: float = 0.3,  # 300 milliseconds
+        max_attempts: int = 0,
+        base_delay: float = 0.5,
+        max_delay: float = 4.0,
         logger=None,
     ):
+        if max_attempts < 0:
+            raise ValueError("max_attempts must be >= 0")
+        if base_delay <= 0 or max_delay < base_delay:
+            raise ValueError("invalid reconnect delay configuration")
         self.max_attempts = max_attempts
         self.base_delay = base_delay
+        self.max_delay = max_delay
         self.logger = logger
-
-        # State tracking
         self.attempts = 0
-        self._connection_successful = False
+        self._next_delay = base_delay
 
-    def reset_counter(self):
-        """Reset reconnection counter"""
+    def reset_counter(self) -> None:
         self.attempts = 0
-        if self.logger:
-            self.logger.log_debug("Reconnect counter reset")
+        self._next_delay = self.base_delay
 
-    def mark_connection_successful(self):
-        """Mark connection as successful and reset counter"""
-        self._connection_successful = True
+    def mark_connection_successful(self) -> None:
         self.reset_counter()
 
     def can_retry(self) -> bool:
-        """Check if more reconnection attempts are allowed"""
-        return self.attempts < self.max_attempts
+        return self.max_attempts == 0 or self.attempts < self.max_attempts
 
-    def get_attempts_info(self) -> dict:
-        """Get current reconnection attempts information"""
+    def get_attempts_info(self) -> dict[str, int | bool]:
         return {
             "current_attempts": self.attempts,
             "max_attempts": self.max_attempts,
@@ -54,75 +48,30 @@ class ReconnectManager:
     async def handle_reconnect(
         self,
         connection_func: Callable[[], Awaitable[None]],
-        error_handler: Optional[
-            Callable[[ModuleError], Awaitable[None]]
-        ] = None,
+        error_handler: Optional[Callable[[Exception], Awaitable[None]]] = None,
     ) -> bool:
-        """
-        Handle a single reconnection attempt with backoff delay.
-
-        Args:
-            connection_func: Async function to establish connection
-            error_handler: Optional async function to handle errors
-
-        Returns:
-            True if connection function executed successfully, False if attempt failed
-            Note: Actual connection success is determined by callback calling mark_connection_successful()
-        """
+        """Wait with backoff and run exactly one connection attempt."""
         if not self.can_retry():
-            if self.logger:
-                self.logger.log_error(
-                    f"Maximum reconnection attempts ({self.max_attempts}) reached. No more attempts allowed."
-                )
-            if error_handler:
-                await error_handler(
-                    ModuleError(
-                        module=ModuleType.ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=f"Failed to reconnect after {self.max_attempts} attempts",
-                    )
-                )
             return False
 
-        self._connection_successful = False
         self.attempts += 1
-
-        # Calculate exponential backoff delay: 2^(attempts-1) * base_delay
-        delay = self.base_delay * (2 ** (self.attempts - 1))
-
+        delay = self._next_delay
+        self._next_delay = min(delay * 2, self.max_delay)
         if self.logger:
             self.logger.log_warn(
-                f"Attempting reconnection #{self.attempts}/{self.max_attempts} "
-                f"after {delay} seconds delay..."
+                f"Attempting ElevenLabs reconnection #{self.attempts} "
+                f"after {delay:.2f} seconds"
             )
 
         try:
             await asyncio.sleep(delay)
             await connection_func()
-
-            # Connection function completed successfully
-            # Actual connection success will be determined by callback
-            if self.logger:
-                self.logger.log_debug(
-                    f"Connection function completed for attempt #{self.attempts}"
-                )
             return True
-
-        except Exception as e:
+        except Exception as exc:
             if self.logger:
-                self.logger.log_error(
-                    f"Reconnection attempt #{self.attempts} failed: {e}"
+                self.logger.log_warn(
+                    f"ElevenLabs reconnect attempt failed: {exc}"
                 )
-
-            # If this was the last attempt, send error
-            if self.attempts >= self.max_attempts:
-                if error_handler:
-                    await error_handler(
-                        ModuleError(
-                            module=ModuleType.ASR,
-                            code=ModuleErrorCode.FATAL_ERROR.value,
-                            message=f"All reconnection attempts failed. Last error: {str(e)}",
-                        )
-                    )
-
+            if error_handler:
+                await error_handler(exc)
             return False
