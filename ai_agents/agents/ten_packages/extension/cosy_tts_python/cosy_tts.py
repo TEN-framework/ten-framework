@@ -118,6 +118,8 @@ class _RawWord:
     word: str
     begin_ms: int
     end_ms: int
+    begin_index: int | None = None
+    end_index: int | None = None
 
 
 @dataclass(frozen=True)
@@ -444,7 +446,7 @@ class AsyncIteratorCallback(ResultCallback):
         self._pcm_samples = 0
         self._sentence_origin_samples: dict[int, int] = {}
         self._sentence_time_offset: dict[int, int] = {}
-        self._emitted_words: dict[int, int] = {}
+        self._emitted_word_keys: dict[int, set[tuple[Any, ...]]] = {}
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -616,26 +618,27 @@ class AsyncIteratorCallback(ResultCallback):
             index,
             self._pcm_samples,
         )
-        emitted = self._emitted_words.get(index, 0)
-        if len(words) < emitted:
-            # A shorter list would reopen published words; wait for the complete
-            # list in `sentence-end` instead of publishing them twice.
+        emitted_keys = self._emitted_word_keys.setdefault(index, set())
+        unseen = [
+            word for word in words if self._word_key(word) not in emitted_keys
+        ]
+        if not unseen:
             return
 
         limit = (
-            len(words)
+            len(unseen)
             if event_type == "sentence-end"
-            else max(0, len(words) - SUBTITLE_LAG_WORDS)
+            else max(0, len(unseen) - SUBTITLE_LAG_WORDS)
         )
-        if limit <= emitted:
+        if limit <= 0:
             return
 
         subtitle = self._build_subtitle(
             index,
-            words[emitted:limit],
+            unseen[:limit],
             origin_samples,
         )
-        self._emitted_words[index] = limit
+        emitted_keys.update(self._word_key(word) for word in unseen[:limit])
         if subtitle is None:
             return
         self._put(
@@ -667,6 +670,12 @@ class AsyncIteratorCallback(ResultCallback):
         return self._current_sentence_index
 
     @staticmethod
+    def _word_key(word: _RawWord) -> tuple[Any, ...]:
+        if word.begin_index is not None and word.end_index is not None:
+            return ("index", word.begin_index, word.end_index)
+        return ("timing", word.word, word.begin_ms, word.end_ms)
+
+    @staticmethod
     def _parse_words(raw_words: Any) -> list[_RawWord]:
         if not isinstance(raw_words, list):
             return []
@@ -682,7 +691,21 @@ class AsyncIteratorCallback(ResultCallback):
             end_ms = _as_milliseconds(entry.get("end_time"))
             if begin_ms is None or end_ms is None or end_ms < begin_ms:
                 continue
-            words.append(_RawWord(word=text, begin_ms=begin_ms, end_ms=end_ms))
+            begin_index = entry.get("begin_index")
+            end_index = entry.get("end_index")
+            if not isinstance(begin_index, int) or not isinstance(
+                end_index, int
+            ):
+                begin_index = end_index = None
+            words.append(
+                _RawWord(
+                    word=text,
+                    begin_ms=begin_ms,
+                    end_ms=end_ms,
+                    begin_index=begin_index,
+                    end_index=end_index,
+                )
+            )
         return words
 
     def _build_subtitle(
