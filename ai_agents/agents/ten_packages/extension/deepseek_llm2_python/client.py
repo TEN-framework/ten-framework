@@ -430,14 +430,14 @@ class DeepSeekChatClient:
             # Emit tool calls event (fire-and-forget)
             if tool_calls_list:
                 for tool_call in tool_calls_list:
-                    arguements = json.loads(tool_call["function"]["arguments"])
+                    arguments = json.loads(tool_call["function"]["arguments"])
                     self.ten_env.log_info("Emitting a tool call")
                     yield LLMResponseToolCall(
                         response_id=last_chat_completion.id,
                         id=last_chat_completion.id,
                         tool_call_id=tool_call["id"],
                         name=tool_call["function"]["name"],
-                        arguments=arguements,
+                        arguments=arguments,
                         created=last_chat_completion.created,
                     )
 
