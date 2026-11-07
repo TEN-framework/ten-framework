@@ -95,6 +95,7 @@ class SessionSettings:
     agora_token: str = ""
     egress_idle_reconnect_ms: int = EGRESS_IDLE_RECONNECT_MS
     source_timeline_only: bool = False
+    source_playback_profile: int = 0
 
 
 @dataclass
@@ -357,6 +358,25 @@ class SessionClient:
                         "SDK with source-timeline-only handshake support"
                     )
                 egress_options["source_timeline_only"] = True
+            if s.source_playback_profile:
+                profile_type = getattr(
+                    spatialreal, "RtcSourcePlaybackProfile", None
+                )
+                has_profile_field = "source_playback_profile" in getattr(
+                    AgoraEgressConfig, "__dataclass_fields__", {}
+                )
+                if not (
+                    s.source_timeline_only
+                    and has_profile_field
+                    and profile_type is not None
+                ):
+                    raise ValueError(
+                        "params.source_playback_profile requires source-only "
+                        "mode and a SpatialReal SDK with burst profile support"
+                    )
+                egress_options["source_playback_profile"] = profile_type(
+                    s.source_playback_profile
+                )
             egress = AgoraEgressConfig(
                 channel_name=s.channel,
                 token=build_agora_token(
@@ -398,7 +418,26 @@ class SessionClient:
             self._session = session
             await session.init()
             connection_id = await session.start()
+            if s.source_playback_profile:
+                capabilities = getattr(session, "capabilities", ())
+                if not isinstance(capabilities, tuple) or not all(
+                    capability in capabilities
+                    for capability in (
+                        "agora_source_timeline_only",
+                        "agora_source_burst_v1",
+                    )
+                ):
+                    raise spatialreal.UnsupportedConfigurationError(
+                        "Server did not confirm the requested source profile",
+                        connection_id=connection_id,
+                    )
         except Exception as exc:
+            if s.source_playback_profile and session is not None:
+                # start() may already have joined successfully before our
+                # confirmation check fails. Invalidate callbacks before close,
+                # and retain ownership until that close has completed.
+                self._gen += 1
+                await self._close_quietly(session)
             self._session = None
             decision, code, vendor = classify_start_error(
                 exc, source_timeline_only=s.source_timeline_only

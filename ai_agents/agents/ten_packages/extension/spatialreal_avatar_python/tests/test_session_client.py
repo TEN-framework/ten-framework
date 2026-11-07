@@ -218,6 +218,17 @@ class Harness:
         return [(r.code, r.vendor_code) for r in self.reports]
 
 
+class BurstFactory(FakeFactory):
+    def __init__(self, capabilities, **kwargs):
+        super().__init__(**kwargs)
+        self.capabilities = capabilities
+
+    def __call__(self, **kwargs):
+        session = super().__call__(**kwargs)
+        session.capabilities = tuple(self.capabilities(session.index))
+        return session
+
+
 @pytest.fixture
 def vt() -> VirtualTime:
     return VirtualTime()
@@ -444,6 +455,160 @@ async def test_source_timeline_requires_sdk_ack_support_not_just_field(
     assert h.codes == [(CODE_CONFIG, "ValueError")]
     assert factory.sessions == []
     assert vt.pending == []
+
+
+BURST_CAPABILITIES = (
+    "agora_source_timeline_only",
+    "agora_source_burst_v1",
+)
+
+
+@pytest.mark.asyncio
+async def test_burst_profile_reconnect_rechecks_real_confirmation(vt):
+    factory = BurstFactory(lambda i: BURST_CAPABILITIES if i == 0 else ())
+    h = Harness(
+        factory, vt, source_timeline_only=True, source_playback_profile=1
+    )
+    await h.client.start()
+    await settle()
+    assert h.client.connected
+    assert factory.last.kwargs["agora_egress"].source_playback_profile == 1
+    assert await h.client.send_audio(PCM)
+    first = factory.last
+    first.fire_close()
+    await settle()
+    await vt.advance(1)
+    assert not h.client.connected
+    assert h.connected_ids == [first.connection_id]
+    assert len(factory.sessions) == 2
+    assert factory.last.kwargs["agora_egress"].source_playback_profile == 1
+    assert factory.last.closes == 1
+    assert not await h.client.send_audio(PCM)
+    assert factory.last.sends == []
+    assert vt.pending == []
+    await h.client.stop()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "capabilities", [(), BURST_CAPABILITIES[:1], BURST_CAPABILITIES[1:]]
+)
+async def test_burst_post_start_refusal_closes_and_invalidates_callbacks(
+    vt, capabilities
+):
+    # Observe retained ownership and callback invalidation during awaited close.
+    # pylint: disable=protected-access
+    class ClosingFactory(BurstFactory):
+        def __call__(self, **kwargs):
+            session = super().__call__(**kwargs)
+            original_close = session.close
+            generation = h.client._gen
+
+            async def close():
+                assert h.client._session is session
+                assert h.client._stale(generation)
+                session.fire_error(sdk_error(4010))
+                await asyncio.sleep(0)
+                await original_close()
+
+            session.close = close
+            return session
+
+    # Capture the generation at creation, then observe ownership while close
+    # yields: callbacks must already be stale before the session is cleared.
+    factory = ClosingFactory(lambda _: capabilities)
+    h = Harness(
+        factory, vt, source_timeline_only=True, source_playback_profile=1
+    )
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "UnsupportedConfigurationError")]
+    assert not h.client.connected
+    assert h.connected_ids == []
+    assert h.client._session is None
+    assert factory.last.closes == 1
+    assert factory.last.sends == []
+    factory.last.fire_error(sdk_error(4503))
+    factory.last.fire_transport_frames()
+    await settle()
+    await vt.advance(300)
+    assert len(factory.sessions) == 1
+    assert len(h.reports) == 1
+    assert vt.pending == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("capabilities", [None, " ".join(BURST_CAPABILITIES)])
+async def test_burst_missing_or_malformed_capabilities_is_config_error(
+    vt, capabilities
+):
+    class UnconfirmedFactory(FakeFactory):
+        def __call__(self, **kwargs):
+            session = super().__call__(**kwargs)
+            session.capabilities = capabilities
+            return session
+
+    factory = UnconfirmedFactory()
+    h = Harness(
+        factory, vt, source_timeline_only=True, source_playback_profile=1
+    )
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "UnsupportedConfigurationError")]
+    assert factory.last.closes == 1
+    assert factory.last.sends == []
+    assert vt.pending == []
+
+
+@pytest.mark.asyncio
+async def test_burst_old_sdk_rejected_before_session_creation(vt, monkeypatch):
+    monkeypatch.delattr(session_client.spatialreal, "RtcSourcePlaybackProfile")
+    factory = FakeFactory()
+    h = Harness(
+        factory, vt, source_timeline_only=True, source_playback_profile=1
+    )
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "ValueError")]
+    assert factory.sessions == []
+    assert vt.pending == []
+
+
+@pytest.mark.asyncio
+async def test_zero_profile_omits_new_keyword_for_old_sdk(vt, monkeypatch):
+    class LegacyEgressConfig:
+        def __init__(self, **kwargs):
+            assert "source_playback_profile" not in kwargs
+            self.__dict__.update(kwargs)
+
+    monkeypatch.setattr(session_client, "AgoraEgressConfig", LegacyEgressConfig)
+    monkeypatch.delattr(session_client.spatialreal, "RtcSourcePlaybackProfile")
+    h = await connected_harness(vt, source_playback_profile=0)
+    assert h.reports == []
+    await h.client.stop()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("close_code, retries", [(1008, False), (4503, True)])
+async def test_burst_refusal_does_not_hide_transient_failure(
+    vt, close_code, retries
+):
+    factory = BurstFactory(
+        lambda _: BURST_CAPABILITIES,
+        start_error=lambda _: sdk_error(close_code),
+    )
+    h = Harness(
+        factory, vt, source_timeline_only=True, source_playback_profile=1
+    )
+    await h.client.start()
+    await settle()
+    assert factory.last.closes == 1
+    assert factory.last.sends == []
+    assert vt.pending == ([1] if retries else [])
+    assert h.codes == [
+        (CODE_NON_FATAL if retries else CODE_FATAL, str(close_code))
+    ]
+    await h.client.stop()
 
 
 @pytest.mark.asyncio

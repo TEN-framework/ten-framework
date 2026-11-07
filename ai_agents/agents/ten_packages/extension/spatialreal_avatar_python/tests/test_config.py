@@ -65,6 +65,29 @@ def test_source_timeline_only_rejects_non_boolean(invalid):
         resolve_config("room", params(source_timeline_only=invalid))
 
 
+def test_source_profile_defaults_zero_and_passes_burst():
+    assert resolve_config("room", params()).source_playback_profile == 0
+    cfg = resolve_config(
+        "room", params(source_timeline_only=True, source_playback_profile=1)
+    )
+    assert cfg.source_playback_profile == 1
+    assert SessionSettings(**asdict(cfg)).source_playback_profile == 1
+
+
+@pytest.mark.parametrize("invalid", [True, False, None, "1", 1.0, -1, 2, 999])
+def test_source_profile_rejects_invalid_values(invalid):
+    with pytest.raises(ValueError, match="params.source_playback_profile"):
+        resolve_config(
+            "room",
+            params(source_timeline_only=True, source_playback_profile=invalid),
+        )
+
+
+def test_source_profile_requires_source_only():
+    with pytest.raises(ValueError, match="source_timeline_only"):
+        resolve_config("room", params(source_playback_profile=1))
+
+
 def test_agora_channel_in_params_overrides_channel():
     cfg = resolve_config("injected", params(agora_channel="explicit"))
     assert cfg.channel == "explicit"

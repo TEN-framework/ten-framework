@@ -73,6 +73,7 @@ which holds everything the operator sets. Defaults are the package
 | `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL (test: `wss://test-driven.spatialreal.dev/v2/driveningress`). |
 | `params.sample_rate` | — | `24000` | One of 8000, 16000, 22050, 24000, 32000, 44100, 48000. |
 | `params.source_timeline_only` | — | `false` | Boolean opt-in only for source-audio viewers with client-managed entry. Requires the matching SDK and server handshake capability. |
+| `params.source_playback_profile` | — | `0` | Integer 0 retains the existing profile. Integer 1 requests `BOUNDED_BURST_V1`; requires source-only mode, a compatible Python SDK and independently opted-in viewers. |
 | `params.egress_idle_reconnect_ms` | — | `1080000` | Idle time after which the session is reconnected so the avatar stays in the channel; must stay below the server's inactivity timeout (20 min today). |
 | `params.agora_uid` | — | `""` | **Required.** Avatar uid in the channel; must parse as a non-zero integer. |
 | `params.agora_token` | — | `""` | Used verbatim when set; otherwise a token is minted per connect. |
@@ -94,6 +95,23 @@ missing confirmation is a configuration error with no reconnect loop. Ordinary
 transport failures still use the existing retry policy. No new PyPI release is
 required for the diagnostic image; pin the reviewed SDK source revision when
 building it.
+
+The optional bounded-burst profile is a pending shared-proto contract, not a
+released SDK requirement for existing graphs. Set `source_playback_profile: 1`
+only with `source_timeline_only: true` and a reviewed Python SDK build exporting
+`RtcSourcePlaybackProfile`. The SDK and this extension require both actual
+confirmation capabilities, `agora_source_timeline_only` and
+`agora_source_burst_v1`, before connecting the sender. A missing confirmation
+closes the session and reports a configuration error without retry or fallback.
+Every reconnect checks again. Profile zero omits the new SDK keyword, preserving
+compatibility with older SDKs. Booleans, strings and unknown profiles are invalid.
+
+Room viewers must separately select the same profile; neither TEN's `/start`
+HTTP response nor a publisher acknowledgement proves viewer compatibility.
+Audio input, sample rates, sender/pacer timing, End and interruption ordering
+are unchanged. The shared-proto merge/tag and coordinated viewer/backend
+validation are still required before enabling this in a public demo. No official
+TEN submission, package release or deployment is part of this change.
 
 A missing or invalid value is reported once at start as a `-1012` error whose
 message names the key (`params.<key>`) and the extension stays idle; the

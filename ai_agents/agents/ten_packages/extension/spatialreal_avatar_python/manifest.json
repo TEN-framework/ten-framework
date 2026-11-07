@@ -57,6 +57,9 @@
             "source_timeline_only": {
               "type": "bool"
             },
+            "source_playback_profile": {
+              "type": "int64"
+            },
             "egress_idle_reconnect_ms": {
               "type": "int64"
             },

@@ -9,6 +9,7 @@
     "ingress_endpoint_url": "",
     "sample_rate": 24000,
     "source_timeline_only": false,
+    "source_playback_profile": 0,
     "egress_idle_reconnect_ms": 1080000,
     "agora_uid": "",
     "agora_token": "",

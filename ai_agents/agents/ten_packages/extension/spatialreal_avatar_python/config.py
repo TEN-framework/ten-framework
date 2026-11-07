@@ -48,6 +48,7 @@ class ResolvedConfig:
     agora_token: str
     egress_idle_reconnect_ms: int
     source_timeline_only: bool
+    source_playback_profile: int
 
 
 def _string(params: Mapping[str, Any], key: str, default: str = "") -> str:
@@ -139,6 +140,16 @@ def resolve_config(channel: str, params: Mapping[str, Any]) -> ResolvedConfig:
     idle_ms = _integer(
         params, "egress_idle_reconnect_ms", DEFAULT_EGRESS_IDLE_RECONNECT_MS
     )
+    source_only = _boolean(params, "source_timeline_only", False)
+    profile = params.get("source_playback_profile", 0)
+    # RtcSourcePlaybackProfile in shared-proto: zero is compatibility, one is
+    # BOUNDED_BURST_V1. SessionClient also checks the installed SDK's enum.
+    if type(profile) is not int or profile not in (0, 1):
+        raise ValueError("params.source_playback_profile must be 0 or 1")
+    if profile and not source_only:
+        raise ValueError(
+            "params.source_playback_profile requires source_timeline_only"
+        )
 
     return ResolvedConfig(
         api_key=api_key,
@@ -155,5 +166,6 @@ def resolve_config(channel: str, params: Mapping[str, Any]) -> ResolvedConfig:
         agora_appcert=_string(params, "agora_appcert").strip(),
         agora_token=agora_token,
         egress_idle_reconnect_ms=idle_ms,
-        source_timeline_only=_boolean(params, "source_timeline_only", False),
+        source_timeline_only=source_only,
+        source_playback_profile=profile,
     )
