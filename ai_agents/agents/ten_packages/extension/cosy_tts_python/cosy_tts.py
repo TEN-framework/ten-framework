@@ -446,7 +446,8 @@ class AsyncIteratorCallback(ResultCallback):
         self._pcm_samples = 0
         self._sentence_origin_samples: dict[int, int] = {}
         self._sentence_time_offset: dict[int, int] = {}
-        self._emitted_word_keys: dict[int, set[tuple[Any, ...]]] = {}
+        # Provider word indexes are request-scoped, not sentence-scoped.
+        self._emitted_word_keys: set[tuple[Any, ...]] = set()
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -618,7 +619,7 @@ class AsyncIteratorCallback(ResultCallback):
             index,
             self._pcm_samples,
         )
-        emitted_keys = self._emitted_word_keys.setdefault(index, set())
+        emitted_keys = self._emitted_word_keys
         unseen = [
             word for word in words if self._word_key(word) not in emitted_keys
         ]

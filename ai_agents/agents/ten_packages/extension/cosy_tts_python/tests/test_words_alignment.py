@@ -533,3 +533,70 @@ async def test_nested_enable_words_is_not_forwarded(
     # the provider as an unknown parameter.
     assert parameters["word_timestamp_enabled"] is False
     assert "enable_words" not in parameters
+
+
+def test_word_identity_is_shared_across_sentences() -> None:
+    """Replayed words in a new sentence must not reopen published captions."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+
+    def event(index, kind, words):
+        callback._handle_output(
+            {
+                "output": {
+                    "type": kind,
+                    "sentence": {"index": index, "words": words},
+                }
+            }
+        )
+
+    words = [
+        {
+            "text": "今",
+            "begin_index": 98,
+            "end_index": 99,
+            "begin_time": 0,
+            "end_time": 200,
+        },
+        {
+            "text": "道",
+            "begin_index": 99,
+            "end_index": 100,
+            "begin_time": 200,
+            "end_time": 240,
+        },
+    ]
+    event(5, "sentence-begin", words)
+    assert [item.payload.text for item in captured] == ["今"]
+    words[1]["end_time"] = 400
+    event(5, "sentence-end", words)
+    assert [item.payload.text for item in captured] == ["今", "道"]
+    assert captured[-1].payload.words[0].duration_ms == 200
+    event(6, "sentence-begin", [])
+    event(6, "sentence-end", words)
+    assert len(captured) == 2
+    # The same spoken text at a new position is legitimate, not a duplicate.
+    event(
+        7,
+        "sentence-end",
+        [
+            {
+                **word,
+                "begin_index": word["begin_index"] + 2,
+                "end_index": word["end_index"] + 2,
+                "begin_time": word["begin_time"] + 400,
+                "end_time": word["end_time"] + 400,
+            }
+            for word in words
+        ],
+    )
+    assert captured[-1].payload.text == "今道"
+    assert len(captured) == 3
