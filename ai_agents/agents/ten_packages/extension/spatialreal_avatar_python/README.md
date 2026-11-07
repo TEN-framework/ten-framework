@@ -72,6 +72,7 @@ which holds everything the operator sets. Defaults are the package
 | `params.console_endpoint_url` | — | `""` | Overrides the environment's console URL (test: `https://api.spatialreal.dev`). |
 | `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL (test: `wss://test-driven.spatialreal.dev/v2/driveningress`). |
 | `params.sample_rate` | — | `24000` | One of 8000, 16000, 22050, 24000, 32000, 44100, 48000. |
+| `params.source_timeline_only` | — | `false` | Boolean opt-in only for source-audio viewers with client-managed entry. Requires the matching SDK and server handshake capability. |
 | `params.egress_idle_reconnect_ms` | — | `1080000` | Idle time after which the session is reconnected so the avatar stays in the channel; must stay below the server's inactivity timeout (20 min today). |
 | `params.agora_uid` | — | `""` | **Required.** Avatar uid in the channel; must parse as a non-zero integer. |
 | `params.agora_token` | — | `""` | Used verbatim when set; otherwise a token is minted per connect. |
@@ -83,6 +84,16 @@ which holds everything the operator sets. Defaults are the package
 incoming TTS audio. The TTS rate is read from each `AudioFrame` and frames at
 another rate are resampled, so a 44.1 kHz TTS feeding a 24 kHz session is
 fine; 24000 matches what most TTS extensions emit and is then pass-through.
+
+`source_timeline_only` leaves audio, the sender and the pacer unchanged. Keep it
+`false` for existing graphs/viewers. To enable it, install a source-pinned
+SpatialReal Python SDK build containing `AgoraEgressConfig.source_timeline_only`
+and its capability check; the released 0.2.3 build does not support the option.
+The server must confirm `agora_source_timeline_only`. An unsupported SDK or a
+missing confirmation is a configuration error with no reconnect loop. Ordinary
+transport failures still use the existing retry policy. No new PyPI release is
+required for the diagnostic image; pin the reviewed SDK source revision when
+building it.
 
 A missing or invalid value is reported once at start as a `-1012` error whose
 message names the key (`params.<key>`) and the extension stays idle; the

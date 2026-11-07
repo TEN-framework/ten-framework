@@ -45,6 +45,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Awaitable, Callable, Optional, Sequence
 
+import spatialreal
 from spatialreal import (
     AgoraEgressConfig,
     AvatarSDKError,
@@ -93,6 +94,7 @@ class SessionSettings:
     agora_appcert: str = ""
     agora_token: str = ""
     egress_idle_reconnect_ms: int = EGRESS_IDLE_RECONNECT_MS
+    source_timeline_only: bool = False
 
 
 @dataclass
@@ -124,9 +126,20 @@ def _vendor_code(exc: Exception) -> str:
     return type(exc).__name__
 
 
-def classify_start_error(exc: Exception) -> tuple[Decision, int, str]:
+def classify_start_error(
+    exc: Exception, *, source_timeline_only: bool = False
+) -> tuple[Decision, int, str]:
     """Decide on an exception from ``init()`` or ``start()`` (D7)."""
     vendor = _vendor_code(exc)
+    unsupported_config = getattr(
+        spatialreal, "UnsupportedConfigurationError", None
+    )
+    if (
+        source_timeline_only
+        and unsupported_config is not None
+        and isinstance(exc, unsupported_config)
+    ):
+        return Decision.CONFIG, CODE_CONFIG, vendor
     if isinstance(exc, SessionTokenError):
         if exc.http_status == _TOKEN_BAD_REQUEST:
             return Decision.CONFIG, CODE_CONFIG, vendor
@@ -329,6 +342,21 @@ class SessionClient:
             expire_at = datetime.now(timezone.utc) + timedelta(
                 seconds=SESSION_TOKEN_TTL_S
             )
+            egress_options = {}
+            if s.source_timeline_only:
+                has_source_field = "source_timeline_only" in getattr(
+                    AgoraEgressConfig, "__dataclass_fields__", {}
+                )
+                has_ack_check = (
+                    getattr(spatialreal, "UnsupportedConfigurationError", None)
+                    is not None
+                )
+                if not (has_source_field and has_ack_check):
+                    raise ValueError(
+                        "params.source_timeline_only requires a SpatialReal "
+                        "SDK with source-timeline-only handshake support"
+                    )
+                egress_options["source_timeline_only"] = True
             egress = AgoraEgressConfig(
                 channel_name=s.channel,
                 token=build_agora_token(
@@ -339,6 +367,7 @@ class SessionClient:
                     explicit_token=s.agora_token,
                 ),
                 uid=s.uid,
+                **egress_options,
             )
             kwargs = {
                 "api_key": s.api_key,
@@ -371,7 +400,9 @@ class SessionClient:
             connection_id = await session.start()
         except Exception as exc:
             self._session = None
-            decision, code, vendor = classify_start_error(exc)
+            decision, code, vendor = classify_start_error(
+                exc, source_timeline_only=s.source_timeline_only
+            )
             logger.warning(
                 "spatialreal connect failed (%s, %s): %s",
                 vendor,

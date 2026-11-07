@@ -18,7 +18,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from spatialreal import AvatarSDKError, AvatarSDKErrorCode, SessionTokenError
+from spatialreal import UnsupportedConfigurationError
 
+from spatialreal_avatar_python import session_client
 from spatialreal_avatar_python.session_client import (
     CODE_CONFIG,
     CODE_FATAL,
@@ -239,6 +241,7 @@ async def connected_harness(vt: VirtualTime, **overrides) -> Harness:
         (sdk_error(4010), (Decision.STOP, CODE_FATAL, "4010")),
         (sdk_error(4003), (Decision.SLOW, CODE_NON_FATAL, "4003")),
         (sdk_error(4503), (Decision.FAST, CODE_NON_FATAL, "4503")),
+        (sdk_error(1008), (Decision.STOP, CODE_FATAL, "1008")),
         (sdk_error(None), (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError")),
         (
             # Handshake frame that did not parse: no close code, SDK says
@@ -344,6 +347,7 @@ async def test_connect_success_reports_connected_and_sends(vt):
     assert (egress.channel_name, egress.uid) == ("room", 12345)
     # No certificate: the App ID itself is the token (D3).
     assert egress.token == APP_ID
+    assert egress.source_timeline_only is False
 
     assert await h.client.send_audio(PCM)
     assert await h.client.send_audio(b"", end=True)
@@ -360,6 +364,102 @@ async def test_optional_settings_are_omitted_when_empty(vt):
     assert "console_endpoint_url" not in kwargs
     assert "ingress_endpoint_url" not in kwargs
     assert kwargs["environment"] == "us-west"
+
+
+@pytest.mark.asyncio
+async def test_source_timeline_mode_survives_reconnect(vt):
+    h = await connected_harness(vt, source_timeline_only=True)
+    first = h.factory.last
+    assert first.kwargs["agora_egress"].source_timeline_only is True
+    first.fire_close()
+    await settle()
+    await vt.advance(1)
+    assert h.client.connected
+    assert len(h.factory.sessions) == 2
+    assert h.factory.last.kwargs["agora_egress"].source_timeline_only is True
+
+
+@pytest.mark.asyncio
+async def test_source_timeline_missing_ack_is_config_error_without_retry(vt):
+    factory = FakeFactory(
+        start_error=lambda _: UnsupportedConfigurationError("required mode")
+    )
+    h = Harness(factory, vt, source_timeline_only=True)
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "UnsupportedConfigurationError")]
+    assert not h.client.connected
+    assert vt.pending == []
+    await vt.advance(300)
+    assert len(factory.sessions) == 1
+
+
+@pytest.mark.asyncio
+async def test_source_timeline_old_sdk_is_explicit_config_error(
+    vt, monkeypatch
+):
+    class LegacyEgressConfig:
+        __dataclass_fields__ = {}
+
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    monkeypatch.setattr(session_client, "AgoraEgressConfig", LegacyEgressConfig)
+    factory = FakeFactory()
+    h = Harness(factory, vt, source_timeline_only=True)
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "ValueError")]
+    assert not h.client.connected
+    assert factory.sessions == []
+    assert vt.pending == []
+
+
+@pytest.mark.asyncio
+async def test_old_sdk_still_connects_when_source_mode_is_disabled(
+    vt, monkeypatch
+):
+    class LegacyEgressConfig:
+        def __init__(self, **kwargs):
+            assert "source_timeline_only" not in kwargs
+            self.__dict__.update(kwargs)
+
+    monkeypatch.setattr(session_client, "AgoraEgressConfig", LegacyEgressConfig)
+    h = await connected_harness(vt)
+    assert h.factory.last.kwargs["agora_egress"].channel_name == "room"
+    assert h.reports == []
+
+
+@pytest.mark.asyncio
+async def test_source_timeline_requires_sdk_ack_support_not_just_field(
+    vt, monkeypatch
+):
+    monkeypatch.delattr(
+        session_client.spatialreal, "UnsupportedConfigurationError"
+    )
+    factory = FakeFactory()
+    h = Harness(factory, vt, source_timeline_only=True)
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_CONFIG, "ValueError")]
+    assert factory.sessions == []
+    assert vt.pending == []
+
+
+@pytest.mark.asyncio
+async def test_source_timeline_parse_failure_keeps_fast_retry(vt):
+    factory = FakeFactory(
+        start_error=lambda _: AvatarSDKError(
+            AvatarSDKErrorCode.protocolError,
+            "malformed protobuf",
+            phase="websocket_handshake",
+        )
+    )
+    h = Harness(factory, vt, source_timeline_only=True)
+    await h.client.start()
+    await settle()
+    assert h.codes == [(CODE_NON_FATAL, "AvatarSDKError")]
+    assert vt.pending == [1]
 
 
 @pytest.mark.asyncio

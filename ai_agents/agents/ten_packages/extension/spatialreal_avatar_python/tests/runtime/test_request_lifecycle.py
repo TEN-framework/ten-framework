@@ -59,7 +59,8 @@ class Clock:
 class RecordingSession:
     instances = []
 
-    def __init__(self, _settings, **callbacks):
+    def __init__(self, settings, **callbacks):
+        self.settings = settings
         self.callbacks = callbacks
         self.calls = []
         self.open = False
@@ -168,7 +169,10 @@ class LifecycleTester(AsyncExtensionTester):
         return await self.snapshot()
 
     async def run_case(self):
-        if self.case in ("legacy", "turn_zero", "finalize"):
+        if self.case in ("legacy", "turn_zero", "finalize", "source_mode"):
+            assert self.sink.settings.source_timeline_only is (
+                self.case == "source_mode"
+            )
             metadata = None if self.case == "legacy" else META_A
             if self.case == "turn_zero":
                 metadata = {**META_A, "turn_id": 0}
@@ -260,6 +264,7 @@ class LifecycleTester(AsyncExtensionTester):
         "flush_gate",
         "flush_before_old_first_pcm",
         "finalize",
+        "source_mode",
     ],
 )
 def test_request_lifecycle_through_native_callbacks(monkeypatch, case):
@@ -301,6 +306,7 @@ def test_request_lifecycle_through_native_callbacks(monkeypatch, case):
                     "spatialreal_avatar_id": "synthetic-avatar",
                     "agora_appid": "synthetic-app",
                     "agora_uid": "1001",
+                    "source_timeline_only": case == "source_mode",
                 },
             }
         ),

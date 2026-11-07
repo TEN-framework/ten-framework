@@ -54,6 +54,9 @@
             "sample_rate": {
               "type": "int64"
             },
+            "source_timeline_only": {
+              "type": "bool"
+            },
             "egress_idle_reconnect_ms": {
               "type": "int64"
             },

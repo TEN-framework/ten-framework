@@ -50,6 +50,19 @@ def test_minimal_valid_config_resolves_with_defaults():
     assert cfg.ingress_endpoint_url == ""
     assert cfg.sample_rate == 24000
     assert cfg.egress_idle_reconnect_ms == 1_080_000
+    assert cfg.source_timeline_only is False
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_source_timeline_only_boolean_passes_through(enabled):
+    cfg = resolve_config("room", params(source_timeline_only=enabled))
+    assert cfg.source_timeline_only is enabled
+
+
+@pytest.mark.parametrize("invalid", [None, 0, 1, "true", "false", {}, []])
+def test_source_timeline_only_rejects_non_boolean(invalid):
+    with pytest.raises(ValueError, match="params.source_timeline_only"):
+        resolve_config("room", params(source_timeline_only=invalid))
 
 
 def test_agora_channel_in_params_overrides_channel():

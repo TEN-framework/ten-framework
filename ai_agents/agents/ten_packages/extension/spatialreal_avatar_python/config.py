@@ -47,6 +47,7 @@ class ResolvedConfig:
     agora_appcert: str
     agora_token: str
     egress_idle_reconnect_ms: int
+    source_timeline_only: bool
 
 
 def _string(params: Mapping[str, Any], key: str, default: str = "") -> str:
@@ -83,6 +84,13 @@ def _integer(params: Mapping[str, Any], key: str, default: int) -> int:
         except ValueError:
             pass
     raise ValueError(f"params.{key} must be an integer, got {value!r}")
+
+
+def _boolean(params: Mapping[str, Any], key: str, default: bool) -> bool:
+    value = params.get(key, default)
+    if not isinstance(value, bool):
+        raise ValueError(f"params.{key} must be a boolean")
+    return value
 
 
 def resolve_config(channel: str, params: Mapping[str, Any]) -> ResolvedConfig:
@@ -147,4 +155,5 @@ def resolve_config(channel: str, params: Mapping[str, Any]) -> ResolvedConfig:
         agora_appcert=_string(params, "agora_appcert").strip(),
         agora_token=agora_token,
         egress_idle_reconnect_ms=idle_ms,
+        source_timeline_only=_boolean(params, "source_timeline_only", False),
     )
