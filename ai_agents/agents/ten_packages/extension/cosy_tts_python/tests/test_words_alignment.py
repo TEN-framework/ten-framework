@@ -600,3 +600,58 @@ def test_word_identity_is_shared_across_sentences() -> None:
     )
     assert captured[-1].payload.text == "今道"
     assert len(captured) == 3
+
+
+def test_repeated_cumulative_sentence_list_is_ignored() -> None:
+    """Repeated provider revisions must not publish the same words twice."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+    words = [
+        {
+            "text": "墙",
+            "begin_index": 53,
+            "end_index": 54,
+            "begin_time": 1000,
+            "end_time": 1200,
+        },
+        {
+            "text": "缝",
+            "begin_index": 54,
+            "end_index": 55,
+            "begin_time": 1200,
+            "end_time": 1400,
+        },
+        {
+            "text": "中",
+            "begin_index": 55,
+            "end_index": 56,
+            "begin_time": 1400,
+            "end_time": 1600,
+        },
+    ]
+    payload = {
+        "output": {
+            "type": "sentence-synthesis",
+            "sentence": {"index": 3, "words": words},
+        }
+    }
+    callback._handle_output(payload)
+    callback._handle_output(payload)
+    assert [item.payload.text for item in captured] == ["墙缝"]
+    callback._handle_output(
+        {
+            "output": {
+                "type": "sentence-end",
+                "sentence": {"index": 3, "words": words},
+            }
+        }
+    )
+    assert [item.payload.text for item in captured] == ["墙缝", "中"]
