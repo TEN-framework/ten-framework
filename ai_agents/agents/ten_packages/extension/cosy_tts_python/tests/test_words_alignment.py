@@ -655,3 +655,77 @@ def test_repeated_cumulative_sentence_list_is_ignored() -> None:
         }
     )
     assert [item.payload.text for item in captured] == ["墙缝", "中"]
+
+
+@pytest.fixture
+def replay_server(request):
+    from pathlib import Path
+
+    capture = json.loads(
+        (
+            Path(__file__).parent / "fixtures" / f"{request.param}.json"
+        ).read_text()
+    )
+    server = FakeWordTimestampServer(SERVER_PORT, ())
+
+    def synthesize(websocket, task_id):
+        for event in capture["events"]:
+            if "pcm_bytes" in event:
+                websocket.send(b"\x01\x00" * (event["pcm_bytes"] // 2))
+            else:
+                websocket.send(
+                    server._event("result-generated", task_id, event)
+                )
+
+    server._synthesize = synthesize
+    server.start()
+    try:
+        yield capture
+    finally:
+        server.stop()
+
+
+@pytest.mark.parametrize(
+    "replay_server",
+    ["cross_sentence_quote", "trailing_quote_terminal"],
+    indirect=True,
+)
+@ten_test(
+    "cosy_tts_python", property_json_str=WORDS_ENABLED_PROPERTY, timeout=15.0
+)
+async def test_recorded_sentence_replay_and_terminal(ctx, replay_server):
+    """Replay sanitized provider events from both reported duplicate cases."""
+    await _send_request(ctx, "recorded-replay")
+    results = []
+    while True:
+        result = await _expect_text_result(ctx)
+        results.append(result)
+        if result["text_result_end"]:
+            break
+    end = await ctx.expect_data("tts_audio_end", timeout=2.0)
+    end_json, error = end.get_property_to_json("")
+    assert error is None
+    assert json.loads(end_json)["reason"] == 1
+    expected = replay_server["expected_words"]
+    actual = [word for result in results for word in result["words"]]
+    assert [word["word"] for word in actual] == [
+        word["text"] for word in expected
+    ]
+    origin = actual[0]["start_ms"] - expected[0]["begin_time"]
+    for word, raw in zip(actual, expected):
+        assert word["start_ms"] - origin == raw["begin_time"]
+        assert word["duration_ms"] == raw["end_time"] - raw["begin_time"]
+    assert all(
+        result["metadata"]["turn_status"] == 0 for result in results[:-1]
+    )
+    terminal = results[-1]
+    assert terminal["metadata"]["turn_status"] == 1
+    assert terminal["text"] == "" and terminal["words"] == []
+    assert (
+        terminal["start_ms"]
+        == actual[-1]["start_ms"] + actual[-1]["duration_ms"]
+    )
+    assert terminal["start_ms"] - origin <= sum(
+        event.get("pcm_bytes", 0) for event in replay_server["events"]
+    ) * 1000 // (SAMPLE_RATE * BYTES_PER_SAMPLE)
+    await ctx.assert_no_data("tts_text_result", timeout=0.1)
