@@ -449,7 +449,9 @@ async def test_audio_end_accounts_emitted_pcm_and_monotonic_interval(
 async def test_partial_audio_error_accounts_only_emitted_pcm(
     ctx: TenTestContext,
     dashscope_server: FakeDashScopeServer,
+    monotonic_clock,
 ) -> None:
+    monotonic_clock(100.0, 100.25)
     dashscope_server.audio_chunk_count = 2
     dashscope_server.fail_next_task = True
 
@@ -469,6 +471,7 @@ async def test_partial_audio_error_accounts_only_emitted_pcm(
     end = json.loads(payload)
     assert end["reason"] == 3
     assert end["request_total_audio_duration_ms"] == 20
+    assert end["request_event_interval_ms"] == 250
     assert sum(frame_sizes) == 2 * 320
 
     await ctx.expect_data("error", timeout=0.5)
@@ -483,7 +486,9 @@ async def test_partial_audio_error_accounts_only_emitted_pcm(
 async def test_flush_accounts_emitted_pcm_and_terminates_once(
     ctx: TenTestContext,
     dashscope_server: FakeDashScopeServer,
+    monotonic_clock,
 ) -> None:
+    monotonic_clock(200.0, 200.25)
     dashscope_server.audio_chunk_count = 2
     request = TTSTextInput(
         request_id="flush-accounting",
@@ -508,6 +513,7 @@ async def test_flush_accounts_emitted_pcm_and_terminates_once(
     end = json.loads(payload)
     assert end["reason"] == 2
     assert end["request_total_audio_duration_ms"] == 20
+    assert end["request_event_interval_ms"] == 250
     assert sum(frame_sizes) == 2 * 320
 
     await ctx.expect_data("tts_flush_end", timeout=0.5)

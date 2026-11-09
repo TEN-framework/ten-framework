@@ -450,7 +450,11 @@ class AsyncIteratorCallback(ResultCallback):
         # only the contiguous published character boundary for bounded memory.
         self._emitted_end_index: int | None = None
         self._fallback_end_ms: dict[int, int] = {}
-        self._fallback_last_key: dict[int, tuple[str, int, int]] = {}
+        # Keep all identities at the current time boundary.  A provider can
+        # report several distinct zero-duration words at the same timestamp;
+        # retaining only the last one republishes the earlier entries when a
+        # cumulative event is repeated.
+        self._fallback_boundary_keys: dict[int, set[tuple[str, int, int]]] = {}
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -659,16 +663,30 @@ class AsyncIteratorCallback(ResultCallback):
             word for word in published if word.begin_index is None
         ]
         if fallback_words:
-            last = fallback_words[-1]
-            self._fallback_end_ms[index] = max(
-                self._fallback_end_ms.get(index, -1),
-                last.end_ms + offset_ms,
+            old_boundary = self._fallback_end_ms.get(index, -1)
+            adjusted = [
+                (
+                    word.word,
+                    word.begin_ms + offset_ms,
+                    word.end_ms + offset_ms,
+                )
+                for word in fallback_words
+            ]
+            new_boundary = max(
+                old_boundary,
+                max(end for _, _, end in adjusted),
             )
-            self._fallback_last_key[index] = (
-                last.word,
-                last.begin_ms + offset_ms,
-                last.end_ms + offset_ms,
-            )
+            boundary_keys = {
+                (word, begin, end)
+                for word, begin, end in adjusted
+                if begin == new_boundary
+            }
+            if new_boundary == old_boundary:
+                boundary_keys.update(
+                    self._fallback_boundary_keys.get(index, set())
+                )
+            self._fallback_end_ms[index] = new_boundary
+            self._fallback_boundary_keys[index] = boundary_keys
         if subtitle is None:
             return
         self._put(
@@ -707,7 +725,8 @@ class AsyncIteratorCallback(ResultCallback):
         boundary = self._fallback_end_ms.get(index, -1)
         key = (word.word, begin, end)
         return begin > boundary or (
-            begin == boundary and key != self._fallback_last_key.get(index)
+            begin == boundary
+            and key not in self._fallback_boundary_keys.get(index, set())
         )
 
     @staticmethod

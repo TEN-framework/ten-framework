@@ -657,6 +657,47 @@ def test_repeated_cumulative_sentence_list_is_ignored() -> None:
     assert [item.payload.text for item in captured] == ["墙缝", "中"]
 
 
+def test_repeated_zero_duration_words_at_boundary_are_ignored() -> None:
+    """All entries sharing a time boundary stay idempotent across replays."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+    words = [
+        {
+            "text": "，",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+        {
+            "text": "。",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+        {
+            "text": "终",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+    ]
+    payload = {
+        "output": {
+            "type": "sentence-end",
+            "sentence": {"index": 8, "words": words},
+        }
+    }
+    callback._handle_output(payload)
+    callback._handle_output(payload)
+    assert len(captured) == 1
+    assert captured[0].payload.text == "，。终"
+
+
 @pytest.fixture
 def replay_server(request):
     from pathlib import Path
