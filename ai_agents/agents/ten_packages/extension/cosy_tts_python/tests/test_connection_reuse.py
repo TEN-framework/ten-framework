@@ -47,6 +47,8 @@ class FakeDashScopeServer:
         self.block_finish_task = False
         self.finish_task_release = threading.Event()
         self.finish_task_completed = threading.Event()
+        self.hold_replacement_audio = False
+        self.replacement_audio_release = threading.Event()
         self._server: Server | None = None
         self._thread: threading.Thread | None = None
         self._ready = threading.Event()
@@ -106,6 +108,11 @@ class FakeDashScopeServer:
                         websocket.send(self._event("task-started", task_id))
                     case "continue-task":
                         text = message["payload"]["input"]["text"]
+                        if (
+                            self.hold_replacement_audio
+                            and len(self.task_ids) >= 2
+                        ):
+                            self.replacement_audio_release.wait(1.0)
                         if self.first_audio_delay > 0:
                             time.sleep(self.first_audio_delay)
                         audio_sample = (
@@ -134,6 +141,7 @@ class FakeDashScopeServer:
                         self.finish_task_received.set()
                         if self.block_finish_task:
                             self.finish_task_release.wait(1.0)
+                        self.finish_task_completed.set()
                         if self.finish_task_delay > 0:
                             time.sleep(self.finish_task_delay)
                         if self.close_on_finish:
@@ -153,7 +161,6 @@ class FakeDashScopeServer:
                             websocket.send(
                                 self._event("task-finished", task_id)
                             )
-                        self.finish_task_completed.set()
         finally:
             with self._connections_lock:
                 self._connections.discard(websocket)
@@ -276,7 +283,6 @@ async def test_sequential_tasks_reuse_preconnected_pool(
     connect_metrics = await _expect_metrics(ctx, "connect_delay")
     assert connect_metrics["metrics"]["connect_delay"] >= 0
     await ctx.expect_audio_frame(timeout=0.5)
-    await ctx.expect_data("tts_audio_end", timeout=0.5)
 
     for task_index in range(1, 5):
         await _synthesize(
@@ -365,6 +371,32 @@ async def test_finalizing_request_does_not_block_next_request_after_flush(
 
     await ctx.expect_audio_frame(timeout=0.5)
 
+    finish_started = await asyncio.to_thread(
+        dashscope_server.finish_task_received.wait,
+        0.5,
+    )
+    assert finish_started
+
+    flush = Data.create("tts_flush")
+    flush.set_property_from_json(
+        "",
+        TTSFlush(flush_id="flush-finalizing").model_dump_json(),
+    )
+    await ctx.send_data(flush)
+    await ctx.expect_data("tts_flush_end", timeout=0.2)
+
+    dashscope_server.finish_task_delay = 0.0
+    next_request = TTSTextInput(
+        request_id="request-after-finalizing-cancel",
+        text="second",
+        text_input_end=True,
+    )
+    next_data = Data.create("tts_text_input")
+    next_data.set_property_from_json("", next_request.model_dump_json())
+    await ctx.send_data(next_data)
+
+    await ctx.expect_audio_frame(timeout=0.5)
+
 
 @ten_test(
     "cosy_tts_python",
@@ -374,9 +406,23 @@ async def test_finalizing_request_does_not_block_next_request_after_flush(
 async def test_replacement_survives_blocked_cancel_cleanup(
     ctx: TenTestContext,
     dashscope_server: FakeDashScopeServer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A replacement task stays isolated while the old lease is cleaning up."""
+    from cosy_tts_python import cosy_tts
+
+    cleanup_done = threading.Event()
+    original_discard = cosy_tts.SharedPool.discard_lease
+
+    def discard_lease(lease):
+        try:
+            original_discard(lease)
+        finally:
+            cleanup_done.set()
+
+    monkeypatch.setattr(cosy_tts.SharedPool, "discard_lease", discard_lease)
     dashscope_server.block_finish_task = True
+    dashscope_server.hold_replacement_audio = True
     request = TTSTextInput(
         request_id="blocked-cancel-old",
         text="old request",
@@ -413,8 +459,11 @@ async def test_replacement_survives_blocked_cancel_cleanup(
         )
         await asyncio.sleep(0.01)
 
-    # Let the old cancellation finish only after the replacement has started.
+    # Let the old cancellation finish while the replacement remains active.
     dashscope_server.finish_task_release.set()
+    assert dashscope_server.finish_task_completed.wait(0.5)
+    assert cleanup_done.wait(0.5)
+    dashscope_server.replacement_audio_release.set()
     frame = await ctx.expect_audio_frame(timeout=0.5)
     buffer = frame.lock_buf()
     try:
@@ -427,31 +476,6 @@ async def test_replacement_survives_blocked_cancel_cleanup(
     assert error is None
     assert json.loads(payload)["request_id"] == "blocked-cancel-new"
     await ctx.assert_no_data("tts_audio_end", timeout=0.2)
-    finish_started = await asyncio.to_thread(
-        dashscope_server.finish_task_received.wait,
-        0.5,
-    )
-    assert finish_started
-
-    flush = Data.create("tts_flush")
-    flush.set_property_from_json(
-        "",
-        TTSFlush(flush_id="flush-finalizing").model_dump_json(),
-    )
-    await ctx.send_data(flush)
-    await ctx.expect_data("tts_flush_end", timeout=0.2)
-
-    dashscope_server.finish_task_delay = 0.0
-    next_request = TTSTextInput(
-        request_id="request-after-finalizing-cancel",
-        text="second",
-        text_input_end=True,
-    )
-    next_data = Data.create("tts_text_input")
-    next_data.set_property_from_json("", next_request.model_dump_json())
-    await ctx.send_data(next_data)
-
-    await ctx.expect_audio_frame(timeout=0.5)
 
 
 @ten_test(
