@@ -1,6 +1,6 @@
 [project]
 name = "cosy-tts-python"
-version = "0.5.0"
+version = "0.5.1"
 requires-python = ">=3.10"
 dependencies = [
     "dashscope==1.26.4",
