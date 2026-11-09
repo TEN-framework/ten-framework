@@ -21,6 +21,8 @@ from spatialreal import AvatarSDKError, AvatarSDKErrorCode, SessionTokenError
 from spatialreal import UnsupportedConfigurationError
 
 from spatialreal_avatar_python import session_client
+from spatialreal_avatar_python.pacer import Pacer
+from spatialreal_avatar_python.sender import AudioSender
 from spatialreal_avatar_python.session_client import (
     CODE_CONFIG,
     CODE_FATAL,
@@ -914,6 +916,82 @@ async def test_idle_timer_reconnects_only_when_no_request_open(vt):
     assert len(h.factory.sessions) == 2
     await vt.advance(6)
     assert len(h.factory.sessions) == 3
+
+
+class _NullLog:
+    def log_debug(self, msg: str) -> None:
+        pass
+
+    log_info = log_warn = log_error = log_debug
+
+
+@pytest.mark.asyncio
+async def test_ticker_closed_request_lets_the_idle_reconnect_run(vt):
+    """A request that stops producing audio without an end marker is
+    closed by the pacer's ticker at the padding limit. The client must
+    learn that, or its idle timer keeps waiting for the request forever."""
+    rate = 24000
+    reports: list[ErrorReport] = []
+    factory = FakeFactory()
+    client = SessionClient(
+        SessionSettings(
+            api_key="k",
+            avatar_id="av",
+            channel="room",
+            uid=12345,
+            agora_appid=APP_ID,
+            egress_idle_reconnect_ms=10_000,
+        ),
+        on_report=reports.append,
+        on_connected=lambda _id: sender.session_up(),
+        on_disconnected=lambda: sender.session_down(),
+        session_factory=factory,
+        clock=vt.now,
+        sleep=vt.sleep,
+    )
+    pacer = Pacer(
+        client,
+        rate,
+        clock=vt.now,
+        sleep=vt.sleep,
+        on_request_state=client.note_request_state,
+    )
+    sender = AudioSender(
+        pacer, rate, _NullLog(), on_request_state=client.note_request_state
+    )
+    tasks = [
+        asyncio.create_task(sender.run()),
+        asyncio.create_task(pacer.run()),
+    ]
+    try:
+        await client.start()
+        await settle()
+        assert client.connected
+        first = factory.last
+
+        # 500 ms of speech and no end marker.
+        sender.put_audio(b"\x01\x01" * (rate // 2), rate)
+        await settle()
+        assert pacer.request_open
+
+        # The speech drains at 0.5 s; 3 s of padding later the ticker
+        # closes the request with end=True.
+        await vt.advance(4)
+        assert not pacer.request_open
+        assert first.sends[-1] == (b"", True)
+        assert len(factory.sessions) == 1
+
+        # 10 s after that last send the planned idle reconnect runs.
+        await vt.advance(10)
+        assert len(factory.sessions) == 2
+        assert first.closes == 1
+        assert client.connected
+        assert reports == []
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await client.stop()
 
 
 @pytest.mark.asyncio

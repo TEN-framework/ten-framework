@@ -87,6 +87,8 @@ class Pacer:
     single sender, ``tick``/``run`` by the ticker, ``flush`` and the end
     signals by the extension's handlers. State is re-read after every
     ``await`` so an end or flush that lands mid-send stops the padding.
+    ``on_request_state(False)`` is called whenever a request is closed with
+    ``end=True``, including the ticker's pad-max and stall closures.
     """
 
     def __init__(
@@ -101,6 +103,7 @@ class Pacer:
         pad_max_ms: int = PAD_MAX_MS,
         turn_stall_ms: int = TURN_STALL_MS,
         gate_ms: int = GATE_MS,
+        on_request_state: Callable[[bool], None] = lambda open_: None,
     ) -> None:
         if sample_rate <= 0:
             raise ValueError("sample_rate must be positive")
@@ -115,6 +118,7 @@ class Pacer:
         self._pad_max_ms = pad_max_ms
         self._turn_stall_ms = turn_stall_ms
         self._gate_ms = gate_ms
+        self._on_request_state = on_request_state
         # Raises ValueError for a tick that is not whole samples at this rate.
         self._pad_chunk = silence(pad_tick_ms, sample_rate)
 
@@ -236,6 +240,9 @@ class Pacer:
         self._request_gen += 1
         self._req_open = False
         self._padded_ms_contiguous = 0.0
+        # The ticker closes requests too (pad max, stall), outside the
+        # sender that otherwise reports the state after each operation.
+        self._on_request_state(False)
         # An end signal closes the window in which a late reason 2 could
         # belong to a pre-flush request.
         self._flush_seen = False

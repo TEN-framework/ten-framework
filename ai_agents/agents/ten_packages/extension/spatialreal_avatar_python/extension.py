@@ -155,7 +155,11 @@ class SpatialRealAvatarExtension(AsyncExtension):
             on_connected=self._on_connected,
             on_disconnected=self._on_disconnected,
         )
-        self.pacer = Pacer(sink=self.client, sample_rate=cfg.sample_rate)
+        self.pacer = Pacer(
+            sink=self.client,
+            sample_rate=cfg.sample_rate,
+            on_request_state=self.client.note_request_state,
+        )
         self.sender = AudioSender(
             self.pacer,
             cfg.sample_rate,
