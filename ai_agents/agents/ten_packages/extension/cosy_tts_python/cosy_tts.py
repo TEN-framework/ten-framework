@@ -446,8 +446,10 @@ class AsyncIteratorCallback(ResultCallback):
         self._pcm_samples = 0
         self._sentence_origin_samples: dict[int, int] = {}
         self._sentence_time_offset: dict[int, int] = {}
-        # Provider word indexes are request-scoped, not sentence-scoped.
-        self._emitted_word_keys: set[tuple[Any, ...]] = set()
+        # Provider word indexes are request-scoped, not sentence-scoped. Keep
+        # only the contiguous published character boundary for bounded memory.
+        self._emitted_end_index: int | None = None
+        self._fallback_end_ms = -1
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -619,9 +621,15 @@ class AsyncIteratorCallback(ResultCallback):
             index,
             self._pcm_samples,
         )
-        emitted_keys = self._emitted_word_keys
+        boundary = self._emitted_end_index
         unseen = [
-            word for word in words if self._word_key(word) not in emitted_keys
+            word
+            for word in words
+            if (
+                (boundary is None or word.begin_index >= boundary)
+                if word.begin_index is not None and word.end_index is not None
+                else word.begin_ms >= self._fallback_end_ms
+            )
         ]
         if not unseen:
             return
@@ -639,7 +647,15 @@ class AsyncIteratorCallback(ResultCallback):
             unseen[:limit],
             origin_samples,
         )
-        emitted_keys.update(self._word_key(word) for word in unseen[:limit])
+        published = unseen[:limit]
+        indexed_ends = [
+            word.end_index for word in published if word.end_index is not None
+        ]
+        if indexed_ends:
+            self._emitted_end_index = max(indexed_ends)
+        self._fallback_end_ms = max(
+            self._fallback_end_ms, max(word.end_ms for word in published)
+        )
         if subtitle is None:
             return
         self._put(
@@ -669,12 +685,6 @@ class AsyncIteratorCallback(ResultCallback):
                 else self._current_sentence_index + 1
             )
         return self._current_sentence_index
-
-    @staticmethod
-    def _word_key(word: _RawWord) -> tuple[Any, ...]:
-        if word.begin_index is not None and word.end_index is not None:
-            return ("index", word.begin_index, word.end_index)
-        return ("timing", word.word, word.begin_ms, word.end_ms)
 
     @staticmethod
     def _parse_words(raw_words: Any) -> list[_RawWord]:
