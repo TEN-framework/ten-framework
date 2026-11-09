@@ -850,6 +850,66 @@ async def test_frame_held_for_reconnect_is_dropped_by_a_flush(clock):
         assert not h.sender.request_open
 
 
+class BlockingClient(FakeClient):
+    """A ``FakeClient`` whose next send parks until the test releases it.
+
+    The released send re-reads the connection, so a session that dropped
+    meanwhile refuses it, as the real client does.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.block_next = False
+        self._parked: asyncio.Future | None = None
+
+    @property
+    def parked(self) -> bool:
+        return self._parked is not None and not self._parked.done()
+
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
+        if self.block_next:
+            self.block_next = False
+            self._parked = asyncio.get_running_loop().create_future()
+            await self._parked
+        return await super().send_audio(pcm, end)
+
+    def release(self) -> None:
+        self._parked.set_result(None)
+
+
+async def test_inflight_send_failed_after_a_flush_is_not_replayed(clock):
+    """A flush lands while a frame's send is in flight; the send then fails
+    because the session dropped. The frame belongs to the cancelled turn
+    and must not reach the replacement session."""
+    client = BlockingClient()
+    async with Harness(clock, sink=client) as h:
+        client.connect("conn-0")
+        h.sender.session_up()
+        client.block_next = True
+        h.sender.put_audio(_speech(300), RATE)
+        await settle()
+        assert client.parked
+
+        await h.sender.flush()
+        client.disconnect()
+        h.sender.session_down()
+        client.release()
+        await settle()
+        assert client.sessions["conn-0"] == []
+
+        client.connect("conn-1")
+        h.sender.session_up()
+        await settle()
+        assert client.sessions["conn-1"] == []
+        assert not h.sender.request_open
+
+        # The next turn still goes out on the replacement session.
+        pcm = _speech(100)
+        h.sender.put_audio(pcm, RATE)
+        await settle()
+        assert client.sessions["conn-1"] == [(pcm, False)]
+
+
 async def test_frame_refused_while_the_session_is_up_is_dropped(clock):
     """A send that fails without the session going down is not retried: the
     frame is dropped with a warning and the sender moves on."""
