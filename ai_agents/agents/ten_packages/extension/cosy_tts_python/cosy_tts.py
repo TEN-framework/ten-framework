@@ -449,7 +449,8 @@ class AsyncIteratorCallback(ResultCallback):
         # Provider word indexes are request-scoped, not sentence-scoped. Keep
         # only the contiguous published character boundary for bounded memory.
         self._emitted_end_index: int | None = None
-        self._fallback_end_ms = -1
+        self._fallback_end_ms: dict[int, int] = {}
+        self._fallback_last_key: dict[int, tuple[str, int, int]] = {}
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -622,13 +623,14 @@ class AsyncIteratorCallback(ResultCallback):
             self._pcm_samples,
         )
         boundary = self._emitted_end_index
+        offset_ms = self._sentence_word_offset(index, words, origin_samples)
         unseen = [
             word
             for word in words
             if (
                 (boundary is None or word.begin_index >= boundary)
                 if word.begin_index is not None and word.end_index is not None
-                else word.begin_ms >= self._fallback_end_ms
+                else self._fallback_is_new(index, word, offset_ms)
             )
         ]
         if not unseen:
@@ -653,9 +655,20 @@ class AsyncIteratorCallback(ResultCallback):
         ]
         if indexed_ends:
             self._emitted_end_index = max(indexed_ends)
-        self._fallback_end_ms = max(
-            self._fallback_end_ms, max(word.end_ms for word in published)
-        )
+        fallback_words = [
+            word for word in published if word.begin_index is None
+        ]
+        if fallback_words:
+            last = fallback_words[-1]
+            self._fallback_end_ms[index] = max(
+                self._fallback_end_ms.get(index, -1),
+                last.end_ms + offset_ms,
+            )
+            self._fallback_last_key[index] = (
+                last.word,
+                last.begin_ms + offset_ms,
+                last.end_ms + offset_ms,
+            )
         if subtitle is None:
             return
         self._put(
@@ -685,6 +698,17 @@ class AsyncIteratorCallback(ResultCallback):
                 else self._current_sentence_index + 1
             )
         return self._current_sentence_index
+
+    def _fallback_is_new(
+        self, index: int, word: _RawWord, offset_ms: int
+    ) -> bool:
+        begin = word.begin_ms + offset_ms
+        end = word.end_ms + offset_ms
+        boundary = self._fallback_end_ms.get(index, -1)
+        key = (word.word, begin, end)
+        return begin > boundary or (
+            begin == boundary and key != self._fallback_last_key.get(index)
+        )
 
     @staticmethod
     def _parse_words(raw_words: Any) -> list[_RawWord]:
