@@ -25,6 +25,7 @@ from spatialreal_avatar_python.session_client import (
     CODE_CONFIG,
     CODE_FATAL,
     CODE_NON_FATAL,
+    START_TIMEOUT_S,
     Decision,
     ErrorReport,
     SessionClient,
@@ -129,6 +130,10 @@ class FakeSession:
         self.closes = 0
         self.send_exc: Exception | None = None
         self.interrupt_exc: Exception | None = None
+        # ``start()`` never returns, like a server that upgrades the socket
+        # but never sends ServerConfirmSession.
+        self.start_hangs = False
+        self.start_cancelled = False
         self._close_notified = False
 
     async def init(self) -> None:
@@ -136,6 +141,12 @@ class FakeSession:
             raise self.init_exc
 
     async def start(self) -> str:
+        if self.start_hangs:
+            try:
+                await asyncio.get_running_loop().create_future()
+            except asyncio.CancelledError:
+                self.start_cancelled = True
+                raise
         if self.start_exc is not None:
             raise self.start_exc
         return self.connection_id
@@ -171,16 +182,18 @@ class FakeSession:
 class FakeFactory:
     """Builds one ``FakeSession`` per connect attempt, failing on request."""
 
-    def __init__(self, *, init_error=None, start_error=None):
+    def __init__(self, *, init_error=None, start_error=None, start_hangs=None):
         self.sessions: list[FakeSession] = []
         self._init_error = init_error or (lambda i: None)
         self._start_error = start_error or (lambda i: None)
+        self._start_hangs = start_hangs or (lambda i: False)
 
     def __call__(self, **kwargs) -> FakeSession:
         i = len(self.sessions)
         session = FakeSession(
             i, kwargs, self._init_error(i), self._start_error(i)
         )
+        session.start_hangs = self._start_hangs(i)
         self.sessions.append(session)
         return session
 
@@ -676,6 +689,34 @@ async def test_start_4503_uses_fast_schedule_until_it_connects(vt):
     assert h.connected_ids == ["conn-3"]
     # One outage, one non-fatal report.
     assert h.codes == [(CODE_NON_FATAL, "4503")]
+
+
+@pytest.mark.asyncio
+async def test_start_never_confirmed_times_out_closes_and_retries(vt):
+    """The socket is up but ServerConfirmSession never arrives: start() is
+    abandoned at the deadline, the half-open session is closed, the outage
+    is reported once and the fast schedule makes another attempt."""
+    factory = FakeFactory(start_hangs=lambda i: i == 0)
+    h = Harness(factory, vt)
+    await h.client.start()
+    await settle()
+    first = factory.last
+    assert not h.client.connected
+    assert vt.pending == [START_TIMEOUT_S]
+    assert h.reports == []
+
+    await vt.advance(START_TIMEOUT_S)
+    assert first.start_cancelled
+    assert first.closes == 1
+    assert h.codes == [(CODE_NON_FATAL, "TimeoutError")]
+    assert not h.client.connected
+    assert vt.pending == [1]
+
+    await vt.advance(1)
+    assert len(factory.sessions) == 2
+    assert h.client.connected
+    assert h.connected_ids == ["conn-1"]
+    assert h.codes == [(CODE_NON_FATAL, "TimeoutError")]
 
 
 @pytest.mark.asyncio

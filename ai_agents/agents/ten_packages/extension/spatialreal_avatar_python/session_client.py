@@ -17,6 +17,9 @@ follows the observable event:
 * ``start()`` refused: 4001/4010 are fatal, 4003 takes the slow schedule
   (30, 60, 120, 300… s, ten attempts, then fatal), 4503 and transport
   failures the fast schedule (1, 2, 4, 8, 15, 30… s while running);
+* ``start()`` and its capability check not finished within
+  ``START_TIMEOUT_S`` (the server never confirmed the session): the session
+  is closed and the fast schedule applies;
 * ``init()`` refused with HTTP 400: configuration error, stop; HTTP 401 or
   403 (the API key is invalid or revoked): fatal, stop; other token
   failures (5xx, network) take the fast schedule;
@@ -61,6 +64,10 @@ FAST_BACKOFF_S: Sequence[float] = (1, 2, 4, 8, 15, 30)
 SLOW_BACKOFF_S: Sequence[float] = (30, 60, 120, 300)
 SLOW_MAX_ATTEMPTS = 10
 SESSION_TOKEN_TTL_S = 3600
+# Deadline for the handshake: endpoint lookup, WebSocket upgrade, the
+# ServerConfirmSession frame (which the SDK awaits with no timeout of its own)
+# and the capability check that follows it.
+START_TIMEOUT_S = 20.0
 EGRESS_IDLE_RECONNECT_MS = 1_080_000
 # How often the idle timer re-checks while a request is still open.
 IDLE_RECHECK_S = 1.0
@@ -210,6 +217,7 @@ class SessionClient:
         fast_backoff: Sequence[float] = FAST_BACKOFF_S,
         slow_backoff: Sequence[float] = SLOW_BACKOFF_S,
         slow_max_attempts: int = SLOW_MAX_ATTEMPTS,
+        start_timeout_s: float = START_TIMEOUT_S,
     ) -> None:
         self._settings = settings
         self._on_report = on_report
@@ -221,6 +229,7 @@ class SessionClient:
         self._fast_backoff = tuple(fast_backoff)
         self._slow_backoff = tuple(slow_backoff)
         self._slow_max_attempts = slow_max_attempts
+        self._start_timeout_s = start_timeout_s
 
         self.connected = False
         self.connection_id = ""
@@ -430,25 +439,14 @@ class SessionClient:
             session = self._factory(**kwargs)
             self._session = session
             await session.init()
-            connection_id = await session.start()
-            if s.source_playback_profile:
-                capabilities = getattr(session, "capabilities", ())
-                if not isinstance(capabilities, tuple) or not all(
-                    capability in capabilities
-                    for capability in (
-                        "agora_source_timeline_only",
-                        "agora_source_burst_v1",
-                    )
-                ):
-                    raise spatialreal.UnsupportedConfigurationError(
-                        "Server did not confirm the requested source profile",
-                        connection_id=connection_id,
-                    )
+            connection_id = await self._start_with_deadline(session)
         except Exception as exc:
-            if s.source_playback_profile and session is not None:
-                # start() may already have joined successfully before our
-                # confirmation check fails. Invalidate callbacks before close,
-                # and retain ownership until that close has completed.
+            if session is not None:
+                # start() may have joined before the capability check failed,
+                # and a timed-out start() was cancelled, which skips the SDK's
+                # own cleanup of the half-open socket. Invalidate callbacks
+                # before the (idempotent) close, and retain ownership until
+                # that close has completed.
                 self._gen += 1
                 await self._close_quietly(session)
             self._session = None
@@ -479,6 +477,49 @@ class SessionClient:
         self._start_idle_timer(gen)
         self._on_connected(self.connection_id)
         return True
+
+    async def _start_with_deadline(self, session) -> str:
+        """The whole handshake, or ``TimeoutError`` after the deadline.
+
+        The deadline covers ``session.start()`` and the capability
+        confirmation that follows it. On a timeout (or cancellation) the
+        pending handshake is cancelled; the caller then closes the session.
+        """
+        starter = asyncio.ensure_future(self._start_and_confirm(session))
+        timer = asyncio.ensure_future(self._sleep(self._start_timeout_s))
+        try:
+            await asyncio.wait(
+                {starter, timer}, return_when=asyncio.FIRST_COMPLETED
+            )
+        finally:
+            timer.cancel()
+            if not starter.done():
+                starter.cancel()
+        if not starter.done() or starter.cancelled():
+            raise TimeoutError(
+                "session start not confirmed within %.0f s"
+                % self._start_timeout_s
+            )
+        return starter.result()
+
+    async def _start_and_confirm(self, session) -> str:
+        """``session.start()``, then the capability check for the requested
+        source playback profile."""
+        connection_id = await session.start()
+        if self._settings.source_playback_profile:
+            capabilities = getattr(session, "capabilities", ())
+            if not isinstance(capabilities, tuple) or not all(
+                capability in capabilities
+                for capability in (
+                    "agora_source_timeline_only",
+                    "agora_source_burst_v1",
+                )
+            ):
+                raise spatialreal.UnsupportedConfigurationError(
+                    "Server did not confirm the requested source profile",
+                    connection_id=connection_id,
+                )
+        return connection_id
 
     def _next_delay(self, decision: Decision) -> Optional[float]:
         if decision is Decision.SLOW:
