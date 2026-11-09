@@ -16,7 +16,13 @@ import hashlib
 import pytest
 
 from spatialreal_avatar_python.pacer import Pacer
-from spatialreal_avatar_python.sender import AudioSender, End, InputQueue, Turn
+from spatialreal_avatar_python.sender import (
+    INPUT_QUEUE_MAX_MS,
+    AudioSender,
+    End,
+    InputQueue,
+    Turn,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -216,6 +222,43 @@ async def test_end_follows_its_own_audio_behind_the_gate(clock):
         assert not h.sender.request_open
         assert h.states[-1] is False
         assert "request closed: finalize" in h.log.level("info")
+
+
+async def test_over_10s_queued_behind_an_active_gate_all_reach_the_sink(clock):
+    """A connected session waiting at the gate keeps every queued frame: a
+    second request longer than 10 s, queued while the first request's tail
+    plays, reaches the sink whole and in order, its end last."""
+    async with Harness(clock, max_queue_ms=INPUT_QUEUE_MAX_MS) as h:
+        h.sender.session_up()
+        pcm_a = _speech(2000)
+        h.sender.put_audio(pcm_a, RATE)
+        h.sender.put_end(End("finalize"))
+        await settle()
+        assert h.sink.calls == [("audio", pcm_a, False), ("audio", b"", True)]
+
+        # 12 s of distinct 100 ms frames for request B, all queued while
+        # the sender is parked at A's gate.
+        frames = [
+            (index + 1).to_bytes(2, "little") * (RATE // 10)
+            for index in range(120)
+        ]
+        for pcm in frames:
+            h.sender.put_audio(pcm, RATE)
+        h.sender.put_end(End("finalize"))
+        await settle()
+        assert h.sleep.calls == [pytest.approx(4.0)]
+        assert len(h.sink.calls) == 2
+        # The first frame is in flight at the gate; the rest wait behind it.
+        assert h.sender.queued == len(frames)
+
+        h.sleep.release()
+        await settle()
+
+        assert h.sink.audio() == [pcm_a, *frames]
+        assert h.sink.calls[-1] == ("audio", b"", True)
+        assert h.sink.ends == 2
+        assert not h.log.level("warn")
+        assert not h.log.level("error")
 
 
 async def test_end_waits_for_audio_queued_before_the_session_is_up(clock):
