@@ -50,7 +50,7 @@ def test_minimal_valid_config_resolves_with_defaults():
     assert cfg.ingress_endpoint_url == ""
     assert cfg.sample_rate == 24000
     assert cfg.egress_idle_reconnect_ms == 1_080_000
-    assert cfg.source_timeline_only is False
+    assert cfg.source_timeline_only is True
 
 
 @pytest.mark.parametrize("enabled", [False, True])
@@ -65,8 +65,14 @@ def test_source_timeline_only_rejects_non_boolean(invalid):
         resolve_config("room", params(source_timeline_only=invalid))
 
 
-def test_source_profile_defaults_zero_and_passes_burst():
-    assert resolve_config("room", params()).source_playback_profile == 0
+def test_source_profile_defaults_burst_and_resolves_legacy_override():
+    assert resolve_config("room", params()).source_playback_profile == 1
+    assert (
+        resolve_config(
+            "room", params(source_timeline_only=False)
+        ).source_playback_profile
+        == 0
+    )
     cfg = resolve_config(
         "room", params(source_timeline_only=True, source_playback_profile=1)
     )
@@ -85,7 +91,10 @@ def test_source_profile_rejects_invalid_values(invalid):
 
 def test_source_profile_requires_source_only():
     with pytest.raises(ValueError, match="source_timeline_only"):
-        resolve_config("room", params(source_playback_profile=1))
+        resolve_config(
+            "room",
+            params(source_timeline_only=False, source_playback_profile=1),
+        )
 
 
 def test_agora_channel_in_params_overrides_channel():

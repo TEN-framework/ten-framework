@@ -120,6 +120,10 @@ class FakeSession:
         self.init_exc = init_exc
         self.start_exc = start_exc
         self.connection_id = f"conn-{index}"
+        self.capabilities = (
+            "agora_source_timeline_only",
+            "agora_source_burst_v1",
+        )
         self.sends: list[tuple[bytes, bool]] = []
         self.interrupts = 0
         self.closes = 0
@@ -358,7 +362,8 @@ async def test_connect_success_reports_connected_and_sends(vt):
     assert (egress.channel_name, egress.uid) == ("room", 12345)
     # No certificate: the App ID itself is the token (D3).
     assert egress.token == APP_ID
-    assert egress.source_timeline_only is False
+    assert egress.source_timeline_only is True
+    assert egress.source_playback_profile == 1
 
     assert await h.client.send_audio(PCM)
     assert await h.client.send_audio(b"", end=True)
@@ -436,7 +441,7 @@ async def test_old_sdk_still_connects_when_source_mode_is_disabled(
             self.__dict__.update(kwargs)
 
     monkeypatch.setattr(session_client, "AgoraEgressConfig", LegacyEgressConfig)
-    h = await connected_harness(vt)
+    h = await connected_harness(vt, source_timeline_only=False)
     assert h.factory.last.kwargs["agora_egress"].channel_name == "room"
     assert h.reports == []
 
@@ -583,7 +588,9 @@ async def test_zero_profile_omits_new_keyword_for_old_sdk(vt, monkeypatch):
 
     monkeypatch.setattr(session_client, "AgoraEgressConfig", LegacyEgressConfig)
     monkeypatch.delattr(session_client.spatialreal, "RtcSourcePlaybackProfile")
-    h = await connected_harness(vt, source_playback_profile=0)
+    h = await connected_harness(
+        vt, source_timeline_only=False, source_playback_profile=0
+    )
     assert h.reports == []
     await h.client.stop()
 
@@ -942,3 +949,26 @@ async def test_stop_during_backoff_cancels_the_retry(vt):
     assert vt.pending == []
     await vt.advance(3600)
     assert len(factory.sessions) == 1
+
+
+@pytest.mark.asyncio
+async def test_explicit_legacy_passes_false_and_zero_to_new_sdk(vt):
+    h = await connected_harness(vt, source_timeline_only=False)
+    egress = h.factory.last.kwargs["agora_egress"]
+    assert egress.source_timeline_only is False
+    assert egress.source_playback_profile == 0
+    await h.client.stop()
+
+
+@pytest.mark.asyncio
+async def test_default_profile_requires_actual_server_confirmation(vt):
+    factory = BurstFactory(lambda _: ())
+    h = Harness(factory, vt)
+    await h.client.start()
+    await settle()
+    assert not h.client.connected
+    assert factory.last.closes == 1
+    assert factory.last.sends == []
+    assert h.codes == [(CODE_CONFIG, "UnsupportedConfigurationError")]
+    assert vt.pending == []
+    await h.client.stop()

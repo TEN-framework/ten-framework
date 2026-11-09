@@ -94,8 +94,12 @@ class SessionSettings:
     agora_appcert: str = ""
     agora_token: str = ""
     egress_idle_reconnect_ms: int = EGRESS_IDLE_RECONNECT_MS
-    source_timeline_only: bool = False
-    source_playback_profile: int = 0
+    source_timeline_only: bool = True
+    source_playback_profile: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        if self.source_playback_profile is None:
+            self.source_playback_profile = 1 if self.source_timeline_only else 0
 
 
 @dataclass
@@ -344,6 +348,15 @@ class SessionClient:
                 seconds=SESSION_TOKEN_TTL_S
             )
             egress_options = {}
+            sdk_fields = getattr(AgoraEgressConfig, "__dataclass_fields__", {})
+            # Preserve explicit compatibility even when the SDK itself now
+            # defaults to burst. Old SDKs must not receive unknown keywords.
+            if "source_timeline_only" in sdk_fields:
+                egress_options["source_timeline_only"] = s.source_timeline_only
+            if "source_playback_profile" in sdk_fields:
+                egress_options["source_playback_profile"] = (
+                    s.source_playback_profile
+                )
             if s.source_timeline_only:
                 has_source_field = "source_timeline_only" in getattr(
                     AgoraEgressConfig, "__dataclass_fields__", {}

@@ -72,8 +72,8 @@ which holds everything the operator sets. Defaults are the package
 | `params.console_endpoint_url` | — | `""` | Overrides the environment's console URL (test: `https://api.spatialreal.dev`). |
 | `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL (test: `wss://test-driven.spatialreal.dev/v2/driveningress`). |
 | `params.sample_rate` | — | `24000` | One of 8000, 16000, 22050, 24000, 32000, 44100, 48000. |
-| `params.source_timeline_only` | — | `false` | Boolean opt-in only for source-audio viewers with client-managed entry. Requires the matching SDK and server handshake capability. |
-| `params.source_playback_profile` | — | `0` | Integer 0 retains the existing profile. Integer 1 requests `BOUNDED_BURST_V1`; requires source-only mode, a compatible Python SDK and independently opted-in viewers. |
+| `params.source_timeline_only` | — | `true` | Current source-audio playback with client-managed entry. Set false only for legacy/native-audio viewers. |
+| `params.source_playback_profile` | — | `1` with source-only, otherwise `0` | Normally omit. Integer 1 requests `BOUNDED_BURST_V1`; integer 0 explicitly retains the earlier profile. |
 | `params.egress_idle_reconnect_ms` | — | `1080000` | Idle time after which the session is reconnected so the avatar stays in the channel; must stay below the server's inactivity timeout (20 min today). |
 | `params.agora_uid` | — | `""` | **Required.** Avatar uid in the channel; must parse as a non-zero integer. |
 | `params.agora_token` | — | `""` | Used verbatim when set; otherwise a token is minted per connect. |
@@ -86,32 +86,31 @@ incoming TTS audio. The TTS rate is read from each `AudioFrame` and frames at
 another rate are resampled, so a 44.1 kHz TTS feeding a 24 kHz session is
 fine; 24000 matches what most TTS extensions emit and is then pass-through.
 
-`source_timeline_only` leaves audio, the sender and the pacer unchanged. Keep it
-`false` for existing graphs/viewers. To enable it, install a source-pinned
-SpatialReal Python SDK build containing `AgoraEgressConfig.source_timeline_only`
-and its capability check; the released 0.2.3 build does not support the option.
-The server must confirm `agora_source_timeline_only`. An unsupported SDK or a
-missing confirmation is a configuration error with no reconnect loop. Ordinary
-transport failures still use the existing retry policy. No new PyPI release is
-required for the diagnostic image; pin the reviewed SDK source revision when
-building it.
+Current integrations need neither playback setting: the extension defaults to
+source-only bounded burst, and the current Web SDK detects the published profile.
+The extension requires Python SDK 0.3.0 or newer for the negotiated capabilities.
+With Web SDK 1.0.0-beta.6, explicitly set the viewer
+`agora.sourcePlaybackProfile: "bounded-burst-v1"`; automatic viewer detection is
+available in the subsequent Web SDK change.
 
-The optional bounded-burst profile is a pending shared-proto contract, not a
-released SDK requirement for existing graphs. Set `source_playback_profile: 1`
-only with `source_timeline_only: true` and a reviewed Python SDK build exporting
-`RtcSourcePlaybackProfile`. The SDK and this extension require both actual
-confirmation capabilities, `agora_source_timeline_only` and
-`agora_source_burst_v1`, before connecting the sender. A missing confirmation
-closes the session and reports a configuration error without retry or fallback.
-Every reconnect checks again. Profile zero omits the new SDK keyword, preserving
-compatibility with older SDKs. Booleans, strings and unknown profiles are invalid.
+The SDK and extension require both actual confirmation capabilities,
+`agora_source_timeline_only` and `agora_source_burst_v1`, before connecting the
+sender. A missing confirmation closes the session and reports a configuration
+error without retry or silent fallback. Every reconnect checks again. Ordinary
+transport failures retain the existing retry policy.
 
-Room viewers must separately select the same profile; neither TEN's `/start`
-HTTP response nor a publisher acknowledgement proves viewer compatibility.
-Audio input, sample rates, sender/pacer timing, End and interruption ordering
-are unchanged. The shared-proto merge/tag and coordinated viewer/backend
-validation are still required before enabling this in a public demo. No official
-TEN submission, package release or deployment is part of this change.
+For legacy/native-audio viewers, set `source_timeline_only: false` and omit the
+profile (or explicitly set it to zero). For the earlier source-only contract,
+keep source-only enabled and set `source_playback_profile: 0`. Explicit false/zero
+values are forwarded to modern Python SDKs; unsupported keywords are omitted for
+older SDKs when compatibility mode is explicitly chosen. Booleans, strings and
+unknown profiles are invalid.
+
+The publisher cannot discover other viewers in the room. Updated viewers support
+both profiles automatically; older viewers require the compatibility settings.
+This changes the publisher default, not audio input, sample rates, sender/pacer
+timing, End or interruption ordering. It does not submit an upstream TEN PR,
+publish a package or deploy a runtime.
 
 A missing or invalid value is reported once at start as a `-1012` error whose
 message names the key (`params.<key>`) and the extension stays idle; the
