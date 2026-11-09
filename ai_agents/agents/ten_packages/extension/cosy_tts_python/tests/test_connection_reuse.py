@@ -283,6 +283,10 @@ async def test_sequential_tasks_reuse_preconnected_pool(
     connect_metrics = await _expect_metrics(ctx, "connect_delay")
     assert connect_metrics["metrics"]["connect_delay"] >= 0
     await ctx.expect_audio_frame(timeout=0.5)
+    # Drain the first request before starting the next one.  Its audio end can
+    # arrive after the first frame, and otherwise the next request may consume
+    # the stale terminal event as its own.
+    await ctx.expect_data("tts_audio_end", timeout=0.5)
 
     for task_index in range(1, 5):
         await _synthesize(
