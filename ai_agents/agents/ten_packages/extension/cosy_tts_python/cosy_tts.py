@@ -118,6 +118,8 @@ class _RawWord:
     word: str
     begin_ms: int
     end_ms: int
+    begin_index: int | None = None
+    end_index: int | None = None
 
 
 @dataclass(frozen=True)
@@ -444,7 +446,15 @@ class AsyncIteratorCallback(ResultCallback):
         self._pcm_samples = 0
         self._sentence_origin_samples: dict[int, int] = {}
         self._sentence_time_offset: dict[int, int] = {}
-        self._emitted_words: dict[int, int] = {}
+        # Provider word indexes are request-scoped, not sentence-scoped. Keep
+        # only the contiguous published character boundary for bounded memory.
+        self._emitted_end_index: int | None = None
+        self._fallback_end_ms: dict[int, int] = {}
+        # Keep all identities at the current time boundary.  A provider can
+        # report several distinct zero-duration words at the same timestamp;
+        # retaining only the last one republishes the earlier entries when a
+        # cumulative event is repeated.
+        self._fallback_boundary_keys: dict[int, set[tuple[str, int, int]]] = {}
         self._current_sentence_index: int | None = None
 
     def bind_task(self, task_id: str) -> None:
@@ -616,26 +626,67 @@ class AsyncIteratorCallback(ResultCallback):
             index,
             self._pcm_samples,
         )
-        emitted = self._emitted_words.get(index, 0)
-        if len(words) < emitted:
-            # A shorter list would reopen published words; wait for the complete
-            # list in `sentence-end` instead of publishing them twice.
+        boundary = self._emitted_end_index
+        offset_ms = self._sentence_word_offset(index, words, origin_samples)
+        unseen = [
+            word
+            for word in words
+            if (
+                (boundary is None or word.begin_index >= boundary)
+                if word.begin_index is not None and word.end_index is not None
+                else self._fallback_is_new(index, word, offset_ms)
+            )
+        ]
+        if not unseen:
             return
 
         limit = (
-            len(words)
+            len(unseen)
             if event_type == "sentence-end"
-            else max(0, len(words) - SUBTITLE_LAG_WORDS)
+            else max(0, len(unseen) - SUBTITLE_LAG_WORDS)
         )
-        if limit <= emitted:
+        if limit <= 0:
             return
 
         subtitle = self._build_subtitle(
             index,
-            words[emitted:limit],
+            unseen[:limit],
             origin_samples,
         )
-        self._emitted_words[index] = limit
+        published = unseen[:limit]
+        indexed_ends = [
+            word.end_index for word in published if word.end_index is not None
+        ]
+        if indexed_ends:
+            self._emitted_end_index = max(indexed_ends)
+        fallback_words = [
+            word for word in published if word.begin_index is None
+        ]
+        if fallback_words:
+            old_boundary = self._fallback_end_ms.get(index, -1)
+            adjusted = [
+                (
+                    word.word,
+                    word.begin_ms + offset_ms,
+                    word.end_ms + offset_ms,
+                )
+                for word in fallback_words
+            ]
+            new_boundary = max(
+                old_boundary,
+                max(end for _, _, end in adjusted),
+            )
+            boundary_keys = {
+                (word, begin, end)
+                for word, begin, end in adjusted
+                if begin == new_boundary
+            }
+            if new_boundary == old_boundary:
+                boundary_keys.update(
+                    self._fallback_boundary_keys.get(index, set())
+                )
+            self._fallback_end_ms[index] = new_boundary
+            self._fallback_boundary_keys[index] = boundary_keys
         if subtitle is None:
             return
         self._put(
@@ -666,6 +717,18 @@ class AsyncIteratorCallback(ResultCallback):
             )
         return self._current_sentence_index
 
+    def _fallback_is_new(
+        self, index: int, word: _RawWord, offset_ms: int
+    ) -> bool:
+        begin = word.begin_ms + offset_ms
+        end = word.end_ms + offset_ms
+        boundary = self._fallback_end_ms.get(index, -1)
+        key = (word.word, begin, end)
+        return begin > boundary or (
+            begin == boundary
+            and key not in self._fallback_boundary_keys.get(index, set())
+        )
+
     @staticmethod
     def _parse_words(raw_words: Any) -> list[_RawWord]:
         if not isinstance(raw_words, list):
@@ -682,7 +745,21 @@ class AsyncIteratorCallback(ResultCallback):
             end_ms = _as_milliseconds(entry.get("end_time"))
             if begin_ms is None or end_ms is None or end_ms < begin_ms:
                 continue
-            words.append(_RawWord(word=text, begin_ms=begin_ms, end_ms=end_ms))
+            begin_index = entry.get("begin_index")
+            end_index = entry.get("end_index")
+            if not isinstance(begin_index, int) or not isinstance(
+                end_index, int
+            ):
+                begin_index = end_index = None
+            words.append(
+                _RawWord(
+                    word=text,
+                    begin_ms=begin_ms,
+                    end_ms=end_ms,
+                    begin_index=begin_index,
+                    end_index=end_index,
+                )
+            )
         return words
 
     def _build_subtitle(

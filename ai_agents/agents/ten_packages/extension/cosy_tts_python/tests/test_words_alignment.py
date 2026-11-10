@@ -533,3 +533,240 @@ async def test_nested_enable_words_is_not_forwarded(
     # the provider as an unknown parameter.
     assert parameters["word_timestamp_enabled"] is False
     assert "enable_words" not in parameters
+
+
+def test_word_identity_is_shared_across_sentences() -> None:
+    """Replayed words in a new sentence must not reopen published captions."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+
+    def event(index, kind, words):
+        callback._handle_output(
+            {
+                "output": {
+                    "type": kind,
+                    "sentence": {"index": index, "words": words},
+                }
+            }
+        )
+
+    words = [
+        {
+            "text": "今",
+            "begin_index": 98,
+            "end_index": 99,
+            "begin_time": 0,
+            "end_time": 200,
+        },
+        {
+            "text": "道",
+            "begin_index": 99,
+            "end_index": 100,
+            "begin_time": 200,
+            "end_time": 240,
+        },
+    ]
+    event(5, "sentence-begin", words)
+    assert [item.payload.text for item in captured] == ["今"]
+    words[1]["end_time"] = 400
+    event(5, "sentence-end", words)
+    assert [item.payload.text for item in captured] == ["今", "道"]
+    assert captured[-1].payload.words[0].duration_ms == 200
+    event(6, "sentence-begin", [])
+    event(6, "sentence-end", words)
+    assert len(captured) == 2
+    # The same spoken text at a new position is legitimate, not a duplicate.
+    event(
+        7,
+        "sentence-end",
+        [
+            {
+                **word,
+                "begin_index": word["begin_index"] + 2,
+                "end_index": word["end_index"] + 2,
+                "begin_time": word["begin_time"] + 400,
+                "end_time": word["end_time"] + 400,
+            }
+            for word in words
+        ],
+    )
+    assert captured[-1].payload.text == "今道"
+    assert len(captured) == 3
+
+
+def test_repeated_cumulative_sentence_list_is_ignored() -> None:
+    """Repeated provider revisions must not publish the same words twice."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+    words = [
+        {
+            "text": "墙",
+            "begin_index": 53,
+            "end_index": 54,
+            "begin_time": 1000,
+            "end_time": 1200,
+        },
+        {
+            "text": "缝",
+            "begin_index": 54,
+            "end_index": 55,
+            "begin_time": 1200,
+            "end_time": 1400,
+        },
+        {
+            "text": "中",
+            "begin_index": 55,
+            "end_index": 56,
+            "begin_time": 1400,
+            "end_time": 1600,
+        },
+    ]
+    payload = {
+        "output": {
+            "type": "sentence-synthesis",
+            "sentence": {"index": 3, "words": words},
+        }
+    }
+    callback._handle_output(payload)
+    callback._handle_output(payload)
+    assert [item.payload.text for item in captured] == ["墙缝"]
+    callback._handle_output(
+        {
+            "output": {
+                "type": "sentence-end",
+                "sentence": {"index": 3, "words": words},
+            }
+        }
+    )
+    assert [item.payload.text for item in captured] == ["墙缝", "中"]
+
+
+def test_repeated_zero_duration_words_at_boundary_are_ignored() -> None:
+    """All entries sharing a time boundary stay idempotent across replays."""
+    callback = AsyncIteratorCallback(
+        MagicMock(),
+        MagicMock(),
+        MagicMock(),
+        "request",
+        sample_rate=SAMPLE_RATE,
+        words_enabled=True,
+    )
+    captured = []
+    callback._put = captured.append
+    words = [
+        {
+            "text": "，",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+        {
+            "text": "。",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+        {
+            "text": "终",
+            "begin_time": 100,
+            "end_time": 100,
+        },
+    ]
+    payload = {
+        "output": {
+            "type": "sentence-end",
+            "sentence": {"index": 8, "words": words},
+        }
+    }
+    callback._handle_output(payload)
+    callback._handle_output(payload)
+    assert len(captured) == 1
+    assert captured[0].payload.text == "，。终"
+
+
+@pytest.fixture
+def replay_server(request):
+    from pathlib import Path
+
+    capture = json.loads(
+        (
+            Path(__file__).parent / "fixtures" / f"{request.param}.json"
+        ).read_text()
+    )
+    server = FakeWordTimestampServer(SERVER_PORT, ())
+
+    def synthesize(websocket, task_id):
+        for event in capture["events"]:
+            if "pcm_bytes" in event:
+                websocket.send(b"\x01\x00" * (event["pcm_bytes"] // 2))
+            else:
+                websocket.send(
+                    server._event("result-generated", task_id, event)
+                )
+
+    server._synthesize = synthesize
+    server.start()
+    try:
+        yield capture
+    finally:
+        server.stop()
+
+
+@pytest.mark.parametrize(
+    "replay_server",
+    ["cross_sentence_quote", "trailing_quote_terminal"],
+    indirect=True,
+)
+@ten_test(
+    "cosy_tts_python", property_json_str=WORDS_ENABLED_PROPERTY, timeout=15.0
+)
+async def test_recorded_sentence_replay_and_terminal(ctx, replay_server):
+    """Replay sanitized provider events from both reported duplicate cases."""
+    await _send_request(ctx, "recorded-replay")
+    results = []
+    while True:
+        result = await _expect_text_result(ctx)
+        results.append(result)
+        if result["text_result_end"]:
+            break
+    end = await ctx.expect_data("tts_audio_end", timeout=2.0)
+    end_json, error = end.get_property_to_json("")
+    assert error is None
+    assert json.loads(end_json)["reason"] == 1
+    expected = replay_server["expected_words"]
+    actual = [word for result in results for word in result["words"]]
+    assert [word["word"] for word in actual] == [
+        word["text"] for word in expected
+    ]
+    origin = actual[0]["start_ms"] - expected[0]["begin_time"]
+    for word, raw in zip(actual, expected):
+        assert word["start_ms"] - origin == raw["begin_time"]
+        assert word["duration_ms"] == raw["end_time"] - raw["begin_time"]
+    assert all(
+        result["metadata"]["turn_status"] == 0 for result in results[:-1]
+    )
+    terminal = results[-1]
+    assert terminal["metadata"]["turn_status"] == 1
+    assert terminal["text"] == "" and terminal["words"] == []
+    assert (
+        terminal["start_ms"]
+        == actual[-1]["start_ms"] + actual[-1]["duration_ms"]
+    )
+    assert terminal["start_ms"] - origin <= sum(
+        event.get("pcm_bytes", 0) for event in replay_server["events"]
+    ) * 1000 // (SAMPLE_RATE * BYTES_PER_SAMPLE)
+    await ctx.assert_no_data("tts_text_result", timeout=0.1)

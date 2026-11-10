@@ -14,9 +14,11 @@ class Hook:
         class Callback(module.ResultCallback):
             def __init__(self, callback):
                 self.callback = callback
+                self.request_id = getattr(callback, "request_id", None)
 
             def on_data(self, data):
-                reference.capture("audio", data)
+                request_id = getattr(self.callback, "request_id", None)
+                reference.capture("audio", data, request_id=request_id)
                 return self.callback.on_data(data)
 
             def on_open(self):
@@ -39,7 +41,9 @@ class Hook:
             return original_borrow(pool, *args, **kwargs)
 
         def streaming_call(synthesizer, text, *args, **kwargs):
-            reference.capture("text", text)
+            callback = getattr(synthesizer, "callback", None)
+            request_id = getattr(callback, "request_id", None)
+            reference.capture("text", text, request_id=request_id)
             return original_call(synthesizer, text, *args, **kwargs)
 
         patch.setattr(
