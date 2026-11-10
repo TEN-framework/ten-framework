@@ -37,11 +37,18 @@ speech-to-text WebSocket API.
 |----------|------|---------------|-------------|
 | `dump` | bool | `false` | Save sent PCM audio for debugging |
 | `dump_path` | string | `/tmp` | Directory for the audio dump |
+| `language` | string | unset | Public TEN language (for example `en-US`); copied to the vendor `language_code` as `en` when no explicit vendor code is supplied |
 
 The extension accepts the Scribe Realtime v2 query options for VAD, language
 selection, keyterms, no-verbatim mode, background filtering, and keepalives.
 TEN audio input is signed PCM16 mono, so `ulaw_8000` is rejected unless an
 upstream extension converts the audio first.
+
+When timestamps are disabled, ElevenLabs sends text-only partial and committed
+events. The extension estimates segment timing from successfully sent audio so
+final text remains usable by turn detection. The estimate may include silence
+and is marked as `local_estimate` in `metadata.asr_info.timing_source`; provider
+word timing is preserved when timestamp enrichment is enabled.
 
 ## Configuration Examples
 
@@ -51,6 +58,7 @@ upstream extension converts the audio first.
 {
     "dump": false,
     "dump_path": "/tmp",
+    "language": "en-US",
     "params": {
         "api_key": "your_elevenlabs_api_key_here",
         "ws_url": "wss://api.elevenlabs.io/v1/speech-to-text/realtime",

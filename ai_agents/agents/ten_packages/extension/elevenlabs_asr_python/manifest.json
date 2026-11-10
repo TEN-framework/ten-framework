@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "elevenlabs_asr_python",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "dependencies": [
     {
       "type": "system",
@@ -26,6 +26,9 @@
           "type": "bool"
         },
         "dump_path": {
+          "type": "string"
+        },
+        "language": {
           "type": "string"
         },
         "params": {

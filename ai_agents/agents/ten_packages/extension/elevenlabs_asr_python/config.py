@@ -30,6 +30,10 @@ class ElevenLabsASRConfig(BaseModel):
 
     dump: bool = False
     dump_path: str = "/tmp"
+    # ``language`` is the public ASR property used by TEN integrations.  The
+    # ElevenLabs query parameter is ``language_code`` and accepts ISO-639
+    # values, so it is copied and normalized in ``apply_defaults``.
+    language: str | None = None
     params: Dict[str, Any] = Field(default_factory=dict)
 
     def apply_defaults(self) -> None:
@@ -51,6 +55,16 @@ class ElevenLabsASRConfig(BaseModel):
         }
         for key, value in defaults.items():
             self.params.setdefault(key, value)
+
+        # Keep an explicitly supplied vendor language untouched.  When a
+        # customer only supplies TEN's top-level language, translate its
+        # BCP-47 value to the ISO code expected by ElevenLabs.
+        if "language_code" not in self.params:
+            public_language = self.params.get("language") or self.language
+            if isinstance(public_language, str) and public_language.strip():
+                self.params["language_code"] = self.to_provider_language_code(
+                    public_language
+                )
 
     def validate_config(self) -> None:
         """Validate values that otherwise fail only after opening a socket."""
@@ -101,7 +115,9 @@ class ElevenLabsASRConfig(BaseModel):
         language_code = self.params.get("language_code")
         if language_code is not None and (
             not isinstance(language_code, str)
-            or not re.fullmatch(r"[A-Za-z]{2,3}", language_code)
+            or not re.fullmatch(
+                r"[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*", language_code
+            )
         ):
             raise ValueError(
                 "params.language_code must be an ISO-639 code or BCP-47 tag"
@@ -198,10 +214,22 @@ class ElevenLabsASRConfig(BaseModel):
         return self.to_json(sensitive_handling=sensitive_handling)
 
     @staticmethod
+    def to_provider_language_code(language_code: str) -> str:
+        """Convert a public language tag to ElevenLabs' ISO language code."""
+        return language_code.strip().replace("_", "-").split("-", 1)[0].lower()
+
+    @staticmethod
     def normalize_language_code(language_code: str | None) -> str:
+        """Normalize provider or public language tags for TEN results."""
         if not language_code:
             return "und"
-        language_code = language_code.strip()
+        language_code = language_code.strip().replace("_", "-")
+        parts = language_code.split("-")
+        base = parts[0].lower()
+        if len(parts) > 1:
+            # Preserve a caller/provider supplied region while making the
+            # emitted TEN language stable (for example en-us -> en-US).
+            return "-".join([base, parts[1].upper(), *parts[2:]])
         language_map = {
             "zh": "zh-CN",
             "en": "en-US",
@@ -216,8 +244,9 @@ class ElevenLabsASRConfig(BaseModel):
             "hi": "hi-IN",
             "ar": "ar-AE",
         }
-        return language_map.get(language_code.lower(), language_code)
+        return language_map.get(base, language_code)
 
     @property
     def normalized_language(self) -> str:
+        """Return the configured language in TEN's display form."""
         return self.normalize_language_code(self.params.get("language_code"))

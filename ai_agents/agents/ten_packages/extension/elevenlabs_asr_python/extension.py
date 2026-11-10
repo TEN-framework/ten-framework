@@ -73,6 +73,15 @@ class ElevenLabsASRExtension(
         self._reported_error_epochs: set[int] = set()
         self._vendor_session_id: str | None = None
 
+        # Local timing is used only when ElevenLabs omits word timestamps.
+        # These values are reset at every provider session boundary.
+        self._session_audio_duration_ms = 0
+        self._session_audio_sent = False
+        self._local_segment_start_ms = 0
+        self._deferred_reconnect = False
+        self._audio_handle_lock = asyncio.Lock()
+        self.buffered_frames_size = 0
+
         self._finalize_lock = asyncio.Lock()
         self._finalize_request_lock = asyncio.Lock()
         self._finalize_event = asyncio.Event()
@@ -117,12 +126,17 @@ class ElevenLabsASRExtension(
                 f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            if self.config.dump:
+            if self.config.dump and self.config.dump_path.strip():
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
                 )
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
+            elif self.config.dump:
+                ten_env.log_warn(
+                    "ElevenLabs ASR dump is enabled but dump_path is empty; "
+                    "skipping audio dump"
+                )
         except Exception as exc:
             self._init_failed = True
             ten_env.log_error(f"Invalid ElevenLabs ASR config: {exc}")
@@ -176,6 +190,43 @@ class ElevenLabsASRExtension(
                 await super().on_data(ten_env, data)
             return
         await super().on_data(ten_env, data)
+
+    @override
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
+        """Wake a deferred reconnect when audio resumes after an idle close."""
+        if self._deferred_reconnect and not self._stopping:
+            self._deferred_reconnect = False
+            self._schedule_reconnect()
+        await super().on_audio_frame(ten_env, audio_frame)
+
+    async def _handle_audio_frame(
+        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+    ) -> None:
+        """Serialize normal and reconnect-triggered buffered frame delivery."""
+        async with self._audio_handle_lock:
+            await super()._handle_audio_frame(ten_env, audio_frame)
+
+    async def _flush_buffered_audio(self) -> None:
+        """Send frames buffered while an idle session was reconnecting.
+
+        The base ASR consumer normally drains this queue when the next frame
+        arrives.  A session can reconnect after the only post-idle frame,
+        though, so explicitly kick the queue once the new socket is ready.
+        """
+        if not self.is_connected() or self.buffered_frames.empty():
+            return
+        async with self._audio_handle_lock:
+            frames: list[AudioFrame] = []
+            while True:
+                try:
+                    frames.append(self.buffered_frames.get_nowait())
+                except asyncio.QueueEmpty:
+                    break
+            self.buffered_frames_size = 0
+            for frame in frames:
+                await super()._handle_audio_frame(self.ten_env, frame)
 
     @override
     async def start_connection(self) -> None:
@@ -306,6 +357,10 @@ class ElevenLabsASRExtension(
         self._pending_committed.clear()
         self._timestamp_fallbacks.clear()
         self._vendor_session_id = session_id
+        self._session_audio_duration_ms = 0
+        self._session_audio_sent = False
+        self._local_segment_start_ms = 0
+        self._deferred_reconnect = False
         if self.reconnect_manager:
             self.reconnect_manager.mark_connection_successful()
         self.sent_user_audio_duration_ms_before_last_reset += (
@@ -416,7 +471,9 @@ class ElevenLabsASRExtension(
                     self._timestamp_fallbacks.append(pending["text"])
                 await self._emit_result(pending, final=True)
 
-    def _result_metadata(self) -> dict[str, Any]:
+    def _result_metadata(
+        self, timing_source: str | None = None, final: bool | None = None
+    ) -> dict[str, Any]:
         metadata = (
             copy.deepcopy(self.metadata) if self.metadata is not None else {}
         )
@@ -434,8 +491,49 @@ class ElevenLabsASRExtension(
                 "vendor_session_id": self._vendor_session_id,
             }
         )
+        if timing_source is not None:
+            # ``asr_info`` is the existing extensible metadata object in the
+            # TEN ASR contract; keep the estimate marker there instead of
+            # adding a new top-level result field.
+            asr_info["timing_source"] = timing_source
+        if final is not None:
+            # ElevenLabs' committed event is the provider's speech boundary.
+            # Exposing that existing TEN turn-detector marker lets integrations
+            # use a final-event mode when word timestamps are disabled.
+            asr_info["speech_final"] = final
         metadata["asr_info"] = asr_info
         return metadata
+
+    def _estimate_local_timing(self, final: bool) -> tuple[int, int, str]:
+        """Estimate timing for a result without provider word timestamps.
+
+        ElevenLabs does not expose word timing when timestamp enrichment is
+        disabled.  The estimate uses successfully sent user audio in this
+        provider session and can therefore include silence.  It is only a
+        fallback for turn ordering; it is not caption-quality timing.
+        """
+        sent_audio_ms = self._session_audio_duration_ms
+        if not self._session_audio_sent and sent_audio_ms <= 0:
+            self.ten_env.log_warn(
+                "ElevenLabs returned transcript timing without sent audio; "
+                "leaving timing at zero"
+            )
+            return 0, 0, "unavailable"
+
+        segment_start = min(self._local_segment_start_ms, sent_audio_ms)
+        elapsed_ms = max(0, sent_audio_ms - segment_start)
+        # A nonempty result with successfully sent audio must not look like an
+        # old zero-length result to the turn detector.  One millisecond is the
+        # smallest representable approximation when no new frame duration is
+        # available yet.
+        duration_ms = max(1, elapsed_ms)
+        start_ms = (
+            self.sent_user_audio_duration_ms_before_last_reset
+            + self.audio_timeline.get_audio_duration_before_time(segment_start)
+        )
+        if final:
+            self._local_segment_start_ms = sent_audio_ms
+        return max(0, int(start_ms)), duration_ms, "local_estimate"
 
     async def _emit_result(
         self, message_data: dict[str, Any], *, final: bool
@@ -447,34 +545,48 @@ class ElevenLabsASRExtension(
             return
 
         words = self._parse_words(message_data.get("words", []))
+        actual_start_ms = 0
         if words:
             start_ms = words[0].start_ms
             end_ms = max(word.start_ms + word.duration_ms for word in words)
             duration_ms = max(0, end_ms - start_ms)
+            timing_source = "provider"
         else:
-            start_ms = 0
-            duration_ms = 0
-        actual_start_ms = int(
-            self.audio_timeline.get_audio_duration_before_time(start_ms)
-            + self.sent_user_audio_duration_ms_before_last_reset
-        )
-        for word in words:
-            word.start_ms = max(
-                0,
-                int(
-                    self.audio_timeline.get_audio_duration_before_time(
-                        word.start_ms
-                    )
-                    + self.sent_user_audio_duration_ms_before_last_reset
-                ),
+            actual_start_ms, duration_ms, timing_source = (
+                self._estimate_local_timing(final)
             )
+        if words:
+            actual_start_ms = int(
+                self.audio_timeline.get_audio_duration_before_time(start_ms)
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+            for word in words:
+                word.start_ms = max(
+                    0,
+                    int(
+                        self.audio_timeline.get_audio_duration_before_time(
+                            word.start_ms
+                        )
+                        + self.sent_user_audio_duration_ms_before_last_reset
+                    ),
+                )
+            if final:
+                self._local_segment_start_ms = self._session_audio_duration_ms
 
         assert self.config is not None
-        language = self.config.normalize_language_code(
-            message_data.get("language_code")
-            or self.config.params.get("language_code")
+        provider_language = message_data.get("language_code")
+        if not isinstance(provider_language, str):
+            provider_language = None
+        requested_language = (
+            self.config.params.get("language_code") or self.config.language
         )
-        metadata = self._result_metadata()
+        if (
+            not provider_language
+            or str(provider_language).strip().lower() in {"und", "unknown"}
+        ) and requested_language:
+            provider_language = requested_language
+        language = self.config.normalize_language_code(provider_language)
+        metadata = self._result_metadata(timing_source, final=final)
         result = ASRResult(
             text=text,
             final=final,
@@ -585,7 +697,18 @@ class ElevenLabsASRExtension(
         if self._finalize_pending:
             await self._complete_finalize()
         if not self._fatal_error:
-            self._schedule_reconnect()
+            if self._session_audio_sent:
+                self._schedule_reconnect()
+            else:
+                # ElevenLabs intentionally closes sessions that have been
+                # idle. Keep the socket closed until audio resumes instead
+                # of creating an endless reconnect loop with no input.
+                self._deferred_reconnect = True
+                self.ten_env.log_info(
+                    "ElevenLabs session closed before audio; "
+                    "deferring reconnect until the next audio frame",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
     @override
     async def on_event(
@@ -683,6 +806,7 @@ class ElevenLabsASRExtension(
                     self.start_connection
                 )
                 if self.is_connected():
+                    await self._flush_buffered_audio()
                     return
         finally:
             if self._reconnect_task is asyncio.current_task():
@@ -757,10 +881,25 @@ class ElevenLabsASRExtension(
             audio_data = bytes(buf)
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
-            return await self.recognition.send_audio_frame(audio_data)
+            sent = await self.recognition.send_audio_frame(audio_data)
+            if sent:
+                self._session_audio_sent = True
+                self._session_audio_duration_ms += self._audio_duration_ms(
+                    len(audio_data)
+                )
+            return sent
         except Exception as exc:
             self.ten_env.log_error(f"Error sending audio to ElevenLabs: {exc}")
             return False
         finally:
             if buf is not None:
                 frame.unlock_buf(buf)
+
+    def _audio_duration_ms(self, byte_count: int) -> int:
+        return int(
+            byte_count
+            / self.input_audio_sample_rate()
+            / self.input_audio_channels()
+            / self.input_audio_sample_width()
+            * 1000
+        )

@@ -108,11 +108,23 @@ class ElevenLabsWSRecognition:
             getattr(received, "reason", "") or "closed",
         )
 
+    @staticmethod
+    def _is_idle_close(close_code: int, close_message: str) -> bool:
+        """Return whether the vendor closed an otherwise idle session."""
+        message = (close_message or "").lower()
+        return close_code in {1000, 1001} or any(
+            marker in message
+            for marker in ("idle", "inactiv", "no message", "timeout")
+        )
+
     def _build_websocket_url(self) -> str:
         """Build an encoded URL with only vendor query parameters."""
         excluded = {
             "api_key",
             "ws_url",
+            # TEN's generic public language property is translated to the
+            # provider's language_code by the config layer.
+            "language",
             "sample_rate",
             "dump",
             "dump_path",
@@ -232,7 +244,8 @@ class ElevenLabsWSRecognition:
             normal = True
         except ConnectionClosedError as exc:
             close_code, close_message = self._close_details(exc)
-            if self.callback:
+            normal = self._is_idle_close(close_code, close_message)
+            if self.callback and not normal:
                 await self.callback.on_error(
                     f"ElevenLabs websocket closed: {close_message}",
                     str(close_code or "websocket_closed"),
@@ -240,7 +253,8 @@ class ElevenLabsWSRecognition:
                 )
         except ConnectionClosed as exc:
             close_code, close_message = self._close_details(exc)
-            if self.callback:
+            normal = self._is_idle_close(close_code, close_message)
+            if self.callback and not normal:
                 await self.callback.on_error(
                     f"ElevenLabs websocket closed: {close_message}",
                     str(close_code or "websocket_closed"),

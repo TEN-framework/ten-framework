@@ -1,6 +1,7 @@
 {
     "dump": false,
     "dump_path": "/tmp",
+    "language": "en-US",
     "params": {
         "api_key": "${env:ELEVENLABS_ASR_KEY|}",
         "ws_url": "wss://api.elevenlabs.io/v1/speech-to-text/realtime",

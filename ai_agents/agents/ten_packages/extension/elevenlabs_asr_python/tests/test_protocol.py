@@ -65,6 +65,26 @@ def test_config_defaults_and_redaction():
     assert "url-token" not in config.to_json()
 
 
+def test_top_level_language_is_forwarded_as_provider_language():
+    config = ElevenLabsASRConfig(language="en-US", params={"api_key": "secret"})
+
+    config.validate_config()
+
+    assert config.params["language_code"] == "en"
+    assert config.normalized_language == "en-US"
+
+
+def test_explicit_provider_language_is_preserved():
+    config = ElevenLabsASRConfig(
+        language="en-US",
+        params={"api_key": "secret", "language_code": "fr"},
+    )
+
+    config.validate_config()
+
+    assert config.params["language_code"] == "fr"
+
+
 def test_config_rejects_legacy_model():
     config = ElevenLabsASRConfig(
         params={"api_key": "secret", "model_id": "scribe_v2"}
@@ -83,6 +103,7 @@ def test_websocket_url_excludes_credentials_and_audio_rate():
             "model_id": "scribe_v2_realtime",
             "audio_format": "pcm_16000",
             "sample_rate": 16000,
+            "language": "en-US",
             "keyterms": ["hello world"],
             "connect_timeout": 10,
             "finalize_timeout": 5,
@@ -93,6 +114,7 @@ def test_websocket_url_excludes_credentials_and_audio_rate():
 
     assert "secret" not in url
     assert "sample_rate" not in url
+    assert "language=en-US" not in url
     assert "connect_timeout" not in url
     assert "finalize_timeout" not in url
     assert "keyterms=hello+world" in url
@@ -183,6 +205,67 @@ def test_timestamp_event_does_not_duplicate_final_result():
     assert result.final is True
     assert result.language == "en-US"
     assert result.words[0].duration_ms == 500
+
+
+def test_text_only_results_use_local_segment_timing():
+    extension = ElevenLabsASRExtension("elevenlabs")
+    extension.ten_env = FakeEnv()
+    extension.config = ElevenLabsASRConfig(
+        language="en-US", params={"api_key": "secret"}
+    )
+    extension.config.validate_config()
+    extension._session_audio_sent = True
+    extension._session_audio_duration_ms = 640
+    extension.audio_timeline.add_user_audio(640)
+
+    async def run_test():
+        await extension.on_result(
+            {"message_type": "partial_transcript", "text": "hel"}, 0
+        )
+        await extension.on_result(
+            {"message_type": "committed_transcript", "text": "hello"}, 0
+        )
+
+    asyncio.run(run_test())
+
+    results = [
+        payload
+        for name, payload in extension.ten_env.events
+        if name == "asr_result"
+    ]
+    assert [
+        (result["start_ms"], result["duration_ms"]) for result in results
+    ] == [
+        (0, 640),
+        (0, 640),
+    ]
+    assert results[-1]["final"] is True
+    assert results[-1]["language"] == "en-US"
+    assert results[-1]["metadata"]["asr_info"]["timing_source"] == (
+        "local_estimate"
+    )
+    assert results[-1]["metadata"]["asr_info"]["speech_final"] is True
+
+
+def test_text_only_final_without_audio_is_explicitly_untimed():
+    extension = ElevenLabsASRExtension("elevenlabs")
+    extension.ten_env = FakeEnv()
+    extension.config = ElevenLabsASRConfig(params={"api_key": "secret"})
+    extension.config.validate_config()
+
+    asyncio.run(
+        extension.on_result(
+            {"message_type": "committed_transcript", "text": "hello"}, 0
+        )
+    )
+
+    result = next(
+        payload
+        for name, payload in extension.ten_env.events
+        if name == "asr_result"
+    )
+    assert (result["start_ms"], result["duration_ms"]) == (0, 0)
+    assert result["metadata"]["asr_info"]["timing_source"] == "unavailable"
 
 
 @pytest.mark.parametrize("reconnect_offset", [0, 5000])
@@ -339,6 +422,42 @@ def test_pending_timestamps_are_discarded_on_reconnect():
     assert results[0]["metadata"]["asr_info"]["vendor_session_id"] == (
         "new-session"
     )
+
+
+def test_reconnect_resets_local_segment_timing():
+    extension = ElevenLabsASRExtension("elevenlabs")
+    extension.ten_env = FakeEnv()
+    extension.config = ElevenLabsASRConfig(params={"api_key": "secret"})
+    extension.config.validate_config()
+    extension._connection_epoch = 2
+    extension._session_audio_sent = True
+    extension._session_audio_duration_ms = 500
+    extension._local_segment_start_ms = 400
+
+    asyncio.run(extension.on_open(2, "new-session", 1))
+
+    assert extension._session_audio_duration_ms == 0
+    assert extension._local_segment_start_ms == 0
+    assert extension._session_audio_sent is False
+
+
+def test_idle_close_defers_reconnect_until_audio():
+    extension = ElevenLabsASRExtension("elevenlabs")
+    extension.ten_env = FakeEnv()
+    extension._connection_epoch = 1
+    schedule_reconnect = Mock()
+    extension._schedule_reconnect = schedule_reconnect
+    extension.on_disconnected = AsyncMock()
+
+    async def run_test():
+        await extension.on_close(1000, "idle timeout", 1)
+        assert extension._deferred_reconnect is True
+        schedule_reconnect.assert_not_called()
+        await extension.on_audio_frame(extension.ten_env, Mock())
+
+    asyncio.run(run_test())
+
+    schedule_reconnect.assert_called_once_with()
 
 
 def test_late_timestamps_do_not_consume_next_identical_commit():
