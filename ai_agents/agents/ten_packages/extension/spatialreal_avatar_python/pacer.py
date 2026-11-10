@@ -22,6 +22,9 @@ tick sends enough 100 ms silence chunks to return it to ``pad_floor_ms``
 the next speech chunk can follow without inserted silence.
 ``pad_max_ms`` of contiguous padding with no new real audio closes the
 request; ``turn_stall_ms`` after the real audio drained is the outer backstop.
+While a real chunk's send is in flight the ticker does none of this: that
+chunk is not on the playhead yet, so it would see a drain that is not there
+and pad, or close the request, ahead of speech that has already arrived.
 
 A new request whose predecessor is still less than ``gate_ms`` past drained
 waits before its first chunk so the predecessor's tail is not cut by the
@@ -137,6 +140,8 @@ class Pacer:
         # An awaited send may finish after end, flush or reconnect and after
         # a new request has opened. Its accounting belongs only to its epoch.
         self._request_gen = 0
+        # Real sends awaiting the sink; the ticker stands still meanwhile.
+        self._real_sends_in_flight = 0
 
     # -- observable state ---------------------------------------------------
 
@@ -163,7 +168,9 @@ class Pacer:
         An empty chunk is a no-op reported as sent. A chunk that a flush
         cancels while it waits at the gate is not sent. A chunk the sink
         could not send is ``NOT_SENT``: nothing is counted, and a request
-        opened for it is forgotten so the next chunk opens a fresh one.
+        opened for it is forgotten so the next chunk opens a fresh one. A
+        send that completes after a flush, end or reset is not counted
+        toward the request that boundary closed.
         """
         if not pcm:
             return PushResult.SENT
@@ -173,7 +180,16 @@ class Pacer:
                 return PushResult.CANCELLED
             self._open()
             opened = True
-        if not await self._sink.send_audio(pcm, end=False):
+        gen = self._request_gen
+        self._real_sends_in_flight += 1
+        try:
+            sent = await self._sink.send_audio(pcm, end=False)
+        finally:
+            self._real_sends_in_flight -= 1
+        if gen != self._request_gen:
+            # A flush, end or reset closed this request during the send.
+            return PushResult.SENT if sent else PushResult.NOT_SENT
+        if not sent:
             if opened:
                 self._forget_request()
             return PushResult.NOT_SENT
@@ -279,15 +295,25 @@ class Pacer:
     # -- ticker -------------------------------------------------------------
 
     async def tick(self) -> None:
-        """One padding/stall step; ``run`` calls it every ``pad_tick_ms``."""
-        if not self._req_open:
+        """One padding/stall step; ``run`` calls it every ``pad_tick_ms``.
+
+        A no-op while a real send is in flight: the playhead does not hold
+        that chunk yet, so neither padding nor a padding or stall closure
+        may overtake it. The next tick after it completes reads the updated
+        playhead. ``flush`` is not held back by an in-flight send.
+        """
+        if not self._req_open or self._real_sends_in_flight:
             return
         gen = self._request_gen
         now = self._clock()
         if self._stalled(now):
             await self.end_request("turn stall")
             return
-        while self._req_open and gen == self._request_gen:
+        while (
+            self._req_open
+            and gen == self._request_gen
+            and not self._real_sends_in_flight
+        ):
             # Real audio can arrive during an awaited padding send. Recheck
             # its lead before each chunk instead of sending a stale batch.
             # The tolerance avoids an extra chunk from float clock drift.
@@ -301,6 +327,10 @@ class Pacer:
                 return
             self._sent_ms += self._pad_tick_ms
             self._padded_ms_contiguous += self._pad_tick_ms
+            if self._real_sends_in_flight:
+                # Real audio started during this padding send; once it is
+                # counted the contiguous padding restarts from zero.
+                return
             if self._padded_ms_contiguous >= self._pad_max_ms:
                 await self.end_request("pad max")
                 return

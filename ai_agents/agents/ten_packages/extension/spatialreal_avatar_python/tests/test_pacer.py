@@ -86,6 +86,29 @@ class PausingPaddingSink(FakeSink):
         return result
 
 
+class HoldingRealSink(PausingPaddingSink):
+    """Hold every real (non-silent) send open until ``release_real`` is set.
+
+    Stands in for a WebSocket send that yields under backpressure.
+    ``real_started`` is set once such a send has been recorded.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.release_padding.set()
+        self.real_started = asyncio.Event()
+        self.release_real = asyncio.Event()
+        self.hold = False
+
+    async def send_audio(self, pcm: bytes, end: bool = False) -> bool:
+        if self.hold and pcm and pcm.strip(b"\x00"):
+            self.calls.append(("audio", pcm, end))
+            self.real_started.set()
+            await self.release_real.wait()
+            return self.connected
+        return await super().send_audio(pcm, end=end)
+
+
 class FakeSleep:
     """Records each requested sleep and advances the clock by it.
 
@@ -682,3 +705,153 @@ async def test_old_padding_completion_cannot_advance_new_request(
         await asyncio.wait_for(tick, timeout=1)
     assert pacer.request_open
     assert pacer.ahead_ms == pytest.approx(100)
+
+
+async def _start_held_send(pacer, sink, pcm):
+    sink.hold = True
+    task = asyncio.create_task(pacer.push_audio(pcm))
+    await asyncio.wait_for(sink.real_started.wait(), timeout=1)
+    return task
+
+
+@pytest.mark.parametrize("opening", [True, False])
+async def test_ticker_neither_pads_nor_ends_during_a_held_real_send(
+    clock, opening
+):
+    """A real send held across more than pad-max and turn-stall worth of
+    ticks: no silence and no end=True go out until it completes."""
+    sink = HoldingRealSink()
+    pacer = _pacer(clock, sink)
+    real_ms = 200.0
+    if not opening:
+        await pacer.push_audio(_speech(200))
+        clock.advance(150)
+        real_ms += 200
+    started_at = clock.now()
+    held = await _start_held_send(pacer, sink, _speech(200))
+
+    for _ in range(170):  # 17 s: past PAD_MAX_MS and TURN_STALL_MS
+        clock.advance(100)
+        await pacer.tick()
+    assert not held.done()
+    assert sink.silence_chunks() == []
+    assert sink.ends == 0
+    assert pacer.request_open
+
+    sink.release_real.set()
+    assert await asyncio.wait_for(held, timeout=1) is PushResult.SENT
+    assert pacer.request_open
+    assert sink.ends == 0
+    if opening:
+        first_send = started_at
+    else:
+        first_send = started_at - 0.150
+    elapsed_ms = (clock.now() - first_send) * 1000
+    assert pacer.ahead_ms == pytest.approx(real_ms - elapsed_ms)
+
+
+async def test_padding_resumes_from_the_playhead_after_a_held_send(clock):
+    sink = HoldingRealSink()
+    pacer = _pacer(clock, sink)
+    await pacer.push_audio(_speech(200))
+    clock.advance(150)
+    held = await _start_held_send(pacer, sink, _speech(1000))
+    for _ in range(5):  # the first 200 ms drain at 200 ms
+        clock.advance(100)
+        await pacer.tick()
+    assert sink.silence_chunks() == []
+
+    sink.release_real.set()
+    assert await asyncio.wait_for(held, timeout=1) is PushResult.SENT
+    # Elapsed 650 ms against 1200 ms of real audio.
+    assert pacer.ahead_ms == pytest.approx(550)
+    await pacer.tick()
+    assert sink.silence_chunks() == []
+
+    clock.advance(600)
+    assert pacer.ahead_ms == pytest.approx(-50)
+    await pacer.tick()
+    assert sink.audio_ms(silent=True) == 100.0
+    assert pacer.ahead_ms == pytest.approx(50)
+    assert pacer.request_open
+    assert sink.ends == 0
+
+
+async def test_flush_during_a_held_send_acts_at_once_and_stays_closed(clock):
+    sink = HoldingRealSink()
+    sleep = FakeSleep(clock)
+    pacer = _pacer(clock, sink, sleep)
+    await pacer.push_audio(_speech(200))
+    clock.advance(150)
+    held = await _start_held_send(pacer, sink, _speech(1000))
+    for _ in range(3):
+        clock.advance(100)
+        await pacer.tick()
+
+    await pacer.flush()
+    assert not held.done()
+    assert sink.calls[-1] == ("interrupt",)
+    assert not pacer.request_open
+    playhead = pacer.ahead_ms
+
+    sink.release_real.set()
+    assert await asyncio.wait_for(held, timeout=1) is PushResult.SENT
+    assert not pacer.request_open
+    assert pacer.ahead_ms == pytest.approx(playhead)
+    for _ in range(40):
+        clock.advance(100)
+        await pacer.tick()
+    assert sink.silence_chunks() == []
+    assert sink.ends == 0
+
+    # The next turn opens a fresh request without a gate wait.
+    sink.hold = False
+    assert await pacer.push_audio(_speech(100)) is PushResult.SENT
+    assert sleep.calls == []
+    assert pacer.request_open
+    assert pacer.ahead_ms == pytest.approx(100)
+
+
+async def test_refused_held_opening_send_is_forgotten_without_padding(clock):
+    sink = HoldingRealSink()
+    sleep = FakeSleep(clock)
+    pacer = _pacer(clock, sink, sleep)
+    held = await _start_held_send(pacer, sink, _speech(200))
+    for _ in range(40):
+        clock.advance(100)
+        await pacer.tick()
+    assert sink.silence_chunks() == []
+
+    sink.connected = False
+    sink.release_real.set()
+    assert await asyncio.wait_for(held, timeout=1) is PushResult.NOT_SENT
+    assert not pacer.request_open
+    assert pacer.ahead_ms == -math.inf
+    await pacer.tick()
+    assert sink.silence_chunks() == []
+    assert sink.ends == 0
+
+
+async def test_pad_max_does_not_close_while_a_real_send_is_in_flight(clock):
+    """Real audio arrives during the padding send that reaches pad max: the
+    request is not closed ahead of it."""
+    sink = HoldingRealSink()
+    sink.release_padding.clear()
+    pacer = _pacer(clock, sink, pad_max_ms=100)
+    await pacer.push_audio(_speech(20))
+    clock.advance(270)
+    tick = asyncio.create_task(pacer.tick())
+    await asyncio.wait_for(sink.padding_started.wait(), timeout=1)
+    held = await _start_held_send(pacer, sink, _speech(1000))
+
+    sink.release_padding.set()
+    await asyncio.wait_for(tick, timeout=1)
+    assert sink.ends == 0
+    assert pacer.request_open
+
+    sink.release_real.set()
+    assert await asyncio.wait_for(held, timeout=1) is PushResult.SENT
+    await pacer.tick()
+    assert sink.ends == 0
+    assert pacer.request_open
+    assert len(sink.silence_chunks()) == 1
