@@ -189,6 +189,22 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_width(self) -> int:
         return 2
 
+    async def send_tts_audio_data(
+        self, audio_data: bytes, timestamp: int = 0
+    ) -> None:
+        # Reserve before sending: an end callback may run while the frame is
+        # in flight. Count aligned PCM, including the base's previous leftover.
+        metadata = self.metadatas.setdefault(self.current_audio_request_id, {})
+        frame_bytes = (
+            self.synthesize_audio_sample_width()
+            * self.synthesize_audio_channels()
+        )
+        emitted = (len(self.leftover_bytes) + len(audio_data)) // frame_bytes
+        metadata["pcm_bytes"] = (
+            metadata.get("pcm_bytes", 0) + emitted * frame_bytes
+        )
+        await super().send_tts_audio_data(audio_data, timestamp)
+
     async def _loop(self) -> None:
         """Message polling loop"""
         while True:
@@ -319,6 +335,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     )
 
                 self.request_total_audio_duration = 0
+                self.metadatas.setdefault(t.request_id, {})["pcm_bytes"] = 0
 
                 # create new PCMWriter for new request_id, and clean up old PCMWriter
                 if self.config.dump:

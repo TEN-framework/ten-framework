@@ -375,6 +375,10 @@
               "extension": "bridge",
               "data": [
                 {
+                  "name": "processing_completed",
+                  "dest": [{"extension": "websocket_server"}]
+                },
+                {
                   "name": "error",
                   "dest": [
                     {
