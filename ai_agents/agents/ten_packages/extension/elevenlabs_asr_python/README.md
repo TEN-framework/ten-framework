@@ -76,3 +76,36 @@ word timing is preserved when timestamp enrichment is enabled.
     }
 }
 ```
+
+## Connection and enrichment boundaries
+
+Connection creation, explicit connects, reconnects, finalize, and stop share a
+replacement lock. Sends and transport closure share a client-operation lock;
+the network handshake does not hold that lock. Every successful connection
+drains retained frames, reading each frame's metadata. Pending committed text
+is delivered once with its captured session and timing before replacing the
+provider session. Context-local output metadata prevents the base class's
+shallow merge from replacing that captured context with a later audio frame.
+
+ElevenLabs documents timestamp enrichment as delayed, but publishes no maximum
+delay and no shared transcript identifier for the committed/enriched pair
+([event reference](https://elevenlabs.io/docs/eleven-api/guides/how-to/speech-to-text/realtime/event-reference),
+[wire schema](https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime)).
+This adapter waits 250 ms, then emits the captured local estimate without
+waiting indefinitely. Up to 256 fallback records retain the upper bound of
+audio sent at commit receipt. For repeated text, enrichment whose word end
+extends beyond an older record's audio bound cannot belong to that older
+commit; it is paired with the pending later commit. Older or ambiguous
+enrichment is ignored, preserving exactly-once text delivery. Within a pending
+window, matching text is paired in commit order.
+
+This is a conservative bounded policy, not a provider identity guarantee.
+Missing enrichment followed by identical text with distinguishable word timing
+retains the later provider words; indistinguishable timing falls back locally.
+After the 256-record history limit, arbitrary late identical enrichment cannot
+be disambiguated. Waiting forever would stall final text; matching only text
+would consume later enrichment; introducing a public transcript ID would not
+be supported by the provider. Protocol regressions cover missing/late repeated
+enrichment, missing/delayed enrichment across replacement, yielding handshake
+error delivery, active sends/finalize during stop, initial/explicit buffer
+draining, and connection-status credential redaction.

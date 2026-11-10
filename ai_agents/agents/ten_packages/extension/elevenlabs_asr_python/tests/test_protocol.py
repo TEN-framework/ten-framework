@@ -396,7 +396,7 @@ def test_delayed_timestamps_do_not_duplicate_final_result():
     assert results[0]["metadata"]["session_id"] == "session"
 
 
-def test_pending_timestamps_are_discarded_on_reconnect():
+def test_pending_finals_keep_their_context_on_reconnect():
     extension = make_timestamp_extension()
     extension._connection_epoch = 1
 
@@ -418,8 +418,9 @@ def test_pending_timestamps_are_discarded_on_reconnect():
         for name, payload in extension.ten_env.events
         if name == "asr_result"
     ]
-    assert [result["text"] for result in results] == ["new"]
-    assert results[0]["metadata"]["asr_info"]["vendor_session_id"] == (
+    assert [result["text"] for result in results] == ["old", "new"]
+    assert results[0]["metadata"]["session_id"] == "session"
+    assert results[1]["metadata"]["asr_info"]["vendor_session_id"] == (
         "new-session"
     )
 

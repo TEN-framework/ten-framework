@@ -8,7 +8,6 @@ from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 import websockets
 from websockets.exceptions import (
     ConnectionClosed,
-    ConnectionClosedError,
     ConnectionClosedOK,
 )
 from websockets.protocol import State
@@ -81,6 +80,7 @@ class ElevenLabsWSRecognition:
         self._closed = False
         self._session_started = asyncio.Event()
         self._start_error: tuple[str, str] | None = None
+        self._handshake_complete = False
         self._send_lock = asyncio.Lock()
         self._connection_started_at = 0.0
 
@@ -108,14 +108,13 @@ class ElevenLabsWSRecognition:
             getattr(received, "reason", "") or "closed",
         )
 
-    @staticmethod
-    def _is_idle_close(close_code: int, close_message: str) -> bool:
-        """Return whether the vendor closed an otherwise idle session."""
-        message = (close_message or "").lower()
-        return close_code in {1000, 1001} or any(
-            marker in message
-            for marker in ("idle", "inactiv", "no message", "timeout")
-        )
+    async def _notify_error(self, code: str, message: str) -> None:
+        """Startup errors belong to start(); live errors belong to callbacks."""
+        if not self._handshake_complete:
+            self._start_error = (code, message)
+            self._session_started.set()
+        elif self.callback:
+            await self.callback.on_error(message, code, self.generation)
 
     def _build_websocket_url(self) -> str:
         """Build an encoded URL with only vendor query parameters."""
@@ -169,7 +168,6 @@ class ElevenLabsWSRecognition:
             if message_type == "session_started":
                 self.session_id = message_data.get("session_id")
                 self.is_started = True
-                self._session_started.set()
                 delay_ms = int(
                     max(0.0, monotonic() - self._connection_started_at) * 1000
                 )
@@ -177,6 +175,7 @@ class ElevenLabsWSRecognition:
                     await self.callback.on_open(
                         self.generation, self.session_id, delay_ms
                     )
+                self._session_started.set()
                 return
 
             if message_type in {
@@ -205,30 +204,17 @@ class ElevenLabsWSRecognition:
                 "insufficient_audio_activity",
             }:
                 error = str(message_data.get("error", message_type))
-                self._start_error = (message_type, error)
-                self._session_started.set()
-                if self.callback:
-                    await self.callback.on_error(
-                        error, message_type, self.generation
-                    )
+                await self._notify_error(message_type, error)
                 return
 
             if self.callback:
                 await self.callback.on_event(message_data, self.generation)
         except json.JSONDecodeError as exc:
             error = f"invalid ElevenLabs JSON response: {exc}"
-            self._start_error = ("invalid_response", error)
-            self._session_started.set()
-            if self.callback:
-                await self.callback.on_error(
-                    error, "invalid_response", self.generation
-                )
+            await self._notify_error("invalid_response", error)
         except Exception as exc:
             error = f"error processing ElevenLabs response: {exc}"
-            if self.callback:
-                await self.callback.on_error(
-                    error, "response_error", self.generation
-                )
+            await self._notify_error("response_error", error)
 
     async def _message_handler(self) -> None:
         close_code = 0
@@ -242,40 +228,28 @@ class ElevenLabsWSRecognition:
         except ConnectionClosedOK as exc:
             close_code, close_message = self._close_details(exc)
             normal = True
-        except ConnectionClosedError as exc:
-            close_code, close_message = self._close_details(exc)
-            normal = self._is_idle_close(close_code, close_message)
-            if self.callback and not normal:
-                await self.callback.on_error(
-                    f"ElevenLabs websocket closed: {close_message}",
-                    str(close_code or "websocket_closed"),
-                    self.generation,
-                )
         except ConnectionClosed as exc:
+            # Every ConnectionClosedError is abnormal, including code 1000
+            # with an incomplete handshake or a timeout in the reason.
             close_code, close_message = self._close_details(exc)
-            normal = self._is_idle_close(close_code, close_message)
-            if self.callback and not normal:
-                await self.callback.on_error(
-                    f"ElevenLabs websocket closed: {close_message}",
-                    str(close_code or "websocket_closed"),
-                    self.generation,
-                )
+            await self._notify_error(
+                str(close_code or "websocket_closed"),
+                f"ElevenLabs websocket closed: {close_message}",
+            )
         except Exception as exc:
             close_message = str(exc)
-            if self.callback:
-                await self.callback.on_error(
-                    f"ElevenLabs websocket error: {exc}",
-                    "websocket_error",
-                    self.generation,
-                )
+            await self._notify_error(
+                "websocket_error", f"ElevenLabs websocket error: {exc}"
+            )
         finally:
             self.is_started = False
-            if self.callback and not self._closed:
+            if not self._handshake_complete:
+                if self._start_error is None:
+                    self._start_error = ("websocket_closed", close_message)
+                self._session_started.set()
+            elif self.callback and not self._closed:
                 await self.callback.on_close(
-                    close_code,
-                    close_message,
-                    self.generation,
-                    normal,
+                    close_code, close_message, self.generation, normal
                 )
 
     async def start(self, timeout: float = 10) -> bool:
@@ -285,6 +259,7 @@ class ElevenLabsWSRecognition:
         self._closed = False
         self._session_started.clear()
         self._start_error = None
+        self._handshake_complete = False
         self._connection_started_at = monotonic()
         ws_url = self._build_websocket_url()
         self._log(
@@ -308,8 +283,9 @@ class ElevenLabsWSRecognition:
                 raise ConnectionError(f"{code}: {message}")
             if not self.is_started:
                 raise ConnectionError("ElevenLabs session did not start")
+            self._handshake_complete = True
             return True
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             await self.close(notify=False)
             raise
 

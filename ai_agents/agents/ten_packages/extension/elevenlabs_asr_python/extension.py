@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import contextvars
 import json
 import os
 from collections import deque
@@ -70,7 +71,12 @@ class ElevenLabsASRExtension(
         self._fatal_error = False
         self._init_failed = False
         self._reconnect_task: asyncio.Task | None = None
-        self._reported_error_epochs: set[int] = set()
+        self._swap_lock = asyncio.Lock()
+        self._client_lock = asyncio.Lock()
+        self._result_lock = asyncio.Lock()
+        self._output_metadata = contextvars.ContextVar(
+            f"elevenlabs_metadata_{id(self)}", default=None
+        )
         self._vendor_session_id: str | None = None
 
         # Local timing is used only when ElevenLabs omits word timestamps.
@@ -80,6 +86,7 @@ class ElevenLabsASRExtension(
         self._local_segment_start_ms = 0
         self._deferred_reconnect = False
         self._audio_handle_lock = asyncio.Lock()
+        self._audio_consumer_task: asyncio.Task | None = None
         self.buffered_frames_size = 0
 
         self._finalize_lock = asyncio.Lock()
@@ -88,11 +95,23 @@ class ElevenLabsASRExtension(
         self._finalize_pending = False
         self._finalize_completed = False
         self._pending_committed: deque[dict[str, Any]] = deque()
-        # Retain fallback commits for delayed timestamp pairing, including
-        # repeated text. Bound the history if enrichment messages are lost.
-        self._timestamp_fallbacks: deque[str] = deque(maxlen=256)
+        # Bounded tombstones retain the sent-audio upper bound at each commit.
+        # See the documented conservative repeated-text pairing policy.
+        self._timestamp_fallbacks: deque[dict[str, Any]] = deque(maxlen=256)
         self._pending_timestamp_task: asyncio.Task | None = None
         self._finalize_metadata: dict[str, Any] | None = None
+
+    @property
+    def metadata(self) -> dict[str, Any] | None:
+        """Keep delayed output context independent of incoming audio metadata."""
+        context = getattr(self, "_output_metadata", None)
+        if context is not None and context.get() is not None:
+            return context.get()
+        return getattr(self, "_stream_metadata", None)
+
+    @metadata.setter
+    def metadata(self, value: dict[str, Any] | None) -> None:
+        self._stream_metadata = value
 
     @override
     def vendor(self) -> str:
@@ -152,15 +171,20 @@ class ElevenLabsASRExtension(
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         self._stopping = True
-        self._cancel_timestamp_task()
         await self._cancel_reconnect_task()
         await super().on_stop(ten_env)
+        task = self._audio_consumer_task
+        if task and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         self._stopping = True
         self._fatal_error = True
-        self._cancel_timestamp_task()
         await self._cancel_reconnect_task()
         try:
             await self.stop_connection()
@@ -201,124 +225,168 @@ class ElevenLabsASRExtension(
             self._schedule_reconnect()
         await super().on_audio_frame(ten_env, audio_frame)
 
+    async def _audio_frame_consumer(self) -> None:
+        """Retain the base queue boundary and expose a drain barrier."""
+        self._audio_consumer_task = asyncio.current_task()
+        while not self.stopped and not self._stopping:
+            frame = await self.audio_frames_queue.get()
+            try:
+                await self._handle_audio_frame(self.ten_env, frame)
+            except Exception as exc:
+                self.ten_env.log_error(
+                    f"Error consuming ElevenLabs audio: {exc}"
+                )
+            finally:
+                self.audio_frames_queue.task_done()
+
+    def _retain_frame(self, frame: AudioFrame) -> None:
+        limit = self.buffer_strategy().byte_limit
+        size = len(frame.get_buf())
+        while self.buffered_frames_size + size > limit:
+            try:
+                dropped = self.buffered_frames.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            self.buffered_frames_size -= len(dropped.get_buf())
+            self.dropped_audio_frames += 1
+        if size <= limit:
+            self.buffered_frames.put_nowait(frame)
+            self.buffered_frames_size += size
+
+    async def _deliver_frame(self, frame: AudioFrame) -> bool:
+        if not await self.send_audio(frame, None):
+            return False
+        self.sent_buffer_length += len(frame.get_buf())
+        if self.first_audio_time is None:
+            self.first_audio_time = asyncio.get_running_loop().time()
+        return True
+
     async def _handle_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
-        """Serialize normal and reconnect-triggered buffered frame delivery."""
-        async with self._audio_handle_lock:
-            await super()._handle_audio_frame(ten_env, audio_frame)
-
-    async def _flush_buffered_audio(self) -> None:
-        """Send frames buffered while an idle session was reconnecting.
-
-        The base ASR consumer normally drains this queue when the next frame
-        arrives.  A session can reconnect after the only post-idle frame,
-        though, so explicitly kick the queue once the new socket is ready.
-        """
-        if not self.is_connected() or self.buffered_frames.empty():
+        del ten_env
+        if not audio_frame.get_buf() or self._stopping:
             return
         async with self._audio_handle_lock:
-            frames: list[AudioFrame] = []
-            while True:
-                try:
-                    frames.append(self.buffered_frames.get_nowait())
-                except asyncio.QueueEmpty:
-                    break
-            self.buffered_frames_size = 0
-            for frame in frames:
-                await super()._handle_audio_frame(self.ten_env, frame)
+            await self._flush_buffered_audio_locked()
+            if not self.is_connected() or not await self._deliver_frame(
+                audio_frame
+            ):
+                self._retain_frame(audio_frame)
+
+    async def _flush_buffered_audio_locked(self) -> None:
+        while self.is_connected() and not self.buffered_frames.empty():
+            frame = self.buffered_frames.get_nowait()
+            self.buffered_frames_size -= len(frame.get_buf())
+            if not await self._deliver_frame(frame):
+                # Restore a failed head before newer frames, without resending
+                # a frame that was already accepted by the transport.
+                remaining = []
+                while not self.buffered_frames.empty():
+                    remaining.append(self.buffered_frames.get_nowait())
+                self.buffered_frames.put_nowait(frame)
+                for queued in remaining:
+                    self.buffered_frames.put_nowait(queued)
+                self.buffered_frames_size += len(frame.get_buf())
+                return
+
+    async def _flush_buffered_audio(self) -> None:
+        async with self._audio_handle_lock:
+            await self._flush_buffered_audio_locked()
 
     @override
     async def start_connection(self) -> None:
-        """Create a client and wait for the vendor session handshake."""
-        if self._stopping:
-            return
-        if self._init_failed or self._fatal_error:
-            await self.on_disconnected(
-                code=ModuleErrorCode.FATAL_ERROR.value,
-                message="ElevenLabs connection disabled after a fatal error",
-            )
-            return
-        if self.config is None:
-            return
-
-        api_key = self.config.params.get("api_key", "")
-        token = self.config.params.get("token", "")
-        if not (
-            isinstance(api_key, str)
-            and api_key.strip()
-            or isinstance(token, str)
-            and token.strip()
-        ):
-            await self._report_connect_failure(
-                "missing_credentials",
-                "ElevenLabs API key or token is required",
-                fatal=True,
-            )
-            return
-
-        self._replacing = True
-        self._connection_epoch += 1
-        generation = self._connection_epoch
-        old = self.recognition
-        self.recognition = None
-        if old is not None:
-            await old.close(notify=False)
-
-        client = ElevenLabsWSRecognition(
-            audio_timeline=self.audio_timeline,
-            ten_env=self.ten_env,
-            params=self.config.params,
-            callback=self,
-            generation=generation,
-        )
-        self.recognition = client
-        try:
-            await client.start(
-                timeout=float(self.config.params.get("connect_timeout", 10))
-            )
-            if self.recognition is not client or not client.is_connected():
-                raise ConnectionError("ElevenLabs session is no longer active")
-            self.ten_env.log_info(
-                "vendor_status_changed: ElevenLabs session ready",
-                category=LOG_CATEGORY_VENDOR,
-            )
-        except Exception as exc:
-            if self.recognition is client:
-                self.recognition = None
-            code = self._vendor_code_from_exception(exc)
-            fatal = code in self._FATAL_VENDOR_CODES
-            await self._report_connect_failure(code, str(exc), fatal=fatal)
-        finally:
-            self._replacing = False
-            # The base ASR consumer drains buffered frames before the next
-            # live frame. Keeping that drain in one task preserves PCM dump
-            # ordering and prevents concurrent writes to the async dumper.
+        """Serialize all replacements, including explicit trigger_connect."""
+        async with self._swap_lock:
+            if self._stopping or self._init_failed or self._fatal_error:
+                await self.on_disconnected(
+                    code=(
+                        ModuleErrorCode.FATAL_ERROR.value
+                        if self._fatal_error or self._init_failed
+                        else 0
+                    ),
+                    message="ElevenLabs connection disabled",
+                )
+                return
+            if self.is_connected():
+                await self.on_connected()
+                return
+            if self.config is None:
+                return
+            self._replacing = True
+            client = None
+            generation = self._connection_epoch
+            try:
+                # Handshakes hold the swap lock, never the client lock.
+                async with self._client_lock:
+                    old = self.recognition
+                    self.recognition = None
+                    if old is not None:
+                        await old.close(notify=False)
+                async with self._result_lock:
+                    self._cancel_timestamp_task()
+                    await self._emit_pending_committed()
+                self._connection_epoch += 1
+                generation = self._connection_epoch
+                client = ElevenLabsWSRecognition(
+                    audio_timeline=self.audio_timeline,
+                    ten_env=self.ten_env,
+                    params=self.config.params,
+                    callback=self,
+                    generation=generation,
+                )
+                self.recognition = client
+                await client.start(
+                    timeout=float(self.config.params.get("connect_timeout", 10))
+                )
+                if self._stopping or not client.is_connected():
+                    raise ConnectionError(
+                        "ElevenLabs session is no longer active"
+                    )
+            except asyncio.CancelledError:
+                if client is not None:
+                    await client.close(notify=False)
+                if self.recognition is client:
+                    self.recognition = None
+                await self.on_disconnected(message="connection cancelled")
+                raise
+            except Exception as exc:
+                if client is not None:
+                    await client.close(notify=False)
+                if generation == self._connection_epoch:
+                    self.recognition = None
+                    code = self._vendor_code_from_exception(exc)
+                    await self._report_connect_failure(
+                        code, str(exc), fatal=code in self._FATAL_VENDOR_CODES
+                    )
+            finally:
+                self._replacing = False
+            # Drain after initial, explicit and automatic connects, even when
+            # no later live frame arrives.
+            if self.is_connected():
+                await self.audio_frames_queue.join()
+                await self._flush_buffered_audio()
 
     async def _report_connect_failure(
         self, code: str, message: str, *, fatal: bool
     ) -> None:
         if fatal:
             self._fatal_error = True
-        generation_was_reported = (
-            self._connection_epoch in self._reported_error_epochs
-        )
         vendor_info = ModuleErrorVendorInfo(
             vendor=self.vendor(), code=str(code), message=message
         )
-        if not generation_was_reported:
-            await self.send_asr_error(
-                ModuleError(
-                    module=ModuleType.ASR,
-                    code=(
-                        ModuleErrorCode.FATAL_ERROR.value
-                        if fatal
-                        else ModuleErrorCode.NON_FATAL_ERROR.value
-                    ),
-                    message=message,
+        await self.send_asr_error(
+            ModuleError(
+                module=ModuleType.ASR,
+                code=(
+                    ModuleErrorCode.FATAL_ERROR.value
+                    if fatal
+                    else ModuleErrorCode.NON_FATAL_ERROR.value
                 ),
-                vendor_info,
-            )
+                message=message,
+            ),
+            vendor_info,
+        )
         await self.on_disconnected(
             code=(
                 ModuleErrorCode.FATAL_ERROR.value
@@ -350,12 +418,10 @@ class ElevenLabsASRExtension(
     ) -> None:
         if generation is not None and generation != self._connection_epoch:
             return
-        # A reconnect creates a new vendor session. Any committed transcript
-        # waiting for delayed timestamps belongs to the previous session and
-        # must not be emitted with the new session's metadata.
-        self._cancel_timestamp_task()
-        self._pending_committed.clear()
-        self._timestamp_fallbacks.clear()
+        async with self._result_lock:
+            self._cancel_timestamp_task()
+            await self._emit_pending_committed()
+            self._timestamp_fallbacks.clear()
         self._vendor_session_id = session_id
         self._session_audio_duration_ms = 0
         self._session_audio_sent = False
@@ -376,6 +442,12 @@ class ElevenLabsASRExtension(
         self,
         message_data: dict[str, Any],
         generation: int | None = None,
+    ) -> None:
+        async with self._result_lock:
+            await self._on_result_locked(message_data, generation)
+
+    async def _on_result_locked(
+        self, message_data: dict[str, Any], generation: int | None
     ) -> None:
         if generation is not None and generation != self._connection_epoch:
             return
@@ -400,6 +472,11 @@ class ElevenLabsASRExtension(
             pending["_connection_epoch"] = (
                 generation if generation is not None else self._connection_epoch
             )
+            pending["_result"] = self._prepare_result(pending, final=True)
+            pending["_audio_end_ms"] = (
+                self.audio_timeline.total_user_audio_duration
+                + self.audio_timeline.total_silence_audio_duration
+            )
             self._pending_committed.append(pending)
             if self._timestamps_enabled():
                 self._replace_timestamp_task()
@@ -412,9 +489,19 @@ class ElevenLabsASRExtension(
                 if self._finalize_pending:
                     await self._complete_finalize()
                 return
-            if text in self._timestamp_fallbacks:
-                self._timestamp_fallbacks.remove(text)
-                return
+            words = self._parse_words(message_data.get("words", []))
+            word_end = max(
+                (word.start_ms + word.duration_ms for word in words), default=0
+            )
+            for fallback in list(self._timestamp_fallbacks):
+                if fallback["text"] != text:
+                    continue
+                if not words or word_end <= fallback["_audio_end_ms"]:
+                    self._timestamp_fallbacks.remove(fallback)
+                    return
+                # Beyond audio sent at the earlier commit: its enrichment
+                # was missing, so this later event must not be consumed by it.
+                self._timestamp_fallbacks.remove(fallback)
             for candidate in self._pending_committed:
                 if candidate.get("text") == text:
                     self._pending_committed.remove(candidate)
@@ -427,7 +514,14 @@ class ElevenLabsASRExtension(
                 self._cancel_timestamp_task()
             combined = dict(message_data)
             combined.setdefault("text", text)
-            await self._emit_result(combined, final=True)
+            result = self._prepare_result(
+                combined, final=True, advance_segment=False
+            )
+            result.metadata = candidate["_result"].metadata
+            result.metadata["asr_info"]["timing_source"] = "provider"
+            if not result.words:
+                result = candidate["_result"]
+            await self._send_result(result)
             return
 
     def _timestamps_enabled(self) -> bool:
@@ -457,19 +551,18 @@ class ElevenLabsASRExtension(
     async def _emit_pending_after_timestamp_window(self) -> None:
         try:
             await asyncio.sleep(0.25)
-            await self._emit_pending_committed()
+            async with self._result_lock:
+                await self._emit_pending_committed()
         except asyncio.CancelledError:
             return
 
     async def _emit_pending_committed(self) -> None:
         while self._pending_committed:
             pending = self._pending_committed.popleft()
-            if pending.get("_connection_epoch") != self._connection_epoch:
-                continue
             if pending.get("text"):
                 if self._timestamps_enabled():
-                    self._timestamp_fallbacks.append(pending["text"])
-                await self._emit_result(pending, final=True)
+                    self._timestamp_fallbacks.append(pending)
+                await self._send_result(pending["_result"])
 
     def _result_metadata(
         self, timing_source: str | None = None, final: bool | None = None
@@ -538,12 +631,16 @@ class ElevenLabsASRExtension(
     async def _emit_result(
         self, message_data: dict[str, Any], *, final: bool
     ) -> None:
-        text = str(message_data.get("text", "") or "")
-        if not text:
-            if final and self._finalize_pending:
-                await self._complete_finalize()
-            return
+        await self._send_result(self._prepare_result(message_data, final=final))
 
+    def _prepare_result(
+        self,
+        message_data: dict[str, Any],
+        *,
+        final: bool,
+        advance_segment: bool = True,
+    ) -> ASRResult:
+        text = str(message_data.get("text", "") or "")
         words = self._parse_words(message_data.get("words", []))
         actual_start_ms = 0
         if words:
@@ -553,7 +650,7 @@ class ElevenLabsASRExtension(
             timing_source = "provider"
         else:
             actual_start_ms, duration_ms, timing_source = (
-                self._estimate_local_timing(final)
+                self._estimate_local_timing(final and advance_segment)
             )
         if words:
             actual_start_ms = int(
@@ -570,7 +667,7 @@ class ElevenLabsASRExtension(
                         + self.sent_user_audio_duration_ms_before_last_reset
                     ),
                 )
-            if final:
+            if final and advance_segment:
                 self._local_segment_start_ms = self._session_audio_duration_ms
 
         assert self.config is not None
@@ -587,7 +684,7 @@ class ElevenLabsASRExtension(
             provider_language = requested_language
         language = self.config.normalize_language_code(provider_language)
         metadata = self._result_metadata(timing_source, final=final)
-        result = ASRResult(
+        return ASRResult(
             text=text,
             final=final,
             start_ms=max(0, actual_start_ms),
@@ -596,8 +693,25 @@ class ElevenLabsASRExtension(
             words=words,
             metadata=metadata,
         )
-        await self.send_asr_result(result)
-        if final and self._finalize_pending and not self._pending_committed:
+
+    async def _send_result(self, result: ASRResult) -> None:
+        token = self._output_metadata.set(copy.deepcopy(result.metadata))
+        try:
+            delivery = asyncio.create_task(self.send_asr_result(result))
+            try:
+                await asyncio.shield(delivery)
+            except asyncio.CancelledError:
+                # Once removed from the pending queue, a committed final must
+                # finish delivery even when a reconnect task is being stopped.
+                await delivery
+                raise
+        finally:
+            self._output_metadata.reset(token)
+        if (
+            result.final
+            and self._finalize_pending
+            and not self._pending_committed
+        ):
             await self._complete_finalize()
 
     @staticmethod
@@ -639,13 +753,20 @@ class ElevenLabsASRExtension(
         if generation is not None and generation != self._connection_epoch:
             return
         code = str(error_code or "unknown")
-        if generation is not None and generation in self._reported_error_epochs:
-            return
-        if generation is not None:
-            self._reported_error_epochs.add(generation)
         fatal = code in self._FATAL_VENDOR_CODES
         if fatal:
+            # Invalidate immediately, then wait for active sends before close.
             self._fatal_error = True
+            async with self._client_lock:
+                if (
+                    generation is not None
+                    and generation != self._connection_epoch
+                ):
+                    return
+                client = self.recognition
+                self.recognition = None
+                if client is not None:
+                    await client.close(notify=False)
         self.ten_env.log_error(
             f"vendor_error: code: {code}, reason: {error_msg}",
             category=LOG_CATEGORY_VENDOR,
@@ -683,10 +804,10 @@ class ElevenLabsASRExtension(
     ) -> None:
         if generation is not None and generation != self._connection_epoch:
             return
-        if self._stopping or self._replacing:
+        if self._stopping or self._replacing or self._fatal_error:
             return
         await self.on_disconnected(
-            code=vendor_code,
+            code=0 if _normal else ModuleErrorCode.NON_FATAL_ERROR.value,
             message=vendor_message,
             vendor_info=ModuleErrorVendorInfo(
                 vendor=self.vendor(),
@@ -695,9 +816,13 @@ class ElevenLabsASRExtension(
             ),
         )
         if self._finalize_pending:
-            await self._complete_finalize()
+            await self._finish_finalize()
         if not self._fatal_error:
-            if self._session_audio_sent:
+            if (
+                self._session_audio_sent
+                or not self.buffered_frames.empty()
+                or not self.audio_frames_queue.empty()
+            ):
                 self._schedule_reconnect()
             else:
                 # ElevenLabs intentionally closes sessions that have been
@@ -726,17 +851,25 @@ class ElevenLabsASRExtension(
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
-        async with self._finalize_lock:
+        async with self._swap_lock, self._finalize_lock:
+            await self.audio_frames_queue.join()
+            await self._flush_buffered_audio()
             self._finalize_pending = True
             self._finalize_completed = False
             self._finalize_event.clear()
-            self._cancel_timestamp_task()
             try:
                 if not self.recognition or not self.is_connected():
-                    await self._complete_finalize()
+                    await self._finish_finalize()
                     return
-                if not await self.recognition.send_final():
-                    await self._complete_finalize()
+                async with self._client_lock:
+                    client = self.recognition
+                    sent = bool(
+                        self.is_connected()
+                        and client
+                        and await client.send_final()
+                    )
+                if not sent:
+                    await self._finish_finalize()
                     return
                 timeout = float(
                     (self.config.params if self.config else {}).get(
@@ -751,10 +884,14 @@ class ElevenLabsASRExtension(
                     self.ten_env.log_warn(
                         "ElevenLabs finalize timed out; completing handshake"
                     )
-                    await self._complete_finalize()
+                    await self._finish_finalize()
             except Exception as exc:
                 self.ten_env.log_error(f"ElevenLabs finalize failed: {exc}")
-                await self._complete_finalize()
+                await self._finish_finalize()
+
+    async def _finish_finalize(self) -> None:
+        async with self._result_lock:
+            await self._complete_finalize()
 
     async def _complete_finalize(self) -> None:
         if not self._finalize_pending or self._finalize_completed:
@@ -768,9 +905,9 @@ class ElevenLabsASRExtension(
             self.ten_env.log_error(
                 f"ElevenLabs pending final result failed: {exc}"
             )
-        saved_metadata = self.metadata
-        if self._finalize_metadata is not None:
-            self.metadata = copy.deepcopy(self._finalize_metadata)
+        token = self._output_metadata.set(
+            copy.deepcopy(self._finalize_metadata or self.metadata or {})
+        )
         try:
             await self.send_asr_finalize_end()
         except Exception as exc:
@@ -778,7 +915,7 @@ class ElevenLabsASRExtension(
                 f"ElevenLabs finalize-end delivery failed: {exc}"
             )
         finally:
-            self.metadata = saved_metadata
+            self._output_metadata.reset(token)
             self._finalize_metadata = None
             self._finalize_event.set()
 
@@ -806,7 +943,6 @@ class ElevenLabsASRExtension(
                     self.start_connection
                 )
                 if self.is_connected():
-                    await self._flush_buffered_audio()
                     return
         finally:
             if self._reconnect_task is asyncio.current_task():
@@ -831,22 +967,29 @@ class ElevenLabsASRExtension(
 
     @override
     async def stop_connection(self) -> None:
-        self._replacing = True
-        self._connection_epoch += 1
-        client = self.recognition
-        self.recognition = None
-        try:
-            if self._finalize_pending:
-                await self._complete_finalize()
-            if client:
-                await client.close(notify=False)
-        finally:
-            self._replacing = False
+        async with self._swap_lock:
+            self._replacing = True
+            try:
+                async with self._client_lock:
+                    client = self.recognition
+                    self.recognition = None
+                    if client:
+                        await client.close(notify=False)
+                async with self._result_lock:
+                    self._cancel_timestamp_task()
+                    await self._emit_pending_committed()
+                    if self._finalize_pending:
+                        await self._complete_finalize()
+                self._connection_epoch += 1
+            finally:
+                self._replacing = False
 
     @override
     def is_connected(self) -> bool:
         return (
             not self._replacing
+            and not self._fatal_error
+            and not self._stopping
             and self.recognition is not None
             and self.recognition.is_connected()
         )
@@ -873,27 +1016,41 @@ class ElevenLabsASRExtension(
     async def send_audio(
         self, frame: AudioFrame, _session_id: str | None
     ) -> bool:
-        if not self.recognition or not self.is_connected():
-            return False
-        buf = None
-        try:
-            buf = frame.lock_buf()
-            audio_data = bytes(buf)
-            if self.audio_dumper:
-                await self.audio_dumper.push_bytes(audio_data)
-            sent = await self.recognition.send_audio_frame(audio_data)
-            if sent:
-                self._session_audio_sent = True
-                self._session_audio_duration_ms += self._audio_duration_ms(
-                    len(audio_data)
+        async with self._client_lock:
+            client = self.recognition
+            if client is None or not self.is_connected():
+                return False
+            buf = None
+            try:
+                # The frame context and client share one operation lock.
+                # A suspended dump cannot resume against a replaced client.
+                metadata_json, error = frame.get_property_to_json("metadata")
+                if not error and metadata_json:
+                    metadata = json.loads(metadata_json)
+                    if isinstance(metadata, dict):
+                        self.metadata = metadata
+                        self.session_id = metadata.get(
+                            "session_id", self.session_id
+                        )
+                buf = frame.lock_buf()
+                audio_data = bytes(buf)
+                if self.audio_dumper:
+                    await self.audio_dumper.push_bytes(audio_data)
+                sent = await client.send_audio_frame(audio_data)
+                if sent:
+                    self._session_audio_sent = True
+                    self._session_audio_duration_ms += self._audio_duration_ms(
+                        len(audio_data)
+                    )
+                return sent
+            except Exception as exc:
+                self.ten_env.log_error(
+                    f"Error sending audio to ElevenLabs: {exc}"
                 )
-            return sent
-        except Exception as exc:
-            self.ten_env.log_error(f"Error sending audio to ElevenLabs: {exc}")
-            return False
-        finally:
-            if buf is not None:
-                frame.unlock_buf(buf)
+                return False
+            finally:
+                if buf is not None:
+                    frame.unlock_buf(buf)
 
     def _audio_duration_ms(self, byte_count: int) -> int:
         return int(
