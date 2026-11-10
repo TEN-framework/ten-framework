@@ -136,6 +136,9 @@ class FakeSession:
         # but never sends ServerConfirmSession.
         self.start_hangs = False
         self.start_cancelled = False
+        # Runs as ``start()`` returns: the SDK's read loop is already up by
+        # then, so the server can close or fail the session at once.
+        self.after_start = None
         self._close_notified = False
 
     async def init(self) -> None:
@@ -151,6 +154,8 @@ class FakeSession:
                 raise
         if self.start_exc is not None:
             raise self.start_exc
+        if self.after_start is not None:
+            self.after_start(self)
         return self.connection_id
 
     async def send_audio(self, audio: bytes, end: bool = False) -> str:
@@ -184,11 +189,19 @@ class FakeSession:
 class FakeFactory:
     """Builds one ``FakeSession`` per connect attempt, failing on request."""
 
-    def __init__(self, *, init_error=None, start_error=None, start_hangs=None):
+    def __init__(
+        self,
+        *,
+        init_error=None,
+        start_error=None,
+        start_hangs=None,
+        after_start=None,
+    ):
         self.sessions: list[FakeSession] = []
         self._init_error = init_error or (lambda i: None)
         self._start_error = start_error or (lambda i: None)
         self._start_hangs = start_hangs or (lambda i: False)
+        self._after_start = after_start or (lambda i: None)
 
     def __call__(self, **kwargs) -> FakeSession:
         i = len(self.sessions)
@@ -196,6 +209,7 @@ class FakeFactory:
             i, kwargs, self._init_error(i), self._start_error(i)
         )
         session.start_hangs = self._start_hangs(i)
+        session.after_start = self._after_start(i)
         self.sessions.append(session)
         return session
 
@@ -777,6 +791,76 @@ async def test_init_5xx_keeps_the_fast_schedule(vt):
     assert h.client.connected
     assert len(factory.sessions) == 3
     assert h.codes == [(CODE_NON_FATAL, "503")]
+
+
+# -- events during the handshake ----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_close_right_after_confirmation_is_a_failed_connect(vt):
+    """The server closes before the connection is published: no connected
+    report, one outage report, and the fast retry runs."""
+    factory = FakeFactory(
+        after_start=lambda i: FakeSession.fire_close if i == 0 else None
+    )
+    h = Harness(factory, vt)
+
+    await h.client.start()
+    await settle()
+
+    assert not h.client.connected
+    assert h.connected_ids == []
+    assert h.disconnects == 0
+    assert h.codes == [(CODE_NON_FATAL, "on_close")]
+    assert factory.sessions[0].closes == 1
+    assert vt.pending == [1]
+
+    await vt.advance(1)
+    assert h.client.connected
+    assert h.connected_ids == ["conn-1"]
+    assert h.codes == [(CODE_NON_FATAL, "on_close")]
+
+
+@pytest.mark.asyncio
+async def test_retryable_error_right_after_confirmation_retries(vt):
+    factory = FakeFactory(
+        after_start=lambda i: (
+            (lambda s: s.fire_error(sdk_error(4503))) if i == 0 else None
+        )
+    )
+    h = Harness(factory, vt)
+
+    await h.client.start()
+    await settle()
+
+    assert not h.client.connected
+    assert h.connected_ids == []
+    assert h.codes == [(CODE_NON_FATAL, "4503")]
+    assert vt.pending == [1]
+    await vt.advance(1)
+    assert h.connected_ids == ["conn-1"]
+
+
+@pytest.mark.asyncio
+async def test_fatal_error_during_startup_stops_without_connecting(vt):
+    factory = FakeFactory(
+        after_start=lambda i: lambda s: s.fire_error(sdk_error(4001))
+    )
+    h = Harness(factory, vt)
+
+    await h.client.start()
+    await settle()
+
+    assert not h.client.connected
+    assert h.client.connection_id == ""
+    assert h.connected_ids == []
+    assert h.disconnects == 0
+    assert h.codes == [(CODE_FATAL, "4001")]
+    assert factory.sessions[0].closes == 1
+    assert vt.pending == []
+    await vt.advance(3600)
+    assert len(factory.sessions) == 1
+    assert not await h.client.send_audio(PCM)
 
 
 # -- mid-session events -------------------------------------------------------

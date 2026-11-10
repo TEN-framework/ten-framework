@@ -37,7 +37,11 @@ An outage reports ``1001`` once when it begins and ``-1`` if the client
 gives up; a planned idle reconnect reports nothing. Design D9: SDK
 callbacks are marshalled onto the loop with ``call_soon_threadsafe`` and
 bound to the session that registered them, so a callback that arrives
-after that session was torn down is dropped.
+after that session was torn down is dropped. One that arrives after the
+server confirmed the session but before the connection is published is
+held and resolved then: a close or retryable error makes it a failed
+connect on the fast schedule, a fatal error stops without ever reporting
+the session connected.
 """
 
 import asyncio
@@ -245,6 +249,12 @@ class SessionClient:
         self._stopped = False
         self._wake = asyncio.Event()
         self._pending: Optional[tuple[Decision, bool]] = None
+        # The attempt whose handshake is in progress, and the first decisive
+        # callback it received before the connection was published: the SDK
+        # starts its read loop inside ``start()``, so the server can close or
+        # fail the session before ``_connect_once()`` resumes.
+        self._startup_gen = 0
+        self._startup_failure: Optional[tuple[Decision, int, str, str]] = None
         self._last_vendor_code = ""
         self._outage_reported = False
         self._fast_index = 0
@@ -350,6 +360,8 @@ class SessionClient:
         s = self._settings
         self._gen += 1
         gen = self._gen
+        self._startup_gen = gen
+        self._startup_failure = None
         loop = self._loop
         session = None
         try:
@@ -441,31 +453,21 @@ class SessionClient:
             await session.init()
             connection_id = await self._start_with_deadline(session)
         except Exception as exc:
-            if session is not None:
-                # start() may have joined before the capability check failed,
-                # and a timed-out start() was cancelled, which skips the SDK's
-                # own cleanup of the half-open socket. Invalidate callbacks
-                # before the (idempotent) close, and retain ownership until
-                # that close has completed.
-                self._gen += 1
-                await self._close_quietly(session)
-            self._session = None
+            self._startup_gen = 0
             decision, code, vendor = classify_start_error(
                 exc, source_timeline_only=s.source_timeline_only
             )
-            logger.warning(
-                "spatialreal connect failed (%s, %s): %s",
-                vendor,
-                decision.value,
-                exc,
+            await self._abandon_attempt(
+                session, decision, code, vendor, str(exc)
             )
-            self._last_vendor_code = vendor
-            if decision in (Decision.STOP, Decision.CONFIG):
-                self._report(code, vendor, str(exc))
-                self._stopped = True
-            else:
-                self._pending = (decision, False)
-                self._report_outage(vendor, str(exc))
+            return False
+
+        self._startup_gen = 0
+        failure, self._startup_failure = self._startup_failure, None
+        if failure is not None:
+            # The session confirmed, then closed or failed before it was
+            # published: a failed connect, never a connected one.
+            await self._abandon_attempt(session, *failure)
             return False
 
         self.connected = True
@@ -477,6 +479,39 @@ class SessionClient:
         self._start_idle_timer(gen)
         self._on_connected(self.connection_id)
         return True
+
+    async def _abandon_attempt(
+        self,
+        session,
+        decision: Decision,
+        code: int,
+        vendor: str,
+        message: str,
+    ) -> None:
+        """Close a connect attempt that did not produce a live session, then
+        stop or schedule the retry its decision calls for."""
+        if session is not None:
+            # start() may have joined before the capability check failed,
+            # and a timed-out start() was cancelled, which skips the SDK's
+            # own cleanup of the half-open socket. Invalidate callbacks
+            # before the (idempotent) close, and retain ownership until
+            # that close has completed.
+            self._gen += 1
+            await self._close_quietly(session)
+        self._session = None
+        logger.warning(
+            "spatialreal connect failed (%s, %s): %s",
+            vendor,
+            decision.value,
+            message,
+        )
+        self._last_vendor_code = vendor
+        if decision in (Decision.STOP, Decision.CONFIG):
+            self._report(code, vendor, message)
+            self._stopped = True
+        else:
+            self._pending = (decision, False)
+            self._report_outage(vendor, message)
 
     async def _start_with_deadline(self, session) -> str:
         """The whole handshake, or ``TimeoutError`` after the deadline.
@@ -564,9 +599,28 @@ class SessionClient:
             or self._session is None
         )
 
+    def _starting(self, gen: int) -> bool:
+        return gen == self._startup_gen and not self._stale(gen)
+
+    def _record_startup_failure(
+        self, decision: Decision, code: int, vendor: str, message: str
+    ) -> None:
+        """Keep the first event of the handshake window; a fatal one
+        replaces an earlier retryable one, as it would once connected."""
+        if self._startup_failure is None or (
+            decision is Decision.STOP
+            and self._startup_failure[0] is not Decision.STOP
+        ):
+            self._startup_failure = (decision, code, vendor, message)
+
     def _handle_error(self, gen: int, exc: Exception) -> None:
         if self._stale(gen):
             return
+        if self._starting(gen):
+            decision, code, vendor = classify_runtime_error(exc)
+            if decision is not Decision.REPORT_ONLY:
+                self._record_startup_failure(decision, code, vendor, str(exc))
+                return
         self._handle_runtime_exception(exc)
 
     def _handle_runtime_exception(self, exc: Exception) -> None:
@@ -587,12 +641,28 @@ class SessionClient:
     def _handle_close(self, gen: int) -> None:
         if self._stale(gen):
             return
+        if self._starting(gen):
+            self._record_startup_failure(
+                Decision.FAST,
+                CODE_NON_FATAL,
+                "on_close",
+                "session closed by the server",
+            )
+            return
         self._request_reconnect(
             Decision.FAST, "on_close", "session closed by the server"
         )
 
     def _handle_transport_frames(self, gen: int) -> None:
         if self._stale(gen):
+            return
+        if self._starting(gen):
+            self._record_startup_failure(
+                Decision.FAST,
+                CODE_NON_FATAL,
+                "transport_frames",
+                "animation arrived over the WebSocket: egress left the channel",
+            )
             return
         self._request_reconnect(
             Decision.FAST,
