@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Unit tests for property resolution and validation (design D3).
+"""Unit tests for property resolution and validation.
 
 ``resolve_config`` takes the two top-level properties the extension reads
 (``channel`` and the ``params`` object) and returns the typed settings a

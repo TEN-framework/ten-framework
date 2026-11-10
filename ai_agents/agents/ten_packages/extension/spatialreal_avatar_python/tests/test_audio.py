@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Unit tests for the audio helpers (design D5, "Audio" and "Padding").
+"""Unit tests for the audio helpers: resampling and silence padding.
 
 Resampling keeps ``audioop.ratecv`` state across chunks so a request that
 arrives in 20 ms pieces converts like one that arrives whole; a trailing odd

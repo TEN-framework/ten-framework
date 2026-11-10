@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Unit tests for the Agora token rule (design D3).
+"""Unit tests for the Agora token rule.
 
 The rule: an explicit token wins; otherwise a certificate signs a publisher
 token for the channel and uid; otherwise the App ID itself is the token

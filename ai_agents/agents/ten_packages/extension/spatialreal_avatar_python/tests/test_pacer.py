@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Unit tests for the request pacer (design D5 and D6).
+"""Unit tests for the request pacer: request boundaries, padding, flush.
 
 Time never passes for real: the pacer gets the ``FakeClock`` and a fake
 ``sleep`` that records what was asked and advances the clock, and the
@@ -329,7 +329,7 @@ async def test_pad_max_closes_request(clock):
 
 
 async def test_padding_resumes_after_real_audio(clock):
-    """Real audio resets the contiguous-padding counter (D5 "Bounds")."""
+    """Real audio resets the contiguous-padding counter."""
     sink = FakeSink()
     pacer = _pacer(clock, sink)
     await pacer.push_audio(_speech(200))

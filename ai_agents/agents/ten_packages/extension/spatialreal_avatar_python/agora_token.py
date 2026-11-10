@@ -8,7 +8,7 @@
 Pure: no TEN or SpatialReal imports. The session client calls this on every
 connect so a reconnect always joins the channel with a fresh token.
 
-Rule (design D3):
+Token rule:
 
 1. an explicit ``agora_token`` is used verbatim;
 2. otherwise, with an App Certificate, a publisher token is signed for the

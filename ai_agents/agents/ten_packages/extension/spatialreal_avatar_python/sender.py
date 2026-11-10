@@ -14,9 +14,9 @@ arrived with. An ``End`` is the end-of-request signal (``tts_audio_end`` or
 ``finalize``) as an ordered marker: it is applied only after every frame
 queued before it has been sent, so ``end=True`` can never overtake its own
 audio while the sender is behind, waiting for the session or waiting at the
-previous request's gate. ``flush`` (design D6) acts at once instead: it
-clears the queue, markers included, because everything queued belongs to
-the cancelled turn.
+previous request's gate. ``flush`` acts at once instead: it clears the
+queue, markers included, because everything queued belongs to the cancelled
+turn.
 
 Frames and ordered end markers are preserved within explicit duration, byte
 and item budgets. Admission beyond a budget raises ``QueueCapacityError``;
@@ -101,7 +101,7 @@ class End:
     """An end-of-request marker, applied after every frame queued before it.
 
     ``label`` is for the log line only. ``tts_reason`` is the
-    ``tts_audio_end`` reason, so the pacer can apply the D5 reason rules;
+    ``tts_audio_end`` reason, so the pacer can apply its reason rules;
     ``None`` is an unconditional end (``finalize``).
     """
 
@@ -326,7 +326,7 @@ class AudioSender:
             raise
 
     async def flush(self) -> None:
-        """D6: drop everything queued, cancel the turn, interrupt the avatar."""
+        """Drop everything queued, cancel the turn, interrupt the avatar."""
         self._flush_gen += 1
         self._flushing += 1
         self._flush_done.clear()

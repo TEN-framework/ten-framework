@@ -81,7 +81,7 @@ def test_config_error_uses_module_error():
     # the first checks and fails on ``agora_uid``. An empty ``params`` dict
     # would fail on ``spatialreal_api_key`` instead, so a message naming
     # ``agora_uid`` proves the ``params`` object reached ``resolve_config``
-    # as a dict. on_start reports the design D8 configuration error and
+    # as a dict. on_start reports the -1012 configuration error and
     # leaves the extension idle; it must not raise and must not connect.
     invalid_params = {
         "channel": "test-channel",
@@ -114,5 +114,5 @@ def test_config_error_uses_module_error():
     for key in vendor_metadata:
         assert "key" not in key
         assert "url" not in key
-    # No empty values travel in vendor_metadata (D8).
+    # No empty values travel in vendor_metadata.
     assert all(value not in ("", None) for value in vendor_metadata.values())

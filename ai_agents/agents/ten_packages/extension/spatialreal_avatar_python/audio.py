@@ -9,15 +9,15 @@ Pure: no TEN or SpatialReal imports. Everything is 16-bit little-endian
 mono, the only format the graph's TTS extensions emit and the only one
 ``SessionConfig.sample_rate`` describes.
 
-Design D5 ("Audio"): frames arrive at ``AudioFrame.get_sample_rate()`` and
-are converted to the session rate with ``audioop.ratecv``; the filter state
-is kept across chunks of one request and reset at close or flush so a
-request that arrives in 20 ms pieces converts like one that arrives whole.
-A trailing odd byte (half a sample) is dropped first: ``ratecv`` raises on
-it, and a raise in the frame handler would take the whole extension down.
+Frames arrive at ``AudioFrame.get_sample_rate()`` and are converted to the
+session rate with ``audioop.ratecv``; the filter state is kept across chunks
+of one request and reset at close or flush so a request that arrives in
+20 ms pieces converts like one that arrives whole. A trailing odd byte (half
+a sample) is dropped first: ``ratecv`` raises on it, and a raise in the
+frame handler would take the whole extension down.
 
-Design D5 ("Padding"): silence is generated in whole samples at the session
-rate so the virtual playhead's ``sent_ms`` stays exact.
+Silence is generated in whole samples at the session rate so the virtual
+playhead's ``sent_ms`` stays exact.
 """
 
 import audioop  # pylint: disable=deprecated-module

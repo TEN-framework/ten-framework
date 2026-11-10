@@ -70,8 +70,8 @@ which holds everything the operator sets. Defaults are the package
 | `params.spatialreal_avatar_id` | `SPATIALREAL_AVATAR_ID` | `""` | **Required.** Avatar id from the SpatialReal console. |
 | `params.spatialreal_app_id` | `SPATIALREAL_APP_ID` | `""` | Optional; sent as `X-App-ID` when set. |
 | `params.environment` | — | `us-west` | SDK named environment. |
-| `params.console_endpoint_url` | — | `""` | Overrides the environment's console URL (test: `https://api.spatialreal.dev`). |
-| `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL (test: `wss://test-driven.spatialreal.dev/v2/driveningress`). |
+| `params.console_endpoint_url` | — | `""` | Overrides the environment's console URL, for a non-default SpatialReal deployment. |
+| `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL, for a non-default SpatialReal deployment. |
 | `params.sample_rate` | — | `24000` | One of 8000, 16000, 22050, 24000, 32000, 44100, 48000. |
 | `params.source_timeline_only` | — | `true` | Source-timeline-only playback. `false` selects compatibility mode for viewers that play the egress's native audio (see below). |
 | `params.source_playback_profile` | — | `1` with source-only, otherwise `0` | Normally omit. `1` requests `BOUNDED_BURST_V1`; `0` keeps the earlier source-only profile. |

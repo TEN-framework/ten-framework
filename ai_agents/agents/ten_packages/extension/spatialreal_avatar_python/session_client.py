@@ -10,9 +10,9 @@ Imports ``spatialreal`` only; no TEN. The extension glue owns config,
 ``SessionClient``: ``send_audio``/``interrupt`` for the pacer, three
 callbacks for state and error reports.
 
-Design D7. Every connect is a new SDK session with a fresh session token
-(``expire_at`` now + 1 h) and a fresh Agora token. The reconnect decision
-follows the observable event:
+Every connect is a new SDK session with a fresh session token (``expire_at``
+now + 1 h) and a fresh Agora token. The reconnect decision follows the
+observable event:
 
 * ``start()`` refused: 4001/4010 are fatal, 4003 takes the slow schedule
   (30, 60, 120, 300… s, ten attempts, then fatal), 4503 and transport
@@ -34,14 +34,13 @@ follows the observable event:
   once, before egress's own inactivity timeout drops the channel.
 
 An outage reports ``1001`` once when it begins and ``-1`` if the client
-gives up; a planned idle reconnect reports nothing. Design D9: SDK
-callbacks are marshalled onto the loop with ``call_soon_threadsafe`` and
-bound to the session that registered them, so a callback that arrives
-after that session was torn down is dropped. One that arrives after the
-server confirmed the session but before the connection is published is
-held and resolved then: a close or retryable error makes it a failed
-connect on the fast schedule, a fatal error stops without ever reporting
-the session connected.
+gives up; a planned idle reconnect reports nothing. SDK callbacks are
+marshalled onto the loop with ``call_soon_threadsafe`` and bound to the
+session that registered them, so a callback that arrives after that session
+was torn down is dropped. One that arrives after the server confirmed the
+session but before the connection is published is held and resolved then: a
+close or retryable error makes it a failed connect on the fast schedule, a
+fatal error stops without ever reporting the session connected.
 """
 
 import asyncio
@@ -115,7 +114,7 @@ class SessionSettings:
 
 @dataclass
 class ErrorReport:
-    """What the glue turns into a ``ModuleError`` (D8)."""
+    """What the glue turns into a ``ModuleError``."""
 
     code: int  # CODE_FATAL | CODE_NON_FATAL | CODE_CONFIG
     # WS close code or token-exchange HTTP status as a string, or the
@@ -145,7 +144,7 @@ def _vendor_code(exc: Exception) -> str:
 def classify_start_error(
     exc: Exception, *, source_timeline_only: bool = False
 ) -> tuple[Decision, int, str]:
-    """Decide on an exception from ``init()`` or ``start()`` (D7)."""
+    """Decide on an exception from ``init()`` or ``start()``."""
     vendor = _vendor_code(exc)
     unsupported_config = getattr(
         spatialreal, "UnsupportedConfigurationError", None
@@ -167,7 +166,7 @@ def classify_start_error(
     if isinstance(exc, AvatarSDKError):
         if exc.close_code is None:
             # No close code: transport failure, a frame that did not parse,
-            # or a ServerError with no session-fate code. D7 says fast.
+            # or a ServerError with no session-fate code: fast schedule.
             return Decision.FAST, CODE_NON_FATAL, vendor
         if exc.close_code in (_CLOSE_CREDITS, _CLOSE_AUTH):
             return Decision.STOP, CODE_FATAL, vendor
@@ -184,11 +183,11 @@ def classify_start_error(
 
 
 def classify_runtime_error(exc: Exception) -> tuple[Decision, int, str]:
-    """Decide on an exception from ``on_error`` or a send (D7)."""
+    """Decide on an exception from ``on_error`` or a send."""
     vendor = _vendor_code(exc)
     if isinstance(exc, AvatarSDKError):
         if exc.close_code is None or exc.retryable:
-            # D7: retryable codes and the absence of a close code (a failed
+            # Retryable codes and the absence of a close code (a failed
             # inference call relayed as ServerError{code: 0}, a frame that
             # did not parse, a transport drop) both take the fast schedule.
             return Decision.FAST, CODE_NON_FATAL, vendor

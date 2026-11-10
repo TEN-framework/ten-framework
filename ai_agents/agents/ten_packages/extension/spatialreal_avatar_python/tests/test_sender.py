@@ -326,7 +326,7 @@ async def test_tts_audio_end_marker_applies_the_reason_rules(clock):
         assert h.sender.request_open
 
         # A flush, then the new turn, then the late reason 2 that belongs to
-        # the pre-flush request: the marker is reached and ignored (D5).
+        # the pre-flush request: the marker is reached and ignored.
         await h.sender.flush()
         h.sender.put_audio(_speech(100), RATE)
         h.sender.put_end(End("tts_audio_end reason=2", tts_reason=2))

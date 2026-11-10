@@ -9,10 +9,10 @@ Pure: no TEN or SpatialReal imports. The pacer talks to the session through
 the ``PacerSink`` protocol and takes its clock and sleep from the caller so
 the tests drive time by hand.
 
-Design D5. One avatar request per TTS request. The first audio after idle
-opens a request; the first of ``tts_audio_end`` (reasons 1, 3, unknown, and
-2 unless a flush has been processed), ``finalize``, the padding bound or the
-stall backstop closes it with ``send_audio(b"", end=True)``. Closing is
+One avatar request per TTS request. The first audio after idle opens a
+request; the first of ``tts_audio_end`` (reasons 1, 3, unknown, and 2 unless
+a flush has been processed), ``finalize``, the padding bound or the stall
+backstop closes it with ``send_audio(b"", end=True)``. Closing is
 idempotent.
 
 Padding keeps egress's playout buffer from running dry inside a request:
@@ -27,11 +27,11 @@ chunk is not on the playhead yet, so it would see a drain that is not there
 and pad, or close the request, ahead of speech that has already arrived.
 
 A new request whose predecessor is still less than ``gate_ms`` past drained
-waits before its first chunk so the predecessor's tail is not cut by the
-new server-side session. Design D6: ``flush`` cancels that wait and the
-frame that was waiting (``push_audio`` returns ``PushResult.CANCELLED``
-without sending), closes the open request locally without ``end=True``,
-interrupts the sink and waives the gate for the next request.
+waits before its first chunk so the predecessor's tail is not cut by the new
+server-side session. ``flush`` cancels that wait and the frame that was
+waiting (``push_audio`` returns ``PushResult.CANCELLED`` without sending),
+closes the open request locally without ``end=True``, interrupts the sink
+and waives the gate for the next request.
 
 The sink reports whether a send went out. A send that did not (the session
 dropped between the sender's readiness check and the send, possibly after a
@@ -266,7 +266,7 @@ class Pacer:
         return True
 
     async def on_tts_audio_end(self, reason: int) -> bool:
-        """Apply the D5 rules for data ``tts_audio_end``.
+        """Apply the end-of-request rules for data ``tts_audio_end``.
 
         Reasons 1 (REQUEST_END), 3 (ERROR) and anything unknown close the
         request. Reason 2 (INTERRUPTED) closes it only when no flush has been
@@ -278,7 +278,7 @@ class Pacer:
         return await self.end_request(f"tts_audio_end reason={reason}")
 
     async def flush(self) -> None:
-        """D6: drop the open request locally, interrupt, waive the gate.
+        """Drop the open request locally, interrupt, waive the gate.
 
         A chunk waiting at the gate is cancelled rather than released.
         """

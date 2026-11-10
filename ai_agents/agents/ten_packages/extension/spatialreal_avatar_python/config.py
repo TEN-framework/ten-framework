@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Property resolution and validation (design D3).
+"""Property resolution and validation.
 
 Pure: no TEN or SpatialReal imports, so the rules are unit-tested on any
 laptop. The extension reads two top-level properties, ``channel`` (owned by
@@ -142,7 +142,7 @@ def resolve_config(channel: str, params: Mapping[str, Any]) -> ResolvedConfig:
     )
     source_only = _boolean(params, "source_timeline_only", True)
     profile = params.get("source_playback_profile", 1 if source_only else 0)
-    # RtcSourcePlaybackProfile in shared-proto: zero is compatibility, one is
+    # The SDK's RtcSourcePlaybackProfile: zero is compatibility, one is
     # BOUNDED_BURST_V1. SessionClient also checks the installed SDK's enum.
     if type(profile) is not int or profile not in (0, 1):
         raise ValueError("params.source_playback_profile must be 0 or 1")

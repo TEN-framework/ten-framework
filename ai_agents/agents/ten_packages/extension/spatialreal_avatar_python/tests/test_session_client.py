@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-"""Unit tests for the SDK session wrapper and its reconnect policy (D7).
+"""Unit tests for the SDK session wrapper and its reconnect policy.
 
 The SDK is replaced by ``FakeSession`` objects a ``FakeFactory`` hands out
 through ``session_factory``; each can fail ``init``/``start``, record what
@@ -289,7 +289,7 @@ async def connected_harness(vt: VirtualTime, **overrides) -> Harness:
         (sdk_error(None), (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError")),
         (
             # Handshake frame that did not parse: no close code, SDK says
-            # not retryable, D7 says fast.
+            # not retryable, still the fast schedule.
             sdk_error(None, code=AvatarSDKErrorCode.protocolError),
             (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError"),
         ),
@@ -334,7 +334,7 @@ def test_classify_start_errors(exc, expected):
         (sdk_error(None), (Decision.FAST, CODE_NON_FATAL, "AvatarSDKError")),
         (
             # One inference call failed: ServerError{code: 0}, session
-            # continues; the SDK marks it not retryable, D7 says fast.
+            # continues; not retryable per the SDK, still the fast schedule.
             sdk_error(
                 None, code=AvatarSDKErrorCode.serverError, server_code="0"
             ),
@@ -389,7 +389,7 @@ async def test_connect_success_reports_connected_and_sends(vt):
     assert kwargs["ingress_endpoint_url"] == "wss://ingress.test/v2"
     egress = kwargs["agora_egress"]
     assert (egress.channel_name, egress.uid) == ("room", 12345)
-    # No certificate: the App ID itself is the token (D3).
+    # No certificate: the App ID itself is the token.
     assert egress.token == APP_ID
     assert egress.source_timeline_only is True
     assert egress.source_playback_profile == 1

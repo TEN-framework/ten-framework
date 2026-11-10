@@ -7,11 +7,11 @@
 
 Everything TEN-specific lives here: the property dataclass, the hook
 dispatch (audio frames, ``tts_audio_end``/``finalize`` data, the ``flush``
-command) and ``ModuleError`` emission (design D8). The work is delegated to
-the pure modules: ``config`` validates the properties, ``sender`` queues
-frames and end markers in order and resamples to the session rate,
-``pacer`` owns request boundaries and padding, and ``session_client`` keeps
-the SpatialReal session up.
+command) and ``ModuleError`` emission. The work is delegated to the pure
+modules: ``config`` validates the properties, ``sender`` queues frames and
+end markers in order and resamples to the session rate, ``pacer`` owns
+request boundaries and padding, and ``session_client`` keeps the SpatialReal
+session up.
 
 Nothing raises out of a hook (an uncaught exception ends the TEN process):
 a configuration failure is reported as a ``-1012`` error and the extension
@@ -63,7 +63,7 @@ _PROPERTY_KEY_OF_FIELD = {"api_key": "spatialreal_api_key"}
 
 @dataclass
 class SpatialRealAvatarConfig(BaseConfig):
-    """The two top-level properties (D3): the server-owned channel and the
+    """The two top-level properties: the server-owned channel and the
     operator's ``params`` object. Every other key lives inside ``params``."""
 
     channel: str = ""
@@ -202,7 +202,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
                     await self.sender.flush()
             except Exception:
                 ten_env.log_error(f"flush: {traceback.format_exc()}")
-            # D6: the flush continues downstream.
+            # The flush continues downstream.
             await ten_env.send_cmd(Cmd.create("flush"))
         await ten_env.return_result(CmdResult.create(StatusCode.OK, cmd))
 
@@ -279,7 +279,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
     def _on_tts_audio_end(self, ten_env: AsyncTenEnv, data: Data) -> None:
         """Queue the end as a marker behind the audio already queued.
 
-        The pacer applies the D5 reason rules when the marker is reached;
+        The pacer applies its reason rules when the marker is reached;
         the turn id is taken at once because it only labels error reports.
         """
         payload = _payload(data)
@@ -330,7 +330,7 @@ class SpatialRealAvatarExtension(AsyncExtension):
         session_id: Optional[str] = None,
         turn_id: Optional[int] = None,
     ) -> None:
-        """Emit the D8 ``ModuleError`` on data ``error``.
+        """Emit a ``ModuleError`` on data ``error``.
 
         ``session_id`` defaults to the client's current connection id; a
         report from the client names the session it is about instead.
