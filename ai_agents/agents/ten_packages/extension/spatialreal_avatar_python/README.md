@@ -245,3 +245,13 @@ task check              # black, line length 80
   No input PCM is spilled to disk.
 - A session is billed on connection time and holds one concurrency slot for as
   long as the extension runs, idle reconnects included.
+- Interruption before the first frame: if a `flush` reaches the avatar before
+  the interrupted turn has delivered any PCM, the avatar cannot tell that
+  turn from a legitimate successor (the `flush` from `main_python` carries
+  no turn identity, and both arrive with the same next turn id). PCM the TTS
+  emitted before it handled its own `tts_flush` can then play after the
+  interrupt. The window is bounded: once the TTS handles `tts_flush` its
+  frames carry no turn, and the replayed request is closed by the TTS's
+  `INTERRUPTED` `tts_audio_end` for that turn or by the successor's first
+  frame, whichever arrives first. Closing it completely needs the cancelled
+  turn id on the `flush` cmd sent to the avatar.
