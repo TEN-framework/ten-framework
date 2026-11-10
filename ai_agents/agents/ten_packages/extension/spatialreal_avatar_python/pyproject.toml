@@ -3,7 +3,7 @@ name = "spatialreal-avatar-python"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
-    "spatialreal>=0.2.3,<0.3",
+    "spatialreal>=0.4.0,<0.5",
     "agora-token-builder>=1.0.0",
     "audioop-lts>=0.2.1; python_version >= \"3.13\"",
 ]

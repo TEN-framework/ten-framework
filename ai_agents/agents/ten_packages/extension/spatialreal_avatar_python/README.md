@@ -54,7 +54,8 @@ good (credits exhausted, authentication refused, reconnection given up),
 is `spatialreal` and `vendor_info.code` carries the server's WebSocket close
 code (for example `4001`), the HTTP status of a failed session-token exchange
 (`401` or `403` for a refused API key, reported once as `-1`) or the exception
-class name.
+class name. A session start the server does not confirm within 20 s is closed
+and retried like a transport failure (`1001`, code `TimeoutError`).
 
 ## Configuration
 
@@ -72,8 +73,8 @@ which holds everything the operator sets. Defaults are the package
 | `params.console_endpoint_url` | — | `""` | Overrides the environment's console URL (test: `https://api.spatialreal.dev`). |
 | `params.ingress_endpoint_url` | — | `""` | Overrides the environment's ingress URL (test: `wss://test-driven.spatialreal.dev/v2/driveningress`). |
 | `params.sample_rate` | — | `24000` | One of 8000, 16000, 22050, 24000, 32000, 44100, 48000. |
-| `params.source_timeline_only` | — | `true` | Current source-audio playback with client-managed entry. Set false only for legacy/native-audio viewers. |
-| `params.source_playback_profile` | — | `1` with source-only, otherwise `0` | Normally omit. Integer 1 requests `BOUNDED_BURST_V1`; integer 0 explicitly retains the earlier profile. |
+| `params.source_timeline_only` | — | `true` | Source-timeline-only playback. `false` selects compatibility mode for viewers that play the egress's native audio (see below). |
+| `params.source_playback_profile` | — | `1` with source-only, otherwise `0` | Normally omit. `1` requests `BOUNDED_BURST_V1`; `0` keeps the earlier source-only profile. |
 | `params.egress_idle_reconnect_ms` | — | `1080000` | Idle time after which the session is reconnected so the avatar stays in the channel; must stay below the server's inactivity timeout (20 min today). |
 | `params.agora_uid` | — | `""` | **Required.** Avatar uid in the channel; must parse as a non-zero integer. |
 | `params.agora_token` | — | `""` | Used verbatim when set; otherwise a token is minted per connect. |
@@ -86,35 +87,35 @@ incoming TTS audio. The TTS rate is read from each `AudioFrame` and frames at
 another rate are resampled, so a 44.1 kHz TTS feeding a 24 kHz session is
 fine; 24000 matches what most TTS extensions emit and is then pass-through.
 
-Current integrations need neither playback setting: the extension defaults to
-source-only bounded burst, and the current Web SDK detects the published profile.
-The extension requires Python SDK 0.3.0 or newer for the negotiated capabilities.
-With Web SDK 1.0.0-beta.6, explicitly set the viewer
-`agora.sourcePlaybackProfile: "bounded-burst-v1"`; automatic viewer detection is
-available in the subsequent Web SDK change.
-
-The SDK and extension require both actual confirmation capabilities,
-`agora_source_timeline_only` and `agora_source_burst_v1`, before connecting the
-sender. A missing confirmation closes the session and reports a configuration
-error without retry or silent fallback. Every reconnect checks again. Ordinary
-transport failures retain the existing retry policy.
-
-For legacy/native-audio viewers, set `source_timeline_only: false` and omit the
-profile (or explicitly set it to zero). For the earlier source-only contract,
-keep source-only enabled and set `source_playback_profile: 0`. Explicit false/zero
-values are forwarded to modern Python SDKs; unsupported keywords are omitted for
-older SDKs when compatibility mode is explicitly chosen. Booleans, strings and
-unknown profiles are invalid.
-
-The publisher cannot discover other viewers in the room. Updated viewers support
-both profiles automatically; older viewers require the compatibility settings.
-This changes the publisher default, not audio input, sample rates, sender/pacer
-timing, End or interruption ordering. It does not submit an upstream TEN PR,
-publish a package or deploy a runtime.
-
 A missing or invalid value is reported once at start as a `-1012` error whose
 message names the key (`params.<key>`) and the extension stays idle; the
 configuration is logged with the secrets masked.
+
+### Viewer requirement and playback mode
+
+By default the extension publishes in source-timeline-only mode with the
+bounded burst playback profile (`BOUNDED_BURST_V1`), which it negotiates with
+the SpatialReal backend at session start. This needs the SpatialReal Python
+SDK 0.4.0 or newer, the release in which these are the SDK defaults.
+
+Viewers must use `@spatialreal/web-sdk` 1.0.0-beta.7 or newer, which detects
+the published profile automatically, or 1.0.0-beta.6 with
+`agora.sourcePlaybackProfile: 'bounded-burst-v1'` set in its configuration.
+The publisher cannot see which viewers are in the channel; older viewers need
+compatibility mode.
+
+The backend must confirm both capabilities, `agora_source_timeline_only` and
+`agora_source_burst_v1`, when it confirms the session. If it does not, the
+session is closed and a `-1012` configuration error is reported: the
+extension does not retry and does not fall back silently. Every reconnect
+checks again; ordinary transport failures keep the retry policy.
+
+Compatibility mode, for viewers that play the egress's native audio: set
+`params.source_timeline_only: false` and omit `params.source_playback_profile`
+(it then defaults to `0`). To keep source-only playback without the burst
+profile, leave `source_timeline_only` at `true` and set
+`source_playback_profile: 0`. Booleans, strings and profile values other than
+`0` and `1` are configuration errors, as is profile `1` without source-only.
 
 ## Graph
 
