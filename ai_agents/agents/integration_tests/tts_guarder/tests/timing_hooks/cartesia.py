@@ -124,9 +124,9 @@ class CartesiaTimingHook:
 def _add_spacing_groups(groups):
     """Mirror spacing both within and between Cartesia timestamp groups.
 
-    The client prepends one space to every timestamp group after the first
-    one, whatever the group starts with, and inserts a space between two
-    words of a group only when its own spacing rules allow it.
+    The client prepends one 1ms space to every timestamp group after the
+    first one, whatever the group starts with, and inserts a 1ms space
+    between two words of a group only when its own spacing rules allow it.
     """
     result = []
     previous = None
@@ -135,7 +135,7 @@ def _add_spacing_groups(groups):
         group_prefix = previous is not None
         if group_prefix:
             current.append(
-                ReferenceWord(" ", group[0].start_ms, group[0].start_ms)
+                ReferenceWord(" ", previous.end_ms - 1, previous.end_ms)
             )
         for index, word in enumerate(group):
             if (
@@ -143,7 +143,9 @@ def _add_spacing_groups(groups):
                 and previous is not None
                 and _needs_space(previous.word, word.word)
             ):
-                current.append(ReferenceWord(" ", word.start_ms, word.start_ms))
+                current.append(
+                    ReferenceWord(" ", word.start_ms - 1, word.start_ms)
+                )
             current.append(word)
             previous = word
         result.append(tuple(current))
