@@ -1,385 +1,370 @@
 import asyncio
-import json
-import re
 import base64
+import json
+from time import monotonic
+from typing import Any, Optional
+from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
-from typing import Optional, Dict, Any
 import websockets
-from websockets.exceptions import ConnectionClosed, WebSocketException
-
+from websockets.exceptions import (
+    ConnectionClosed,
+    ConnectionClosedOK,
+)
 from websockets.protocol import State
 
-from .audio_buffer_manager import AudioBufferManager
-
+from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS, LOG_CATEGORY_VENDOR
 from ten_ai_base.timeline import AudioTimeline
-from ten_ai_base.const import LOG_CATEGORY_TRANSCRIPTS
-from ten_runtime import (
-    AsyncTenEnv,
-)
+from ten_ai_base.utils import redact_url
+from ten_runtime import AsyncTenEnv
 
 
 class ElevenLabsWSRecognitionCallback:
-    """ElevenLabs WebSocket Speech Recognition Callback Interface"""
+    """Callbacks from the websocket client into the TEN extension."""
 
-    async def on_open(self):
-        """Called when connection is established"""
+    async def on_open(
+        self,
+        generation: int | None = None,
+        session_id: str | None = None,
+        connect_delay_ms: int | None = None,
+    ) -> None:
+        del generation, session_id, connect_delay_ms
 
-    async def on_result(self, message_data: Dict[str, Any]):
-        """
-        Recognition result callback
-        :param message_data: Complete recognition result data
-        """
+    async def on_result(
+        self, message_data: dict[str, Any], generation: int | None = None
+    ) -> None:
+        del message_data, generation
 
-    async def on_event(self, message_data: Dict[str, Any]):
-        """
-        Event callback
-        :param message_data: Event data
-        """
+    async def on_event(
+        self, message_data: dict[str, Any], generation: int | None = None
+    ) -> None:
+        del message_data, generation
 
-    async def on_error(self, error_msg: str, error_code: Optional[str] = None):
-        """Error callback"""
+    async def on_error(
+        self,
+        error_msg: str,
+        error_code: Optional[str] = None,
+        generation: int | None = None,
+    ) -> None:
+        del error_msg, error_code, generation
 
-    async def on_close(self):
-        """Called when connection is closed"""
+    async def on_close(
+        self,
+        vendor_code: int = 0,
+        vendor_message: str = "closed",
+        generation: int | None = None,
+        normal: bool = False,
+    ) -> None:
+        del vendor_code, vendor_message, generation, normal
 
 
 class ElevenLabsWSRecognition:
-    """Async WebSocket-based ElevenLabs speech recognition client"""
+    """Websocket client for ElevenLabs Scribe Realtime v2."""
 
     def __init__(
         self,
-        audio_timeline=AudioTimeline,
-        ten_env=AsyncTenEnv,
-        params: Optional[Dict[str, Any]] = None,
+        audio_timeline: AudioTimeline,
+        ten_env: AsyncTenEnv,
+        params: Optional[dict[str, Any]] = None,
         callback: Optional[ElevenLabsWSRecognitionCallback] = None,
+        generation: int = 0,
     ):
-        """
-        Initialize ElevenLabs WebSocket speech recognition
-        :param audio_timeline: Audio timeline for timestamp management
-        :param ten_env: Ten environment object for logging
-        :param params: Parameter dictionary containing configuration
-        :param callback: Callback instance for handling events
-        """
         self.audio_timeline = audio_timeline
         self.ten_env = ten_env
-        self.params = params or {}
+        self.params = dict(params or {})
         self.callback = callback
+        self.generation = generation
         self.websocket = None
         self.is_started = False
-        self._message_task: Optional[asyncio.Task] = None
-        self._consumer_task: Optional[asyncio.Task] = None
+        self.session_id: str | None = None
+        self._message_task: asyncio.Task | None = None
+        self._closed = False
+        self._session_started = asyncio.Event()
+        self._start_error: tuple[str, str] | None = None
+        self._handshake_complete = False
+        self._send_lock = asyncio.Lock()
+        self._connection_started_at = 0.0
 
-        self.api_key = params.get("api_key")
-        self.ws_url = params.get("ws_url")
-
-        self.audio_buffer = AudioBufferManager(
-            ten_env=self.ten_env, threshold=640
+        self.api_key = self.params.get("api_key", "")
+        self.ws_url = self.params.get("ws_url", "")
+        self.sample_rate = int(self.params.get("sample_rate", 16000))
+        self.channels = 1
+        self.sample_width = (
+            1 if self.params.get("audio_format") == "ulaw_8000" else 2
         )
 
-    async def _handle_message(self, message: str):
-        """Handle WebSocket message from ElevenLabs"""
+    def _log(self, message: str, category: str = LOG_CATEGORY_VENDOR) -> None:
+        self.ten_env.log_info(message, category=category)
+
+    @staticmethod
+    def _close_details(exc: ConnectionClosed) -> tuple[int, str]:
+        """Read close details without using deprecated exception properties."""
+        received = getattr(exc, "rcvd", None)
+        if received is None:
+            received = getattr(exc, "sent", None)
+        if received is None:
+            return 0, "closed"
+        return (
+            int(getattr(received, "code", 0)),
+            getattr(received, "reason", "") or "closed",
+        )
+
+    async def _notify_error(self, code: str, message: str) -> None:
+        """Startup errors belong to start(); live errors belong to callbacks."""
+        if not self._handshake_complete:
+            self._start_error = (code, message)
+            self._session_started.set()
+        elif self.callback:
+            await self.callback.on_error(message, code, self.generation)
+
+    def _build_websocket_url(self) -> str:
+        """Build an encoded URL with only vendor query parameters."""
+        excluded = {
+            "api_key",
+            "ws_url",
+            # TEN's generic public language property is translated to the
+            # provider's language_code by the config layer.
+            "language",
+            "sample_rate",
+            "dump",
+            "dump_path",
+            "connect_timeout",
+            "finalize_timeout",
+        }
+        query: list[tuple[str, str]] = []
+        for key, value in self.params.items():
+            if key in excluded or value is None:
+                continue
+            if isinstance(value, bool):
+                query.append((key, str(value).lower()))
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    if item is not None:
+                        query.append((key, str(item)))
+            elif value != "":
+                query.append((key, str(value)))
+
+        parts = urlsplit(self.ws_url)
+        existing = parse_qsl(parts.query, keep_blank_values=True)
+        encoded_query = urlencode(existing + query, doseq=True)
+        return urlunsplit(
+            (
+                parts.scheme,
+                parts.netloc,
+                parts.path,
+                encoded_query,
+                parts.fragment,
+            )
+        )
+
+    async def _handle_message(self, message: str) -> None:
         try:
             message_data = json.loads(message)
+            message_type = message_data.get("message_type", "")
             self.ten_env.log_debug(
-                f"vendor_result: on_recognized: {message}",
+                f"vendor_result: {message_type}",
                 category=LOG_CATEGORY_TRANSCRIPTS,
             )
 
-            message_type = message_data.get("message_type", "")
-
             if message_type == "session_started":
-                session_id = message_data.get("session_id")
-                config = message_data.get("config", {})
-                self.ten_env.log_info(
-                    f"[ElevenLabs] Session started: {session_id}, config: {config}"
+                self.session_id = message_data.get("session_id")
+                self.is_started = True
+                delay_ms = int(
+                    max(0.0, monotonic() - self._connection_started_at) * 1000
                 )
                 if self.callback:
-                    await self.callback.on_open()
-                    self.is_started = True
+                    await self.callback.on_open(
+                        self.generation, self.session_id, delay_ms
+                    )
+                self._session_started.set()
+                return
 
-            elif message_type == "partial_transcript":
+            if message_type in {
+                "partial_transcript",
+                "committed_transcript",
+                "committed_transcript_with_timestamps",
+            }:
                 if self.callback:
-                    await self.callback.on_result(message_data)
+                    await self.callback.on_result(message_data, self.generation)
+                return
 
-            elif message_type == "committed_transcript":
-                if self.callback:
-                    await self.callback.on_result(message_data)
+            if message_type in {
+                "auth_error",
+                "quota_exceeded",
+                "transcriber_error",
+                "input_error",
+                "invalid_request",
+                "error",
+                "commit_throttled",
+                "unaccepted_terms",
+                "rate_limited",
+                "queue_overflow",
+                "resource_exhausted",
+                "session_time_limit_exceeded",
+                "chunk_size_exceeded",
+                "insufficient_audio_activity",
+            }:
+                error = str(message_data.get("error", message_type))
+                await self._notify_error(message_type, error)
+                return
 
-            elif message_type == "committed_transcript_with_timestamps":
-                if self.callback:
-                    await self.callback.on_result(message_data)
-
-            elif message_type == "error":
-                error = message_data.get("error", "Unknown error")
-                self.ten_env.log_error(f"[ElevenLabs] Error: {error}")
-                if self.callback:
-                    await self.callback.on_error(error)
-
-            elif message_type == "auth_error":
-                error = message_data.get("error", "Authentication error")
-                self.ten_env.log_error(f"[ElevenLabs] Auth error: {error}")
-                if self.callback:
-                    await self.callback.on_error(error, "auth_error")
-
-            elif message_type == "quota_exceeded_error":
-                error = message_data.get("error", "Quota exceeded")
-                self.ten_env.log_error(f"[ElevenLabs] Quota exceeded: {error}")
-                if self.callback:
-                    await self.callback.on_error(error, "quota_exceeded")
-
-            else:
-                self.ten_env.log_info(
-                    f"[ElevenLabs] Unknown message: {message_data}",
-                    category=LOG_CATEGORY_TRANSCRIPTS,
-                )
-                if self.callback:
-                    await self.callback.on_event(message_data)
-
-        except json.JSONDecodeError as e:
-            error_msg = f"Failed to parse message JSON: {e}"
-            self.ten_env.log_error(f"[ElevenLabs] {error_msg}")
             if self.callback:
-                await self.callback.on_error(error_msg)
-        except Exception as e:
-            error_msg = f"Error processing message: {e}"
-            self.ten_env.log_error(f"[ElevenLabs] {error_msg}")
-            if self.callback:
-                await self.callback.on_error(error_msg)
+                await self.callback.on_event(message_data, self.generation)
+        except json.JSONDecodeError as exc:
+            error = f"invalid ElevenLabs JSON response: {exc}"
+            await self._notify_error("invalid_response", error)
+        except Exception as exc:
+            error = f"error processing ElevenLabs response: {exc}"
+            await self._notify_error("response_error", error)
 
-    async def _message_handler(self):
-        """Handle incoming WebSocket messages"""
-        if self.websocket is None:
-            self.ten_env.log_info(
-                "WebSocket connection not established, skipping message handler"
-            )
-            return
+    async def _message_handler(self) -> None:
+        close_code = 0
+        close_message = "closed"
+        normal = False
         try:
+            if self.websocket is None:
+                return
             async for message in self.websocket:
-                try:
-                    await self._handle_message(message)
-                except Exception as e:
-                    self.ten_env.log_error(f"Error handling message: {e}")
-                    continue
-        except ConnectionClosed as e:
-            code_match = re.search(r"(\d{3,4})", str(e))
-            code = int(code_match.group(1)) if code_match else 0
-            self.ten_env.log_info(
-                f"[ElevenLabs] WebSocket connection closed (code={code}, reason='{e}')"
+                await self._handle_message(message)
+        except ConnectionClosedOK as exc:
+            close_code, close_message = self._close_details(exc)
+            normal = True
+        except ConnectionClosed as exc:
+            # Every ConnectionClosedError is abnormal, including code 1000
+            # with an incomplete handshake or a timeout in the reason.
+            close_code, close_message = self._close_details(exc)
+            await self._notify_error(
+                str(close_code or "websocket_closed"),
+                f"ElevenLabs websocket closed: {close_message}",
             )
-            if self.callback:
-                if code != 0:
-                    await self.callback.on_error(str(e), str(code))
-
-        except WebSocketException as e:
-            error_msg = f"WebSocket error: {e}"
-            self.ten_env.log_error(f"[ElevenLabs] {error_msg}")
-            if self.callback:
-                await self.callback.on_error(error_msg)
-        except asyncio.CancelledError:
-            if self.callback:
-                await self.callback.on_error(e)
-        except Exception as e:
-            if self.callback:
-                await self.callback.on_error(str(e))
+        except Exception as exc:
+            close_message = str(exc)
+            await self._notify_error(
+                "websocket_error", f"ElevenLabs websocket error: {exc}"
+            )
         finally:
             self.is_started = False
-            if self.callback:
-                await self.callback.on_close()
-
-    def _build_websocket_url(self) -> str:
-        """Build WebSocket URL with query parameters for ElevenLabs"""
-        base_url = self.ws_url
-        query_params = []
-
-        excluded_params = {"ws_url", "api_key"}
-
-        for param_key, value in self.params.items():
-            if param_key not in excluded_params and value is not None:
-                if isinstance(value, bool):
-                    query_params.append(f"{param_key}={str(value).lower()}")
-                elif value:
-                    query_params.append(f"{param_key}={value}")
-
-        self.ten_env.log_info(
-            f"[ElevenLabs] Building websocket url with params: {query_params}"
-        )
-
-        if query_params:
-            url = f"{base_url}?{'&'.join(query_params)}"
-        else:
-            url = base_url
-
-        return url
-
-    async def start(self, timeout: int = 10) -> bool:
-        """
-        Start ElevenLabs recognition service
-        :param timeout: Connection timeout in seconds
-        :return: True if connection successful, False otherwise
-        """
-        if self.is_connected():
-            self.ten_env.log_info("[ElevenLabs] Recognition already started")
-            return True
-
-        ws_url = self._build_websocket_url()
-        headers = {"xi-api-key": self.api_key}
-
-        self.ten_env.log_info(
-            f"[ElevenLabs] Connecting to ElevenLabs: {ws_url}"
-        )
-
-        self.websocket = await websockets.connect(
-            ws_url, additional_headers=headers, open_timeout=timeout
-        )
-        self._message_task = asyncio.create_task(self._message_handler())
-        self._consumer_task = asyncio.create_task(self._consume_and_send())
-
-        self.ten_env.log_info("[ElevenLabs] WebSocket connection established")
-
-        return True
-
-    async def send_audio_frame(self, audio_data: bytes):
-        """
-        Producer side: push audio bytes into buffer.
-        :param audio_data: Audio data (bytes format)
-        """
-        try:
-            await self.audio_buffer.push_audio(audio_data)
-        except Exception as e:
-            if self.callback:
-                await self.callback.on_error(
-                    f"Failed to enqueue audio frame: {e}"
+            if not self._handshake_complete:
+                if self._start_error is None:
+                    self._start_error = ("websocket_closed", close_message)
+                self._session_started.set()
+            elif self.callback and not self._closed:
+                await self.callback.on_close(
+                    close_code, close_message, self.generation, normal
                 )
 
-    async def _consume_and_send(self):
-        """Consumer loop: pull chunks from buffer and send over websocket."""
-
-        sample_rate = self.params.get("sample_rate", 16000)
-
+    async def start(self, timeout: float = 10) -> bool:
+        """Open the socket and wait for the vendor handshake."""
+        if self.is_connected():
+            return True
+        self._closed = False
+        self._session_started.clear()
+        self._start_error = None
+        self._handshake_complete = False
+        self._connection_started_at = monotonic()
+        ws_url = self._build_websocket_url()
+        self._log(
+            "Connecting to ElevenLabs realtime ASR: " f"{redact_url(ws_url)}"
+        )
         try:
-            while True:
-                if not self.is_connected():
-                    await asyncio.sleep(0.01)
-                    continue
-                else:
-                    chunk = await self.audio_buffer.pull_chunk()
-                    if chunk == b"":
-                        break
-
-                    if self.websocket is None:
-                        break
-
-                    duration_ms = int(len(chunk) / (sample_rate / 1000 * 2))
-                    if self.audio_timeline:
-                        self.audio_timeline.add_user_audio(duration_ms)
-
-                    # ElevenLabs expects audio data in a specific JSON format
-                    audio_message = {
-                        "message_type": "input_audio_chunk",
-                        "audio_base_64": str(base64.b64encode(chunk), "utf-8"),
-                        "commit": False,  # Let VAD handle commits
-                        "sample_rate": sample_rate,
-                    }
-                    # self.ten_env.log_info(f"[ElevenLabs] WebSocket send len :{len(chunk)}")
-                    await self.websocket.send(json.dumps(audio_message))
-
-        except asyncio.TimeoutError:
-            self.ten_env.log_error(
-                "[ElevenLabs] Timeout while sending audio chunk"
+            headers = {}
+            if isinstance(self.api_key, str) and self.api_key:
+                headers["xi-api-key"] = self.api_key
+            self.websocket = await websockets.connect(
+                ws_url,
+                additional_headers=headers,
+                open_timeout=timeout,
             )
+            self._message_task = asyncio.create_task(self._message_handler())
+            await asyncio.wait_for(
+                self._session_started.wait(), timeout=timeout
+            )
+            if self._start_error:
+                code, message = self._start_error
+                raise ConnectionError(f"{code}: {message}")
+            if not self.is_started:
+                raise ConnectionError("ElevenLabs session did not start")
+            self._handshake_complete = True
+            return True
+        except (Exception, asyncio.CancelledError):
+            await self.close(notify=False)
+            raise
+
+    async def send_audio_frame(self, audio_data: bytes) -> bool:
+        """Send one PCM frame and update the timeline after success."""
+        if not audio_data or not self.is_connected():
+            return False
+        payload = {
+            "message_type": "input_audio_chunk",
+            "audio_base_64": base64.b64encode(audio_data).decode("ascii"),
+            "sample_rate": self.sample_rate,
+            "commit": False,
+        }
+        try:
+            async with self._send_lock:
+                if not self.is_connected() or self.websocket is None:
+                    return False
+                await self.websocket.send(json.dumps(payload))
+            duration_ms = int(
+                len(audio_data)
+                / self.sample_rate
+                / self.channels
+                / self.sample_width
+                * 1000
+            )
+            self.audio_timeline.add_user_audio(duration_ms)
+            return True
         except ConnectionClosed:
-            self.ten_env.log_error(
-                "[ElevenLabs] WebSocket connection closed while consuming audio frames"
-            )
-        except Exception as e:
-            self.ten_env.log_error(f"[ElevenLabs] Consumer loop error: {e}")
-            if self.callback:
-                await self.callback.on_error(f"Consumer loop error: {e}")
+            self.is_started = False
+            return False
 
-    async def send_final(self):
-        sample_rate = self.params.get("sample_rate", 16000)
-
-        audio_message = {
+    async def send_final(self) -> bool:
+        """Commit the current segment after all prior audio sends complete."""
+        if not self.is_connected() or self.websocket is None:
+            return False
+        payload = {
             "message_type": "input_audio_chunk",
             "audio_base_64": "",
             "commit": True,
-            "sample_rate": sample_rate,
         }
-        self.ten_env.log_info("[ElevenLabs] WebSocket send final")
-        await self.websocket.send(json.dumps(audio_message))
-
-    async def stop(self):
-        """Stop ElevenLabs recognition"""
-        if not self.is_connected():
-            self.ten_env.log_info("[ElevenLabs] Recognition not started")
-            return
-
         try:
-            self.audio_buffer.close()
-            if self._consumer_task:
-                try:
-                    await self._consumer_task
-                except asyncio.CancelledError:
-                    pass
-
-            # ElevenLabs doesn't require explicit termination message
-            # Just close the connection
-            self.ten_env.log_info("[ElevenLabs] Session termination initiated")
-
-            self.is_started = False
-
+            async with self._send_lock:
+                if not self.is_connected() or self.websocket is None:
+                    return False
+                await self.websocket.send(json.dumps(payload))
+            return True
         except ConnectionClosed:
-            self.ten_env.log_info(
-                "[ElevenLabs] WebSocket connection already closed"
-            )
-        except Exception as e:
-            error_msg = f"Failed to stop recognition: {e}"
-            self.ten_env.log_error(f"[ElevenLabs] {error_msg}")
-            if self.callback:
-                await self.callback.on_error(error_msg)
+            self.is_started = False
+            return False
 
-    async def stop_consumer(self):
-        """Stop consumer task"""
-        if self._consumer_task and not self._consumer_task.done():
-            self._consumer_task.cancel()
-            try:
-                await self._consumer_task
-            except asyncio.CancelledError:
-                pass
-
-    async def close(self):
-        """Close WebSocket connection"""
-        self.ten_env.log_info("[ElevenLabs] Starting close process")
-
-        if self.websocket:
-            try:
-                if self.websocket.state == State.OPEN:
-                    await self.websocket.close()
-            except Exception as e:
-                self.ten_env.log_info(
-                    f"[ElevenLabs] Error closing websocket: {e}"
-                )
-
-        await self.stop_consumer()
-
-        if self._message_task and not self._message_task.done():
-            self._message_task.cancel()
-            try:
-                await self._message_task
-            except asyncio.CancelledError:
-                pass
-
+    async def close(self, notify: bool = False) -> None:
+        """Close the socket and await the reader task without reconnecting."""
+        self._closed = True
         self.is_started = False
+        ws = self.websocket
+        self.websocket = None
+        if ws is not None:
+            try:
+                if getattr(ws, "state", None) == State.OPEN:
+                    await ws.close()
+            except Exception as exc:
+                self._log(f"Error closing ElevenLabs websocket: {exc}")
+
+        task = self._message_task
+        self._message_task = None
+        if task and task is not asyncio.current_task() and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+        if notify and self.callback:
+            await self.callback.on_close(0, "closed", self.generation, True)
 
     def is_connected(self) -> bool:
-        """Check if WebSocket connection is established"""
-
-        if self.websocket is None:
+        if self.websocket is None or not self.is_started:
             return False
         try:
-            if hasattr(self.websocket, "state"):
-                return self.is_started and self.websocket.state == State.OPEN
-            else:
-                return self.is_started
+            return getattr(self.websocket, "state", State.OPEN) == State.OPEN
         except Exception:
             return False
