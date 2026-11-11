@@ -66,6 +66,11 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
             raise ValueError("voice_id is required for Typecast TTS")
         if not self.params.get("model"):  # pylint: disable=no-member
             raise ValueError("model is required for Typecast TTS")
+        if "seed" in self.params:
+            raise ValueError(
+                "seed is no longer supported by Typecast streaming; "
+                "remove params.seed from configuration"
+            )
         output = self.params.get("output")  # pylint: disable=no-member
         if output is not None and not isinstance(output, dict):
             raise ValueError("Invalid Typecast output settings")

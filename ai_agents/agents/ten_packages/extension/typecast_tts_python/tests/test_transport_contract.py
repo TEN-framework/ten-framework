@@ -331,7 +331,6 @@ def test_outgoing_mapping_and_unsupported_controls(local_extension, output):
             "language": "kor",
             "output": {**output, "audio_format": "mp3"},
             "unsupported_control": "ignored",
-            "seed": 42,
         }
         async with local_extension(serve, params) as h:
             result = [item async for item in h.ext.client.get(TEXT, "mapping")]
@@ -351,11 +350,23 @@ def test_outgoing_mapping_and_unsupported_controls(local_extension, output):
                     "url",
                     "dump",
                     "chunk_size",
-                    "seed",
                     "unsupported_control",
                 }
                 & body.keys()
             )
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("seed", [None, 0, 42, True])
+def test_removed_seed_is_rejected_before_vendor_request(local_extension, seed):
+    async def run():
+        async def serve(request, body):
+            pytest.fail("Unsupported seed must not reach the vendor")
+
+        with pytest.raises(ValueError, match="seed is no longer supported"):
+            async with local_extension(serve, {"seed": seed}):
+                pytest.fail("Unsupported seed must fail configuration")
 
     asyncio.run(run())
 

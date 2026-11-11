@@ -75,6 +75,9 @@ duration. This setting does not guarantee lower time to first byte.
 
 See the [Typecast Python SDK documentation](https://typecast.ai/docs/sdk/python).
 
+`params.seed` is no longer supported by Typecast streaming. Remove it from
+existing configurations; the extension rejects it rather than silently ignoring it.
+
 ## Validation
 
 ```bash
