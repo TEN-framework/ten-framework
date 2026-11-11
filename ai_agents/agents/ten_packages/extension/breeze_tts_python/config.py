@@ -11,9 +11,9 @@ from ten_ai_base import utils
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
 try:  # loaded as a TEN package
-    from .breeze_tts import SAMPLE_RATE, BreezeTTSParams
+    from .breeze_tts import SAMPLE_RATE, SUPPORTED_SAMPLE_RATES, BreezeTTSParams
 except ImportError:  # loaded flat, e.g. by the unit tests
-    from breeze_tts import SAMPLE_RATE, BreezeTTSParams
+    from breeze_tts import SAMPLE_RATE, SUPPORTED_SAMPLE_RATES, BreezeTTSParams
 
 MAX_INSTRUCTIONS = 500
 
@@ -47,6 +47,8 @@ class BreezeTTSConfig(AsyncTTS2HttpConfig):
         )
         params.api_key = (params.api_key or "").strip()
         params.speed = _clamp_speed(params.speed)
+        if params.sample_rate not in SUPPORTED_SAMPLE_RATES:
+            params.sample_rate = SAMPLE_RATE
         if len(params.instructions) > MAX_INSTRUCTIONS:
             params.instructions = params.instructions[:MAX_INSTRUCTIONS]
 
@@ -66,6 +68,10 @@ class BreezeTTSConfig(AsyncTTS2HttpConfig):
             )
         if not self.params.voice_id:
             raise ValueError("params.voice_id is required")
+        if self.params.sample_rate not in SUPPORTED_SAMPLE_RATES:
+            raise ValueError(
+                f"params.sample_rate must be one of {SUPPORTED_SAMPLE_RATES}"
+            )
         if SAMPLE_RATE != 24000:
             raise ValueError(
                 "Breeze PCM is fixed at 24 kHz mono 16-bit; sample_rate must "

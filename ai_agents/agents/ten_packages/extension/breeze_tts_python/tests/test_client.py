@@ -77,8 +77,12 @@ class FakeConfig:
         self.dump_path = "/tmp"
 
 
-def make_client(response):
-    client = BreezeTTSClient(FakeConfig(), FakeEnv())
+def make_client(response, **params):
+    config = FakeConfig()
+    config.params = BreezeTTSParams(
+        api_key="brz_test", voice_id="voc_test", **params
+    )
+    client = BreezeTTSClient(config, FakeEnv())
     client._session = FakeSession(response)
     return client
 
@@ -157,3 +161,20 @@ def test_empty_text_finishes_immediately():
 def test_sample_rate_matches_pcm_layout():
     assert SAMPLE_RATE == 24000
     assert BYTES_PER_SAMPLE == 2
+
+
+def test_resamples_to_the_configured_rate():
+    chunks = [b"\x01\x00" * 24000]  # one second of 24 kHz mono PCM
+    client = make_client(FakeResponse(chunks=chunks), sample_rate=16000)
+    events = asyncio.run(collect(client))
+
+    audio = b"".join(payload for payload, kind in events if kind is TTS2HttpResponseEventType.RESPONSE)
+    # 1 s at 16 kHz, 16 bit mono
+    assert abs(len(audio) - 32000) <= 64
+
+
+def test_validation_error_is_reported_as_fatal():
+    client = make_client(FakeResponse(status=422, text="bad params"))
+    events = asyncio.run(collect(client))
+
+    assert events[-1][1] is TTS2HttpResponseEventType.INVALID_KEY_ERROR

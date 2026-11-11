@@ -21,6 +21,45 @@ NUMBER_OF_CHANNELS = 1
 SAMPLE_RATE = 24000
 MAX_ATTEMPTS = 4
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+SUPPORTED_SAMPLE_RATES = (16000, 22050, 24000, 44100)
+
+
+class LinearResampler:
+    """Streaming linear resampler for 16-bit mono PCM.
+
+    Breeze always synthesises 24 kHz; when a graph asks for another rate we
+    convert chunk by chunk so audio can still start before the stream ends.
+    """
+
+    def __init__(self, in_rate: int, out_rate: int) -> None:
+        self.step = in_rate / out_rate
+        self.pos = 0.0
+        self.prev: float | None = None
+
+    def process(self, pcm: bytes) -> bytes:
+        import array
+
+        if self.step == 1.0 or not pcm:
+            return pcm
+
+        samples = array.array("h")
+        samples.frombytes(pcm[: len(pcm) - len(pcm) % 2])
+        if not samples:
+            return b""
+
+        data = [samples[0] if self.prev is None else self.prev, *samples]
+        out = array.array("h")
+        pos = self.pos
+        last = len(data) - 1
+        while pos < last:
+            idx = int(pos)
+            frac = pos - idx
+            value = data[idx] * (1.0 - frac) + data[idx + 1] * frac
+            out.append(max(-32768, min(32767, int(value))))
+            pos += self.step
+        self.pos = pos - last
+        self.prev = float(data[-1])
+        return out.tobytes()
 
 
 def _retry_delay(attempt: int, headers: Any) -> float:
@@ -56,6 +95,11 @@ class BreezeTTSParams(BaseModel):
     instructions: str = Field(
         default="", description="Optional style / emotion instructions"
     )
+    sample_rate: int = Field(
+        default=24000,
+        description="Requested output rate; Breeze renders 24 kHz and the "
+        "extension resamples to 16k / 22.05k / 44.1k when configured",
+    )
     timeout: int = Field(
         default=60, description="HTTP timeout in seconds for one utterance"
     )
@@ -75,6 +119,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self._session: aiohttp.ClientSession | None = None
         self._response: aiohttp.ClientResponse | None = None
         self._cancelled = False
+        self._resampler: LinearResampler | None = None
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -98,10 +143,15 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
             self._response.close()
         self._response = None
 
+    def target_sample_rate(self) -> int:
+        rate = getattr(self.config.params, "sample_rate", SAMPLE_RATE)
+        return rate if rate in SUPPORTED_SAMPLE_RATES else SAMPLE_RATE
+
     def get_extra_metadata(self) -> dict[str, Any]:
         params = self.config.params
         return {
             "voice_id": params.voice_id,
+            "sample_rate": self.target_sample_rate(),
             "language": params.language,
             "sample_rate": SAMPLE_RATE,
         }
@@ -121,6 +171,10 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         self._cancelled = False
+        target_rate = self.target_sample_rate()
+        self._resampler = (
+            None if target_rate == SAMPLE_RATE else LinearResampler(SAMPLE_RATE, target_rate)
+        )
 
         if not text.strip():
             yield None, TTS2HttpResponseEventType.END
@@ -165,7 +219,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                 self._response = None
                 yield detail.encode(), (
                     TTS2HttpResponseEventType.INVALID_KEY_ERROR
-                    if response.status in (401, 403)
+                    if response.status in (400, 401, 403, 422)
                     else TTS2HttpResponseEventType.ERROR
                 )
                 return
@@ -178,6 +232,8 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                 if self._cancelled:
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return
+                if self._resampler is not None:
+                    chunk = self._resampler.process(chunk)
                 if chunk:
                     yield chunk, TTS2HttpResponseEventType.RESPONSE
 
@@ -189,7 +245,18 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         except asyncio.CancelledError:
             yield None, TTS2HttpResponseEventType.FLUSH
             raise
+        except aiohttp.ClientError as error:
+            if self._cancelled:
+                yield None, TTS2HttpResponseEventType.FLUSH
+                return
+            self.ten_env.log_error(
+                f"Breeze TTS request {request_id} failed: {error}"
+            )
+            yield str(error).encode(), TTS2HttpResponseEventType.ERROR
         except Exception as error:  # noqa: BLE001 - surfaced to the pipeline
+            if self._cancelled:
+                yield None, TTS2HttpResponseEventType.FLUSH
+                return
             self.ten_env.log_error(
                 f"Breeze TTS request {request_id} failed: {error}"
             )
