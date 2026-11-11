@@ -15,6 +15,12 @@
 
 Refer to `api` definition in [manifest.json] and default values in [property.json](property.json).
 
+Pass credentials explicitly in `params.api_key`. The extension does not fall
+back to an environment key. Tests can inject `FISH_AUDIO_TTS_KEY` through their
+test configuration. Missing or invalid credentials are sent to Fish Audio;
+vendor authentication errors are returned through the TTS error callback for
+the synthesis request.
+
 <!-- Additional API.md can be referred to if extra introduction needed -->
 
 ## Development

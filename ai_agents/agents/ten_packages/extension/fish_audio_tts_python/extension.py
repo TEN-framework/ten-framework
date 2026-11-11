@@ -63,13 +63,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             await super().on_init(ten_env)
             config_json_str, _ = await self.ten_env.get_property_to_json("")
 
-            if not config_json_str or config_json_str.strip() == "{}":
-                raise ValueError(
-                    "Configuration is empty. Required parameter 'key' is missing."
-                )
-
             self.config = FishAudioTTSConfig.model_validate_json(
-                config_json_str
+                config_json_str or "{}"
             )
             self.config.update_params()
             if self.config.flush_mode_warning:
@@ -79,9 +74,8 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            if not self.config.api_key:
-                raise ValueError("API key is required")
-
+            # Let the vendor validate credentials so authentication failures
+            # reach the TTS error callback with the synthesis request ID.
             self.client = self._create_client()
 
         except Exception as e:
