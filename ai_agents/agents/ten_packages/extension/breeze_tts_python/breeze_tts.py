@@ -117,8 +117,8 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self.config = config
         self.ten_env = ten_env
         self._session: aiohttp.ClientSession | None = None
-        self._response: aiohttp.ClientResponse | None = None
-        self._cancelled = False
+        self._responses: dict[str, aiohttp.ClientResponse] = {}
+        self._cancel_epoch = 0
         self._resampler: LinearResampler | None = None
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
@@ -135,13 +135,14 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self._session = None
 
     async def cancel(self) -> None:
-        self._cancelled = True
+        self._cancel_epoch += 1
         await self._close_response()
 
     async def _close_response(self) -> None:
-        if self._response is not None and not self._response.closed:
-            self._response.close()
-        self._response = None
+        for response in self._responses.values():
+            if not response.closed:
+                response.close()
+        self._responses.clear()
 
     def target_sample_rate(self) -> int:
         rate = getattr(self.config.params, "sample_rate", SAMPLE_RATE)
@@ -153,7 +154,6 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
             "voice_id": params.voice_id,
             "sample_rate": self.target_sample_rate(),
             "language": params.language,
-            "sample_rate": SAMPLE_RATE,
         }
 
     def _build_request(self, text: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
@@ -170,7 +170,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
     async def get(
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
-        self._cancelled = False
+        epoch = self._cancel_epoch
         target_rate = self.target_sample_rate()
         self._resampler = (
             None if target_rate == SAMPLE_RATE else LinearResampler(SAMPLE_RATE, target_rate)
@@ -182,86 +182,98 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
 
         url, body, headers = self._build_request(text)
         session = await self._ensure_session()
-        response = None
+        emitted = 0
 
-        try:
-            for attempt in range(1, MAX_ATTEMPTS + 1):
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            response = None
+            try:
                 response = await session.post(
                     url,
                     params={"output_format": "pcm"},
                     json=body,
                     headers=headers,
                 )
-                self._response = response
+                self._responses[request_id] = response
 
-                if response.status == 200:
-                    break
+                if response.status != 200:
+                    detail = (await response.text())[:300]
+                    retryable = (
+                        response.status in RETRY_STATUSES
+                        and attempt < MAX_ATTEMPTS
+                    )
+                    if retryable:
+                        delay = _retry_delay(attempt, response.headers)
+                        self.ten_env.log_warn(
+                            f"Breeze TTS HTTP {response.status} for request "
+                            f"{request_id}, retrying in {delay:.1f}s "
+                            f"(attempt {attempt}/{MAX_ATTEMPTS})"
+                        )
+                        response.release()
+                        self._responses.pop(request_id, None)
+                        response = None
+                        await asyncio.sleep(delay)
+                        continue
 
-                detail = (await response.text())[:300]
-                if response.status in RETRY_STATUSES and attempt < MAX_ATTEMPTS:
-                    delay = _retry_delay(attempt, response.headers)
-                    self.ten_env.log_warn(
+                    self.ten_env.log_error(
                         f"Breeze TTS HTTP {response.status} for request "
-                        f"{request_id}, retrying in {delay:.1f}s "
-                        f"(attempt {attempt}/{MAX_ATTEMPTS})"
+                        f"{request_id}: {detail}"
                     )
                     response.release()
-                    response = None
-                    self._response = None
-                    await asyncio.sleep(delay)
-                    continue
+                    self._responses.pop(request_id, None)
+                    yield detail.encode(), (
+                        TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                        if response.status in (400, 401, 403, 422)
+                        else TTS2HttpResponseEventType.ERROR
+                    )
+                    return
 
-                self.ten_env.log_error(
-                    f"Breeze TTS HTTP {response.status} for request "
-                    f"{request_id}: {detail}"
-                )
-                response.release()
-                self._response = None
-                yield detail.encode(), (
-                    TTS2HttpResponseEventType.INVALID_KEY_ERROR
-                    if response.status in (400, 401, 403, 422)
-                    else TTS2HttpResponseEventType.ERROR
-                )
-                return
+                async for chunk in response.content.iter_chunked(4096):
+                    if epoch != self._cancel_epoch:
+                        yield None, TTS2HttpResponseEventType.FLUSH
+                        return
+                    if self._resampler is not None:
+                        chunk = self._resampler.process(chunk)
+                    if chunk:
+                        emitted += len(chunk)
+                        yield chunk, TTS2HttpResponseEventType.RESPONSE
 
-            if response is None:
-                yield b"Breeze TTS request failed", TTS2HttpResponseEventType.ERROR
-                return
-
-            async for chunk in response.content.iter_chunked(4096):
-                if self._cancelled:
+                if epoch != self._cancel_epoch:
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return
-                if self._resampler is not None:
-                    chunk = self._resampler.process(chunk)
-                if chunk:
-                    yield chunk, TTS2HttpResponseEventType.RESPONSE
+                yield None, TTS2HttpResponseEventType.END
+                return
 
-            if self._cancelled:
+            except asyncio.CancelledError:
                 yield None, TTS2HttpResponseEventType.FLUSH
+                raise
+            except aiohttp.ClientError as error:
+                if epoch != self._cancel_epoch:
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    return
+                if emitted == 0 and attempt < MAX_ATTEMPTS:
+                    self.ten_env.log_warn(
+                        f"Breeze TTS request {request_id} dropped before audio "
+                        f"({error}), retrying (attempt {attempt}/{MAX_ATTEMPTS})"
+                    )
+                    await asyncio.sleep(min(0.4 * attempt, 2.0))
+                    continue
+                self.ten_env.log_error(
+                    f"Breeze TTS request {request_id} failed: {error}"
+                )
+                yield str(error).encode(), TTS2HttpResponseEventType.ERROR
                 return
-            yield None, TTS2HttpResponseEventType.END
+            except Exception as error:  # noqa: BLE001 - surfaced to the pipeline
+                if epoch != self._cancel_epoch:
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    return
+                self.ten_env.log_error(
+                    f"Breeze TTS request {request_id} failed: {error}"
+                )
+                yield str(error).encode(), TTS2HttpResponseEventType.ERROR
+                return
+            finally:
+                self._responses.pop(request_id, None)
+                if response is not None and not response.closed:
+                    response.release()
 
-        except asyncio.CancelledError:
-            yield None, TTS2HttpResponseEventType.FLUSH
-            raise
-        except aiohttp.ClientError as error:
-            if self._cancelled:
-                yield None, TTS2HttpResponseEventType.FLUSH
-                return
-            self.ten_env.log_error(
-                f"Breeze TTS request {request_id} failed: {error}"
-            )
-            yield str(error).encode(), TTS2HttpResponseEventType.ERROR
-        except Exception as error:  # noqa: BLE001 - surfaced to the pipeline
-            if self._cancelled:
-                yield None, TTS2HttpResponseEventType.FLUSH
-                return
-            self.ten_env.log_error(
-                f"Breeze TTS request {request_id} failed: {error}"
-            )
-            yield str(error).encode(), TTS2HttpResponseEventType.ERROR
-        finally:
-            self._response = None
-            if response is not None and not response.closed:
-                response.release()
+        yield b"Breeze TTS request failed", TTS2HttpResponseEventType.ERROR
