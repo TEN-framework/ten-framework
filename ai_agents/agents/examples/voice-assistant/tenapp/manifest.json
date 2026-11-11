@@ -61,6 +61,9 @@
       "path": "../../../ten_packages/extension/soniox_asr_python"
     },
     {
+      "path": "../../../ten_packages/extension/soniox_tts"
+    },
+    {
       "path": "../../../ten_packages/extension/speechmatics_asr_python"
     },
     {
@@ -86,6 +89,12 @@
     },
     {
       "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepseek_llm2_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/typesafe_jev_python"
     },
     {
       "path": "../../../ten_packages/extension/anthropic_llm2_python"
@@ -176,6 +185,9 @@
     },
     {
       "path": "../../../ten_packages/extension/smallest_tts_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/fish_asr_python"
     }
   ],
   "scripts": {

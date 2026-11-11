@@ -2,7 +2,6 @@ from typing import Dict, Any
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
 
-
 # Default params for nova models (v1 API)
 NOVA_DEFAULT_PARAMS = {
     "url": "wss://api.deepgram.com/v1/listen",
@@ -34,7 +33,9 @@ class DeepgramASRConfig(BaseModel):
     # Debugging and dumping
     dump: bool = False
     dump_path: str = "/tmp"
-    finalize_mode: str = "mute_pkg"  # "flush_api" or "mute_pkg" or "ignore"
+    finalize_mode: str = (
+        "mute_pkg"  # "flush_api", "close_stream", "mute_pkg", "ignore"
+    )
     mute_pkg_duration_ms: int = 1000
     # Additional parameters
     params: dict[str, Any] = Field(default_factory=dict)

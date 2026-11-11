@@ -18,24 +18,25 @@ class GlobalThreadManager:
     _instance: "GlobalThreadManager | None" = None
     _lock: threading.Lock = threading.Lock()
 
+    _ref_count: int
+    _main_thread: threading.Thread | None
+    _main_loop: asyncio.AbstractEventLoop | None
+    _stop_event: asyncio.Event
+    _loop_ready_event: threading.Event
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
+                    instance = super().__new__(cls)
+                    instance._ref_count = 0
+                    instance._main_thread = None
+                    instance._main_loop = None
+                    instance._stop_event = asyncio.Event()
+                    instance._loop_ready_event = threading.Event()
+                    # Publish only after initialization, while holding the lock.
+                    cls._instance = instance
         return cls._instance
-
-    def __init__(self):
-        if self._initialized:
-            return
-
-        self._ref_count: int = 0
-        self._main_thread: threading.Thread | None = None
-        self._main_loop: asyncio.AbstractEventLoop | None = None
-        self._stop_event: asyncio.Event = asyncio.Event()
-        self._loop_ready_event: threading.Event = threading.Event()
-        self._initialized: bool = True
 
     def reset(self):
         with self._lock:
@@ -44,7 +45,6 @@ class GlobalThreadManager:
             self._main_loop = None
             self._stop_event = asyncio.Event()
             self._loop_ready_event = threading.Event()
-            self._initialized = True
 
     def get_or_start_thread(
         self, ten_env: "TenEnv"

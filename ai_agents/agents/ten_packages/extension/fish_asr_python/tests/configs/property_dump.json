@@ -1,0 +1,13 @@
+{
+  "dump": true,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "${env:FISH_AUDIO_ASR_KEY}",
+    "model": "transcribe-stream-1",
+    "sample_rate": 16000,
+    "turn_mode": "auto",
+    "eager": true,
+    "drafts": true,
+    "diarize": false
+  }
+}

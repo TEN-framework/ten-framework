@@ -1,0 +1,3 @@
+ormsgpack>=1.5.0
+pydantic>=2.0.0
+websockets>=14.0

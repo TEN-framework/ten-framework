@@ -1,0 +1,82 @@
+{
+  "type": "extension",
+  "name": "fish_asr_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "dev_dependencies": [
+    {
+      "type": "system",
+      "name": "pytest_ten",
+      "version": "0.11.73"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {"type": "bool"},
+        "dump_path": {"type": "string"},
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {"type": "string"},
+            "url": {"type": "string"},
+            "model": {"type": "string"},
+            "sample_rate": {"type": "int64"},
+            "turn_mode": {"type": "string"},
+            "eager": {"type": "bool"},
+            "drafts": {"type": "bool"},
+            "ignore_timestamps": {"type": "bool"},
+            "diarize": {"type": "bool"},
+            "vad_events": {"type": "bool"},
+            "eot_events": {"type": "bool"},
+            "silence_timeout_ms": {"type": "int32"},
+            "context_history": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "role": {"type": "string"},
+                  "text": {"type": "string"}
+                }
+              }
+            },
+            "context_terms": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "client_reference_id": {"type": "string"}
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "pyproject.toml",
+      "requirements.txt",
+      "README.md"
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

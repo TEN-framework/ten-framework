@@ -31,7 +31,6 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
 from .config import OpenAITTSConfig
 
-
 # ============================================================================
 # Performance Optimization: Module-level pre-creation of SSL context
 # ============================================================================
