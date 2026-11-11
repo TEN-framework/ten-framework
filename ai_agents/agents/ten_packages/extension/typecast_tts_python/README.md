@@ -7,9 +7,21 @@ The extension uses the official `typecast-python` SDK and Typecast's
 16-bit, mono. The extension strips the initial WAV header and forwards PCM16
 mono audio to TEN.
 
+## Python compatibility
+
+Python 3.11 through 3.14 uses the standard SDK from PyPI. For TEN's existing
+Python 3.10 environment, `requirements.txt` selects a SHA256-pinned
+`0.5.3+ten310.1` compatibility wheel from the SDK repository's separate TEN
+prerelease. It contains the same SDK source as 0.5.3 with adjusted package
+metadata; dependency minimums are unchanged.
+
+This exception is limited to the TEN integration. It does not restore general
+SDK support or security maintenance for end-of-life Python 3.10. No shared TEN
+Python runtime or builder changes are required.
+
 ## Configuration
 
-Requires Python 3.11 or later and `typecast-python>=0.5.3,<0.6`.
+Install `requirements.txt` to select the SDK dependency for the Python version.
 Set `params.model` to `ssfm-v21`, `ssfm-v30` (default), or `ssfm-v31`.
 For SSFM 3.1, find compatible voices using `GET /v3/voices?model=ssfm-v31`
 and check the selected voice's supported emotions.

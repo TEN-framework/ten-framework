@@ -32,7 +32,10 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self._terminal_audio_sent = False
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
-        return TypecastTTSConfig.model_validate_json(config_json_str)
+        try:
+            return TypecastTTSConfig.model_validate_json(config_json_str)
+        except ValueError:
+            raise ValueError("Invalid Typecast configuration") from None
 
     async def create_client(
         self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv
@@ -44,6 +47,20 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
 
     def synthesize_audio_sample_rate(self) -> int:
         return TYPECAST_STREAM_SAMPLE_RATE
+
+    async def send_tts_ttfb_metrics(
+        self,
+        request_id: str,
+        ttfb_ms: int,
+        turn_id: int = -1,
+        extra_metadata: dict | None = None,
+    ) -> None:
+        # Exclude SDK session setup and TEN event delivery from provider TTFB.
+        if self.client and self.client.ttfb_ms is not None:
+            ttfb_ms = self.client.ttfb_ms
+        await super().send_tts_ttfb_metrics(
+            request_id, ttfb_ms, turn_id, extra_metadata
+        )
 
     async def request_tts(self, t: TTSTextInput) -> None:
         if t.request_id != self.current_request_id:

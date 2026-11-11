@@ -1,13 +1,9 @@
 import asyncio
 import json
-import sys
 import struct
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.tts2 import RequestState

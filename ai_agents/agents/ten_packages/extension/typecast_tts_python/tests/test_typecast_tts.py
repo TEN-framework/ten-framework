@@ -1,6 +1,4 @@
-import sys
 import struct
-from pathlib import Path
 import asyncio
 import json
 import threading
@@ -12,9 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from ten_runtime import AsyncExtensionTester, AsyncTenEnvTester, Data, TenError
 from ten_runtime import TenErrorCode
@@ -89,7 +84,7 @@ def test_config_rejects_invalid_silence(value):
         }
     )
     config.update_params()
-    with pytest.raises(ValueError, match="remove_silence_ms"):
+    with pytest.raises(ValueError, match="output settings"):
         config.validate()
 
 
@@ -259,7 +254,14 @@ def test_real_flush_at_emission_boundaries_recovers(
         sdk.text_to_speech_stream = stream
         with patch(
             "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
-        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+        ), patch(
+            "typecast_tts_python.typecast_tts.monotonic_ns",
+            side_effect=lambda: int(
+                (now - datetime(2026, 1, 1)).total_seconds() * 1_000_000_000
+            ),
+        ), patch(
+            "ten_ai_base.tts2_http.datetime"
+        ) as clock:
             clock.now.side_effect = lambda: now
             loop = asyncio.create_task(extension._process_input_queue(env))
             try:
@@ -453,7 +455,14 @@ def test_appended_text_finishes_before_buffered_request(tmp_path):
         sdk.text_to_speech_stream = stream
         with patch(
             "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
-        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+        ), patch(
+            "typecast_tts_python.typecast_tts.monotonic_ns",
+            side_effect=lambda: int(
+                (now - datetime(2026, 1, 1)).total_seconds() * 1_000_000_000
+            ),
+        ), patch(
+            "ten_ai_base.tts2_http.datetime"
+        ) as clock:
             clock.now.side_effect = lambda: now
             loop = asyncio.create_task(extension._process_input_queue(env))
             try:
@@ -590,7 +599,14 @@ def test_extension_audio_accounting_and_recovery(scenario, tmp_path):
         sdk.text_to_speech_stream = stream
         with patch(
             "typecast_tts_python.typecast_tts.AsyncTypecast", return_value=sdk
-        ), patch("ten_ai_base.tts2_http.datetime") as clock:
+        ), patch(
+            "typecast_tts_python.typecast_tts.monotonic_ns",
+            side_effect=lambda: int(
+                (now - datetime(2026, 1, 1)).total_seconds() * 1_000_000_000
+            ),
+        ), patch(
+            "ten_ai_base.tts2_http.datetime"
+        ) as clock:
             clock.now.side_effect = lambda: now
             try:
                 for request_id in ("first", "recovery"):
@@ -850,7 +866,11 @@ def test_client_maps_vendor_errors(error, expected_event):
             return [event async for event in client.get("hello", "request-id")]
 
     events = asyncio.run(collect())
-    assert events == [(str(error).encode(), expected_event)]
+    assert len(events) == 1
+    assert events[0][1] == expected_event
+    assert type(error).__name__.encode() in events[0][0]
+    assert f"HTTP {error.status_code}".encode() in events[0][0]
+    assert str(error).encode() not in events[0][0]
 
 
 @pytest.mark.parametrize(
@@ -1092,6 +1112,7 @@ def test_dump_stat_failure_finishes_and_recovers(tmp_path):
             params={"api_key": "key", "voice_id": "voice"},
         )
         extension.client = MagicMock()
+        extension.client.ttfb_ms = None
         extension.client.close_stream = AsyncMock()
         extension.client.get_extra_metadata.return_value = {}
 

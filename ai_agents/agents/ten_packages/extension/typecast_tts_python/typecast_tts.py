@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+from time import monotonic_ns
 from typing import Any, AsyncGenerator, AsyncIterator, Tuple
 
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -28,8 +29,9 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self._is_cancelled = False
         self._client: AsyncTypecast | None = None
         self._stream: AsyncGenerator[bytes, None] | None = None
+        self.ttfb_ms: int | None = None
 
-        ten_env.log_info(f"TypecastTTS initialized with URL: {self.config.url}")
+        ten_env.log_info("TypecastTTS initialized")
 
     async def _ensure_client(self) -> AsyncTypecast:
         if self._client is None:
@@ -49,6 +51,7 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         self._is_cancelled = False
+        self.ttfb_ms = None
 
         if len(text.strip()) == 0:
             self.ten_env.log_warn(
@@ -78,7 +81,9 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
             self._stream = client.text_to_speech_stream(
                 request, chunk_size=self.config.chunk_size
             )
+            started = monotonic_ns()
             async for chunk in self._stream:
+                arrived = monotonic_ns()
                 if self._is_cancelled:
                     self.ten_env.log_debug(
                         f"Cancellation detected, flushing TTS stream for request_id: {request_id}"
@@ -88,6 +93,8 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
 
                 pcm = converter.feed(chunk)
                 if pcm:
+                    if self.ttfb_ms is None:
+                        self.ttfb_ms = (arrived - started) // 1_000_000
                     yield pcm, TTS2HttpResponseEventType.RESPONSE
 
             if not self._is_cancelled:
@@ -98,18 +105,20 @@ class TypecastTTSClient(AsyncTTS2HttpClient):
                 yield None, TTS2HttpResponseEventType.END
 
         except Exception as e:
-            error_message = str(e)
+            # Vendor bodies and SDK validation errors can echo credentials/text.
+            status = getattr(e, "status_code", None)
+            error_message = f"Typecast request failed ({type(e).__name__})"
+            if isinstance(status, int):
+                error_message += f" HTTP {status}"
             self.ten_env.log_error(
                 f"vendor_error: {error_message} for request_id: {request_id}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            event = (
+            yield error_message.encode("utf-8"), (
                 TTS2HttpResponseEventType.INVALID_KEY_ERROR
-                if isinstance(e, TypecastError)
-                and getattr(e, "status_code", None) in (401, 403)
+                if isinstance(e, TypecastError) and status in (401, 403)
                 else TTS2HttpResponseEventType.ERROR
             )
-            yield error_message.encode("utf-8"), event
 
     async def close_stream(self):
         stream, self._stream = self._stream, None
