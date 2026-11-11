@@ -22,6 +22,7 @@ class CosyTimingHook:
         self.pcm_bytes = 0
         self.groups = []
         self.emitted = {}
+        self.emitted_index_end = None
         self.error = None
 
     def install(self, monkeypatch, config):
@@ -70,6 +71,7 @@ class CosyTimingHook:
             self.pcm_bytes = 0
             self.groups = []
             self.emitted = {}
+            self.emitted_index_end = None
             self.error = None
 
     def observe_send(self, payload):
@@ -92,26 +94,48 @@ class CosyTimingHook:
                     text = item.get("text")
                     begin = item.get("begin_time")
                     end = item.get("end_time")
+                    begin_index = item.get("begin_index")
+                    end_index = item.get("end_index")
                     if (
                         isinstance(text, str)
                         and text
                         and isinstance(begin, (int, float))
                         and isinstance(end, (int, float))
                     ):
-                        raw_words.append((text, begin, end))
-                emitted = self.emitted.get(index, 0)
+                        raw_words.append(
+                            (text, begin, end, begin_index, end_index)
+                        )
+                indexed = all(
+                    begin_index is not None and end_index is not None
+                    for _, _, _, begin_index, end_index in raw_words
+                ) and bool(raw_words)
+                if indexed:
+                    boundary = self.emitted_index_end
+                    unseen = [
+                        word
+                        for word in raw_words
+                        if boundary is None or word[3] >= boundary
+                    ]
+                else:
+                    emitted = self.emitted.get(index, 0)
+                    unseen = raw_words[emitted:]
                 limit = (
-                    len(raw_words)
+                    len(unseen)
                     if output.get("type") == "sentence-end"
-                    else max(0, len(raw_words) - 1)
+                    else max(0, len(unseen) - 1)
                 )
-                if limit <= emitted:
+                if limit <= 0:
                     return
                 words = [
                     ReferenceWord(text, Fraction(begin), Fraction(end))
-                    for text, begin, end in raw_words[emitted:limit]
+                    for text, begin, end, _, _ in unseen[:limit]
                 ]
-                self.emitted[index] = limit
+                if indexed:
+                    self.emitted_index_end = max(
+                        word[4] for word in unseen[:limit]
+                    )
+                else:
+                    self.emitted[index] = emitted + limit
                 if words:
                     self.groups.append(tuple(words))
             except (

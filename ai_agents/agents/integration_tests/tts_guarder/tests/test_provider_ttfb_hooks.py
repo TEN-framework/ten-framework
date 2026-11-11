@@ -179,3 +179,51 @@ def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
     pool.synthesizer.streaming_call("Hello")
     assert received == [b"audio"]
     assert reference.elapsed_ms("first") == 20
+
+
+def test_cosy_hook_binds_late_audio_to_original_callback(monkeypatch, clock):
+    from .provider_ttfb_hooks.cosy import Hook
+
+    class Synthesizer:
+        def streaming_call(self, text):
+            self.callback.on_data(text.encode())
+
+    class Pool:
+        def __init__(self):
+            self.synthesizer = Synthesizer()
+
+        def borrow_synthesizer(self, callback):
+            self.synthesizer.callback = callback
+            return self.synthesizer
+
+    module = SimpleNamespace(
+        SpeechSynthesizer=Synthesizer,
+        SpeechSynthesizerObjectPool=Pool,
+        ResultCallback=object,
+    )
+    monkeypatch.setattr(
+        "tests.provider_ttfb_hooks.cosy.import_module", lambda name: module
+    )
+    pool = Pool()
+    reference = Reference()
+    Hook().install(monkeypatch, reference, {})
+
+    reference.begin_request("first")
+    old_callback = pool.borrow_synthesizer(
+        callback=SimpleNamespace(request_id="first", on_data=lambda data: None)
+    ).callback
+    reference.capture("text", "first")
+    clock[0] = 20_000_000
+    old_callback.on_data(b"old-audio")
+
+    reference.begin_request("second")
+    new_callback = pool.borrow_synthesizer(
+        callback=SimpleNamespace(request_id="second", on_data=lambda data: None)
+    ).callback
+    reference.capture("text", "second")
+    clock[0] = 30_000_000
+    old_callback.on_data(b"late-old-audio")
+    assert reference.elapsed_ms("second") is None
+    new_callback.on_data(b"new-audio")
+    assert reference.elapsed_ms("first") == 20
+    assert reference.elapsed_ms("second") == 30

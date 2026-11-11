@@ -166,6 +166,8 @@ def test_handle_timestamps_keeps_group_prefix_space_and_inner_spaces():
 
         assert text == " is your"
         assert [word.word for word in words] == [" ", "is", " ", "your"]
+        assert [word.start_ms for word in words] == [1233, 1100, 1199, 1200]
+        assert [word.duration_ms for word in words] == [1, 100, 1, 99]
 
     asyncio.run(_run())
 

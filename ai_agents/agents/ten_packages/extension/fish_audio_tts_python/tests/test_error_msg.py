@@ -17,6 +17,8 @@ from pathlib import Path
 import json
 from unittest.mock import patch
 
+import pytest
+
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
@@ -25,75 +27,27 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput
 
 
-# ================ test empty params ================
-class ExtensionTesterEmptyParams(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.error_received = False
-        self.error_code = None
-        self.error_message = None
-        self.error_module = None
+@pytest.mark.parametrize(
+    "config", [{}, {"params": {}}, {"params": {"api_key": ""}}]
+)
+@patch("fish_audio_tts_python.fish_audio_tts.connect")
+def test_missing_key_reports_vendor_error_for_request(MockConnect, config):
+    """Missing credentials reach the vendor and fail on the TTS callback."""
+    MockConnect.side_effect = Exception("HTTP 401 Unauthorized")
+    # An environment credential must never supply a missing join credential.
+    with patch.dict("os.environ", {"FISH_AUDIO_TTS_KEY": "test-env-key"}):
+        tester = ExtensionTesterInvalidApiKey()
+        tester.set_test_mode_single("fish_audio_tts_python", json.dumps(config))
+        tester.run()
 
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts"""
-        ten_env_tester.log_info("Test started")
-        ten_env_tester.on_start_done()
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        name = data.get_name()
-        ten_env.log_info(f"on_data name: {name}")
-
-        if name == "error":
-            self.error_received = True
-            json_str, _ = data.get_property_to_json(None)
-            error_data = json.loads(json_str)
-
-            self.error_code = error_data.get("code")
-            self.error_message = error_data.get("message", "")
-            self.error_module = error_data.get("module", "")
-
-            ten_env.log_info(
-                f"Received error: code={self.error_code}, message={self.error_message}, module={self.error_module}"
-            )
-
-            # Stop test immediately
-            ten_env.log_info("Error received, stopping test immediately")
-            ten_env.stop_test()
-
-
-def test_empty_params_fatal_error():
-    """Test that empty params raises FATAL ERROR with code -1000"""
-
-    print("Starting test_empty_params_fatal_error...")
-
-    # Empty params configuration
-    empty_params_config = {
-        "params": {
-            "api_key": "",
-        }
-    }
-
-    tester = ExtensionTesterEmptyParams()
-    tester.set_test_mode_single(
-        "fish_audio_tts_python", json.dumps(empty_params_config)
-    )
-
-    print("Running test...")
-    tester.run()
-    print("Test completed.")
-
-    # Verify FATAL ERROR was received
-    assert tester.error_received, "Expected to receive error message"
-    assert (
-        tester.error_code == -1000
-    ), f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
-    assert tester.error_message is not None, "Error message should not be None"
-    assert len(tester.error_message) > 0, "Error message should not be empty"
-
-    print(
-        f"✅ Empty params test passed: code={tester.error_code}, message={tester.error_message}"
-    )
-    print("Test verification completed successfully.")
+    assert MockConnect.called, "Missing key must not abort initialization"
+    for call in MockConnect.call_args_list:
+        assert call.kwargs["additional_headers"]["Authorization"] == "Bearer "
+    assert tester.error_received
+    assert tester.error_code == -1000
+    assert "401 Unauthorized" in tester.error_message
+    assert tester.error_request_id == "test-request-invalid-key"
+    assert tester.vendor_info.get("vendor") == "fish_audio"
 
 
 # ================ test invalid api key ================
@@ -105,6 +59,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
         self.error_message = None
         self.error_module = None
         self.vendor_info = None
+        self.error_request_id = None
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request to trigger the logic."""
@@ -135,6 +90,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             self.error_message = error_data.get("message", "")
             self.error_module = error_data.get("module", "")
             self.vendor_info = error_data.get("vendor_info", {})
+            self.error_request_id = error_data.get("id")
 
             ten_env.log_info(
                 f"Received error: code={self.error_code}, message={self.error_message}"

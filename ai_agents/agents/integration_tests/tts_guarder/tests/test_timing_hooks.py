@@ -20,6 +20,7 @@ from .timing_hooks.base import ReferenceWord
 from .timing_hooks.bytedance import ByteDanceTimingHook
 from .timing_hooks.bytedance_duplex import ByteDanceDuplexTimingHook
 from .timing_hooks.cartesia import _add_spacing_groups
+from .timing_hooks.cosy import CosyTimingHook
 from .timing_hooks.elevenlabs import ElevenLabsTimingHook
 from .timing_hooks.minimax import MiniMaxTimingHook
 
@@ -182,7 +183,9 @@ def test_minimax_reference_keeps_request_relative_word_times():
 
 
 def _duplex_message(event, payload=None, payload_json=None):
-    return SimpleNamespace(event=event, payload=payload, payload_json=payload_json)
+    return SimpleNamespace(
+        event=event, payload=payload, payload_json=payload_json
+    )
 
 
 def _duplex_hook():
@@ -252,7 +255,9 @@ def test_bytedance_reference_keeps_leading_silence_offset():
     hook = ByteDanceTimingHook()
     hook.sample_rate = 16000
     hook.begin_request("req-1")
-    session = SimpleNamespace(original_request_id="req-1", tts_input=SimpleNamespace())
+    session = SimpleNamespace(
+        original_request_id="req-1", tts_input=SimpleNamespace()
+    )
 
     hook._observe_frontend_msg(
         session,
@@ -298,3 +303,46 @@ def test_bytedance_reference_keeps_leading_silence_offset():
     assert words[0].end_ms == 130
     assert words[1].start_ms == 140
     assert words[1].end_ms == 240
+
+
+def test_cosy_reference_deduplicates_request_scoped_indexes_across_sentences():
+    hook = CosyTimingHook()
+    hook.sample_rate = 24000
+    hook.begin_request("req-cosy")
+
+    def message(index, event_type, words):
+        return json.dumps(
+            {
+                "header": {"event": "result-generated"},
+                "payload": {
+                    "output": {
+                        "type": event_type,
+                        "sentence": {"index": index, "words": words},
+                    }
+                },
+            }
+        )
+
+    words = [
+        {
+            "text": "今",
+            "begin_time": 0,
+            "end_time": 100,
+            "begin_index": 98,
+            "end_index": 99,
+        },
+        {
+            "text": "道",
+            "begin_time": 100,
+            "end_time": 200,
+            "begin_index": 99,
+            "end_index": 100,
+        },
+    ]
+    hook.observe_receive(message(5, "sentence-end", words))
+    hook.observe_receive(message(6, "sentence-end", words))
+
+    reference = hook.reference("req-cosy")
+    assert [[word.word for word in group] for group in reference.captions] == [
+        ["今道"]
+    ]
