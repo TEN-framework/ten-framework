@@ -25,8 +25,9 @@ class FakeContent:
 
 
 class FakeResponse:
-    def __init__(self, status=200, chunks=(), text=""):
+    def __init__(self, status=200, chunks=(), text="", headers=None):
         self.status = status
+        self.headers = headers if headers is not None else {"Content-Type": "audio/pcm"}
         self.content = FakeContent(chunks)
         self._text = text
         self.closed = False
@@ -185,6 +186,43 @@ def test_credential_error_is_fatal():
     events = asyncio.run(collect(client))
 
     assert events[-1][1] is TTS2HttpResponseEventType.INVALID_KEY_ERROR
+
+
+def test_non_audio_200_is_recoverable():
+    client = make_client(
+        FakeResponse(
+            chunks=[b"<html>rate limited</html>"],
+            headers={"Content-Type": "text/html"},
+        )
+    )
+    events = asyncio.run(collect(client))
+
+    assert events[-1][1] is TTS2HttpResponseEventType.ERROR
+    assert not any(k is TTS2HttpResponseEventType.RESPONSE for _, k in events)
+
+
+def test_truncated_final_sample_is_reported():
+    client = make_client(FakeResponse(chunks=[b"\x01\x00\x02"]))
+    events = asyncio.run(collect(client))
+
+    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+    assert audio == b"\x01\x00"
+    assert events[-1][1] is TTS2HttpResponseEventType.ERROR
+
+
+def test_cancel_after_odd_chunk_does_not_emit_the_tail():
+    async def scenario():
+        client = make_client(FakeResponse(chunks=[b"\x01\x00\x03"]))
+        stream = client.get("hello", "req-cancel")
+        first = await stream.__anext__()
+        await client.cancel()
+        rest = [event async for event in stream]
+        return first, rest
+
+    first, rest = asyncio.run(scenario())
+
+    assert first[1] is TTS2HttpResponseEventType.RESPONSE
+    assert [k for _, k in rest] == [TTS2HttpResponseEventType.FLUSH]
 
 
 def test_odd_chunk_keeps_samples_aligned():

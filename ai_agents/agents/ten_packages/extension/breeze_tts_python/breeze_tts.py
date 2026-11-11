@@ -62,6 +62,17 @@ class LinearResampler:
         return out.tobytes()
 
 
+AUDIO_CONTENT_TYPES = ("audio/pcm", "audio/x-pcm", "audio/l16", "application/octet-stream")
+
+
+def _is_audio_type(content_type: str) -> bool:
+    if not content_type:
+        return True  # a missing header is not proof of an error page
+    return content_type.startswith("audio/") or any(
+        content_type.startswith(kind) for kind in AUDIO_CONTENT_TYPES
+    )
+
+
 CREDENTIAL_HINTS = ("api key", "api_key", "credential", "unauthorized", "invalid key")
 
 
@@ -211,6 +222,18 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                 )
                 self._responses[request_id] = response
 
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                if response.status == 200 and not _is_audio_type(content_type):
+                    detail = (await response.text())[:300]
+                    self.ten_env.log_error(
+                        f"Breeze TTS returned {content_type or 'no content type'} "
+                        f"for request {request_id}: {detail}"
+                    )
+                    response.release()
+                    self._responses.pop(request_id, None)
+                    yield detail.encode(), TTS2HttpResponseEventType.ERROR
+                    return
+
                 if response.status != 200:
                     detail = (await response.text())[:300]
                     retryable = (
@@ -257,17 +280,21 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                         emitted += len(chunk)
                         yield chunk, TTS2HttpResponseEventType.RESPONSE
 
-                if self._carry:
-                    tail = self._carry + b"\x00"
-                    self._carry = b""
-                    if self._resampler is not None:
-                        tail = self._resampler.process(tail)
-                    if tail:
-                        emitted += len(tail)
-                        yield tail, TTS2HttpResponseEventType.RESPONSE
-
                 if epoch != self._cancel_epoch:
+                    self._carry = b""
                     yield None, TTS2HttpResponseEventType.FLUSH
+                    return
+
+                if self._carry:
+                    # the vendor ended mid-sample: report it rather than
+                    # fabricating the missing half sample
+                    self._carry = b""
+                    message = (
+                        f"Breeze TTS response for request {request_id} ended "
+                        "with a truncated PCM sample"
+                    )
+                    self.ten_env.log_error(message)
+                    yield message.encode(), TTS2HttpResponseEventType.ERROR
                     return
                 yield None, TTS2HttpResponseEventType.END
                 return
