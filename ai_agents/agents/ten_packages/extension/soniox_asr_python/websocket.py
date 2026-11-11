@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -7,6 +8,8 @@ from typing import Callable, Optional, Any
 
 import websockets
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass
@@ -132,22 +135,26 @@ class SonioxWebsocketClient:
                 if self.enable_keepalive:
                     self._start_keepalive_task(ws)
                 await self._work(ws)
-            if self.state != self.State.STOPPING:
+            if self.state not in (self.State.STOPPING, self.State.STOPPED):
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
             # Completed normal close handshakes are not ASR failures.
-            # ConnectionClosed raised after CLOSE was reported is stale
-            # (forced abort or a late vendor frame); don't re-report it.
+            # Nothing may be reported while stopping or after stop(): this
+            # client is discarded and its errors would land on the next session.
             close_code, close_message = self._extract_close_info(e)
-            if self.state != self.State.STOPPING and not (
-                self._close_emitted and isinstance(e, ConnectionClosed)
-            ):
+            if self.state not in (
+                self.State.STOPPING,
+                self.State.STOPPED,
+            ) and not (self._close_emitted and isinstance(e, ConnectionClosed)):
                 if self.is_normal_close(e):
-                    await self._call(
-                        SonioxWebsocketEvents.CLOSE,
-                        close_code,
-                        close_message,
-                    )
+                    try:
+                        await self._call(
+                            SonioxWebsocketEvents.CLOSE,
+                            close_code,
+                            close_message,
+                        )
+                    except Exception as close_error:
+                        await self._emit_exception_safely(close_error)
                 else:
                     await self._emit_exception_and_close(
                         e, close_code, close_message
@@ -164,10 +171,7 @@ class SonioxWebsocketClient:
         close_message: str = "closed",
     ) -> None:
         """Deliver EXCEPTION and always follow it with CLOSE."""
-        try:
-            await self._call(SonioxWebsocketEvents.EXCEPTION, exception)
-        except Exception:
-            pass
+        await self._emit_exception_safely(exception)
         if self._close_emitted:
             return
         try:
@@ -178,10 +182,14 @@ class SonioxWebsocketClient:
             )
         except Exception as close_error:
             # Close deduplication must not swallow a failed close callback.
-            try:
-                await self._call(SonioxWebsocketEvents.EXCEPTION, close_error)
-            except Exception:
-                pass
+            await self._emit_exception_safely(close_error)
+
+    async def _emit_exception_safely(self, exception: Exception) -> None:
+        """Deliver EXCEPTION; a failing callback is logged, never raised."""
+        try:
+            await self._call(SonioxWebsocketEvents.EXCEPTION, exception)
+        except Exception:
+            _LOG.exception("Failed to deliver exception event")
 
     def _reset_client_state(self):
         self.state = self.State.INIT
@@ -384,7 +392,7 @@ class SonioxWebsocketClient:
             try:
                 ws.transport.abort()
             except Exception:
-                pass
+                _LOG.exception("Failed to abort websocket transport")
 
     async def send_audio(self, audio: bytes):
         if self.enable_keepalive:

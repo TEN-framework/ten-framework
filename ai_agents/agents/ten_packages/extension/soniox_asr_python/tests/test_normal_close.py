@@ -6,6 +6,7 @@
 
 import asyncio
 import json
+import logging
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -476,6 +477,10 @@ async def test_timeout_close_ignores_late_close_error():
 
     class FakeWs:
         send = AsyncMock()
+        transport = MagicMock()
+
+        async def close(self):
+            await asyncio.sleep(60)
 
         async def recv(self):
             await gate.wait()
@@ -516,8 +521,8 @@ async def test_timeout_close_ignores_late_close_error():
 
 
 @pytest.mark.asyncio
-async def test_late_nonclose_exception_still_reported():
-    """Non-close errors still surface after a timeout close is reported."""
+async def test_late_exception_after_stop_timeout_is_suppressed():
+    """After STOPPED, a stale client must not report errors to the session."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
         json.dumps({"model": "stt-rt-preview"}),
@@ -538,6 +543,10 @@ async def test_late_nonclose_exception_still_reported():
 
     class FakeWs:
         send = AsyncMock()
+        transport = MagicMock()
+
+        async def close(self):
+            await asyncio.sleep(60)
 
         async def recv(self):
             await gate.wait()
@@ -574,8 +583,73 @@ async def test_late_nonclose_exception_still_reported():
     assert events == [
         ("exception", "TimeoutError"),
         ("close", 0, "closed"),
-        ("exception", "ValueError"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_normal_close_callback_failure_reports_exception():
+    """A raising CLOSE callback on a vendor close still surfaces an error."""
+    client = SonioxWebsocketClient(
+        "wss://example.invalid/ws",
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
+    )
+    events: list[tuple] = []
+
+    async def on_exception(exception):
+        events.append(("exception", str(exception)))
+
+    async def on_close(code, message):
+        events.append(("close", code, message))
+        raise RuntimeError("close callback failed")
+
+    client.on(SonioxWebsocketEvents.EXCEPTION, on_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, on_close)
+
+    normal_close = _connection_closed_ok(1000, "OK")
+
+    class FakeWs:
+        send = AsyncMock()
+
+        async def recv(self):
+            raise normal_close
+
+    class FakeConnectCM:
+        async def __aenter__(self):
+            return FakeWs()
+
+        async def __aexit__(self, *_args):
+            return False
+
+    with patch(
+        "soniox_asr_python.websocket.websockets.connect",
+        return_value=FakeConnectCM(),
+    ):
+        await client.connect()
+
+    assert events == [
+        ("close", 1000, "OK"),
+        ("exception", "close callback failed"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_exception_callback_failure_is_logged(caplog):
+    """A failing EXCEPTION callback must still close, and leave a log."""
+    client = SonioxWebsocketClient("wss://x", "{}", "k")
+    close = AsyncMock()
+
+    async def on_exception(_e):
+        raise RuntimeError("exception callback failed")
+
+    client.on(SonioxWebsocketEvents.EXCEPTION, on_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, close)
+
+    with caplog.at_level(logging.ERROR):
+        await client._emit_exception_and_close(ConnectionError("failure"))
+
+    close.assert_awaited_once()
+    assert any(record.levelno >= logging.ERROR for record in caplog.records)
 
 
 @pytest.mark.asyncio
