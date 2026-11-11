@@ -30,6 +30,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
         self._dump_start_offset = 0
         self._finish_task: asyncio.Task | None = None
         self._terminal_audio_sent = False
+        self._audio_start_sent = False
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
         try:
@@ -70,6 +71,7 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
             self._emitted_audio_bytes = 0
             self._finish_task = None
             self._terminal_audio_sent = False
+            self._audio_start_sent = False
             self._dump_start_offset = 0
         # Let the inherited flush path cancel the HTTP wait, not the queue loop.
         task = asyncio.create_task(super().request_tts(t))
@@ -105,9 +107,15 @@ class TypecastTTSExtension(AsyncTTS2HttpExtension):
             await super().send_tts_audio_start(
                 request_id, turn_id, extra_metadata
             )
+            self._audio_start_sent = True
         finally:
-            # Preserve timing even when the pending start send is cancelled.
+            # Keep the timestamp available to the inherited flush path.
             self.request_ts = start_ts
+
+    def _calculate_request_event_interval_ms(self) -> int:
+        if not self._audio_start_sent:
+            return 0
+        return super()._calculate_request_event_interval_ms()
 
     async def send_tts_audio_data(
         self, audio_data: bytes, timestamp: int = 0

@@ -150,10 +150,7 @@ def test_real_flush_at_emission_boundaries_recovers(
             payload = json.loads(body)
             if extension.current_request_id == "first" and not waiting.is_set():
                 if (
-                    (
-                        phase in ("start", "start_sent")
-                        and data.get_name() == "tts_audio_start"
-                    )
+                    (phase == "start" and data.get_name() == "tts_audio_start")
                     or (phase == "end" and data.get_name() == "tts_audio_end")
                     or (
                         phase == "ttfb"
@@ -161,12 +158,8 @@ def test_real_flush_at_emission_boundaries_recovers(
                         and extension.request_ts is not None
                     )
                 ):
-                    if phase == "start_sent":
-                        events.append((data.get_name(), payload))
                     waiting.set()
                     await release.wait()
-                    if phase == "start_sent":
-                        return
             if data.get_name() != "metrics":
                 events.append((data.get_name(), payload))
 
@@ -192,6 +185,18 @@ def test_real_flush_at_emission_boundaries_recovers(
         extension.config.update_params()
         extension.config.validate()
         extension.client = TypecastTTSClient(extension.config, env)
+        original_start = extension.send_tts_audio_start
+
+        async def send_start(*args, **kwargs):
+            await original_start(*args, **kwargs)
+            if (
+                phase == "start_sent"
+                and extension.current_request_id == "first"
+            ):
+                waiting.set()
+                await release.wait()
+
+        extension.send_tts_audio_start = send_start
         cancel_task = extension._cancel_current_task
         finish_request = extension.finish_request
 
@@ -310,7 +315,11 @@ def test_real_flush_at_emission_boundaries_recovers(
                     assert end["request_event_interval_ms"] == (
                         275
                         if terminal
-                        else 400 if phase == "next_byte" else 125
+                        else (
+                            400
+                            if phase == "next_byte"
+                            else 0 if phase == "start" else 125
+                        )
                     )
                 prefix.append("tts_flush_end")
                 assert [name for name, _ in events] == prefix
