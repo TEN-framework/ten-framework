@@ -35,6 +35,7 @@ class BreezeTTSExtension(AsyncTTS2HttpExtension):
 
     async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
         config = BreezeTTSConfig.model_validate_json(config_json_str)
+        config.update_params()
         self._sample_rate = config.params.sample_rate
         return config
 

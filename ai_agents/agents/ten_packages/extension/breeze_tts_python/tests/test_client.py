@@ -173,8 +173,24 @@ def test_resamples_to_the_configured_rate():
     assert abs(len(audio) - 32000) <= 64
 
 
-def test_validation_error_is_reported_as_fatal():
-    client = make_client(FakeResponse(status=422, text="bad params"))
+def test_validation_error_is_recoverable():
+    client = make_client(FakeResponse(status=422, text="Request validation failed."))
+    events = asyncio.run(collect(client))
+
+    assert events[-1][1] is TTS2HttpResponseEventType.ERROR
+
+
+def test_credential_error_is_fatal():
+    client = make_client(FakeResponse(status=401, text="bad key"))
     events = asyncio.run(collect(client))
 
     assert events[-1][1] is TTS2HttpResponseEventType.INVALID_KEY_ERROR
+
+
+def test_odd_chunk_keeps_samples_aligned():
+    payload = b"\x01\x00\x02\x00\x03\x00"
+    client = make_client(FakeResponse(chunks=[payload[:3], payload[3:]]))
+    events = asyncio.run(collect(client))
+
+    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+    assert audio == payload

@@ -66,6 +66,10 @@ class BreezeTTSConfig(AsyncTTS2HttpConfig):
                 "params.api_key is required (set BREEZE_API_KEY or configure it "
                 "in property.json)"
             )
+        if not self.params.api_key.startswith("brz_"):
+            raise ValueError(
+                "params.api_key must be a Breeze key starting with brz_"
+            )
         if not self.params.voice_id:
             raise ValueError("params.voice_id is required")
         if self.params.sample_rate not in SUPPORTED_SAMPLE_RATES:

@@ -62,6 +62,20 @@ class LinearResampler:
         return out.tobytes()
 
 
+CREDENTIAL_HINTS = ("api key", "api_key", "credential", "unauthorized", "invalid key")
+
+
+def _is_credential_failure(status: int, detail: str) -> bool:
+    """Auth failures are fatal; request validation errors stay recoverable."""
+
+    if status in (401, 403):
+        return True
+    if status in (400, 422):
+        lowered = (detail or "").lower()
+        return any(hint in lowered for hint in CREDENTIAL_HINTS)
+    return False
+
+
 def _retry_delay(attempt: int, headers: Any) -> float:
     """Backoff for a transient Breeze failure, honoring Retry-After."""
 
@@ -120,6 +134,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self._responses: dict[str, aiohttp.ClientResponse] = {}
         self._cancel_epoch = 0
         self._resampler: LinearResampler | None = None
+        self._carry = b""
 
     async def _ensure_session(self) -> aiohttp.ClientSession:
         if self._session is None or self._session.closed:
@@ -171,6 +186,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         epoch = self._cancel_epoch
+        self._carry = b""
         target_rate = self.target_sample_rate()
         self._resampler = (
             None if target_rate == SAMPLE_RATE else LinearResampler(SAMPLE_RATE, target_rate)
@@ -222,7 +238,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                     self._responses.pop(request_id, None)
                     yield detail.encode(), (
                         TTS2HttpResponseEventType.INVALID_KEY_ERROR
-                        if response.status in (400, 401, 403, 422)
+                        if _is_credential_failure(response.status, detail)
                         else TTS2HttpResponseEventType.ERROR
                     )
                     return
@@ -231,11 +247,24 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                     if epoch != self._cancel_epoch:
                         yield None, TTS2HttpResponseEventType.FLUSH
                         return
+                    chunk = self._carry + chunk
+                    # keep a trailing odd byte so 16-bit samples stay aligned
+                    self._carry = chunk[-1:] if len(chunk) % 2 else b""
+                    chunk = chunk[: len(chunk) - len(self._carry)]
                     if self._resampler is not None:
                         chunk = self._resampler.process(chunk)
                     if chunk:
                         emitted += len(chunk)
                         yield chunk, TTS2HttpResponseEventType.RESPONSE
+
+                if self._carry:
+                    tail = self._carry + b"\x00"
+                    self._carry = b""
+                    if self._resampler is not None:
+                        tail = self._resampler.process(tail)
+                    if tail:
+                        emitted += len(tail)
+                        yield tail, TTS2HttpResponseEventType.RESPONSE
 
                 if epoch != self._cancel_epoch:
                     yield None, TTS2HttpResponseEventType.FLUSH
