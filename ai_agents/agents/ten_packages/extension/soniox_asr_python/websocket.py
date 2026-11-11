@@ -93,6 +93,7 @@ class SonioxWebsocketClient:
         self._stop_event = asyncio.Event()
         self._event_callbacks = {}
         self._close_emitted = False
+        self._ws = None
 
         # Keepalive parameters
         self.enable_keepalive = enable_keepalive
@@ -119,6 +120,7 @@ class SonioxWebsocketClient:
                     "Authorization": f"Bearer {self.api_key}",
                 },
             ) as ws:
+                self._ws = ws
                 if self.state == self.State.STOPPING:
                     return
                 await ws.send(self.start_request)
@@ -134,8 +136,12 @@ class SonioxWebsocketClient:
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
             # Completed normal close handshakes are not ASR failures.
+            # ConnectionClosed raised after CLOSE was reported is stale
+            # (forced abort or a late vendor frame); don't re-report it.
             close_code, close_message = self._extract_close_info(e)
-            if self.state != self.State.STOPPING:
+            if self.state != self.State.STOPPING and not (
+                self._close_emitted and isinstance(e, ConnectionClosed)
+            ):
                 if self.is_normal_close(e):
                     await self._call(
                         SonioxWebsocketEvents.CLOSE,
@@ -147,6 +153,7 @@ class SonioxWebsocketClient:
                         e, close_code, close_message
                     )
         finally:
+            self._ws = None
             if self.state == self.State.STOPPING:
                 self._stop_event.set()
 
@@ -157,18 +164,24 @@ class SonioxWebsocketClient:
         close_message: str = "closed",
     ) -> None:
         """Deliver EXCEPTION and always follow it with CLOSE."""
-        if self._close_emitted:
-            return
         try:
             await self._call(SonioxWebsocketEvents.EXCEPTION, exception)
         except Exception:
             pass
-        finally:
+        if self._close_emitted:
+            return
+        try:
             await self._call(
                 SonioxWebsocketEvents.CLOSE,
                 close_code,
                 close_message,
             )
+        except Exception as close_error:
+            # Close deduplication must not swallow a failed close callback.
+            try:
+                await self._call(SonioxWebsocketEvents.EXCEPTION, close_error)
+            except Exception:
+                pass
 
     def _reset_client_state(self):
         self.state = self.State.INIT
@@ -176,6 +189,7 @@ class SonioxWebsocketClient:
     def _reset_session_state(self):
         self._stop_event.clear()
         self._close_emitted = False
+        self._ws = None
         if self.enable_keepalive:
             self._last_audio_time = 0.0
             self._stop_keepalive_task()
@@ -354,9 +368,23 @@ class SonioxWebsocketClient:
             try:
                 await asyncio.wait_for(self._stop_event.wait(), timeout=5.0)
             except asyncio.TimeoutError as e:
+                await self._close_transport()
                 await self._emit_exception_and_close(e)
             finally:
                 self.state = self.State.STOPPED
+
+    async def _close_transport(self) -> None:
+        """Force the transport down so the connection task can unwind."""
+        ws = self._ws
+        if ws is None:
+            return
+        try:
+            await asyncio.wait_for(ws.close(), timeout=1.0)
+        except Exception:
+            try:
+                ws.transport.abort()
+            except Exception:
+                pass
 
     async def send_audio(self, audio: bytes):
         if self.enable_keepalive:

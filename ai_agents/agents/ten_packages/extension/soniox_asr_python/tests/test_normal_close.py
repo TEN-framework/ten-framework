@@ -258,8 +258,133 @@ async def test_close_callback_is_not_repeated_after_exception():
     await client._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
     await client._emit_exception_and_close(ConnectionError("late failure"))
 
-    exception.assert_awaited_once()
+    # CLOSE is deduplicated; EXCEPTION still reports the late failure.
+    assert exception.await_count == 2
     close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_close_callback_failure_reports_exception():
+    """A raising CLOSE callback must surface an error, not vanish."""
+    client = SonioxWebsocketClient(
+        "wss://example.invalid/ws",
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
+    )
+    events: list[tuple] = []
+
+    async def on_open(_ts):
+        events.append(("open",))
+
+    async def on_exception(exception):
+        events.append(("exception", str(exception)))
+
+    async def on_close(code, message):
+        events.append(("close", code, message))
+        raise RuntimeError("close callback failed")
+
+    client.on(SonioxWebsocketEvents.OPEN, on_open)
+    client.on(SonioxWebsocketEvents.EXCEPTION, on_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, on_close)
+
+    class FakeWs:
+        send = AsyncMock()
+
+        async def recv(self):
+            await asyncio.sleep(60)
+
+    class FakeConnectCM:
+        async def __aenter__(self):
+            return FakeWs()
+
+        async def __aexit__(self, *_args):
+            return False
+
+    async def completed_work(_ws):
+        await asyncio.sleep(0)
+
+    with (
+        patch(
+            "soniox_asr_python.websocket.websockets.connect",
+            return_value=FakeConnectCM(),
+        ),
+        patch.object(client, "_work", new=completed_work),
+    ):
+        await client.connect()
+
+    assert events == [
+        ("open",),
+        ("close", 0, "closed"),
+        ("exception", "close callback failed"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_stop_timeout_closes_stalled_transport():
+    """Timeout must terminate the transport so the listener task unwinds."""
+    client = SonioxWebsocketClient(
+        "wss://example.invalid/ws",
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
+    )
+    events: list[tuple] = []
+    aborted = asyncio.Event()
+
+    async def on_exception(exception):
+        events.append(("exception", type(exception).__name__))
+
+    async def on_close(code, message):
+        events.append(("close", code, message))
+
+    client.on(SonioxWebsocketEvents.EXCEPTION, on_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, on_close)
+
+    class FakeWs:
+        send = AsyncMock()
+
+        def __init__(self):
+            self.transport = MagicMock()
+            self.transport.abort.side_effect = aborted.set
+
+        async def recv(self):
+            # Stalled listener: only exits once the transport is aborted.
+            await aborted.wait()
+            raise _connection_closed_error(1006, "aborted")
+
+        async def close(self):
+            await asyncio.sleep(60)
+
+    class FakeConnectCM:
+        async def __aenter__(self):
+            return FakeWs()
+
+        async def __aexit__(self, *_args):
+            return False
+
+    async def timeout(awaitable, **_kwargs):
+        awaitable.close()
+        raise asyncio.TimeoutError
+
+    with (
+        patch(
+            "soniox_asr_python.websocket.websockets.connect",
+            return_value=FakeConnectCM(),
+        ),
+        patch(
+            "soniox_asr_python.websocket.asyncio.wait_for",
+            side_effect=timeout,
+        ),
+    ):
+        connect_task = asyncio.create_task(client.connect())
+        await asyncio.sleep(0.05)
+        await client.stop()
+
+    await asyncio.wait_for(connect_task, timeout=1)
+    assert events == [
+        ("exception", "TimeoutError"),
+        ("close", 0, "closed"),
+    ]
+    assert client.state == client.State.STOPPED
 
 
 @pytest.mark.asyncio
@@ -328,8 +453,8 @@ async def test_close_arriving_while_stopping_is_suppressed():
 
 
 @pytest.mark.asyncio
-async def test_timeout_close_dedups_late_exception():
-    """A real error after a stop-timeout close must not emit again."""
+async def test_timeout_close_ignores_late_close_error():
+    """A late ConnectionClosed after a stop-timeout close is stale noise."""
     client = SonioxWebsocketClient(
         "wss://example.invalid/ws",
         json.dumps({"model": "stt-rt-preview"}),
@@ -387,6 +512,69 @@ async def test_timeout_close_dedups_late_exception():
     assert events == [
         ("exception", "TimeoutError"),
         ("close", 0, "closed"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_late_nonclose_exception_still_reported():
+    """Non-close errors still surface after a timeout close is reported."""
+    client = SonioxWebsocketClient(
+        "wss://example.invalid/ws",
+        json.dumps({"model": "stt-rt-preview"}),
+        "test-api-key",
+    )
+    events: list[tuple] = []
+
+    async def on_exception(exception):
+        events.append(("exception", type(exception).__name__))
+
+    async def on_close(code, message):
+        events.append(("close", code, message))
+
+    client.on(SonioxWebsocketEvents.EXCEPTION, on_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, on_close)
+
+    gate = asyncio.Event()
+
+    class FakeWs:
+        send = AsyncMock()
+
+        async def recv(self):
+            await gate.wait()
+            raise ValueError("unexpected work failure")
+
+    class FakeConnectCM:
+        async def __aenter__(self):
+            return FakeWs()
+
+        async def __aexit__(self, *_args):
+            return False
+
+    async def timeout(awaitable, **_kwargs):
+        awaitable.close()
+        raise asyncio.TimeoutError
+
+    with (
+        patch(
+            "soniox_asr_python.websocket.websockets.connect",
+            return_value=FakeConnectCM(),
+        ),
+        patch(
+            "soniox_asr_python.websocket.asyncio.wait_for",
+            side_effect=timeout,
+        ),
+    ):
+        connect_task = asyncio.create_task(client.connect())
+        await asyncio.sleep(0.05)
+        await client.stop()
+
+    gate.set()
+    await asyncio.wait_for(connect_task, timeout=1)
+
+    assert events == [
+        ("exception", "TimeoutError"),
+        ("close", 0, "closed"),
+        ("exception", "ValueError"),
     ]
 
 
