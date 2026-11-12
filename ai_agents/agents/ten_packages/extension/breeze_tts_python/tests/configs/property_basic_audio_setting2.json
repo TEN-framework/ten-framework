@@ -1,0 +1,12 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:BREEZE_API_KEY}",
+        "base_url": "https://api.breeze.blue",
+        "voice_id": "voc_u3nxkd5578wc",
+        "language": "zh",
+        "speed": 0.9,
+        "instructions": "温柔一点，句尾收住"
+    }
+}
