@@ -68,6 +68,9 @@ class FakeEnv:
     def log_info(self, *_args, **_kwargs):
         pass
 
+    def log_warn(self, *_args, **_kwargs):
+        pass
+
 
 class FakeConfig:
     def __init__(self, **overrides):
@@ -232,3 +235,60 @@ def test_odd_chunk_keeps_samples_aligned():
 
     audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
     assert audio == payload
+
+
+class BlockingSession(FakeSession):
+    """A session whose post() never resolves until it is cancelled."""
+
+    def __init__(self):
+        super().__init__(FakeResponse())
+        self.started = asyncio.Event()
+
+    async def post(self, url, params=None, json=None, headers=None):
+        self.calls.append({"url": url})
+        self.started.set()
+        await asyncio.Event().wait()
+
+
+def test_cancel_while_waiting_for_headers_yields_flush():
+    async def scenario():
+        client = make_client(FakeResponse())
+        session = BlockingSession()
+        client._session = session
+        stream = client.get("hello", "req-headers")
+        pending = asyncio.ensure_future(stream.__anext__())
+        await asyncio.wait_for(session.started.wait(), 2)
+        await client.cancel()
+        event = await asyncio.wait_for(pending, 2)
+        rest = [item async for item in stream]
+        return event, rest
+
+    event, rest = asyncio.run(scenario())
+
+    assert event[1] is TTS2HttpResponseEventType.FLUSH
+    assert rest == []
+
+
+def test_cancel_during_retry_backoff_stops_further_requests():
+    async def scenario():
+        client = make_client(
+            FakeResponse(status=503, headers={"Retry-After": "0.2"})
+        )
+        session = client._session
+        stream = client.get("hello", "req-backoff")
+        pending = asyncio.ensure_future(stream.__anext__())
+        for _ in range(100):
+            if session.calls:
+                break
+            await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
+        await client.cancel()
+        event = await asyncio.wait_for(pending, 2)
+        rest = [item async for item in stream]
+        return event, rest, len(session.calls)
+
+    event, rest, calls = asyncio.run(scenario())
+
+    assert event[1] is TTS2HttpResponseEventType.FLUSH
+    assert rest == []
+    assert calls == 1

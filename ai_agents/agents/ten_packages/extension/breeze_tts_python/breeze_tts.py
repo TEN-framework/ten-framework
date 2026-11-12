@@ -143,6 +143,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self.ten_env = ten_env
         self._session: aiohttp.ClientSession | None = None
         self._responses: dict[str, aiohttp.ClientResponse] = {}
+        self._pending_posts: dict[str, asyncio.Task] = {}
         self._cancel_epoch = 0
         self._resampler: LinearResampler | None = None
         self._carry = b""
@@ -162,6 +163,10 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
 
     async def cancel(self) -> None:
         self._cancel_epoch += 1
+        for task in list(self._pending_posts.values()):
+            if not task.done():
+                task.cancel()
+        self._pending_posts.clear()
         await self._close_response()
 
     async def _close_response(self) -> None:
@@ -214,12 +219,29 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         for attempt in range(1, MAX_ATTEMPTS + 1):
             response = None
             try:
-                response = await session.post(
-                    url,
-                    params={"output_format": "pcm"},
-                    json=body,
-                    headers=headers,
+                post_task = asyncio.ensure_future(
+                    session.post(
+                        url,
+                        params={"output_format": "pcm"},
+                        json=body,
+                        headers=headers,
+                    )
                 )
+                self._pending_posts[request_id] = post_task
+                try:
+                    response = await post_task
+                except asyncio.CancelledError:
+                    if epoch != self._cancel_epoch:
+                        yield None, TTS2HttpResponseEventType.FLUSH
+                        return
+                    raise
+                finally:
+                    self._pending_posts.pop(request_id, None)
+
+                if epoch != self._cancel_epoch:
+                    response.release()
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    return
                 self._responses[request_id] = response
 
                 content_type = (response.headers.get("Content-Type") or "").lower()
@@ -251,6 +273,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                         self._responses.pop(request_id, None)
                         response = None
                         await asyncio.sleep(delay)
+                        if epoch != self._cancel_epoch:
+                            yield None, TTS2HttpResponseEventType.FLUSH
+                            return
                         continue
 
                     self.ten_env.log_error(
@@ -312,6 +337,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                         f"({error}), retrying (attempt {attempt}/{MAX_ATTEMPTS})"
                     )
                     await asyncio.sleep(min(0.4 * attempt, 2.0))
+                    if epoch != self._cancel_epoch:
+                        yield None, TTS2HttpResponseEventType.FLUSH
+                        return
                     continue
                 self.ten_env.log_error(
                     f"Breeze TTS request {request_id} failed: {error}"
