@@ -144,6 +144,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self._session: aiohttp.ClientSession | None = None
         self._responses: dict[str, aiohttp.ClientResponse] = {}
         self._pending_posts: dict[str, asyncio.Task] = {}
+        self._active_request_id: str | None = None
         self._cancel_epoch = 0
         self._resampler: LinearResampler | None = None
         self._carry = b""
@@ -163,10 +164,13 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
 
     async def cancel(self) -> None:
         self._cancel_epoch += 1
-        for task in list(self._pending_posts.values()):
+        # only safe to interrupt the post while one request is in flight;
+        # with interleaved requests the epoch check ends each stream instead
+        if len(self._pending_posts) == 1:
+            (request_id, task), = self._pending_posts.items()
             if not task.done():
                 task.cancel()
-        self._pending_posts.clear()
+            self._pending_posts.pop(request_id, None)
         await self._close_response()
 
     async def _close_response(self) -> None:
@@ -202,6 +206,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         epoch = self._cancel_epoch
+        self._active_request_id = request_id
         self._carry = b""
         target_rate = self.target_sample_rate()
         self._resampler = (
