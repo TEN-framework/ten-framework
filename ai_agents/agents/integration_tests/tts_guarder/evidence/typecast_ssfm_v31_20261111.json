@@ -1,0 +1,36 @@
+{
+  "tested_commit": "c611c36dd1889fa2128cbcbe8c24415d0dc01f7c",
+  "date": "2026-11-11",
+  "test": "tests/test_metrics.py::test_sequential_requests_ttfb",
+  "scope": "Selected live timing guarder only; not the full vendor suite. No runtime changes after this measurement.",
+  "environment": {
+    "builder": "ghcr.io/ten-framework/ten_agent_build:0.7.14",
+    "python": "3.10.12",
+    "native": "0.11.75",
+    "ten_ai_base": "0.7.65",
+    "sdk": "0.5.3+ten310.1"
+  },
+  "model": "ssfm-v31",
+  "actual_provider": true,
+  "stream_attempts": 2,
+  "tolerance_ms": 1,
+  "comparisons": [
+    {
+      "request_id": "ttfb_streamed",
+      "reported_ms": 432,
+      "reference_ms": 432.838476,
+      "observed_first_audio_ms": 540.6008149730042
+    },
+    {
+      "request_id": "ttfb_single_final",
+      "reported_ms": 266,
+      "reference_ms": 266.212389,
+      "observed_first_audio_ms": 282.72338199894875
+    }
+  ],
+  "passed": true,
+  "evidence": {
+    "url": "https://github.com/neosapience/typecast-sdk/releases/download/ten-python310-v0.5.3/TEN-live-provider-ttfb-20261111.zip",
+    "sha256": "ebb4d50adb5abe81735357967e9ddaa11caf6921faad0a730fce8c6b4c39d12d"
+  }
+}

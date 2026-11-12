@@ -5,15 +5,16 @@
 #
 from pathlib import Path
 from typing import Any
-import copy
 
-from pydantic import Field
-from ten_ai_base import utils
+from pydantic import ConfigDict, Field, ValidationError
+from typecast.models import OutputStream
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
 
 class TypecastTTSConfig(AsyncTTS2HttpConfig):
     """Typecast TTS config."""
+
+    model_config = ConfigDict(hide_input_in_errors=True)
 
     dump: bool = Field(default=False, description="Typecast TTS dump")
     dump_path: str = Field(
@@ -21,17 +22,21 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
             Path(__file__).parent / "typecast_tts_in.pcm"
         ),
         description="Typecast TTS dump path",
+        repr=False,
     )
     url: str = Field(
         default="https://api.typecast.ai",
         description="Typecast API URL",
+        repr=False,
     )
     params: dict[str, Any] = Field(
         default_factory=dict,
         description="Typecast TTS params",
+        repr=False,
     )
     chunk_size: int = Field(
         default=8192,
+        strict=True,
         ge=1,
         description="Maximum bytes read from each Typecast streaming chunk",
     )
@@ -47,9 +52,10 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
         if "model" not in self.params:
             self.params["model"] = "ssfm-v30"
 
-        output = dict(
-            self.params.get("output") or {}  # pylint: disable=no-member
-        )
+        output = self.params.get("output")  # pylint: disable=no-member
+        if output is not None and not isinstance(output, dict):
+            raise ValueError("Invalid Typecast output settings")
+        output = dict(output or {})
         output["audio_format"] = "wav"
         self.params["output"] = output
 
@@ -60,12 +66,29 @@ class TypecastTTSConfig(AsyncTTS2HttpConfig):
             raise ValueError("voice_id is required for Typecast TTS")
         if not self.params.get("model"):  # pylint: disable=no-member
             raise ValueError("model is required for Typecast TTS")
+        if "seed" in self.params:
+            raise ValueError(
+                "seed is no longer supported by Typecast streaming; "
+                "remove params.seed from configuration"
+            )
+        output = self.params.get("output")  # pylint: disable=no-member
+        if output is not None and not isinstance(output, dict):
+            raise ValueError("Invalid Typecast output settings")
+        output = output or {}
+        for name in ("audio_pitch", "audio_tempo", "target_lufs"):
+            if isinstance(output.get(name), bool):
+                raise ValueError("Invalid Typecast output settings")
+        try:
+            OutputStream.model_validate(output)
+        except ValidationError:
+            # SDK validation errors include the rejected input verbatim.
+            raise ValueError("Invalid Typecast output settings") from None
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         if not sensitive_handling:
             return f"{self}"
 
-        config = copy.deepcopy(self)
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
-        return f"{config}"
+        return (
+            f"TypecastTTSConfig(dump={self.dump}, "
+            f"chunk_size={self.chunk_size}, params=[REDACTED])"
+        )

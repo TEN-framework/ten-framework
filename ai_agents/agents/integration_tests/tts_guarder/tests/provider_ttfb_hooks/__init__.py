@@ -14,6 +14,7 @@ HOOKS = {
     "humeai_tts_python": "hume",
     "google_tts_python": "google",
     "cosy_tts_python": "cosy",
+    "typecast_tts_python": "typecast",
 }
 
 
