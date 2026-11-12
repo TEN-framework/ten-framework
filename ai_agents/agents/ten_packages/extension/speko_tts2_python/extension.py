@@ -38,7 +38,9 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._route: dict[str, Any] = {}
         self._router_usage: dict[str, Any] = {}
         self._audio_start_sent = False
-        self._first_audio_at: float | None = None
+        self._audio_start_at: float | None = None
+        # PCM bytes actually emitted as frames, excluding any odd tail the
+        # base keeps in leftover_bytes.
         self._total_audio_bytes = 0
         self._finalized = False
         self._audio_end_sent = False
@@ -76,19 +78,26 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # TEN aborts the process when an exception escapes on_stop, so
+        # cleanup failures are logged, never raised.
         self._stopped = True
         task = self.current_task
         await self._cancel_current_task()
         if task is not None and task is not asyncio.current_task():
             await asyncio.gather(task, return_exceptions=True)
         try:
-            await self._close_client()
-        finally:
+            # Usage drained here would have no request left to report on.
+            await self._close_client(drain=False)
+        except Exception as error:
+            ten_env.log_warn(f"Speko TTS close on stop: {safe_error(error)}")
+        for request_id in list(self._recorders):
             try:
-                for request_id in list(self._recorders):
-                    await self._flush_recorder(request_id)
-            finally:
-                await super().on_stop(ten_env)
+                await self._flush_recorder(request_id)
+            except Exception as error:
+                ten_env.log_warn(
+                    f"Speko TTS dump flush on stop: {safe_error(error)}"
+                )
+        await super().on_stop(ten_env)
 
     def vendor(self) -> str:
         return "speko"
@@ -140,7 +149,8 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             if self._permanent_error is not None:
                 raise self._permanent_error
             text = text_input.text
-            if text:
+            # Whitespace has nothing to synthesize; providers reject it.
+            if text.strip():
                 await self._stream_text(text, text_input.request_id)
 
             if text_input.text_input_end:
@@ -210,8 +220,10 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._route = {}
         self._router_usage = {}
         self._audio_start_sent = False
-        self._first_audio_at = None
+        self._audio_start_at = None
         self._total_audio_bytes = 0
+        # An odd tail of the previous request is not this request's audio.
+        self.leftover_bytes = b""
         self._finalized = False
         self._audio_end_sent = False
         self._cancelled = False
@@ -266,12 +278,15 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 if not isinstance(audio, bytes) or not audio:
                     continue
                 await self._ensure_audio_start()
-                if self._first_audio_at is None:
-                    self._first_audio_at = time.monotonic()
-                self._total_audio_bytes += len(audio)
                 self.metrics_add_recv_audio_chunks(audio)
                 await self._write_dump(request_id, audio)
+                # The base emits whole frames and keeps an odd tail for the
+                # next chunk; count only bytes that left as frames.
+                pending = len(self.leftover_bytes)
                 await self.send_tts_audio_data(audio)
+                self._total_audio_bytes += (
+                    pending + len(audio) - len(self.leftover_bytes)
+                )
             elif event.type == SpekoTTSEventType.USAGE:
                 if isinstance(event.value, dict):
                     self._router_usage = event.value
@@ -291,6 +306,8 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 await self._close_client()
             except Exception as close_error:
                 if self._cancelled or self._stopped:
+                    # Flush/shutdown own the outcome; never finish as success.
+                    reason = TTSAudioEndReason.INTERRUPTED
                     return
                 router_error = (
                     close_error
@@ -351,25 +368,29 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self, error: SpekoRouterError, final_input: bool
     ) -> None:
         module_error = self._make_module_error(error)
+        # The failed session is unusable. Detach it first so finalization
+        # does not close it again and report a second disconnect.
+        client, self.client = self.client, None
+        if client is not None:
+            self._router_usage = client.usage or self._router_usage
+            try:
+                await client.close(drain=False)
+            except Exception as close_error:
+                self.ten_env.log_debug(
+                    f"Failed Speko TTS session close: {safe_error(close_error)}"
+                )
         await self.on_disconnected(
             code=module_error.code,
             message=safe_error(error),
             vendor_info=module_error.vendor_info,
         )
-        if self._finalized:
-            await self.send_tts_error(self.current_request_id, module_error)
-        elif final_input:
+        if final_input and not self._finalized:
             await self._finalize_request(
                 TTSAudioEndReason.ERROR, error=module_error
             )
         else:
-            # The remaining chunks still belong to the same TEN request.
-            client, self.client = self.client, None
-            try:
-                if client is not None:
-                    await client.close(drain=False)
-            finally:
-                await self.send_tts_error(self.current_request_id, module_error)
+            # A non-final chunk leaves the rest of the TEN request open.
+            await self.send_tts_error(self.current_request_id, module_error)
 
     async def _ensure_audio_start(self) -> None:
         if self._audio_start_sent or self.current_request_id is None:
@@ -379,14 +400,16 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             extra_metadata={"route": self._route},
         )
         self._audio_start_sent = True
+        # The end event's interval is measured from this start event.
+        self._audio_start_at = time.monotonic()
 
-    async def _close_client(self) -> None:
+    async def _close_client(self, *, drain: bool = True) -> None:
         if self.client is None:
             return
         client, self.client = self.client, None
         request_id = self.current_request_id
         try:
-            await client.close()
+            await client.close(drain=drain)
         finally:
             if self.current_request_id == request_id:
                 self._router_usage = client.usage or self._router_usage
@@ -431,9 +454,9 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             await recorder.flush()
 
     def _request_interval_ms(self) -> int:
-        if self._first_audio_at is None:
+        if self._audio_start_at is None:
             return 0
-        return int((time.monotonic() - self._first_audio_at) * 1000)
+        return int((time.monotonic() - self._audio_start_at) * 1000)
 
     def _audio_duration_ms(self) -> int:
         bytes_per_second = (

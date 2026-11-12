@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -114,16 +115,18 @@ async def test_whitespace_and_output_metrics():
     extension._ensure_client = AsyncMock(return_value=client)
     extension.metrics_add_output_characters = MagicMock()
     extension.metrics_add_input_characters = MagicMock()
-    for value in ("hello", " ", " world "):
+    for value in ("hello", " ", "\n\t", " world "):
         await extension.request_tts(text(value))
-    assert sent == ["hello", " ", " world "]
+    # Whitespace-only chunks are not sent to the Router at all.
+    assert sent == ["hello", " world "]
     assert (
         sum(
             call.args[0]
             for call in extension.metrics_add_output_characters.call_args_list
         )
-        == 13
+        == 12
     )
+    extension.send_tts_error.assert_not_awaited()
     extension.metrics_add_input_characters.assert_not_called()
 
 
@@ -184,13 +187,13 @@ async def test_nonretryable_chunk_error_allows_new_text_without_replay(code):
     extension._stream_text = AsyncMock(
         side_effect=SpekoRouterError(code, "chunk failed", retryable=False)
     )
-    await extension.request_tts(text(" "))
+    await extension.request_tts(text("rejected"))
     extension.finish_request.assert_not_awaited()
     extension._stream_text.side_effect = None
     await extension.request_tts(text("valid next chunk", final=True))
     assert [
         call.args[0] for call in extension._stream_text.await_args_list
-    ] == [" ", "valid next chunk"]
+    ] == ["rejected", "valid next chunk"]
     extension.send_tts_error.assert_awaited_once()
     await extension.request_tts(text("new", "next", True))
     extension._stream_text.assert_awaited_with("new", "next")
@@ -205,7 +208,7 @@ async def test_flush_during_close_emits_only_interruption():
     await extension._begin_request(text())
     entered = asyncio.Event()
 
-    async def close():
+    async def close(**_kwargs):
         entered.set()
         await asyncio.Future()
 
@@ -283,7 +286,7 @@ async def test_old_close_does_not_clear_a_new_requests_client_or_usage():
     extension.current_request_id = "old"
     entered, release = asyncio.Event(), asyncio.Event()
 
-    async def close():
+    async def close(**_kwargs):
         entered.set()
         await release.wait()
 
@@ -404,8 +407,6 @@ async def test_replaced_request_recorder_is_flushed_even_if_close_fails(
 
 @pytest.mark.asyncio
 async def test_connection_event_redacts_credentials_and_url():
-    import json
-
     extension = SpekoTTS2Extension("speko")
     extension.config = SpekoTTS2Config(
         api_key="test-secret-key-long",
@@ -420,3 +421,157 @@ async def test_connection_event_redacts_credentials_and_url():
     assert "key" in vendor and "api_key" not in vendor
     for secret in ("test-secret-key-long", "password", "private", "#secret"):
         assert secret not in raw + extension.config.to_str()
+
+
+@pytest.mark.asyncio
+async def test_final_chunk_error_reports_one_disconnect():
+    extension = make_extension()
+    await extension._begin_request(text())
+    extension._processing_request_id = "req"
+    client = MagicMock(usage={"characters": 3})
+    client.close = AsyncMock()
+
+    async def fail(*_):
+        extension.client = client
+        raise SpekoRouterError("provider_error", "boom", retryable=True)
+
+    extension._stream_text = AsyncMock(side_effect=fail)
+    await extension.request_tts(text(final=True))
+    extension.on_disconnected.assert_awaited_once()
+    assert extension.on_disconnected.await_args.kwargs["code"] != 0
+    client.close.assert_awaited_once_with(drain=False)
+    extension.finish_request.assert_awaited_once()
+    assert extension.send_usage_metrics.await_args.kwargs["extra_metadata"][
+        "router_usage"
+    ] == {"characters": 3}
+
+
+@pytest.mark.asyncio
+async def test_close_failure_after_stop_does_not_finish_as_success():
+    extension = make_extension()
+    await extension._begin_request(text())
+    extension._processing_request_id = "req"
+    client = MagicMock(usage={})
+
+    async def close(**_kwargs):
+        extension._stopped = True
+        raise OSError("closed during shutdown")
+
+    client.close = AsyncMock(side_effect=close)
+    extension.client = client
+    await extension._finalize_request(TTSAudioEndReason.REQUEST_END)
+    extension.send_tts_audio_end.assert_not_awaited()
+    extension.send_tts_error.assert_not_awaited()
+    extension.finish_request.assert_awaited_once()
+    assert (
+        extension.finish_request.await_args.kwargs["reason"]
+        == TTSAudioEndReason.INTERRUPTED
+    )
+
+
+class _ClosingSocket:
+    """A Router socket that fails during the close handshake."""
+
+    def __init__(self, failure):
+        self.failure = failure
+        self.sent = []
+        self.closed = False
+
+    async def send(self, value):
+        self.sent.append(value)
+
+    async def recv(self):
+        if self.failure == "closed":
+            from websockets.exceptions import ConnectionClosedError
+
+            raise ConnectionClosedError(None, None)
+        return json.dumps(
+            {
+                "type": "error",
+                "error": {"code": "provider_error", "message": "late"},
+            }
+        )
+
+    async def close(self):
+        self.closed = True
+
+
+def _ready_client(socket):
+    from speko_tts2_python.client import SpekoTTSClient
+
+    client = SpekoTTSClient(
+        api_key="key",
+        base_url="https://router.speko.dev",
+        configure={},
+        ready_timeout_sec=1,
+        receive_timeout_sec=1,
+    )
+    client._ws = socket
+    client._ready = True
+    return client
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["closed", "error"])
+async def test_stop_never_raises_when_router_close_fails(failure):
+    extension = SpekoTTS2Extension("speko")
+    extension.config = SpekoTTS2Config(api_key="key")
+    extension.ten_env = MagicMock(
+        send_data=AsyncMock(), send_audio_frame=AsyncMock()
+    )
+    socket = _ClosingSocket(failure)
+    extension.client = _ready_client(socket)
+    extension.current_request_id = "req"
+    await extension.on_stop(extension.ten_env)
+    assert extension.client is None
+    assert socket.closed
+
+
+@pytest.mark.asyncio
+async def test_stop_logs_instead_of_raising_when_close_raises():
+    extension = SpekoTTS2Extension("speko")
+    extension.config = SpekoTTS2Config(api_key="key")
+    extension.ten_env = MagicMock(send_data=AsyncMock())
+    extension.client = MagicMock(
+        close=AsyncMock(side_effect=SpekoRouterError("relay_error", "x"))
+    )
+    extension.current_request_id = "req"
+    extension._recorders["req"] = MagicMock(
+        flush=AsyncMock(side_effect=OSError("disk"))
+    )
+    await extension.on_stop(extension.ten_env)
+    assert extension.ten_env.log_warn.call_count == 2
+    assert not extension._recorders
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["closed", "error"])
+async def test_drain_treats_closed_socket_as_closed_and_surfaces_errors(
+    failure,
+):
+    socket = _ClosingSocket(failure)
+    client = _ready_client(socket)
+    if failure == "closed":
+        await client.close(drain=True)
+    else:
+        with pytest.raises(SpekoRouterError):
+            await client.close(drain=True)
+    assert socket.closed
+    assert not client.is_ready
+
+
+@pytest.mark.asyncio
+async def test_drain_is_bounded_while_audio_keeps_arriving():
+    import asyncio
+    from unittest.mock import patch
+
+    class StreamingSocket(_ClosingSocket):
+        async def recv(self):
+            await asyncio.sleep(0.001)
+            return b"\x00\x00"
+
+    socket = StreamingSocket("audio")
+    client = _ready_client(socket)
+    with patch("speko_tts2_python.client.DRAIN_TIMEOUT_SEC", 0.05):
+        await asyncio.wait_for(client.close(drain=True), 1)
+    assert socket.closed

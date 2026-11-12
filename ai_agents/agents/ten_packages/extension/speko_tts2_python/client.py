@@ -39,6 +39,10 @@ class SpekoRouterError(Exception):
         )
 
 
+# A close drain only collects final usage; never let it hold up shutdown.
+DRAIN_TIMEOUT_SEC = 5.0
+
+
 class SpekoTTSEventType(str, Enum):
     AUDIO = "audio"
     TTFB = "ttfb"
@@ -152,14 +156,13 @@ class SpekoTTSClient:
             )
 
         websocket = self._ws
-        await websocket.send(
-            json.dumps(
-                {"type": "input.append", "text": text},
-                separators=(",", ":"),
-            )
+        append = json.dumps(
+            {"type": "input.append", "text": text}, separators=(",", ":")
         )
-        await websocket.send('{"type":"input.commit"}')
+        # TTFB starts when the text leaves, not after the commit frame.
         sent_at = time.monotonic()
+        await websocket.send(append)
+        await websocket.send('{"type":"input.commit"}')
         sequence: int | None = None
         first_audio = True
 
@@ -192,7 +195,7 @@ class SpekoTTSClient:
                     first_audio = False
                     yield SpekoTTSEvent(
                         SpekoTTSEventType.TTFB,
-                        int((time.monotonic() - sent_at) * 1000),
+                        round((time.monotonic() - sent_at) * 1000),
                     )
                 if self._cancelled:
                     return
@@ -251,9 +254,18 @@ class SpekoTTSClient:
     async def _drain_close(self) -> None:
         websocket = self._ws
         assert websocket is not None
+        loop = asyncio.get_running_loop()
+        # Bound the whole drain: audio still streaming after session.close
+        # would otherwise renew a per-frame timeout indefinitely.
+        deadline = loop.time() + DRAIN_TIMEOUT_SEC
         try:
             while not self._cancelled:
-                raw = await asyncio.wait_for(websocket.recv(), timeout=2.0)
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    return
+                raw = await asyncio.wait_for(
+                    websocket.recv(), timeout=min(2.0, remaining)
+                )
                 if isinstance(raw, bytes):
                     continue
                 event = self._decode_event(raw)
@@ -264,7 +276,8 @@ class SpekoTTSClient:
                     raise SpekoRouterError.from_event(event)
                 if event_type == "session.closed":
                     return
-        except asyncio.TimeoutError:
+        except (asyncio.TimeoutError, ConnectionClosed):
+            # The Router closing first is a completed close.
             return
 
     async def _close_socket(self) -> None:
