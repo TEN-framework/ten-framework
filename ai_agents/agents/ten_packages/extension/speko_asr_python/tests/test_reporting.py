@@ -9,7 +9,7 @@ import pytest
 from ten_ai_base.message import ModuleErrorCode
 from ten_runtime import Data
 
-from speko_asr_python.client import SpekoRouterError
+from speko_asr_python.client import SpekoCommitTimeout, SpekoRouterError
 from speko_asr_python.config import SpekoASRConfig
 from speko_asr_python.extension import SpekoASRExtension
 
@@ -140,14 +140,22 @@ async def test_concurrent_finalize_echoes_each_request_and_blocks_later_audio():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "failure",
+    "failure,errors",
     [
-        None,
-        SpekoRouterError("request_timeout", "timeout", retryable=True),
-        OSError("closed"),
+        (None, 0),
+        (SpekoCommitTimeout("request_timeout", "timeout", retryable=True), 0),
+        (
+            SpekoRouterError(
+                "relay_error",
+                "Speko ASR session closed before final transcript",
+                retryable=True,
+            ),
+            1,
+        ),
+        (OSError("closed"), 1),
     ],
 )
-async def test_finalize_acknowledges_disconnection_and_errors(failure):
+async def test_finalize_acknowledges_disconnection_and_errors(failure, errors):
     ext, events = extension_and_events()
     if failure is None:
         ext.client = None
@@ -161,6 +169,150 @@ async def test_finalize_acknowledges_disconnection_and_errors(failure):
             "metadata": {"session_id": "final-session", "custom": "id"},
         }
     ]
+    assert len(payloads(events, "error")) == errors
+
+
+@pytest.mark.asyncio
+async def test_commit_timeout_keeps_session_and_next_turn_timeline():
+    ext, events = extension_and_events()
+    client = ext.client
+    await ext._handle_audio_frame(ext.ten_env, audio())
+    client.commit.side_effect = SpekoCommitTimeout(
+        "request_timeout",
+        "Timed out waiting for a final Speko transcript",
+        retryable=True,
+    )
+    await ext.on_data(ext.ten_env, finalize_data("one", "turn-one"))
+    assert ext.client is client and ext.is_connected()
+    assert ext._reconnect_task is None
+    client.close.assert_not_awaited()
+    assert not payloads(events, "error")
+    assert not payloads(events, "connection_status_changed")
+    assert [
+        item["finalize_id"] for item in payloads(events, "asr_finalize_end")
+    ] == ["one"]
+    warnings = [call.args[0] for call in ext.ten_env.log_warn.call_args_list]
+    assert any("not acknowledged" in message for message in warnings)
+    # The next turn starts where the timed-out finalize closed the last one.
+    client.commit.side_effect = None
+    await ext._handle_audio_frame(ext.ten_env, audio())
+    await ext._on_router_event({"type": "transcript.final", "text": "next"})
+    await ext.on_data(ext.ten_env, finalize_data("two", "turn-two"))
+    results = payloads(events, "asr_result")
+    assert [(item["start_ms"], item["duration_ms"]) for item in results] == [
+        (1000, 1000)
+    ]
+    assert len(payloads(events, "asr_finalize_end")) == 2
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
+async def test_empty_final_acknowledges_finalize_without_a_result():
+    ext, events = extension_and_events()
+    await ext._handle_audio_frame(ext.ten_env, audio())
+
+    async def commit():
+        await ext._on_router_event({"type": "transcript.final", "text": ""})
+
+    ext.client.commit.side_effect = commit
+    await ext.on_data(ext.ten_env, finalize_data("empty", "turn"))
+    assert not payloads(events, "asr_result")
+    assert not payloads(events, "error")
+    assert [
+        item["finalize_id"] for item in payloads(events, "asr_finalize_end")
+    ] == ["empty"]
+    assert ext._final_cursor_ms == 1000
+    await ext.on_stop(ext.ten_env)
+
+
+def _upgrade_rejected(status):
+    from websockets.exceptions import InvalidStatus
+
+    response = MagicMock(status_code=status, reason_phrase="denied", body=b"")
+    return AsyncMock(side_effect=InvalidStatus(response))
+
+
+class _ErrorBeforeReady:
+    """A Router socket that rejects session.configure with an error event."""
+
+    def __init__(self, retryable):
+        self.retryable = retryable
+        self.closed = False
+
+    async def send(self, _value):
+        pass
+
+    async def recv(self):
+        return json.dumps(
+            {
+                "type": "error",
+                "error": {
+                    "code": "invalid_request",
+                    "message": "unsupported language",
+                    "retryable": self.retryable,
+                },
+            }
+        )
+
+    async def close(self):
+        self.closed = True
+
+
+def _error_before_ready(retryable):
+    return AsyncMock(return_value=_ErrorBeforeReady(retryable))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "connect,router_code",
+    [
+        (_upgrade_rejected(400), "invalid_request"),
+        (_error_before_ready(False), "invalid_request"),
+    ],
+)
+async def test_non_retryable_setup_failure_is_one_fatal_error_without_retry(
+    connect, router_code
+):
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.ten_env.get_property_bool = AsyncMock(return_value=(True, None))
+    ext.ten_env.get_property_to_json = AsyncMock(
+        return_value=(json.dumps({"params": {"api_key": "key"}}), None)
+    )
+    with patch("speko_asr_python.client.websockets.connect", connect):
+        await ext.on_init(ext.ten_env)
+        await ext.on_start(ext.ten_env)
+        await ext._ensure_connection()
+        for _ in range(3):
+            await ext.on_audio_frame(ext.ten_env, audio())
+            await ext.on_data(ext.ten_env, Data.create("trigger_connect"))
+        await asyncio.sleep(0)
+        assert ext._reconnect_task is None
+        assert connect.await_count == 1
+        await ext.on_stop(ext.ten_env)
+    errors = payloads(events, "error")
+    assert len(errors) == 1
+    assert errors[0]["code"] == int(ModuleErrorCode.FATAL_ERROR.value)
+    assert errors[0]["vendor_info"]["code"] == router_code
+    assert ext._permanent_error is not None
+    assert not ext._retired_clients
+
+
+@pytest.mark.asyncio
+async def test_retryable_setup_failure_reports_non_fatal_and_reconnects():
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.config = SpekoASRConfig(api_key="key")
+    with patch(
+        "speko_asr_python.client.websockets.connect", _upgrade_rejected(503)
+    ):
+        await ext.start_connection()
+    errors = payloads(events, "error")
+    assert len(errors) == 1
+    assert errors[0]["code"] == int(ModuleErrorCode.NON_FATAL_ERROR.value)
+    assert ext._permanent_error is None
+    assert ext._reconnect_task is not None
+    await ext.stop_connection()
 
 
 @pytest.mark.asyncio
@@ -218,17 +370,21 @@ async def test_real_status_events_redact_key_and_url():
 
 
 @pytest.mark.asyncio
-async def test_invalid_configuration_is_latched_before_any_connect_attempt():
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"api_key": "private-value", "base_url": "invalid"},
+        {"api_key": "private-value", "buffer_duration_ms": 30001},
+    ],
+)
+async def test_invalid_configuration_is_latched_before_any_connect_attempt(
+    params,
+):
     ext, events = extension_and_events()
     ext.client = None
     ext.ten_env.get_property_bool = AsyncMock(return_value=(True, None))
     ext.ten_env.get_property_to_json = AsyncMock(
-        return_value=(
-            json.dumps(
-                {"params": {"api_key": "private-value", "base_url": "invalid"}}
-            ),
-            None,
-        )
+        return_value=(json.dumps({"params": params}), None)
     )
     # The real base initializer starts a consumer; stop it through the lifecycle.
     with patch("speko_asr_python.extension.SpekoASRClient") as constructor:
@@ -406,6 +562,22 @@ async def test_dropped_audio_and_fractional_frames_have_correct_timeline():
     assert ext.audio_timeline.get_audio_duration_before_time(500) == 520
 
 
+@pytest.mark.asyncio
+async def test_disconnected_buffer_cap_drops_oldest_frames_into_timeline():
+    ext, _ = extension_and_events()
+    ext.client.is_ready = False
+    ext.config.sample_rate = 48000
+    ext.config.channels = 8
+    ext.config.buffer_duration_ms = 30000
+    second = 48000 * 8 * 2  # 768000 bytes is one second at this format.
+    for _ in range(14):
+        await ext._handle_audio_frame(ext.ten_env, audio(size=second))
+    # 14 s exceed the 10 MiB cap; the oldest second is dropped and recorded.
+    assert ext.buffered_frames.qsize() == 13
+    assert ext.buffered_frames_size == 13 * second <= 10 * 1024 * 1024
+    assert ext.audio_timeline.total_dropped_audio_duration == 1000
+
+
 @pytest.mark.parametrize(
     "params",
     [
@@ -418,6 +590,8 @@ async def test_dropped_audio_and_fractional_frames_have_correct_timeline():
         {"sample_rate": 1},
         {"channels": 0},
         {"routing": {"mode": "wrong"}},
+        {"buffer_duration_ms": 30001},
+        {"buffer_duration_ms": -1},
     ],
 )
 def test_invalid_config_values(params):

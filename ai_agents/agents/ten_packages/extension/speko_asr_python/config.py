@@ -7,6 +7,9 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from ten_ai_base import utils
 
+# Audio is buffered in memory while the Router session is not ready.
+MAX_BUFFER_DURATION_MS = 30_000
+
 
 class SpekoASRConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
@@ -45,6 +48,16 @@ class SpekoASRConfig(BaseModel):
             raise ValueError("channels must be between 1 and 8")
         return value
 
+    @field_validator("buffer_duration_ms")
+    @classmethod
+    def validate_buffer_duration_ms(cls, value: int) -> int:
+        if not 0 <= value <= MAX_BUFFER_DURATION_MS:
+            raise ValueError(
+                "buffer_duration_ms must be between 0 and "
+                f"{MAX_BUFFER_DURATION_MS}"
+            )
+        return value
+
     def update_params(self) -> None:
         values = dict(self.params)
         for name in (
@@ -68,8 +81,6 @@ class SpekoASRConfig(BaseModel):
         if not self.api_key.strip():
             raise ValueError("api_key is required")
         validate_base_url(self.base_url)
-        if self.buffer_duration_ms < 0:
-            raise ValueError("buffer_duration_ms must not be negative")
         if not re.fullmatch(
             r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*", self.language
         ):

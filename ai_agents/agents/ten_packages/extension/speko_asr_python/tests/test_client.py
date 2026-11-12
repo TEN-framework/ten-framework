@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from speko_asr_python.client import (
     SpekoASRClient,
+    SpekoCommitTimeout,
     SpekoRouterError,
     websocket_url,
 )
@@ -172,9 +173,11 @@ async def test_timeout_does_not_poison_next_commit():
     ):
         await client.connect()
         await client.send_audio(b"\x00\x00")
-        with pytest.raises(SpekoRouterError, match="Timed out"):
+        with pytest.raises(SpekoCommitTimeout, match="Timed out"):
             await client.commit()
         assert client._finalize_waiter is None
+        # A missing acknowledgement is not a transport failure.
+        assert client.is_ready
         next_commit = asyncio.create_task(client.commit())
         await asyncio.sleep(0)
         websocket.messages.put_nowait(
@@ -321,3 +324,70 @@ async def test_commit_without_audio_completes_without_protocol_wait():
         await asyncio.wait_for(client.commit(), 0.1)
         assert len(websocket.sent) == 1
         await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_empty_final_acknowledges_commit():
+    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+    events = []
+    client = make_client(events, [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        await client.send_audio(b"\x00\x00")
+        commit = asyncio.create_task(client.commit())
+        await asyncio.sleep(0)
+        websocket.messages.put_nowait(
+            json.dumps({"type": "transcript.final", "text": ""})
+        )
+        await asyncio.wait_for(commit, 0.5)
+        assert events[-1] == {"type": "transcript.final", "text": ""}
+        assert client.is_ready
+        await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_upgrade_400_without_envelope_is_not_retryable():
+    from unittest.mock import MagicMock
+    from websockets.exceptions import InvalidStatus
+
+    response = MagicMock(status_code=400, reason_phrase="bad", body=b"")
+    client = make_client([], [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(side_effect=InvalidStatus(response)),
+    ):
+        with pytest.raises(SpekoRouterError) as caught:
+            await client.connect()
+    assert caught.value.code == "invalid_request"
+    assert caught.value.retryable is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("retryable", [False, True])
+async def test_error_before_ready_keeps_router_retryable_flag(retryable):
+    websocket = FakeWebSocket(
+        json.dumps(
+            {
+                "type": "error",
+                "error": {
+                    "code": "invalid_request",
+                    "message": "unsupported language",
+                    "retryable": retryable,
+                },
+            }
+        )
+    )
+    client = make_client([], [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        with pytest.raises(SpekoRouterError) as caught:
+            await client.connect()
+    assert caught.value.code == "invalid_request"
+    assert caught.value.retryable is retryable
+    assert websocket.closed
+    assert not client.is_ready

@@ -17,12 +17,23 @@ your graph.
 | `params.language` | `en-US` | Language tag for routing/transcription |
 | `params.routing` | auto, balanced | Speko routing selection |
 | `params.options` | `{}` | Diarization, keywords, noise reduction, or namespaced provider options |
-| `params.buffer_duration_ms` | `5000` | Audio retained while disconnected; `0` discards |
+| `params.buffer_duration_ms` | `5000` | Audio retained while disconnected, `0`–`30000`; `0` discards |
+
+The disconnected buffer is held in memory and is also capped at 10 MiB, which
+binds before 30 seconds at high sample rates or channel counts. When a frame
+would overflow it, the oldest buffered frames are dropped (a frame larger than
+the whole buffer is dropped itself). Dropped frames are never sent; they are
+recorded as dropped audio in the TEN audio timeline, so later transcript
+timestamps still line up with the caller's audio.
 
 The transport is raw signed 16-bit little-endian PCM. A TEN `asr_finalize`
 message sends Speko `input.commit`. Each finalize is serialized and acknowledged
 with its own `finalize_id` and metadata, including disconnected and timeout paths.
 Silent or already-finalized input completes without waiting for another transcript.
+An empty `transcript.final` acknowledges the commit. If no final arrives within
+`finalize_timeout_sec` (the provider may already have finalized the turn), the
+extension logs a warning, keeps the session, and still completes the finalize;
+only a real disconnect reports an error and reconnects.
 Empty vendor transcripts are not emitted as user turns.
 
 ```json
@@ -71,9 +82,11 @@ Client/lifecycle unit tests use mocked transport and do not require credentials.
 
 Transient disconnects have one background recovery loop with delays of 0.5, 1,
 2, 4, and 4 seconds. A successful handshake resets this retry budget. Exhaustion,
-invalid configuration, authentication/credit failures, and unavailable explicit
-routes stop further attempts until the cause is corrected and the extension is
-restarted. Failed sends are not replayed; disconnected input uses the bounded
+invalid configuration, authentication/credit failures, unavailable explicit
+routes, and any handshake rejection the Router marks non-retryable (for example
+HTTP 400 on upgrade, or an `error` event before `session.ready` with
+`retryable: false`) report one fatal error and stop further attempts until the
+cause is corrected and the extension is restarted. Failed sends are not replayed; disconnected input uses the bounded
 buffer. Stop cancels pending recovery and finalization.
 
 Finalization waits for an in-progress handshake and previously accepted audio

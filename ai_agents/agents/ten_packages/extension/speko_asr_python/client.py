@@ -42,6 +42,10 @@ class SpekoRouterError(Exception):
         )
 
 
+class SpekoCommitTimeout(SpekoRouterError):
+    """input.commit got no transcript.final; the session itself is intact."""
+
+
 def websocket_url(base_url: str, path: str) -> str:
     parsed = urlparse(base_url)
     scheme = {"https": "wss", "http": "ws"}.get(parsed.scheme, parsed.scheme)
@@ -175,7 +179,7 @@ class SpekoASRClient:
                 asyncio.shield(waiter), timeout=self.finalize_timeout_sec
             )
         except asyncio.TimeoutError as error:
-            raise SpekoRouterError(
+            raise SpekoCommitTimeout(
                 "request_timeout",
                 "Timed out waiting for a final Speko transcript",
                 retryable=True,

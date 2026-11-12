@@ -29,8 +29,20 @@ from ten_ai_base.struct import ASRWord
 from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
-from .client import SpekoASRClient, SpekoRouterError
+from .client import SpekoASRClient, SpekoCommitTimeout, SpekoRouterError
 from .config import SpekoASRConfig, safe_error, safe_url
+
+# Disconnected audio stays in memory; bound it for high-rate input.
+MAX_BUFFER_BYTES = 10 * 1024 * 1024
+FATAL_ROUTER_CODES = frozenset(
+    {
+        "authentication_failed",
+        "insufficient_credit",
+        "route_not_found",
+        "capability_unsupported",
+        "retry_exhausted",
+    }
+)
 
 
 class SpekoASRExtension(AsyncASRBaseExtension):
@@ -178,7 +190,12 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 await self._close_retired_clients()
                 raise
             except Exception as error:
-                await self._reset_connection(self._router_error(error), epoch)
+                await self._reset_connection(
+                    self._router_error(error), epoch, setup=True
+                )
+                # The failed handshake has no live socket; release it now so
+                # a fatal setup error leaves nothing for a cleanup task.
+                await self._close_retired_clients()
 
     def _detach_client(self) -> None:
         self._connection_epoch += 1
@@ -268,13 +285,15 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     def buffer_strategy(self) -> ASRBufferConfig:
         if self.config is None or self.config.buffer_duration_ms == 0:
             return ASRBufferConfigModeDiscard()
+        # Overflow drops the oldest frames, recorded as dropped audio.
         return ASRBufferConfigModeKeep(
-            byte_limit=(
+            byte_limit=min(
+                MAX_BUFFER_BYTES,
                 self.input_audio_sample_rate()
                 * self.input_audio_channels()
                 * self.input_audio_sample_width()
                 * self.config.buffer_duration_ms
-                // 1000
+                // 1000,
             )
         )
 
@@ -374,7 +393,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             self._permanent_error = SpekoRouterError(
                 "retry_exhausted", "Speko ASR reconnect attempts exhausted"
             )
-            await self._report_router_error(self._permanent_error)
+            await self._report_router_error(
+                self._permanent_error, ModuleErrorCode.FATAL_ERROR
+            )
 
     @override
     async def send_audio(
@@ -456,6 +477,15 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 self._commit_task = asyncio.create_task(client.commit())
                 try:
                     await self._commit_task
+                except SpekoCommitTimeout as timeout:
+                    # The provider may have finalized this turn on its own, so
+                    # the Router has no final left to send. The session is
+                    # still usable: complete the finalize instead of failing.
+                    self.ten_env.log_warn(
+                        "Speko ASR commit was not acknowledged: "
+                        f"{safe_error(timeout)}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
                 finally:
                     self._commit_task = None
                 if epoch == self._connection_epoch:
@@ -486,7 +516,11 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                         self.metadata = previous
 
     async def _reset_connection(
-        self, error: SpekoRouterError, epoch: int | None = None
+        self,
+        error: SpekoRouterError,
+        epoch: int | None = None,
+        *,
+        setup: bool = False,
     ) -> None:
         if self.stopped or (
             epoch is not None and epoch != self._connection_epoch
@@ -495,14 +529,20 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         # Invalidate before the first await. Error + close callbacks for the
         # same generation now have exactly one owner and one error report.
         self._detach_client()
-        if self._module_error_code(error) == ModuleErrorCode.FATAL_ERROR:
+        # One classification drives the latch and every report.
+        code = self._module_error_code(error, setup=setup)
+        fatal = code == ModuleErrorCode.FATAL_ERROR
+        if fatal:
             self._permanent_error = error
-        await self._report_router_error(error)
+        await self._report_router_error(error, code)
         await self.on_disconnected(
-            code=self._module_error_code(error).value,
+            code=code.value,
             message=safe_error(error),
             vendor_info=self._vendor_info(error),
         )
+        if fatal and setup:
+            # start_connection releases the failed handshake itself.
+            return
         self._schedule_reconnect()
 
     async def _on_router_disconnect(
@@ -631,7 +671,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         if final:
             self._final_cursor_ms = max(self._final_cursor_ms, end_ms)
 
-    async def _report_router_error(self, error: SpekoRouterError) -> None:
+    async def _report_router_error(
+        self, error: SpekoRouterError, code: ModuleErrorCode
+    ) -> None:
         self.ten_env.log_error(
             f"vendor_error: code={error.code}, message={safe_error(error)}",
             category=LOG_CATEGORY_VENDOR,
@@ -639,7 +681,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         await self.send_asr_error(
             ModuleError(
                 module="asr",
-                code=self._module_error_code(error).value,
+                code=code.value,
                 message=safe_error(error),
                 vendor_info=self._vendor_info(error),
             )
@@ -695,14 +737,12 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         )
 
     @staticmethod
-    def _module_error_code(error: SpekoRouterError) -> ModuleErrorCode:
-        if error.code in {
-            "authentication_failed",
-            "insufficient_credit",
-            "route_not_found",
-            "capability_unsupported",
-            "retry_exhausted",
-        }:
+    def _module_error_code(
+        error: SpekoRouterError, *, setup: bool = False
+    ) -> ModuleErrorCode:
+        # A handshake/configuration rejection the Router marks non-retryable
+        # would fail the same way on every reconnect.
+        if error.code in FATAL_ROUTER_CODES or (setup and not error.retryable):
             return ModuleErrorCode.FATAL_ERROR
         return ModuleErrorCode.NON_FATAL_ERROR
 

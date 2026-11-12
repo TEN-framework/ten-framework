@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from speko_asr_python.client import SpekoRouterError
+from speko_asr_python.client import SpekoCommitTimeout, SpekoRouterError
 from speko_asr_python.config import SpekoASRConfig
 from speko_asr_python.extension import SpekoASRExtension
 
@@ -58,15 +58,39 @@ async def test_multiple_turns_have_separate_duration_and_session_positions():
 
 
 @pytest.mark.asyncio
-async def test_timeout_disconnects_and_completes_finalize_once():
+async def test_commit_timeout_keeps_session_and_completes_finalize_once():
     extension, client = make_extension()
-    client.commit.side_effect = SpekoRouterError(
+    assert await extension.send_audio(frame(), "session")
+    client.commit.side_effect = SpekoCommitTimeout(
         "request_timeout", "timeout", retryable=True
     )
     await extension.finalize("session")
+    assert extension.client is client
+    client.close.assert_not_awaited()
+    extension.send_asr_error.assert_not_awaited()
+    extension.on_disconnected.assert_not_awaited()
+    assert extension._reconnect_task is None
+    extension.ten_env.log_warn.assert_called_once()
+    extension.send_asr_finalize_end.assert_awaited_once()
+    # Bookkeeping advances exactly as for an acknowledged commit.
+    assert extension._total_audio_bytes == 0
+    assert extension._final_cursor_ms == 1000
+    assert extension._commit_boundary_ms == 1000
+
+
+@pytest.mark.asyncio
+async def test_disconnect_during_commit_resets_and_completes_finalize_once():
+    extension, client = make_extension()
+    client.commit.side_effect = SpekoRouterError(
+        "relay_error",
+        "Speko ASR session closed before final transcript",
+        retryable=True,
+    )
+    await extension.finalize("session")
     await extension.stop_connection()
-    client.close.assert_awaited_once()
+    client.close.assert_awaited()
     assert extension.client is None
+    extension.send_asr_error.assert_awaited_once()
     extension.send_asr_finalize_end.assert_awaited_once()
 
 
@@ -261,3 +285,41 @@ async def test_reconnect_waits_for_failed_session_cleanup():
     release.set()
     await extension._reconnect_task
     extension.start_connection.assert_awaited_once()
+
+
+def test_buffer_duration_bounds():
+    config = SpekoASRConfig(
+        api_key="test-key", params={"buffer_duration_ms": 30000}
+    )
+    config.update_params()
+    assert config.buffer_duration_ms == 30000
+    for value in (30001, -1):
+        with pytest.raises(ValueError):
+            SpekoASRConfig(
+                api_key="test-key", params={"buffer_duration_ms": value}
+            ).update_params()
+        with pytest.raises(ValueError):
+            SpekoASRConfig(api_key="test-key", buffer_duration_ms=value)
+
+
+@pytest.mark.parametrize(
+    "sample_rate,channels,duration_ms,expected",
+    [
+        (16000, 1, 30000, 960000),
+        (48000, 2, 30000, 5760000),
+        # 48 kHz x 8 ch x 30 s would be 23 MB; the in-memory cap binds.
+        (48000, 8, 30000, 10 * 1024 * 1024),
+        (192000, 8, 30000, 10 * 1024 * 1024),
+    ],
+)
+def test_buffer_byte_limit_is_capped(
+    sample_rate, channels, duration_ms, expected
+):
+    from speko_asr_python.extension import MAX_BUFFER_BYTES
+
+    extension, _ = make_extension()
+    extension.config.sample_rate = sample_rate
+    extension.config.channels = channels
+    extension.config.buffer_duration_ms = duration_ms
+    assert MAX_BUFFER_BYTES == 10 * 1024 * 1024
+    assert extension.buffer_strategy().byte_limit == expected
