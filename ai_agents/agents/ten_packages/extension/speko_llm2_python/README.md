@@ -39,6 +39,10 @@ configured in explicit mode.
 Speko's launch Responses contract accepts text content only. Image content is
 rejected locally with a clear error instead of being silently dropped.
 
+Every request failure, including an invalid request, malformed Router JSON, or
+an `{"error": "..."}` envelope over HTTP or SSE, is emitted as one TEN `error`
+with `vendor_info.vendor` set to `speko` before the request ends.
+
 ## Testing
 
 From `ai_agents/`:

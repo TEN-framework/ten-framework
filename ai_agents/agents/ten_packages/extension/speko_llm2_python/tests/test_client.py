@@ -141,3 +141,80 @@ async def test_truncated_stream_is_not_reported_as_success():
     assert caught.value.code == "relay_error"
     assert caught.value.retryable is True
     await http_client.aclose()
+
+
+def make_client(handler):
+    http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    client = SpekoLLMClient(
+        api_key="test-key",
+        base_url="https://router.speko.dev",
+        timeout_sec=1,
+        http_client=http_client,
+    )
+    return client, http_client
+
+
+@pytest.mark.asyncio
+async def test_malformed_success_json_is_router_error():
+    client, http_client = make_client(
+        lambda request: httpx.Response(200, text="<html>bad gateway</html>")
+    )
+    with pytest.raises(SpekoRouterError) as caught:
+        await client.complete({"input": []}, idempotency_key="idem-1")
+    assert caught.value.code == "relay_error"
+    assert caught.value.status_code == 200
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("streaming", [False, True])
+async def test_string_error_envelope_over_http(streaming):
+    client, http_client = make_client(
+        lambda request: httpx.Response(502, json={"error": "upstream down"})
+    )
+    with pytest.raises(SpekoRouterError) as caught:
+        if streaming:
+            _ = [
+                event
+                async for event in client.stream(
+                    {"input": []}, idempotency_key="idem-1"
+                )
+            ]
+        else:
+            await client.complete({"input": []}, idempotency_key="idem-1")
+    assert caught.value.code == "relay_error"
+    assert caught.value.message == "upstream down"
+    assert caught.value.status_code == 502
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_string_error_envelope_over_sse():
+    client, http_client = make_client(
+        lambda request: httpx.Response(
+            200,
+            text=sse(
+                ("response.created", {"response_id": "resp_1"}),
+                ("error", {"error": "quota exceeded"}),
+            ),
+        )
+    )
+    with pytest.raises(SpekoRouterError) as caught:
+        _ = [
+            event
+            async for event in client.stream(
+                {"input": []}, idempotency_key="idem-1"
+            )
+        ]
+    assert caught.value.code == "relay_error"
+    assert caught.value.message == "quota exceeded"
+    await http_client.aclose()
+
+
+@pytest.mark.parametrize(
+    "envelope", [{}, {"error": None}, {"error": 7}, {"error": ""}]
+)
+def test_envelope_without_error_object_uses_defaults(envelope):
+    error = SpekoRouterError.from_envelope(envelope)
+    assert error.code == "relay_error"
+    assert error.message == "Speko Router error"

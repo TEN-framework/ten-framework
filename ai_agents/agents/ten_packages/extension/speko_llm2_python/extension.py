@@ -79,12 +79,19 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # Clean up before the base stops, like the ASR/TTS extensions. Cancel
+        # in-flight streams first so closing their transport is not reported
+        # as a request failure. An exception escaping on_stop aborts TEN.
+        await self._cancel_all()
+        client, self.client = self.client, None
         try:
-            await super().on_stop(ten_env)
-        finally:
-            client, self.client = self.client, None
             if client is not None:
                 await client.close()
+        except Exception as error:
+            ten_env.log_warn(
+                f"Speko LLM client close failed: {safe_error(error)}"
+            )
+        await super().on_stop(ten_env)
 
     async def on_retrieve_prompt(
         self, ten_env: AsyncTenEnv, request: LLMRequestRetrievePrompt
@@ -109,19 +116,24 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
         response_id = request.request_id
         full_content = ""
         ttft_ms: int | None = None
-        payload = self._build_payload(request)
         stream = request.streaming is not False
-        payload["stream"] = stream
         idempotency_key = uuid.uuid4().hex
 
-        ten_env.log_info(
-            "Requesting Speko LLM response: "
-            f"messages={len(request.messages)}, stream={stream}, "
-            f"routing={payload.get('routing', {})}",
-            category=LOG_CATEGORY_VENDOR,
-        )
-
         try:
+            try:
+                payload = self._build_payload(request)
+            except ValueError as error:
+                raise SpekoRouterError(
+                    "invalid_request", safe_error(error)
+                ) from error
+            payload["stream"] = stream
+            ten_env.log_info(
+                "Requesting Speko LLM response: "
+                f"messages={len(request.messages)}, stream={stream}, "
+                f"routing={payload.get('routing', {})}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+
             if not stream:
                 response = await self.client.complete(
                     payload, idempotency_key=idempotency_key
@@ -196,6 +208,14 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
             await self._report_router_error(error, request)
             raise RuntimeError(
                 f"Speko Router request failed ({error.code}): {safe_error(error)}"
+            ) from error
+        except Exception as error:
+            # Backstop: a malformed payload the client did not anticipate must
+            # still reach the graph as a standard TEN error, not only a log.
+            router_error = SpekoRouterError("relay_error", safe_error(error))
+            await self._report_router_error(router_error, request)
+            raise RuntimeError(
+                f"Speko Router request failed (relay_error): {safe_error(error)}"
             ) from error
 
     def _build_payload(self, request: LLMRequest) -> dict[str, Any]:

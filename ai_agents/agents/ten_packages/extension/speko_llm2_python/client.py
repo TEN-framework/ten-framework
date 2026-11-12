@@ -28,6 +28,11 @@ class SpekoRouterError(Exception):
         cls, envelope: dict[str, Any], *, status_code: int = 0
     ) -> "SpekoRouterError":
         error = envelope.get("error", {})
+        if isinstance(error, str) and error:
+            # Relays and proxies may send {"error": "message"}.
+            error = {"message": error}
+        if not isinstance(error, dict):
+            error = {}
         return cls(
             str(error.get("code", "relay_error")),
             str(error.get("message", "Speko Router error")),
@@ -167,7 +172,14 @@ class SpekoLLMClient:
             ) from error
         if response.status_code >= 400:
             raise await self._error_from_response(response)
-        decoded = response.json()
+        try:
+            decoded = response.json()
+        except ValueError as error:
+            raise SpekoRouterError(
+                "relay_error",
+                "Speko Router returned invalid JSON",
+                status_code=response.status_code,
+            ) from error
         if not isinstance(decoded, dict):
             raise SpekoRouterError(
                 "relay_error", "Speko Router response must be a JSON object"
