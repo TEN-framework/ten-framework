@@ -168,8 +168,9 @@ class SpekoTTSClient:
 
         while not self._cancelled:
             try:
-                raw = await asyncio.wait_for(
-                    websocket.recv(), timeout=self.receive_timeout_sec
+                raw, received_at = await asyncio.wait_for(
+                    self._timed_recv(websocket),
+                    timeout=self.receive_timeout_sec,
                 )
             except ConnectionClosed:
                 if self._cancelled:
@@ -195,7 +196,7 @@ class SpekoTTSClient:
                     first_audio = False
                     yield SpekoTTSEvent(
                         SpekoTTSEventType.TTFB,
-                        round((time.monotonic() - sent_at) * 1000),
+                        round((received_at - sent_at) * 1000),
                     )
                 if self._cancelled:
                     return
@@ -229,6 +230,13 @@ class SpekoTTSClient:
                     "Speko TTS session closed before utterance.done",
                     retryable=True,
                 )
+
+    @staticmethod
+    async def _timed_recv(websocket: ClientConnection) -> tuple[Any, float]:
+        raw = await websocket.recv()
+        # Stamp arrival in wait_for's own task, before the hop back to the
+        # caller: under load that hop alone can exceed a millisecond.
+        return raw, time.monotonic()
 
     async def cancel(self) -> None:
         self._cancelled = True
