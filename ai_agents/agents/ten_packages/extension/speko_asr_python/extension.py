@@ -130,16 +130,26 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 )
             )
 
+    @override
     async def _ensure_connection(self) -> None:
-        # Guard before the base's start_connection wrapper emits connecting.
-        if self.stopped or self._init_failed or self._permanent_error:
+        # The base's start_connection wrapper emits connecting, so check the
+        # latch before it and again under the lock: a caller queued behind a
+        # handshake that just failed fatally must not report that failure twice.
+        if self._connection_disabled():
             return
-        await super()._ensure_connection()
+        self._connection_requested = True
+        async with self._connection_lock:
+            if self._connection_disabled() or self._safe_is_connected():
+                return
+            await self.start_connection()
+
+    def _connection_disabled(self) -> bool:
+        return bool(self.stopped or self._init_failed or self._permanent_error)
 
     @override
     async def start_connection(self) -> None:
         async with self._swap_lock:
-            if self.stopped or self._init_failed or self._permanent_error:
+            if self._connection_disabled():
                 await self.on_disconnected(
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message="Speko ASR connection is disabled",
@@ -313,10 +323,13 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         # the base queue must not duplicate bytes in this raw-input dump.
         if self.audio_dumper is not None:
             await self.audio_dumper.push_bytes(bytes(frame.get_buf()))
+        # Before the first requested connection (on_start with auto_connect, or
+        # trigger_connect), audio only buffers: a retry scheduled now would race
+        # that handshake and spend retry budget on it.
         if (
             not self.is_connected()
             and self.connection_status != ModuleConnectionStatus.CONNECTING
-            and (self.auto_connect or self._connection_requested)
+            and self._connection_requested
         ):
             self._schedule_reconnect()
         self._audio_queue_drained.clear()
@@ -378,7 +391,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             delay = self.RECONNECT_DELAYS[self._reconnect_attempts]
             async with self._swap_lock:
                 await self._close_retired_clients()
-            if self.stopped or self._init_failed or self._permanent_error:
+            if self._connection_disabled():
                 return
             if self.is_connected():
                 return

@@ -299,6 +299,38 @@ async def test_non_retryable_setup_failure_is_one_fatal_error_without_retry(
 
 
 @pytest.mark.asyncio
+async def test_caller_queued_behind_fatal_handshake_emits_no_transition():
+    ext, events = extension_and_events()
+    ext.client = None
+    entered, release = asyncio.Event(), asyncio.Event()
+    rejected = _upgrade_rejected(401)
+
+    async def connect(*args, **kwargs):
+        entered.set()
+        await release.wait()
+        return await rejected(*args, **kwargs)
+
+    with patch("speko_asr_python.client.websockets.connect", connect):
+        first = asyncio.create_task(ext._ensure_connection())
+        await entered.wait()
+        # Passes the unlocked latch check, then queues on _connection_lock.
+        queued = asyncio.create_task(ext._ensure_connection())
+        await asyncio.sleep(0)
+        release.set()
+        await asyncio.gather(first, queued)
+    statuses = [
+        (status["current"], status["code"])
+        for status in payloads(events, "connection_status_changed")
+    ]
+    assert statuses == [
+        ("connecting", 0),
+        ("disconnected", int(ModuleErrorCode.FATAL_ERROR.value)),
+    ]
+    assert len(payloads(events, "error")) == 1
+    assert rejected.await_count == 1
+
+
+@pytest.mark.asyncio
 async def test_retryable_setup_failure_reports_non_fatal_and_reconnects():
     ext, events = extension_and_events()
     ext.client = None

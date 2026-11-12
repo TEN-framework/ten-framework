@@ -190,6 +190,7 @@ async def test_audio_ingress_does_not_wait_for_reconnection_and_stop_joins_it():
 
     extension, _ = make_extension()
     extension.client = None
+    extension._connection_requested = True  # dropped after on_start
     entered = asyncio.Event()
 
     async def connect():
@@ -255,6 +256,16 @@ async def test_audio_during_initial_connection_does_not_schedule_retry():
     extension._connection_machine.try_connecting()
     await extension.on_audio_frame(extension.ten_env, frame())
     assert extension._reconnect_task is None
+    assert extension.audio_frames_queue.qsize() == 1
+
+
+@pytest.mark.asyncio
+async def test_audio_before_start_waits_for_first_connection_without_retry():
+    extension, _ = make_extension()
+    extension.client = None
+    await extension.on_audio_frame(extension.ten_env, frame())
+    assert extension._reconnect_task is None
+    assert extension._reconnect_attempts == 0
     assert extension.audio_frames_queue.qsize() == 1
 
 
