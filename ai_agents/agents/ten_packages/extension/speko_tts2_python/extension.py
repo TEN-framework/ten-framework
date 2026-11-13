@@ -219,6 +219,27 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
             finally:
                 await self._flush_recorder(request_id)
 
+    async def finish_request(
+        self,
+        request_id: str,
+        reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
+        error: ModuleError | None = None,
+    ) -> None:
+        # ten_ai_base 0.7.65 re-queues the next request's buffered text
+        # behind text queued while it waited, but buffered text left the
+        # FIFO queue first, so it arrived first. Move it back to the front.
+        buffered = [
+            item for items in self._pending_messages.values() for item in items
+        ]
+        await super().finish_request(request_id, reason=reason, error=error)
+        held = {id(item) for item in buffered}
+        queue = self.input_queue._queue  # pylint: disable=protected-access
+        released = [item for item in queue if id(item) in held]
+        if released:
+            later = [item for item in queue if id(item) not in held]
+            queue.clear()
+            queue.extend(released + later)
+
     async def _begin_request(self, text_input: TTSTextInput) -> None:
         previous_request = self.current_request_id
         try:

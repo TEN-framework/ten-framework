@@ -633,12 +633,15 @@ CHUNKS = {
     [
         # r2 opens before r1's final chunk.
         (["a1", "b1", "a2", "b2"], True),
+        (["a1", "b1", "a2", "b2"], False),
         # r2 sends all its input while r1 is still open.
         (["a1", "b1", "b2", "a2"], True),
         (["a1", "b1", "b2", "a2"], False),
         # Three open requests whose final chunks arrive in reverse order.
         (["a1", "b1", "c1", "c2", "b2", "a2"], True),
         (["a1", "b1", "c1", "c2", "b2", "a2"], False),
+        # Three open requests whose final chunks arrive in opening order.
+        (["a1", "b1", "c1", "a2", "b2", "c2"], False),
     ],
 )
 async def test_interleaved_requests_keep_their_own_audio_and_one_end(
@@ -647,9 +650,8 @@ async def test_interleaved_requests_keep_their_own_audio_and_one_end(
     """Chunks of several open requests go through the real base queue.
 
     Paced: each chunk is handled before the next arrives. Unpaced: every
-    chunk queues while the first one streams. The first order is not run
-    unpaced: ten_ai_base 0.7.65 re-queues r2's buffered b1 behind the
-    already queued b2, so b1 reaches the extension after r2 has ended.
+    chunk queues while the first one streams, so a request's buffered
+    chunks are released while its later chunks already wait in the queue.
     """
     steps = {
         text: [("ttfb", ttfb), ("pcm", audio), ("advance", 125)]
