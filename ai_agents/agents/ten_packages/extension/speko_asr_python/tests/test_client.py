@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -36,6 +37,29 @@ class FakeWebSocket:
 
     async def close(self):
         self.closed = True
+
+
+def commit_ids(websocket):
+    """commit_id of every input.commit sent, in order."""
+    ids = []
+    for value in websocket.sent:
+        if isinstance(value, str):
+            message = json.loads(value)
+            if message.get("type") == "input.commit":
+                ids.append(message["commit_id"])
+    return ids
+
+
+async def until(predicate):
+    for _ in range(50):
+        if predicate():
+            return
+        await asyncio.sleep(0)
+    raise AssertionError("condition not reached")
+
+
+# A Router that stamps each commit's answer with its commit_id.
+CORRELATED_READY = json.dumps({"type": "session.ready", "commit_ids": True})
 
 
 def make_client(events, disconnects):
@@ -100,7 +124,9 @@ async def test_streams_audio_and_waits_for_final_transcript():
     assert headers["Idempotency-Key"]
     assert json.loads(websocket.sent[0])["type"] == "session.configure"
     assert websocket.sent[1] == b"\x00\x01"
-    assert json.loads(websocket.sent[2]) == {"type": "input.commit"}
+    commit = json.loads(websocket.sent[2])
+    assert commit["type"] == "input.commit"
+    assert re.fullmatch(r"[A-Za-z0-9._:-]{1,64}", commit["commit_id"])
     assert [event["type"] for event in events] == [
         "session.ready",
         "transcript.delta",
@@ -164,8 +190,8 @@ def test_websocket_url_preserves_base_path():
 
 
 @pytest.mark.asyncio
-async def test_late_final_answers_its_timed_out_commit_not_the_next():
-    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+async def test_late_answer_keeps_its_timed_out_commit_and_resolves_no_other():
+    websocket = FakeWebSocket(CORRELATED_READY)
     events = []
     client = make_client(events, [])
     client.finalize_timeout_sec = 0.01
@@ -177,27 +203,159 @@ async def test_late_final_answers_its_timed_out_commit_not_the_next():
         await client.send_audio(b"\x00\x00")
         with pytest.raises(SpekoCommitTimeout, match="Timed out"):
             await client.commit({"turn": 1})
-        # A missing acknowledgement is not a transport failure.
+        # Answers carry their commit_id, so the session stays usable.
         assert client.is_ready
         client.finalize_timeout_sec = 1
         await client.send_audio(b"\x01\x01")
         second = asyncio.create_task(client.commit({"turn": 2}))
-        await asyncio.sleep(0)
+        await until(lambda: len(commit_ids(websocket)) == 2)
+        first_id, second_id = commit_ids(websocket)
+        assert first_id != second_id
         websocket.messages.put_nowait(
-            json.dumps({"type": "transcript.final", "text": "late"})
+            json.dumps(
+                {
+                    "type": "transcript.final",
+                    "text": "late",
+                    "commit_id": first_id,
+                }
+            )
         )
-        for _ in range(20):
-            if events[-1].get("text") == "late":
-                break
-            await asyncio.sleep(0)
+        await until(lambda: events[-1].get("text") == "late")
         assert events[-1][LATE_COMMIT_CONTEXT] == {"turn": 1}
         assert not second.done()
         websocket.messages.put_nowait(
-            json.dumps({"type": "transcript.final", "text": "second"})
+            json.dumps(
+                {
+                    "type": "transcript.final",
+                    "text": "own",
+                    "commit_id": second_id,
+                }
+            )
         )
         await asyncio.wait_for(second, 1)
         assert LATE_COMMIT_CONTEXT not in events[-1]
-        assert websocket.sent.count('{"type":"input.commit"}') == 2
+        await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_permanently_missing_answer_does_not_shift_the_next_turn():
+    websocket = FakeWebSocket(CORRELATED_READY)
+    events = []
+    client = make_client(events, [])
+    client.finalize_timeout_sec = 0.01
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        await client.send_audio(b"\x00\x00")
+        with pytest.raises(SpekoCommitTimeout):
+            await client.commit({"turn": 1})
+        client.finalize_timeout_sec = 1
+        await client.send_audio(b"\x01\x01")
+        second = asyncio.create_task(client.commit({"turn": 2}))
+        await until(lambda: len(commit_ids(websocket)) == 2)
+        # The first answer never arrives; the second turn's own answer does.
+        websocket.messages.put_nowait(
+            json.dumps(
+                {
+                    "type": "transcript.final",
+                    "text": "two",
+                    "commit_id": commit_ids(websocket)[1],
+                }
+            )
+        )
+        await asyncio.wait_for(second, 1)
+        assert events[-1]["text"] == "two"
+        assert LATE_COMMIT_CONTEXT not in events[-1]
+        assert client.is_ready
+        await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_provider_final_in_flight_when_commit_is_sent_is_not_its_answer():
+    websocket = FakeWebSocket(CORRELATED_READY)
+    events = []
+    client = make_client(events, [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        await client.send_audio(b"speech")
+        commit = asyncio.create_task(client.commit())
+        await until(lambda: commit_ids(websocket))
+        # The provider's own endpoint was already on its way: no commit_id.
+        websocket.messages.put_nowait(
+            json.dumps({"type": "transcript.final", "text": "auto"})
+        )
+        await until(lambda: events[-1].get("text") == "auto")
+        assert not commit.done()
+        websocket.messages.put_nowait(
+            json.dumps(
+                {
+                    "type": "transcript.final",
+                    "text": "",
+                    "commit_id": commit_ids(websocket)[0],
+                }
+            )
+        )
+        await asyncio.wait_for(commit, 1)
+        assert [event.get("text") for event in events[1:]] == ["auto", ""]
+        await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_router_echoing_commit_ids_is_detected_from_the_first_answer():
+    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+    events = []
+    client = make_client(events, [])
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        for turn in range(2):
+            await client.send_audio(b"speech")
+            commit = asyncio.create_task(client.commit())
+            await until(lambda: len(commit_ids(websocket)) == turn + 1)
+            if turn:
+                # Correlated now: a final without an id is not an answer.
+                websocket.messages.put_nowait(
+                    json.dumps({"type": "transcript.final", "text": "auto"})
+                )
+                await until(lambda: events[-1].get("text") == "auto")
+                assert not commit.done()
+            websocket.messages.put_nowait(
+                json.dumps(
+                    {
+                        "type": "transcript.final",
+                        "text": f"turn {turn}",
+                        "commit_id": commit_ids(websocket)[turn],
+                    }
+                )
+            )
+            await asyncio.wait_for(commit, 1)
+        await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_without_commit_ids_an_unanswered_commit_requires_a_reset():
+    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+    client = make_client([], [])
+    client.finalize_timeout_sec = 0.01
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        await client.send_audio(b"\x00\x00")
+        # In-order answers would now be one behind: not a SpekoCommitTimeout.
+        with pytest.raises(SpekoRouterError) as caught:
+            await client.commit()
+        assert not isinstance(caught.value, SpekoCommitTimeout)
+        assert caught.value.code == "request_timeout"
+        assert caught.value.retryable
         await client.close(drain=False)
 
 
@@ -223,16 +381,16 @@ async def test_audio_sent_before_a_provider_final_is_still_committed():
                 break
             await asyncio.sleep(0)
         commit = asyncio.create_task(client.commit())
-        await asyncio.sleep(0)
-        assert websocket.sent[-1] == '{"type":"input.commit"}'
+        await until(lambda: commit_ids(websocket))
         assert not commit.done()
+        # A Router without commit ids answers in order.
         websocket.messages.put_nowait(
             json.dumps({"type": "transcript.final", "text": "next"})
         )
         await asyncio.wait_for(commit, 1)
         # Nothing new was sent since that commit, so nothing to finalize.
         await asyncio.wait_for(client.commit(), 0.1)
-        assert websocket.sent.count('{"type":"input.commit"}') == 1
+        assert len(commit_ids(websocket)) == 1
         await client.close(drain=False)
 
 

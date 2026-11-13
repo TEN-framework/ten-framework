@@ -29,20 +29,26 @@ timestamps still line up with the caller's audio.
 
 The buffer holds one session at a time. A frame whose metadata `session_id`
 differs from the held frames' drops them, and a finalize while disconnected
-drops the finished turn's held frames, both recorded as dropped audio: the
-replay after reconnecting never merges one session's speech into another's.
+drops the finished turn's held frames, both recorded as dropped audio. Frames
+still queued when the session becomes ready follow the same rule: the replay
+after reconnecting never merges one session's speech into another's.
 
 The transport is raw signed 16-bit little-endian PCM. A TEN `asr_finalize`
 message sends Speko `input.commit` when any audio was sent since the last
 commit. Each finalize is serialized and acknowledged with its own `finalize_id`
-and metadata, including disconnected and timeout paths. The Router answers
-every commit with exactly one `transcript.final`, in order (empty when the
-provider had nothing left to finalize), so finals pair with commits first in,
-first out; a final with no commit outstanding is the provider's own endpoint.
-If no final arrives within `finalize_timeout_sec`, the extension logs a
-warning, keeps the session, and still completes the finalize. That commit
-stays outstanding: its late final answers it, is reported with the timed-out
-turn's metadata, and never completes the next finalize.
+and metadata, including disconnected and timeout paths. Each commit carries a
+fresh `commit_id`, and the Router answers it with exactly one
+`transcript.final` stamped with that `commit_id` (empty when the provider had
+nothing left to finalize). Only that final completes the finalize; a final
+without a `commit_id` is the provider's own endpoint and is emitted as a
+normal result. If no answer arrives within `finalize_timeout_sec`, the
+extension logs a warning, keeps the session, and still completes the
+finalize. A late answer is reported with the timed-out turn's metadata and
+never completes another finalize.
+A Router that does not stamp answers (no `commit_ids` in `session.ready`, and
+the first answer has no `commit_id`) answers commits in order; finals are then
+paired first in, first out, and a commit timeout resets the session so later
+answers cannot be paired one behind.
 Empty vendor transcripts are not emitted as user turns. TTLW comes from the
 first non-empty final after `asr_finalize`; when the commit is acknowledged
 without one (already-finalized input or an empty final), TTLW is the latency to

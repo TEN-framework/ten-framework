@@ -1,7 +1,6 @@
 import asyncio
 import json
 import uuid
-from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse, urlunparse
@@ -55,7 +54,7 @@ LATE_COMMIT_CONTEXT = "speko_late_commit_context"
 class _PendingCommit:
     """An input.commit sent and not yet answered by a transcript.final."""
 
-    def __init__(self, context: Any) -> None:
+    def __init__(self, commit_id: str, context: Any) -> None:
         self.answered: asyncio.Future[None] = (
             asyncio.get_running_loop().create_future()
         )
@@ -63,6 +62,7 @@ class _PendingCommit:
         self.answered.add_done_callback(
             lambda future: future.cancelled() or future.exception()
         )
+        self.commit_id = commit_id
         self.context = context
         self.abandoned = False
 
@@ -99,10 +99,14 @@ class SpekoASRClient:
         self.usage: dict[str, Any] = {}
         self._ws: ClientConnection | None = None
         self._listener_task: asyncio.Task[None] | None = None
-        # The Router answers every input.commit with exactly one
-        # transcript.final, in order, so finals pair with commits FIFO. A
-        # final with no commit outstanding is the provider's own endpoint.
-        self._pending_commits: deque[_PendingCommit] = deque()
+        # Sent commits by commit_id, oldest first. The Router answers each
+        # input.commit with exactly one transcript.final.
+        self._pending_commits: dict[str, _PendingCommit] = {}
+        # True: the Router stamps each answer with its commit's commit_id, so
+        # only that final answers it and a final without one is the provider's
+        # own. False: an older Router answers commits in order. None: this
+        # session has not shown which yet.
+        self._correlated: bool | None = None
         self._audio_since_commit = False
         self._ready = False
         self._closing = False
@@ -144,6 +148,7 @@ class SpekoASRClient:
             self.request_id = str(event.get("request_id", ""))
             self.route = dict(event.get("route", {}))
             self._pending_commits.clear()
+            self._correlated = True if event.get("commit_ids") is True else None
             self._audio_since_commit = False
             self._ready = True
             await self.on_event(event)
@@ -189,6 +194,10 @@ class SpekoASRClient:
         Returns when the Router answers this commit. A provider final that
         arrives first does not show where its audio ends, so any audio sent
         since the last commit is committed and its own answer awaited.
+
+        Raises SpekoCommitTimeout when no answer came but the session is still
+        usable. Without commit ids a missing answer would shift every later
+        pairing, so the timeout is a plain SpekoRouterError: reset the session.
         """
         if not self.is_ready or self._ws is None:
             raise SpekoRouterError(
@@ -196,13 +205,18 @@ class SpekoASRClient:
             )
         if not self._audio_since_commit:
             return
-        pending = _PendingCommit(context)
-        self._pending_commits.append(pending)
+        pending = _PendingCommit(uuid.uuid4().hex, context)
+        self._pending_commits[pending.commit_id] = pending
         try:
-            await self._ws.send('{"type":"input.commit"}')
+            await self._ws.send(
+                json.dumps(
+                    {"type": "input.commit", "commit_id": pending.commit_id},
+                    separators=(",", ":"),
+                )
+            )
         except BaseException:
             # Never sent, so the Router owes it no answer.
-            self._pending_commits.remove(pending)
+            del self._pending_commits[pending.commit_id]
             raise
         self._audio_since_commit = False
         try:
@@ -213,9 +227,16 @@ class SpekoASRClient:
         except asyncio.TimeoutError as error:
             # Stays outstanding: its late final must answer it, not the next.
             pending.abandoned = True
-            raise SpekoCommitTimeout(
+            if self._correlated:
+                raise SpekoCommitTimeout(
+                    "request_timeout",
+                    "Timed out waiting for a final Speko transcript",
+                    retryable=True,
+                ) from error
+            raise SpekoRouterError(
                 "request_timeout",
-                "Timed out waiting for a final Speko transcript",
+                "Timed out waiting for a final Speko transcript; in-order "
+                "answers can no longer be paired",
                 retryable=True,
             ) from error
         except asyncio.CancelledError:
@@ -266,9 +287,9 @@ class SpekoASRClient:
                     break
 
                 pending = None
-                if event_type == "transcript.final" and self._pending_commits:
-                    pending = self._pending_commits.popleft()
-                    if pending.abandoned:
+                if event_type == "transcript.final":
+                    pending = self._answered_commit(event)
+                    if pending is not None and pending.abandoned:
                         event = {**event, LATE_COMMIT_CONTEXT: pending.context}
                 # Deliver before answering: the finalize must not complete
                 # ahead of the final that answers it.
@@ -281,8 +302,9 @@ class SpekoASRClient:
             error = SpekoRouterError("relay_error", str(caught), retryable=True)
         finally:
             self._ready = False
-            while self._pending_commits:
-                pending = self._pending_commits.popleft()
+            pending_commits = list(self._pending_commits.values())
+            self._pending_commits.clear()
+            for pending in pending_commits:
                 if not pending.answered.done():
                     pending.answered.set_exception(
                         error
@@ -294,6 +316,19 @@ class SpekoASRClient:
                     )
             if not self._closing or error is not None:
                 await self.on_disconnect(error)
+
+    def _answered_commit(self, event: dict[str, Any]) -> _PendingCommit | None:
+        """The commit this final answers, or None for the provider's own."""
+        commit_id = event.get("commit_id")
+        if commit_id is not None:
+            self._correlated = True
+            # An id that is not pending answers nothing here.
+            return self._pending_commits.pop(str(commit_id), None)
+        if self._correlated or not self._pending_commits:
+            return None
+        # A commit's answer came without its id: this Router answers in order.
+        self._correlated = False
+        return self._pending_commits.pop(next(iter(self._pending_commits)))
 
     async def _close_socket(self) -> None:
         self._ready = False

@@ -398,8 +398,9 @@ async def test_caller_queued_behind_fatal_handshake_emits_no_transition():
 class _RouterSocket:
     """A Router socket that is ready, streams queued events, then closes."""
 
-    def __init__(self, failure=None):
+    def __init__(self, failure=None, *, commit_ids=False):
         self.failure = failure
+        self.commit_ids = commit_ids
         self.events = asyncio.Queue()
         self.sent = []
 
@@ -407,7 +408,19 @@ class _RouterSocket:
         self.sent.append(value)
 
     async def recv(self):
-        return json.dumps({"type": "session.ready"})
+        ready = {"type": "session.ready"}
+        if self.commit_ids:
+            ready["commit_ids"] = True
+        return json.dumps(ready)
+
+    def commits(self):
+        """commit_id of every input.commit sent, in order."""
+        return [
+            json.loads(value)["commit_id"]
+            for value in self.sent
+            if isinstance(value, str)
+            and json.loads(value).get("type") == "input.commit"
+        ]
 
     def __aiter__(self):
         return self
@@ -460,43 +473,58 @@ async def test_only_an_abnormal_close_reports_an_error(failure):
     await ext.on_stop(ext.ten_env)
 
 
+async def _wait_for(predicate):
+    for _ in range(100):
+        if predicate():
+            return
+        await asyncio.sleep(0)
+    raise AssertionError("condition not reached")
+
+
+async def _stream(ext, session):
+    await ext.on_audio_frame(ext.ten_env, audio({"session_id": session}))
+    await ext._handle_audio_frame(
+        ext.ten_env, ext.audio_frames_queue.get_nowait()
+    )
+
+
+def _results_and_ends(events):
+    return [
+        payload.get("finalize_id") or payload.get("text")
+        for kind, payload in events
+        if kind in {"asr_result", "asr_finalize_end"}
+    ]
+
+
 @pytest.mark.asyncio
 async def test_late_final_keeps_its_turn_and_next_finalize_waits_for_its_own():
     ext, events = extension_and_events()
     ext.client = None
     ext.config.finalize_timeout_sec = 0.05
-    socket = _RouterSocket()
-
-    async def stream(session):
-        await ext.on_audio_frame(ext.ten_env, audio({"session_id": session}))
-        await ext._handle_audio_frame(
-            ext.ten_env, ext.audio_frames_queue.get_nowait()
-        )
-
+    socket = _RouterSocket(commit_ids=True)
     with patch(
         "speko_asr_python.client.websockets.connect",
         AsyncMock(return_value=socket),
     ):
         await ext.start_connection()
-        await stream("one")
+        await _stream(ext, "one")
         # Turn one's commit times out; its final is still on the way.
         await ext.on_data(ext.ten_env, finalize_data("one", "one"))
         ext.client.finalize_timeout_sec = 1
-        await stream("two")
+        await _stream(ext, "two")
         second = asyncio.create_task(
             ext.on_data(ext.ten_env, finalize_data("two", "two"))
         )
-        for _ in range(50):
-            if socket.sent.count('{"type":"input.commit"}') == 2:
-                break
-            await asyncio.sleep(0)
-        socket.events.put_nowait({"type": "transcript.final", "text": "late"})
-        for _ in range(50):
-            if payloads(events, "asr_result"):
-                break
-            await asyncio.sleep(0)
+        await _wait_for(lambda: len(socket.commits()) == 2)
+        first_id, second_id = socket.commits()
+        socket.events.put_nowait(
+            {"type": "transcript.final", "text": "late", "commit_id": first_id}
+        )
+        await _wait_for(lambda: payloads(events, "asr_result"))
         assert not second.done()
-        socket.events.put_nowait({"type": "transcript.final", "text": "own"})
+        socket.events.put_nowait(
+            {"type": "transcript.final", "text": "own", "commit_id": second_id}
+        )
         await asyncio.wait_for(second, 1)
     results = payloads(events, "asr_result")
     assert [
@@ -505,12 +533,88 @@ async def test_late_final_keeps_its_turn_and_next_finalize_waits_for_its_own():
         ("late", "one"),
         ("own", "two"),
     ]
-    kinds = [
-        payload.get("finalize_id") or payload.get("text")
-        for kind, payload in events
-        if kind in {"asr_result", "asr_finalize_end"}
+    assert _results_and_ends(events) == ["one", "late", "own", "two"]
+    assert not payloads(events, "error")
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
+async def test_missing_first_answer_then_second_turn_completes_on_its_own():
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.config.finalize_timeout_sec = 0.05
+    socket = _RouterSocket(commit_ids=True)
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=socket),
+    ):
+        await ext.start_connection()
+        await _stream(ext, "one")
+        # Turn one's answer never arrives.
+        await ext.on_data(ext.ten_env, finalize_data("one", "one"))
+        ext.client.finalize_timeout_sec = 1
+        await _stream(ext, "two")
+        second = asyncio.create_task(
+            ext.on_data(ext.ten_env, finalize_data("two", "two"))
+        )
+        await _wait_for(lambda: len(socket.commits()) == 2)
+        socket.events.put_nowait(
+            {
+                "type": "transcript.final",
+                "text": "two",
+                "commit_id": socket.commits()[1],
+            }
+        )
+        await asyncio.wait_for(second, 1)
+    assert [
+        (item["text"], item["metadata"]["session_id"])
+        for item in payloads(events, "asr_result")
+    ] == [("two", "two")]
+    assert _results_and_ends(events) == ["one", "two", "two"]
+    # The same session served both turns.
+    assert len(payloads(events, "connection_status_changed")) == 2
+    assert not payloads(events, "error")
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
+async def test_without_commit_ids_a_missing_answer_resets_and_next_turn_completes():
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.config.finalize_timeout_sec = 0.05
+    ext.RECONNECT_DELAYS = (0.0,)
+    first, second = _RouterSocket(), _RouterSocket()
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(side_effect=[first, second]),
+    ):
+        await ext.start_connection()
+        await _stream(ext, "one")
+        # An older Router answers in order; this answer never arrives.
+        await ext.on_data(ext.ten_env, finalize_data("one", "one"))
+        await _wait_for(ext.is_connected)
+        ext.client.finalize_timeout_sec = 1
+        await _stream(ext, "two")
+        turn = asyncio.create_task(
+            ext.on_data(ext.ten_env, finalize_data("two", "two"))
+        )
+        await _wait_for(second.commits)
+        second.events.put_nowait({"type": "transcript.final", "text": "two"})
+        await asyncio.wait_for(turn, 1)
+    assert len(first.commits()) == 1
+    assert [
+        (item["text"], item["metadata"]["session_id"])
+        for item in payloads(events, "asr_result")
+    ] == [("two", "two")]
+    assert _results_and_ends(events) == ["one", "two", "two"]
+    # One non-fatal error for the reset, then a fresh session.
+    assert [error["code"] for error in payloads(events, "error")] == [
+        int(ModuleErrorCode.NON_FATAL_ERROR.value)
     ]
-    assert kinds == ["one", "late", "own", "two"]
+    assert [
+        status["current"]
+        for status in payloads(events, "connection_status_changed")
+    ] == ["connecting", "connected", "disconnected", "connecting", "connected"]
     await ext.on_stop(ext.ten_env)
 
 
@@ -785,6 +889,37 @@ async def test_disconnected_buffer_replays_only_the_latest_session(tmp_path):
     await ext.on_deinit(ext.ten_env)
     # The dump keeps exact ingress, including the dropped frame.
     assert (tmp_path / "audio.pcm").read_bytes() == bytes(64000)
+
+
+@pytest.mark.asyncio
+async def test_replay_holds_queued_audio_to_the_session_boundary():
+    ext, events = extension_and_events()
+    client = ext.client
+    client.is_ready = False
+    ext.auto_connect = False
+    await ext.on_audio_frame(ext.ten_env, audio({"session_id": "old"}))
+    await ext._handle_audio_frame(
+        ext.ten_env, ext.audio_frames_queue.get_nowait()
+    )
+    assert ext.buffered_frames.qsize() == 1
+    # The new session's frame is still queued when the session becomes ready.
+    await ext.on_audio_frame(ext.ten_env, audio({"session_id": "new"}))
+    client.is_ready = True
+    ext.on_connected = AsyncMock()
+    await ext._on_router_event({"type": "session.ready"})
+    assert ext.audio_frames_queue.qsize() == 1
+    assert ext._dropped_audio_bytes == 32000
+    await ext._handle_audio_frame(
+        ext.ten_env, ext.audio_frames_queue.get_nowait()
+    )
+    client.send_audio.assert_awaited_once()
+    # The transcript arrives only after both frames were consumed.
+    await ext._on_router_event({"type": "transcript.final", "text": "hello"})
+    assert [
+        item["metadata"]["session_id"]
+        for item in payloads(events, "asr_result")
+    ] == ["new"]
+    await ext.stop_connection()
 
 
 @pytest.mark.asyncio

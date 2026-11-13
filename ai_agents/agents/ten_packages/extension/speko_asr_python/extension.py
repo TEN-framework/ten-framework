@@ -395,11 +395,16 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 await super()._handle_audio_frame(ten_env, frame)
 
     def _drop_buffered_frames(self) -> None:
+        dropped = []
         while not self.buffered_frames.empty():
-            frame = self.buffered_frames.get_nowait()
-            self._record_dropped_audio(len(frame.get_buf()))
+            dropped.append(self.buffered_frames.get_nowait())
+        self._record_dropped_frames(dropped)
         self.buffered_frames_size = 0
         self._buffered_session = None
+
+    def _record_dropped_frames(self, frames: list[AudioFrame]) -> None:
+        for frame in frames:
+            self._record_dropped_audio(len(frame.get_buf()))
 
     @staticmethod
     def _frame_session_id(frame: AudioFrame) -> str | None:
@@ -547,9 +552,10 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                     await self._commit_task
                     acknowledged = True
                 except SpekoCommitTimeout as timeout:
-                    # The provider may have finalized this turn on its own, so
-                    # the Router has no final left to send. The session is
-                    # still usable: complete the finalize instead of failing.
+                    # Answers carry their commit_id, so a missing one shifts no
+                    # later pairing. The session is still usable: complete the
+                    # finalize instead of failing. (Without commit ids the
+                    # client raises a plain error, and the session is reset.)
                     self.ten_env.log_warn(
                         "Speko ASR commit was not acknowledged: "
                         f"{safe_error(timeout)}",
@@ -662,15 +668,27 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             # Requeue in order through the base consumer, which reads metadata
             # per frame. No new ingress is needed to release buffered audio.
             if not self.buffered_frames.empty():
-                pending = []
+                replay = []
                 while not self.buffered_frames.empty():
-                    pending.append(self.buffered_frames.get_nowait())
+                    replay.append(self.buffered_frames.get_nowait())
+                session = self._buffered_session
+                # Frames still queued reach the consumer only once it is
+                # connected, past its session check. Hold them to the same
+                # boundary: one stream must not carry two sessions' audio.
                 while not self.audio_frames_queue.empty():
-                    pending.append(self.audio_frames_queue.get_nowait())
+                    frame = self.audio_frames_queue.get_nowait()
+                    frame_session = self._frame_session_id(frame)
+                    if frame_session is None:
+                        frame_session = session
+                    if replay and frame_session != session:
+                        self._record_dropped_frames(replay)
+                        replay = []
+                    session = frame_session
+                    replay.append(frame)
                 self.buffered_frames_size = 0
                 self._buffered_session = None
                 self._audio_queue_drained.clear()
-                for frame in pending:
+                for frame in replay:
                     self.audio_frames_queue.put_nowait(frame)
             await self.on_connected()
             if self.stopped or epoch != self._connection_epoch:
