@@ -102,11 +102,11 @@ class SpekoASRClient:
         # Sent commits by commit_id, oldest first. The Router answers each
         # input.commit with exactly one transcript.final.
         self._pending_commits: dict[str, _PendingCommit] = {}
-        # True: the Router stamps each answer with its commit's commit_id, so
-        # only that final answers it and a final without one is the provider's
-        # own. False: an older Router answers commits in order. None: this
-        # session has not shown which yet.
-        self._correlated: bool | None = None
+        # Set from session.ready "commit_ids": the Router stamps each answer
+        # with its commit's commit_id, so only that final answers it and a
+        # final without one is the provider's own. Without it the Router
+        # answers commits in order.
+        self._correlated = False
         self._audio_since_commit = False
         self._ready = False
         self._closing = False
@@ -148,7 +148,7 @@ class SpekoASRClient:
             self.request_id = str(event.get("request_id", ""))
             self.route = dict(event.get("route", {}))
             self._pending_commits.clear()
-            self._correlated = True if event.get("commit_ids") is True else None
+            self._correlated = event.get("commit_ids") is True
             self._audio_since_commit = False
             self._ready = True
             await self.on_event(event)
@@ -196,8 +196,9 @@ class SpekoASRClient:
         since the last commit is committed and its own answer awaited.
 
         Raises SpekoCommitTimeout when no answer came but the session is still
-        usable. Without commit ids a missing answer would shift every later
-        pairing, so the timeout is a plain SpekoRouterError: reset the session.
+        usable. A Router without commit ids answers in order, so a missing
+        answer would shift every later pairing: there the timeout is a plain
+        SpekoRouterError, and the session must be reset.
         """
         if not self.is_ready or self._ws is None:
             raise SpekoRouterError(
@@ -319,15 +320,14 @@ class SpekoASRClient:
 
     def _answered_commit(self, event: dict[str, Any]) -> _PendingCommit | None:
         """The commit this final answers, or None for the provider's own."""
-        commit_id = event.get("commit_id")
-        if commit_id is not None:
-            self._correlated = True
+        if self._correlated:
+            commit_id = event.get("commit_id")
+            if commit_id is None:
+                return None
             # An id that is not pending answers nothing here.
             return self._pending_commits.pop(str(commit_id), None)
-        if self._correlated or not self._pending_commits:
+        if not self._pending_commits:
             return None
-        # A commit's answer came without its id: this Router answers in order.
-        self._correlated = False
         return self._pending_commits.pop(next(iter(self._pending_commits)))
 
     async def _close_socket(self) -> None:

@@ -306,36 +306,42 @@ async def test_provider_final_in_flight_when_commit_is_sent_is_not_its_answer():
 
 
 @pytest.mark.asyncio
-async def test_router_echoing_commit_ids_is_detected_from_the_first_answer():
-    websocket = FakeWebSocket(json.dumps({"type": "session.ready"}))
+async def test_one_provider_final_answers_each_pending_commit_by_its_id():
+    websocket = FakeWebSocket(CORRELATED_READY)
     events = []
     client = make_client(events, [])
+    client.finalize_timeout_sec = 0.01
     with patch(
         "speko_asr_python.client.websockets.connect",
         AsyncMock(return_value=websocket),
     ):
         await client.connect()
-        for turn in range(2):
-            await client.send_audio(b"speech")
-            commit = asyncio.create_task(client.commit())
-            await until(lambda: len(commit_ids(websocket)) == turn + 1)
-            if turn:
-                # Correlated now: a final without an id is not an answer.
-                websocket.messages.put_nowait(
-                    json.dumps({"type": "transcript.final", "text": "auto"})
-                )
-                await until(lambda: events[-1].get("text") == "auto")
-                assert not commit.done()
+        await client.send_audio(b"one")
+        with pytest.raises(SpekoCommitTimeout):
+            await client.commit({"turn": 1})
+        client.finalize_timeout_sec = 1
+        await client.send_audio(b"two")
+        second = asyncio.create_task(client.commit({"turn": 2}))
+        await until(lambda: len(commit_ids(websocket)) == 2)
+        first_id, second_id = commit_ids(websocket)
+        # The Router answers the older commit with an empty final first, then
+        # gives the provider's words to the newest commit.
+        for text, commit_id in (("", first_id), ("one two", second_id)):
             websocket.messages.put_nowait(
                 json.dumps(
                     {
                         "type": "transcript.final",
-                        "text": f"turn {turn}",
-                        "commit_id": commit_ids(websocket)[turn],
+                        "text": text,
+                        "commit_id": commit_id,
                     }
                 )
             )
-            await asyncio.wait_for(commit, 1)
+        await asyncio.wait_for(second, 1)
+        assert [
+            (event["text"], event.get(LATE_COMMIT_CONTEXT))
+            for event in events[1:]
+        ] == [("", {"turn": 1}), ("one two", None)]
+        assert not client._pending_commits
         await client.close(drain=False)
 
 
