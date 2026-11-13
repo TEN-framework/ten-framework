@@ -144,6 +144,17 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 self.ten_env.log_warn(
                     "Ignoring text for a completed Speko TTS request"
                 )
+                # The base reopened this request for the late text (e.g. a
+                # chunk in flight at a flush); finish it again, or every
+                # later request stays buffered behind it.
+                await self.finish_request(
+                    text_input.request_id,
+                    reason=(
+                        TTSAudioEndReason.INTERRUPTED
+                        if self._cancelled
+                        else TTSAudioEndReason.REQUEST_END
+                    ),
+                )
                 return
 
             if self._permanent_error is not None:

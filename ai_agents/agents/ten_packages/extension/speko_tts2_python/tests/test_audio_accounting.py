@@ -1,7 +1,8 @@
 """Drive known PCM through the real TTS2 base and check audio-end accounting.
 
-Only the Router transport and the extension's clock are replaced. Requests,
-flushes, frames, metrics and errors go through the base class unchanged.
+Only the Router transport (the client, or the WebSocket under the real
+client) and the clocks are replaced. Requests, flushes, frames, metrics and
+errors go through the base class unchanged.
 """
 
 import asyncio
@@ -11,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from ten_ai_base.message import ModuleErrorCode, TTSAudioEndReason
 from ten_ai_base.struct import TTSTextInput
+from ten_ai_base.tts2 import RequestState
 from ten_runtime import Data
 
 from speko_tts2_python.client import (
@@ -92,11 +94,17 @@ class RecordingTenEnv:
 
 
 class Script:
-    """Steps for successive stream_text calls, shared by every client."""
+    """Steps for stream_text calls, shared by every client.
 
-    def __init__(self, clock, *streams):
+    A text listed in by_text gets its own steps whenever it is streamed;
+    any other text takes the next positional stream.
+    """
+
+    def __init__(self, clock, *streams, by_text=None):
         self.clock = clock
         self.streams = list(streams)
+        self.by_text = dict(by_text or {})
+        self.texts = []
         self.blocked = asyncio.Event()
         self.probes = []
         self.extension = None
@@ -116,8 +124,12 @@ class ScriptedClient:
     async def connect(self):
         self.is_ready = True
 
-    async def stream_text(self, _text):
-        for step, *args in self.script.streams.pop(0):
+    async def stream_text(self, text):
+        self.script.texts.append(text)
+        steps = self.script.by_text.pop(text, None)
+        if steps is None:
+            steps = self.script.streams.pop(0)
+        for step, *args in steps:
             if step == "advance":
                 self.script.clock.advance(args[0])
             elif step == "ttfb":
@@ -147,6 +159,73 @@ class ScriptedClient:
 
     async def cancel(self):
         self.is_ready = False
+
+
+class RouterSocket:
+    """A Router WebSocket under the real SpekoTTSClient.
+
+    It answers the handshake and synthesizes each committed text from a
+    fixed table. hold="upgrade" or hold="ready" stops the handshake at
+    that step until the connecting task is cancelled.
+    """
+
+    def __init__(self, audio=None, *, hold=None):
+        self.audio = dict(audio or {})
+        self.hold = hold
+        self.held = asyncio.Event()
+        self.upgrade_cancelled = False
+        self.inbox = asyncio.Queue()
+        self.sent = []
+        self.closed = False
+        self._text = ""
+        self._sequence = 0
+
+    async def upgrade(self):
+        if self.hold == "upgrade":
+            self.held.set()
+            try:
+                await asyncio.Future()
+            except asyncio.CancelledError:
+                self.upgrade_cancelled = True
+                raise
+        return self
+
+    async def send(self, raw):
+        frame = json.loads(raw)
+        kind = frame["type"]
+        self.sent.append(kind)
+        if kind == "session.configure":
+            if self.hold == "ready":
+                self.held.set()
+            else:
+                self._reply(
+                    {
+                        "type": "session.ready",
+                        "request_id": "router-request",
+                        "route": {"provider": "test", "model": "voice"},
+                    }
+                )
+        elif kind == "input.append":
+            self._text += frame["text"]
+        elif kind == "input.commit":
+            self._sequence += 1
+            text, self._text = self._text, ""
+            self._reply(
+                {"type": "utterance.started", "sequence": self._sequence}
+            )
+            self.inbox.put_nowait(self.audio[text])
+            self._reply({"type": "utterance.done", "sequence": self._sequence})
+        elif kind == "session.close":
+            self._reply({"type": "session.closed", "usage": {"characters": 4}})
+
+    def _reply(self, event):
+        self.inbox.put_nowait(json.dumps(event))
+
+    async def recv(self):
+        return await self.inbox.get()
+
+    async def close(self):
+        self.closed = True
 
 
 def text_input(text, end, request_id="request", metadata=None):
@@ -183,20 +262,38 @@ async def until(predicate):
 
 
 class Harness:
-    def __init__(self, *streams, **config):
+    """Runs the extension's real queue on a fake clock.
+
+    By default a ScriptedClient replaces the Router client. With sockets,
+    the real client runs and each connect takes the next RouterSocket.
+    """
+
+    def __init__(self, *streams, by_text=None, sockets=None, **config):
         self.clock = FakeClock()
         self.ten_env = RecordingTenEnv()
-        self.script = Script(self.clock, *streams)
+        self.script = Script(self.clock, *streams, by_text=by_text)
         self.extension = SpekoTTS2Extension("speko")
         self.extension.config = SpekoTTS2Config(api_key="test-key", **config)
         self.extension.ten_env = self.ten_env
         self.script.extension = self.extension
-        self._patches = [
-            patch("speko_tts2_python.extension.time", self.clock),
-            patch(
+        if sockets is None:
+            transport = patch(
                 "speko_tts2_python.extension.SpekoTTSClient",
                 side_effect=self.script.client,
-            ),
+            )
+        else:
+            pending = list(sockets)
+
+            async def upgrade(*_args, **_kwargs):
+                return await pending.pop(0).upgrade()
+
+            transport = patch(
+                "speko_tts2_python.client.websockets.connect", new=upgrade
+            )
+        self._patches = [
+            patch("speko_tts2_python.extension.time", self.clock),
+            patch("speko_tts2_python.client.time", self.clock),
+            transport,
         ]
 
     async def __aenter__(self):
@@ -489,3 +586,241 @@ async def test_dump_holds_exactly_the_emitted_pcm(tmp_path, terminal):
     emitted = harness.ten_env.pcm()
     assert emitted == audio[:-1]
     assert (tmp_path / "speko_tts_request.pcm").read_bytes() == emitted
+
+
+def frames_by_request(events):
+    """Frames grouped by the tts_audio_start/end pair that encloses them.
+
+    Fails if two requests' start/end pairs overlap or one opens twice.
+    """
+    frames, current = {}, None
+    for kind, payload in events:
+        if kind == "tts_audio_start":
+            assert current is None
+            current = payload["request_id"]
+            assert current not in frames
+            frames[current] = []
+        elif kind == "frame":
+            assert current is not None
+            frames[current].append(payload)
+        elif kind == "tts_audio_end":
+            assert payload["request_id"] == current
+            current = None
+    assert current is None
+    return frames
+
+
+def pcm_of(frames):
+    return b"".join(frame["pcm"] for frame in frames)
+
+
+# text: (request_id, text_input_end, ttfb_ms, pcm). Every first chunk ends
+# one byte into a sample, so a request's audio is whole only if that byte
+# carries over to its own next chunk.
+CHUNKS = {
+    "a1": ("r1", False, 31, pcm(HUNDRED_MS + 1, seed=21)),
+    "a2": ("r1", True, 32, pcm(HUNDRED_MS - 1, seed=22)),
+    "b1": ("r2", False, 41, pcm(HUNDRED_MS + 1, seed=23)),
+    "b2": ("r2", True, 42, pcm(2 * HUNDRED_MS - 1, seed=24)),
+    "c1": ("r3", False, 51, pcm(2 * HUNDRED_MS + 1, seed=25)),
+    "c2": ("r3", True, 52, pcm(HUNDRED_MS - 1, seed=26)),
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "order,paced",
+    [
+        # r2 opens before r1's final chunk.
+        (["a1", "b1", "a2", "b2"], True),
+        # r2 sends all its input while r1 is still open.
+        (["a1", "b1", "b2", "a2"], True),
+        (["a1", "b1", "b2", "a2"], False),
+        # Three open requests whose final chunks arrive in reverse order.
+        (["a1", "b1", "c1", "c2", "b2", "a2"], True),
+        (["a1", "b1", "c1", "c2", "b2", "a2"], False),
+    ],
+)
+async def test_interleaved_requests_keep_their_own_audio_and_one_end(
+    order, paced
+):
+    """Chunks of several open requests go through the real base queue.
+
+    Paced: each chunk is handled before the next arrives. Unpaced: every
+    chunk queues while the first one streams. The first order is not run
+    unpaced: ten_ai_base 0.7.65 re-queues r2's buffered b1 behind the
+    already queued b2, so b1 reaches the extension after r2 has ended.
+    """
+    steps = {
+        text: [("ttfb", ttfb), ("pcm", audio), ("advance", 125)]
+        for text, (_, _, ttfb, audio) in CHUNKS.items()
+    }
+    async with Harness(by_text=steps) as harness:
+        extension = harness.extension
+        for text in order:
+            request_id, end, _, _ = CHUNKS[text]
+            await harness.send(
+                text_input(text, end, request_id, {"session_id": request_id})
+            )
+            if paced:
+                await until(
+                    lambda: len(extension.input_queue) == 0
+                    and extension.current_task is None
+                )
+        requests = list(dict.fromkeys(CHUNKS[text][0] for text in order))
+        await until(
+            lambda: len(harness.ends()) == len(requests) and harness.idle()
+        )
+    env = harness.ten_env
+    texts = {
+        request: [text for text in order if CHUNKS[text][0] == request]
+        for request in requests
+    }
+    # Requests run whole, in the order they opened, chunks in arrival order.
+    assert harness.script.texts == sum(texts.values(), [])
+    frames = frames_by_request(env.events)
+    assert list(frames) == requests
+    ends = harness.ends()
+    assert [payload["request_id"] for payload in ends] == requests
+    for request, payload in zip(requests, ends):
+        audio = b"".join(CHUNKS[text][3] for text in texts[request])
+        assert pcm_of(frames[request]) == audio
+        assert {
+            frame["metadata"]["session_id"] for frame in frames[request]
+        } == {request}
+        assert payload["reason"] == TTSAudioEndReason.REQUEST_END
+        assert (
+            payload["request_total_audio_duration_ms"]
+            == len(audio) * 100 // HUNDRED_MS
+        )
+        # From this request's own start: two chunks of 125 ms each.
+        assert payload["request_event_interval_ms"] == 250
+    assert [
+        (payload["metadata"]["session_id"], payload["metrics"]["ttfb"])
+        for payload in env.named("metrics")
+        if "ttfb" in payload["metrics"]
+    ] == [(request, CHUNKS[texts[request][0]][2]) for request in requests]
+    assert harness.extension.request_states == {
+        request: RequestState.COMPLETED for request in requests
+    }
+    assert not env.named("error")
+
+
+def connection_changes(env):
+    return [
+        (payload["current"], payload["id"])
+        for payload in env.named("connection_status_changed")
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("stage", ["upgrade", "ready"])
+async def test_flush_while_connecting_closes_the_handshake_and_next_runs(
+    stage,
+):
+    """TEN flushes while the real client is still in its handshake.
+
+    upgrade: the WebSocket upgrade has not completed. ready: the socket is
+    open and session.configure is sent, but session.ready has not arrived.
+    """
+    audio = pcm(HUNDRED_MS, seed=31)
+    held = RouterSocket(hold=stage)
+    ready = RouterSocket({"next": audio})
+    async with Harness(sockets=[held, ready]) as harness:
+        env, extension = harness.ten_env, harness.extension
+        await harness.send(text_input("hello", True, "r1"))
+        await until(held.held.is_set)
+        assert not env.named("tts_audio_start")
+        await harness.send(flush())
+        await until(lambda: env.named("tts_flush_end"))
+        # The cancelled handshake unwinds in its own task.
+        await until(lambda: held.closed or held.upgrade_cancelled)
+        assert extension.client is None
+        assert extension.current_task is None
+        assert [
+            task
+            for task in asyncio.all_tasks()
+            if task not in (asyncio.current_task(), extension.loop_task)
+        ] == []
+        # Nothing of r1 is emitted after the flush boundary.
+        assert env.events[-1][0] == "tts_flush_end"
+        await harness.send(text_input("next", True, "r2"))
+        await until(lambda: len(harness.ends()) == 2 and harness.idle())
+        assert extension.client is None
+    if stage == "upgrade":
+        assert held.upgrade_cancelled
+        assert held.sent == []
+    else:
+        assert held.closed
+        assert held.sent == ["session.configure"]
+    assert ready.sent == [
+        "session.configure",
+        "input.append",
+        "input.commit",
+        "session.close",
+    ]
+    assert ready.closed
+    frames = frames_by_request(env.events)
+    assert list(frames) == ["r1", "r2"]
+    assert not frames["r1"]
+    assert pcm_of(frames["r2"]) == audio
+    interrupted, completed = harness.ends()
+    assert interrupted["request_id"] == "r1"
+    assert interrupted["reason"] == TTSAudioEndReason.INTERRUPTED
+    assert interrupted["request_total_audio_duration_ms"] == 0
+    assert interrupted["request_event_interval_ms"] == 0
+    assert env.index(lambda kind, _: kind == "tts_audio_end") < env.index(
+        lambda kind, _: kind == "tts_flush_end"
+    )
+    assert completed["request_id"] == "r2"
+    assert completed["reason"] == TTSAudioEndReason.REQUEST_END
+    assert completed["request_total_audio_duration_ms"] == 100
+    assert completed["metadata"]["router_usage"] == {"characters": 4}
+    assert connection_changes(env) == [
+        ("connecting", "r1"),
+        ("disconnected", "r1"),
+        ("connecting", "r2"),
+        ("connected", "r2"),
+        ("disconnected", "r2"),
+    ]
+    assert not env.named("error")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("final", [False, True])
+async def test_late_text_for_a_flushed_request_does_not_stall_the_queue(
+    final,
+):
+    first, second = pcm(HUNDRED_MS, seed=41), pcm(2 * HUNDRED_MS, seed=42)
+    async with Harness(
+        by_text={
+            "hello": [("ttfb", 20), ("pcm", first), ("block",)],
+            "next": [("ttfb", 30), ("pcm", second)],
+        }
+    ) as harness:
+        await harness.send(text_input("hello", False, "r1"))
+        await until(harness.script.blocked.is_set)
+        await harness.send(flush())
+        await until(lambda: harness.ten_env.named("tts_flush_end"))
+        # A chunk of r1 that TEN had in flight arrives after the flush.
+        await harness.send(text_input("late", final, "r1"))
+        await harness.send(text_input("next", True, "r2"))
+        await until(lambda: len(harness.ends()) == 2 and harness.idle())
+    env = harness.ten_env
+    assert harness.script.texts == ["hello", "next"]
+    # frames_by_request also fails if r1 opens a second time.
+    frames = frames_by_request(env.events)
+    assert list(frames) == ["r1", "r2"]
+    assert pcm_of(frames["r1"]) == first
+    assert pcm_of(frames["r2"]) == second
+    assert [
+        (payload["request_id"], payload["reason"]) for payload in harness.ends()
+    ] == [
+        ("r1", TTSAudioEndReason.INTERRUPTED),
+        ("r2", TTSAudioEndReason.REQUEST_END),
+    ]
+    assert env.index(lambda kind, _: kind == "tts_flush_end") < env.index(
+        lambda kind, payload: kind == "tts_audio_start"
+        and payload["request_id"] == "r2"
+    )
+    assert not env.named("error")
