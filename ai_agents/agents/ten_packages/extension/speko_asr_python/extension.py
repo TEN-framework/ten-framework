@@ -561,6 +561,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                         f"{safe_error(timeout)}",
                         category=LOG_CATEGORY_VENDOR,
                     )
+                    # The turn ends without its final. The next turn takes a
+                    # new result id; a late final keeps this one.
+                    self.uuid = self._get_uuid()
                 finally:
                     self._commit_task = None
                 if epoch == self._connection_epoch:
@@ -720,26 +723,35 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                     segments.append((start, end, str(segment.get("text", ""))))
             except (KeyError, TypeError, ValueError):
                 continue
+        # Answers a commit whose finalize already ended: it belongs to that
+        # turn and leaves the current turn's clock, cursor and finalize alone.
+        late = event.get(LATE_COMMIT_CONTEXT)
+        if not isinstance(late, dict):
+            late = None
         words: list[ASRWord] = []
         if segments:
-            first = min(start for start, _, _ in segments)
-            # Most providers keep a stream clock. Only rebase a reset clock
-            # after a completed commit, never on ordinary interim/final events.
-            if (
-                self._commit_boundary_ms is not None
-                and first < self._vendor_last_end_ms
-            ):
-                self._provider_origin_ms = self._commit_boundary_ms
-                self._vendor_last_end_ms = 0
-            self._commit_boundary_ms = None
+            if late is None:
+                first = min(start for start, _, _ in segments)
+                # Most providers keep a stream clock. Only rebase a reset
+                # clock after a completed commit, never on ordinary events.
+                if (
+                    self._commit_boundary_ms is not None
+                    and first < self._vendor_last_end_ms
+                ):
+                    self._provider_origin_ms = self._commit_boundary_ms
+                    self._vendor_last_end_ms = 0
+                self._commit_boundary_ms = None
+                origin = self._provider_origin_ms
+            else:
+                origin = late["provider_origin_ms"]
             for start, end, word in segments:
                 mapped_start = (
                     self.audio_timeline.get_audio_duration_before_time(
-                        self._provider_origin_ms + start
+                        origin + start
                     )
                 )
                 mapped_end = self.audio_timeline.get_audio_duration_before_time(
-                    self._provider_origin_ms + end
+                    origin + end
                 )
                 words.append(
                     ASRWord(
@@ -751,8 +763,10 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 )
             start_ms = min(word.start_ms for word in words)
             end_ms = max(word.start_ms + word.duration_ms for word in words)
-            if final:
+            if final and late is None:
                 self._vendor_last_end_ms = max(end for _, end, _ in segments)
+        elif late is not None:
+            start_ms, end_ms = late["start_ms"], late["end_ms"]
         else:
             start_ms = self._final_cursor_ms
             end_ms = self.audio_timeline.get_total_user_audio_duration()
@@ -760,11 +774,13 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             if self.stopped or epoch != self._connection_epoch:
                 return
             previous = self.metadata, self.session_id
-            late = event.get(LATE_COMMIT_CONTEXT)
-            if isinstance(late, dict):
-                # Answers a commit whose finalize already ended: keep it with
-                # that turn, not whichever session is streaming now.
+            turn = self.uuid, self.last_finalize_time
+            if late is not None:
+                # Report under that turn's session and result id. The active
+                # finalize's TTLW belongs to the current turn's own final.
                 self.session_id = late.get("session_id")
+                self.uuid = late["result_id"]
+                self.last_finalize_time = None
                 metadata = copy.deepcopy(late.get("metadata") or {})
             else:
                 metadata = copy.deepcopy(self.metadata or {})
@@ -791,7 +807,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 )
             finally:
                 self.metadata, self.session_id = previous
-        if final:
+                if late is not None:
+                    self.uuid, self.last_finalize_time = turn
+        if final and late is None:
             self._final_cursor_ms = max(self._final_cursor_ms, end_ms)
 
     async def _report_router_error(
@@ -815,6 +833,10 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         return {
             "metadata": copy.deepcopy(self.metadata),
             "session_id": self.session_id,
+            "result_id": self.uuid,
+            "start_ms": self._final_cursor_ms,
+            "end_ms": self.audio_timeline.get_total_user_audio_duration(),
+            "provider_origin_ms": self._provider_origin_ms,
         }
 
     def _configure_frame(self) -> dict[str, Any]:

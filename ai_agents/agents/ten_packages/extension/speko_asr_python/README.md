@@ -43,8 +43,10 @@ answers each commit with exactly one `transcript.final` stamped with that
 final completes the finalize; a final without a `commit_id` is the provider's
 own endpoint and is emitted as a normal result. If no answer arrives within
 `finalize_timeout_sec`, the extension logs a warning, keeps the session, and
-still completes the finalize. A late answer is reported with the timed-out
-turn's metadata and never completes another finalize.
+still completes the finalize, and the next turn's results take a new result
+id. A late answer is reported as the timed-out turn's final, with that turn's
+metadata, result id and audio timestamps. It never completes another finalize
+or takes its TTLW.
 Without that flag the Router answers commits in order: finals are paired first
 in, first out, and a commit timeout resets the session so later answers cannot
 be paired one behind.

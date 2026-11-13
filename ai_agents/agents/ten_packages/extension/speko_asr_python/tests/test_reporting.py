@@ -539,6 +539,85 @@ async def test_late_final_keeps_its_turn_and_next_finalize_waits_for_its_own():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("segments", [False, True], ids=["text", "segments"])
+async def test_late_final_keeps_its_turns_id_timeline_and_ttlw(segments):
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.config.finalize_timeout_sec = 0.05
+    socket = _RouterSocket(commit_ids=True)
+
+    def answer(text, commit_id, start_ms, end_ms):
+        event = {
+            "type": "transcript.final",
+            "text": text,
+            "commit_id": commit_id,
+        }
+        if segments:
+            event["segments"] = [
+                {"start_ms": start_ms, "end_ms": end_ms, "text": text}
+            ]
+        return event
+
+    def results():
+        return payloads(events, "asr_result")
+
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(return_value=socket),
+    ):
+        await ext.start_connection()
+        await _stream(ext, "one")  # 0-1000 ms
+        socket.events.put_nowait({"type": "transcript.delta", "text": "la"})
+        await _wait_for(lambda: len(results()) == 1)
+        # Turn one's commit times out; its final is still on the way.
+        await ext.on_data(ext.ten_env, finalize_data("one", "one"))
+        ext.client.finalize_timeout_sec = 1
+        await _stream(ext, "two")  # 1000-2000 ms
+        socket.events.put_nowait({"type": "transcript.delta", "text": "tw"})
+        await _wait_for(lambda: len(results()) == 2)
+        second = asyncio.create_task(
+            ext.on_data(ext.ten_env, finalize_data("two", "two"))
+        )
+        await _wait_for(lambda: len(socket.commits()) == 2)
+        first_id, second_id = socket.commits()
+        socket.events.put_nowait(answer("late", first_id, 0, 800))
+        await _wait_for(lambda: len(results()) == 3)
+        assert not second.done()
+        socket.events.put_nowait(answer("own", second_id, 1000, 2000))
+        await asyncio.wait_for(second, 1)
+    early, interim, late, own = results()
+    # The late final closes turn one: its id, metadata and audio.
+    assert late["final"] and late["id"] == early["id"]
+    assert late["metadata"] == early["metadata"]
+    assert late["metadata"]["session_id"] == "one"
+    assert (late["start_ms"], late["duration_ms"]) == (
+        (0, 800) if segments else (0, 1000)
+    )
+    # Turn two's interim is closed by turn two's own final, not by turn one's.
+    assert own["final"] and own["id"] == interim["id"] != late["id"]
+    assert interim["metadata"]["session_id"] == "two"
+    assert own["metadata"]["session_id"] == "two"
+    assert (own["start_ms"], own["duration_ms"]) == (1000, 1000)
+    # Turn two's own final reports its TTLW; one finalize_end per finalize.
+    order = [
+        (
+            "ttlw"
+            if kind == "metrics"
+            else payload.get("finalize_id") or payload.get("text")
+        )
+        for kind, payload in events
+        if kind in {"asr_result", "asr_finalize_end"}
+        or (kind == "metrics" and "ttlw" in payload["metrics"])
+    ]
+    assert order == ["la", "one", "tw", "late", "ttlw", "own", "two"]
+    assert [
+        item["metadata"]["session_id"] for item in ttlw_metrics(events)
+    ] == ["two"]
+    assert not payloads(events, "error")
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
 async def test_missing_first_answer_then_second_turn_completes_on_its_own():
     ext, events = extension_and_events()
     ext.client = None
