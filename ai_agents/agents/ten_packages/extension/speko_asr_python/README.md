@@ -18,6 +18,7 @@ your graph.
 | `params.routing` | auto, balanced | Speko routing selection |
 | `params.options` | `{}` | Diarization, keywords, noise reduction, or namespaced provider options |
 | `params.buffer_duration_ms` | `5000` | Audio retained while disconnected, `0`–`30000`; `0` discards |
+| `params.max_reconnect_attempts` | `0` | Reconnect attempts before a fatal `retry_exhausted`; `0` retries until stop |
 
 The disconnected buffer is held in memory and is also capped at 10 MiB, which
 binds before 30 seconds at high sample rates or channel counts. When a frame
@@ -26,14 +27,22 @@ the whole buffer is dropped itself). Dropped frames are never sent; they are
 recorded as dropped audio in the TEN audio timeline, so later transcript
 timestamps still line up with the caller's audio.
 
+The buffer holds one session at a time. A frame whose metadata `session_id`
+differs from the held frames' drops them, and a finalize while disconnected
+drops the finished turn's held frames, both recorded as dropped audio: the
+replay after reconnecting never merges one session's speech into another's.
+
 The transport is raw signed 16-bit little-endian PCM. A TEN `asr_finalize`
-message sends Speko `input.commit`. Each finalize is serialized and acknowledged
-with its own `finalize_id` and metadata, including disconnected and timeout paths.
-Silent or already-finalized input completes without waiting for another transcript.
-An empty `transcript.final` acknowledges the commit. If no final arrives within
-`finalize_timeout_sec` (the provider may already have finalized the turn), the
-extension logs a warning, keeps the session, and still completes the finalize;
-only a real disconnect reports an error and reconnects.
+message sends Speko `input.commit` when any audio was sent since the last
+commit. Each finalize is serialized and acknowledged with its own `finalize_id`
+and metadata, including disconnected and timeout paths. The Router answers
+every commit with exactly one `transcript.final`, in order (empty when the
+provider had nothing left to finalize), so finals pair with commits first in,
+first out; a final with no commit outstanding is the provider's own endpoint.
+If no final arrives within `finalize_timeout_sec`, the extension logs a
+warning, keeps the session, and still completes the finalize. That commit
+stays outstanding: its late final answers it, is reported with the timed-out
+turn's metadata, and never completes the next finalize.
 Empty vendor transcripts are not emitted as user turns. TTLW comes from the
 first non-empty final after `asr_finalize`; when the commit is acknowledged
 without one (already-finalized input or an empty final), TTLW is the latency to
@@ -86,12 +95,16 @@ and `--config_dir /absolute/path/to/configs`. Keep invalid-key configs invalid.
 Client/lifecycle unit tests use mocked transport and do not require credentials.
 
 Transient disconnects have one background recovery loop with delays of 0.5, 1,
-2, 4, and 4 seconds. A successful handshake resets this retry budget. Exhaustion,
-invalid configuration, authentication/credit failures, unavailable explicit
-routes, and any handshake rejection the Router marks non-retryable (for example
-HTTP 400 on upgrade, or an `error` event before `session.ready` with
-`retryable: false`) report one fatal error and stop further attempts until the
-cause is corrected and the extension is restarted. Failed sends are not replayed; disconnected input uses the bounded
+2, and then 4 seconds per attempt, retrying until stop unless
+`max_reconnect_attempts` sets a ceiling. A successful handshake resets the
+attempt count. A normal close (WebSocket 1000/1001 or `session.closed`) reports
+`disconnected` and recovers without an `error`; an abnormal close or a Router
+error reports one. An exhausted ceiling, invalid configuration,
+authentication/credit failures, unavailable explicit routes, and any handshake
+rejection the Router marks non-retryable (for example HTTP 400 on upgrade, or
+an `error` event before `session.ready` with `retryable: false`) report one
+fatal error and stop further attempts until the cause is corrected and the
+extension is restarted. Failed sends are not replayed; disconnected input uses the bounded
 buffer. Stop cancels pending recovery and finalization.
 
 Finalization waits for an in-progress handshake and previously accepted audio

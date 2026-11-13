@@ -1,6 +1,7 @@
 import asyncio
 import json
 import uuid
+from collections import deque
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse, urlunparse
@@ -46,6 +47,26 @@ class SpekoCommitTimeout(SpekoRouterError):
     """input.commit got no transcript.final; the session itself is intact."""
 
 
+# Set on a transcript.final that answers a commit whose caller stopped waiting
+# (timeout); holds the context that caller passed to commit().
+LATE_COMMIT_CONTEXT = "speko_late_commit_context"
+
+
+class _PendingCommit:
+    """An input.commit sent and not yet answered by a transcript.final."""
+
+    def __init__(self, context: Any) -> None:
+        self.answered: asyncio.Future[None] = (
+            asyncio.get_running_loop().create_future()
+        )
+        # An abandoned commit's failure has nobody awaiting it.
+        self.answered.add_done_callback(
+            lambda future: future.cancelled() or future.exception()
+        )
+        self.context = context
+        self.abandoned = False
+
+
 def websocket_url(base_url: str, path: str) -> str:
     parsed = urlparse(base_url)
     scheme = {"https": "wss", "http": "ws"}.get(parsed.scheme, parsed.scheme)
@@ -78,9 +99,11 @@ class SpekoASRClient:
         self.usage: dict[str, Any] = {}
         self._ws: ClientConnection | None = None
         self._listener_task: asyncio.Task[None] | None = None
-        self._finalize_waiter: asyncio.Future[None] | None = None
-        self._audio_generation = 0
-        self._final_generation = 0
+        # The Router answers every input.commit with exactly one
+        # transcript.final, in order, so finals pair with commits FIFO. A
+        # final with no commit outstanding is the provider's own endpoint.
+        self._pending_commits: deque[_PendingCommit] = deque()
+        self._audio_since_commit = False
         self._ready = False
         self._closing = False
 
@@ -120,8 +143,8 @@ class SpekoASRClient:
                 )
             self.request_id = str(event.get("request_id", ""))
             self.route = dict(event.get("route", {}))
-            self._audio_generation = 0
-            self._final_generation = 0
+            self._pending_commits.clear()
+            self._audio_since_commit = False
             self._ready = True
             await self.on_event(event)
             self._listener_task = asyncio.create_task(self._listen())
@@ -156,40 +179,48 @@ class SpekoASRClient:
             raise SpekoRouterError(
                 "relay_error", "Speko ASR session is not ready", retryable=True
             )
-        if audio:
-            self._audio_generation += 1
         await self._ws.send(audio)
+        if audio:
+            self._audio_since_commit = True
 
-    async def commit(self) -> None:
+    async def commit(self, context: Any = None) -> None:
+        """Finalize the audio sent since the last commit.
+
+        Returns when the Router answers this commit. A provider final that
+        arrives first does not show where its audio ends, so any audio sent
+        since the last commit is committed and its own answer awaited.
+        """
         if not self.is_ready or self._ws is None:
             raise SpekoRouterError(
                 "relay_error", "Speko ASR session is not ready", retryable=True
             )
-        if self._final_generation == self._audio_generation:
+        if not self._audio_since_commit:
             return
-        waiter = self._finalize_waiter
-        owner = waiter is None or waiter.done()
-        if owner:
-            waiter = asyncio.get_running_loop().create_future()
-            self._finalize_waiter = waiter
+        pending = _PendingCommit(context)
+        self._pending_commits.append(pending)
         try:
-            if owner:
-                await self._ws.send('{"type":"input.commit"}')
+            await self._ws.send('{"type":"input.commit"}')
+        except BaseException:
+            # Never sent, so the Router owes it no answer.
+            self._pending_commits.remove(pending)
+            raise
+        self._audio_since_commit = False
+        try:
             await asyncio.wait_for(
-                asyncio.shield(waiter), timeout=self.finalize_timeout_sec
+                asyncio.shield(pending.answered),
+                timeout=self.finalize_timeout_sec,
             )
         except asyncio.TimeoutError as error:
+            # Stays outstanding: its late final must answer it, not the next.
+            pending.abandoned = True
             raise SpekoCommitTimeout(
                 "request_timeout",
                 "Timed out waiting for a final Speko transcript",
                 retryable=True,
             ) from error
-        finally:
-            if owner:
-                if not waiter.done():
-                    waiter.cancel()
-                if self._finalize_waiter is waiter:
-                    self._finalize_waiter = None
+        except asyncio.CancelledError:
+            pending.abandoned = True
+            raise
 
     async def close(self, *, drain: bool = True) -> None:
         self._closing = True
@@ -234,29 +265,33 @@ class SpekoASRClient:
                     await self.on_event(event)
                     break
 
-                audio_generation = self._audio_generation
+                pending = None
+                if event_type == "transcript.final" and self._pending_commits:
+                    pending = self._pending_commits.popleft()
+                    if pending.abandoned:
+                        event = {**event, LATE_COMMIT_CONTEXT: pending.context}
+                # Deliver before answering: the finalize must not complete
+                # ahead of the final that answers it.
                 await self.on_event(event)
-                if event_type == "transcript.final":
-                    self._final_generation = audio_generation
-                    waiter = self._finalize_waiter
-                    if waiter is not None and not waiter.done():
-                        waiter.set_result(None)
+                if pending is not None and not pending.answered.done():
+                    pending.answered.set_result(None)
         except SpekoRouterError as caught:
             error = caught
         except Exception as caught:  # pragma: no cover - transport-specific
             error = SpekoRouterError("relay_error", str(caught), retryable=True)
         finally:
             self._ready = False
-            waiter = self._finalize_waiter
-            if waiter is not None and not waiter.done():
-                waiter.set_exception(
-                    error
-                    or SpekoRouterError(
-                        "relay_error",
-                        "Speko ASR session closed before final transcript",
-                        retryable=True,
+            while self._pending_commits:
+                pending = self._pending_commits.popleft()
+                if not pending.answered.done():
+                    pending.answered.set_exception(
+                        error
+                        or SpekoRouterError(
+                            "relay_error",
+                            "Speko ASR session closed before final transcript",
+                            retryable=True,
+                        )
                     )
-                )
             if not self._closing or error is not None:
                 await self.on_disconnect(error)
 

@@ -171,7 +171,7 @@ async def test_finalize_cancelled_by_shutdown_does_not_emit_after_stop():
     extension, client = make_extension()
     entered = asyncio.Event()
 
-    async def commit():
+    async def commit(_context=None):
         entered.set()
         await asyncio.Future()
 

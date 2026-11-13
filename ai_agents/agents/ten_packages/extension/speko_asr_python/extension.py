@@ -29,7 +29,12 @@ from ten_ai_base.struct import ASRWord
 from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
-from .client import SpekoASRClient, SpekoCommitTimeout, SpekoRouterError
+from .client import (
+    LATE_COMMIT_CONTEXT,
+    SpekoASRClient,
+    SpekoCommitTimeout,
+    SpekoRouterError,
+)
 from .config import SpekoASRConfig, safe_error, safe_url
 
 # Disconnected audio stays in memory; bound it for high-rate input.
@@ -46,7 +51,8 @@ FATAL_ROUTER_CODES = frozenset(
 
 
 class SpekoASRExtension(AsyncASRBaseExtension):
-    RECONNECT_DELAYS = (0.5, 1.0, 2.0, 4.0, 4.0)
+    # Backoff before each reconnect attempt; later attempts reuse the last.
+    RECONNECT_DELAYS = (0.5, 1.0, 2.0, 4.0)
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -69,6 +75,8 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         self._connection_epoch = 0
         self._retired_clients: list[SpekoASRClient] = []
         self._route: dict[str, Any] = {}
+        # Session of the frames held while disconnected; one session at a time.
+        self._buffered_session: str | None = None
         # Base _connection_lock -> swap -> I/O. Callbacks never acquire these
         # locks: connect/close/commit may themselves be awaiting a callback.
         self._swap_lock = asyncio.Lock()
@@ -356,6 +364,21 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 if not self.is_connected():
                     size = len(frame.get_buf())
                     policy = self.buffer_strategy()
+                    session = self._frame_session_id(frame)
+                    if session is None:
+                        session = (
+                            self._buffered_session
+                            if not self.buffered_frames.empty()
+                            else self.session_id
+                        )
+                    if (
+                        not self.buffered_frames.empty()
+                        and session != self._buffered_session
+                    ):
+                        # One Router stream carries the replay: an earlier
+                        # session's audio must not merge into this one's turn.
+                        self._drop_buffered_frames()
+                    self._buffered_session = session
                     if isinstance(policy, ASRBufferConfigModeDiscard):
                         self._record_dropped_audio(size)
                         return
@@ -370,6 +393,27 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                         self.buffered_frames_size -= dropped_size
                         self._record_dropped_audio(dropped_size)
                 await super()._handle_audio_frame(ten_env, frame)
+
+    def _drop_buffered_frames(self) -> None:
+        while not self.buffered_frames.empty():
+            frame = self.buffered_frames.get_nowait()
+            self._record_dropped_audio(len(frame.get_buf()))
+        self.buffered_frames_size = 0
+        self._buffered_session = None
+
+    @staticmethod
+    def _frame_session_id(frame: AudioFrame) -> str | None:
+        raw, _ = frame.get_property_to_json("metadata")
+        try:
+            metadata = json.loads(raw) if raw else None
+        except ValueError:
+            return None
+        if (
+            isinstance(metadata, dict)
+            and metadata.get("session_id") is not None
+        ):
+            return str(metadata["session_id"])
+        return None
 
     def _record_dropped_audio(self, size: int) -> None:
         before = self._audio_duration_ms(self._dropped_audio_bytes)
@@ -387,8 +431,13 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             self._reconnect_task = asyncio.create_task(self._reconnect())
 
     async def _reconnect(self) -> None:
-        while self._reconnect_attempts < len(self.RECONNECT_DELAYS):
-            delay = self.RECONNECT_DELAYS[self._reconnect_attempts]
+        # 0 (the default) retries until stopped; only a non-retryable error
+        # latches. An operator may set a ceiling that latches retry_exhausted.
+        limit = self.config.max_reconnect_attempts if self.config else 0
+        while not limit or self._reconnect_attempts < limit:
+            delay = self.RECONNECT_DELAYS[
+                min(self._reconnect_attempts, len(self.RECONNECT_DELAYS) - 1)
+            ]
             async with self._swap_lock:
                 await self._close_retired_clients()
             if self._connection_disabled():
@@ -485,10 +534,15 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         try:
             async with self._io_lock:
                 if not self.is_connected():
+                    # The finalize ends this turn; its held audio must not be
+                    # replayed into a later one.
+                    self._drop_buffered_frames()
                     return
                 client = self.client
                 assert client is not None
-                self._commit_task = asyncio.create_task(client.commit())
+                self._commit_task = asyncio.create_task(
+                    client.commit(self._result_context())
+                )
                 try:
                     await self._commit_task
                     acknowledged = True
@@ -519,26 +573,32 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             if error is not None:
                 await self._reset_connection(error, epoch)
             if not self.stopped:
-                if acknowledged and self.last_finalize_time is not None:
-                    # No non-empty final consumed the finalize: the provider
-                    # had already finalized the turn, or the Router acked
-                    # with an empty final. TTLW is the latency to that ack.
-                    elapsed = (
-                        asyncio.get_running_loop().time()
-                        - self.last_finalize_time
-                    )
-                    await self._send_metrics_ttlw(int(elapsed * 1000))
-                    self.last_finalize_time = None
-                # send_asr_finalize_end reads mutable base metadata. Snapshot
-                # only while reporting, after commit releases its I/O lock.
+                # Reports read mutable base metadata and session_id. Attribute
+                # them to the finalize only while reporting, after commit
+                # releases its I/O lock.
                 async with self._metadata_lock:
-                    previous = self.metadata
-                    if self._finalize_context is not None:
-                        self.metadata = self._finalize_context
+                    previous = self.metadata, self.session_id
+                    context = self._finalize_context
+                    if context is not None:
+                        self.metadata = context
+                        self.session_id = context.get(
+                            "session_id", self.session_id
+                        )
                     try:
+                        if acknowledged and self.last_finalize_time is not None:
+                            # No non-empty final consumed the finalize: the
+                            # provider had already finalized the turn, or the
+                            # Router answered with an empty final. TTLW is the
+                            # latency to that answer.
+                            elapsed = (
+                                asyncio.get_running_loop().time()
+                                - self.last_finalize_time
+                            )
+                            await self._send_metrics_ttlw(int(elapsed * 1000))
+                            self.last_finalize_time = None
                         await self.send_asr_finalize_end()
                     finally:
-                        self.metadata = previous
+                        self.metadata, self.session_id = previous
 
     async def _reset_connection(
         self,
@@ -573,13 +633,16 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     async def _on_router_disconnect(
         self, error: SpekoRouterError | None
     ) -> None:
-        await self._reset_connection(
-            error
-            or SpekoRouterError(
-                "relay_error", "Speko ASR connection closed", retryable=True
-            ),
-            self._connection_epoch,
-        )
+        if error is not None:
+            await self._reset_connection(error, self._connection_epoch)
+            return
+        # A completed close handshake (1000/1001, or session.closed) is not a
+        # failure: report the disconnect and recover without an asr_error.
+        if self.stopped:
+            return
+        self._detach_client()
+        await self.on_disconnected(message="Speko ASR session closed")
+        self._schedule_reconnect()
 
     async def _on_router_event(self, event: dict[str, Any]) -> None:
         epoch = self._connection_epoch
@@ -605,6 +668,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 while not self.audio_frames_queue.empty():
                     pending.append(self.audio_frames_queue.get_nowait())
                 self.buffered_frames_size = 0
+                self._buffered_session = None
                 self._audio_queue_drained.clear()
                 for frame in pending:
                     self.audio_frames_queue.put_nowait(frame)
@@ -677,8 +741,15 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         async with self._metadata_lock:
             if self.stopped or epoch != self._connection_epoch:
                 return
-            previous = self.metadata
-            metadata = copy.deepcopy(previous or {})
+            previous = self.metadata, self.session_id
+            late = event.get(LATE_COMMIT_CONTEXT)
+            if isinstance(late, dict):
+                # Answers a commit whose finalize already ended: keep it with
+                # that turn, not whichever session is streaming now.
+                self.session_id = late.get("session_id")
+                metadata = copy.deepcopy(late.get("metadata") or {})
+            else:
+                metadata = copy.deepcopy(self.metadata or {})
             info = metadata.setdefault("asr_info", {})
             if not isinstance(info, dict):
                 info = metadata["asr_info"] = {}
@@ -701,7 +772,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                     )
                 )
             finally:
-                self.metadata = previous
+                self.metadata, self.session_id = previous
         if final:
             self._final_cursor_ms = max(self._final_cursor_ms, end_ms)
 
@@ -720,6 +791,13 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 vendor_info=self._vendor_info(error),
             )
         )
+
+    def _result_context(self) -> dict[str, Any]:
+        """Attribution for results answering the commit about to be sent."""
+        return {
+            "metadata": copy.deepcopy(self.metadata),
+            "session_id": self.session_id,
+        }
 
     def _configure_frame(self) -> dict[str, Any]:
         assert self.config is not None

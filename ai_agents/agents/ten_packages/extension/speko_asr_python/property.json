@@ -15,6 +15,7 @@
     "options": {},
     "ready_timeout_sec": 10.0,
     "finalize_timeout_sec": 10.0,
-    "buffer_duration_ms": 5000
+    "buffer_duration_ms": 5000,
+    "max_reconnect_attempts": 0
   }
 }

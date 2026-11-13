@@ -33,6 +33,9 @@ class SpekoASRConfig(BaseModel):
     ready_timeout_sec: float = Field(default=10.0, gt=0, allow_inf_nan=False)
     finalize_timeout_sec: float = Field(default=10.0, gt=0, allow_inf_nan=False)
     buffer_duration_ms: int = 5000
+    # 0 retries a lost connection until stop; N > 0 latches a fatal
+    # retry_exhausted after N failed reconnect attempts.
+    max_reconnect_attempts: int = Field(default=0, ge=0)
 
     @field_validator("sample_rate")
     @classmethod
@@ -71,6 +74,7 @@ class SpekoASRConfig(BaseModel):
             "ready_timeout_sec",
             "finalize_timeout_sec",
             "buffer_duration_ms",
+            "max_reconnect_attempts",
         ):
             if name in values:
                 setattr(self, name, values.pop(name))

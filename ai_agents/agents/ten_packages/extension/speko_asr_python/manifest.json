@@ -52,7 +52,8 @@
             "options": {"type": "object", "properties": {}},
             "ready_timeout_sec": {"type": "float64"},
             "finalize_timeout_sec": {"type": "float64"},
-            "buffer_duration_ms": {"type": "int32"}
+            "buffer_duration_ms": {"type": "int32"},
+            "max_reconnect_attempts": {"type": "int32"}
           }
         }
       }
