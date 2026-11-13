@@ -80,6 +80,28 @@ small number of high-confidence findings over a broad checklist report.
    touched extension and subtitle hook gaps where subtitles are supported.
    Verify each finding against surrounding code; do not flag style, preferences,
    or purely hypothetical risks.
+13. Treat extension metadata as part of the implementation contract. When an
+   existing extension has an implementation, configuration, manifest, or
+   dependency change, compare the extension version in `manifest.json` and
+   `pyproject.toml`
+   with the merge base. Require both files to exist when the extension uses
+   them, to agree exactly, and to be bumped for the release. A routine change
+   normally increments the final (patch) component; a substantial or breaking
+   change should increment the middle (minor) component. Report an unchanged,
+   mismatched, or implausibly small bump when the changed behavior warrants a
+   release update. Do not demand a bump for README-only or otherwise out-of-scope
+   changes.
+14. Reconcile new Python imports with extension packaging. For every added
+   import, classify it as standard library, an in-repository TEN module, or an
+   external package. Every newly introduced external runtime package must be
+   declared in the extension's `pyproject.toml` dependencies with a compatible
+   version constraint. Check import names against package names (including
+   packages whose distribution name differs), and report a missing or
+   incompatible declaration when a clean extension install would fail. Do not
+   require declarations for standard-library or repository-local imports, and do
+   not flag dependencies already inherited through an explicit project
+   dependency unless the new import adds a direct package requirement under the
+   repository's packaging convention.
 
 ## Evidence standard
 
