@@ -536,6 +536,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         error = None
         acknowledged = False
         epoch = self._connection_epoch
+        turn_id = self.uuid
         try:
             async with self._io_lock:
                 if not self.is_connected():
@@ -561,9 +562,6 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                         f"{safe_error(timeout)}",
                         category=LOG_CATEGORY_VENDOR,
                     )
-                    # The turn ends without its final. The next turn takes a
-                    # new result id; a late final keeps this one.
-                    self.uuid = self._get_uuid()
                 finally:
                     self._commit_task = None
                 if epoch == self._connection_epoch:
@@ -608,6 +606,11 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                         await self.send_asr_finalize_end()
                     finally:
                         self.metadata, self.session_id = previous
+                        if self.uuid == turn_id:
+                            # No final ended the turn (timeout, empty answer,
+                            # disconnect or error). The next turn takes a new
+                            # result id; a late final keeps this one.
+                            self.uuid = self._get_uuid()
 
     async def _reset_connection(
         self,

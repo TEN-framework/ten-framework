@@ -162,6 +162,7 @@ async def test_concurrent_finalize_echoes_each_request_and_blocks_later_audio():
 )
 async def test_finalize_acknowledges_disconnection_and_errors(failure, errors):
     ext, events = extension_and_events()
+    await ext._on_router_event({"type": "transcript.delta", "text": "part"})
     if failure is None:
         ext.client = None
     else:
@@ -175,6 +176,10 @@ async def test_finalize_acknowledges_disconnection_and_errors(failure, errors):
         }
     ]
     assert len(payloads(events, "error")) == errors
+    # The turn ended without its final: the next turn's results take a new id.
+    await ext._on_router_event({"type": "transcript.final", "text": "next"})
+    abandoned, following = payloads(events, "asr_result")
+    assert abandoned["id"] != following["id"]
 
 
 @pytest.mark.asyncio
@@ -215,18 +220,23 @@ async def test_commit_timeout_keeps_session_and_next_turn_timeline():
 async def test_empty_final_acknowledges_finalize_without_a_result():
     ext, events = extension_and_events()
     await ext._handle_audio_frame(ext.ten_env, audio())
+    await ext._on_router_event({"type": "transcript.delta", "text": "um"})
 
     async def commit(_context=None):
         await ext._on_router_event({"type": "transcript.final", "text": ""})
 
     ext.client.commit.side_effect = commit
     await ext.on_data(ext.ten_env, finalize_data("empty", "turn"))
-    assert not payloads(events, "asr_result")
+    assert [item["text"] for item in payloads(events, "asr_result")] == ["um"]
     assert not payloads(events, "error")
     assert [
         item["finalize_id"] for item in payloads(events, "asr_finalize_end")
     ] == ["empty"]
     assert ext._final_cursor_ms == 1000
+    # No final ended the turn: the next turn's results take a new id.
+    await ext._on_router_event({"type": "transcript.final", "text": "next"})
+    abandoned, following = payloads(events, "asr_result")
+    assert abandoned["id"] != following["id"]
     await ext.on_stop(ext.ten_env)
 
 

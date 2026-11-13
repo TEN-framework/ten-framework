@@ -43,8 +43,7 @@ answers each commit with exactly one `transcript.final` stamped with that
 final completes the finalize; a final without a `commit_id` is the provider's
 own endpoint and is emitted as a normal result. If no answer arrives within
 `finalize_timeout_sec`, the extension logs a warning, keeps the session, and
-still completes the finalize, and the next turn's results take a new result
-id. A late answer is reported as the timed-out turn's final, with that turn's
+still completes the finalize. A late answer is reported as the timed-out turn's final, with that turn's
 metadata, result id and audio timestamps. It never completes another finalize
 or takes its TTLW. At most three timed-out commits wait for a late answer: a
 timeout beyond that means the Router has stopped answering, so the session is
@@ -57,6 +56,9 @@ Empty vendor transcripts are not emitted as user turns. TTLW comes from the
 first non-empty final after `asr_finalize`; when the commit is acknowledged
 without one (already-finalized input or an empty final), TTLW is the latency to
 that acknowledgement. A commit timeout or disconnect reports no TTLW.
+Every finalize ends its turn. When no non-empty final ended it (a timeout, an
+empty answer, a disconnect or an error), the next turn's results still take a
+new result id, so they never share one with the abandoned turn's interims.
 Each `session.ready` logs the Router `request_id` and the route, including its
 `attempt_id`, for support reports.
 
