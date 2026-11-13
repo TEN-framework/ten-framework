@@ -154,6 +154,9 @@
       "path": "../../../ten_packages/extension/anam_avatar_python"
     },
     {
+      "path": "../../../ten_packages/extension/spatialreal_avatar_python"
+    },
+    {
       "path": "../../../ten_packages/extension/cartesia_tts"
     }
   ],

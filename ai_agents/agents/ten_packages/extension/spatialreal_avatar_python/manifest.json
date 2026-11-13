@@ -1,0 +1,117 @@
+{
+  "type": "extension",
+  "name": "spatialreal_avatar_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "pyproject.toml",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "spatialreal_api_key": {
+              "type": "string"
+            },
+            "spatialreal_avatar_id": {
+              "type": "string"
+            },
+            "spatialreal_app_id": {
+              "type": "string"
+            },
+            "environment": {
+              "type": "string"
+            },
+            "console_endpoint_url": {
+              "type": "string"
+            },
+            "ingress_endpoint_url": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            },
+            "source_timeline_only": {
+              "type": "bool"
+            },
+            "source_playback_profile": {
+              "type": "int64"
+            },
+            "egress_idle_reconnect_ms": {
+              "type": "int64"
+            },
+            "agora_uid": {
+              "type": "string"
+            },
+            "agora_token": {
+              "type": "string"
+            },
+            "agora_appid": {
+              "type": "string"
+            },
+            "agora_appcert": {
+              "type": "string"
+            },
+            "agora_channel": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "tts_audio_end"
+      },
+      {
+        "name": "finalize"
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "error"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
