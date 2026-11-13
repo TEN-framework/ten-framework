@@ -250,6 +250,35 @@ async def test_connection_ready_requeues_early_audio_before_live_frames():
 
 
 @pytest.mark.asyncio
+async def test_session_ready_logs_request_id_and_route_without_key():
+    extension, _ = make_extension()
+    extension.on_connected = AsyncMock()
+    extension.send_connect_delay_metrics = AsyncMock()
+    await extension._on_router_event(
+        {
+            "type": "session.ready",
+            "request_id": "req_1",
+            "route": {
+                "provider": "meta",
+                "model": "muse",
+                "region": "eu-central-1",
+                "attempt_id": "ratt_1",
+            },
+        }
+    )
+    messages = [
+        call.args[0] for call in extension.ten_env.log_info.call_args_list
+    ]
+    assert any(
+        "request_id=req_1" in message
+        and "route=meta/muse" in message
+        and "attempt_id=ratt_1" in message
+        for message in messages
+    )
+    assert not any("test-key" in message for message in messages)
+
+
+@pytest.mark.asyncio
 async def test_audio_during_initial_connection_does_not_schedule_retry():
     extension, _ = make_extension()
     extension.client = None

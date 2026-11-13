@@ -480,6 +480,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
     async def finalize(self, session_id: str | None) -> None:
         del session_id
         error = None
+        acknowledged = False
         epoch = self._connection_epoch
         try:
             async with self._io_lock:
@@ -490,6 +491,7 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 self._commit_task = asyncio.create_task(client.commit())
                 try:
                     await self._commit_task
+                    acknowledged = True
                 except SpekoCommitTimeout as timeout:
                     # The provider may have finalized this turn on its own, so
                     # the Router has no final left to send. The session is
@@ -517,6 +519,16 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             if error is not None:
                 await self._reset_connection(error, epoch)
             if not self.stopped:
+                if acknowledged and self.last_finalize_time is not None:
+                    # No non-empty final consumed the finalize: the provider
+                    # had already finalized the turn, or the Router acked
+                    # with an empty final. TTLW is the latency to that ack.
+                    elapsed = (
+                        asyncio.get_running_loop().time()
+                        - self.last_finalize_time
+                    )
+                    await self._send_metrics_ttlw(int(elapsed * 1000))
+                    self.last_finalize_time = None
                 # send_asr_finalize_end reads mutable base metadata. Snapshot
                 # only while reporting, after commit releases its I/O lock.
                 async with self._metadata_lock:
@@ -575,6 +587,15 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         if event_type == "session.ready":
             self._route = dict(event.get("route", {}))
             self._reconnect_attempts = 0
+            self.ten_env.log_info(
+                "Speko ASR session.ready: "
+                f"request_id={event.get('request_id', '')} "
+                f"route={self._route.get('provider', '')}/"
+                f"{self._route.get('model', '')} "
+                f"region={self._route.get('region', '')} "
+                f"attempt_id={self._route.get('attempt_id', '')}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
             # Requeue in order through the base consumer, which reads metadata
             # per frame. No new ingress is needed to release buffered audio.
             if not self.buffered_frames.empty():

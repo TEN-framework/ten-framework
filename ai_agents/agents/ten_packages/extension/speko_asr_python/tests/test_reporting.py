@@ -225,6 +225,66 @@ async def test_empty_final_acknowledges_finalize_without_a_result():
     await ext.on_stop(ext.ten_env)
 
 
+def ttlw_metrics(events):
+    return [
+        payload
+        for payload in payloads(events, "metrics")
+        if "ttlw" in payload["metrics"]
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "final_text",
+    [None, "", "done"],
+    ids=["short_circuited_commit", "empty_final_ack", "final_result"],
+)
+async def test_acknowledged_finalize_reports_ttlw_once(final_text):
+    ext, events = extension_and_events()
+    await ext._handle_audio_frame(ext.ten_env, audio())
+
+    async def commit():
+        if final_text is not None:
+            await ext._on_router_event(
+                {"type": "transcript.final", "text": final_text}
+            )
+
+    ext.client.commit.side_effect = commit
+    await ext.on_data(ext.ten_env, finalize_data("one", "turn-one"))
+    ttlw = ttlw_metrics(events)
+    assert len(ttlw) == 1
+    assert ttlw[0]["metrics"]["ttlw"] >= 0
+    assert ttlw[0]["metadata"]["session_id"] == "audio-session"
+    kinds = [
+        "ttlw" if kind == "metrics" and "ttlw" in payload["metrics"] else kind
+        for kind, payload in events
+    ]
+    assert kinds.index("ttlw") < kinds.index("asr_finalize_end")
+    assert len(payloads(events, "asr_result")) == (1 if final_text else 0)
+    assert ext.last_finalize_time is None
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "failure",
+    [
+        SpekoCommitTimeout("request_timeout", "timeout", retryable=True),
+        SpekoRouterError("relay_error", "closed", retryable=True),
+    ],
+    ids=["commit_timeout", "disconnect"],
+)
+async def test_unacknowledged_finalize_reports_no_ttlw(failure):
+    ext, events = extension_and_events()
+    await ext._handle_audio_frame(ext.ten_env, audio())
+    ext.client.commit.side_effect = failure
+    await ext.on_data(ext.ten_env, finalize_data("one", "turn-one"))
+    await ext.stop_connection()
+    assert not ttlw_metrics(events)
+    assert len(payloads(events, "asr_finalize_end")) == 1
+    assert ext.last_finalize_time is None
+
+
 def _upgrade_rejected(status):
     from websockets.exceptions import InvalidStatus
 

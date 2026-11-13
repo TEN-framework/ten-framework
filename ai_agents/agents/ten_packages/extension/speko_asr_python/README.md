@@ -34,7 +34,12 @@ An empty `transcript.final` acknowledges the commit. If no final arrives within
 `finalize_timeout_sec` (the provider may already have finalized the turn), the
 extension logs a warning, keeps the session, and still completes the finalize;
 only a real disconnect reports an error and reconnects.
-Empty vendor transcripts are not emitted as user turns.
+Empty vendor transcripts are not emitted as user turns. TTLW comes from the
+first non-empty final after `asr_finalize`; when the commit is acknowledged
+without one (already-finalized input or an empty final), TTLW is the latency to
+that acknowledgement. A commit timeout or disconnect reports no TTLW.
+Each `session.ready` logs the Router `request_id` and the route, including its
+`attempt_id`, for support reports.
 
 ```json
 {
