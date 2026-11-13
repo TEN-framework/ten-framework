@@ -1044,6 +1044,66 @@ async def test_segments_after_a_final_without_segments_keep_the_timeline(
 
 
 @pytest.mark.asyncio
+async def test_stream_clock_turn_spoken_during_a_delayed_answer_is_not_rebased():
+    ext, events = extension_and_events()
+    ext.client = None
+    socket = _RouterSocket(commit_ids=True)
+    consumer = asyncio.create_task(ext._audio_frame_consumer())
+    try:
+        with patch(
+            "speko_asr_python.client.websockets.connect",
+            AsyncMock(return_value=socket),
+        ):
+            await ext.start_connection()
+            first = audio({"session_id": "one"})  # 0-1000 ms
+            await ext.on_audio_frame(ext.ten_env, first)
+            finalize = asyncio.create_task(
+                ext.on_data(ext.ten_env, finalize_data("one", "one"))
+            )
+            await _wait_for(socket.commits)
+            # The next turn's audio arrives while the answer is delayed.
+            second = audio({"session_id": "two"})  # 1000-2000 ms
+            ingress = asyncio.create_task(
+                ext.on_audio_frame(ext.ten_env, second)
+            )
+            await asyncio.sleep(0.05)
+            # It reaches the Router only after the commit is answered, so the
+            # commit boundary is the audio sent before the commit.
+            assert json.loads(socket.sent[-1])["type"] == "input.commit"
+            socket.events.put_nowait(
+                {
+                    "type": "transcript.final",
+                    "text": "",
+                    "commit_id": socket.commits()[0],
+                }
+            )
+            await asyncio.wait_for(asyncio.gather(finalize, ingress), 1)
+            await _wait_for(
+                lambda: ext.audio_timeline.get_total_user_audio_duration()
+                == 2000
+            )
+            # A stream clock: the speech began 200 ms into the next turn.
+            socket.events.put_nowait(
+                {
+                    "type": "transcript.final",
+                    "text": "two",
+                    "segments": [
+                        {"start_ms": 1200, "end_ms": 1800, "text": "two"}
+                    ],
+                }
+            )
+            await _wait_for(lambda: payloads(events, "asr_result"))
+    finally:
+        await ext.on_stop(ext.ten_env)
+        consumer.cancel()
+        await asyncio.gather(consumer, return_exceptions=True)
+    (result,) = payloads(events, "asr_result")
+    assert result["metadata"]["session_id"] == "two"
+    assert (result["start_ms"], result["duration_ms"]) == (1200, 600)
+    assert result["words"][0]["start_ms"] == 1200
+
+
+@pytest.mark.asyncio
 async def test_disconnected_buffer_replays_only_the_latest_session(tmp_path):
     ext, events = extension_and_events()
     ext.config.dump = True

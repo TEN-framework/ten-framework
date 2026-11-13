@@ -563,6 +563,9 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 finally:
                     self._commit_task = None
                 if epoch == self._connection_epoch:
+                    # Audio is sent only under the I/O lock, held since before
+                    # the commit: this is the audio sent before the commit,
+                    # however long the answer took.
                     self._commit_boundary_ms = self._vendor_audio_duration()
                     self._total_audio_bytes = 0
                     self._final_cursor_ms = max(
