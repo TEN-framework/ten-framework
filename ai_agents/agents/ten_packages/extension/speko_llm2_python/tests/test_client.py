@@ -189,6 +189,32 @@ async def test_string_error_envelope_over_http(streaming):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "envelope,code,message",
+    [
+        ({"error": "upstream down"}, "relay_error", "upstream down"),
+        (
+            {"error": {"code": "provider_error", "message": "no capacity"}},
+            "provider_error",
+            "no capacity",
+        ),
+    ],
+)
+async def test_error_envelope_in_success_response_is_router_error(
+    envelope, code, message
+):
+    client, http_client = make_client(
+        lambda request: httpx.Response(200, json=envelope)
+    )
+    with pytest.raises(SpekoRouterError) as caught:
+        await client.complete({"input": []}, idempotency_key="idem-1")
+    assert caught.value.code == code
+    assert caught.value.message == message
+    assert caught.value.status_code == 200
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
 async def test_string_error_envelope_over_sse():
     client, http_client = make_client(
         lambda request: httpx.Response(

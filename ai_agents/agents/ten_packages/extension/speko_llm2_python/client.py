@@ -184,6 +184,11 @@ class SpekoLLMClient:
             raise SpekoRouterError(
                 "relay_error", "Speko Router response must be a JSON object"
             )
+        if decoded.get("error"):
+            # A relay or proxy can wrap a failure in a 2xx response.
+            raise SpekoRouterError.from_envelope(
+                decoded, status_code=response.status_code
+            )
         return decoded
 
     async def close(self) -> None:

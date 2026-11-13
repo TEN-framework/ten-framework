@@ -131,6 +131,7 @@ def _sse(*events):
         (False, httpx.Response(200, text="not json"), "relay_error"),
         # {"error": "..."} envelopes over HTTP and SSE.
         (False, httpx.Response(503, json={"error": "busy"}), "relay_error"),
+        (False, httpx.Response(200, json={"error": "busy"}), "relay_error"),
         (
             True,
             httpx.Response(200, text=_sse(("error", {"error": "busy"}))),
