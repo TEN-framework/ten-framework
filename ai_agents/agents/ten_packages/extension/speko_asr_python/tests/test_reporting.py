@@ -1012,6 +1012,38 @@ async def test_segment_timeline_two_cycles_and_reconnect(reset_clock):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "reset_clock", [False, True], ids=["stream_clock", "reset_clock"]
+)
+@pytest.mark.parametrize(
+    "first_text", ["one", ""], ids=["text_only_final", "empty_final"]
+)
+async def test_segments_after_a_final_without_segments_keep_the_timeline(
+    first_text, reset_clock
+):
+    ext, events = extension_and_events()
+    await ext._handle_audio_frame(ext.ten_env, audio())  # 0-1000 ms
+    await ext._on_router_event({"type": "transcript.final", "text": first_text})
+    await ext.on_data(ext.ten_env, finalize_data("one", "audio-session"))
+    await ext._handle_audio_frame(ext.ten_env, audio())  # 1000-2000 ms
+    start = 0 if reset_clock else 1000
+    await ext._on_router_event(
+        {
+            "type": "transcript.final",
+            "text": "two",
+            "segments": [
+                {"start_ms": start, "end_ms": start + 1000, "text": "two"}
+            ],
+        }
+    )
+    *_, second = payloads(events, "asr_result")
+    assert second["text"] == "two"
+    assert (second["start_ms"], second["duration_ms"]) == (1000, 1000)
+    assert second["words"][0]["start_ms"] == 1000
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
 async def test_disconnected_buffer_replays_only_the_latest_session(tmp_path):
     ext, events = extension_and_events()
     ext.config.dump = True

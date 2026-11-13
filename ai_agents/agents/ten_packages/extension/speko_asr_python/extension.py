@@ -66,7 +66,6 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         self._dropped_audio_bytes = 0
         self._final_cursor_ms = 0
         self._provider_origin_ms = 0
-        self._vendor_last_end_ms = 0
         self._commit_boundary_ms: int | None = None
         self._permanent_error: SpekoRouterError | None = None
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -175,7 +174,6 @@ class SpekoASRExtension(AsyncASRBaseExtension):
             self._detach_client()
             await self._close_retired_clients()
             self._provider_origin_ms = self._vendor_audio_duration()
-            self._vendor_last_end_ms = 0
             self._commit_boundary_ms = None
             self._final_cursor_ms = (
                 self.audio_timeline.get_total_user_audio_duration()
@@ -735,14 +733,16 @@ class SpekoASRExtension(AsyncASRBaseExtension):
         if segments:
             if late is None:
                 first = min(start for start, _, _ in segments)
-                # Most providers keep a stream clock. Only rebase a reset
-                # clock after a completed commit, never on ordinary events.
+                # Most providers keep a stream clock, which places audio sent
+                # after a commit at or past its boundary. The first segment
+                # after a commit that would fall before it comes from a clock
+                # restarted at the commit, whatever the earlier finals held.
                 if (
                     self._commit_boundary_ms is not None
-                    and first < self._vendor_last_end_ms
+                    and self._provider_origin_ms + first
+                    < self._commit_boundary_ms
                 ):
                     self._provider_origin_ms = self._commit_boundary_ms
-                    self._vendor_last_end_ms = 0
                 self._commit_boundary_ms = None
                 origin = self._provider_origin_ms
             else:
@@ -766,8 +766,6 @@ class SpekoASRExtension(AsyncASRBaseExtension):
                 )
             start_ms = min(word.start_ms for word in words)
             end_ms = max(word.start_ms + word.duration_ms for word in words)
-            if final and late is None:
-                self._vendor_last_end_ms = max(end for _, end, _ in segments)
         elif late is not None:
             start_ms, end_ms = late["start_ms"], late["end_ms"]
         else:

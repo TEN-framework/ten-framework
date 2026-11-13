@@ -124,8 +124,11 @@ to drain through the base consumer before committing. Later ingress waits until
 that finalize completes, preserving audio order and the request's metadata.
 
 Segment and word timestamps are mapped onto TEN's user-audio timeline, retaining
-position across connection replacement and excluding protocol silence. The raw
-input dump records each ingress frame once, including buffered input.
+position across connection replacement and excluding protocol silence. A
+provider clock that restarts at a commit is detected from the first segment
+after it: a segment that would fall before the commit's position in the audio
+is mapped from that position, whether or not earlier finals had segments. The
+raw input dump records each ingress frame once, including buffered input.
 
 Run standalone tests before guarders using the same image as CI:
 
