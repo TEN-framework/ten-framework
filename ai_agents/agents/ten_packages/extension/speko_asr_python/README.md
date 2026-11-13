@@ -46,7 +46,10 @@ own endpoint and is emitted as a normal result. If no answer arrives within
 still completes the finalize, and the next turn's results take a new result
 id. A late answer is reported as the timed-out turn's final, with that turn's
 metadata, result id and audio timestamps. It never completes another finalize
-or takes its TTLW.
+or takes its TTLW. At most three timed-out commits wait for a late answer: a
+timeout beyond that means the Router has stopped answering, so the session is
+reset with one non-fatal error, and answers to those commits are never
+reported.
 Without that flag the Router answers commits in order: finals are paired first
 in, first out, and a commit timeout resets the session so later answers cannot
 be paired one behind.

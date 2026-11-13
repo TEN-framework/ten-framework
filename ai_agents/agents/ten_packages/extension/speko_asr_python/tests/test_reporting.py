@@ -10,7 +10,11 @@ from ten_ai_base.message import ModuleErrorCode
 from ten_runtime import Data
 from websockets.exceptions import ConnectionClosedError
 
-from speko_asr_python.client import SpekoCommitTimeout, SpekoRouterError
+from speko_asr_python.client import (
+    MAX_ABANDONED_COMMITS,
+    SpekoCommitTimeout,
+    SpekoRouterError,
+)
 from speko_asr_python.config import SpekoASRConfig
 from speko_asr_python.extension import SpekoASRExtension
 
@@ -653,6 +657,71 @@ async def test_missing_first_answer_then_second_turn_completes_on_its_own():
     # The same session served both turns.
     assert len(payloads(events, "connection_status_changed")) == 2
     assert not payloads(events, "error")
+    await ext.on_stop(ext.ten_env)
+
+
+@pytest.mark.asyncio
+async def test_unanswered_commits_are_bounded_by_a_session_reset():
+    ext, events = extension_and_events()
+    ext.client = None
+    ext.config.finalize_timeout_sec = 0.02
+    ext.RECONNECT_DELAYS = (0.0,)
+    first = _RouterSocket(commit_ids=True)
+    second = _RouterSocket(commit_ids=True)
+    turns = [f"t{index}" for index in range(MAX_ABANDONED_COMMITS + 1)]
+    with patch(
+        "speko_asr_python.client.websockets.connect",
+        AsyncMock(side_effect=[first, second]),
+    ):
+        await ext.start_connection()
+        stuck = ext.client
+        # The Router stays connected but answers no commit.
+        for index, turn in enumerate(turns[:-1]):
+            await _stream(ext, turn)
+            await ext.on_data(ext.ten_env, finalize_data(turn, turn))
+            assert ext.client is stuck
+            assert len(stuck._pending_commits) == index + 1
+        # One timeout more resets the session instead of growing it.
+        await _stream(ext, turns[-1])
+        await ext.on_data(ext.ten_env, finalize_data(turns[-1], turns[-1]))
+        assert ext.client is not stuck
+        # An answer to a dropped commit is reported as no turn's result.
+        first.events.put_nowait(
+            {
+                "type": "transcript.final",
+                "text": "late",
+                "commit_id": first.commits()[0],
+            }
+        )
+        await _wait_for(ext.is_connected)
+        assert not stuck._pending_commits
+        ext.client.finalize_timeout_sec = 1
+        await _stream(ext, "next")
+        turn = asyncio.create_task(
+            ext.on_data(ext.ten_env, finalize_data("next", "next"))
+        )
+        await _wait_for(second.commits)
+        second.events.put_nowait(
+            {
+                "type": "transcript.final",
+                "text": "next",
+                "commit_id": second.commits()[0],
+            }
+        )
+        await asyncio.wait_for(turn, 1)
+    assert len(first.commits()) == len(turns)
+    assert [
+        (item["text"], item["metadata"]["session_id"])
+        for item in payloads(events, "asr_result")
+    ] == [("next", "next")]
+    assert _results_and_ends(events) == [*turns, "next", "next"]
+    assert [error["code"] for error in payloads(events, "error")] == [
+        int(ModuleErrorCode.NON_FATAL_ERROR.value)
+    ]
+    assert [
+        status["current"]
+        for status in payloads(events, "connection_status_changed")
+    ] == ["connecting", "connected", "disconnected", "connecting", "connected"]
     await ext.on_stop(ext.ten_env)
 
 

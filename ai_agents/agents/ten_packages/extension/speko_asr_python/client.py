@@ -50,6 +50,10 @@ class SpekoCommitTimeout(SpekoRouterError):
 # (timeout); holds the context that caller passed to commit().
 LATE_COMMIT_CONTEXT = "speko_late_commit_context"
 
+# Timed-out commits kept for a late answer. One more means the Router has
+# stopped answering: that timeout resets the session instead.
+MAX_ABANDONED_COMMITS = 3
+
 
 class _PendingCommit:
     """An input.commit sent and not yet answered by a transcript.final."""
@@ -198,7 +202,8 @@ class SpekoASRClient:
         Raises SpekoCommitTimeout when no answer came but the session is still
         usable. A Router without commit ids answers in order, so a missing
         answer would shift every later pairing: there the timeout is a plain
-        SpekoRouterError, and the session must be reset.
+        SpekoRouterError, and the session must be reset. So is a timeout that
+        leaves more than MAX_ABANDONED_COMMITS commits unanswered.
         """
         if not self.is_ready or self._ws is None:
             raise SpekoRouterError(
@@ -228,6 +233,15 @@ class SpekoASRClient:
         except asyncio.TimeoutError as error:
             # Stays outstanding: its late final must answer it, not the next.
             pending.abandoned = True
+            abandoned = sum(
+                commit.abandoned for commit in self._pending_commits.values()
+            )
+            if abandoned > MAX_ABANDONED_COMMITS:
+                raise SpekoRouterError(
+                    "request_timeout",
+                    f"Speko Router left {abandoned} commits unanswered",
+                    retryable=True,
+                ) from error
             if self._correlated:
                 raise SpekoCommitTimeout(
                     "request_timeout",
