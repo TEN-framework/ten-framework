@@ -6,6 +6,7 @@ import httpx
 import pytest
 from ten_ai_base.message import ModuleErrorCode
 from ten_ai_base.struct import LLMRequest
+from ten_ai_base.types import LLMToolMetadata, LLMToolMetadataParameter
 
 from speko_llm2_python.client import SpekoLLMClient, SSEEvent
 from speko_llm2_python.config import SpekoLLM2Config
@@ -186,6 +187,73 @@ async def test_failures_emit_ten_error_with_speko_vendor_info(
     assert payload["code"] == int(ModuleErrorCode.NON_FATAL_ERROR.value)
     assert payload["vendor_info"]["vendor"] == "speko"
     assert payload["vendor_info"]["code"] == router_code
+    await extension.client._client.aclose()
+
+
+class MCPToolParameter(LLMToolMetadataParameter):
+    """A tool parameter as MCP supplies it, with its array element schema."""
+
+    items: dict | None = None
+
+
+@pytest.mark.asyncio
+async def test_array_tool_parameter_keeps_its_item_schema_in_the_request():
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "id": "response",
+                "output": [
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [{"type": "text", "text": "ok"}],
+                    }
+                ],
+            },
+        )
+
+    extension = _configured_extension(handler)
+    items = {
+        "type": "object",
+        "properties": {"tag": {"type": "string"}},
+        "required": ["tag"],
+    }
+    tool = LLMToolMetadata(
+        name="search",
+        description="Search notes",
+        parameters=[
+            MCPToolParameter(
+                name="filters",
+                type="array",
+                description="Tag filters",
+                required=True,
+                items=items,
+            ),
+            LLMToolMetadataParameter(
+                name="query", type="string", description="Text", required=True
+            ),
+        ],
+    )
+    request = LLMRequest(
+        request_id="request", messages=[], streaming=False, tools=[tool]
+    )
+    _ = [
+        item
+        async for item in extension.on_call_chat_completion(
+            extension.ten_env, request
+        )
+    ]
+    properties = sent[0]["tools"][0]["parameters"]["properties"]
+    assert properties["filters"] == {
+        "type": "array",
+        "description": "Tag filters",
+        "items": items,
+    }
+    assert "items" not in properties["query"]
     await extension.client._client.aclose()
 
 

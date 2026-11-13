@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import copy
 import json
 import time
 import uuid
@@ -319,10 +320,17 @@ class SpekoLLM2Extension(AsyncLLM2BaseExtension):
         properties: dict[str, Any] = {}
         required: list[str] = []
         for parameter in tool.parameters:
-            properties[parameter.name] = {
+            schema: dict[str, Any] = {
                 "type": parameter.type,
                 "description": parameter.description,
             }
+            # MCP tools describe array elements, possibly nested; providers
+            # may reject an array schema without them. Newer ten_ai_base
+            # parameters carry the field, older ones do not.
+            items = getattr(parameter, "items", None)
+            if parameter.type == "array" and items:
+                schema["items"] = copy.deepcopy(items)
+            properties[parameter.name] = schema
             if parameter.required:
                 required.append(parameter.name)
         return {
