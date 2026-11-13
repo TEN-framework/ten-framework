@@ -186,6 +186,9 @@ class SpekoTTSClient:
             if self._cancelled:
                 return
             if isinstance(raw, bytes):
+                if not raw:
+                    # No audio yet: first audio and TTFB wait for real PCM.
+                    continue
                 if sequence is None:
                     raise SpekoRouterError(
                         "relay_error",

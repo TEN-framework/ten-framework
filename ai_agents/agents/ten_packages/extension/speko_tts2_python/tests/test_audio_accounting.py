@@ -58,9 +58,29 @@ class RecordingTenEnv:
     async def _frame(self, frame):
         buffer = frame.lock_buf()
         try:
-            self.events.append(("frame", len(buffer)))
+            pcm = bytes(buffer)
         finally:
             frame.unlock_buf(buffer)
+        raw, _ = frame.get_property_to_json("metadata")
+        self.events.append(
+            (
+                "frame",
+                {
+                    "pcm": pcm,
+                    "sample_rate": frame.get_sample_rate(),
+                    "channels": frame.get_number_of_channels(),
+                    "bytes_per_sample": frame.get_bytes_per_sample(),
+                    "samples_per_channel": frame.get_samples_per_channel(),
+                    "metadata": json.loads(raw) if raw else {},
+                },
+            )
+        )
+
+    def frame_sizes(self):
+        return [len(frame["pcm"]) for frame in self.named("frame")]
+
+    def pcm(self):
+        return b"".join(frame["pcm"] for frame in self.named("frame"))
 
     def named(self, name):
         return [payload for kind, payload in self.events if kind == name]
@@ -104,6 +124,8 @@ class ScriptedClient:
                 yield SpekoTTSEvent(SpekoTTSEventType.TTFB, args[0])
             elif step == "audio":
                 yield SpekoTTSEvent(SpekoTTSEventType.AUDIO, b"\x01" * args[0])
+            elif step == "pcm":
+                yield SpekoTTSEvent(SpekoTTSEventType.AUDIO, args[0])
             elif step == "usage":
                 self.usage = args[0]
                 yield SpekoTTSEvent(SpekoTTSEventType.USAGE, args[0])
@@ -127,7 +149,7 @@ class ScriptedClient:
         self.is_ready = False
 
 
-def text_input(text, end, request_id="request"):
+def text_input(text, end, request_id="request", metadata=None):
     data = Data.create("tts_text_input")
     data.set_property_from_json(
         None,
@@ -135,10 +157,15 @@ def text_input(text, end, request_id="request"):
             request_id=request_id,
             text=text,
             text_input_end=end,
-            metadata={"session_id": "session"},
+            metadata=metadata or {"session_id": "session"},
         ).model_dump_json(),
     )
     return data
+
+
+def pcm(size, seed):
+    """Distinct bytes per stream, so mixed-up audio cannot compare equal."""
+    return bytes((seed + index) % 251 for index in range(size))
 
 
 def flush():
@@ -156,12 +183,12 @@ async def until(predicate):
 
 
 class Harness:
-    def __init__(self, *streams):
+    def __init__(self, *streams, **config):
         self.clock = FakeClock()
         self.ten_env = RecordingTenEnv()
         self.script = Script(self.clock, *streams)
         self.extension = SpekoTTS2Extension("speko")
-        self.extension.config = SpekoTTS2Config(api_key="test-key")
+        self.extension.config = SpekoTTS2Config(api_key="test-key", **config)
         self.extension.ten_env = self.ten_env
         self.script.extension = self.extension
         self._patches = [
@@ -230,7 +257,7 @@ async def test_success_order_duration_and_interval():
     end = env.index(lambda kind, _: kind == "tts_audio_end")
     usage = env.index(is_usage)
     assert start < ttfb < first_frame < end < usage
-    assert env.named("frame") == [HUNDRED_MS, HUNDRED_MS]
+    assert env.frame_sizes() == [HUNDRED_MS, HUNDRED_MS]
     assert env.events[ttfb][1]["metrics"]["ttfb"] == 120
     (payload,) = harness.ends()
     assert payload["reason"] == TTSAudioEndReason.REQUEST_END
@@ -361,6 +388,104 @@ async def test_odd_sized_chunks_count_only_emitted_frames():
         await until(lambda: harness.ends() and harness.idle())
     # The odd byte waits in the base's leftover buffer for the next chunk.
     assert harness.script.probes == [HUNDRED_MS, 2 * HUNDRED_MS]
-    assert harness.ten_env.named("frame") == [HUNDRED_MS, HUNDRED_MS]
+    assert harness.ten_env.frame_sizes() == [HUNDRED_MS, HUNDRED_MS]
     (payload,) = harness.ends()
     assert payload["request_total_audio_duration_ms"] == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("sample_rate,channels", [(24000, 1), (16000, 2)])
+async def test_emitted_pcm_and_frame_format_follow_the_output_config(
+    sample_rate, channels
+):
+    frame_bytes = 2 * channels
+    tenth = sample_rate * frame_bytes // 10
+    audio = pcm(2 * tenth, seed=7)
+    # The first chunk ends one byte into a sample frame.
+    split = tenth + 1
+    async with Harness(
+        [("ttfb", 50), ("pcm", audio[:split]), ("pcm", audio[split:])],
+        sample_rate=sample_rate,
+        channels=channels,
+    ) as harness:
+        await harness.send(text_input("hello", True))
+        await until(lambda: harness.ends() and harness.idle())
+    env = harness.ten_env
+    assert env.pcm() == audio
+    for frame in env.named("frame"):
+        assert (
+            frame["sample_rate"],
+            frame["channels"],
+            frame["bytes_per_sample"],
+        ) == (sample_rate, channels, 2)
+        assert frame["samples_per_channel"] * frame_bytes == len(frame["pcm"])
+    (payload,) = harness.ends()
+    assert payload["request_total_audio_duration_ms"] == 200
+
+
+@pytest.mark.asyncio
+async def test_back_to_back_requests_keep_their_own_audio_and_end():
+    first, second = pcm(HUNDRED_MS, seed=1), pcm(2 * HUNDRED_MS, seed=2)
+    async with Harness(
+        [("ttfb", 40), ("pcm", first[:1001]), ("pcm", first[1001:])],
+        [("ttfb", 60), ("pcm", second)],
+    ) as harness:
+        # The second request is queued while the first one streams.
+        await harness.send(text_input("one", True, "r1", {"session_id": "s1"}))
+        await harness.send(text_input("two", True, "r2", {"session_id": "s2"}))
+        await until(lambda: len(harness.ends()) == 2 and harness.idle())
+    audio = {"r1": [], "r2": []}
+    current = None
+    for kind, payload in harness.ten_env.events:
+        if kind == "tts_audio_start":
+            assert current is None
+            current = payload["request_id"]
+        elif kind == "frame":
+            audio[current].append(payload)
+        elif kind == "tts_audio_end":
+            assert payload["request_id"] == current
+            current = None
+    assert b"".join(frame["pcm"] for frame in audio["r1"]) == first
+    assert b"".join(frame["pcm"] for frame in audio["r2"]) == second
+    for request, session in (("r1", "s1"), ("r2", "s2")):
+        assert {
+            frame["metadata"].get("session_id") for frame in audio[request]
+        } == {session}
+    ends = harness.ends()
+    assert [payload["request_id"] for payload in ends] == ["r1", "r2"]
+    assert [payload["request_total_audio_duration_ms"] for payload in ends] == [
+        100,
+        200,
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("terminal", ["completion", "flush", "error"])
+async def test_dump_holds_exactly_the_emitted_pcm(tmp_path, terminal):
+    # The odd last byte stays in the base's leftover and is never emitted.
+    audio = pcm(HUNDRED_MS + 1, seed=3)
+    tail = {
+        "completion": [],
+        "flush": [("block",)],
+        "error": [
+            (
+                "error",
+                SpekoRouterError("provider_error", "boom", retryable=True),
+            )
+        ],
+    }[terminal]
+    async with Harness(
+        [("ttfb", 30), ("pcm", audio), *tail],
+        dump=True,
+        dump_path=str(tmp_path),
+    ) as harness:
+        await harness.send(text_input("hello", True))
+        if terminal == "flush":
+            await until(harness.script.blocked.is_set)
+            await harness.send(flush())
+            await until(lambda: harness.ten_env.named("tts_flush_end"))
+        else:
+            await until(lambda: harness.ends() and harness.idle())
+    emitted = harness.ten_env.pcm()
+    assert emitted == audio[:-1]
+    assert (tmp_path / "speko_tts_request.pcm").read_bytes() == emitted

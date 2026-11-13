@@ -279,14 +279,14 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                     continue
                 await self._ensure_audio_start()
                 self.metrics_add_recv_audio_chunks(audio)
-                await self._write_dump(request_id, audio)
                 # The base emits whole frames and keeps an odd tail for the
-                # next chunk; count only bytes that left as frames.
-                pending = len(self.leftover_bytes)
+                # next chunk; count and dump only bytes that left as frames.
+                combined = self.leftover_bytes + audio
                 await self.send_tts_audio_data(audio)
-                self._total_audio_bytes += (
-                    pending + len(audio) - len(self.leftover_bytes)
-                )
+                emitted = combined[: len(combined) - len(self.leftover_bytes)]
+                self._total_audio_bytes += len(emitted)
+                if emitted:
+                    await self._write_dump(request_id, emitted)
             elif event.type == SpekoTTSEventType.USAGE:
                 if isinstance(event.value, dict):
                     self._router_usage = event.value

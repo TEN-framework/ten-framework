@@ -332,3 +332,39 @@ async def test_ttfb_uses_arrival_time_taken_in_the_receive_task():
     ttfb = [event for event in events if event.type == SpekoTTSEventType.TTFB]
     assert [event.value for event in ttfb] == [250]
     await client.close(drain=False)
+
+
+@pytest.mark.asyncio
+async def test_empty_binary_frame_neither_starts_audio_nor_stamps_ttfb():
+    websocket = FakeWebSocket(
+        json.dumps({"type": "session.ready", "route": {}}),
+        json.dumps({"type": "utterance.started", "sequence": 1}),
+        b"",
+        b"pcm",
+        json.dumps({"type": "utterance.done", "sequence": 1}),
+    )
+    # Before append; utterance.started; the empty frame; the PCM frame.
+    readings = iter([10.0, 10.1, 10.2, 10.4])
+
+    class Clock:
+        @staticmethod
+        def monotonic():
+            return next(readings, 99.0)
+
+    client = make_client()
+    with patch(
+        "speko_tts2_python.client.websockets.connect",
+        AsyncMock(return_value=websocket),
+    ):
+        await client.connect()
+        with patch("speko_tts2_python.client.time", Clock):
+            events = [event async for event in client.stream_text("hello")]
+    assert [event.type for event in events] == [
+        SpekoTTSEventType.TTFB,
+        SpekoTTSEventType.AUDIO,
+        SpekoTTSEventType.DONE,
+    ]
+    # Measured to the first non-empty PCM, not the empty frame.
+    assert events[0].value == 400
+    assert events[1].value == b"pcm"
+    await client.close(drain=False)
