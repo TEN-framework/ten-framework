@@ -4,6 +4,7 @@ import os
 from contextlib import contextmanager
 from importlib import import_module
 from threading import RLock
+from urllib.parse import urlsplit, urlunsplit
 
 from .timing_hooks.transport import ObservedWebSockets
 
@@ -93,6 +94,12 @@ HOOKS = {
         "soul_tts",
         "wss://qa-soul-llm.soulapp.cn/llm",
     ),
+    "speko_tts2_python": (
+        "speko",
+        "SpekoObserver",
+        "client",
+        "wss://router.speko.dev/v1/tts/stream",
+    ),
 }
 
 
@@ -103,7 +110,16 @@ CONFIGS = {
     "minimax_tts_websocket": ("MinimaxTTSWebsocketConfig", "url"),
     "minimax_tts_websocket_duplex": ("MinimaxTTSWebsocketDuplexConfig", "url"),
     "soul_tts_python": ("SoulTTSWebsocketConfig", "url"),
+    "speko_tts2_python": ("SpekoTTS2Config", "base_url"),
 }
+
+
+def speko_stream_url(base_url):
+    """The Router's TTS WebSocket for a configured HTTP(S) or WS(S) origin."""
+    parsed = urlsplit(base_url)
+    scheme = {"https": "wss", "http": "ws"}.get(parsed.scheme, parsed.scheme)
+    path = parsed.path.rstrip("/") + "/v1/tts/stream"
+    return urlunsplit((scheme, parsed.netloc, path, "", ""))
 
 
 def resolve_environment(value):
@@ -129,7 +145,10 @@ def effective_config(extension_name, config):
     if extension_name == "elevenlabs_multiple_context_tts_python":
         normalized.apply_defaults()
     normalized.update_params()
-    return module, normalized, getattr(normalized, field)
+    url = getattr(normalized, field)
+    if extension_name == "speko_tts2_python":
+        url = speko_stream_url(url)
+    return module, normalized, url
 
 
 @contextmanager
