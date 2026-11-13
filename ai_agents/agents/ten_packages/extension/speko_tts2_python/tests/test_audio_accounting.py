@@ -397,35 +397,52 @@ async def test_partial_audio_then_final_error_ends_once_before_error():
 
 
 @pytest.mark.asyncio
-async def test_non_final_error_keeps_request_open_until_one_end():
+async def test_non_final_error_ends_the_request_once_as_error():
+    first, second, after = (
+        pcm(HUNDRED_MS, seed=51),
+        pcm(HUNDRED_MS, seed=52),
+        pcm(2 * HUNDRED_MS, seed=53),
+    )
     async with Harness(
         [
             ("ttfb", 80),
-            ("audio", HUNDRED_MS),
+            ("pcm", first),
             ("advance", 125),
             (
                 "error",
                 SpekoRouterError("provider_error", "boom", retryable=True),
             ),
         ],
-        [("audio", HUNDRED_MS), ("advance", 125)],
+        [("pcm", second), ("advance", 125)],
+        [("ttfb", 60), ("pcm", after)],
     ) as harness:
-        await harness.send(text_input("first part", False))
+        await harness.send(text_input("first part", False, "r1"))
         await until(lambda: harness.ten_env.named("error"))
+        # The failed chunk leaves the TEN request open for its later text.
         assert not harness.ends()
-        await harness.send(text_input("second part", True))
+        await harness.send(text_input("second part", True, "r1"))
         await until(lambda: harness.ends() and harness.idle())
+        await harness.send(text_input("next", True, "r2"))
+        await until(lambda: len(harness.ends()) == 2 and harness.idle())
     env = harness.ten_env
-    (payload,) = harness.ends()
-    assert payload["reason"] == TTSAudioEndReason.REQUEST_END
-    assert payload["request_total_audio_duration_ms"] == 200
-    assert payload["request_event_interval_ms"] == 250
+    frames = frames_by_request(env.events)
+    assert pcm_of(frames["r1"]) == first + second
+    assert pcm_of(frames["r2"]) == after
+    failed, completed = harness.ends()
+    # Text was lost, so the request must not end as a success.
+    assert failed["request_id"] == "r1"
+    assert failed["reason"] == TTSAudioEndReason.ERROR
+    assert failed["request_total_audio_duration_ms"] == 200
+    assert failed["request_event_interval_ms"] == 250
     (error,) = env.named("error")
+    assert error["id"] == "r1"
     assert error["vendor_info"]["vendor"] == "speko"
     assert env.index(lambda kind, _: kind == "error") < env.index(
         lambda kind, _: kind == "tts_audio_end"
     )
-    assert len(env.named("tts_audio_start")) == 1
+    assert completed["request_id"] == "r2"
+    assert completed["reason"] == TTSAudioEndReason.REQUEST_END
+    assert completed["request_total_audio_duration_ms"] == 200
 
 
 @pytest.mark.asyncio

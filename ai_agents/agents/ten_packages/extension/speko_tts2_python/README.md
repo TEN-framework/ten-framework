@@ -65,10 +65,11 @@ and `--config_dir /absolute/path/to/configs`. Keep invalid-key configs invalid.
 Client/lifecycle unit tests use mocked transport and do not require credentials.
 
 Text chunks retain their whitespace; a chunk that is only whitespace is not
-sent to the Router. An intermediate-chunk error resets the
-connection while retaining the TEN request until its final input. Failed text
-is never replayed; later text can continue unless a permanent admission denial
-blocks the session.
+sent to the Router. An intermediate-chunk error is reported once and resets
+the connection while retaining the TEN request until its final input. That
+request then ends with reason `ERROR`, because the failed text is missing from
+its audio. Failed text is never replayed; later text can continue unless a
+permanent admission denial blocks the session.
 A terminal close error produces an error completion and still releases the
 request. Non-retryable denials are not automatically retried.
 

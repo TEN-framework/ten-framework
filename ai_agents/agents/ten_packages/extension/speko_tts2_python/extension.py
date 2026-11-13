@@ -45,6 +45,8 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._finalized = False
         self._audio_end_sent = False
         self._cancelled = False
+        # A non-final chunk failed: its text is missing from the audio.
+        self._chunk_failed = False
         self._stopped = False
         self._permanent_error: SpekoRouterError | None = None
         self._recorders: dict[str, PCMWriter] = {}
@@ -165,7 +167,11 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 await self._stream_text(text, text_input.request_id)
 
             if text_input.text_input_end:
-                await self._finalize_request(TTSAudioEndReason.REQUEST_END)
+                await self._finalize_request(
+                    TTSAudioEndReason.ERROR
+                    if self._chunk_failed
+                    else TTSAudioEndReason.REQUEST_END
+                )
         except SpekoRouterError as error:
             if self._cancelled or self._stopped:
                 return
@@ -259,6 +265,7 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
         self._finalized = False
         self._audio_end_sent = False
         self._cancelled = False
+        self._chunk_failed = False
         await self._setup_recorder(text_input.request_id)
 
     async def _ensure_client(self) -> SpekoTTSClient:
@@ -421,7 +428,10 @@ class SpekoTTS2Extension(AsyncTTS2BaseExtension):
                 TTSAudioEndReason.ERROR, error=module_error
             )
         else:
-            # A non-final chunk leaves the rest of the TEN request open.
+            # A non-final chunk leaves the rest of the TEN request open, but
+            # its text is lost, so the request will end as an error. The
+            # error is reported here, once.
+            self._chunk_failed = True
             await self.send_tts_error(self.current_request_id, module_error)
 
     async def _ensure_audio_start(self) -> None:

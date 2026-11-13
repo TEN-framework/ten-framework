@@ -53,6 +53,11 @@ async def test_intermediate_error_keeps_request_open_and_next_chunk_runs():
     await extension.request_tts(text(" next", final=True))
     extension._stream_text.assert_awaited_with(" next", "req")
     extension.finish_request.assert_awaited_once()
+    # The earlier chunk's text is missing, so the request ends as an error.
+    assert (
+        extension.finish_request.await_args.kwargs["reason"]
+        == TTSAudioEndReason.ERROR
+    )
     assert extension._processing_request_id is None
 
 
