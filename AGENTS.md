@@ -11,7 +11,7 @@ agents work efficiently. Documentation is structured in three levels under
    This gives you setup, architecture, code map, conventions, workflows,
    interfaces, gotchas, and security.
 3. If a task needs more detail than L1 provides, follow links to L2 deep dives
-   in `docs/ai/L1/deep_dives/`. Load only the specific L2 file you need.
+   in `docs/ai/L1/L2/`. Load only the specific L2 file you need.
 
 ## Levels
 
