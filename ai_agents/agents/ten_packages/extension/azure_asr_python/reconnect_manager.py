@@ -6,10 +6,10 @@ from .const import MODULE_NAME_ASR
 
 class ReconnectManager:
     """
-    Manages bounded reconnection attempts with exponential backoff strategy.
+    Manages reconnection attempts with exponential backoff strategy.
 
     Features:
-    - Bounded retry attempts (default from RECONNECT_MAX_ATTEMPTS)
+    - Optional bounded retry attempts; max_attempts=None retries forever
     - Exponential backoff strategy with maximum delay cap: 0.5s, 1s, 2s, 4s (capped)
     - Automatic counter reset after successful connection
     - Detailed logging for monitoring and debugging
@@ -19,7 +19,7 @@ class ReconnectManager:
         self,
         base_delay: float = 0.5,  # 500 milliseconds
         max_delay: float = 4.0,  # 4 seconds maximum delay
-        max_attempts: int = 100,
+        max_attempts: int | None = None,
         logger=None,
     ):
         self.base_delay = base_delay
@@ -46,11 +46,13 @@ class ReconnectManager:
         """Get current reconnection attempts information"""
         return {
             "current_attempts": self.attempts,
-            "max_attempts": self.max_attempts,
+            "max_attempts": (
+                self.max_attempts if self.max_attempts is not None else "unlimited"
+            ),
         }
 
     def can_retry(self) -> bool:
-        return self.attempts < self.max_attempts
+        return self.max_attempts is None or self.attempts < self.max_attempts
 
     async def handle_reconnect(
         self,
@@ -74,8 +76,9 @@ class ReconnectManager:
         self.attempts += 1
 
         # Calculate exponential backoff delay with max limit: min(2^(attempts-1) * base_delay, max_delay)
+        # Exponent is capped so attempts can grow unbounded without huge ints.
         delay = min(
-            self.base_delay * (2 ** (self.attempts - 1)), self.max_delay
+            self.base_delay * (2 ** min(self.attempts - 1, 10)), self.max_delay
         )
 
         if self.logger:
@@ -97,7 +100,10 @@ class ReconnectManager:
             return True
 
         except Exception as e:
-            is_fatal = self.attempts >= self.max_attempts
+            is_fatal = (
+                self.max_attempts is not None
+                and self.attempts >= self.max_attempts
+            )
             if self.logger:
                 self.logger.log_error(
                     f"Reconnection attempt #{self.attempts} failed: {e}. "

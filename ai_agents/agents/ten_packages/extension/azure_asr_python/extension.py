@@ -20,7 +20,6 @@ from .const import (
     AZURE_LANGUAGE_ID_MODE_KEY,
     DEFAULT_TRANSPORT_RECONNECT_GRACE_SEC,
     DEFAULT_TRANSPORT_HANDSHAKE_TIMEOUT_SEC,
-    RECONNECT_MAX_ATTEMPTS,
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -88,9 +87,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
 
-        # Initialize reconnection manager
+        # Initialize reconnection manager; non-fatal errors retry without limit
         self.reconnect_manager = ReconnectManager(
-            logger=ten_env, max_attempts=RECONNECT_MAX_ATTEMPTS
+            logger=ten_env, max_attempts=None
         )
 
         config_json, _ = await ten_env.get_property_to_json("")
@@ -934,6 +933,11 @@ class AzureASRExtension(AsyncASRBaseExtension):
             return False
         finally:
             self._reconnect_in_flight = False
+            # Keep retrying until the transport is restored or the extension
+            # stops. Scheduling via the grace task also covers failure events
+            # (e.g. session_stopped) dropped while a reconnect was in flight.
+            if not self.stopped and not self._transport_connected:
+                await self._schedule_transport_recovery()
 
     async def _finalize_end(self) -> None:
         if self.last_finalize_timestamp != 0:
