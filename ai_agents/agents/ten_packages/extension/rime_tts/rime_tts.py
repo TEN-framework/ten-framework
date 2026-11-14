@@ -197,7 +197,11 @@ class RimeTTSynthesizer:
         finally:
             if self.ws:
                 await self.ws.close()
-            if self.on_connection_disconnected:
+            # A deliberate shutdown (for example extension on_stop calling
+            # close()) must not be reported as a fatal disconnect. The normal
+            # websocket close code is handled by the caller; this callback is
+            # only for an unexpected end of the connection-processing task.
+            if self.on_connection_disconnected and not self._session_closing:
                 await self.on_connection_disconnected(
                     code=int(ModuleErrorCode.FATAL_ERROR),
                     message="closed",
