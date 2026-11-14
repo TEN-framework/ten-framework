@@ -1,7 +1,16 @@
 [project]
 name = "openai-tts2-python"
-version = "0.6.10"
+version = "0.7.0"
 requires-python = ">=3.10"
 dependencies = [
-    "httpx>=0.28.1",
+    "certifi",
+    "httpcore>=1.0.0",
+    "httpx[http2]>=0.28.1",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "typing-extensions",
 ]

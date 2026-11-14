@@ -15,18 +15,33 @@ OpenAI TTS Extension for TEN Framework - provides text-to-speech synthesis using
 
 ### Top-level Properties
 
+- `url` (string, optional): Complete endpoint URL used when `params.url` is missing, blank, or not a string
 - `dump` (bool): Enable audio dumping for debugging (default: false)
 - `dump_path` (string): Path to save dumped audio files (default: extension directory + "openai_tts_in.pcm")
 
 ### TTS Parameters (under `params`)
 
-All OpenAI TTS-specific settings are configured within the `params` object:
+Configure OpenAI TTS settings in the `params` object:
 
+- `url` (string, optional): Complete endpoint URL, with priority over the top-level `url`
+- `base_url` (string, optional): Base URL used when neither endpoint URL is set (default: `https://api.openai.com/v1`)
 - `api_key` (string, required): OpenAI API key
 - `model` (string, required): TTS model to use (e.g., "gpt-4o-mini-tts")
 - `voice` (string, required): Voice identifier (e.g., "coral", "alloy", "echo", "fable", "onyx", "nova", "shimmer")
 - `speed` (float, optional): Speech speed (0.25 to 4.0, default: 1.0)
 - `instructions` (string, optional): Additional instructions for the TTS model
+
+### Endpoint Selection
+
+The endpoint precedence is:
+
+1. `params.url`
+2. Top-level `url`
+3. `params.base_url` without trailing slashes, plus `/audio/speech`
+4. `https://api.openai.com/v1/audio/speech`
+
+An empty, whitespace-only, or non-string `params.url` falls back to the top-level
+`url`. The extension removes `url` and `base_url` from the synthesis request body.
 
 ### Example Configuration
 
