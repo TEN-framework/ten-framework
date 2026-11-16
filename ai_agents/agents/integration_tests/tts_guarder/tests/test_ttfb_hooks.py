@@ -1,4 +1,4 @@
-"""Deterministic wire fixtures for all seven first-batch TTFB modes."""
+"""Deterministic wire fixtures for the first-batch TTFB modes and Speko."""
 
 import gzip
 import json
@@ -11,6 +11,7 @@ from .ttfb_hooks.bytedance import ByteDanceObserver
 from .ttfb_hooks.bytedance_duplex import ByteDanceDuplexObserver
 from .ttfb_hooks.minimax import MiniMaxObserver
 from .ttfb_hooks.soul import SoulObserver
+from .ttfb_hooks.speko import SpekoObserver
 from .test_soul_ttfb_reference import gateway_frame
 
 
@@ -41,6 +42,10 @@ def wire(mode, context, audio=False, empty=False):
             json.dumps({"request": {"reqid": context, "text": text}}).encode()
         )
         return b"\x11\x10\x11\x00" + len(body).to_bytes(4, "big") + body
+    if mode == "speko":
+        if audio:
+            return pcm
+        return json.dumps({"type": "input.append", "text": text})
     if mode == "bytedance-duplex":
         return duplex(
             352 if audio else 200,
@@ -82,6 +87,7 @@ def wire(mode, context, audio=False, empty=False):
         ("minimax", MiniMaxObserver),
         ("minimax-duplex", MiniMaxObserver),
         ("soul", SoulObserver),
+        ("speko", SpekoObserver),
     ],
 )
 def test_hook_times_only_first_text_and_nonempty_audio(
@@ -143,6 +149,7 @@ def test_context_does_not_cross_requests(monkeypatch, mode, observer_class):
         ("minimax", "minimax_tts_websocket", "minimax_tts"),
         ("minimax-duplex", "minimax_tts_websocket_duplex", "minimax_tts"),
         ("soul", "soul_tts_python", "soul_tts"),
+        ("speko", "speko_tts2_python", "client"),
     ],
 )
 def test_hook_installs_on_transport_and_restores(
@@ -179,6 +186,10 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
     async with websockets.serve(provider, "127.0.0.1", 0) as server:
         port = server.sockets[0].getsockname()[1]
         url = f"ws://127.0.0.1:{port}/test"
+        # Speko configures an origin; the client appends the stream path.
+        connect_url = (
+            f"{url}/v1/tts/stream" if extension == "speko_tts2_python" else url
+        )
         model = "eleven_v4" if mode == "ttd" else "eleven_flash_v2_5"
         # The installer only needs a dependency binding and config contract.
         # No vendor package/SDK is required by these transport utility tests.
@@ -193,6 +204,7 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
                 self.url = values["url"]
                 self.uri = self.url
                 self.api_url = self.url
+                self.base_url = self.url
                 self.model_id = values["params"]["model_id"]
                 self.params = values["params"]
 
@@ -212,7 +224,7 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
         ) as reference:
             assert reference is not None
             reference.begin_request(request)
-            async with module.websockets.connect(url) as socket:
+            async with module.websockets.connect(connect_url) as socket:
                 await socket.send(outgoing)
                 assert await socket.recv() == wire(
                     mode, request, audio=True, empty=True
@@ -235,6 +247,7 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
         ("minimax", MiniMaxObserver),
         ("minimax-duplex", MiniMaxObserver),
         ("soul", SoulObserver),
+        ("speko", SpekoObserver),
     ],
 )
 def test_hook_defers_decode_and_retains_first_audio_arrival(
@@ -293,3 +306,54 @@ def test_reading_previous_request_does_not_return_pending_request(monkeypatch):
     observer.observe_send(wire("tts", "second"))
     assert reference.elapsed_ms("first") == 20
     assert reference.elapsed_ms("second") is None
+
+
+def test_speko_hook_ignores_control_frames_and_router_events(monkeypatch):
+    now = [0]
+    monkeypatch.setattr("tests.ttfb_hooks.base.time.monotonic_ns", lambda: now[0])
+    reference = TTFBReference()
+    observer = SpekoObserver(reference)
+    reference.begin_request("request")
+    for frame in (
+        {"type": "session.configure", "audio": {"encoding": "pcm_s16le"}},
+        {"type": "input.append", "text": " \n\t"},
+        {"type": "input.commit"},
+        {"type": "input.cancel"},
+        {"type": "session.close"},
+    ):
+        observer.observe_send(json.dumps(frame))
+    now[0] = 10_000_000
+    observer.observe_send(wire("speko", "request"))
+    observer.observe_send(json.dumps({"type": "input.commit"}))
+    for event in (
+        {"type": "session.ready", "request_id": "router"},
+        {"type": "utterance.started", "sequence": 1},
+        {"type": "usage.updated", "usage": {"characters": 6}},
+    ):
+        now[0] += 5_000_000
+        observer.observe_receive(json.dumps(event))
+    now[0] = 40_000_000
+    observer.observe_receive(b"")
+    assert reference.elapsed_ms("request") is None
+    now[0] = 45_000_000
+    observer.observe_receive(wire("speko", "request", audio=True))
+    observer.observe_receive(json.dumps({"type": "utterance.done", "sequence": 1}))
+    assert reference.elapsed_ms("request") == 35
+
+
+def test_speko_old_connection_audio_cannot_complete_new_request(monkeypatch):
+    now = [0]
+    monkeypatch.setattr("tests.ttfb_hooks.base.time.monotonic_ns", lambda: now[0])
+    reference = TTFBReference()
+    old_connection = SpekoObserver(reference)
+    reference.begin_request("old")
+    old_connection.observe_send(wire("speko", "old"))
+    reference.begin_request("new")
+    connection = SpekoObserver(reference)
+    connection.observe_send(wire("speko", "new"))
+    now[0] = 10_000_000
+    old_connection.observe_receive(wire("speko", "old", audio=True))
+    assert reference.elapsed_ms("new") is None
+    now[0] = 20_000_000
+    connection.observe_receive(wire("speko", "new", audio=True))
+    assert reference.elapsed_ms("new") == 20
