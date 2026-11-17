@@ -1,0 +1,9 @@
+{
+  "params": {
+    "base_url": "${env:BLAZE_STT_API_URL|https://api.blaze.vn}",
+    "api_key": "${env:BLAZE_STT_API_KEY}",
+    "language": "vi",
+    "model": "stt-stream-1.5",
+    "sample_rate": 16000
+  }
+}

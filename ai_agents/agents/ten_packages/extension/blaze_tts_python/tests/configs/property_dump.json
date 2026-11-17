@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./tests/dump_output/",
+  "params": {
+    "base_url": "${env:BLAZE_TTS_API_URL|https://api.blaze.vn}",
+    "api_key": "${env:BLAZE_TTS_API_KEY}",
+    "speaker_id": "${env:BLAZE_TTS_SPEAKER_ID|HN-Nu-CSKH-HuongGiang}",
+    "language": "vi",
+    "model": "2.0-realtime"
+  }
+}

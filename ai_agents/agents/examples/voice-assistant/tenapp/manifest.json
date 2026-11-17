@@ -160,6 +160,12 @@
       "path": "../../../ten_packages/extension/xai_tts_python"
     },
     {
+      "path": "../../../ten_packages/extension/blaze_stt_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/blaze_tts_python"
+    },
+    {
       "path": "../../../ten_packages/extension/message_collector2"
     },
     {
