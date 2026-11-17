@@ -648,10 +648,9 @@ class CartesiaTTSClient:
         # If this context already received words, prepend a space word
         # so concatenated subtitles have proper spacing between groups.
         if context_id in self._last_word_end_ms:
-            # Keep the space strictly before the next group.
-            space_start_ms = self._last_word_end_ms[context_id] - 1
+            space_start_ms = self._last_word_end_ms[context_id]
             words.append(
-                TTSWord(word=" ", start_ms=space_start_ms, duration_ms=1)
+                TTSWord(word=" ", start_ms=space_start_ms, duration_ms=0)
             )
             text_parts.append(" ")
 
@@ -672,7 +671,7 @@ class CartesiaTTSClient:
                 text_parts[-1], word_text
             ):
                 words.append(
-                    TTSWord(word=" ", start_ms=start_ms - 1, duration_ms=1)
+                    TTSWord(word=" ", start_ms=start_ms, duration_ms=0)
                 )
                 text_parts.append(" ")
             words.append(
