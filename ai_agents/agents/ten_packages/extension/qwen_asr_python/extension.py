@@ -63,6 +63,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
         self._connection_start = 0.0
         self._task_audio_start_ms = 0
         self._task_contexts: dict[str, tuple[dict[str, Any], str | None]] = {}
+        self._usage_reported_task_ids: set[str] = set()
         self._active_task_id: str | None = None
         self._active_session_id: str | None = None
         self._task_starting = False
@@ -217,6 +218,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
                 )
                 self.client = client
                 self._task_contexts.clear()
+                self._usage_reported_task_ids.clear()
                 try:
                     await client.connect()
                     if self._stop_requested or generation != self._generation:
@@ -437,8 +439,23 @@ class QwenASRExtension(AsyncASRBaseExtension):
         event_name = (event.get("header") or {}).get("event")
         if event_name == "task-failed":
             await self._handle_task_failed(event)
+        elif event_name == "task-finished":
+            await self._report_usage_metrics(event)
         elif event_name == "result-generated":
             await self._handle_result(event)
+
+    async def _report_usage_metrics(self, event: dict[str, Any]) -> None:
+        usage = (event.get("payload") or {}).get("usage")
+        if not isinstance(usage, dict) or not usage:
+            return
+        task_id = (event.get("header") or {}).get("task_id")
+        if not isinstance(task_id, str):
+            task_id = self._active_task_id
+        if task_id is not None:
+            if task_id in self._usage_reported_task_ids:
+                return
+            self._usage_reported_task_ids.add(task_id)
+        await self.send_vendor_metrics({"usage": dict(usage)})
 
     async def _handle_task_failed(self, event: dict[str, Any]) -> None:
         client = self.client
@@ -523,6 +540,8 @@ class QwenASRExtension(AsyncASRBaseExtension):
             self.config.normalized_language if self.config else "zh-CN"
         )
         try:
+            if final:
+                await self._report_usage_metrics(event)
             await self.send_asr_result(
                 ASRResult(
                     text=text,
