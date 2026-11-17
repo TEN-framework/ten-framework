@@ -198,6 +198,116 @@ async def test_send_asr_result_from_text_no_config_sends(mock_ten_env) -> None:
     ext.send_asr_result.assert_awaited_once()
 
 
+async def _send_result_and_advance_uuid(ext, result) -> None:
+    result.id = ext.uuid
+    if result.final:
+        ext.uuid = "next-turn"
+
+
+def _send_result_mock(ext) -> AsyncMock:
+    async def send_result(result) -> None:
+        await _send_result_and_advance_uuid(ext, result)
+
+    return AsyncMock(side_effect=send_result)
+
+
+@pytest.mark.asyncio
+async def test_non_final_result_cache_tracks_latest_result_for_same_id(
+    mock_ten_env,
+) -> None:
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.uuid = "turn-1"
+    ext.send_asr_result = _send_result_mock(ext)
+
+    await ext._send_asr_result_from_text(
+        text="hello",
+        is_final=False,
+        start_ms=0,
+        duration_ms=100,
+        language="zh-CN",
+        metadata={},
+    )
+    await ext._send_asr_result_from_text(
+        text="hello world",
+        is_final=False,
+        start_ms=0,
+        duration_ms=200,
+        language="zh-CN",
+        metadata={},
+    )
+
+    assert ext._pending_non_final_result is not None
+    assert ext._pending_non_final_result.id == "turn-1"
+    assert ext._pending_non_final_result.text == "hello world"
+    assert ext._pending_non_final_result.final is False
+
+
+@pytest.mark.asyncio
+async def test_final_result_clears_non_final_cache_for_same_id(
+    mock_ten_env,
+) -> None:
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.uuid = "turn-1"
+    ext.send_asr_result = _send_result_mock(ext)
+
+    await ext._send_asr_result_from_text(
+        text="hello",
+        is_final=False,
+        start_ms=0,
+        duration_ms=100,
+        language="zh-CN",
+        metadata={},
+    )
+    await ext._send_asr_result_from_text(
+        text="hello world",
+        is_final=True,
+        start_ms=0,
+        duration_ms=200,
+        language="zh-CN",
+        metadata={},
+    )
+
+    assert ext._pending_non_final_result is None
+
+
+@pytest.mark.asyncio
+async def test_disconnect_sends_cached_non_final_as_same_id_final(
+    mock_ten_env,
+) -> None:
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.uuid = "turn-1"
+    ext.on_disconnected = AsyncMock()
+    ext.send_asr_result = _send_result_mock(ext)
+
+    await ext._send_asr_result_from_text(
+        text="hello world",
+        is_final=False,
+        start_ms=10,
+        duration_ms=200,
+        language="zh-CN",
+        metadata={"asr_info": {"vendor": "bytedance_bigmodel"}},
+    )
+    await ext._on_disconnected()
+
+    assert ext.send_asr_result.await_count == 2
+    fallback = ext.send_asr_result.await_args_list[1].args[0]
+    assert fallback.id == "turn-1"
+    assert fallback.text == "hello world"
+    assert fallback.final is True
+    assert fallback.start_ms == 10
+    assert fallback.duration_ms == 200
+    assert ext._pending_non_final_result is None
+
+    await ext._on_disconnected()
+    assert ext.send_asr_result.await_count == 2
+
+
 @pytest.mark.asyncio
 async def test_run_update_configs_returns_false_when_config_missing(
     mock_ten_env,

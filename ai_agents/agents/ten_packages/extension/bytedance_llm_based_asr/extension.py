@@ -186,6 +186,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # >0 means a stop/start swap is in progress: is_connected() is False so
         # the base class Keep-buffers audio instead of racing send_audio.
         self._connection_swap_depth: int = 0
+        # Keep the latest non-final result so a disconnect can close the
+        # current turn without changing the base ASR ID.
+        self._pending_non_final_result: ASRResult | None = None
+        self._asr_result_lock: asyncio.Lock = asyncio.Lock()
 
     @override
     def vendor(self) -> str:
@@ -798,8 +802,35 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             words=[],
             metadata=metadata,
         )
-        await self.send_asr_result(asr_result)
+        async with self._asr_result_lock:
+            # Capture the base-class ID before a final result resets it.
+            asr_result.id = self.uuid
+            await self.send_asr_result(asr_result)
+            if is_final:
+                self._pending_non_final_result = None
+            else:
+                self._pending_non_final_result = copy.deepcopy(asr_result)
         return True
+
+    async def _finalize_pending_non_final_result(self) -> None:
+        """Emit the current non-final result as final after a disconnect."""
+        async with self._asr_result_lock:
+            pending = self._pending_non_final_result
+            self._pending_non_final_result = None
+            if pending is None:
+                return
+
+            pending.final = True
+            if pending.id:
+                # send_asr_result() assigns self.uuid. The pending result is
+                # the active turn, so restore its ID before the fallback send.
+                self.uuid = pending.id
+            try:
+                await self.send_asr_result(pending)
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Failed to finalize pending ASR result on disconnect: {e}"
+                )
 
     async def _track_utterance_timestamps(self, result: ASRResponse) -> None:
         """Track utterance timestamps and send two-pass delay metrics."""
@@ -1187,6 +1218,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         vendor_message: str = "",
     ) -> None:
         """Handle connection lost."""
+        await self._finalize_pending_non_final_result()
         self.ten_env.log_info(
             f"vendor connection closed, session_id: {self.session_id}, "
             f"vendor_close_code={vendor_close_code}, "
