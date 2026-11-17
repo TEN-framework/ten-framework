@@ -144,7 +144,7 @@ wheels = [
 
 [[package]]
 name = "speko-asr-python"
-version = "0.1.0"
+version = "0.1.1"
 source = { virtual = "." }
 dependencies = [
     { name = "pydantic" },
@@ -156,7 +156,7 @@ dependencies = [
 requires-dist = [
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
-    { name = "websockets", specifier = ">=14.0,<16" },
+    { name = "websockets", specifier = ">=14.0" },
 ]
 
 [[package]]
