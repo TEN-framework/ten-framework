@@ -785,6 +785,100 @@ def test_empty_and_heartbeat_results_are_ignored():
     asyncio.run(run())
 
 
+def test_task_finished_reports_vendor_usage():
+    async def run():
+        extension = connection_extension()
+        extension.send_vendor_metrics = AsyncMock()
+
+        await extension._handle_event(
+            {
+                "header": {"event": "task-finished"},
+                "payload": {
+                    "usage": {
+                        "duration": 9,
+                        "input_tokens": 365,
+                        "output_tokens": 12,
+                        "total_tokens": 377,
+                    }
+                },
+            },
+            extension._generation,
+        )
+
+        extension.send_vendor_metrics.assert_awaited_once_with(
+            {
+                "usage": {
+                    "duration": 9,
+                    "input_tokens": 365,
+                    "output_tokens": 12,
+                    "total_tokens": 377,
+                }
+            }
+        )
+
+    asyncio.run(run())
+
+
+def test_final_result_reports_usage_and_task_finished_does_not_duplicate():
+    async def run():
+        extension = connection_extension()
+        extension.send_vendor_metrics = AsyncMock()
+        usage = {
+            "duration": 3,
+            "input_tokens": 23,
+            "output_tokens": 6,
+            "total_tokens": 29,
+        }
+
+        await extension._handle_event(
+            {
+                "header": {
+                    "event": "result-generated",
+                    "task_id": "task-1",
+                },
+                "payload": {
+                    "output": {
+                        "sentence": {
+                            "text": "hello",
+                            "sentence_end": True,
+                        }
+                    },
+                    "usage": usage,
+                },
+            },
+            extension._generation,
+        )
+        await extension._handle_event(
+            {
+                "header": {
+                    "event": "task-finished",
+                    "task_id": "task-1",
+                },
+                "payload": {"usage": usage},
+            },
+            extension._generation,
+        )
+
+        extension.send_vendor_metrics.assert_awaited_once_with({"usage": usage})
+
+    asyncio.run(run())
+
+
+def test_task_finished_without_usage_does_not_report_vendor_metrics():
+    async def run():
+        extension = connection_extension()
+        extension.send_vendor_metrics = AsyncMock()
+
+        await extension._handle_event(
+            {"header": {"event": "task-finished"}, "payload": {}},
+            extension._generation,
+        )
+
+        extension.send_vendor_metrics.assert_not_awaited()
+
+    asyncio.run(run())
+
+
 def connection_extension():
     extension = configured_extension()
     extension.ten_env.send_data = AsyncMock()

@@ -168,6 +168,7 @@ class XfyunDialectASRExtension(
                 "multiFuncData": self.config.multiFuncData,
                 "use_tts": self.config.use_tts,
                 "nrtMode": self.config.nrtMode,
+                "recognized_language": self.config.recognized_language,
             }
 
             # Create recognition instance with new API
