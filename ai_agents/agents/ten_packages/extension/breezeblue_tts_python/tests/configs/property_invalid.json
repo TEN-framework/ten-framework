@@ -1,0 +1,6 @@
+{
+    "params": {
+        "api_key": "invalid",
+        "voice_id": "${env:BREEZE_TTS_VOICE_ID}"
+    }
+}
