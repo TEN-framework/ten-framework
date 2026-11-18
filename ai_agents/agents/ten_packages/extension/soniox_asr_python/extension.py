@@ -322,7 +322,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             await ws.stop()
         if task and not task.done():
             try:
-                await task
+                # The client force-closes the transport on stop timeout; if it
+                # still does not unwind, cancel rather than hang indefinitely.
+                await asyncio.wait_for(task, timeout=5.0)
             except Exception:
                 pass
         self._suppress_close_status = False
