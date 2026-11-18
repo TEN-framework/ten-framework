@@ -1,4 +1,4 @@
-"""Deterministic wire fixtures for the first-batch TTFB modes and Speko."""
+"""Deterministic wire fixtures for the WebSocket TTFB modes."""
 
 import gzip
 import json
@@ -12,6 +12,7 @@ from .ttfb_hooks.bytedance_duplex import ByteDanceDuplexObserver
 from .ttfb_hooks.minimax import MiniMaxObserver
 from .ttfb_hooks.soul import SoulObserver
 from .ttfb_hooks.speko import SpekoObserver
+from .ttfb_hooks.kalpa import KalpaObserver
 from .test_soul_ttfb_reference import gateway_frame
 
 
@@ -66,6 +67,16 @@ def wire(mode, context, audio=False, empty=False):
                 **({"text": text} if mode == "tts" else {"inputs": [{"text": text}]}),
             }
         )
+    if mode == "kalpa":
+        if audio:
+            return json.dumps(
+                {
+                    "type": "responseAudio",
+                    "response_id": context,
+                    "pcm_b64": "" if empty else "AQA=",
+                }
+            )
+        return json.dumps({"type": "sendText", "text": text})
     body = (
         {
             "event": "task_continued",
@@ -88,6 +99,7 @@ def wire(mode, context, audio=False, empty=False):
         ("minimax-duplex", MiniMaxObserver),
         ("soul", SoulObserver),
         ("speko", SpekoObserver),
+        ("kalpa", KalpaObserver),
     ],
 )
 def test_hook_times_only_first_text_and_nonempty_audio(
@@ -150,6 +162,7 @@ def test_context_does_not_cross_requests(monkeypatch, mode, observer_class):
         ("minimax-duplex", "minimax_tts_websocket_duplex", "minimax_tts"),
         ("soul", "soul_tts_python", "soul_tts"),
         ("speko", "speko_tts2_python", "client"),
+        ("kalpa", "kalpa_tts_python", "kalpa_tts"),
     ],
 )
 def test_hook_installs_on_transport_and_restores(
@@ -205,6 +218,7 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
                 self.uri = self.url
                 self.api_url = self.url
                 self.base_url = self.url
+                self.websocket_url = self.url
                 self.model_id = values["params"]["model_id"]
                 self.params = values["params"]
 
@@ -248,6 +262,7 @@ async def _transport_scenario(monkeypatch, mode, extension, filename):
         ("minimax-duplex", MiniMaxObserver),
         ("soul", SoulObserver),
         ("speko", SpekoObserver),
+        ("kalpa", KalpaObserver),
     ],
 )
 def test_hook_defers_decode_and_retains_first_audio_arrival(
@@ -356,4 +371,62 @@ def test_speko_old_connection_audio_cannot_complete_new_request(monkeypatch):
     assert reference.elapsed_ms("new") is None
     now[0] = 20_000_000
     connection.observe_receive(wire("speko", "new", audio=True))
+    assert reference.elapsed_ms("new") == 20
+
+
+def test_kalpa_hook_ignores_control_frames_and_server_events(monkeypatch):
+    now = [0]
+    monkeypatch.setattr("tests.ttfb_hooks.base.time.monotonic_ns", lambda: now[0])
+    reference = TTFBReference()
+    observer = KalpaObserver(reference)
+    reference.begin_request("request")
+    for frame in (
+        {"type": "initializeConnection", "api_key": "key", "model": "kalpa-tts-1"},
+        {"type": "sendText", "text": ""},
+        {"type": "sendText", "text": " \n\t"},
+        {"type": "sendText", "text": "", "flush": True},
+    ):
+        observer.observe_send(json.dumps(frame))
+    now[0] = 10_000_000
+    observer.observe_send(wire("kalpa", "request"))
+    observer.observe_send(json.dumps({"type": "sendText", "text": "", "flush": True}))
+    for event in (
+        {"type": "sessionCreated", "session_id": "session"},
+        {"type": "responseCreated", "response_id": "request"},
+        {"type": "error", "fatal": False, "error": {"type": "inference_error"}},
+    ):
+        now[0] += 5_000_000
+        observer.observe_receive(json.dumps(event))
+    now[0] = 40_000_000
+    observer.observe_receive(wire("kalpa", "request", audio=True, empty=True))
+    # Frames the extension ignores: not JSON, not an object, not base64.
+    for frame in ("not JSON", "[1, 2]", b"\x00\x01"):
+        observer.observe_receive(frame)
+    observer.observe_receive(
+        json.dumps({"type": "responseAudio", "pcm_b64": "not base64!"})
+    )
+    assert reference.elapsed_ms("request") is None
+    now[0] = 45_000_000
+    observer.observe_receive(wire("kalpa", "request", audio=True))
+    observer.observe_receive(
+        json.dumps({"type": "responseDone", "response_id": "request"})
+    )
+    assert reference.elapsed_ms("request") == 35
+
+
+def test_kalpa_old_connection_audio_cannot_complete_new_request(monkeypatch):
+    now = [0]
+    monkeypatch.setattr("tests.ttfb_hooks.base.time.monotonic_ns", lambda: now[0])
+    reference = TTFBReference()
+    old_connection = KalpaObserver(reference)
+    reference.begin_request("old")
+    old_connection.observe_send(wire("kalpa", "old"))
+    reference.begin_request("new")
+    connection = KalpaObserver(reference)
+    connection.observe_send(wire("kalpa", "new"))
+    now[0] = 10_000_000
+    old_connection.observe_receive(wire("kalpa", "old", audio=True))
+    assert reference.elapsed_ms("new") is None
+    now[0] = 20_000_000
+    connection.observe_receive(wire("kalpa", "new", audio=True))
     assert reference.elapsed_ms("new") == 20

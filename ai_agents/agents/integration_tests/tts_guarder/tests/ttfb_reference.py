@@ -100,6 +100,12 @@ HOOKS = {
         "client",
         "wss://router.speko.dev/v1/tts/stream",
     ),
+    "kalpa_tts_python": (
+        "kalpa",
+        "KalpaObserver",
+        "kalpa_tts",
+        "wss://api.kalpalabs.ai",
+    ),
 }
 
 
@@ -111,6 +117,8 @@ CONFIGS = {
     "minimax_tts_websocket_duplex": ("MinimaxTTSWebsocketDuplexConfig", "url"),
     "soul_tts_python": ("SoulTTSWebsocketConfig", "url"),
     "speko_tts2_python": ("SpekoTTS2Config", "base_url"),
+    # The voice is part of the path, so the config builds the endpoint.
+    "kalpa_tts_python": ("KalpaTTSConfig", "websocket_url"),
 }
 
 
