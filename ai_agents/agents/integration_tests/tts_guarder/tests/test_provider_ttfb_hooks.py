@@ -253,6 +253,7 @@ async def test_breeze_http_adapter_hook_tracks_input_and_first_audio(
         async for audio, event in client.get("Hello", "first"):
             seen.append((audio, event))
         assert seen == [(b"", Event.RESPONSE), (b"audio", Event.RESPONSE)]
-        assert reference.elapsed_ms("first") == 20
+        # The empty chunk at 150 ms is ignored; the first real audio is at 170 ms.
+        assert reference.elapsed_ms("first") == 170
 
     assert BreezeTTSClient.get is fake_get
