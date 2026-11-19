@@ -35,6 +35,7 @@ class GmicloudTTS2Extension(AsyncTTS2HttpExtension):
                 voice=cfg.voice,
                 audio_format=cfg.audio_format,
                 speed=cfg.speed,
+                temperature=cfg.temperature,
                 sample_rate=cfg.sample_rate,
                 text_chunk_chars=cfg.text_chunk_chars,
                 request_timeout_sec=cfg.request_timeout_sec,

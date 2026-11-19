@@ -22,10 +22,11 @@ The default `property.json` reads the key from `GMI_API_KEY` via
 | `model` | `inworld-tts-2` | GMI Cloud model id |
 | `voice` | `Dennis` | `voice_id` (Inworld/MiniMax) or a Resemble `voice_uuid` (Chatterbox) |
 | `speed` | `1.0` | Speaking rate |
+| `temperature` | none | Inworld only (0.0-2.0); omitted from the payload when unset |
 | `temperature` | none | Inworld only |
 | `audio_format` | `WAV` | WAV only: PCM frames are emitted |
 | `sample_rate` | `24000` | Output rate; vendor audio is resampled to it |
-| `channels` | `1` | Vendor audio is downmixed to this |
+| `channels` | `1` | Must be 1: vendor audio is downmixed to mono |
 | `text_chunk_chars` | `1000` | Sentence-bounded chunking cap (see Long text below) |
 | `request_timeout_sec` | `60.0` | HTTP timeout |
 | `poll_interval_sec` | `2.0` | Queue poll interval |

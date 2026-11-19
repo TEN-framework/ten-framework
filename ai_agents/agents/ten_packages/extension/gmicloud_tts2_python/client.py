@@ -84,6 +84,7 @@ def build_payload(
     voice: str | None,
     audio_format: str,
     speed: float,
+    temperature: float | None = None,
 ) -> dict[str, Any]:
     """Build the GMI Cloud request payload for the model's request family.
 
@@ -103,6 +104,8 @@ def build_payload(
         }
         if resolved_voice:
             payload["voice_id"] = resolved_voice
+        if temperature is not None:
+            payload["temperature"] = temperature
     elif family == "minimax":
         payload = {
             "text": text,
@@ -218,6 +221,7 @@ class GmicloudTTSOptions:
         request_timeout_sec: float,
         poll_interval_sec: float,
         poll_attempts: int,
+        temperature: float | None = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
@@ -230,6 +234,7 @@ class GmicloudTTSOptions:
         self.request_timeout_sec = request_timeout_sec
         self.poll_interval_sec = poll_interval_sec
         self.poll_attempts = poll_attempts
+        self.temperature = temperature
 
 
 class GmicloudTTSClient(AsyncTTS2HttpClient):
@@ -246,12 +251,37 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
         self.opts = opts
         self._client = httpx.AsyncClient(timeout=opts.request_timeout_sec)
         self._cancelled = False
+        self._cancel_event = asyncio.Event()
+        self._inflight: asyncio.Task | None = None
 
     async def clean(self) -> None:
         await self._client.aclose()
 
     async def cancel(self) -> None:
+        # Abort promptly: wake any poll sleep and cancel the in-flight HTTP
+        # call so get() can release the request without waiting for I/O.
         self._cancelled = True
+        self._cancel_event.set()
+        inflight, self._inflight = self._inflight, None
+        if inflight is not None and not inflight.done():
+            inflight.cancel()
+
+    async def _http(self, coro):
+        """Run one HTTP call as a tracked task so cancel() can abort it."""
+        task = asyncio.ensure_future(coro)
+        self._inflight = task
+        try:
+            return await task
+        finally:
+            if self._inflight is task:
+                self._inflight = None
+
+    async def _sleep(self, seconds: float) -> None:
+        try:
+            await asyncio.wait_for(self._cancel_event.wait(), timeout=seconds)
+        except asyncio.TimeoutError:
+            return
+        raise GmicloudTTSApiError("cancelled during queue poll")
 
     def get_extra_metadata(self) -> dict[str, Any]:
         return {"model": self.opts.model, "voice": self.opts.voice or ""}
@@ -286,6 +316,9 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
             else:
                 yield message, TTS2HttpResponseEventType.ERROR
         except asyncio.CancelledError:
+            if self._cancelled:
+                yield None, TTS2HttpResponseEventType.FLUSH
+                return
             raise
         except Exception as error:  # noqa: BLE001 - never crash the pipeline
             yield str(error).encode(), TTS2HttpResponseEventType.ERROR
@@ -313,6 +346,7 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
                 voice=self.opts.voice,
                 audio_format=self.opts.audio_format,
                 speed=self.opts.speed,
+                temperature=self.opts.temperature,
             ),
         }
         headers = {
@@ -320,10 +354,12 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
             "Content-Type": "application/json",
         }
         try:
-            response = await self._client.post(
-                f"{self.opts.base_url}{QUEUE_PATH}",
-                json=body,
-                headers=headers,
+            response = await self._http(
+                self._client.post(
+                    f"{self.opts.base_url}{QUEUE_PATH}",
+                    json=body,
+                    headers=headers,
+                )
             )
         except httpx.HTTPError as error:
             raise GmicloudTTSApiError(
@@ -344,7 +380,7 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
                 request_id=str(data.get("request_id") or ""),
             )
         try:
-            audio = await self._client.get(audio_url)
+            audio = await self._http(self._client.get(audio_url))
         except httpx.HTTPError as error:
             raise GmicloudTTSApiError(
                 f"GMI Cloud audio download error: {error}"
@@ -368,15 +404,15 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
         if not audio_url and status != "failed" and request_id:
             poll_url = f"{self.opts.base_url}{QUEUE_PATH}/{request_id}"
             for _ in range(self.opts.poll_attempts):
-                await asyncio.sleep(self.opts.poll_interval_sec)
-                if self._cancelled:
-                    raise GmicloudTTSApiError("cancelled during queue poll")
+                await self._sleep(self.opts.poll_interval_sec)
                 try:
-                    response = await self._client.get(
-                        poll_url,
-                        headers={
-                            "Authorization": f"Bearer {self.opts.api_key}"
-                        },
+                    response = await self._http(
+                        self._client.get(
+                            poll_url,
+                            headers={
+                                "Authorization": f"Bearer {self.opts.api_key}"
+                            },
+                        )
                     )
                 except httpx.HTTPError as error:
                     raise GmicloudTTSApiError(

@@ -55,6 +55,22 @@ def test_chatterbox_requires_voice():
         config.validate()
 
 
+def test_channels_must_be_mono():
+    config = GmicloudTTS2Config(params={"api_key": "k", "channels": 2})
+    with pytest.raises(ValueError, match="channels must be 1"):
+        config.update_params()
+
+
+def test_temperature_bounds():
+    config = GmicloudTTS2Config(params={"api_key": "k", "temperature": 0.5})
+    config.update_params()
+    config.validate()
+    assert config.temperature == 0.5
+    bad = GmicloudTTS2Config(params={"api_key": "k", "temperature": 3.0})
+    with pytest.raises(ValueError, match="temperature"):
+        bad.update_params()
+
+
 def test_config_masks_api_key():
     config = GmicloudTTS2Config(params={"api_key": "secret-key-123"})
     config.update_params()

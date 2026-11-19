@@ -23,6 +23,7 @@ class GmicloudTTS2Config(AsyncTTS2HttpConfig):
     model: str = "inworld-tts-2"
     voice: str | None = None
     speed: float = 1.0
+    temperature: float | None = None
     audio_format: str = "WAV"
     sample_rate: int = 24000
     channels: int = 1
@@ -41,8 +42,12 @@ class GmicloudTTS2Config(AsyncTTS2HttpConfig):
     @field_validator("channels")
     @classmethod
     def validate_channels(cls, value: int) -> int:
-        if not 1 <= value <= 8:
-            raise ValueError("channels must be between 1 and 8")
+        # The adapter always emits downmixed mono PCM; a higher value would
+        # mislabel the stream. Reject anything else explicitly.
+        if value != 1:
+            raise ValueError(
+                "channels must be 1: this adapter emits downmixed mono PCM"
+            )
         return value
 
     @field_validator("speed")
@@ -50,6 +55,13 @@ class GmicloudTTS2Config(AsyncTTS2HttpConfig):
     def validate_speed(cls, value: float) -> float:
         if not 0.5 <= value <= 2.0:
             raise ValueError("speed must be between 0.5 and 2.0")
+        return value
+
+    @field_validator("temperature")
+    @classmethod
+    def validate_temperature(cls, value: float | None) -> float | None:
+        if value is not None and not 0.0 <= value <= 2.0:
+            raise ValueError("temperature must be between 0.0 and 2.0")
         return value
 
     @field_validator("audio_format")
@@ -75,6 +87,7 @@ class GmicloudTTS2Config(AsyncTTS2HttpConfig):
             "model",
             "voice",
             "speed",
+            "temperature",
             "audio_format",
             "sample_rate",
             "channels",

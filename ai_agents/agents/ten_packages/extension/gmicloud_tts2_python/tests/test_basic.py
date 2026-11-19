@@ -62,6 +62,24 @@ def test_chatterbox_requires_voice_uuid():
     assert payload["data"] == "hello"
 
 
+def test_inworld_temperature_forwarded_only_when_set():
+    with_t = build_payload(
+        "hi", model="inworld-tts-2", voice="Dennis",
+        audio_format="WAV", speed=1.0, temperature=0.5,
+    )
+    assert with_t["temperature"] == 0.5
+    without = build_payload(
+        "hi", model="inworld-tts-2", voice="Dennis",
+        audio_format="WAV", speed=1.0,
+    )
+    assert "temperature" not in without
+    minimax = build_payload(
+        "hi", model="minimax-tts-speech-2.8-turbo", voice=None,
+        audio_format="WAV", speed=1.0, temperature=0.5,
+    )
+    assert "temperature" not in minimax
+
+
 def test_split_text_sentence_boundaries():
     text = " ".join(f"Sentence number {i}." for i in range(80))
     chunks = split_text(text, 200)

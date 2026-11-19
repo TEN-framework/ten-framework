@@ -59,6 +59,9 @@
             "model": {
               "type": "string"
             },
+            "temperature": {
+              "type": "float64"
+            },
             "voice": {
               "type": "string"
             },

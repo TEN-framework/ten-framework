@@ -99,6 +99,59 @@ async def test_long_text_is_chunked_and_concatenated():
 
 
 @pytest.mark.asyncio
+async def test_cancel_interrupts_blocked_post_promptly():
+    client = GmicloudTTSClient(make_opts())
+    gate = asyncio.Event()
+
+    async def hanging_post(url, json=None, headers=None):
+        await gate.wait()
+        return FakeResponse()
+
+    client._client.post = hanging_post
+    task = asyncio.create_task(collect(client, "hello"))
+    await asyncio.sleep(0.05)
+    await client.cancel()
+    events = await asyncio.wait_for(task, timeout=1.0)
+    assert events == [(None, TTS2HttpResponseEventType.FLUSH)]
+    assert not gate.is_set()  # the POST never completed
+    await client.clean()
+
+
+@pytest.mark.asyncio
+async def test_cancel_interrupts_poll_sleep_promptly():
+    client = GmicloudTTSClient(make_opts(poll_interval_sec=30.0))
+    client._client.post = AsyncMock(return_value=FakeResponse(
+        json_data={"status": "queued", "request_id": "r1"}))
+    task = asyncio.create_task(collect(client, "hello"))
+    await asyncio.sleep(0.05)
+    await client.cancel()
+    events = await asyncio.wait_for(task, timeout=1.0)
+    assert events == [(None, TTS2HttpResponseEventType.FLUSH)]
+    await client.clean()
+
+
+@pytest.mark.asyncio
+async def test_cancel_interrupts_blocked_download_promptly():
+    client = GmicloudTTSClient(make_opts())
+    gate = asyncio.Event()
+
+    async def hanging_get(url, **kwargs):
+        await gate.wait()
+        return FakeResponse()
+
+    client._client.post = AsyncMock(return_value=FakeResponse(
+        json_data={"status": "success", "outcome": {"audio_url": "https://a/wav"}}))
+    client._client.get = hanging_get
+    task = asyncio.create_task(collect(client, "hello"))
+    await asyncio.sleep(0.05)
+    await client.cancel()
+    events = await asyncio.wait_for(task, timeout=1.0)
+    assert events == [(None, TTS2HttpResponseEventType.FLUSH)]
+    assert not gate.is_set()
+    await client.clean()
+
+
+@pytest.mark.asyncio
 async def test_request_succeeds_after_recoverable_error():
     pcm = struct.pack("<2h", 5, -5)
     client = GmicloudTTSClient(make_opts())
