@@ -73,6 +73,18 @@ def test_temperature_bounds():
         bad.update_params()
 
 
+def test_text_chunk_chars_bounds():
+    for bad in (0, -5, 2001):
+        config = GmicloudTTS2Config(params={"api_key": "k", "text_chunk_chars": bad})
+        with pytest.raises(ValueError):
+            config.update_params()
+    for ok in (1, 1000, 2000):
+        config = GmicloudTTS2Config(params={"api_key": "k", "text_chunk_chars": ok})
+        config.update_params()
+        config.validate()
+        assert config.text_chunk_chars == ok
+
+
 def test_config_masks_api_key():
     config = GmicloudTTS2Config(params={"api_key": "secret-key-123"})
     config.update_params()

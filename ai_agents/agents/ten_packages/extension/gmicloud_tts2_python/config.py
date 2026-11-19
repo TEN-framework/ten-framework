@@ -27,7 +27,7 @@ class GmicloudTTS2Config(AsyncTTS2HttpConfig):
     audio_format: str = "WAV"
     sample_rate: int = 24000
     channels: int = 1
-    text_chunk_chars: int = 1000
+    text_chunk_chars: int = Field(default=1000, ge=1, le=2000)
     request_timeout_sec: float = Field(default=60.0, gt=0, allow_inf_nan=False)
     poll_interval_sec: float = Field(default=2.0, gt=0, allow_inf_nan=False)
     poll_attempts: int = Field(default=90, gt=0)

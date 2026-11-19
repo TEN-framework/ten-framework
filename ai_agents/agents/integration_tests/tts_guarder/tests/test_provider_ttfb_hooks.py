@@ -51,13 +51,25 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
-def test_gmicloud_public_get_boundary(monkeypatch, clock):
+def test_gmicloud_http_boundary(monkeypatch, clock):
     module = import_module(
         "ten_packages.extension.gmicloud_tts2_python.client"
     )
 
-    async def fake_synthesize_part(instance, text, request_id):
-        clock[0] = 25_000_000
+    class FakeResponse:
+        def __init__(self, status_code=200, json_data=None, content=b""):
+            self.status_code = status_code
+            self._json = json_data or {}
+            self.content = content
+
+        def json(self):
+            return self._json
+
+        @property
+        def text(self):
+            return ""
+
+    def make_wav():
         buf = io.BytesIO()
         with wave.open(buf, "wb") as pcm:
             pcm.setnchannels(1)
@@ -66,11 +78,19 @@ def test_gmicloud_public_get_boundary(monkeypatch, clock):
             pcm.writeframes(struct.pack("<2h", 1, -1))
         return buf.getvalue()
 
-    monkeypatch.setattr(
-        module.GmicloudTTSClient,
-        "_synthesize_part",
-        fake_synthesize_part,
-    )
+    state = {"download": make_wav()}
+
+    async def fake_post(url, json=None, headers=None):
+        clock[0] += 10_000_000
+        return FakeResponse(
+            json_data={"status": "success",
+                       "outcome": {"audio_url": "https://a/wav"}}
+        )
+
+    async def fake_get(url, **kwargs):
+        clock[0] += 15_000_000
+        return FakeResponse(content=state["download"])
+
     options = module.GmicloudTTSOptions(
         api_key="k",
         base_url="https://console.gmicloud.ai",
@@ -85,18 +105,35 @@ def test_gmicloud_public_get_boundary(monkeypatch, clock):
         poll_attempts=3,
     )
     with install_hook("gmicloud_tts2_python", {}, monkeypatch) as reference:
-        reference.begin_request("first")
         client = module.GmicloudTTSClient(options)
-        stream = client.get("Hello", "first")
+        client._client.post = fake_post
+        client._client.get = fake_get
 
-        async def collect():
-            return [event async for event in stream]
+        def run(text, request_id):
+            async def collect():
+                return [event async for event in client.get(text, request_id)]
+            return asyncio.run(collect())
 
-        events = asyncio.run(collect())
+        # sequential requests: each measures submission -> WAV arrival at
+        # the HTTP boundary (10ms submit + 15ms download = 25ms)
+        reference.begin_request("first")
+        events = run("Hello", "first")
+        assert events[-1][1].name == "END"
+        assert reference.elapsed_ms("first") == 25
+
+        clock[0] += 100_000_000
+        reference.begin_request("second")
+        run("Again", "second")
+        assert reference.elapsed_ms("second") == 25
+
+        # an empty WAV arrival is not audio and must not close the interval
+        state["download"] = b""
+        clock[0] += 100_000_000
+        reference.begin_request("empty")
+        run("Hello", "empty")
+        assert reference.elapsed_ms("empty") is None
+
         asyncio.run(client.clean())
-    assert [kind for _, kind in events][-1].name == "END"
-    assert all(payload for payload, _ in events[:-1])
-    assert reference.elapsed_ms("first") == 25
 
 
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):

@@ -53,7 +53,13 @@ TRANSIENT_POLL_STATUSES = (408, 425, 429)
 
 
 class GmicloudTTSApiError(Exception):
-    """HTTP or generation failure with context for error mapping."""
+    """HTTP or generation failure with context for error mapping.
+
+    ``auth_context`` distinguishes queue API authentication (a rejected
+    key maps to INVALID_KEY_ERROR) from audio download authorization (an
+    expired or forbidden download URL is not a key problem and a new job
+    may recover, so it maps to ERROR).
+    """
 
     def __init__(
         self,
@@ -61,10 +67,12 @@ class GmicloudTTSApiError(Exception):
         *,
         status_code: int | None = None,
         request_id: str = "",
+        auth_context: str = "api",
     ):
         super().__init__(message)
         self.status_code = status_code
         self.request_id = request_id
+        self.auth_context = auth_context
 
 
 def model_family(model: str) -> str:
@@ -200,8 +208,13 @@ def split_text(text: str, chunk_chars: int) -> list[str]:
             joiner = "" if current.endswith(_CJK_PUNCT) else " "
             current = f"{current}{joiner}{piece}".strip()
         while len(current) > chunk_chars:
-            parts.append(current[:chunk_chars])
-            current = current[chunk_chars:]
+            cut = current.rfind(" ", 0, chunk_chars + 1)
+            if cut <= 0:
+                # no whitespace inside the limit: a single token is longer
+                # than the limit and must be cut hard
+                cut = chunk_chars
+            parts.append(current[:cut].rstrip())
+            current = current[cut:].lstrip()
     if current:
         parts.append(current)
     return parts
@@ -315,7 +328,10 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
                 yield None, TTS2HttpResponseEventType.FLUSH
                 return
             message = str(error).encode()
-            if error.status_code in (401, 403):
+            if (
+                error.auth_context == "api"
+                and error.status_code in (401, 403)
+            ):
                 yield message, TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
                 yield message, TTS2HttpResponseEventType.ERROR
@@ -394,6 +410,7 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
                 f"GMI Cloud audio download error: HTTP {audio.status_code} - "
                 f"{audio.text[:200]}",
                 status_code=audio.status_code,
+                auth_context="download",
             )
         return audio.content
 

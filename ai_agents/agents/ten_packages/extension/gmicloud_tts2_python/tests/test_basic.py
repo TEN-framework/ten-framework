@@ -103,6 +103,24 @@ def test_split_text_keeps_numbers_intact():
     assert chunks == ["The value is 3.14 units."]
 
 
+def test_split_text_never_cuts_mid_word():
+    sentence = " ".join(f"word{i}" for i in range(200))  # one long sentence
+    chunks = split_text(sentence, 50)
+    assert all(len(c) <= 50 for c in chunks)
+    # a mid-word cut would surface as split tokens; the rebuilt word
+    # sequence must be identical to the original
+    assert " ".join(chunks).split() == sentence.split()
+    rebuilt = " ".join(chunks)
+    assert rebuilt.split() == sentence.split()
+
+
+def test_split_text_hard_splits_only_oversized_tokens():
+    chunks = split_text("a" * 60, 20)
+    assert chunks == ["a" * 20, "a" * 20, "a" * 20]
+    mixed = split_text("ok " + "b" * 25, 20)
+    assert all(len(c) <= 20 for c in mixed)
+
+
 def test_split_text_cjk_join_inserts_no_spaces():
     text = "第一句话。第二句话。第三句话。"
     chunks = split_text(text, 12)

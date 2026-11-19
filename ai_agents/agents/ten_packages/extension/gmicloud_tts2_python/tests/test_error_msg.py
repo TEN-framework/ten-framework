@@ -46,6 +46,17 @@ async def test_error_event_carries_message_bytes():
 
 
 @pytest.mark.asyncio
+async def test_download_403_is_not_invalid_key():
+    client = GmicloudTTSClient(make_opts())
+    client._client.post = AsyncMock(return_value=FakeResponse(
+        json_data={"status": "success", "outcome": {"audio_url": "https://a/wav"}}))
+    client._client.get = AsyncMock(return_value=FakeResponse(status_code=403))
+    _, kinds = split_events(await collect(client, "hello"))
+    assert kinds == [TTS2HttpResponseEventType.ERROR]
+    await client.clean()
+
+
+@pytest.mark.asyncio
 async def test_error_event_carries_response_body():
     client = GmicloudTTSClient(make_opts())
     client._client.post = AsyncMock(return_value=FakeResponse(
