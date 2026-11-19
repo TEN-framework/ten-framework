@@ -1,0 +1,63 @@
+import json
+from pathlib import Path
+
+import pytest
+
+from gmicloud_tts2_python.config import GmicloudTTS2Config
+
+CONFIGS = Path(__file__).parent / "configs"
+
+
+def load_config(name: str) -> GmicloudTTS2Config:
+    raw = json.loads((CONFIGS / name).read_text())
+    config = GmicloudTTS2Config.model_validate(raw)
+    config.update_params()
+    return config
+
+
+def test_basic_config_loads_and_validates():
+    config = load_config("property_basic_audio_setting1.json")
+    config.validate()
+    assert config.model == "inworld-tts-2"
+    assert config.sample_rate == 24000
+    assert config.channels == 1
+
+
+def test_alt_model_config():
+    config = load_config("property_basic_audio_setting2.json")
+    config.validate()
+    assert config.model == "minimax-tts-speech-2.8-turbo"
+
+
+def test_dump_config():
+    config = load_config("property_dump.json")
+    config.validate()
+    assert config.dump is True
+
+
+def test_missing_api_key_rejected():
+    config = load_config("property_miss_required.json")
+    with pytest.raises(ValueError, match="api_key is required"):
+        config.validate()
+
+
+def test_invalid_config_rejected():
+    with pytest.raises(ValueError):
+        load_config("property_invalid.json")
+
+
+def test_chatterbox_requires_voice():
+    config = GmicloudTTS2Config(params={
+        "api_key": "k", "model": "Chatterbox-tts", "voice": None,
+    })
+    config.update_params()
+    with pytest.raises(ValueError, match="voice UUID"):
+        config.validate()
+
+
+def test_config_masks_api_key():
+    config = GmicloudTTS2Config(params={"api_key": "secret-key-123"})
+    config.update_params()
+    config.validate()
+    assert "secret-key-123" not in config.to_str(sensitive_handling=True)
+    assert config.to_str(sensitive_handling=True).endswith("api_key=secr***)")

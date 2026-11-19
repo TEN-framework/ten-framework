@@ -1,5 +1,9 @@
 """Public transport/SDK fixture checks for every second-stage provider hook."""
 
+import asyncio
+import io
+import struct
+import wave
 from importlib import import_module
 from types import SimpleNamespace
 
@@ -45,6 +49,54 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
         assert [item.audio_content for item in outputs] == [b"", b"audio"]
         assert reference.elapsed_ms("first") == 20
     assert module.texttospeech.TextToSpeechClient is Client
+
+
+def test_gmicloud_public_get_boundary(monkeypatch, clock):
+    module = import_module(
+        "ten_packages.extension.gmicloud_tts2_python.client"
+    )
+
+    async def fake_synthesize_part(instance, text, request_id):
+        clock[0] = 25_000_000
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as pcm:
+            pcm.setnchannels(1)
+            pcm.setsampwidth(2)
+            pcm.setframerate(24000)
+            pcm.writeframes(struct.pack("<2h", 1, -1))
+        return buf.getvalue()
+
+    monkeypatch.setattr(
+        module.GmicloudTTSClient,
+        "_synthesize_part",
+        fake_synthesize_part,
+    )
+    options = module.GmicloudTTSOptions(
+        api_key="k",
+        base_url="https://console.gmicloud.ai",
+        model="inworld-tts-2",
+        voice="Dennis",
+        audio_format="WAV",
+        speed=1.0,
+        sample_rate=24000,
+        text_chunk_chars=1000,
+        request_timeout_sec=5.0,
+        poll_interval_sec=0.01,
+        poll_attempts=3,
+    )
+    with install_hook("gmicloud_tts2_python", {}, monkeypatch) as reference:
+        reference.begin_request("first")
+        client = module.GmicloudTTSClient(options)
+        stream = client.get("Hello", "first")
+
+        async def collect():
+            return [event async for event in stream]
+
+        events = asyncio.run(collect())
+        asyncio.run(client.clean())
+    assert [kind for _, kind in events][-1].name == "END"
+    assert all(payload for payload, _ in events[:-1])
+    assert reference.elapsed_ms("first") == 25
 
 
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):

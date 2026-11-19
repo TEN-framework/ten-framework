@@ -13,6 +13,7 @@ HOOKS = {
     "mistral_tts_python": "mistral",
     "humeai_tts_python": "hume",
     "google_tts_python": "google",
+    "gmicloud_tts2_python": "gmicloud",
     "cosy_tts_python": "cosy",
 }
 

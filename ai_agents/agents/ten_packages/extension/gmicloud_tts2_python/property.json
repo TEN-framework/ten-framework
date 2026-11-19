@@ -1,0 +1,18 @@
+{
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "api_key": "${env:GMI_API_KEY|}",
+    "base_url": "https://console.gmicloud.ai",
+    "model": "inworld-tts-2",
+    "voice": "Dennis",
+    "speed": 1.0,
+    "audio_format": "WAV",
+    "sample_rate": 24000,
+    "channels": 1,
+    "text_chunk_chars": 1000,
+    "request_timeout_sec": 60.0,
+    "poll_interval_sec": 2.0,
+    "poll_attempts": 90
+  }
+}

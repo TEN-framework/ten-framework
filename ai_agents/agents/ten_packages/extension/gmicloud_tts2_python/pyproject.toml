@@ -1,0 +1,9 @@
+[project]
+name = "gmicloud-tts2-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "pydantic>=2.13.4",
+]
