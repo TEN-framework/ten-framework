@@ -19,14 +19,16 @@ def test_basic_config_loads_and_validates():
     config = load_config("property_basic_audio_setting1.json")
     config.validate()
     assert config.model == "inworld-tts-2"
-    assert config.sample_rate == 24000
+    assert config.sample_rate == 16000
     assert config.channels == 1
 
 
 def test_alt_model_config():
     config = load_config("property_basic_audio_setting2.json")
     config.validate()
-    assert config.model == "minimax-tts-speech-2.8-turbo"
+    assert config.model == "inworld-tts-2"
+    # the rate-comparison harness requires the two fixtures to differ
+    assert config.sample_rate == 32000
 
 
 def test_dump_config():

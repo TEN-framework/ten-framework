@@ -152,6 +152,32 @@ async def test_cancel_interrupts_blocked_download_promptly():
 
 
 @pytest.mark.asyncio
+async def test_request_succeeds_after_cancellation():
+    pcm = struct.pack("<2h", 9, -9)
+    client = GmicloudTTSClient(make_opts())
+    gate = asyncio.Event()
+
+    async def hanging_post(url, json=None, headers=None):
+        await gate.wait()
+        return FakeResponse()
+
+    client._client.post = hanging_post
+    task = asyncio.create_task(collect(client, "first"))
+    await asyncio.sleep(0.05)
+    await client.cancel()
+    events = await asyncio.wait_for(task, timeout=1.0)
+    assert events == [(None, TTS2HttpResponseEventType.FLUSH)]
+
+    client._client.post = AsyncMock(return_value=FakeResponse(
+        json_data={"status": "success", "outcome": {"audio_url": "https://a/wav"}}))
+    client._client.get = AsyncMock(return_value=FakeResponse(
+        content=make_wav(pcm, 24000, 1)))
+    audio, kinds = split_events(await collect(client, "second"))
+    assert audio == pcm and kinds[-1] == TTS2HttpResponseEventType.END
+    await client.clean()
+
+
+@pytest.mark.asyncio
 async def test_request_succeeds_after_recoverable_error():
     pcm = struct.pack("<2h", 5, -5)
     client = GmicloudTTSClient(make_opts())

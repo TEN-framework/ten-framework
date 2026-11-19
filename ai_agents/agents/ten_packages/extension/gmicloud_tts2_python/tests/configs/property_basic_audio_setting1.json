@@ -8,7 +8,7 @@
     "voice": "Dennis",
     "speed": 1.0,
     "audio_format": "WAV",
-    "sample_rate": 24000,
+    "sample_rate": 16000,
     "channels": 1,
     "text_chunk_chars": 1000,
     "request_timeout_sec": 60.0,

@@ -289,6 +289,10 @@ class GmicloudTTSClient(AsyncTTS2HttpClient):
     async def get(
         self, text: str, request_id: str
     ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
+        # Cancellation is per-request: a flush cancels the active request,
+        # and the next request starts with a fresh state.
+        self._cancelled = False
+        self._cancel_event = asyncio.Event()
         try:
             for part in split_text(text, self.opts.text_chunk_chars):
                 if self._cancelled:
