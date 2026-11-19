@@ -79,7 +79,7 @@ before sharing. Do not screenshot raw debug logs.
 ## TTFB hook contract
 
 Protocol observers are under `tests/ttfb_hooks/`: ElevenLabs (TTS/TTD),
-ByteDance, ByteDance duplex, MiniMax (standard/duplex), and Soul. The installer
+ByteDance, ByteDance duplex, MiniMax (standard/duplex), Soul and Kalpa. The installer
 in `ttfb_reference.py` chooses the implementation and endpoint, resolves URL
 environment placeholders, and restores the client dependency after the test.
 It reuses `timing_hooks/transport.py`, which remains compatible with the subtitle
@@ -93,7 +93,7 @@ This keeps JSON, gzip and audio decoding off the production send/receive path.
 The observer excludes whitespace-only input, control messages and empty audio,
 and retains the first timestamp across subsequent chunks. Delayed parsing uses
 the original capture time, never the later parsing time. ElevenLabs context IDs and ByteDance duplex session IDs associate audio
-with the request that sent text. Standard ByteDance, MiniMax and Soul serialize
+with the request that sent text. Standard ByteDance, MiniMax, Soul and Kalpa serialize
 requests on a connection; their audio references follow the active text request
 on that connection because the wire protocol does not provide an application
 request ID for every audio frame. Frames from an old connection cannot complete
