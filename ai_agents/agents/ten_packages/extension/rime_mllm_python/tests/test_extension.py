@@ -2,7 +2,6 @@
 
 import asyncio
 import base64
-import json
 
 import pytest
 
@@ -25,7 +24,9 @@ async def next_data(environment, name):
 
 
 @pytest.mark.asyncio
-async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_modules):
+async def test_pcm_captions_late_transcripts_and_interrupted_audio(
+    peer, ten_modules
+):
     environment = ten_modules.environment(
         {"endpoint": peer.url, "api_key": "test-only"}
     )
@@ -34,7 +35,9 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_mod
     try:
         await extension.on_start(environment)
         await next_data(environment, "mllm_server_session_ready")
-        await peer.send({"type": "response.created", "response": {"id": "reply"}})
+        await peer.send(
+            {"type": "response.created", "response": {"id": "reply"}}
+        )
         await peer.send(
             {
                 "type": "response.text.delta",
@@ -65,7 +68,9 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_mod
                 "text": "Hello there",
             }
         )
-        assert (await next_data(environment, "mllm_server_output_transcript"))["final"]
+        assert (await next_data(environment, "mllm_server_output_transcript"))[
+            "final"
+        ]
         await peer.send(
             {
                 "type": "response.done",
@@ -78,8 +83,12 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_mod
                 "transcript": "A late transcript",
             }
         )
-        transcript = await next_data(environment, "mllm_server_input_transcript")
-        assert transcript["content"] == "A late transcript" and transcript["final"]
+        transcript = await next_data(
+            environment, "mllm_server_input_transcript"
+        )
+        assert (
+            transcript["content"] == "A late transcript" and transcript["final"]
+        )
         await peer.send({"type": "input_audio_buffer.speech_started"})
         await next_data(environment, "mllm_server_interrupted")
         await peer.send(
@@ -89,7 +98,9 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_mod
                 "delta": audio,
             }
         )
-        await peer.send({"type": "response.created", "response": {"id": "next"}})
+        await peer.send(
+            {"type": "response.created", "response": {"id": "next"}}
+        )
         await peer.send(
             {
                 "type": "response.audio.delta",
@@ -98,11 +109,15 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(peer, ten_mod
             }
         )
         assert (
-            bytes((await asyncio.wait_for(environment.audio.get(), 2)).get_buf())
+            bytes(
+                (await asyncio.wait_for(environment.audio.get(), 2)).get_buf()
+            )
             == b"\2\0"
         )
         assert environment.audio.empty()
-        frame = ten_modules.message("pcm_frame", {"metadata": {"session_id": "123"}})
+        frame = ten_modules.message(
+            "pcm_frame", {"metadata": {"session_id": "123"}}
+        )
         frame.buffer = bytearray(b"\3\0" * 320)
         await extension.on_audio_frame(environment, frame)
         while True:
@@ -144,7 +159,9 @@ async def test_audio_backlog_is_fatal_and_clears_stale_input(peer, ten_modules):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("properties", [{}, {"endpoint": "ws://example.com"}])
-async def test_invalid_configuration_and_missing_key_are_fatal(ten_modules, properties):
+async def test_invalid_configuration_and_missing_key_are_fatal(
+    ten_modules, properties
+):
     environment = ten_modules.environment(properties)
     extension = ten_modules.extension.RimeRealtimeExtension("v2v")
     await extension.on_init(environment)
@@ -157,7 +174,9 @@ async def test_invalid_configuration_and_missing_key_are_fatal(ten_modules, prop
 
 
 @pytest.mark.asyncio
-async def test_unsupported_features_report_recoverable_errors(peer, ten_modules):
+async def test_unsupported_features_report_recoverable_errors(
+    peer, ten_modules
+):
     environment = ten_modules.environment(
         {"endpoint": peer.url, "api_key": "test-only"}
     )
@@ -181,24 +200,52 @@ async def test_unsupported_features_report_recoverable_errors(peer, ten_modules)
 
 
 @pytest.mark.asyncio
-async def test_input_clock_recovers_from_a_short_write_stall(ten_modules, monkeypatch):
+@pytest.mark.parametrize("stall_every", [None, 50])
+async def test_input_clock_recovers_without_accumulating_microphone_audio(
+    ten_modules, monkeypatch, stall_every
+):
     from types import SimpleNamespace
 
-    clock = SimpleNamespace(now=0.0)
-    frames = []
+    clock = SimpleNamespace(now=0.0, next_frame=0.02, writes=0, peak_frames=0)
+    environment = ten_modules.environment({})
     extension = ten_modules.extension.RimeRealtimeExtension("v2v")
+    extension.ten_env = environment
+    microphone = ten_modules.message("pcm_frame")
+    microphone.buffer = bytearray(b"\1\0" * 320)
+    extension.input_audio.append(bytes(microphone.buffer))
+
+    async def advance(seconds):
+        target = clock.now + seconds
+        while clock.next_frame <= target and extension.is_connected():
+            clock.now = clock.next_frame
+            await extension.on_audio_frame(environment, microphone)
+            clock.peak_frames = max(
+                clock.peak_frames, len(extension.input_audio.buffer) // 640
+            )
+            clock.next_frame += 0.02
+        clock.now = target
+        if clock.now >= 20:
+            extension.stopped = True
 
     async def send_audio(frame):
-        frames.append(frame)
-        clock.now += 0.035 if len(frames) == 1 else 0.001
-        if len(frames) == 10:
-            extension.stopped = True
+        assert frame == bytes(microphone.buffer)
+        clock.writes += 1
+        if stall_every is None:
+            delay = 0.035 if clock.writes == 1 else 0.001
+        else:
+            delay = 0.12 if clock.writes % stall_every == 0 else 0.001
+        await advance(delay)
 
     async def sleep(seconds):
         assert 0 <= seconds <= 0.021
-        clock.now += seconds
+        await advance(seconds)
 
-    extension.connection = SimpleNamespace(ready=True, send_audio=send_audio)
+    async def close():
+        extension.connection.ready = False
+
+    extension.connection = SimpleNamespace(
+        ready=True, send_audio=send_audio, close=close
+    )
     monkeypatch.setattr(
         ten_modules.extension,
         "asyncio",
@@ -208,7 +255,49 @@ async def test_input_clock_recovers_from_a_short_write_stall(ten_modules, monkey
         ),
     )
     await extension._send_input()
-    assert len(frames) == 10
-    assert (
-        clock.now <= 0.205
-    ), "A short write stall must not permanently shift the PCM clock"
+    assert environment.data.empty(), "Recoverable write jitter ended the call"
+    assert clock.now >= 20
+    assert 990 <= clock.writes <= 1010
+    assert clock.peak_frames < 10
+
+
+@pytest.mark.asyncio
+async def test_input_clock_refuses_excessive_catch_up_without_microphone_frames(
+    ten_modules, monkeypatch
+):
+    from types import SimpleNamespace
+
+    environment = ten_modules.environment({})
+    extension = ten_modules.extension.RimeRealtimeExtension("v2v")
+    extension.ten_env = environment
+    clock = SimpleNamespace(now=0.0, writes=0)
+
+    async def send_audio(_frame):
+        clock.writes += 1
+        clock.now += 1.2
+
+    async def sleep(_seconds):
+        raise AssertionError(
+            "Excessive clock lag must end input before another frame"
+        )
+
+    async def close():
+        extension.connection.ready = False
+
+    extension.connection = SimpleNamespace(
+        ready=True, send_audio=send_audio, close=close
+    )
+    monkeypatch.setattr(
+        ten_modules.extension,
+        "asyncio",
+        SimpleNamespace(
+            get_running_loop=lambda: SimpleNamespace(time=lambda: clock.now),
+            sleep=sleep,
+        ),
+    )
+    await extension._send_input()
+    failure = await next_data(environment, "error")
+    assert failure["vendor_info"]["code"] == "audio_backlog"
+    assert failure["code"] == -1000
+    assert clock.writes == 1
+    assert not extension.is_connected()

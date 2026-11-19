@@ -70,12 +70,15 @@ class PrismConnection:
                 )
                 self._receiver = asyncio.create_task(self._receive())
                 await asyncio.wait_for(
-                    asyncio.shield(self._initialized), max(0, deadline - loop.time())
+                    asyncio.shield(self._initialized),
+                    max(0, deadline - loop.time()),
                 )
                 return
             except aiohttp.ClientResponseError as error:
                 retry = error.status in {408, 429, 500, 502, 503, 504}
-                failure = PrismError(str(error.status), "Prism refused the connection")
+                failure = PrismError(
+                    str(error.status), "Prism refused the connection"
+                )
             except (aiohttp.ClientConnectionError, asyncio.TimeoutError):
                 retry = True
                 failure = PrismError("startup_timeout", "Prism startup failed")
@@ -98,19 +101,26 @@ class PrismConnection:
 
     async def send(self, payload):
         """Serialize writes with a deadline, including writer-lock acquisition."""
-        request = {**payload, "event_id": payload.get("event_id", self.event_id())}
+        request = {
+            **payload,
+            "event_id": payload.get("event_id", self.event_id()),
+        }
 
         async def write():
             async with self._write_lock:
                 if self._socket is None or self._socket.closed or self.stopping:
-                    raise PrismError("connection_closed", "Prism is disconnected", True)
+                    raise PrismError(
+                        "connection_closed", "Prism is disconnected", True
+                    )
                 await self._socket.send_json(request)
 
         try:
             await asyncio.wait_for(write(), self.config.startup_timeout)
         except (aiohttp.ClientError, OSError, asyncio.TimeoutError) as error:
             raise PrismError(
-                "connection_closed", "Prism write failed; start a new call", True
+                "connection_closed",
+                "Prism write failed; start a new call",
+                True,
             ) from error
         return request["event_id"]
 
@@ -147,10 +157,14 @@ class PrismConnection:
         ):
             request = self._triggers.popleft()
             event_id = self.event_id()
-            self._typed_ready = False
+            # The inflight request blocks admission until accepted or refused.
             self._trigger_inflight = (event_id, request, self._generation)
             await self.send(
-                {"type": "response.create", "event_id": event_id, "response": request}
+                {
+                    "type": "response.create",
+                    "event_id": event_id,
+                    "response": request,
+                }
             )
 
     async def _dispatch(self, event):
@@ -163,7 +177,8 @@ class PrismConnection:
                 not self.ready and request_id == self._setup_id
             ):
                 raise PrismError(
-                    error.get("code", "session_error"), "Prism refused the session"
+                    error.get("code", "session_error"),
+                    "Prism refused the session",
                 )
             if self._trigger_inflight and (
                 request_id == self._trigger_inflight[0]
@@ -199,7 +214,10 @@ class PrismConnection:
             self._response_id = event["response"]["id"]
             self._interrupted = False
             self._typed_ready = False
-            if self._trigger_inflight and request_id == self._trigger_inflight[0]:
+            if (
+                self._trigger_inflight
+                and request_id == self._trigger_inflight[0]
+            ):
                 self._trigger_inflight = None
         elif kind == "input_audio_buffer.speech_started":
             self._generation += 1
@@ -208,7 +226,9 @@ class PrismConnection:
             self._typed_ready = False
         elif kind in {"response.audio.delta", "response.text.done"}:
             if self._response_id is None:
-                raise PrismError("protocol_error", "Output has no response identity")
+                raise PrismError(
+                    "protocol_error", "Output has no response identity"
+                )
             if self._interrupted or event["response_id"] != self._response_id:
                 return
         await self.on_event(event)
@@ -235,12 +255,16 @@ class PrismConnection:
                 ):
                     raise ValueError("event needs a string type")
                 await self._dispatch(self._redact(event))
-            raise PrismError("connection_closed", "Prism ended the conversation")
+            raise PrismError(
+                "connection_closed", "Prism ended the conversation"
+            )
         except Exception as error:
             failure = (
                 error
                 if isinstance(error, PrismError)
-                else PrismError("protocol_error", "Prism event processing failed")
+                else PrismError(
+                    "protocol_error", "Prism event processing failed"
+                )
             )
             if not self._initialized.done():
                 self._initialized.set_exception(failure)

@@ -54,7 +54,7 @@ Changing a local app graph is an application configuration step; this package do
 | `startup_timeout` | `15` | Startup budget in seconds, also the maximum duration of a WebSocket write, including waiting for another writer. |
 | `startup_retries` | `2` | Retries for transient connection failures before initialization. Authentication and protocol errors are not retried. |
 
-An established conversation is never reconnected or replayed automatically. Start a new call after a terminal failure. Input backlog is bounded to one second; falling behind ends the provider session instead of sending stale microphone audio.
+An established conversation is never reconnected or replayed automatically. Start a new call after a terminal failure. Delayed writes catch up to the original audio schedule. Input buffering and the sender's catch-up window are bounded to one second; exceeding either limit ends the provider session instead of sending stale microphone audio or a long burst of accumulated silence.
 
 ## Interruption and errors
 
@@ -65,19 +65,6 @@ RTC flush clears local pending audio and its sender buffer. It does not acknowle
 Only final captions are forwarded. Caller transcription can arrive after the associated reply, so captions can appear out of conversational order. An interrupted reply may not produce a final caption. This avoids requiring partial-caption queue changes in the shared collector.
 
 Fatal errors stop and join this extension's audio/transport work and emit TEN's standard MLLM `error` data with vendor code. The host application must consume fatal errors and end the room as appropriate; the stock controller does not close the app for these events. Recoverable errors leave the session active. Provider error messages exclude raw server payloads and credentials.
-
-## Review guide
-
-| File | Responsibility |
-| --- | --- |
-| `addon.py`, `__init__.py` | TEN extension registration. |
-| `manifest.json`, `property.json`, `requirements.txt`, `pyproject.toml` | Standard MLLM interface, basic properties, environment credential binding, Python dependencies. |
-| `config.py`, `audio.py` | Validated configuration, PCM formats, bounded microphone buffering. |
-| `connection.py` | WebSocket lifecycle, initialization, greeting readiness, response filtering, bounded writes and startup. |
-| `extension.py` | Translation between Prism events and TEN audio/captions/interruption/errors; owned task cleanup. |
-| `tests/` | Local WebSocket contract tests and adapter tests using the real TEN base helpers with a native runtime double. |
-
-All production code is contained in this extension directory. The shared controller, collector, RTC package pins, and existing example graph remain upstream versions.
 
 ## Tests
 

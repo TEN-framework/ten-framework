@@ -1,6 +1,11 @@
 """Bounded input buffering for a continuous 16 kHz PCM stream."""
 
-from .config import INPUT_FRAME_BYTES, INPUT_SAMPLE_RATE, SAMPLE_WIDTH
+from .config import (
+    INPUT_FRAME_BYTES,
+    INPUT_SAMPLE_RATE,
+    MAX_INPUT_BUFFER_SECONDS,
+    SAMPLE_WIDTH,
+)
 
 
 class AudioBufferOverflow(ValueError):
@@ -17,9 +22,13 @@ class InputAudio:
         """Reject partial PCM samples and excessive input latency."""
         if len(audio) % SAMPLE_WIDTH:
             raise ValueError("input must contain whole PCM16 samples")
-        if len(self.buffer) + len(audio) > INPUT_SAMPLE_RATE * SAMPLE_WIDTH:
+        if len(self.buffer) + len(audio) > (
+            INPUT_SAMPLE_RATE * SAMPLE_WIDTH * MAX_INPUT_BUFFER_SECONDS
+        ):
             self.buffer.clear()
-            raise AudioBufferOverflow("input audio exceeded one second of buffering")
+            raise AudioBufferOverflow(
+                "input audio exceeded one second of buffering"
+            )
         self.buffer.extend(audio)
 
     def frame(self) -> bytes:

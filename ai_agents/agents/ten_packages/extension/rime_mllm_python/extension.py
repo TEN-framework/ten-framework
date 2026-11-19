@@ -4,8 +4,15 @@ import asyncio
 import base64
 import json
 
-from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleErrorVendorInfo
-from ten_ai_base.mllm import AsyncMLLMBaseExtension, DATA_MLLM_IN_SET_MESSAGE_CONTEXT
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+)
+from ten_ai_base.mllm import (
+    AsyncMLLMBaseExtension,
+    DATA_MLLM_IN_SET_MESSAGE_CONTEXT,
+)
 from ten_ai_base.struct import (
     MLLMServerInputTranscript,
     MLLMServerInterrupt,
@@ -18,6 +25,7 @@ from .config import (
     CHANNELS,
     INPUT_FRAME_SECONDS,
     INPUT_SAMPLE_RATE,
+    MAX_INPUT_BUFFER_SECONDS,
     OUTPUT_SAMPLE_RATE,
     SAMPLE_WIDTH,
     RimeRealtimeConfig,
@@ -46,7 +54,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
             ten_env.log_info(f"config: {self.config.model_dump_json()}")
             self.connection = PrismConnection(self.config, self._on_event)
         except ValueError:
-            await self._report("invalid_config", "Invalid Rime configuration", True)
+            await self._report(
+                "invalid_config", "Invalid Rime configuration", True
+            )
 
     async def on_start(self, _ten_env):
         if self.connection is not None:
@@ -62,7 +72,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
     async def start_connection(self):
         await self.connection.start()
         if not self.is_connected():
-            raise PrismError("connection_closed", "Prism ended during startup", True)
+            raise PrismError(
+                "connection_closed", "Prism ended during startup", True
+            )
         self._audio_sender = asyncio.create_task(self._send_input())
         await self.send_server_session_ready(MLLMServerSessionReady())
 
@@ -82,7 +94,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
 
     def is_connected(self):
         return (
-            self.connection is not None and self.connection.ready and not self.stopped
+            self.connection is not None
+            and self.connection.ready
+            and not self.stopped
         )
 
     def vendor(self):
@@ -128,11 +142,15 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         try:
             while self.is_connected():
                 await self.connection.send_audio(self.input_audio.frame())
-                # Preserve cadence through jitter; limit catch-up after a stall.
-                deadline = max(
-                    deadline + INPUT_FRAME_SECONDS, loop.time() - INPUT_FRAME_SECONDS
-                )
+                # Preserve the PCM schedule while delayed writes catch up.
+                deadline += INPUT_FRAME_SECONDS
+                if loop.time() - deadline > MAX_INPUT_BUFFER_SECONDS:
+                    raise AudioBufferOverflow(
+                        "input clock exceeded latency limit"
+                    )
                 await asyncio.sleep(max(0, deadline - loop.time()))
+        except AudioBufferOverflow:
+            await self._report("audio_backlog", "Prism input fell behind", True)
         except (PrismError, OSError):
             await self._report("audio_send_failed", "Prism input stopped", True)
 
@@ -154,7 +172,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
 
     async def send_client_message_item(self, item, session_id=None):
         if item.role != "user":
-            raise PrismError("unsupported_history", "Only user text is supported")
+            raise PrismError(
+                "unsupported_history", "Only user text is supported"
+            )
         if self._pending_text is not None:
             raise PrismError("pending_text", "Trigger the pending text first")
         self._pending_text = item.content
@@ -163,7 +183,7 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         await self.connection.trigger(self._pending_text)
         self._pending_text = None
 
-    async def send_client_register_tool(self, tool):
+    async def send_client_register_tool(self, _tool):
         await self._report(
             "unsupported_tools", "This provider does not support tools", False
         )
@@ -194,7 +214,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
             text = event["text"]
             if text:
                 await self.send_server_output_text(
-                    MLLMServerOutputTranscript(content=text, delta=text, final=True)
+                    MLLMServerOutputTranscript(
+                        content=text, delta=text, final=True
+                    )
                 )
         elif kind == "response.audio.delta":
             audio = base64.b64decode(event["delta"], validate=True)
@@ -226,7 +248,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
                     ),
                     message=message,
                 ),
-                ModuleErrorVendorInfo(vendor=self.vendor(), code=code, message=message),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(), code=code, message=message
+                ),
             )
         finally:
             if fatal:

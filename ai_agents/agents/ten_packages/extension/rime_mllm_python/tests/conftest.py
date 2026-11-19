@@ -18,7 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 # Transport tests load the package without importing TEN's native addon entry.
 protocol_package = types.ModuleType("prism_test_protocol")
 protocol_package.__path__ = [str(Path(__file__).resolve().parents[1])]
-protocol_package.__file__ = str(Path(protocol_package.__path__[0]) / "__init__.py")
+protocol_package.__file__ = str(
+    Path(protocol_package.__path__[0]) / "__init__.py"
+)
 sys.modules[protocol_package.__name__] = protocol_package
 # Pytest imports the enclosing package during setup, before runtime fixtures.
 sys.modules["rime_mllm_python"] = protocol_package
@@ -60,7 +62,9 @@ class PrismPeer:
         await socket.send_json(event)
 
     async def acknowledge(self, request, kind):
-        await self.send({"type": kind, "prism_request_event_id": request["event_id"]})
+        await self.send(
+            {"type": kind, "prism_request_event_id": request["event_id"]}
+        )
 
     async def request(self, kind):
         while True:
@@ -98,7 +102,9 @@ async def connection(peer):
 
     events = asyncio.Queue()
     client = PrismConnection(
-        RimeRealtimeConfig(endpoint=peer.url, api_key="test-only", startup_retries=0),
+        RimeRealtimeConfig(
+            endpoint=peer.url, api_key="test-only", startup_retries=0
+        ),
         events.put,
     )
     yield client, events
@@ -227,10 +233,14 @@ def ten_modules():
         specification = importlib.util.find_spec("ten_ai_base")
         if specification and specification.submodule_search_locations:
             base_path = str(
-                Path(next(iter(specification.submodule_search_locations))).parent
+                Path(
+                    next(iter(specification.submodule_search_locations))
+                ).parent
             )
     if base_path is None:
-        pytest.skip("Install TEN dependencies or set TEN_AI_BASE_INTERFACE_PATH")
+        pytest.skip(
+            "Install TEN dependencies or set TEN_AI_BASE_INTERFACE_PATH"
+        )
     prefixes = (
         "ten_runtime",
         "ten_ai_base",
