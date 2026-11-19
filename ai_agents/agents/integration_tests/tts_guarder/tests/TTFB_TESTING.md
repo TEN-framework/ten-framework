@@ -181,3 +181,27 @@ After these changes, all seven live sequential-request TTFB configurations also
 passed with the independent reference enabled and the existing 1 ms tolerance.
 The endpoint checks and single-extension installation checks are separate from
 that live result: the live verification app supplies all selected packages.
+
+## Speko Router hook
+
+As of: 2026-11-12
+
+`speko_tts2_python` registers `ttfb_hooks/speko.py` (`SpekoObserver`) on the
+extension's `client` module. The guarder maps the configured `base_url` to the
+Router's TTS socket itself (`https`→`wss`, `http`→`ws`, base path kept, then
+`/v1/tts/stream`); it does not import the client's URL helper. Text is the first
+`input.append` JSON frame with non-whitespace text; audio is the first nonempty
+binary frame on that connection. `session.configure`, `input.commit`,
+`input.cancel`, `session.close` and every Router JSON event are excluded. The
+Router runs one utterance per session, so audio follows the connection's active
+text request, and a previous connection's audio cannot complete a new request.
+
+Offline coverage joins the parametrized wire, deferred-decode and local
+WebSocket transport tests, plus Speko-specific control-frame and
+connection-isolation cases. Endpoint cases cover `https://r.test/edge/` →
+`wss://r.test/edge/v1/tts/stream` and `http://127.0.0.1:8080` →
+`ws://127.0.0.1:8080/v1/tts/stream`. Speko normalization requires `api_key`,
+so the default-endpoint test supplies a placeholder. The extension reports TTFB
+from just before the `input.append` send to the first audio frame, rounded to
+the nearest millisecond, to stay within the 1 ms reference tolerance. The live
+sequential-request run for Speko has not been recorded here yet.

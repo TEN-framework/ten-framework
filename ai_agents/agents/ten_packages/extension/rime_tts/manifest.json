@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "rime_tts",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "dependencies": [
     {
       "type": "system",

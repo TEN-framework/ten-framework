@@ -131,6 +131,31 @@ Verify:
 - Dump writers write emitted PCM, are isolated per request, and flush on every
   terminal path without path traversal through request IDs.
 
+## Release metadata and dependency reconciliation
+
+Treat release metadata and packaging as part of every changed extension's
+runtime contract. For any in-scope implementation, configuration, manifest, or
+dependency change, compare `manifest.json` and `pyproject.toml` with the merge
+base:
+
+- The extension version in both files must be present where applicable, match
+  exactly, and advance when the extension behavior or shipped files change.
+- Use a patch (final component) bump for routine fixes and a minor (middle
+  component) bump for substantial or breaking changes. A missing, unchanged,
+  mismatched, or clearly undersized bump is an actionable finding. README-only
+  changes do not require a release bump.
+- Inspect every added Python import. Classify it as standard library,
+  repository-local TEN code, or an external distribution. Each new external
+  runtime distribution must appear in the extension's `pyproject.toml`
+  dependencies with a compatible constraint, accounting for import-name versus
+  distribution-name differences. A clean install must be able to resolve every
+  external import.
+
+Do not report standard-library or repository-local imports as missing
+dependencies. Do not require a redundant direct declaration when the import is
+already covered by an explicit project dependency and the repository's packaging
+convention treats that dependency as sufficient.
+
 ## Extension-local tests
 
 Apply the complete merge-gating matrix in [tests.md](tests.md). The suite must

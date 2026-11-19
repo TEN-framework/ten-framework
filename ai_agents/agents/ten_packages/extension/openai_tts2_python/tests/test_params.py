@@ -1,5 +1,9 @@
+import asyncio
 import sys
 from pathlib import Path
+
+import httpx
+import pytest
 
 # Add project root to sys.path to allow running tests from this directory
 # The project root is 6 levels up from the parent directory of this file.
@@ -251,6 +255,147 @@ def test_invalid_param_values_use_safe_defaults():
     assert "base_url" not in config.params
 
 
+@pytest.mark.parametrize(
+    "properties,expected_url",
+    [
+        pytest.param(
+            {
+                "url": "https://top-level.example/tts",
+                "params": {
+                    "url": "https://params.example/tts",
+                    "base_url": "https://base.example/v1",
+                },
+            },
+            "https://params.example/tts",
+            id="params-url-over-top-level-and-base-url",
+        ),
+        pytest.param(
+            {
+                "url": "https://top-level.example/tts",
+                "params": {"url": "https://params.example/tts"},
+            },
+            "https://params.example/tts",
+            id="params-url-over-top-level-url",
+        ),
+        pytest.param(
+            {
+                "params": {
+                    "url": "https://params.example/tts",
+                    "base_url": "https://base.example/v1",
+                }
+            },
+            "https://params.example/tts",
+            id="params-url-over-base-url",
+        ),
+        pytest.param(
+            {
+                "url": "https://top-level.example/tts",
+                "params": {"base_url": "https://base.example/v1"},
+            },
+            "https://top-level.example/tts",
+            id="top-level-url-over-base-url",
+        ),
+        pytest.param(
+            {"url": "https://top-level.example/tts"},
+            "https://top-level.example/tts",
+            id="top-level-url-only",
+        ),
+        pytest.param(
+            {"params": {"base_url": "https://base.example/v1/"}},
+            "https://base.example/v1/audio/speech",
+            id="base-url-with-trailing-slash",
+        ),
+        pytest.param(
+            {},
+            "https://api.openai.com/v1/audio/speech",
+            id="default-url",
+        ),
+        *[
+            pytest.param(
+                {
+                    "url": "https://top-level.example/tts",
+                    "params": {
+                        "url": value,
+                        "base_url": "https://base.example/v1",
+                    },
+                },
+                "https://top-level.example/tts",
+                id=f"invalid-params-url-{name}",
+            )
+            for name, value in (
+                ("empty", ""),
+                ("whitespace", " \t "),
+                ("null", None),
+                ("number", 8080),
+            )
+        ],
+        pytest.param(
+            {
+                "url": "",
+                "params": {"url": "https://params.example/tts"},
+            },
+            "https://params.example/tts",
+            id="empty-top-level-url",
+        ),
+    ],
+)
+def test_endpoint_url_precedence(properties, expected_url):
+    """Send synthesis to the selected endpoint without endpoint-only params."""
+    from openai_tts2_python.config import OpenAITTSConfig
+    from openai_tts2_python.openai_tts import OpenAITTSClient
+    from ten_ai_base.struct import TTS2HttpResponseEventType
+
+    requests = []
+    audio = b"\x01\x00" * 160
+
+    def handle_request(request):
+        requests.append(request)
+        return httpx.Response(200, content=audio)
+
+    async def synthesize():
+        config = OpenAITTSConfig(
+            **{
+                **properties,
+                "params": {
+                    "api_key": "test_api_key",
+                    **properties.get("params", {}),
+                },
+            }
+        )
+        config.update_params()
+        config.validate()
+        http_client = httpx.AsyncClient(
+            transport=httpx.MockTransport(handle_request)
+        )
+        with patch(
+            "openai_tts2_python.openai_tts.AsyncClient",
+            return_value=http_client,
+        ):
+            client = OpenAITTSClient(config, MagicMock())
+        try:
+            events = [event async for event in client.get("Hello", "url-test")]
+        finally:
+            await client.clean()
+
+        assert events == [
+            (audio, TTS2HttpResponseEventType.RESPONSE),
+            (None, TTS2HttpResponseEventType.END),
+        ]
+
+    asyncio.run(synthesize())
+
+    assert len(requests) == 1
+    request = requests[0]
+    assert request.method == "POST"
+    assert str(request.url) == expected_url
+    assert request.headers["Authorization"] == "Bearer test_api_key"
+    payload = json.loads(request.content)
+    assert payload["input"] == "Hello"
+    assert "url" not in payload
+    assert "base_url" not in payload
+    assert "api_key" not in payload
+
+
 def test_speed_rejects_bool_and_non_finite_values():
     """Speed must be a finite numeric value."""
     from openai_tts2_python.config import OpenAITTSConfig
@@ -497,7 +642,7 @@ def test_url_in_params(MockLimits, MockTimeout, MockAsyncClient):
     Test cases:
     1. When 'url' is in params (and not in top-level), it should be extracted to config.url
     2. When 'url' is in params, it should be removed from params after extraction
-    3. When both top-level 'url' and params 'url' exist, top-level takes precedence
+    3. When both top-level 'url' and params 'url' exist, params takes precedence
     4. When 'url' is in params but top-level url is None, params url should be used
     """
     print("Starting test_url_in_params with mock...")
@@ -573,8 +718,8 @@ def test_url_in_params(MockLimits, MockTimeout, MockAsyncClient):
     ), "Expected other param values to be preserved"
     print("    ✓ URL correctly removed from params, other params preserved")
 
-    # Test Case 3: Top-level 'url' takes precedence over params 'url'
-    print("  → Test Case 3: Top-level 'url' takes precedence over params 'url'")
+    # Test Case 3: Params 'url' takes precedence over top-level 'url'
+    print("  → Test Case 3: Params 'url' takes precedence over top-level 'url'")
     config_precedence = OpenAITTSConfig(
         url="https://top-level-url.com/tts",
         params={
@@ -584,15 +729,14 @@ def test_url_in_params(MockLimits, MockTimeout, MockAsyncClient):
     )
     config_precedence.update_params()
     assert (
-        config_precedence.url == "https://top-level-url.com/tts"
-    ), "Expected top-level url to take precedence"
-    # When top-level url exists, params url should not be extracted
-    # (it may or may not be removed, but top-level takes precedence)
+        config_precedence.url == "https://params-url.com/tts"
+    ), "Expected params url to take precedence"
+    assert "url" not in config_precedence.params
     client_precedence = OpenAITTSClient(config_precedence, mock_ten_env)
     assert (
-        client_precedence.config.url == "https://top-level-url.com/tts"
-    ), "Expected client to use top-level url"
-    print("    ✓ Top-level url correctly takes precedence")
+        client_precedence.config.url == "https://params-url.com/tts"
+    ), "Expected client to use params url"
+    print("    ✓ Params url correctly takes precedence")
 
     # Test Case 4: 'url' in params when top-level url is None
     print("  → Test Case 4: 'url' in params when top-level url is None")

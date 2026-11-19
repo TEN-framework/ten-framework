@@ -31,7 +31,7 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
     )
     url: str | None = Field(
         default=None,
-        description="Direct endpoint URL (takes precedence over base_url)",
+        description="Fallback endpoint URL after params.url",
     )
     headers: dict[str, Any] = Field(
         default_factory=dict, description="OpenAI TTS headers"
@@ -68,14 +68,13 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         base_url = self.params.pop(  # pylint: disable=no-member
             "base_url", "https://api.openai.com/v1"
         )
-        if not self.url:
-            if isinstance(param_url, str) and param_url.strip():
-                self.url = param_url
-            else:
-                if not isinstance(base_url, str) or not base_url.strip():
-                    base_url = "https://api.openai.com/v1"
-                base_url = base_url.rstrip("/")
-                self.url = f"{base_url}/audio/speech"
+        if isinstance(param_url, str) and param_url.strip():
+            self.url = param_url
+        elif not self.url:
+            if not isinstance(base_url, str) or not base_url.strip():
+                base_url = "https://api.openai.com/v1"
+            base_url = base_url.rstrip("/")
+            self.url = f"{base_url}/audio/speech"
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
