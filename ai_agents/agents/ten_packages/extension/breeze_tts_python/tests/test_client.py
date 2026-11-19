@@ -292,3 +292,80 @@ def test_cancel_during_retry_backoff_stops_further_requests():
     assert event[1] is TTS2HttpResponseEventType.FLUSH
     assert rest == []
     assert calls == 1
+
+
+class FailedContent:
+    """Yields one byte, then drops the connection."""
+
+    async def iter_chunked(self, _size):
+        yield b"\x01"
+        import aiohttp
+        raise aiohttp.ClientError("connection reset")
+
+
+class DroppingResponse(FakeResponse):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.content = FailedContent()
+
+
+class SequenceSession(FakeSession):
+    def __init__(self, responses):
+        super().__init__(responses[0])
+        self._responses = list(responses)
+
+    async def post(self, url, params=None, json=None, headers=None):
+        self.calls.append({"url": url})
+        return self._responses.pop(0)
+
+
+def test_cancel_during_long_retry_after_returns_flush_quickly():
+    async def scenario():
+        client = make_client(
+            FakeResponse(status=429, headers={"Retry-After": "5"})
+        )
+        stream = client.get("hello", "req-slow-backoff")
+        pending = asyncio.ensure_future(stream.__anext__())
+        while not client._session.calls:
+            await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
+        started = asyncio.get_running_loop().time()
+        await client.cancel()
+        event = await asyncio.wait_for(pending, 2)
+        elapsed = asyncio.get_running_loop().time() - started
+        rest = [item async for item in stream]
+        return event, rest, elapsed
+
+    event, rest, elapsed = asyncio.run(scenario())
+
+    assert event[1] is TTS2HttpResponseEventType.FLUSH
+    assert rest == []
+    assert elapsed < 1.0
+
+
+def test_partial_byte_from_a_dropped_attempt_is_not_reused():
+    async def scenario():
+        client = make_client(DroppingResponse())
+        client._session = SequenceSession(
+            [DroppingResponse(), FakeResponse(chunks=[b"\x02\x00"])]
+        )
+        return [item async for item in client.get("hello", "req-retry")]
+
+    events = asyncio.run(scenario())
+    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+
+    assert audio == b"\x02\x00"
+    assert events[-1][1] is TTS2HttpResponseEventType.END
+
+
+def test_encoded_audio_is_rejected():
+    client = make_client(
+        FakeResponse(
+            chunks=[b"ID3\x04\x00\x00"],
+            headers={"Content-Type": "audio/mpeg"},
+        )
+    )
+    events = asyncio.run(collect(client))
+
+    assert events[-1][1] is TTS2HttpResponseEventType.ERROR
+    assert not any(k is TTS2HttpResponseEventType.RESPONSE for _, k in events)

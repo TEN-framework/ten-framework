@@ -62,15 +62,19 @@ class LinearResampler:
         return out.tobytes()
 
 
-AUDIO_CONTENT_TYPES = ("audio/pcm", "audio/x-pcm", "audio/l16", "application/octet-stream")
+RAW_PCM_CONTENT_TYPES = (
+    "audio/pcm",
+    "audio/x-pcm",
+    "audio/l16",
+    "audio/raw",
+    "application/octet-stream",
+)
 
 
 def _is_audio_type(content_type: str) -> bool:
     if not content_type:
         return True  # a missing header is not proof of an error page
-    return content_type.startswith("audio/") or any(
-        content_type.startswith(kind) for kind in AUDIO_CONTENT_TYPES
-    )
+    return any(kind in content_type for kind in RAW_PCM_CONTENT_TYPES)
 
 
 CREDENTIAL_HINTS = ("api key", "api_key", "credential", "unauthorized", "invalid key")
@@ -156,6 +160,19 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
             )
         return self._session
 
+    async def _sleep(self, delay: float, epoch: int) -> bool:
+        """Sleep in short slices so a barge-in ends the backoff promptly."""
+
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + delay
+        while True:
+            if epoch != self._cancel_epoch:
+                return False
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                return True
+            await asyncio.sleep(min(0.05, remaining))
+
     async def clean(self) -> None:
         await self._close_response()
         if self._session is not None and not self._session.closed:
@@ -222,6 +239,13 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         emitted = 0
 
         for attempt in range(1, MAX_ATTEMPTS + 1):
+            # each attempt is a fresh response: drop alignment/resampling state
+            self._carry = b""
+            self._resampler = (
+                None
+                if target_rate == SAMPLE_RATE
+                else LinearResampler(SAMPLE_RATE, target_rate)
+            )
             response = None
             try:
                 post_task = asyncio.ensure_future(
@@ -277,8 +301,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                         response.release()
                         self._responses.pop(request_id, None)
                         response = None
-                        await asyncio.sleep(delay)
-                        if epoch != self._cancel_epoch:
+                        if not await self._sleep(delay, epoch):
                             yield None, TTS2HttpResponseEventType.FLUSH
                             return
                         continue
@@ -341,8 +364,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                         f"Breeze TTS request {request_id} dropped before audio "
                         f"({error}), retrying (attempt {attempt}/{MAX_ATTEMPTS})"
                     )
-                    await asyncio.sleep(min(0.4 * attempt, 2.0))
-                    if epoch != self._cancel_epoch:
+                    if not await self._sleep(min(0.4 * attempt, 2.0), epoch):
                         yield None, TTS2HttpResponseEventType.FLUSH
                         return
                     continue
