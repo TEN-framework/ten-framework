@@ -6,8 +6,6 @@
     "language": "zh",
     "speed": 1.0,
     "instructions": "",
-    "sample_rate": 24000,
-    "output_format": "pcm",
     "timeout": 60
   }
 }

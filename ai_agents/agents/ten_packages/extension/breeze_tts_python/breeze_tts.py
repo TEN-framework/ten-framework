@@ -77,7 +77,13 @@ def _is_audio_type(content_type: str) -> bool:
     return any(kind in content_type for kind in RAW_PCM_CONTENT_TYPES)
 
 
-CREDENTIAL_HINTS = ("api key", "api_key", "credential", "unauthorized", "invalid key")
+CREDENTIAL_HINTS = (
+    "api key",
+    "api_key",
+    "credential",
+    "unauthorized",
+    "invalid key",
+)
 
 
 def _is_credential_failure(status: int, detail: str) -> bool:
@@ -184,7 +190,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         # only safe to interrupt the post while one request is in flight;
         # with interleaved requests the epoch check ends each stream instead
         if len(self._pending_posts) == 1:
-            (request_id, task), = self._pending_posts.items()
+            ((request_id, task),) = self._pending_posts.items()
             if not task.done():
                 task.cancel()
             self._pending_posts.pop(request_id, None)
@@ -208,7 +214,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
             "language": params.language,
         }
 
-    def _build_request(self, text: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    def _build_request(
+        self, text: str
+    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         params = self.config.params
         url = f"{params.base_url}/v1/text-to-speech/{params.voice_id}/stream"
         body: dict[str, Any] = {"text": text, "language_code": params.language}
@@ -227,7 +235,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         self._carry = b""
         target_rate = self.target_sample_rate()
         self._resampler = (
-            None if target_rate == SAMPLE_RATE else LinearResampler(SAMPLE_RATE, target_rate)
+            None
+            if target_rate == SAMPLE_RATE
+            else LinearResampler(SAMPLE_RATE, target_rate)
         )
 
         if not text.strip():
@@ -273,7 +283,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                     return
                 self._responses[request_id] = response
 
-                content_type = (response.headers.get("Content-Type") or "").lower()
+                content_type = (
+                    response.headers.get("Content-Type") or ""
+                ).lower()
                 if response.status == 200 and not _is_audio_type(content_type):
                     detail = (await response.text())[:300]
                     self.ten_env.log_error(
@@ -373,7 +385,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                 )
                 yield str(error).encode(), TTS2HttpResponseEventType.ERROR
                 return
-            except Exception as error:  # noqa: BLE001 - surfaced to the pipeline
+            except (
+                Exception
+            ) as error:  # noqa: BLE001 - surfaced to the pipeline
                 if epoch != self._cancel_epoch:
                     yield None, TTS2HttpResponseEventType.FLUSH
                     return

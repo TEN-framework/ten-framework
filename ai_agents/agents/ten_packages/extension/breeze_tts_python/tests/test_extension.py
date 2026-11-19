@@ -14,7 +14,12 @@ def make_extension() -> BreezeTTSExtension:
 
 
 def config_json(**params):
-    return json.dumps({"dump": False, "params": {"api_key": "brz_test", "voice_id": "voc_test", **params}})
+    return json.dumps(
+        {
+            "dump": False,
+            "params": {"api_key": "brz_test", "voice_id": "voc_test", **params},
+        }
+    )
 
 
 def test_vendor_and_default_rate():
@@ -25,7 +30,9 @@ def test_vendor_and_default_rate():
 
 def test_create_config_normalises_rate_and_reports_it():
     extension = make_extension()
-    config = asyncio.run(extension.create_config(config_json(sample_rate=32000)))
+    config = asyncio.run(
+        extension.create_config(config_json(sample_rate=32000))
+    )
 
     assert config.params.sample_rate == SAMPLE_RATE
     assert extension.synthesize_audio_sample_rate() == SAMPLE_RATE

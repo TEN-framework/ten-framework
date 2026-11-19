@@ -27,7 +27,9 @@ class FakeContent:
 class FakeResponse:
     def __init__(self, status=200, chunks=(), text="", headers=None):
         self.status = status
-        self.headers = headers if headers is not None else {"Content-Type": "audio/pcm"}
+        self.headers = (
+            headers if headers is not None else {"Content-Type": "audio/pcm"}
+        )
         self.content = FakeContent(chunks)
         self._text = text
         self.closed = False
@@ -172,13 +174,19 @@ def test_resamples_to_the_configured_rate():
     client = make_client(FakeResponse(chunks=chunks), sample_rate=16000)
     events = asyncio.run(collect(client))
 
-    audio = b"".join(payload for payload, kind in events if kind is TTS2HttpResponseEventType.RESPONSE)
+    audio = b"".join(
+        payload
+        for payload, kind in events
+        if kind is TTS2HttpResponseEventType.RESPONSE
+    )
     # 1 s at 16 kHz, 16 bit mono
     assert abs(len(audio) - 32000) <= 64
 
 
 def test_validation_error_is_recoverable():
-    client = make_client(FakeResponse(status=422, text="Request validation failed."))
+    client = make_client(
+        FakeResponse(status=422, text="Request validation failed.")
+    )
     events = asyncio.run(collect(client))
 
     assert events[-1][1] is TTS2HttpResponseEventType.ERROR
@@ -208,7 +216,9 @@ def test_truncated_final_sample_is_reported():
     client = make_client(FakeResponse(chunks=[b"\x01\x00\x02"]))
     events = asyncio.run(collect(client))
 
-    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+    audio = b"".join(
+        p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE
+    )
     assert audio == b"\x01\x00"
     assert events[-1][1] is TTS2HttpResponseEventType.ERROR
 
@@ -233,7 +243,9 @@ def test_odd_chunk_keeps_samples_aligned():
     client = make_client(FakeResponse(chunks=[payload[:3], payload[3:]]))
     events = asyncio.run(collect(client))
 
-    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+    audio = b"".join(
+        p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE
+    )
     assert audio == payload
 
 
@@ -300,6 +312,7 @@ class FailedContent:
     async def iter_chunked(self, _size):
         yield b"\x01"
         import aiohttp
+
         raise aiohttp.ClientError("connection reset")
 
 
@@ -352,7 +365,9 @@ def test_partial_byte_from_a_dropped_attempt_is_not_reused():
         return [item async for item in client.get("hello", "req-retry")]
 
     events = asyncio.run(scenario())
-    audio = b"".join(p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE)
+    audio = b"".join(
+        p for p, k in events if k is TTS2HttpResponseEventType.RESPONSE
+    )
 
     assert audio == b"\x02\x00"
     assert events[-1][1] is TTS2HttpResponseEventType.END

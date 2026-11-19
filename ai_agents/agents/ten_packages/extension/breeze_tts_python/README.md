@@ -6,7 +6,7 @@ design.
 
 ## Features
 
-- Streaming PCM (default 24 kHz, 16-bit mono) straight into TEN's audio pipeline
+- Streaming PCM (24 kHz, 16-bit mono, Breeze's fixed format) straight into TEN's audio pipeline
 - Breeze voice library plus designed voices (`voc_...`)
 - Emotion / pacing via `instructions`, speed 0.5–2.0
 - Interruptible: cancels the in-flight HTTP stream on barge-in
@@ -22,7 +22,7 @@ design.
 | `instructions` | `instructions` |
 | `speed` | `voice_settings.speed` |
 | `language` | `language_code` |
-| audio | `output_format=pcm` |
+| audio | `output_format=pcm` (fixed 24 kHz mono 16-bit) |
 
 ## Configuration
 
@@ -37,8 +37,6 @@ design.
     "language": "zh",
     "speed": 1.0,
     "instructions": "",
-    "sample_rate": 24000,
-    "output_format": "pcm",
     "timeout": 60
   }
 }

@@ -60,4 +60,3 @@ class BreezeTTSExtension(AsyncTTS2HttpExtension):
 
     def synthesize_audio_sample_rate(self) -> int:
         return self._sample_rate
-

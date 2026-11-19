@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
 def _install_stub() -> None:
     try:
         import ten_ai_base  # noqa: F401
+
         return
     except ImportError:
         pass
