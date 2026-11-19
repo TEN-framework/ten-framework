@@ -37,7 +37,9 @@ def _install_stub() -> None:
         ERROR = "error"
         INVALID_KEY_ERROR = "invalid_key_error"
 
-    struct.TTS2HttpResponseEventType = TTS2HttpResponseEventType  # type: ignore[attr-defined]
+    struct.TTS2HttpResponseEventType = (  # type: ignore[attr-defined]
+        TTS2HttpResponseEventType
+    )
 
     pydantic = __import__("pydantic")
     http = types.ModuleType("ten_ai_base.tts2_http")
@@ -53,12 +55,22 @@ def _install_stub() -> None:
         def __init__(self, name: str) -> None:
             self.name = name
 
-    http.AsyncTTS2HttpConfig = AsyncTTS2HttpConfig  # type: ignore[attr-defined]
-    http.AsyncTTS2HttpClient = AsyncTTS2HttpClient  # type: ignore[attr-defined]
-    http.AsyncTTS2HttpExtension = AsyncTTS2HttpExtension  # type: ignore[attr-defined]
+    http.AsyncTTS2HttpConfig = (  # type: ignore[attr-defined]
+        AsyncTTS2HttpConfig
+    )
+    http.AsyncTTS2HttpClient = (  # type: ignore[attr-defined]
+        AsyncTTS2HttpClient
+    )
+    http.AsyncTTS2HttpExtension = (  # type: ignore[attr-defined]
+        AsyncTTS2HttpExtension
+    )
 
     utils = types.ModuleType("ten_ai_base.utils")
-    utils.encrypt = lambda value: "***" if value else ""  # type: ignore[attr-defined]
+
+    def _encrypt(value):
+        return "***" if value else ""
+
+    utils.encrypt = _encrypt  # type: ignore[attr-defined]
 
     base.struct = struct  # type: ignore[attr-defined]
     base.tts2_http = http  # type: ignore[attr-defined]

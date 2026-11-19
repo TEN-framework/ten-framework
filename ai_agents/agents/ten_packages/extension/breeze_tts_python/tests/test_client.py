@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
-
 from breeze_tts import (
     BYTES_PER_SAMPLE,
     SAMPLE_RATE,

@@ -28,6 +28,7 @@ def _clamp_speed(value: float) -> float:
     return min(2.0, max(0.5, speed))
 
 
+# pylint: disable=no-member  # pydantic fields resolve at runtime
 class BreezeTTSConfig(AsyncTTS2HttpConfig):
     """Extension configuration; ``params`` mirrors Breeze request fields."""
 
@@ -63,8 +64,8 @@ class BreezeTTSConfig(AsyncTTS2HttpConfig):
     def validate(self) -> None:
         if not self.params.api_key:
             raise ValueError(
-                "params.api_key is required (set BREEZE_API_KEY or configure it "
-                "in property.json)"
+                "params.api_key is required (set BREEZE_API_KEY or "
+                "configure it in property.json)"
             )
         if not self.params.api_key.startswith("brz_"):
             raise ValueError(

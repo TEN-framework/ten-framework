@@ -190,7 +190,7 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
         # only safe to interrupt the post while one request is in flight;
         # with interleaved requests the epoch check ends each stream instead
         if len(self._pending_posts) == 1:
-            ((request_id, task),) = self._pending_posts.items()
+            request_id, task = next(iter(self._pending_posts.items()))
             if not task.done():
                 task.cancel()
             self._pending_posts.pop(request_id, None)
@@ -288,9 +288,10 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                 ).lower()
                 if response.status == 200 and not _is_audio_type(content_type):
                     detail = (await response.text())[:300]
+                    kind = content_type or "no content type"
                     self.ten_env.log_error(
-                        f"Breeze TTS returned {content_type or 'no content type'} "
-                        f"for request {request_id}: {detail}"
+                        f"Breeze TTS returned {kind} for request "
+                        f"{request_id}: {detail}"
                     )
                     response.release()
                     self._responses.pop(request_id, None)
@@ -373,8 +374,9 @@ class BreezeTTSClient(AsyncTTS2HttpClient):
                     return
                 if emitted == 0 and attempt < MAX_ATTEMPTS:
                     self.ten_env.log_warn(
-                        f"Breeze TTS request {request_id} dropped before audio "
-                        f"({error}), retrying (attempt {attempt}/{MAX_ATTEMPTS})"
+                        f"Breeze TTS request {request_id} dropped before "
+                        f"audio ({error}), retrying "
+                        f"(attempt {attempt}/{MAX_ATTEMPTS})"
                     )
                     if not await self._sleep(min(0.4 * attempt, 2.0), epoch):
                         yield None, TTS2HttpResponseEventType.FLUSH
