@@ -5,6 +5,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 
+from pydantic import ValidationError
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
 
@@ -26,6 +27,13 @@ class DroppedAudio:
     size: int
 
 
+class OrderedInputs(deque):
+    """Queue used by the ASR base to serialize audio alongside finalize data."""
+
+    async def put(self, frame):
+        self.append(frame)
+
+
 class GnaniASRExtension(AsyncASRBaseExtension):
     url = "wss://api.vachana.ai/stt/v3/stream"
 
@@ -39,16 +47,21 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         self.retry = None
         self.ready = asyncio.Event()
         self.changed = asyncio.Event()
-        self.inputs = deque()
+        self.inputs = OrderedInputs()
+        self.audio_frames_queue = self.inputs
+        self.generation = 0
+        self.connector = None
+        self.finalize_times = deque()
+        self.last_event = 0.0
+        self.turn_results = 0
+        self.processing = 0
         self.available = asyncio.Event()
         self.queued_bytes = 0
         self.tail = bytearray()
         self.starts = {}
         self.unidentified_starts = deque()
         self.completed = set()
-        self.finalized = set()
         self.finalize_metadata = None
-        self.fenced = False
         self.fatal = False
         self.next_send = 0.0
         self.origin = 0
@@ -68,12 +81,12 @@ class GnaniASRExtension(AsyncASRBaseExtension):
     def is_connected(self):
         return self.ws is not None
 
-    async def error(self, message, fatal=False):
+    async def error(self, message, fatal=False, vendor_code="prisma"):
         self.fatal |= fatal
         code = ModuleErrorCode.FATAL_ERROR if fatal else ModuleErrorCode.NON_FATAL_ERROR
         await self.send_asr_error(
             ModuleError(module="asr", code=code.value, message=message),
-            ModuleErrorVendorInfo(vendor="gnani", code="prisma", message=message),
+            ModuleErrorVendorInfo(vendor="gnani", code=vendor_code, message=message),
         )
 
     async def on_init(self, ten_env):
@@ -83,11 +96,17 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             if err:
                 raise ValueError("missing Prisma params")
             self.config = PrismaConfig(**json.loads(raw))
+            ten_env.log_info(
+                f"config: {self.config.model_dump_json(exclude={'api_key'})}"
+            )
             dump, _ = await ten_env.get_property_bool("dump")
             if dump:
                 path, _ = await ten_env.get_property_string("dump_path")
                 self.dumper = Dumper(os.path.join(path or ".", "gnani_asr_in.pcm"))
                 await self.dumper.start()
+        except ValidationError as exc:
+            details = ", ".join(err["msg"] for err in exc.errors(include_input=False))
+            await self.error(f"invalid Prisma params: {details}", True)
         except TypeError:
             await self.error("invalid Prisma params", True)
         except ValueError as exc:
@@ -96,6 +115,19 @@ class GnaniASRExtension(AsyncASRBaseExtension):
     async def start_connection(self):
         if self.fatal or self.stopped or self.ws or not self.config:
             return
+        generation = self.generation
+        task = asyncio.create_task(self._connect(generation))
+        self.connector = task
+        try:
+            await task
+        except asyncio.CancelledError:
+            if self.generation == generation:
+                raise
+        finally:
+            if self.connector is task:
+                self.connector = None
+
+    async def _connect(self, generation):
         ws = None
         try:
             started = time.monotonic()
@@ -106,6 +138,9 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 close_timeout=1,
             )
             hello = json.loads(await asyncio.wait_for(ws.recv(), 5))
+            if self.stopped or generation != self.generation:
+                await ws.close()
+                return
             if hello.get("type") == "error" and any(
                 term in str(hello.get("message", "")).lower()
                 for term in ("concurrent", "capacity", "rate limit")
@@ -128,13 +163,19 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             await self.send_connect_delay_metrics(
                 int((time.monotonic() - started) * 1000)
             )
+        except asyncio.CancelledError:
+            if ws:
+                await ws.close()
+            raise
         except (WebSocketException, OSError, ValueError, asyncio.TimeoutError) as exc:
             if ws:
                 await ws.close()
             status = getattr(getattr(exc, "response", None), "status_code", None)
             fatal = status in (400, 401, 402, 403, 404) or isinstance(exc, ValueError)
             await self.error(
-                f"Prisma connection failed ({status or type(exc).__name__})", fatal
+                f"Prisma connection failed ({status or type(exc).__name__})",
+                fatal,
+                str(status or type(exc).__name__),
             )
             await self.on_disconnected(
                 code=-1000 if fatal else 1000, message="connection failed"
@@ -150,12 +191,13 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             self.retry = asyncio.create_task(self.reconnect())
 
     async def reconnect(self):
-        for delay in (0.25, 0.5, 1, 2, 4):
+        delay = 0.25
+        while not self.stopped and not self.fatal:
             await asyncio.sleep(delay)
             await self._ensure_connection()
             if self.ws or self.fatal or self.stopped:
                 return
-        await self.error("Prisma reconnect attempts exhausted", True)
+            delay = min(delay * 2, 4)
 
     async def receive(self, ws):
         try:
@@ -169,7 +211,10 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 uid = event.get("utterance_id") or event.get("segment_id")
                 if kind == "transcript" and not uid:
                     raise ValueError("missing utterance identifier")
-                if kind == "speech_start":
+                self.last_event = time.monotonic()
+                if kind == "processing":
+                    self.processing += 1
+                elif kind == "speech_start":
                     offset = event.get("t_ms", self.sent_ms())
                     if uid:
                         self.starts[uid] = offset
@@ -206,20 +251,22 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                             )
                         )
                     self.completed.add(uid)
-                elif kind == "settings_updated":
-                    self.fenced = True
+                    self.turn_results += 1
+                    self.processing = max(0, self.processing - 1)
                 elif kind == "error":
                     reason = str(event.get("message") or "unspecified error")
                     reason = reason.replace(self.config.api_key, "[redacted]")[:240]
-                    await self.error(f"Prisma stream error: {reason}")
+                    await self.error(
+                        f"Prisma stream error: {reason}",
+                        vendor_code=str(event.get("code") or "error"),
+                    )
+                    self.processing = max(0, self.processing - 1)
                     self.starts.pop(uid, None)
                 self.changed.set()
         except (WebSocketException, OSError, ValueError, TypeError, KeyError):
             await self.error("Prisma stream interrupted")
         finally:
             if self.ws is ws:
-                if self.dirty and not self.stopped:
-                    await self.error("Prisma disconnected before turn completion")
                 self.ws = None
                 self.ready.clear()
                 self.changed.set()
@@ -249,7 +296,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             return
         if self.dumper:
             await self.dumper.push_bytes(bytes(audio_frame.get_buf()))
-        self.inputs.append(audio_frame)
+        await super().on_audio_frame(ten_env, audio_frame)
         self.queued_bytes += size
         dropped = 0
         while self.queued_bytes + len(self.tail) > QUEUE_BYTES and self.inputs:
@@ -272,6 +319,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
 
     async def on_data(self, ten_env, data):
         if data.get_name() == "asr_finalize":
+            self.finalize_times.append(time.monotonic())
             self.inputs.append(data)
             self.available.set()
         else:
@@ -293,6 +341,25 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 try:
                     await asyncio.wait_for(self.ready.wait(), 1)
                 except asyncio.TimeoutError:
+                    if (
+                        not self.finalize_times
+                        or time.monotonic() - self.finalize_times[0] < 5
+                    ):
+                        continue
+                    dropped = 0
+                    while self.inputs and not isinstance(self.inputs[0], Data):
+                        pending = self.inputs.popleft()
+                        if isinstance(pending, DroppedAudio):
+                            dropped += pending.size
+                        else:
+                            size = len(pending.get_buf())
+                            dropped += size
+                            self.queued_bytes -= size
+                    self.audio_timeline.add_dropped_audio(
+                        (dropped + len(self.tail)) // 32
+                    )
+                    self.tail.clear()
+                    await self.error("Prisma unavailable at finalize deadline")
                     continue
             item = self.inputs.popleft()
             try:
@@ -301,6 +368,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                         await self.packet(min(FRAME_BYTES, len(self.tail)))
                     self.audio_timeline.add_dropped_audio(item.size // 32)
                 elif isinstance(item, Data):
+                    self.finalize_times.popleft()
                     raw, _ = item.get_property_to_json("metadata")
                     self.finalize_metadata = json.loads(raw) if raw else None
                     await super().on_data(self.ten_env, item)
@@ -355,8 +423,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.reset()
             self.origin = self.last_end = self.user_bytes = 0
             self.dirty = False
-            self.finalized.clear()
-            await self._ensure_connection()
+            self.schedule_retry()
         self.session_id = new_session
         self.metadata = metadata
         self.tail.extend(frame.get_buf())
@@ -370,10 +437,6 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             if isinstance(self.finalize_metadata, dict)
             else self.metadata
         )
-        request = ((metadata or {}).get("session_id", session_id), self.finalize_id)
-        if request in self.finalized:
-            return
-        self.finalized.add(request)
         try:
             while self.tail:
                 await self.packet(min(FRAME_BYTES, len(self.tail)))
@@ -381,23 +444,35 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 ws = self.ws
                 if not ws:
                     raise OSError("disconnected")
-                self.fenced = False
                 await asyncio.wait_for(ws.send(json.dumps({"type": "commit"})), 5)
-                await asyncio.wait_for(
-                    ws.send(
-                        json.dumps({"type": "update_settings", "format": "verbatim"})
-                    ),
-                    5,
-                )
-
-                async def wait_results():
-                    while not self.fenced or self.starts or self.unidentified_starts:
-                        if self.ws is not ws:
-                            raise OSError("disconnected")
-                        self.changed.clear()
-                        await self.changed.wait()
-
-                await asyncio.wait_for(wait_results(), 5)
+                # Commit has no drain acknowledgement. Hold this turn's context
+                # for delayed events, then retire its socket before new audio.
+                self.last_event = time.monotonic()
+                deadline = self.last_event + 5
+                while True:
+                    if self.ws is not ws:
+                        raise OSError("disconnected")
+                    now = time.monotonic()
+                    pending = self.starts or self.unidentified_starts or self.processing
+                    if (
+                        not pending
+                        and self.turn_results
+                        and now - self.last_event >= 0.5
+                    ):
+                        break
+                    if now >= deadline:
+                        if pending:
+                            raise asyncio.TimeoutError
+                        break
+                    self.changed.clear()
+                    try:
+                        await asyncio.wait_for(
+                            self.changed.wait(), min(0.5, deadline - now)
+                        )
+                    except asyncio.TimeoutError:
+                        pass
+                await self.stop_connection()
+                self.schedule_retry()
         except (asyncio.TimeoutError, OSError, WebSocketException):
             self.audio_timeline.add_dropped_audio(len(self.tail) // 32)
             self.tail.clear()
@@ -405,6 +480,8 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             await self.stop_connection()
             self.schedule_retry()
         self.dirty = False
+        self.turn_results = 0
+        self.processing = 0
         last_metadata = self.metadata
         try:
             self.metadata = metadata
@@ -413,6 +490,11 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             self.metadata = last_metadata
 
     async def stop_connection(self):
+        self.generation += 1
+        connector = self.connector
+        if connector and connector is not asyncio.current_task():
+            connector.cancel()
+            await asyncio.gather(connector, return_exceptions=True)
         ws, self.ws = self.ws, None
         self.ready.clear()
         if self.receiver:
@@ -420,6 +502,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             await asyncio.gather(self.receiver, return_exceptions=True)
         if ws:
             await ws.close()
+            await self.on_disconnected(code=1000, message="stream closed")
 
     async def on_stop(self, ten_env):
         self.stopped = True

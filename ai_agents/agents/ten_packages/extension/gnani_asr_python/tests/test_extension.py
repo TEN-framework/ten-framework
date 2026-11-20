@@ -36,8 +36,7 @@ class Socket:
                 await self.messages.put(
                     dict(type="speech_start", utterance_id=f"{self.turn}-{n}", t_ms=0)
                 )
-        else:
-            await self.messages.put(dict(type="settings_updated"))
+            await asyncio.sleep(0.05)
             for n in range(2):
                 await self.messages.put(
                     dict(
@@ -172,7 +171,7 @@ def test_invalid_config(options):
 
 
 @pytest.mark.asyncio
-async def test_finalizes_silence_once(monkeypatch):
+async def test_acknowledges_each_silent_request(monkeypatch):
     from unittest.mock import AsyncMock
 
     ext = extension.GnaniASRExtension("gnani")
@@ -181,7 +180,7 @@ async def test_finalizes_silence_once(monkeypatch):
     monkeypatch.setattr(ext, "send_asr_finalize_end", completed)
     await ext.finalize(None)
     await ext.finalize(None)
-    completed.assert_awaited_once()
+    assert completed.await_count == 2
 
 
 @pytest.mark.asyncio
@@ -219,7 +218,7 @@ async def test_disconnect_retires_pending_finalize(monkeypatch):
     monkeypatch.setattr(ext, "schedule_retry", Mock())
     monkeypatch.setattr(ext, "error", failed)
     task = asyncio.create_task(ext.finalize(None))
-    while socket.send.await_count < 2:
+    while socket.send.await_count < 1:
         await asyncio.sleep(0)
     ext.ws = None
     ext.changed.set()
@@ -308,3 +307,143 @@ def test_saved_designer_graph():
         if name == "asr_result":
             assert "hello world" in payload["text"].lower()
             assert payload["language"] == "en-IN"
+
+
+@pytest.mark.asyncio
+async def test_disconnected_audio_before_finalize(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.ten_env = Mock()
+    completed = asyncio.Event()
+
+    async def acknowledge():
+        completed.set()
+
+    monkeypatch.setattr(ext, "send_asr_finalize_end", acknowledge)
+    monkeypatch.setattr(ext, "error", AsyncMock())
+    f = AudioFrame.create("pcm_frame")
+    f.alloc_buf(320)
+    await ext.on_audio_frame(ext.ten_env, f)
+    req = Data.create("asr_finalize")
+    req.set_property_string("finalize_id", "offline")
+    await ext.on_data(ext.ten_env, req)
+    worker = asyncio.create_task(ext._audio_frame_consumer())
+    try:
+        await asyncio.wait_for(completed.wait(), 7)
+        assert ext.finalize_id == "offline"
+        assert ext.queued_bytes == 0
+    finally:
+        worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_stop_invalidates_inflight_handshake(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.config = PrismaConfig(api_key="local")
+    ext.ten_env = AsyncMock()
+    socket = Socket()
+    started = asyncio.Event()
+
+    async def handshake():
+        started.set()
+        await asyncio.Event().wait()
+
+    socket.recv = handshake
+    socket.close = AsyncMock()
+    monkeypatch.setattr(extension, "connect", AsyncMock(return_value=socket))
+    monkeypatch.setattr(ext, "_emit_connection_transition", AsyncMock())
+    attempt = asyncio.create_task(ext.start_connection())
+    await asyncio.wait_for(started.wait(), 1)
+    await ext.stop_connection()
+    await asyncio.wait_for(attempt, 1)
+    socket.close.assert_awaited_once()
+    assert not ext.is_connected()
+
+
+@pytest.mark.asyncio
+async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.config = PrismaConfig(api_key="local")
+    ext.ws = socket = Socket()
+    ext.dirty = True
+    ext.audio_timeline.add_user_audio(32)
+    ext.finalize_id = "delayed"
+    order = []
+
+    async def result(value):
+        order.append(value.text)
+
+    async def end():
+        order.append("end")
+
+    monkeypatch.setattr(ext, "send_asr_result", result)
+    monkeypatch.setattr(ext, "send_asr_finalize_end", end)
+    monkeypatch.setattr(ext, "schedule_retry", Mock())
+    monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
+    socket.send = AsyncMock()
+    ext.receiver = asyncio.create_task(ext.receive(socket))
+    pending = asyncio.create_task(ext.finalize(None))
+    await socket.messages.put({"type": "settings_updated"})
+    await asyncio.sleep(0.05)
+    assert not pending.done()
+    await socket.messages.put({"type": "processing"})
+    await socket.messages.put(
+        {
+            "type": "transcript",
+            "segment_id": "one",
+            "audio_duration_ms": 32,
+            "text": "delayed result",
+        }
+    )
+    await asyncio.wait_for(pending, 2)
+    assert order == ["delayed result", "end"]
+    assert not ext.is_connected()
+
+
+@pytest.mark.asyncio
+async def test_transient_retries_have_capped_delay(monkeypatch):
+    from unittest.mock import AsyncMock
+
+    ext = extension.GnaniASRExtension("gnani")
+    delays = []
+
+    async def sleep(delay):
+        delays.append(delay)
+
+    async def attempt():
+        if len(delays) == 7:
+            ext.ws = Socket()
+
+    monkeypatch.setattr(extension.asyncio, "sleep", sleep)
+    monkeypatch.setattr(ext, "_ensure_connection", attempt)
+    monkeypatch.setattr(ext, "error", AsyncMock())
+    await ext.reconnect()
+    assert delays == [0.25, 0.5, 1, 2, 4, 4, 4]
+    assert not ext.fatal
+
+
+@pytest.mark.asyncio
+async def test_bad_credentials_redacted_and_terminal(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from websockets.exceptions import InvalidStatus
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.config = PrismaConfig(api_key="local-secret")
+    exc = InvalidStatus(SimpleNamespace(status_code=401))
+    monkeypatch.setattr(extension, "connect", AsyncMock(side_effect=exc))
+    errors = AsyncMock()
+    monkeypatch.setattr(ext, "send_asr_error", errors)
+    monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
+    monkeypatch.setattr(ext, "_emit_connection_transition", AsyncMock())
+    await ext.start_connection()
+    assert ext.fatal and ext.retry is None
+    _, vendor = errors.await_args.args
+    assert vendor.code == "401"
+    assert "local-secret" not in vendor.message

@@ -43,3 +43,14 @@ Repeat Guarder with `tests/configs/prisma_v30` and
 `GNANI_DESIGNER_GRAPH` to the saved property.json path in the container and
 run the standalone suite. The fixture source and transcript receiver require
 only the Gnani credential.
+
+## Turn completion and recovery
+
+Gnani's commit control closes an open utterance. The service does not provide
+a transcript-drain acknowledgement. The adapter waits for outstanding speech
+and processing events, allows 500 ms for delayed events after a result, and
+bounds the drain at five seconds. It then closes the turn's socket before
+releasing the finalize request, so late replies cannot enter the next turn.
+These time bounds are a tradeoff between latency and provider delivery delays.
+Temporary transport failures retry with exponential backoff capped at four
+seconds. Authentication and invalid configuration errors stop retries.
