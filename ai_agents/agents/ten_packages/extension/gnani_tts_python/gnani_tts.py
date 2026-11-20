@@ -43,6 +43,17 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
     async def clean(self):
         await self.http.aclose()
 
+    @staticmethod
+    async def close_response(response):
+        # HTTPX marks a response closed before the transport has released it.
+        # A flush racing this await must let the original close finish.
+        close_task = asyncio.create_task(response.aclose())
+        try:
+            await asyncio.shield(close_task)
+        except asyncio.CancelledError:
+            await close_task
+            raise
+
     async def open_stream(self, headers, payload, request_id):
         # A rejected request can be retried before any audio is delivered.
         for attempt in range(4):
@@ -57,7 +68,7 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
             response = await self.http.send(request, stream=True)
             if response.is_success:
                 return response
-            await response.aclose()
+            await self.close_response(response)
             if response.status_code != 429 or attempt == 3:
                 response.raise_for_status()
             try:
@@ -124,7 +135,9 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
             )
         finally:
             if response is not None:
-                await response.aclose()
-                if self.response is response:
-                    self.response = None
+                try:
+                    await self.close_response(response)
+                finally:
+                    if self.response is response:
+                        self.response = None
         yield terminal

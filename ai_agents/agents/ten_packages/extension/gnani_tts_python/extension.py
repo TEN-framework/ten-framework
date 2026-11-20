@@ -31,6 +31,13 @@ class GnaniTTSExtension(AsyncTTS2HttpExtension):
         if task is not None:
             await asyncio.gather(task, return_exceptions=True)
 
+    async def cancel_tts(self):
+        await super().cancel_tts()
+        # A flush before audio_start has no audio_end to release the dump writer.
+        recorder = self.recorder_map.pop(self.current_request_id, None)
+        if recorder is not None:
+            await recorder.flush()
+
     async def on_stop(self, ten_env):
         await self._cancel_current_task()
         await super().on_stop(ten_env)
