@@ -379,7 +379,8 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     ext.dirty = True
     ext.audio_timeline.add_user_audio(32)
     ext.finalize_id = "delayed"
-    ext.turn_results = 1  # An earlier segment finished before commit.
+    ext.ten_env = Mock()
+    monkeypatch.setattr(extension, "DRAIN_SECONDS", 1.5)
     order = []
 
     async def result(value):
@@ -395,6 +396,14 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     socket.send = AsyncMock()
     ext.receiver = asyncio.create_task(ext.receive(socket))
     pending = asyncio.create_task(ext.finalize(None))
+    await socket.messages.put(
+        {
+            "type": "transcript",
+            "segment_id": "zero",
+            "audio_duration_ms": 16,
+            "text": "early result",
+        }
+    )
     await socket.messages.put({"type": "settings_updated"})
     await asyncio.sleep(0.65)
     assert not pending.done()
@@ -408,7 +417,17 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
         }
     )
     await asyncio.wait_for(pending, 2)
-    assert order == ["delayed result", "end"]
+    assert order == ["early result", "delayed result", "end"]
+    await socket.messages.put(
+        {
+            "type": "transcript",
+            "segment_id": "late",
+            "audio_duration_ms": 16,
+            "text": "stale",
+        }
+    )
+    assert ext.receiver.done()
+    ext.ten_env.log_warn.assert_called_once()
     assert not ext.is_connected()
 
 
@@ -479,3 +498,30 @@ def test_invalid_key_configuration_disconnects():
     tester.set_test_mode_single("gnani_asr_python", '{"params":{"api_key":""}}')
     assert tester.run() is None
     assert tester.states[-2:] == ["connecting", "disconnected"]
+
+
+@pytest.mark.asyncio
+async def test_normal_close_at_commit_preserves_arrival_time(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+    from websockets.exceptions import ConnectionClosedOK
+    from websockets.frames import Close
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.finalize_arrival = asyncio.get_running_loop().time() - 2
+    ext.dirty = True
+    ext.ws = Socket()
+
+    async def close_at_send(_):
+        assert asyncio.get_running_loop().time() - ext.last_finalize_time >= 2
+        raise ConnectionClosedOK(Close(1000, ""), Close(1000, ""), True)
+
+    ext.ws.send = close_at_send
+    monkeypatch.setattr(ext, "schedule_retry", Mock())
+    monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
+    monkeypatch.setattr(ext, "error", AsyncMock())
+    monkeypatch.setattr(ext, "send_asr_finalize_end", AsyncMock())
+    await ext.finalize(None)
+    ext.error.assert_not_awaited()
+    ext.on_disconnected.assert_awaited_once()
+    ext.send_asr_finalize_end.assert_awaited_once()
+    assert ext.last_finalize_time is None

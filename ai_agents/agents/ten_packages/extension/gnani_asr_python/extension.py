@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from pydantic import ValidationError
 from websockets.asyncio.client import connect
-from websockets.exceptions import WebSocketException
+from websockets.exceptions import ConnectionClosedOK, WebSocketException
 
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.asr import AsyncASRBaseExtension
@@ -18,6 +18,7 @@ from ten_runtime import Data
 from .config import PrismaConfig
 
 
+DRAIN_SECONDS = 5
 FRAME_BYTES = 1024
 QUEUE_BYTES = 16000 * 2 * 5
 
@@ -52,8 +53,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         self.generation = 0
         self.connector = None
         self.finalize_times = deque()
-        self.last_event = 0.0
-        self.turn_results = 0
+        self.finalize_arrival = None
         self.processing = 0
         self.available = asyncio.Event()
         self.queued_bytes = 0
@@ -161,7 +161,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             self.starts.clear()
             self.unidentified_starts.clear()
             self.completed.clear()
-            self.processing = self.turn_results = 0
+            self.processing = 0
             self.dirty = False
             self.ws = ws
             self.ready.set()
@@ -218,7 +218,6 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 uid = event.get("utterance_id") or event.get("segment_id")
                 if kind == "transcript" and not uid:
                     raise ValueError("missing utterance identifier")
-                self.last_event = time.monotonic()
                 if kind == "processing":
                     self.processing += 1
                 elif kind == "speech_start":
@@ -259,7 +258,6 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                             )
                         )
                     self.completed.add(uid)
-                    self.turn_results += 1
                     self.processing = max(0, self.processing - 1)
                 elif kind == "error":
                     reason = str(event.get("message") or "unspecified error")
@@ -376,7 +374,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                         await self.packet(min(FRAME_BYTES, len(self.tail)))
                     self.audio_timeline.add_dropped_audio(item.size // 32)
                 elif isinstance(item, Data):
-                    self.finalize_times.popleft()
+                    self.finalize_arrival = self.finalize_times.popleft()
                     raw, _ = item.get_property_to_json("metadata")
                     self.finalize_metadata = json.loads(raw) if raw else None
                     await super().on_data(self.ten_env, item)
@@ -386,6 +384,8 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                         await self.send_audio(item, None)
             except (ValueError, TypeError):
                 await self.error("invalid TEN input metadata")
+            except ConnectionClosedOK:
+                continue
             except (OSError, WebSocketException, asyncio.TimeoutError):
                 await self.error("Prisma audio delivery interrupted")
 
@@ -440,6 +440,9 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         return True
 
     async def finalize(self, session_id):
+        if self.finalize_arrival is not None:
+            self.last_finalize_time = self.finalize_arrival
+            self.finalize_arrival = None
         metadata = (
             self.finalize_metadata
             if isinstance(self.finalize_metadata, dict)
@@ -452,47 +455,41 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 ws = self.ws
                 if not ws:
                     raise OSError("disconnected")
-                precommit_results = self.turn_results
                 await asyncio.wait_for(ws.send(json.dumps({"type": "commit"})), 5)
                 # Commit has no drain acknowledgement. Hold this turn's context
                 # for delayed events, then retire its socket before new audio.
-                self.last_event = time.monotonic()
-                deadline = self.last_event + 5
-                while True:
-                    if self.ws is not ws:
-                        raise OSError("disconnected")
-                    now = time.monotonic()
-                    pending = self.starts or self.unidentified_starts or self.processing
-                    if (
-                        not pending
-                        and self.turn_results > precommit_results
-                        and now - self.last_event >= 0.5
-                    ):
-                        break
-                    if now >= deadline:
-                        if pending:
-                            raise asyncio.TimeoutError
-                        self.ten_env.log_warn(
-                            "Prisma commit deadline elapsed without a new transcript"
-                        )
+                deadline = time.monotonic() + DRAIN_SECONDS
+                while self.ws is ws:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
                         break
                     self.changed.clear()
                     try:
-                        await asyncio.wait_for(
-                            self.changed.wait(), min(0.5, deadline - now)
-                        )
+                        await asyncio.wait_for(self.changed.wait(), remaining)
                     except asyncio.TimeoutError:
-                        pass
+                        break
+                if self.ws is not ws:
+                    if ws.close_code not in (1000, 1001):
+                        raise OSError("disconnected")
+                    self.ten_env.log_warn(
+                        "Prisma connection closed during commit drain"
+                    )
+                elif self.starts or self.unidentified_starts or self.processing:
+                    raise asyncio.TimeoutError
+                else:
+                    self.ten_env.log_warn(
+                        "Prisma drain window ended without a provider completion acknowledgement"
+                    )
                 await self.stop_connection()
                 self.schedule_retry()
-        except (asyncio.TimeoutError, OSError, WebSocketException):
+        except (asyncio.TimeoutError, OSError, WebSocketException) as exc:
             self.audio_timeline.add_dropped_audio(len(self.tail) // 32)
             self.tail.clear()
-            await self.error("Prisma finalize interrupted")
+            if not isinstance(exc, ConnectionClosedOK):
+                await self.error("Prisma finalize interrupted")
             await self.stop_connection()
             self.schedule_retry()
         self.dirty = False
-        self.turn_results = 0
         self.processing = 0
         self.last_finalize_time = None
         last_metadata = self.metadata

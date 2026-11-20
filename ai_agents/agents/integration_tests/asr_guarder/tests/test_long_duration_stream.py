@@ -71,6 +71,8 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         # Track test state
         self.start_time: float | None = None
         self.test_completed: bool = False
+        self.last_cycle_started = 0.0
+        self.final_request_id: str | None = None
         self.result_count: int = 0
         self.final_results: list[dict[str, Any]] = []
         self.stream_restart_count: int = 0
@@ -131,6 +133,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
             "metadata": {"session_id": target_session_id},
         }
 
+        if self.test_completed:
+            self.final_request_id = finalize_data["finalize_id"]
+
         # Create Data object for asr_finalize
         finalize_data_obj = Data.create("asr_finalize")
         finalize_data_obj.set_property_from_json(None, json.dumps(finalize_data))
@@ -182,7 +187,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
                         f"Test duration exceeded by {elapsed_time - self.test_duration_seconds:.1f}s, forcing stop"
                     )
                     break
-                cycle_start_time = time.time()
+                self.last_cycle_started = time.time()
 
                 ten_env.log_info(
                     f"=== Audio cycle {audio_repeat_count + 1} (elapsed: {elapsed_time:.1f}s) ==="
@@ -346,6 +351,19 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
     async def on_data(self, ten_env: AsyncTenEnvTester, data: Data) -> None:
         """Handle received data from ASR extension."""
         name: str = data.get_name()
+
+        if name == "asr_finalize_end" and self.final_request_id is not None:
+            request_id, err = data.get_property_string("finalize_id")
+            # VAD may have delivered the last transcript before the final commit.
+            if (
+                not err
+                and request_id == self.final_request_id
+                and self.final_results
+                and self.last_result_time is not None
+                and self.last_result_time >= self.last_cycle_started
+            ):
+                ten_env.stop_test()
+            return
 
         if name != "asr_result":
             ten_env.log_info(f"Received non-ASR data: {name}")

@@ -47,12 +47,11 @@ only the Gnani credential.
 ## Turn completion and recovery
 
 Gnani's commit control closes an open utterance. The service does not provide
-a transcript-drain acknowledgement. The adapter waits for outstanding speech
-and processing events, allows 500 ms for delayed events after a post-commit result, and
-bounds the drain at five seconds. A deadline with outstanding segments emits an
-error. A deadline without a new transcript is logged because silence can also
-produce this outcome. It then closes the turn's socket before
-releasing the finalize request, so late replies cannot enter the next turn.
-These time bounds are a tradeoff between latency and provider delivery delays.
+a transcript-drain acknowledgement. The adapter listens for the full five seconds after commit, even when an earlier
+segment has already completed. This gives delayed segments a chance to arrive
+and bounds how long the next turn can wait. It reports an error for outstanding
+speech at the deadline, logs the unconfirmed drain otherwise, and retires the
+socket before acknowledging finalize. Results delayed beyond this window can
+be lost. An empty event queue cannot distinguish silence from unreported speech.
 Temporary transport failures retry with exponential backoff capped at four
 seconds. Authentication and invalid configuration errors stop retries.
