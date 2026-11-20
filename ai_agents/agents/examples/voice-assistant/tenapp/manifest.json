@@ -55,6 +55,9 @@
       "path": "../../../ten_packages/extension/openai_asr_python"
     },
     {
+      "path": "../../../ten_packages/extension/gnani_asr_python"
+    },
+    {
       "path": "../../../ten_packages/extension/sarvam_asr_python"
     },
     {

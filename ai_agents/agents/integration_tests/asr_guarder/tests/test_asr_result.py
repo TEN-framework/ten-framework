@@ -313,7 +313,9 @@ class AsrExtensionTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_asr_result(extension_name: str, config_dir: str) -> None:
+def test_asr_result(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR extension processes one audio send and returns a final ID."""
 
     # Audio file path
@@ -332,7 +334,7 @@ def test_asr_result(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": DEFAULT_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": DEFAULT_SESSION_ID,
     }
 

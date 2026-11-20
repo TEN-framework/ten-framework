@@ -314,7 +314,9 @@ class MultiLanguageAsrTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_multi_language(extension_name: str, config_dir: str) -> None:
+def test_multi_language(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify multi-language ASR extension functionality."""
 
     # Build test configurations based on extension capabilities
@@ -323,13 +325,22 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
             "name": "English",
             "audio_file": "16k_en_us.pcm",
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_EN,
-            "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_EN,
+            "expected_language": expected_english_locale,
         },
     ]
 
     # Some extensions (e.g. Oracle ASR) do not support Chinese;
     # use Spanish as the second language instead.
-    if extension_name in _EXTENSIONS_USE_SPANISH:
+    if extension_name == "gnani_asr_python":
+        test_configs.append(
+            {
+                "name": "Hindi",
+                "audio_file": "16k_hi_in.pcm",
+                "config_file": "property_hi.json",
+                "expected_language": "hi-IN",
+            }
+        )
+    elif extension_name in _EXTENSIONS_USE_SPANISH:
         test_configs.append(
             {
                 "name": "Spanish",

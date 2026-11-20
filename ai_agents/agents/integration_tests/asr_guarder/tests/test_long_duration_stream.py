@@ -71,6 +71,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         # Track test state
         self.start_time: float | None = None
         self.test_completed: bool = False
+        self.last_cycle_started = 0.0
+        self.last_final_time = 0.0
+        self.final_request_id: str | None = None
         self.result_count: int = 0
         self.final_results: list[dict[str, Any]] = []
         self.stream_restart_count: int = 0
@@ -131,6 +134,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
             "metadata": {"session_id": target_session_id},
         }
 
+        if self.test_completed:
+            self.final_request_id = finalize_data["finalize_id"]
+
         # Create Data object for asr_finalize
         finalize_data_obj = Data.create("asr_finalize")
         finalize_data_obj.set_property_from_json(None, json.dumps(finalize_data))
@@ -182,7 +188,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
                         f"Test duration exceeded by {elapsed_time - self.test_duration_seconds:.1f}s, forcing stop"
                     )
                     break
-                cycle_start_time = time.time()
+                self.last_cycle_started = time.time()
 
                 ten_env.log_info(
                     f"=== Audio cycle {audio_repeat_count + 1} (elapsed: {elapsed_time:.1f}s) ==="
@@ -347,6 +353,18 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         """Handle received data from ASR extension."""
         name: str = data.get_name()
 
+        if name == "asr_finalize_end" and self.final_request_id is not None:
+            request_id, err = data.get_property_string("finalize_id")
+            # VAD may have delivered the last transcript before the final commit.
+            if (
+                not err
+                and request_id == self.final_request_id
+                and self.final_results
+                and self.last_final_time >= self.last_cycle_started
+            ):
+                ten_env.stop_test()
+            return
+
         if name != "asr_result":
             ten_env.log_info(f"Received non-ASR data: {name}")
             return
@@ -376,6 +394,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
 
         # Store final results
         if is_final:
+            self.last_final_time = current_time
             self.final_results.append(json_data)
             ten_env.log_info(f"✅ Final ASR result #{len(self.final_results)} received")
 
@@ -387,7 +406,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
             return
 
         # Check for test completion
-        if self.test_completed:
+        if self.test_completed and self.last_final_time >= self.last_cycle_started:
             if len(self.final_results) > 0:
                 ten_env.log_info("✅ Long duration ASR test completed successfully")
                 ten_env.log_info(f"Total results received: {self.result_count}")
@@ -407,7 +426,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         ten_env.log_info("Long duration test stopped")
 
 
-def test_long_duration_stream(extension_name: str, config_dir: str) -> None:
+def test_long_duration_stream(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR extension handles long duration streams without 5-minute timeout."""
 
     # Audio file path
@@ -424,7 +445,7 @@ def test_long_duration_stream(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": DEFAULT_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": DEFAULT_SESSION_ID,
     }
 

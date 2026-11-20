@@ -43,6 +43,7 @@ RECONNECTION_STATUS_TIMEOUT_SECONDS = 45
 _EXTENSIONS_WITH_CONNECTION_STATUS = frozenset(
     {
         "azure_asr_python",
+        "gnani_asr_python",
         "bytedance_llm_based_asr",
         "deepgram_asr_python",
         "smallest_asr_python",

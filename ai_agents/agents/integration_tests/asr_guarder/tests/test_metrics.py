@@ -423,7 +423,9 @@ class MetricsTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_metrics(extension_name: str, config_dir: str) -> None:
+def test_metrics(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR metrics functionality with TTFW and TTLW metrics."""
 
     # Audio file path
@@ -442,7 +444,7 @@ def test_metrics(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": METRICS_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": METRICS_SESSION_ID,
     }
 
