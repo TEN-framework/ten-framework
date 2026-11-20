@@ -72,6 +72,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         self.start_time: float | None = None
         self.test_completed: bool = False
         self.last_cycle_started = 0.0
+        self.last_final_time = 0.0
         self.final_request_id: str | None = None
         self.result_count: int = 0
         self.final_results: list[dict[str, Any]] = []
@@ -359,8 +360,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
                 not err
                 and request_id == self.final_request_id
                 and self.final_results
-                and self.last_result_time is not None
-                and self.last_result_time >= self.last_cycle_started
+                and self.last_final_time >= self.last_cycle_started
             ):
                 ten_env.stop_test()
             return
@@ -394,6 +394,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
 
         # Store final results
         if is_final:
+            self.last_final_time = current_time
             self.final_results.append(json_data)
             ten_env.log_info(f"✅ Final ASR result #{len(self.final_results)} received")
 
@@ -405,7 +406,7 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
             return
 
         # Check for test completion
-        if self.test_completed:
+        if self.test_completed and self.last_final_time >= self.last_cycle_started:
             if len(self.final_results) > 0:
                 ten_env.log_info("✅ Long duration ASR test completed successfully")
                 ten_env.log_info(f"Total results received: {self.result_count}")

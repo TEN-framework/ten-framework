@@ -50,9 +50,10 @@ class Socket:
 
 
 class RecognitionTester(AsyncExtensionTester):
-    def __init__(self, audio):
+    def __init__(self, audio, next_audio=None):
         super().__init__()
         self.audio = audio
+        self.next_audio = next_audio
         self.finished = asyncio.Event()
         self.events = []
 
@@ -63,8 +64,13 @@ class RecognitionTester(AsyncExtensionTester):
         try:
             for turn in range(2):
                 self.finished.clear()
-                for i in range(0, len(self.audio), 320):
-                    chunk = self.audio[i : i + 320]
+                audio = (
+                    self.next_audio
+                    if self.next_audio is not None and turn
+                    else self.audio
+                )
+                for i in range(0, len(audio), 320):
+                    chunk = audio[i : i + 320]
                     frame = AudioFrame.create("pcm_frame")
                     frame.set_sample_rate(16000)
                     frame.set_number_of_channels(1)
@@ -75,10 +81,13 @@ class RecognitionTester(AsyncExtensionTester):
                     buf[:] = chunk
                     frame.unlock_buf(buf)
                     await env.send_audio_frame(frame)
+                    if self.next_audio is not None:
+                        await asyncio.sleep(0.01)
                 data = Data.create("asr_finalize")
                 data.set_property_string("finalize_id", str(turn))
                 await env.send_data(data)
-                await asyncio.wait_for(self.finished.wait(), 20)
+                if self.next_audio is None or turn:
+                    await asyncio.wait_for(self.finished.wait(), 20)
             env.stop_test()
         except Exception as exc:
             env.stop_test(
@@ -90,7 +99,9 @@ class RecognitionTester(AsyncExtensionTester):
         if name in ("error", "asr_result", "asr_finalize_end"):
             raw, _ = data.get_property_to_json(None)
             self.events.append((name, json.loads(raw)))
-            if name == "asr_finalize_end":
+            if name == "asr_finalize_end" and (
+                self.next_audio is None or json.loads(raw)["finalize_id"] == "1"
+            ):
                 self.finished.set()
 
     async def on_stop(self, env):
@@ -134,7 +145,7 @@ def test_live(model, language):
         Path(__file__).resolve().parents[4]
         / "integration_tests/asr_guarder/tests/test_data/16k_en_us_helloworld.pcm"
     )
-    tester = RecognitionTester(fixture.read_bytes())
+    tester = RecognitionTester(fixture.read_bytes(), fixture.read_bytes())
     tester.set_test_mode_single(
         "gnani_asr_python",
         json.dumps(
@@ -214,18 +225,20 @@ async def test_disconnect_retires_pending_finalize(monkeypatch):
     ext.ws = socket
     ext.finalize_id = "first"
     ext.dirty = True
-    ext.starts["unfinished"] = 0
+    ext.turn.starts["unfinished"] = 0
     completed = AsyncMock()
     failed = AsyncMock()
     monkeypatch.setattr(ext, "send_asr_finalize_end", completed)
     monkeypatch.setattr(ext, "schedule_retry", Mock())
     monkeypatch.setattr(ext, "error", failed)
+    monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
     task = asyncio.create_task(ext.finalize(None))
     while socket.send.await_count < 1:
         await asyncio.sleep(0)
     ext.ws = None
-    ext.changed.set()
+    ext.turn.closed.set()
     await asyncio.wait_for(task, 1)
+    await asyncio.wait_for(ext.drain_task, 1)
     completed.assert_awaited_once()
     failed.assert_awaited_once()
     assert not ext.dirty
@@ -271,7 +284,7 @@ async def test_transport_reconnect_and_shutdown(monkeypatch):
 
     class Dropped(Socket):
         async def __anext__(self):
-            ext.processing = 1
+            ext.turn.processing = 1
             raise StopAsyncIteration
 
     fake = AsyncMock(side_effect=[Dropped(), Socket()])
@@ -281,7 +294,7 @@ async def test_transport_reconnect_and_shutdown(monkeypatch):
     await asyncio.wait_for(ext.retry, 2)
     assert ext.is_connected()
     assert fake.await_count == 2
-    assert ext.processing == 0
+    assert ext.turn.processing == 0
     receiver = ext.receiver
     ext.stopped = True
     await ext.stop_connection()
@@ -323,6 +336,7 @@ async def test_disconnected_audio_before_finalize(monkeypatch):
     completed = asyncio.Event()
 
     async def acknowledge():
+        assert ext.finalize_id == "offline"
         completed.set()
 
     monkeypatch.setattr(ext, "send_asr_finalize_end", acknowledge)
@@ -336,7 +350,6 @@ async def test_disconnected_audio_before_finalize(monkeypatch):
     worker = asyncio.create_task(ext._audio_frame_consumer())
     try:
         await asyncio.wait_for(completed.wait(), 7)
-        assert ext.finalize_id == "offline"
         assert ext.queued_bytes == 0
     finally:
         worker.cancel()
@@ -394,7 +407,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     monkeypatch.setattr(ext, "schedule_retry", Mock())
     monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
     socket.send = AsyncMock()
-    ext.receiver = asyncio.create_task(ext.receive(socket))
+    ext.receiver = receiver = asyncio.create_task(ext.receive(socket))
     pending = asyncio.create_task(ext.finalize(None))
     await socket.messages.put(
         {
@@ -406,7 +419,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     )
     await socket.messages.put({"type": "settings_updated"})
     await asyncio.sleep(0.65)
-    assert not pending.done()
+    assert not ext.drain_task.done()
     await socket.messages.put({"type": "processing"})
     await socket.messages.put(
         {
@@ -417,6 +430,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
         }
     )
     await asyncio.wait_for(pending, 2)
+    await asyncio.wait_for(ext.drain_task, 2)
     assert order == ["early result", "delayed result", "end"]
     await socket.messages.put(
         {
@@ -426,7 +440,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
             "text": "stale",
         }
     )
-    assert ext.receiver.done()
+    assert receiver.done()
     ext.ten_env.log_warn.assert_called_once()
     assert not ext.is_connected()
 
@@ -512,7 +526,7 @@ async def test_normal_close_at_commit_preserves_arrival_time(monkeypatch):
     ext.ws = Socket()
 
     async def close_at_send(_):
-        assert asyncio.get_running_loop().time() - ext.last_finalize_time >= 2
+        assert asyncio.get_running_loop().time() - ext.turn.finalize_time >= 2
         raise ConnectionClosedOK(Close(1000, ""), Close(1000, ""), True)
 
     ext.ws.send = close_at_send
@@ -563,3 +577,45 @@ async def test_normal_close_during_pacing_retains_unsent_audio(monkeypatch):
     with pytest.raises(ConnectionClosedOK):
         await ext.packet(1024)
     assert len(ext.tail) == 1024
+
+
+def test_continuous_audio_is_sent_while_previous_socket_drains(monkeypatch):
+    sockets = []
+    overlap = []
+
+    class RecordingSocket(Socket):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+
+        async def send(self, data):
+            if isinstance(data, bytes) and len(sockets) > 1 and self is sockets[1]:
+                overlap.append(not sockets[0].closed)
+            await super().send(data)
+
+        async def close(self):
+            self.closed = True
+
+    async def connect(*args, **kwargs):
+        socket = RecordingSocket()
+        sockets.append(socket)
+        return socket
+
+    monkeypatch.setattr(extension, "connect", connect)
+    audio = bytes([1, 2]) * 1536
+    next_audio = bytes([3, 4]) * (16_000 * 6)
+    tester = RecognitionTester(audio, next_audio)
+    tester.set_test_mode_single("gnani_asr_python", '{"params":{"api_key":"test"}}')
+    assert tester.run() is None
+    assert any(overlap)
+    assert sockets[0].audio == audio
+    assert sockets[1].audio == next_audio + bytes(-len(next_audio) % 1024)
+    assert [name for name, _ in tester.events] == [
+        "asr_result",
+        "asr_result",
+        "asr_finalize_end",
+    ] * 2
+    assert [e["finalize_id"] for n, e in tester.events if n == "asr_finalize_end"] == [
+        "0",
+        "1",
+    ]
