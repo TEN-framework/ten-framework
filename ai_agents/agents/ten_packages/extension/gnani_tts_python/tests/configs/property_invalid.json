@@ -1,0 +1,9 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "model": "timbre-v3.0",
+    "voice": "Shivani",
+    "language": "en-IN",
+    "sample_rate": 24000
+  }
+}
