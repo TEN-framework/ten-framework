@@ -27,6 +27,7 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/sanitizer/thread_check.h"
+#include "ten_utils/value/value.h"
 
 bool ten_env_check_integrity(ten_env_t *self, bool check_thread) {
   TEN_ASSERT(self, "Invalid argument.");
@@ -74,6 +75,7 @@ ten_env_t *ten_env_create(void) {
 
   self->binding_handle.me_in_target_lang = NULL;
   self->is_closed = false;
+  self->runtime_stats = NULL;
 
   self->destroy_handler = NULL;
   ten_list_init(&self->ten_proxy_list);
@@ -162,6 +164,10 @@ void ten_env_destroy(ten_env_t *self) {
   }
 
   TEN_ASSERT(ten_list_is_empty(&self->ten_proxy_list), "Should not happen.");
+
+  if (self->runtime_stats) {
+    ten_value_destroy(self->runtime_stats);
+  }
 
   ten_sanitizer_thread_check_deinit(&self->thread_check);
   ten_signature_set(&self->signature, 0);

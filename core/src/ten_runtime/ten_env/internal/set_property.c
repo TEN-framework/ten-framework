@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/ten_env/metadata.h"
 #include "include_internal/ten_runtime/ten_env/metadata_cb.h"
+#include "include_internal/ten_runtime/ten_env/runtime_stats.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
@@ -193,6 +194,15 @@ bool ten_env_set_property_internal(ten_env_t *self, const char *path,
     goto done;
   }
 
+  if (ten_env_is_runtime_stats_property(path)) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "Runtime statistics are read-only.");
+    }
+    result = false;
+    goto done;
+  }
+
   const char **p_path = &path;
 
   TEN_METADATA_LEVEL level =
@@ -345,6 +355,14 @@ bool ten_env_set_property_async(ten_env_t *self, const char *path,
     if (err) {
       ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
                     "value should not be empty.");
+    }
+    return false;
+  }
+
+  if (ten_env_is_runtime_stats_property(path)) {
+    if (err) {
+      ten_error_set(err, TEN_ERROR_CODE_INVALID_ARGUMENT,
+                    "Runtime statistics are read-only.");
     }
     return false;
   }

@@ -11,7 +11,10 @@ use anyhow::Result;
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::{metrics::SdkMeterProvider, Resource};
 
-use super::config::{OtlpProtocol, TelemetryConfig};
+use super::{
+    config::{OtlpProtocol, TelemetryConfig},
+    runtime_stats::RuntimeMetricsReader,
+};
 
 /// Metrics exporter type
 #[derive(Debug, Clone)]
@@ -156,6 +159,7 @@ impl ExporterType {
 pub struct MetricsExporter {
     meter_provider: Arc<Mutex<Option<SdkMeterProvider>>>,
     exporter_type: ExporterType,
+    runtime_metrics_reader: RuntimeMetricsReader,
 
     // Only used for Prometheus exporter
     prometheus_registry: Arc<Mutex<Option<prometheus::Registry>>>,
@@ -169,6 +173,7 @@ impl MetricsExporter {
         Self {
             meter_provider: Arc::new(Mutex::new(None)),
             exporter_type,
+            runtime_metrics_reader: RuntimeMetricsReader::default(),
             prometheus_registry: Arc::new(Mutex::new(None)),
             _runtime_handle: Arc::new(Mutex::new(None)),
         }
@@ -208,8 +213,11 @@ impl MetricsExporter {
             opentelemetry_prometheus::exporter().with_registry(registry.clone()).build()?;
 
         // Create meter provider
-        let provider =
-            SdkMeterProvider::builder().with_reader(exporter).with_resource(resource).build();
+        let provider = SdkMeterProvider::builder()
+            .with_reader(exporter)
+            .with_reader(self.runtime_metrics_reader.clone())
+            .with_resource(resource)
+            .build();
 
         // Set global meter provider
         opentelemetry::global::set_meter_provider(provider.clone());
@@ -245,6 +253,7 @@ impl MetricsExporter {
         let protocol_clone = protocol.clone();
         let resource_clone = resource.clone();
         let meter_provider_clone = self.meter_provider.clone();
+        let runtime_metrics_reader = self.runtime_metrics_reader.clone();
 
         // Channel to signal when initialization is complete
         let (init_tx, init_rx) = std::sync::mpsc::channel::<Result<()>>();
@@ -298,6 +307,7 @@ impl MetricsExporter {
                 // Create meter provider
                 let provider = SdkMeterProvider::builder()
                     .with_reader(reader)
+                    .with_reader(runtime_metrics_reader)
                     .with_resource(resource_clone)
                     .build();
 
@@ -313,7 +323,8 @@ impl MetricsExporter {
                 );
 
                 // Keep the runtime alive indefinitely
-                // The PeriodicReader will continue to export metrics in the background
+                // The PeriodicReader will continue to export metrics in the
+                // background
                 loop {
                     tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
                 }
@@ -354,8 +365,11 @@ impl MetricsExporter {
             .build();
 
         // Create meter provider
-        let provider =
-            SdkMeterProvider::builder().with_reader(reader).with_resource(resource).build();
+        let provider = SdkMeterProvider::builder()
+            .with_reader(reader)
+            .with_reader(self.runtime_metrics_reader.clone())
+            .with_resource(resource)
+            .build();
 
         // Set global meter provider
         opentelemetry::global::set_meter_provider(provider.clone());
@@ -380,6 +394,11 @@ impl MetricsExporter {
     /// Get Prometheus registry (only available for Prometheus exporter)
     pub fn get_prometheus_registry(&self) -> Option<prometheus::Registry> {
         self.prometheus_registry.lock().unwrap().clone()
+    }
+
+    /// Collect all scopes as cumulative metrics using the OTLP JSON model.
+    pub fn collect_metrics(&self) -> Result<serde_json::Value> {
+        self.runtime_metrics_reader.collect_json()
     }
 
     /// Shutdown the exporter

@@ -74,6 +74,11 @@ struct ten_engine_t {
   // according to this saved 'start_graph' command.
   ten_shared_ptr_t *original_start_graph_cmd_of_enabling_engine;
 
+  // Pending arrival time is cleared when creation readiness is handled.
+  int64_t graph_startup_start_time_us;
+  // Fixed elapsed startup time, populated once creation readiness is reached.
+  int64_t graph_startup_duration_us;
+
   ten_list_t timers;
 
   // Connections that are not connected to the remote.

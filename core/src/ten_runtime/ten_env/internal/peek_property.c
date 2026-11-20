@@ -16,6 +16,7 @@
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/ten_env/metadata.h"
 #include "include_internal/ten_runtime/ten_env/metadata_cb.h"
+#include "include_internal/ten_runtime/ten_env/runtime_stats.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/internal/metadata.h"
@@ -66,6 +67,7 @@ ten_env_peek_property_async_context_create(ten_env_t *ten_env,
   TEN_ASSERT(context, "Failed to allocate memory.");
 
   context->ten_env = ten_env;
+  TEN_STRING_INIT(context->path);
   context->cb = cb;
   context->cb_data = cb_data;
 
@@ -76,6 +78,7 @@ static void ten_env_peek_property_async_context_destroy(
     ten_env_peek_property_async_context_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
 
+  ten_string_deinit(&self->path);
   TEN_FREE(self);
 }
 
@@ -144,6 +147,21 @@ static void ten_app_peek_property_async_cb(ten_app_t *app, ten_value_t *res,
   ten_env_peek_property_async_context_destroy(context);
 }
 
+static void ten_env_peek_runtime_stats_task(TEN_UNUSED void *from, void *arg) {
+  ten_env_peek_property_async_context_t *context = arg;
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  ten_value_t *value = ten_env_peek_property(
+      context->ten_env, ten_string_get_raw_str(&context->path), &err);
+  if (context->cb) {
+    context->cb(context->ten_env, value, context->cb_data, &err);
+  }
+
+  ten_error_deinit(&err);
+  ten_env_peek_property_async_context_destroy(context);
+}
+
 ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
                                    ten_error_t *err) {
   TEN_ASSERT(self && ten_env_check_integrity(self, true),
@@ -154,6 +172,10 @@ ten_value_t *ten_env_peek_property(ten_env_t *self, const char *path,
       ten_error_set(err, TEN_ERROR_CODE_TEN_IS_CLOSED, "ten_env is closed.");
     }
     return NULL;
+  }
+
+  if (ten_env_is_runtime_stats_property(path)) {
+    return ten_env_peek_runtime_stats(self, path, err);
   }
 
   ten_value_t *res = NULL;
@@ -258,6 +280,22 @@ bool ten_env_peek_property_async(ten_env_t *self, const char *path,
   ten_env_peek_property_async_context_t *context =
       ten_env_peek_property_async_context_create(self, cb, cb_data);
   TEN_ASSERT(context, "Should not happen.");
+
+  if (ten_env_is_runtime_stats_property(path)) {
+    ten_string_set_formatted(&context->path, "%s", path);
+    int rc = ten_runloop_post_task_tail(ten_env_get_attached_runloop(self),
+                                        ten_env_peek_runtime_stats_task, NULL,
+                                        context);
+    if (rc) {
+      ten_env_peek_property_async_context_destroy(context);
+      if (err) {
+        ten_error_set(err, TEN_ERROR_CODE_GENERIC,
+                      "Failed to schedule runtime statistics read.");
+      }
+      return false;
+    }
+    return true;
+  }
 
   TEN_METADATA_LEVEL level =
       ten_determine_metadata_level(self->attach_to, p_path);

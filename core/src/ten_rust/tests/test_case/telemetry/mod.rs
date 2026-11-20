@@ -7,3 +7,4 @@
 
 pub mod config;
 pub mod console_exporter;
+mod runtime_stats;

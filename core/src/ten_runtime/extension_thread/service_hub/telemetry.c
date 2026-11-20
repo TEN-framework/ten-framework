@@ -91,9 +91,16 @@ void ten_extension_record_lifecycle_duration(ten_extension_t *self,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
-  TEN_ASSERT(stage, "Invalid argument.");
 
-  ten_extension_thread_t *extension_thread = self->extension_thread;
+  ten_extension_thread_record_lifecycle_duration(
+      self->extension_thread, ten_extension_get_name(self, true), stage,
+      duration_us);
+}
+
+void ten_extension_thread_record_lifecycle_duration(
+    ten_extension_thread_t *extension_thread, const char *extension_name,
+    const char *stage, int64_t duration_us) {
+  TEN_ASSERT(extension_name && stage, "Invalid argument.");
   TEN_ASSERT(extension_thread &&
                  ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
@@ -120,7 +127,6 @@ void ten_extension_record_lifecycle_duration(ten_extension_t *self,
 
   const char *app_uri = ten_app_get_uri(app);
   const char *graph_id = ten_engine_get_id(engine, false);
-  const char *extension_name = ten_extension_get_name(self, true);
 
   const char *label_values[] = {app_uri, graph_id, extension_name, stage};
 

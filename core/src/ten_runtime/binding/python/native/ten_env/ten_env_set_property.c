@@ -42,7 +42,9 @@ static void ten_env_notify_set_property_ctx_destroy(
   TEN_ASSERT(self, "Invalid argument.");
 
   ten_string_deinit(&self->path);
-  self->c_value = NULL;
+  if (self->c_value) {
+    ten_value_destroy(self->c_value);
+  }
   ten_event_destroy(self->completed);
   self->c_error = NULL;
   TEN_FREE(self);
@@ -62,7 +64,13 @@ static void ten_env_proxy_notify_set_property(ten_env_t *ten_env,
 
   ctx->result = ten_env_set_property(
       ten_env, ten_string_get_raw_str(&ctx->path), ctx->c_value, &err);
-  TEN_ASSERT(ctx->result, "Should not happen.");
+  if (ctx->result) {
+    // The property store now owns the value.
+    ctx->c_value = NULL;
+  } else {
+    ten_error_set(ctx->c_error, ten_error_code(&err), "%s",
+                  ten_error_message(&err));
+  }
 
   ten_event_set(ctx->completed);
 

@@ -12,6 +12,7 @@
 #include "ten_runtime/ten_env/internal/metadata.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/event.h"
+#include "ten_utils/lib/string.h"
 
 typedef struct ten_env_t ten_env_t;
 typedef struct ten_value_t ten_value_t;
@@ -30,6 +31,7 @@ typedef struct ten_peek_manifest_sync_context_t {
 
 typedef struct ten_env_peek_property_async_context_t {
   ten_env_t *ten_env;
+  ten_string_t path;
   ten_env_peek_property_async_cb_t cb;
   void *cb_data;
   ten_value_t *res;
