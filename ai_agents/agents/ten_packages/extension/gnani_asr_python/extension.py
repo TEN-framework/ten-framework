@@ -209,7 +209,9 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 elif kind == "settings_updated":
                     self.fenced = True
                 elif kind == "error":
-                    await self.error("Prisma stream reported an error")
+                    reason = str(event.get("message") or "unspecified error")
+                    reason = reason.replace(self.config.api_key, "[redacted]")[:240]
+                    await self.error(f"Prisma stream error: {reason}")
                     self.starts.pop(uid, None)
                 self.changed.set()
         except (WebSocketException, OSError, ValueError, TypeError, KeyError):

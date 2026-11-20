@@ -17,7 +17,7 @@ Reopen the graph to inspect the selected model.
 
 The default is `prisma-v2.5` with `en-IN`. Both models accept one supported
 Indian locale. Prisma v3.0 additionally accepts `indic-auto`. The extension
-requests verbatim formatting. Language lists are unsupported in this adapter.
+requests verbatim formatting and a 20-second speech segment limit for continuous audio. Language lists are unsupported in this adapter.
 Segment times are estimates derived from the provider's speech-start offset
 and duration. Reconnection can lose speech already transmitted to Gnani.
 

@@ -28,4 +28,5 @@ class PrismaConfig:
             "model": self.model,
             "x-sample-rate": "16000",
             "format": "verbatim",
+            "x-max-speech-s": "20",
         }
