@@ -1,0 +1,9 @@
+{
+  "params": {
+    "api_key": "${env:GNANI_API_KEY|}",
+    "model": "timbre-v3.0",
+    "voice": "Shivani",
+    "language": "en-IN",
+    "sample_rate": 24000
+  }
+}

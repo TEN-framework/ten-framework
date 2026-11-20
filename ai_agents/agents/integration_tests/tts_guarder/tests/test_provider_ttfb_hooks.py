@@ -227,3 +227,55 @@ def test_cosy_hook_binds_late_audio_to_original_callback(monkeypatch, clock):
     new_callback.on_data(b"new-audio")
     assert reference.elapsed_ms("first") == 20
     assert reference.elapsed_ms("second") == 30
+
+
+@pytest.mark.asyncio
+async def test_gnani_observes_first_audio_before_consumer_decodes(monkeypatch):
+    import httpx
+
+    # Drive only the observer's clock. The consumer can delay or discard
+    # decoded output without affecting the transport measurement.
+    now = 0
+    monkeypatch.setattr(
+        import_module(Reference.__module__),
+        "time",
+        SimpleNamespace(monotonic_ns=lambda: now * 1_000_000),
+    )
+
+    class Stream(httpx.AsyncByteStream):
+        def __init__(self, delay):
+            self.delay = delay
+
+        async def __aiter__(self):
+            nonlocal now
+            yield b'event: start\ndata: {}\n\nevent: chunk\ndata: {"audio":""}\n\n'
+            yield b'event: chunk\ndata: {"audio":"invalid"}\n\n'
+            now += self.delay
+            yield b'event: chunk\ndata: {"audio"'
+            yield b':"AQ=="}\n\n'
+            now += 50
+            yield b"event: complete\ndata: {}\n\n"
+
+    async def handle(request):
+        return httpx.Response(200, stream=Stream(request.extensions["delay"]))
+
+    original = httpx.AsyncClient.send
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handle)
+    ) as client:
+        with install_hook("gnani_tts_python", {}, monkeypatch) as reference:
+            for request_id, delay in [("first", 17), ("second", 31)]:
+                request = client.build_request(
+                    "POST",
+                    "https://api.vachana.ai/api/v1/tts/sse",
+                    extensions={"ten_request_id": request_id, "delay": delay},
+                )
+                response = await client.send(request, stream=True)
+                async for _ in response.aiter_lines():
+                    pass
+                await response.aclose()
+
+            assert not reference.audio
+            assert reference.elapsed_ms("second") == 31
+            assert reference.elapsed_ms("first") == 17
+    assert httpx.AsyncClient.send is original
