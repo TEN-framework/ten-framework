@@ -185,3 +185,29 @@ async def test_ttfb_spans_text_batches_and_precedes_sample_alignment(monkeypatch
             assert client.first_audio_ms == expected_ms
     finally:
         await client.clean()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "message,expected",
+    [
+        (
+            "Invalid text or audio configuration.",
+            "Gnani synthesis error: invalid text or audio configuration",
+        ),
+        (
+            "Missing sample_rate: unit-secret",
+            "Gnani synthesis error: missing sample_rate",
+        ),
+        (
+            "Unexpected error at https://example.com/?token=unit-secret",
+            "Gnani reported a synthesis error",
+        ),
+        (None, "Gnani reported a synthesis error"),
+    ],
+)
+async def test_safe_sse_diagnostic(message, expected):
+    body = "event: error\ndata: " + json.dumps({"message": message}) + "\n\n"
+    assert await synthesize(httpx.Response(200, text=body)) == [
+        (expected.encode(), Event.ERROR)
+    ]

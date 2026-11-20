@@ -1,11 +1,33 @@
 import asyncio
 import base64
 import json
+import re
 import time
 
 import httpx
 from ten_ai_base.struct import TTS2HttpResponseEventType as Event
 from ten_ai_base.tts2_http import AsyncTTS2HttpClient
+
+
+# Retain the validation reason and parameter from the provider's message.
+# The rest can contain echoed input, credentials or signed URLs.
+VALIDATION_DIAGNOSTIC = re.compile(
+    r"(invalid|unsupported|unknown|missing) (?:value for )?"
+    r"(text or audio configuration|audio configuration|sample[ _]rate|"
+    r"sample[ _]width|num[ _]channels|encoding|container|language|model|voice|text)\b",
+    re.IGNORECASE,
+)
+
+
+def synthesis_error(body):
+    message = body.get("message") if isinstance(body, dict) else None
+    if isinstance(message, str):
+        match = VALIDATION_DIAGNOSTIC.match(message.strip())
+        if match:
+            return (
+                f"Gnani synthesis error: {match[1].lower()} {match[2].lower()}".encode()
+            )
+    return b"Gnani reported a synthesis error"
 
 
 async def events(response):
@@ -109,7 +131,8 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
                         raise ValueError("Incomplete PCM sample")
                     break
                 if name == "error":
-                    raise ValueError("Gnani reported a synthesis error")
+                    terminal = synthesis_error(body), Event.ERROR
+                    break
                 if name == "chunk":
                     chunk = base64.b64decode(body["audio"], validate=True)
                     if chunk and self.first_audio_ms is None:

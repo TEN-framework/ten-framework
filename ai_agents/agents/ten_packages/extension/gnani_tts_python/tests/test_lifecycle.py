@@ -184,7 +184,7 @@ async def test_stream_lifecycle_and_next_request(profile, scenario, clock, tmp_p
             if not first or scenario == "closing":
                 yield COMPLETE
             elif scenario == "sse_error":
-                yield b"event: error\ndata: {}\n\n"
+                yield b'event: error\ndata: {"message":"Unsupported voice: private provider detail"}\n\n'
             elif scenario == "wrong_content":
                 yield b"<html>upstream error</html>"
 
@@ -245,6 +245,8 @@ async def test_stream_lifecycle_and_next_request(profile, scenario, clock, tmp_p
             else ModuleErrorCode.NON_FATAL_ERROR
         )
         assert "private provider detail" not in errors[0]["message"]
+        if scenario == "sse_error":
+            assert errors[0]["message"] == "Gnani synthesis error: unsupported voice"
 
     assert closed == (
         ["next"] if scenario in {"timeout", "network"} else ["first", "next"]
