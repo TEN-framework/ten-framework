@@ -113,7 +113,12 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             await self.error(str(exc), True)
 
     async def start_connection(self):
-        if self.fatal or self.stopped or self.ws or not self.config:
+        if self.fatal:
+            await self.on_disconnected(
+                code=-1000, message="Prisma configuration rejected"
+            )
+            return
+        if self.stopped or self.ws or not self.config:
             return
         generation = self.generation
         task = asyncio.create_task(self._connect(generation))
@@ -156,6 +161,8 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             self.starts.clear()
             self.unidentified_starts.clear()
             self.completed.clear()
+            self.processing = self.turn_results = 0
+            self.dirty = False
             self.ws = ws
             self.ready.set()
             self.receiver = asyncio.create_task(self.receive(ws))
@@ -246,6 +253,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                                 start_ms=begin,
                                 duration_ms=finish - begin,
                                 words=[],
+                                metadata={"asr_info": {"vendor": self.vendor()}},
                                 language=event.get("detected_language_code")
                                 or self.config.language,
                             )
@@ -444,6 +452,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 ws = self.ws
                 if not ws:
                     raise OSError("disconnected")
+                precommit_results = self.turn_results
                 await asyncio.wait_for(ws.send(json.dumps({"type": "commit"})), 5)
                 # Commit has no drain acknowledgement. Hold this turn's context
                 # for delayed events, then retire its socket before new audio.
@@ -456,13 +465,16 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                     pending = self.starts or self.unidentified_starts or self.processing
                     if (
                         not pending
-                        and self.turn_results
+                        and self.turn_results > precommit_results
                         and now - self.last_event >= 0.5
                     ):
                         break
                     if now >= deadline:
                         if pending:
                             raise asyncio.TimeoutError
+                        self.ten_env.log_warn(
+                            "Prisma commit deadline elapsed without a new transcript"
+                        )
                         break
                     self.changed.clear()
                     try:
@@ -482,6 +494,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         self.dirty = False
         self.turn_results = 0
         self.processing = 0
+        self.last_finalize_time = None
         last_metadata = self.metadata
         try:
             self.metadata = metadata

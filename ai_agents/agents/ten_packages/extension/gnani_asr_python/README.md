@@ -48,8 +48,10 @@ only the Gnani credential.
 
 Gnani's commit control closes an open utterance. The service does not provide
 a transcript-drain acknowledgement. The adapter waits for outstanding speech
-and processing events, allows 500 ms for delayed events after a result, and
-bounds the drain at five seconds. It then closes the turn's socket before
+and processing events, allows 500 ms for delayed events after a post-commit result, and
+bounds the drain at five seconds. A deadline with outstanding segments emits an
+error. A deadline without a new transcript is logged because silence can also
+produce this outcome. It then closes the turn's socket before
 releasing the finalize request, so late replies cannot enter the next turn.
 These time bounds are a tradeoff between latency and provider delivery delays.
 Temporary transport failures retry with exponential backoff capped at four

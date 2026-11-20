@@ -154,6 +154,7 @@ def test_live(model, language):
             assert "hello world" in result["text"].lower()
             assert result["language"] == "en-IN"
             assert result["metadata"]["session_id"] == "example"
+            assert result["metadata"]["asr_info"]["vendor"] == "gnani"
 
 
 @pytest.mark.parametrize(
@@ -176,11 +177,13 @@ async def test_acknowledges_each_silent_request(monkeypatch):
 
     ext = extension.GnaniASRExtension("gnani")
     ext.finalize_id = "silent"
+    ext.last_finalize_time = 1
     completed = AsyncMock()
     monkeypatch.setattr(ext, "send_asr_finalize_end", completed)
     await ext.finalize(None)
     await ext.finalize(None)
     assert completed.await_count == 2
+    assert ext.last_finalize_time is None
 
 
 @pytest.mark.asyncio
@@ -268,6 +271,7 @@ async def test_transport_reconnect_and_shutdown(monkeypatch):
 
     class Dropped(Socket):
         async def __anext__(self):
+            ext.processing = 1
             raise StopAsyncIteration
 
     fake = AsyncMock(side_effect=[Dropped(), Socket()])
@@ -277,6 +281,7 @@ async def test_transport_reconnect_and_shutdown(monkeypatch):
     await asyncio.wait_for(ext.retry, 2)
     assert ext.is_connected()
     assert fake.await_count == 2
+    assert ext.processing == 0
     receiver = ext.receiver
     ext.stopped = True
     await ext.stop_connection()
@@ -374,6 +379,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     ext.dirty = True
     ext.audio_timeline.add_user_audio(32)
     ext.finalize_id = "delayed"
+    ext.turn_results = 1  # An earlier segment finished before commit.
     order = []
 
     async def result(value):
@@ -390,7 +396,7 @@ async def test_settings_reply_cannot_overtake_late_transcript(monkeypatch):
     ext.receiver = asyncio.create_task(ext.receive(socket))
     pending = asyncio.create_task(ext.finalize(None))
     await socket.messages.put({"type": "settings_updated"})
-    await asyncio.sleep(0.05)
+    await asyncio.sleep(0.65)
     assert not pending.done()
     await socket.messages.put({"type": "processing"})
     await socket.messages.put(
@@ -447,3 +453,29 @@ async def test_bad_credentials_redacted_and_terminal(monkeypatch):
     _, vendor = errors.await_args.args
     assert vendor.code == "401"
     assert "local-secret" not in vendor.message
+
+
+def test_invalid_key_configuration_disconnects():
+    class StateTester(AsyncExtensionTester):
+        def __init__(self):
+            super().__init__()
+            self.states = []
+
+        async def on_start(self, env):
+            self.timer = asyncio.get_running_loop().call_later(8, env.stop_test)
+
+        async def on_data(self, env, data):
+            if data.get_name() == "connection_status_changed":
+                raw, _ = data.get_property_to_json(None)
+                state = json.loads(raw)["current"]
+                self.states.append(state)
+                if state == "disconnected":
+                    env.stop_test()
+
+        async def on_stop(self, env):
+            self.timer.cancel()
+
+    tester = StateTester()
+    tester.set_test_mode_single("gnani_asr_python", '{"params":{"api_key":""}}')
+    assert tester.run() is None
+    assert tester.states[-2:] == ["connecting", "disconnected"]
