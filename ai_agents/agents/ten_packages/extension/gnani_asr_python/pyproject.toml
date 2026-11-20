@@ -1,0 +1,11 @@
+[project]
+name = "gnani-asr-python"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["websockets>=14,<16", "pydantic>=2,<3", "typing-extensions>=4"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2,<9", "pytest-asyncio>=0.24,<1"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

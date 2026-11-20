@@ -407,7 +407,9 @@ class LongDurationAsrExtensionTester(AsyncExtensionTester):
         ten_env.log_info("Long duration test stopped")
 
 
-def test_long_duration_stream(extension_name: str, config_dir: str) -> None:
+def test_long_duration_stream(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR extension handles long duration streams without 5-minute timeout."""
 
     # Audio file path
@@ -424,7 +426,7 @@ def test_long_duration_stream(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": DEFAULT_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": DEFAULT_SESSION_ID,
     }
 

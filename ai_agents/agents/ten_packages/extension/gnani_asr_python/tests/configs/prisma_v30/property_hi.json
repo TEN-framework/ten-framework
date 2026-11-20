@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "${env:GNANI_API_KEY|}",
+    "model": "prisma-v3.0",
+    "language": "hi-IN",
+    "sample_rate": 16000
+  }
+}

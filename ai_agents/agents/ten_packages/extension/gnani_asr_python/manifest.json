@@ -1,0 +1,79 @@
+{
+  "type": "extension",
+  "name": "gnani_asr_python",
+  "version": "0.1.0",
+  "tags": [
+    "python",
+    "gnani",
+    "asr",
+    "stt"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7.48"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int32"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "pyproject.toml",
+      "requirements.txt",
+      "README.md",
+      "docs/**"
+    ]
+  },
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Gnani AI Prisma STT"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "README.md"
+      }
+    }
+  }
+}

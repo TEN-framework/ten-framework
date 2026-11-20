@@ -353,7 +353,7 @@ class SameSessionFinalizeReconnectTester(AsyncExtensionTester):
 
 
 def test_same_session_finalize_reconnect(
-    extension_name: str, config_dir: str
+    extension_name: str, config_dir: str, expected_english_locale: str
 ) -> None:
     audio_file_path = os.path.join(
         os.path.dirname(__file__), "test_data/16k_en_us.pcm"
@@ -374,7 +374,7 @@ def test_same_session_finalize_reconnect(
     tester = SameSessionFinalizeReconnectTester(
         audio_file_path=audio_file_path,
         session_id=SESSION_ID,
-        expected_language=EXPECTED_LANGUAGE,
+        expected_language=expected_english_locale,
     )
     tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()

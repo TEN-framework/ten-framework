@@ -623,7 +623,9 @@ class AudioTimestampAsrTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
+def test_audio_timestamp(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR result timestamp fields meet requirements."""
 
     print("=" * 80)
@@ -647,7 +649,7 @@ def test_audio_timestamp(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": AUDIO_TIMESTAMP_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": AUDIO_TIMESTAMP_SESSION_ID,
     }
 

@@ -1,0 +1,8 @@
+{
+  "params": {
+    "api_key": "invalid",
+    "model": "prisma-v2.5",
+    "language": "en-IN",
+    "sample_rate": 16000
+  }
+}

@@ -1,0 +1,45 @@
+# Gnani AI Prisma STT
+
+Streams 16 kHz mono signed 16-bit little-endian PCM to Gnani and emits TEN
+`asr_result` messages for completed utterances. Set `GNANI_API_KEY` in the
+agent environment before starting the graph.
+
+Install the standard voice-assistant example. In local TMAN Designer open the
+voice_assistant graph, right-click the stt node, select **Replace Node**, search
+for **gnani** and select **gnani_asr_python**. Edit the node properties and save.
+Reopen the graph to inspect the selected model.
+
+![Gnani in the installed-addon picker](docs/designer-picker.png)
+
+```json
+{"params":{"api_key":"${env:GNANI_API_KEY|}","model":"prisma-v3.0","language":"indic-auto","sample_rate":16000}}
+```
+
+The default is `prisma-v2.5` with `en-IN`. Both models accept one supported
+Indian locale. Prisma v3.0 additionally accepts `indic-auto`. The extension
+requests verbatim formatting. Language lists are unsupported in this adapter.
+Segment times are estimates derived from the provider's speech-start offset
+and duration. Reconnection can lose speech already transmitted to Gnani.
+
+See the [streaming protocol](https://docs.gnani.ai/api/STT/stt-websocket).
+
+The Hindi test fixture says “नमस्ते, मेरा नाम राहुल है।” and was generated
+locally using eSpeak NG's Hindi voice at 145 words per minute. It includes
+1.2 seconds of trailing silence for provider voice activity detection.
+
+## Verification
+
+From `ai_agents` inside the TEN development container:
+
+```sh
+task lint-extension EXTENSION=gnani_asr_python
+task test-extension EXTENSION=agents/ten_packages/extension/gnani_asr_python
+task asr-guarder-test EXTENSION=gnani_asr_python CONFIG_DIR=tests/configs/prisma_v25
+```
+
+The standalone suite runs the provider tests when `GNANI_API_KEY` is set.
+Repeat Guarder with `tests/configs/prisma_v30` and
+`tests/configs/prisma_v30_auto`. To test the STT node saved by Designer, set
+`GNANI_DESIGNER_GRAPH` to the saved property.json path in the container and
+run the standalone suite. The fixture source and transcript receiver require
+only the Gnani credential.

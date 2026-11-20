@@ -256,7 +256,9 @@ def get_dump_file_path(temp_dir: Path, original_audio_file_path: str) -> Path:
     return dump_file_path
 
 
-def test_dump(extension_name: str, config_dir: str) -> None:
+def test_dump(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR dump functionality with audio file output."""
 
     # Get config file path
@@ -287,7 +289,7 @@ def test_dump(extension_name: str, config_dir: str) -> None:
     # Create and run tester
     tester = DumpTester(
         session_id=DUMP_SESSION_ID,
-        expected_language=DUMP_EXPECTED_LANGUAGE,
+        expected_language=expected_english_locale,
         audio_file_path=audio_file_path,
     )
 
