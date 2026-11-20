@@ -904,8 +904,7 @@
                                 "additionalProperties": false,
                                 "properties": {
                                   "endpoint": {
-                                    "type": "string",
-                                    "minLength": 1
+                                    "type": "string"
                                   },
                                   "protocol": {
                                     "type": "string",

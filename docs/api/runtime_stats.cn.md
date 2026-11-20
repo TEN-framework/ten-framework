@@ -40,6 +40,36 @@ if error is None:
 
 `exporter` 字段可选。需要将指标输出到外部时，再配置对应的 exporter。
 
+对于 OTLP metrics exporter，`config.endpoint` 可选。例如，将
+`ten.services.telemetry` 配置为：
+
+```json
+{
+  "enabled": true,
+  "metrics": {
+    "enabled": true,
+    "exporter": { "type": "otlp" }
+  }
+}
+```
+
+runtime 按以下优先级读取 endpoint：
+
+1. 非空白的 `exporter.config.endpoint`。
+2. `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`。
+
+配置中的 endpoint 缺省、为空字符串或仅包含空白时，使用环境变量。
+如果没有可用的 endpoint，或者选中的值不合法，则关闭外部导出。
+高优先级的值不合法时，不会继续尝试其他地址。
+runtime 不读取 `OTEL_EXPORTER_OTLP_ENDPOINT`，也不会使用 SDK 默认的 localhost collector。
+OTLP 初始化失败时同样关闭外部导出，应用继续运行。
+这些情况下，SDK 仍然聚合指标，可以通过 `ten:runtime_stats.metrics` 读取。
+
+协议默认为 `grpc`。当 `config.protocol` 为 `http` 时，metrics 专用环境变量和显式配置
+都需要提供完整的 endpoint URL，包括 `/v1/metrics` 等路径；runtime 不追加路径。
+endpoint 必须使用 `http://` 或 `https://`，主机和端口合法，且不包含空白或 URL fragment。
+初始化期间不会检查 collector 是否可达。
+
 `metrics` 字段使用 OpenTelemetry protobuf 的 JSON 表示，结构如下：
 
 ```json

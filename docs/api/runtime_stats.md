@@ -42,6 +42,39 @@ Enable runtime metrics using the existing app configuration:
 The `exporter` field is optional. Configure it when external metrics output is
 also needed.
 
+For the OTLP metrics exporter, `config.endpoint` is optional. For example, set
+`ten.services.telemetry` to:
+
+```json
+{
+  "enabled": true,
+  "metrics": {
+    "enabled": true,
+    "exporter": { "type": "otlp" }
+  }
+}
+```
+
+The runtime resolves the endpoint in this order:
+
+1. A nonblank `exporter.config.endpoint`.
+2. `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`.
+
+An omitted, empty, or whitespace-only configuration value uses the environment.
+If no endpoint is available, or the selected value is invalid, external export
+is disabled. An invalid higher-priority value does not fall through to another
+destination. The runtime does not use `OTEL_EXPORTER_OTLP_ENDPOINT` or the SDK's
+default localhost collector.
+OTLP initialization errors also disable external export without stopping the app.
+SDK aggregation and `ten:runtime_stats.metrics` remain available in these cases.
+
+The protocol defaults to `grpc`. With `config.protocol` set to `http`, both the
+metrics-specific environment variable and explicit configuration supply the
+complete endpoint URL, including a path such as `/v1/metrics`; the runtime does
+not append a path. Endpoints must use `http://` or `https://`
+with a valid host and port, without whitespace or a fragment. Collector
+reachability is not checked during initialization.
+
 The `metrics` field uses the OpenTelemetry protobuf JSON representation:
 
 ```json

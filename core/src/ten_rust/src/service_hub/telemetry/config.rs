@@ -75,10 +75,8 @@ impl<'de> Deserialize<'de> for ExporterConfig {
                 }
             }
             ExporterType::Otlp => {
-                if raw.config.is_null()
-                    || (raw.config.is_object() && raw.config.as_object().unwrap().is_empty())
-                {
-                    ExporterSpecificConfig::Empty
+                if raw.config.is_null() {
+                    ExporterSpecificConfig::Otlp(OtlpConfig::default())
                 } else {
                     ExporterSpecificConfig::Otlp(
                         serde_json::from_value(raw.config).map_err(serde::de::Error::custom)?,
@@ -134,7 +132,8 @@ pub struct PrometheusConfig {
 /// OTLP exporter configuration (Push mode)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OtlpConfig {
-    /// OTLP endpoint URL
+    /// OTLP endpoint URL. Empty values use OTEL_EXPORTER_OTLP_METRICS_ENDPOINT.
+    #[serde(default)]
     pub endpoint: String,
 
     /// Protocol: "grpc" or "http" (default: "grpc")
@@ -195,6 +194,41 @@ impl Default for PrometheusConfig {
             path: default_prometheus_path(),
             service_name: None,
         }
+    }
+}
+
+impl Default for OtlpConfig {
+    fn default() -> Self {
+        Self {
+            endpoint: String::new(),
+            protocol: default_otlp_protocol(),
+            headers: HashMap::new(),
+            service_name: None,
+        }
+    }
+}
+
+impl OtlpConfig {
+    /// Resolve a usable endpoint from configuration or the metrics-specific
+    /// environment variable, without the SDK's implicit localhost default.
+    pub fn resolve_endpoint(&self) -> Option<String> {
+        let endpoint = if !self.endpoint.trim().is_empty() {
+            self.endpoint.clone()
+        } else {
+            std::env::var("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT").ok()?
+        };
+
+        if endpoint.chars().any(char::is_whitespace) {
+            return None;
+        }
+        let url = url::Url::parse(&endpoint).ok()?;
+        if !matches!(url.scheme(), "http" | "https")
+            || url.host_str().is_none()
+            || url.fragment().is_some()
+        {
+            return None;
+        }
+        Some(url.into())
     }
 }
 

@@ -7,4 +7,5 @@
 
 pub mod config;
 pub mod console_exporter;
+mod otlp_endpoint;
 mod runtime_stats;

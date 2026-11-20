@@ -18,6 +18,11 @@
 
 namespace {
 
+struct runtime_stats_app_config {
+  bool telemetry;
+  nlohmann::json exporter;
+};
+
 class runtime_stats_extension : public ten::extension_t {
  public:
   explicit runtime_stats_extension(const char *name) : ten::extension_t(name) {}
@@ -68,13 +73,18 @@ class runtime_stats_extension : public ten::extension_t {
 
 class runtime_stats_app : public ten::app_t {
  public:
-  explicit runtime_stats_app(bool telemetry) : telemetry_(telemetry) {}
+  explicit runtime_stats_app(const runtime_stats_app_config &config)
+      : config_(config) {}
 
   void on_configure(ten::ten_env_t &ten_env) override {
     nlohmann::json config = {{"ten", {{"uri", "msgpack://127.0.0.1:8001/"}}}};
-    if (telemetry_) {
+    if (config_.telemetry) {
       config["ten"]["services"]["telemetry"] = {
           {"enabled", true}, {"metrics", {{"enabled", true}}}};
+      if (!config_.exporter.is_null()) {
+        config["ten"]["services"]["telemetry"]["metrics"]["exporter"] =
+            config_.exporter;
+      }
     }
     EXPECT_TRUE(ten_env.init_property_from_json(config.dump().c_str()));
     auto stats = ten_env.get_property_to_json("ten:runtime_stats");
@@ -83,11 +93,11 @@ class runtime_stats_app : public ten::app_t {
   }
 
  private:
-  bool telemetry_;
+  runtime_stats_app_config config_;
 };
 
 void *app_thread_main(void *arg) {
-  runtime_stats_app app(*static_cast<bool *>(arg));
+  runtime_stats_app app(*static_cast<runtime_stats_app_config *>(arg));
   app.run();
   return nullptr;
 }
@@ -95,10 +105,12 @@ void *app_thread_main(void *arg) {
 TEN_CPP_REGISTER_ADDON_AS_EXTENSION(runtime_stats_test_extension,
                                     runtime_stats_extension);
 
-void check_runtime_stats(bool telemetry) {
+void check_runtime_stats(bool telemetry,
+                         const nlohmann::json &exporter = nullptr) {
+  runtime_stats_app_config config{telemetry, exporter};
   std::string response_json;
   auto *thread =
-      ten_thread_create("runtime stats app", app_thread_main, &telemetry);
+      ten_thread_create("runtime stats app", app_thread_main, &config);
   {
     ten::msgpack_tcp_client_t client("msgpack://127.0.0.1:8001/");
     auto graph = ten::start_graph_cmd_t::create();
@@ -179,4 +191,17 @@ TEST(RuntimeStatsTest, ReadsSdkMetricsThroughProperties) {
 
 TEST(RuntimeStatsTest, ReturnsEmptyMetricsWithoutTelemetry) {
   check_runtime_stats(false);
+}
+
+TEST(RuntimeStatsTest, ReadsSdkMetricsWithOtlpWithoutEndpoint) {
+  check_runtime_stats(true, {{"type", "otlp"}});
+}
+
+TEST(RuntimeStatsTest, ReadsSdkMetricsWithOtlpEmptyEndpoint) {
+  check_runtime_stats(true, {{"type", "otlp"}, {"config", {{"endpoint", ""}}}});
+}
+
+TEST(RuntimeStatsTest, ReadsSdkMetricsWithOtlpInvalidEndpoint) {
+  check_runtime_stats(
+      true, {{"type", "otlp"}, {"config", {{"endpoint", "not-a-url"}}}});
 }
