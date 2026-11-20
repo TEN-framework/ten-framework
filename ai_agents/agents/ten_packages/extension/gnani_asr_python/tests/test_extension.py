@@ -525,3 +525,41 @@ async def test_normal_close_at_commit_preserves_arrival_time(monkeypatch):
     ext.on_disconnected.assert_awaited_once()
     ext.send_asr_finalize_end.assert_awaited_once()
     assert ext.last_finalize_time is None
+
+
+@pytest.mark.asyncio
+async def test_malformed_handshake_closes_and_retries(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.config = PrismaConfig(api_key="local")
+    socket = AsyncMock()
+    socket.recv.return_value = "null"
+    monkeypatch.setattr(extension, "connect", AsyncMock(return_value=socket))
+    monkeypatch.setattr(ext, "on_disconnected", AsyncMock())
+    monkeypatch.setattr(ext, "schedule_retry", Mock())
+    monkeypatch.setattr(ext, "error", AsyncMock())
+    await ext._connect(ext.generation)
+    socket.close.assert_awaited_once()
+    ext.on_disconnected.assert_awaited_once()
+    ext.schedule_retry.assert_called_once()
+    assert not ext.is_connected()
+
+
+@pytest.mark.asyncio
+async def test_normal_close_during_pacing_retains_unsent_audio(monkeypatch):
+    from unittest.mock import Mock
+    from websockets.exceptions import ConnectionClosedOK
+
+    ext = extension.GnaniASRExtension("gnani")
+    ext.ws = Mock(close_code=1000)
+    ext.ready.set()
+    ext.tail.extend(bytes(1024))
+
+    async def disconnected(_):
+        ext.ws = None
+
+    monkeypatch.setattr(extension.asyncio, "sleep", disconnected)
+    with pytest.raises(ConnectionClosedOK):
+        await ext.packet(1024)
+    assert len(ext.tail) == 1024

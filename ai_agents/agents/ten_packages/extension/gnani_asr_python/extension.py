@@ -146,6 +146,8 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             if self.stopped or generation != self.generation:
                 await ws.close()
                 return
+            if not isinstance(hello, dict):
+                raise OSError("invalid Prisma handshake response")
             if hello.get("type") == "error" and any(
                 term in str(hello.get("message", "")).lower()
                 for term in ("concurrent", "capacity", "rate limit")
@@ -394,6 +396,8 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         ws = self.ws
         await asyncio.sleep(max(0, self.next_send - time.monotonic()))
         if not ws or ws is not self.ws:
+            if ws and ws.close_code in (1000, 1001):
+                raise ConnectionClosedOK(None, None)
             raise OSError("socket closed")
         packet = bytes(self.tail[:size]).ljust(FRAME_BYTES, b"\0")
         del self.tail[:size]
@@ -458,6 +462,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 await asyncio.wait_for(ws.send(json.dumps({"type": "commit"})), 5)
                 # Commit has no drain acknowledgement. Hold this turn's context
                 # for delayed events, then retire its socket before new audio.
+                metadata = {**(metadata or {}), "gnani_drain_confirmed": False}
                 deadline = time.monotonic() + DRAIN_SECONDS
                 while self.ws is ws:
                     remaining = deadline - time.monotonic()

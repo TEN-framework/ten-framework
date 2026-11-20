@@ -51,7 +51,13 @@ a transcript-drain acknowledgement. The adapter listens for the full five second
 segment has already completed. This gives delayed segments a chance to arrive
 and bounds how long the next turn can wait. It reports an error for outstanding
 speech at the deadline, logs the unconfirmed drain otherwise, and retires the
-socket before acknowledging finalize. Results delayed beyond this window can
+socket before acknowledging finalize. The finalize-end metadata carries
+`gnani_drain_confirmed: false` when the service cannot confirm the drain. Results delayed beyond this window can
 be lost. An empty event queue cannot distinguish silence from unreported speech.
 Temporary transport failures retry with exponential backoff capped at four
 seconds. Authentication and invalid configuration errors stop retries.
+
+The adapter uses one provider connection at a time. New audio queues during
+the five-second drain and reconnect. Continuous input can exhaust the
+five-second queue and drop its oldest frames, including the start of the
+next turn. An overflow emits an ASR error.
