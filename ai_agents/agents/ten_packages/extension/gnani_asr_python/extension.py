@@ -3,6 +3,7 @@ import json
 import os
 import time
 from collections import deque
+from dataclasses import dataclass
 
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
@@ -18,6 +19,11 @@ from .config import PrismaConfig
 
 FRAME_BYTES = 1024
 QUEUE_BYTES = 16000 * 2 * 5
+
+
+@dataclass
+class DroppedAudio:
+    size: int
 
 
 class GnaniASRExtension(AsyncASRBaseExtension):
@@ -38,6 +44,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         self.queued_bytes = 0
         self.tail = bytearray()
         self.starts = {}
+        self.unidentified_starts = deque()
         self.completed = set()
         self.finalized = set()
         self.finalize_metadata = None
@@ -110,7 +117,9 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 self.audio_timeline.get_total_user_audio_duration() + self.origin
             )
             self.audio_timeline.reset()
+            self.last_reported_audio_duration = 0
             self.starts.clear()
+            self.unidentified_starts.clear()
             self.completed.clear()
             self.ws = ws
             self.ready.set()
@@ -154,17 +163,26 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 if self.ws is not ws:
                     break
                 event = json.loads(message)
+                if not isinstance(event, dict):
+                    raise ValueError("invalid Prisma message")
                 kind = event.get("type")
                 uid = event.get("utterance_id") or event.get("segment_id")
                 if kind == "transcript" and not uid:
                     raise ValueError("missing utterance identifier")
                 if kind == "speech_start":
-                    self.starts[uid] = event.get("t_ms", self.sent_ms())
+                    offset = event.get("t_ms", self.sent_ms())
+                    if uid:
+                        self.starts[uid] = offset
+                    else:
+                        self.unidentified_starts.append(offset)
                 elif kind == "transcript" and uid not in self.completed:
                     upper = self.sent_ms()
-                    start = min(
-                        upper, max(0, self.starts.pop(uid, self.last_end - self.origin))
-                    )
+                    offset = self.starts.pop(uid, None)
+                    if offset is None and self.unidentified_starts:
+                        offset = self.unidentified_starts.popleft()
+                    if offset is None:
+                        offset = self.last_end - self.origin
+                    start = min(upper, max(0, offset))
                     end = min(upper, start + max(0, int(event["audio_duration_ms"])))
                     begin = (
                         self.origin
@@ -234,9 +252,13 @@ class GnaniASRExtension(AsyncASRBaseExtension):
         dropped = 0
         while self.queued_bytes + len(self.tail) > QUEUE_BYTES and self.inputs:
             for i, item in enumerate(self.inputs):
-                if not isinstance(item, Data):
+                if not isinstance(item, (Data, DroppedAudio)):
                     n = len(item.get_buf())
-                    del self.inputs[i]
+                    if i and isinstance(self.inputs[i - 1], DroppedAudio):
+                        self.inputs[i - 1].size += n
+                        del self.inputs[i]
+                    else:
+                        self.inputs[i] = DroppedAudio(n)
                     self.queued_bytes -= n
                     dropped += n
                     break
@@ -244,7 +266,6 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 break
         self.available.set()
         if dropped:
-            self.audio_timeline.add_dropped_audio(dropped // 32)
             await self.error("Prisma input buffer overflow")
 
     async def on_data(self, ten_env, data):
@@ -264,7 +285,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
             # Keep unsent frames in the bounded FIFO until the socket is ready.
             if (
                 not self.ready.is_set()
-                and not isinstance(self.inputs[0], Data)
+                and not isinstance(self.inputs[0], (Data, DroppedAudio))
                 and not self.fatal
             ):
                 try:
@@ -273,7 +294,11 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                     continue
             item = self.inputs.popleft()
             try:
-                if isinstance(item, Data):
+                if isinstance(item, DroppedAudio):
+                    if self.tail and self.is_connected():
+                        await self.packet(min(FRAME_BYTES, len(self.tail)))
+                    self.audio_timeline.add_dropped_audio(item.size // 32)
+                elif isinstance(item, Data):
                     raw, _ = item.get_property_to_json("metadata")
                     self.finalize_metadata = json.loads(raw) if raw else None
                     await super().on_data(self.ten_env, item)
@@ -364,7 +389,7 @@ class GnaniASRExtension(AsyncASRBaseExtension):
                 )
 
                 async def wait_results():
-                    while not self.fenced or self.starts:
+                    while not self.fenced or self.starts or self.unidentified_starts:
                         if self.ws is not ws:
                             raise OSError("disconnected")
                         self.changed.clear()

@@ -246,9 +246,9 @@ async def test_overflow_keeps_finalize_and_newest_audio(monkeypatch):
     await ext.on_audio_frame(None, old)
     await ext.on_data(None, barrier)
     await ext.on_audio_frame(None, new)
-    assert list(ext.inputs) == [barrier, new]
+    assert list(ext.inputs) == [extension.DroppedAudio(96000), barrier, new]
     assert ext.queued_bytes == 96000
-    assert ext.audio_timeline.total_dropped_audio_duration == 3000
+    assert ext.audio_timeline.total_dropped_audio_duration == 0
 
 
 @pytest.mark.asyncio
