@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import time
 
 import httpx
 from ten_ai_base.struct import TTS2HttpResponseEventType as Event
@@ -12,7 +13,8 @@ async def events(response):
     async for line in response.aiter_lines():
         if not line:
             if data:
-                yield name, json.loads("\n".join(data))
+                received_ns = time.monotonic_ns()
+                yield received_ns, name, json.loads("\n".join(data))
             name, data = "", []
         elif line.startswith("event:"):
             name = line[6:].strip()
@@ -27,6 +29,9 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
         self.params = params
         self.http = httpx.AsyncClient(timeout=httpx.Timeout(30, connect=5))
         self.response = None
+        self.timing_request_id = None
+        self.started_ns = None
+        self.first_audio_ms = None
 
     def get_extra_metadata(self):
         return {"model": self.params.model, "voice": self.params.voice}
@@ -38,12 +43,17 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
     async def clean(self):
         await self.http.aclose()
 
-    async def open_stream(self, headers, payload):
+    async def open_stream(self, headers, payload, request_id):
         # A rejected request can be retried before any audio is delivered.
         for attempt in range(4):
             request = self.http.build_request(
                 "POST", self.url, headers=headers, json=payload
             )
+            request.extensions["ten_request_id"] = request_id
+            if self.timing_request_id != request_id:
+                self.timing_request_id = request_id
+                self.started_ns = time.monotonic_ns()
+                self.first_audio_ms = None
             response = await self.http.send(request, stream=True)
             if response.is_success:
                 return response
@@ -80,9 +90,9 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
         response = None
         terminal = (None, Event.END)
         try:
-            response = await self.open_stream(headers, payload)
+            response = await self.open_stream(headers, payload, request_id)
             self.response = response
-            async for name, body in events(response):
+            async for received_ns, name, body in events(response):
                 if name == "complete":
                     if tail:
                         raise ValueError("Incomplete PCM sample")
@@ -90,7 +100,12 @@ class GnaniTTSClient(AsyncTTS2HttpClient):
                 if name == "error":
                     raise ValueError("Gnani reported a synthesis error")
                 if name == "chunk":
-                    audio = tail + base64.b64decode(body["audio"], validate=True)
+                    chunk = base64.b64decode(body["audio"], validate=True)
+                    if chunk and self.first_audio_ms is None:
+                        self.first_audio_ms = (
+                            received_ns - self.started_ns
+                        ) // 1_000_000
+                    audio = tail + chunk
                     aligned = len(audio) - len(audio) % 2
                     tail = audio[aligned:]
                     if aligned:

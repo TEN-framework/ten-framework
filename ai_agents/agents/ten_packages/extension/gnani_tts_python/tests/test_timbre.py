@@ -144,26 +144,44 @@ async def test_retry_rate_limit_before_audio():
 
 
 @pytest.mark.asyncio
-async def test_flush_awaits_the_inflight_provider_task(monkeypatch):
-    import asyncio
-    from ten_ai_base.tts2_http import AsyncTTS2HttpExtension
-    from ten_packages.extension.gnani_tts_python.extension import GnaniTTSExtension
+async def test_ttfb_spans_text_batches_and_precedes_sample_alignment(monkeypatch):
+    from types import SimpleNamespace
+    from ten_packages.extension.gnani_tts_python import gnani_tts
 
-    started, stopped = asyncio.Event(), asyncio.Event()
+    now = 0
+    monkeypatch.setattr(
+        gnani_tts, "time", SimpleNamespace(monotonic_ns=lambda: now * 1_000_000)
+    )
 
-    async def stalled_request(self, text_input):
-        started.set()
-        try:
-            await asyncio.Event().wait()
-        finally:
-            stopped.set()
+    class Stream(httpx.AsyncByteStream):
+        def __init__(self, text):
+            self.text = text
 
-    monkeypatch.setattr(AsyncTTS2HttpExtension, "request_tts", stalled_request)
-    extension = GnaniTTSExtension("gnani")
-    request = asyncio.create_task(extension.request_tts(None))
-    await asyncio.wait_for(started.wait(), 1)
-    await extension._cancel_current_task()
-    assert stopped.is_set()
-    with pytest.raises(asyncio.CancelledError):
-        await request
-    assert extension.current_task is None
+        async def __aiter__(self):
+            nonlocal now
+            if self.text != "empty":
+                now += 7
+                yield b'event: chunk\ndata: {"audio":"AQ=="}\n\n'
+                now += 100
+                yield b'event: chunk\ndata: {"audio":"Ag=="}\n\n'
+            yield b"event: complete\ndata: {}\n\n"
+
+    def handle(request):
+        return httpx.Response(200, stream=Stream(json.loads(request.content)["text"]))
+
+    client = GnaniTTSClient(GnaniTTSConfig(params={"api_key": "test"}).params)
+    await client.http.aclose()
+    client.http = httpx.AsyncClient(transport=httpx.MockTransport(handle))
+    try:
+        assert [item async for item in client.get("empty", "first")] == [
+            (None, Event.END)
+        ]
+        now += 20
+        for request_id, expected_ms in [("first", 27), ("next", 7)]:
+            assert [item async for item in client.get("Hello", request_id)] == [
+                (bytes([1, 2]), Event.RESPONSE),
+                (None, Event.END),
+            ]
+            assert client.first_audio_ms == expected_ms
+    finally:
+        await client.clean()

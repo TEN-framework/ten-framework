@@ -1,19 +1,60 @@
-"""Observe the installed Timbre HTTP adapter, including TEN loader imports."""
+"""Observe HTTPX send and SSE record arrival before the Timbre decoder."""
 
-import sys
+import base64
+import json
+from functools import wraps
 
-from .http import HttpAdapterHook
+import httpx
 
 
-class Hook(HttpAdapterHook):
-    module_name = "ten_packages.extension.gnani_tts_python.gnani_tts"
-    client_class = "GnaniTTSClient"
+class AudioRecord:
+    """Classify captured lines at assertion time, independently per response."""
 
+    def __init__(self):
+        self.event = ""
+        self.data = []
+
+    def __call__(self, line):
+        if line.startswith("event:"):
+            self.event = line[6:].strip()
+        elif line.startswith("data:"):
+            self.data.append(line[5:])
+        elif not line:
+            event, data = self.event, self.data
+            self.event, self.data = "", []
+            if event == "chunk" and data:
+                try:
+                    return bool(
+                        base64.b64decode(
+                            json.loads("\n".join(data))["audio"], validate=True
+                        )
+                    )
+                except (ValueError, KeyError, TypeError):
+                    pass
+        return False
+
+
+class Hook:
     def install(self, patch, reference, config):
-        # After a graph has run, the TEN loader may have imported the addon
-        # under the app's package prefix. Observe that same client class.
-        for name in tuple(sys.modules):
-            if name.endswith("gnani_tts_python.gnani_tts"):
-                self.module_name = name
-                break
-        super().install(patch, reference, config)
+        original = httpx.AsyncClient.send
+
+        @wraps(original)
+        async def send(client, request, **kwargs):
+            if str(request.url) != "https://api.vachana.ai/api/v1/tts/sse":
+                return await original(client, request, **kwargs)
+            request_id = request.extensions["ten_request_id"]
+            reference.capture("text", request_id=request_id)
+            response = await original(client, request, **kwargs)
+            if response.is_success:
+                lines = response.aiter_lines
+                record = AudioRecord()
+
+                async def observe_lines():
+                    async for line in lines():
+                        reference.capture("audio", line, record, request_id)
+                        yield line
+
+                response.aiter_lines = observe_lines
+            return response
+
+        patch.setattr(httpx.AsyncClient, "send", send)

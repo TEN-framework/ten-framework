@@ -35,6 +35,13 @@ class GnaniTTSExtension(AsyncTTS2HttpExtension):
         await self._cancel_current_task()
         await super().on_stop(ten_env)
 
+    async def send_tts_ttfb_metrics(
+        self, request_id, ttfb_ms, turn_id=-1, extra_metadata=None
+    ):
+        await super().send_tts_ttfb_metrics(
+            request_id, self.client.first_audio_ms, turn_id, extra_metadata
+        )
+
     def vendor(self):
         return "gnani"
 
