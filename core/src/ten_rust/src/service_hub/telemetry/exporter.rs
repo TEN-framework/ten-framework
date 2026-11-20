@@ -11,11 +11,17 @@ use anyhow::Result;
 use opentelemetry::KeyValue;
 use opentelemetry_sdk::{metrics::SdkMeterProvider, Resource};
 
-use super::config::{OtlpProtocol, TelemetryConfig};
+use super::{
+    config::{OtlpProtocol, TelemetryConfig},
+    runtime_stats::RuntimeMetricsReader,
+};
 
 /// Metrics exporter type
 #[derive(Debug, Clone)]
 pub enum ExporterType {
+    /// Collect metrics locally without an external exporter.
+    None { service_name: Option<String> },
+
     /// Prometheus exporter (Pull mode, /metrics endpoint)
     Prometheus { service_name: Option<String> },
 
@@ -121,25 +127,28 @@ impl ExporterType {
             }
             ConfigExporterType::Otlp => {
                 if let Some(otlp_config) = config.get_otlp_config() {
-                    tracing::info!("Telemetry: Using OTLP exporter (Push mode)");
-                    tracing::info!("Endpoint: {}", otlp_config.endpoint);
-                    tracing::info!("Protocol: {:?}", otlp_config.protocol);
-                    if !otlp_config.headers.is_empty() {
-                        tracing::info!("Headers: {} configured", otlp_config.headers.len());
-                    }
-
-                    ExporterType::Otlp {
-                        endpoint: otlp_config.endpoint.clone(),
-                        protocol: otlp_config.protocol.clone(),
-                        headers: otlp_config.headers.clone(),
-                        service_name: otlp_config.service_name.clone(),
+                    if let Some(endpoint) = otlp_config.resolve_endpoint() {
+                        tracing::info!("Telemetry: Using OTLP exporter (Push mode)");
+                        ExporterType::Otlp {
+                            endpoint,
+                            protocol: otlp_config.protocol.clone(),
+                            headers: otlp_config.headers.clone(),
+                            service_name: otlp_config.service_name.clone(),
+                        }
+                    } else {
+                        tracing::warn!(
+                            "OTLP metrics endpoint is missing or invalid; collecting metrics \
+                             locally without external export"
+                        );
+                        ExporterType::None {
+                            service_name: otlp_config.service_name.clone(),
+                        }
                     }
                 } else {
                     tracing::warn!(
-                        "Warning: OTLP exporter selected but no config provided, falling back to \
-                         Prometheus"
+                        "OTLP exporter selected without configuration; collecting metrics locally"
                     );
-                    ExporterType::Prometheus {
+                    ExporterType::None {
                         service_name: None,
                     }
                 }
@@ -156,12 +165,14 @@ impl ExporterType {
 pub struct MetricsExporter {
     meter_provider: Arc<Mutex<Option<SdkMeterProvider>>>,
     exporter_type: ExporterType,
+    runtime_metrics_reader: RuntimeMetricsReader,
 
     // Only used for Prometheus exporter
     prometheus_registry: Arc<Mutex<Option<prometheus::Registry>>>,
 
     // Runtime handle for OTLP exporter (kept alive for the entire lifecycle)
     _runtime_handle: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
+    runtime_shutdown_tx: Mutex<Option<std::sync::mpsc::Sender<()>>>,
 }
 
 impl MetricsExporter {
@@ -169,14 +180,19 @@ impl MetricsExporter {
         Self {
             meter_provider: Arc::new(Mutex::new(None)),
             exporter_type,
+            runtime_metrics_reader: RuntimeMetricsReader::default(),
             prometheus_registry: Arc::new(Mutex::new(None)),
             _runtime_handle: Arc::new(Mutex::new(None)),
+            runtime_shutdown_tx: Mutex::new(None),
         }
     }
 
     /// Initialize the exporter with given service name
     pub fn init(&self, default_service_name: &str) -> Result<()> {
         match &self.exporter_type {
+            ExporterType::None {
+                service_name,
+            } => self.init_local_metrics(service_name.as_deref().unwrap_or(default_service_name)),
             ExporterType::Prometheus {
                 service_name,
             } => {
@@ -192,10 +208,30 @@ impl MetricsExporter {
             } => {
                 let effective_service_name =
                     service_name.as_deref().unwrap_or(default_service_name);
-                self.init_otlp_exporter(effective_service_name, endpoint, protocol, headers)
+                if let Err(error) =
+                    self.init_otlp_exporter(effective_service_name, endpoint, protocol, headers)
+                {
+                    tracing::warn!(
+                        "OTLP metrics initialization failed: {error}; collecting metrics locally \
+                         without external export"
+                    );
+                    self.init_local_metrics(effective_service_name)?;
+                }
+                Ok(())
             }
             ExporterType::Console => self.init_console_exporter(default_service_name),
         }
+    }
+
+    /// Keep SDK aggregation available to ten:runtime_stats without exporting.
+    fn init_local_metrics(&self, service_name: &str) -> Result<()> {
+        let provider = SdkMeterProvider::builder()
+            .with_reader(self.runtime_metrics_reader.clone())
+            .with_resource(Self::create_resource(service_name))
+            .build();
+        opentelemetry::global::set_meter_provider(provider.clone());
+        *self.meter_provider.lock().unwrap() = Some(provider);
+        Ok(())
     }
 
     /// Initialize with Prometheus exporter (Pull mode)
@@ -208,8 +244,11 @@ impl MetricsExporter {
             opentelemetry_prometheus::exporter().with_registry(registry.clone()).build()?;
 
         // Create meter provider
-        let provider =
-            SdkMeterProvider::builder().with_reader(exporter).with_resource(resource).build();
+        let provider = SdkMeterProvider::builder()
+            .with_reader(exporter)
+            .with_reader(self.runtime_metrics_reader.clone())
+            .with_resource(resource)
+            .build();
 
         // Set global meter provider
         opentelemetry::global::set_meter_provider(provider.clone());
@@ -229,101 +268,87 @@ impl MetricsExporter {
         protocol: &OtlpProtocol,
         headers: &std::collections::HashMap<String, String>,
     ) -> Result<()> {
-        let resource = Self::create_resource(service_name);
-
         tracing::info!("Telemetry: Pushing metrics to collector");
         tracing::info!("  Service: {}", service_name);
         tracing::info!("  Endpoint: {}", endpoint);
         tracing::info!("  Protocol: {:?}", protocol);
         if !headers.is_empty() {
-            tracing::info!("  Headers: {:?}", headers);
+            tracing::info!("  Headers: {} configured", headers.len());
         }
 
         // Create a dedicated runtime thread for OTLP exporter
         // This runtime will stay alive for the entire application lifecycle
         let endpoint_clone = endpoint.to_string();
         let protocol_clone = protocol.clone();
-        let resource_clone = resource.clone();
-        let meter_provider_clone = self.meter_provider.clone();
+        let (init_tx, init_rx) =
+            std::sync::mpsc::channel::<Result<opentelemetry_otlp::MetricExporter>>();
+        let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
 
-        // Channel to signal when initialization is complete
-        let (init_tx, init_rx) = std::sync::mpsc::channel::<Result<()>>();
+        let runtime_handle =
+            std::thread::Builder::new().name("otlp-metrics".into()).spawn(move || {
+                tracing::debug!("Starting dedicated OTLP runtime thread");
 
-        let runtime_handle = std::thread::spawn(move || {
-            tracing::debug!("Starting dedicated OTLP runtime thread");
+                // Create a new Tokio runtime for this thread
+                let rt = match tokio::runtime::Runtime::new() {
+                    Ok(rt) => rt,
+                    Err(e) => {
+                        let _ = init_tx
+                            .send(Err(anyhow::anyhow!("Failed to create Tokio runtime: {}", e)));
+                        return;
+                    }
+                };
 
-            // Create a new Tokio runtime for this thread
-            let rt = match tokio::runtime::Runtime::new() {
-                Ok(rt) => rt,
-                Err(e) => {
-                    let _ =
-                        init_tx.send(Err(anyhow::anyhow!("Failed to create Tokio runtime: {}", e)));
-                    return;
-                }
-            };
-
-            rt.block_on(async {
-                // Build OTLP exporter
+                use opentelemetry_otlp::WithExportConfig;
                 let exporter = match &protocol_clone {
                     OtlpProtocol::Grpc => {
-                        use opentelemetry_otlp::WithExportConfig;
+                        // Tonic needs a running Tokio runtime for its lazy
+                        // channel.
+                        let _guard = rt.enter();
                         opentelemetry_otlp::MetricExporter::builder()
                             .with_tonic()
                             .with_endpoint(&endpoint_clone)
                             .build()
                     }
                     OtlpProtocol::Http => {
-                        use opentelemetry_otlp::WithExportConfig;
+                        // The blocking HTTP client must be built outside Tokio.
                         opentelemetry_otlp::MetricExporter::builder()
                             .with_http()
                             .with_endpoint(&endpoint_clone)
                             .build()
                     }
                 };
-
-                let exporter = match exporter {
-                    Ok(exp) => exp,
-                    Err(e) => {
-                        let _ = init_tx
-                            .send(Err(anyhow::anyhow!("Failed to build OTLP exporter: {}", e)));
-                        return;
+                match exporter {
+                    Ok(exporter) => {
+                        if init_tx.send(Ok(exporter)).is_ok() {
+                            // Dropping the sender after timeout also ends this
+                            // thread. It must never publish a late meter
+                            // provider.
+                            let _ = shutdown_rx.recv();
+                        }
                     }
-                };
-
-                // Create periodic reader to export metrics every 10 seconds
-                let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
-                    .with_interval(std::time::Duration::from_secs(10))
-                    .build();
-
-                // Create meter provider
-                let provider = SdkMeterProvider::builder()
-                    .with_reader(reader)
-                    .with_resource(resource_clone)
-                    .build();
-
-                // Set global meter provider
-                opentelemetry::global::set_meter_provider(provider.clone());
-                *meter_provider_clone.lock().unwrap() = Some(provider);
-
-                // Signal that initialization is complete
-                let _ = init_tx.send(Ok(()));
-
-                tracing::info!(
-                    "OTLP exporter initialized successfully, runtime thread will keep running"
-                );
-
-                // Keep the runtime alive indefinitely
-                // The PeriodicReader will continue to export metrics in the background
-                loop {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+                    Err(error) => {
+                        let _ = init_tx
+                            .send(Err(anyhow::anyhow!("Failed to build OTLP exporter: {error}")));
+                    }
                 }
-            });
-        });
+            })?;
 
         // Wait for initialization to complete (with timeout)
         match init_rx.recv_timeout(std::time::Duration::from_secs(5)) {
-            Ok(Ok(())) => {
+            Ok(Ok(exporter)) => {
+                let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
+                    .with_interval(std::time::Duration::from_secs(10))
+                    .build();
+                let provider = SdkMeterProvider::builder()
+                    .with_reader(reader)
+                    .with_reader(self.runtime_metrics_reader.clone())
+                    .with_resource(Self::create_resource(service_name))
+                    .build();
+                opentelemetry::global::set_meter_provider(provider.clone());
+                *self.meter_provider.lock().unwrap() = Some(provider);
+
                 tracing::info!("OTLP exporter initialization confirmed");
+                *self.runtime_shutdown_tx.lock().unwrap() = Some(shutdown_tx);
                 *self._runtime_handle.lock().unwrap() = Some(runtime_handle);
                 Ok(())
             }
@@ -331,9 +356,8 @@ impl MetricsExporter {
                 tracing::error!("OTLP exporter initialization failed: {}", e);
                 Err(e)
             }
-            Err(_) => {
-                tracing::error!("OTLP exporter initialization timed out");
-                Err(anyhow::anyhow!("OTLP exporter initialization timed out"))
+            Err(error) => {
+                Err(anyhow::anyhow!("OTLP exporter initialization did not complete: {error}"))
             }
         }
     }
@@ -354,8 +378,11 @@ impl MetricsExporter {
             .build();
 
         // Create meter provider
-        let provider =
-            SdkMeterProvider::builder().with_reader(reader).with_resource(resource).build();
+        let provider = SdkMeterProvider::builder()
+            .with_reader(reader)
+            .with_reader(self.runtime_metrics_reader.clone())
+            .with_resource(resource)
+            .build();
 
         // Set global meter provider
         opentelemetry::global::set_meter_provider(provider.clone());
@@ -382,12 +409,22 @@ impl MetricsExporter {
         self.prometheus_registry.lock().unwrap().clone()
     }
 
+    /// Collect all scopes as cumulative metrics using the OTLP JSON model.
+    pub fn collect_metrics(&self) -> Result<serde_json::Value> {
+        self.runtime_metrics_reader.collect_json()
+    }
+
     /// Shutdown the exporter
     pub fn shutdown(&self) -> Result<()> {
-        if let Some(provider) = self.meter_provider.lock().unwrap().take() {
-            provider.shutdown()?;
+        let result = match self.meter_provider.lock().unwrap().take() {
+            Some(provider) => provider.shutdown().map_err(Into::into),
+            None => Ok(()),
+        };
+        self.runtime_shutdown_tx.lock().unwrap().take();
+        if let Some(handle) = self._runtime_handle.lock().unwrap().take() {
+            let _ = handle.join();
         }
-        Ok(())
+        result
     }
 }
 

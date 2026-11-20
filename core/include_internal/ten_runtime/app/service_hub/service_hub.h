@@ -25,6 +25,7 @@ typedef struct ten_service_hub_t {
   MetricHandle *metric_extension_lifecycle_duration_us;
   MetricHandle *metric_extension_cmd_processing_duration_us;
   MetricHandle *metric_extension_callback_execution_duration_us;
+  MetricHandle *metric_graph_startup_duration_us;
 } ten_service_hub_t;
 
 TEN_RUNTIME_PRIVATE_API void ten_service_hub_init(ten_service_hub_t *self);

@@ -19,6 +19,7 @@
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/internal/migration.h"
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/start_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
@@ -530,6 +531,10 @@ bool ten_app_handle_in_msg(ten_app_t *self, ten_connection_t *connection,
   TEN_ASSERT(msg, "Invalid message pointer.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Corrupted message structure.");
 
+  if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD_START_GRAPH) {
+    ten_cmd_start_graph_mark_received(msg);
+  }
+
   if (connection) {
     // If there is a 'connection', then it's possible that the connection might
     // need to be migrated, and if the connection is in the migration phase, we
@@ -663,6 +668,12 @@ void ten_app_push_to_in_msgs_queue(ten_app_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
   TEN_ASSERT(ten_msg_get_src_app_uri(msg), "Invalid argument.");
   TEN_ASSERT((ten_msg_get_dest_cnt(msg) == 1), "Invalid argument.");
+
+  if (ten_msg_get_type(msg) == TEN_MSG_TYPE_CMD_START_GRAPH) {
+    // Preserve arrival before queuing, rather than when the app thread is
+    // eventually able to process the command.
+    ten_cmd_start_graph_mark_received(msg);
+  }
 
   if (ten_msg_is_cmd_and_result(msg)) {
     TEN_ASSERT(!ten_cmd_base_cmd_id_is_empty(msg), "Invalid argument.");

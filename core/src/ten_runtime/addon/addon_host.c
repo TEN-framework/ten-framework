@@ -19,6 +19,7 @@
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "ten_runtime/app/app.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/lib/time.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
@@ -154,6 +155,9 @@ ten_addon_context_t *ten_addon_context_create(void) {
   self->destroy_instance_done_cb = NULL;
   self->destroy_instance_done_cb_data = NULL;
 
+  self->creation_start_time_us = 0;
+  self->creation_duration_us = 0;
+
   return self;
 }
 
@@ -204,6 +208,9 @@ void ten_addon_host_create_instance_async(ten_addon_host_t *self,
 
   if (self->addon->on_create_instance) {
     TEN_ASSERT(self->addon->on_create_instance, "Should not happen.");
+    if (self->type == TEN_ADDON_TYPE_EXTENSION) {
+      addon_context->creation_start_time_us = ten_current_time_us();
+    }
     self->addon->on_create_instance(self->addon, self->ten_env, name,
                                     addon_context);
   } else {

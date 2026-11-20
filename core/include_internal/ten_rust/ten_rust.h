@@ -175,6 +175,10 @@ TEN_RUST_PRIVATE_API ServiceHub *ten_service_hub_create(
 
 TEN_RUST_PRIVATE_API void ten_service_hub_shutdown(ServiceHub *service_hub_ptr);
 
+// The returned JSON and error strings must be freed with ten_rust_free_cstring.
+TEN_RUST_PRIVATE_API const char *ten_service_hub_get_runtime_stats(
+    const ServiceHub *service_hub_ptr, char **err_msg);
+
 TEN_RUST_PRIVATE_API MetricHandle *ten_metric_create(
     ServiceHub *system_ptr, uint32_t metric_type, const char *name,
     const char *help, const char *const *label_names_ptr,

@@ -28,6 +28,7 @@
 #include "include_internal/ten_runtime/extension_store/extension_store.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
 #include "include_internal/ten_runtime/metadata/metadata.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -280,6 +281,18 @@ void ten_extension_thread_on_addon_create_extension_done(void *self_,
     TEN_ASSERT(ten_extension_check_integrity(extension, true),
                "Should not happen.");
   }
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  if (ctx->addon_context->creation_start_time_us > 0) {
+    // The elapsed time was captured before posting the completion task, so
+    // extension thread scheduling does not contribute to creation duration.
+    const char *extension_name =
+        extension ? ten_extension_get_name(extension, true)
+                  : ten_string_get_raw_str(&ctx->addon_context->instance_name);
+    ten_extension_thread_record_lifecycle_duration(
+        self, extension_name, "creation",
+        ctx->addon_context->creation_duration_us);
+  }
+#endif
 
   ten_extension_group_on_addon_create_extension_done(
       extension_group->ten_env, extension, ctx->addon_context);

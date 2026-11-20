@@ -35,7 +35,16 @@ libc = { version = "0.2" }
 once_cell = "1.19.0"
 # OpenTelemetry for modern observability (use compatible versions)
 opentelemetry = "0.31.0"
-opentelemetry_sdk = { version = "0.31.0", features = ["rt-tokio", "logs"] }
+opentelemetry_sdk = { version = "0.31.0", features = [
+  "rt-tokio",
+  "logs",
+  "experimental_metrics_custom_reader",
+] }
+opentelemetry-proto = { version = "0.31.0", default-features = false, features = [
+  "gen-tonic-messages",
+  "metrics",
+  "with-serde",
+] }
 opentelemetry-prometheus = "0.31.0" # Prometheus exporter (for /metrics endpoint)
 opentelemetry-stdout = { version = "0.31.0", features = [
   "metrics",

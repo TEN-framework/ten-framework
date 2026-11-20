@@ -25,16 +25,16 @@ pub fn record_counter(name: &str, value: u64, labels: &[(&str, &str)]) {
     counter.add(value, &attributes);
 }
 
-/// Record a gauge metric (using up_down_counter in OpenTelemetry)
+/// Record the current value of a gauge metric.
 #[allow(dead_code)]
 pub fn record_gauge(name: &str, value: f64, labels: &[(&str, &str)]) {
     let meter = global::meter("ten-framework");
-    let gauge = meter.f64_up_down_counter(name.to_string()).build();
+    let gauge = meter.f64_gauge(name.to_string()).build();
 
     let attributes: Vec<KeyValue> =
         labels.iter().map(|(k, v)| KeyValue::new(k.to_string(), v.to_string())).collect();
 
-    gauge.add(value, &attributes);
+    gauge.record(value, &attributes);
 }
 
 /// Record a histogram metric
@@ -230,7 +230,7 @@ pub unsafe extern "C" fn ten_metric_gauge_set(
 
     let metric = &*metric_ptr;
     let meter = global::meter("ten-framework");
-    let gauge = meter.f64_up_down_counter(metric.name.clone()).build();
+    let gauge = meter.f64_gauge(metric.name.clone()).build();
 
     // Parse label values from C and match with label names
     let mut attributes = Vec::new();
@@ -248,7 +248,7 @@ pub unsafe extern "C" fn ten_metric_gauge_set(
         }
     }
 
-    gauge.add(value, &attributes);
+    gauge.record(value, &attributes);
 }
 
 /// Increment gauge by 1
@@ -352,8 +352,8 @@ pub unsafe extern "C" fn ten_metric_histogram_observe(
     let meter = global::meter("ten-framework");
 
     // Custom bucket boundaries for TEN Framework metrics
-    // Designed to handle both fast operations (< 1ms) and slow operations (up to
-    // 10s) Units: microseconds
+    // Designed to handle both fast operations (< 1ms) and slow operations (up
+    // to 10s) Units: microseconds
     // Buckets: 0, 100us, 500us, 1ms, 5ms, 10ms, 50ms, 100ms, 500ms,
     //          1s, 1.5s, 2s, 2.5s, 3s, 4s, 5s, 7.5s, 10s, +Inf
     let histogram = meter

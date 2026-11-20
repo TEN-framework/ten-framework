@@ -10,6 +10,7 @@ use std::{thread, time::Duration};
 use ten_rust::service_hub::telemetry::{ExporterType, MetricsExporter};
 
 #[test]
+#[serial_test::serial]
 fn test_console_exporter_initialization() {
     println!("\n🧪 Testing Console Exporter Initialization\n");
 
@@ -68,6 +69,7 @@ fn test_console_exporter_initialization() {
 }
 
 #[test]
+#[serial_test::serial]
 fn test_console_exporter_with_wait() {
     println!("\n🧪 Testing Console Exporter with Export Wait\n");
     println!("⚠️  This test will wait 35 seconds for metrics export\n");
@@ -139,12 +141,15 @@ fn test_console_exporter_with_wait() {
 }
 
 #[test]
+#[serial_test::serial]
 fn test_multiple_exporters_comparison() {
     println!("\n🧪 Testing Different Exporter Types\n");
 
     // Test Prometheus exporter
     println!("📊 Testing Prometheus Exporter:");
-    let prom_exporter = MetricsExporter::new(ExporterType::Prometheus { service_name: None });
+    let prom_exporter = MetricsExporter::new(ExporterType::Prometheus {
+        service_name: None,
+    });
     assert!(prom_exporter.init("prom-service").is_ok());
     assert!(prom_exporter.get_prometheus_registry().is_some());
     println!("   ✅ Prometheus exporter works, has registry\n");
