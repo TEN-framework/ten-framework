@@ -147,6 +147,7 @@ async def test_http_adapter_hook_tracks_input_and_first_audio(
 
 def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
     from .provider_ttfb_hooks.cosy import Hook
+    pytest.importorskip("ten_packages.extension.cosy_tts_python")
 
     received = []
 
@@ -185,6 +186,7 @@ def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
 
 def test_cosy_hook_binds_late_audio_to_original_callback(monkeypatch, clock):
     from .provider_ttfb_hooks.cosy import Hook
+    pytest.importorskip("ten_packages.extension.cosy_tts_python")
 
     class Synthesizer:
         def streaming_call(self, text):
