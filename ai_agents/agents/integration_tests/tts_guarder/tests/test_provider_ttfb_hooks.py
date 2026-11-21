@@ -1,5 +1,6 @@
 """Public transport/SDK fixture checks for every second-stage provider hook."""
 
+import sys
 from importlib import import_module
 from types import SimpleNamespace
 
@@ -22,6 +23,7 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     module = import_module(
         "ten_packages.extension.google_tts_python.google_tts"
     )
+    pytest.importorskip("ten_packages.extension.google_tts_python")
 
     class Client:
         def streaming_synthesize(self, requests):
@@ -125,7 +127,7 @@ async def test_http_adapter_hook_tracks_input_and_first_audio(
 
     module = SimpleNamespace(Client=Client)
     monkeypatch.setattr(
-        "tests.provider_ttfb_hooks.http.import_module", lambda name: module
+        sys.modules[HttpAdapterHook.__module__], "import_module", lambda _: module
     )
     hook = HttpAdapterHook()
     hook.client_class = "Client"
