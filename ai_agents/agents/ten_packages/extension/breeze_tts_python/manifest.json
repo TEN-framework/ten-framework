@@ -1,0 +1,35 @@
+{
+  "type": "extension",
+  "name": "breeze_tts_python",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": { "content": "Breeze TTS" },
+      "zh-CN": { "content": "Breeze 语音合成" }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": { "content": "Breeze text-to-speech extension for TEN: streaming PCM audio, voice design and style instructions." },
+      "zh-CN": { "content": "TEN 的 Breeze 语音合成扩展：流式 PCM、音色设计与情绪指令。" }
+    }
+  },
+  "dependencies": [
+    { "type": "system", "name": "ten_runtime_python", "version": "0.11" },
+    { "type": "system", "name": "ten_ai_base", "version": "0.7" }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      { "import_uri": "../../system/ten_ai_base/api/tts-interface.json" }
+    ]
+  }
+}

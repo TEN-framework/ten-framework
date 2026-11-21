@@ -1,5 +1,6 @@
 """Public transport/SDK fixture checks for every second-stage provider hook."""
 
+import sys
 from importlib import import_module
 from types import SimpleNamespace
 
@@ -19,6 +20,7 @@ def clock(monkeypatch):
 
 
 def test_google_public_lazy_iterator(monkeypatch, clock):
+    pytest.importorskip("ten_packages.extension.google_tts_python")
     module = import_module(
         "ten_packages.extension.google_tts_python.google_tts"
     )
@@ -125,7 +127,7 @@ async def test_http_adapter_hook_tracks_input_and_first_audio(
 
     module = SimpleNamespace(Client=Client)
     monkeypatch.setattr(
-        "tests.provider_ttfb_hooks.http.import_module", lambda name: module
+        sys.modules[HttpAdapterHook.__module__], "import_module", lambda _: module
     )
     hook = HttpAdapterHook()
     hook.client_class = "Client"
@@ -145,6 +147,7 @@ async def test_http_adapter_hook_tracks_input_and_first_audio(
 
 def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
     from .provider_ttfb_hooks.cosy import Hook
+    pytest.importorskip("ten_packages.extension.cosy_tts_python")
 
     received = []
 
@@ -183,6 +186,7 @@ def test_cosy_hook_observes_sdk_pool_reuse(monkeypatch, clock):
 
 def test_cosy_hook_binds_late_audio_to_original_callback(monkeypatch, clock):
     from .provider_ttfb_hooks.cosy import Hook
+    pytest.importorskip("ten_packages.extension.cosy_tts_python")
 
     class Synthesizer:
         def streaming_call(self, text):
@@ -227,3 +231,33 @@ def test_cosy_hook_binds_late_audio_to_original_callback(monkeypatch, clock):
     new_callback.on_data(b"new-audio")
     assert reference.elapsed_ms("first") == 20
     assert reference.elapsed_ms("second") == 30
+
+
+@pytest.mark.asyncio
+async def test_breeze_http_adapter_hook_tracks_input_and_first_audio(
+    monkeypatch, clock
+):
+    from .provider_ttfb_hooks.breeze import Hook
+    from ten_ai_base.struct import TTS2HttpResponseEventType as Event
+    from ten_packages.extension.breeze_tts_python.breeze_tts import (
+        BreezeTTSClient,
+    )
+
+    async def fake_get(self, text, request_id):
+        clock[0] = 150_000_000
+        yield b"", Event.RESPONSE
+        clock[0] = 170_000_000
+        yield b"audio", Event.RESPONSE
+
+    monkeypatch.setattr(BreezeTTSClient, "get", fake_get)
+    with install_hook("breeze_tts_python", {}, monkeypatch) as reference:
+        reference.begin_request("first")
+        client = BreezeTTSClient.__new__(BreezeTTSClient)
+        seen = []
+        async for audio, event in client.get("Hello", "first"):
+            seen.append((audio, event))
+        assert seen == [(b"", Event.RESPONSE), (b"audio", Event.RESPONSE)]
+        # The empty chunk at 150 ms is ignored; the first real audio is at 170 ms.
+        assert reference.elapsed_ms("first") == 170
+
+    assert BreezeTTSClient.get is fake_get
