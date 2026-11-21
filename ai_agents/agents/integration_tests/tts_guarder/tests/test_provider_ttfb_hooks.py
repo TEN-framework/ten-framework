@@ -20,10 +20,10 @@ def clock(monkeypatch):
 
 
 def test_google_public_lazy_iterator(monkeypatch, clock):
+    pytest.importorskip("ten_packages.extension.google_tts_python")
     module = import_module(
         "ten_packages.extension.google_tts_python.google_tts"
     )
-    pytest.importorskip("ten_packages.extension.google_tts_python")
 
     class Client:
         def streaming_synthesize(self, requests):
