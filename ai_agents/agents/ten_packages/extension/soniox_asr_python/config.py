@@ -99,3 +99,10 @@ class SonioxASRConfig(BaseModel):
 
     def to_str(self, sensitive_handling: bool = False) -> str:
         return self.to_json(sensitive_handling)
+
+    def supports_agent_text_input(self) -> bool:
+        """True when start request enabled agent text on a v6 realtime model."""
+        if not bool(self.params.get("enable_agent_text_input")):
+            return False
+        model = str(self.params.get("model", ""))
+        return "stt-rt-v6" in model

@@ -1,5 +1,7 @@
 DUMP_FILE_NAME = "soniox_asr_in.pcm"
 MODULE_NAME_ASR = "asr"
+# Soniox closes the stream when a single agent_text frame exceeds the vendor limit.
+AGENT_TEXT_MAX_CHUNK_CHARS = 500
 
 # Language code mapping from ISO codes to Soniox language codes
 LANGUAGE_CODE_MAPPING = {
