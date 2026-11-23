@@ -177,6 +177,10 @@ ten_engine_t *ten_engine_create(ten_app_t *app, ten_shared_ptr_t *cmd) {
                  ten_cmd_base_check_integrity(cmd),
              "Should not happen.");
 
+  // Auto-started predefined graphs dispatch an internal start command
+  // directly to an engine without passing through the app's receive handler.
+  ten_cmd_start_graph_mark_received(cmd);
+
   TEN_LOGD("Create engine");
 
   ten_engine_t *self = (ten_engine_t *)TEN_MALLOC(sizeof(ten_engine_t));
@@ -197,6 +201,10 @@ ten_engine_t *ten_engine_create(ten_app_t *app, ten_shared_ptr_t *cmd) {
   self->loop = NULL;
   self->runloop_is_created = NULL;
   self->is_ready_to_handle_msg = false;
+
+  self->graph_startup_start_time_us =
+      ((ten_cmd_start_graph_t *)ten_msg_get_raw_msg(cmd))->received_time_us;
+  self->graph_startup_duration_us = 0;
 
   ten_list_init(&self->orphan_connections);
 

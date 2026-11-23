@@ -19,6 +19,7 @@
 typedef struct ten_engine_t ten_engine_t;
 typedef struct ten_addon_loader_t ten_addon_loader_t;
 typedef struct ten_loc_t ten_loc_t;
+typedef struct ten_value_t ten_value_t;
 
 typedef void (*ten_env_destroy_handler_in_target_lang_func_t)(
     void *me_in_target_lang);
@@ -77,6 +78,10 @@ typedef struct ten_env_t {
   ten_env_destroy_handler_in_target_lang_func_t destroy_handler;
 
   ten_list_t ten_proxy_list;
+
+  // Owns the borrowed value returned by runtime statistics property reads.
+  // Replaced on the next statistics read on this environment's thread.
+  ten_value_t *runtime_stats;
 } ten_env_t;
 
 TEN_RUNTIME_PRIVATE_API ten_runloop_t *ten_env_get_attached_runloop(
@@ -122,8 +127,7 @@ TEN_RUNTIME_PRIVATE_API void ten_env_get_attached_target_loc(ten_env_t *self,
 
 TEN_RUNTIME_PRIVATE_API ten_app_t *ten_env_get_belonging_app(ten_env_t *self);
 
-TEN_RUNTIME_API ten_addon_host_t *ten_env_get_attached_addon(
-    ten_env_t *self);
+TEN_RUNTIME_API ten_addon_host_t *ten_env_get_attached_addon(ten_env_t *self);
 
 inline ten_extension_t *ten_env_get_attached_extension(ten_env_t *self) {
   TEN_ASSERT(self, "Invalid argument.");

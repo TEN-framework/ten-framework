@@ -22,6 +22,8 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
              "Should not happen.");
   TEN_ASSERT(!self->service_hub.metric_extension_callback_execution_duration_us,
              "Should not happen.");
+  TEN_ASSERT(!self->service_hub.metric_graph_startup_duration_us,
+             "Should not happen.");
 
   if (self->service_hub.service_hub) {
     const char *label_names[] = {"app_uri", "graph_id", "extension_group_name"};
@@ -44,8 +46,8 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
         ten_metric_create(self->service_hub.service_hub, 1,
                           "extension_lifecycle_duration",
                           "The duration (in micro-seconds) of each extension "
-                          "lifecycle stage (on_configure, on_init, on_start, "
-                          "on_stop, on_deinit).",
+                          "lifecycle stage (creation, on_configure, on_init, "
+                          "on_start, on_stop, on_deinit).",
                           lifecycle_label_names, 4);
     TEN_ASSERT(self->service_hub.metric_extension_lifecycle_duration_us,
                "Should not happen.");
@@ -78,6 +80,15 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
     TEN_ASSERT(
         self->service_hub.metric_extension_callback_execution_duration_us,
         "Should not happen.");
+
+    const char *graph_label_names[] = {"app_uri", "graph_id"};
+    self->service_hub.metric_graph_startup_duration_us = ten_metric_create(
+        self->service_hub.service_hub, 1, "graph_startup_duration",
+        "The duration (in micro-seconds) from receiving a start_graph command "
+        "until all local extension threads are ready to start their lifecycle.",
+        graph_label_names, 2);
+    TEN_ASSERT(self->service_hub.metric_graph_startup_duration_us,
+               "Should not happen.");
   }
 }
 
@@ -116,6 +127,12 @@ void ten_app_service_hub_destroy_metric(ten_app_t *self) {
     ten_metric_destroy(
         self->service_hub.metric_extension_callback_execution_duration_us);
     self->service_hub.metric_extension_callback_execution_duration_us = NULL;
+  }
+
+  if (self->service_hub.metric_graph_startup_duration_us) {
+    TEN_ASSERT(self->service_hub.service_hub, "Should not happen.");
+    ten_metric_destroy(self->service_hub.metric_graph_startup_duration_us);
+    self->service_hub.metric_graph_startup_duration_us = NULL;
   }
 }
 

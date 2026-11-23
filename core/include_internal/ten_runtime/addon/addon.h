@@ -8,6 +8,8 @@
 
 #include "ten_runtime/ten_config.h"
 
+#include <stdint.h>
+
 #include "include_internal/ten_runtime/addon/common/store.h"
 #include "include_internal/ten_runtime/binding/common.h"
 #include "ten_runtime/addon/addon.h"
@@ -62,6 +64,10 @@ typedef struct ten_addon_context_t {
 
   ten_env_addon_destroy_instance_done_cb_t destroy_instance_done_cb;
   void *destroy_instance_done_cb_data;
+
+  // Per-request timing survives asynchronous addon creation and thread handoff.
+  int64_t creation_start_time_us;
+  int64_t creation_duration_us;
 } ten_addon_context_t;
 
 typedef struct ten_addon_t {

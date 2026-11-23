@@ -24,6 +24,7 @@ void ten_service_hub_init(ten_service_hub_t *self) {
   self->metric_extension_lifecycle_duration_us = NULL;
   self->metric_extension_cmd_processing_duration_us = NULL;
   self->metric_extension_callback_execution_duration_us = NULL;
+  self->metric_graph_startup_duration_us = NULL;
 }
 
 static bool is_telemetry_metrics_enabled(ten_value_t *value) {

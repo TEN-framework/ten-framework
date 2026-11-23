@@ -54,6 +54,7 @@ pub mod config;
 pub mod exporter;
 pub mod http_endpoint;
 pub mod metrics;
+mod runtime_stats;
 
 // Re-export commonly used items
 pub use config::{

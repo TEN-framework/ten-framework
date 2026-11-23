@@ -27,8 +27,36 @@
 #include "ten_utils/container/list.h"
 #include "ten_utils/io/runloop.h"
 #include "ten_utils/lib/smart_ptr.h"
+#include "ten_utils/lib/time.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_rust/ten_rust.h"
+#endif
+
+static void ten_engine_record_graph_startup_duration(ten_engine_t *self) {
+  int64_t started_us = self->graph_startup_start_time_us;
+  self->graph_startup_start_time_us = 0;
+  if (started_us <= 0 || self->is_closing) {
+    return;
+  }
+
+  self->graph_startup_duration_us = ten_current_time_us() - started_us;
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_app_t *app = self->app;
+  MetricHandle *metric = app->service_hub.metric_graph_startup_duration_us;
+  if (!metric) {
+    return;
+  }
+
+  const char *label_values[] = {ten_app_get_uri(app),
+                                ten_engine_get_id(self, true)};
+  ten_metric_gauge_set(metric, (double)self->graph_startup_duration_us,
+                       label_values, 2);
+#endif
+}
 
 // The 'cmd' parameter is the command triggers the enabling of extension system.
 // If there is no command to trigger the enabling, this parameter would be NULL.
@@ -147,12 +175,14 @@ static void ten_engine_check_if_all_extension_threads_are_ready(
 
     ten_shared_ptr_t *cmd_result = NULL;
     if (error_occurred) {
+      self->graph_startup_start_time_us = 0;
       TEN_LOGE("[%s] Failed to start the graph successfully, shutting it down",
                ten_engine_get_id(self, true));
 
       cmd_result = ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR,
                                                   original_start_graph_cmd);
     } else {
+      ten_engine_record_graph_startup_duration(self);
       TEN_LOGD("[%s] All extension threads are initted",
                ten_app_get_uri(self->app));
 
@@ -298,14 +328,13 @@ void ten_engine_on_extension_stop_done_task(void *self_, TEN_UNUSED void *arg) {
            ten_engine_get_id(self, true));
 
   ten_list_foreach (&extension_context->extension_threads, iter) {
-    ten_extension_thread_t *extension_thread =
-        ten_ptr_listnode_get(iter.node);
+    ten_extension_thread_t *extension_thread = ten_ptr_listnode_get(iter.node);
     TEN_ASSERT(extension_thread, "Should not happen.");
 
     int rc = ten_runloop_post_task_tail(
         ten_extension_thread_get_attached_runloop(extension_thread),
-        ten_extension_thread_on_all_extensions_stop_done_task,
-        extension_thread, NULL);
+        ten_extension_thread_on_all_extensions_stop_done_task, extension_thread,
+        NULL);
     if (rc) {
       TEN_LOGW("Failed to post task to extension thread's runloop: %d", rc);
       TEN_ASSERT(0, "Should not happen.");

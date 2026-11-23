@@ -60,6 +60,33 @@ fn main() {
             .define("CLINGO_BUILD_APPS", "OFF")
             .define("CLASP_BUILD_APP", "OFF");
 
+        if target_os.as_str() == "windows" && target_env == "msvc" {
+            let static_crt = env::var("CARGO_CFG_TARGET_FEATURE")
+                .unwrap_or_default()
+                .split(',')
+                .any(|feature| feature == "crt-static");
+            let runtime = if static_crt {
+                "MultiThreaded"
+            } else {
+                "MultiThreadedDLL"
+            };
+            // Rust uses the non-debug CRT even in its debug profile. Keep
+            // CMake from appending /MDd or /MTd to Clingo's Debug build.
+            config
+                .static_crt(static_crt)
+                .define("CMAKE_POLICY_DEFAULT_CMP0091", "NEW")
+                .define("CMAKE_MSVC_RUNTIME_LIBRARY", runtime);
+
+            // Forward the selection explicitly because cmake-rs supplies -T.
+            println!("cargo:rerun-if-changed=clingo");
+            println!("cargo:rerun-if-env-changed=CMAKE_GENERATOR_TOOLSET");
+            if let Ok(toolset) = env::var("CMAKE_GENERATOR_TOOLSET") {
+                if !toolset.is_empty() {
+                    config.generator_toolset(toolset);
+                }
+            }
+        }
+
         // For MinGW on Windows, specify the MinGW Makefiles generator
         // to ensure correct library file naming (libclingo.a instead of clingo.lib)
         if target_os.as_str() == "windows" && target_env == "gnu" {

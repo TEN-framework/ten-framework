@@ -544,8 +544,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
     // Determine API endpoint.
     let api_endpoint = api_config.map(|(host, port)| format!("{host}:{port}"));
 
-    // Get Prometheus registry only if we need it (when telemetry endpoint exists).
-    // This avoids creating unnecessary Registry for Console/OTLP exporters.
+    // Only Prometheus exports need a registry for the HTTP metrics endpoint.
     let registry = if telemetry_endpoint.is_some() {
         match metrics_exporter.get_prometheus_registry() {
             Some(reg) => Some(reg),
@@ -573,7 +572,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
     }
 
     // Create the HTTP server with retry mechanism (only if we have endpoints).
-    // For Console/OTLP exporters without HTTP endpoints, we can skip the server.
+    // Console, OTLP, and local metrics do not need a metrics HTTP server.
     let (server_thread_handle, server_thread_shutdown_tx) =
         if telemetry_endpoint.is_some() || api_endpoint.is_some() {
             match create_service_hub_server_with_retry(
@@ -595,8 +594,8 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 }
             }
         } else {
-            // No HTTP endpoints needed (e.g., Console or OTLP exporter).
-            tracing::info!("No HTTP endpoints configured (using push-based or console exporter)");
+            // No HTTP endpoints needed for metrics or the API.
+            tracing::info!("No HTTP endpoints configured for the service hub");
             (None, None)
         };
 

@@ -32,6 +32,7 @@
 #include "ten_utils/lib/json.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/lib/time.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
@@ -79,7 +80,16 @@ ten_cmd_start_graph_t *ten_raw_cmd_start_graph_create(void) {
   ten_value_init_string(&self->predefined_graph_name);
   ten_value_init_string(&self->graph_json);
 
+  self->received_time_us = 0;
+
   return self;
+}
+
+void ten_cmd_start_graph_mark_received(ten_shared_ptr_t *self) {
+  ten_cmd_start_graph_t *cmd = get_raw_cmd(self);
+  if (cmd->received_time_us == 0) {
+    cmd->received_time_us = ten_current_time_us();
+  }
 }
 
 ten_shared_ptr_t *ten_cmd_start_graph_create(void) {
@@ -536,8 +546,7 @@ bool ten_cmd_start_graph_get_sync_stop_before_deinit(ten_shared_ptr_t *self) {
   TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
 
-  return ten_raw_cmd_start_graph_get_sync_stop_before_deinit(
-      get_raw_cmd(self));
+  return ten_raw_cmd_start_graph_get_sync_stop_before_deinit(get_raw_cmd(self));
 }
 
 bool ten_cmd_start_graph_set_predefined_graph_name(

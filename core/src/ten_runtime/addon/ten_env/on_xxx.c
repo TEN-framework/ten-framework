@@ -24,6 +24,7 @@
 #include "ten_runtime/addon/addon.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/ten_env/ten_env.h"
+#include "ten_utils/lib/time.h"
 #include "ten_utils/macro/check.h"
 
 static void ten_extension_addon_on_create_instance_done(ten_env_t *self,
@@ -42,6 +43,11 @@ static void ten_extension_addon_on_create_instance_done(ten_env_t *self,
 
   ten_addon_context_t *addon_context = (ten_addon_context_t *)context;
   TEN_ASSERT(addon_context, "Invalid argument.");
+
+  if (addon_context->creation_start_time_us > 0) {
+    addon_context->creation_duration_us =
+        ten_current_time_us() - addon_context->creation_start_time_us;
+  }
 
   TEN_ASSERT(addon_context->create_instance_done_cb, "Should not happen.");
 
