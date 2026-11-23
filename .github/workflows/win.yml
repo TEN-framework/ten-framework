@@ -34,6 +34,8 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      # Cargo's native CMake builds must reuse the selected MSVC environment.
+      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
       # Must use nightly for MinGW, otherwise error[E0554] will be triggered
       # when rustc is building tman.exe, because sysinfo 0.32 uses
       # "#![cfg_attr(target_os = "windows", feature(windows_by_handle))]"
@@ -268,6 +270,7 @@ jobs:
             $buildArgs += "ten_enable_nodejs_binding=false"
           } else {
             Write-Host "MSVC toolset: $env:VCToolsVersion"
+            Write-Host "Rust CMake generator: $env:CMAKE_GENERATOR_x86_64_pc_windows_msvc"
             clang-cl --version
             $buildArgs += "is_mingw=false" # msvc
             $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
@@ -828,6 +831,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1111,6 +1115,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1288,6 +1293,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1388,6 +1394,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
+      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
     strategy:
       matrix:
         build_type: [debug, release]
