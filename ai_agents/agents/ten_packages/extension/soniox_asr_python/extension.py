@@ -26,7 +26,7 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     ModuleErrorVendorInfo,
 )
-from ten_runtime import AsyncTenEnv, AudioFrame, Data
+from ten_runtime import AsyncTenEnv, AudioFrame, Cmd, CmdResult, Data, StatusCode
 from typing_extensions import override
 
 from .config import (
@@ -35,7 +35,8 @@ from .config import (
     HoldingMode,
     SonioxASRConfig,
 )
-from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .agent_text import chunk_agent_text, parse_agent_text_update
+from .const import AGENT_TEXT_MAX_CHUNK_CHARS, DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
 from .reconnect_manager import ReconnectManager
 from .dumper import Dumper
 from .text_utils import SentenceBoundaryDetector
@@ -218,6 +219,69 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         if model:
             metadata["model"] = model
         return metadata
+
+    @override
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        if cmd.get_name() != "update_configs":
+            await super().on_cmd(ten_env, cmd)
+            return
+        await self._handle_update_configs(ten_env, cmd)
+
+    async def _handle_update_configs(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        result = CmdResult.create(StatusCode.OK, cmd)
+        try:
+            payload_json, payload_error = cmd.get_property_to_json(None)
+            if payload_error:
+                raise ValueError("missing update_configs payload")
+            payload = json.loads(payload_json)
+            params = payload.get("params")
+            if not isinstance(params, dict):
+                await ten_env.return_result(result)
+                return
+            parsed = parse_agent_text_update(params)
+            if parsed is None:
+                await ten_env.return_result(result)
+                return
+            text, end_of_segment = parsed
+            await self._forward_agent_text_update(
+                ten_env,
+                text,
+                end_of_segment=end_of_segment,
+            )
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            result = CmdResult.create(StatusCode.ERROR, cmd)
+            result.set_property_string("message", str(exc)[:512])
+        await ten_env.return_result(result)
+
+    async def _forward_agent_text_update(
+        self,
+        ten_env: AsyncTenEnv,
+        text: str,
+        *,
+        end_of_segment: bool,
+    ) -> None:
+        if self.config is None or not self.config.supports_agent_text_input():
+            ten_env.log_warn(
+                "agent_text update_configs skipped: enable_agent_text_input "
+                "and stt-rt-v6 model required",
+            )
+            return
+        if self.websocket is None or not self.connected:
+            ten_env.log_warn(
+                "agent_text update_configs skipped: websocket not connected",
+            )
+            return
+        chunks = chunk_agent_text(
+            text,
+            AGENT_TEXT_MAX_CHUNK_CHARS,
+            end_of_segment,
+        )
+        for piece, end in chunks:
+            await self.websocket.send_agent_text(piece, end_of_segment=end)
+        ten_env.log_debug(
+            f"agent_text forwarded: chunks={len(chunks)}, "
+            f"chars={len(text)}, end_of_segment={end_of_segment}",
+        )
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
