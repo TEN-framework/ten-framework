@@ -467,7 +467,7 @@ jobs:
 
   test-standalone:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -703,7 +703,7 @@ jobs:
 
   test-integration-ten-manager:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -871,7 +871,7 @@ jobs:
 
   test-integration-cpp:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1035,7 +1035,7 @@ jobs:
 
   test-integration-go:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         compiler: [gcc, clang]
@@ -1483,7 +1483,7 @@ jobs:
 
   test-integration-nodejs:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         compiler: [gcc, clang]
