@@ -34,8 +34,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
-      # Cargo's native CMake builds must reuse the selected MSVC environment.
-      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
+      CMAKE_GENERATOR_TOOLSET: ${{ matrix.compiler == 'msvc' && 'v143,host=x64' || '' }}
       # Must use nightly for MinGW, otherwise error[E0554] will be triggered
       # when rustc is building tman.exe, because sysinfo 0.32 uses
       # "#![cfg_attr(target_os = "windows", feature(windows_by_handle))]"
@@ -270,7 +269,7 @@ jobs:
             $buildArgs += "ten_enable_nodejs_binding=false"
           } else {
             Write-Host "MSVC toolset: $env:VCToolsVersion"
-            Write-Host "Rust CMake generator: $env:CMAKE_GENERATOR_x86_64_pc_windows_msvc"
+            Write-Host "CMake toolset: $env:CMAKE_GENERATOR_TOOLSET"
             clang-cl --version
             $buildArgs += "is_mingw=false" # msvc
             $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
@@ -290,6 +289,26 @@ jobs:
 
           tgn gen win x64 ${{ matrix.build_type }} -- $argsString
           tgn build win x64 ${{ matrix.build_type }}
+
+      - name: Show Clingo CMake configuration on failure
+        if: failure() && matrix.compiler == 'msvc'
+        shell: pwsh
+        run: |
+          $caches = Get-ChildItem out/win/x64/gen -Recurse -Filter CMakeCache.txt -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match 'clingo-sys' }
+          foreach ($cache in $caches) {
+            Write-Host "Clingo CMake cache: $($cache.FullName)"
+            Select-String -Path $cache.FullName -Pattern '^CMAKE_(BUILD_TYPE|CXX_COMPILER|CXX_FLAGS|GENERATOR|MSVC_RUNTIME_LIBRARY|VS_PLATFORM_TOOLSET|POLICY_DEFAULT_CMP0091)'
+            $compilers = Get-ChildItem "$($cache.DirectoryName)/CMakeFiles/*/CMakeCXXCompiler.cmake" -ErrorAction SilentlyContinue
+            foreach ($compiler in $compilers) {
+              Select-String -Path $compiler.FullName -Pattern '^set\(CMAKE_CXX_COMPILER(_VERSION|_ID)? '
+            }
+            $library = Join-Path (Split-Path $cache.DirectoryName -Parent) 'lib/clingo.lib'
+            if (Test-Path $library) {
+              Write-Host "Clingo exported symbols: $library"
+              dumpbin /linkermember:1 $library | Select-String -Pattern 'clingo_control_new|clingo_error_code'
+            }
+          }
 
       - name: Update supports before upload or publish
         continue-on-error: true
@@ -831,7 +850,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
-      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
+      CMAKE_GENERATOR_TOOLSET: ${{ matrix.compiler == 'msvc' && 'v143,host=x64' || '' }}
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1115,7 +1134,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
-      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
+      CMAKE_GENERATOR_TOOLSET: ${{ matrix.compiler == 'msvc' && 'v143,host=x64' || '' }}
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1293,7 +1312,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
-      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
+      CMAKE_GENERATOR_TOOLSET: ${{ matrix.compiler == 'msvc' && 'v143,host=x64' || '' }}
     strategy:
       matrix:
         build_type: [debug, release]
@@ -1394,7 +1413,7 @@ jobs:
     runs-on: windows-latest
     env:
       PYTHONIOENCODING: utf-8
-      CMAKE_GENERATOR_x86_64_pc_windows_msvc: Ninja
+      CMAKE_GENERATOR_TOOLSET: ${{ matrix.compiler == 'msvc' && 'v143,host=x64' || '' }}
     strategy:
       matrix:
         build_type: [debug, release]

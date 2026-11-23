@@ -76,6 +76,15 @@ fn main() {
                 .static_crt(static_crt)
                 .define("CMAKE_POLICY_DEFAULT_CMP0091", "NEW")
                 .define("CMAKE_MSVC_RUNTIME_LIBRARY", runtime);
+
+            // Forward the selection explicitly because cmake-rs supplies -T.
+            println!("cargo:rerun-if-changed=clingo");
+            println!("cargo:rerun-if-env-changed=CMAKE_GENERATOR_TOOLSET");
+            if let Ok(toolset) = env::var("CMAKE_GENERATOR_TOOLSET") {
+                if !toolset.is_empty() {
+                    config.generator_toolset(toolset);
+                }
+            }
         }
 
         // For MinGW on Windows, specify the MinGW Makefiles generator
