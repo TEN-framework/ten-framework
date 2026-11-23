@@ -130,9 +130,12 @@ jobs:
         with:
           node-version: 20
 
+      # The default VS 2026 STL needs Clang 22; v143 supports runner LLVM 20.
       - name: Setup MSVC
         if: matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: "14.44"
 
       - uses: actions/setup-python@v5
         with:
@@ -264,6 +267,8 @@ jobs:
             $buildArgs += "is_clang=false"
             $buildArgs += "ten_enable_nodejs_binding=false"
           } else {
+            Write-Host "MSVC toolset: $env:VCToolsVersion"
+            clang-cl --version
             $buildArgs += "is_mingw=false" # msvc
             $buildArgs += "is_clang=true" # choose to use clang-cl.exe instead of cl.exe, the latter does not work yet
             $buildArgs += "vs_version=2026"
@@ -862,6 +867,8 @@ jobs:
       - name: Setup MSVC
         if: matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: "14.44"
 
       - uses: actions/setup-python@v5
         with:
@@ -1142,6 +1149,8 @@ jobs:
       - name: Setup MSVC
         if: matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: "14.44"
 
       - uses: actions/setup-python@v5
         with:
@@ -1317,6 +1326,8 @@ jobs:
       - name: Setup MSVC
         if: matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: "14.44"
 
       - uses: actions/setup-python@v5
         with:
@@ -1415,6 +1426,8 @@ jobs:
       - name: Setup MSVC
         if: matrix.compiler == 'msvc'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: "14.44"
 
       - uses: actions/setup-python@v5
         with:
