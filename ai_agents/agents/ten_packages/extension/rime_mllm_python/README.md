@@ -52,7 +52,9 @@ The extension emits TEN's standard interruption event when Prism confirms caller
 
 RTC flush clears local pending audio and its sender buffer. It does not acknowledge what the receiving browser played or remove all audio buffered there. A short tail may remain audible. No playback position, client completion, or conversation truncation is inferred. Prism uses its server-side playback estimate.
 
-Only final captions are forwarded. Caller transcription can arrive after the associated reply, so captions can appear out of conversational order. An interrupted reply may not produce a final caption. This avoids requiring partial-caption queue changes in the shared collector.
+Only final captions are forwarded. A final caption means the generated transcript is complete; it is not a playback acknowledgment. If caller speech interrupts queued audio after its final caption was emitted, that caption remains. Audio and final text arriving after the interruption are discarded for that reply. Captions limited to words the caller actually heard would require receiving-client playback feedback, which the RTC extension does not expose.
+
+Caller transcription can arrive after the associated reply, so captions can appear out of conversational order. An interrupted reply may not produce a final caption. This avoids requiring partial-caption queue changes in the shared collector.
 
 Fatal errors stop and join this extension's audio/transport work and emit TEN's standard MLLM `error` data with vendor code. The host application must consume fatal errors and end the room as appropriate; the stock controller does not close the app for these events. Recoverable errors leave the session active. Provider error messages exclude raw server payloads and credentials.
 

@@ -180,8 +180,9 @@ class RimeRealtimeExtension(AsyncMLLMBaseExtension):
         self._pending_text = item.content
 
     async def send_client_create_response(self, session_id=None):
-        await self.connection.trigger(self._pending_text)
+        text = self._pending_text
         self._pending_text = None
+        await self.connection.trigger(text)
 
     async def send_client_register_tool(self, _tool):
         await self._report(

@@ -138,6 +138,144 @@ async def test_pcm_captions_late_transcripts_and_interrupted_audio(
 
 
 @pytest.mark.asyncio
+async def test_full_reply_queue_does_not_replay_rejected_text(
+    peer, ten_modules
+):
+    environment = ten_modules.environment(
+        {"endpoint": peer.url, "api_key": "test-only"}
+    )
+    extension = ten_modules.extension.RimeRealtimeExtension("v2v")
+    await extension.on_init(environment)
+    await extension.on_start(environment)
+    await next_data(environment, "mllm_server_session_ready")
+
+    async def request_text(text):
+        await extension.on_data(
+            environment,
+            ten_modules.message(
+                "mllm_client_request_message_item",
+                {"message": {"role": "user", "content": text}},
+            ),
+        )
+        await extension.on_data(
+            environment,
+            ten_modules.message("mllm_client_request_create_response"),
+        )
+
+    try:
+        for index in range(8):
+            await request_text(f"Queued {index}")
+        await request_text("Rejected request")
+        error = await next_data(environment, "error")
+        assert error["vendor_info"]["code"] == "trigger_queue_full"
+        assert error["code"] > 0
+        assert extension.is_connected()
+
+        await extension.connection._dispatch(
+            {"type": "prism.typed_input.ready"}
+        )
+        request = await peer.request("response.create")
+        assert request["response"]["prism_input_text"] == "Queued 0"
+        await extension.connection._dispatch(
+            {
+                "type": "response.created",
+                "response": {"id": "reply_0"},
+                "prism_request_event_id": request["event_id"],
+            }
+        )
+        await request_text("Fresh request")
+
+        for index in range(1, 9):
+            await extension.connection._dispatch(
+                {
+                    "type": "response.done",
+                    "response": {
+                        "id": f"reply_{index - 1}",
+                        "status": "completed",
+                    },
+                }
+            )
+            await extension.connection._dispatch(
+                {"type": "prism.typed_input.ready"}
+            )
+            request = await peer.request("response.create")
+            expected = f"Queued {index}" if index < 8 else "Fresh request"
+            assert request["response"]["prism_input_text"] == expected
+            await extension.connection._dispatch(
+                {
+                    "type": "response.created",
+                    "response": {"id": f"reply_{index}"},
+                    "prism_request_event_id": request["event_id"],
+                }
+            )
+        assert environment.data.empty()
+    finally:
+        await extension.on_stop(environment)
+
+
+@pytest.mark.asyncio
+async def test_final_transcript_precedes_playback_and_survives_later_interrupt(
+    peer, ten_modules
+):
+    environment = ten_modules.environment(
+        {"endpoint": peer.url, "api_key": "test-only"}
+    )
+    extension = ten_modules.extension.RimeRealtimeExtension("v2v")
+    await extension.on_init(environment)
+    await extension.on_start(environment)
+    await next_data(environment, "mllm_server_session_ready")
+    audio = base64.b64encode(b"\1\0" * 24).decode()
+    try:
+        for event in [
+            {"type": "response.created", "response": {"id": "reply"}},
+            {
+                "type": "response.audio.delta",
+                "response_id": "reply",
+                "delta": audio,
+            },
+            {
+                "type": "response.text.done",
+                "response_id": "reply",
+                "text": "The generated reply",
+            },
+            {
+                "type": "response.done",
+                "response": {"id": "reply", "status": "completed"},
+            },
+        ]:
+            await extension.connection._dispatch(event)
+        transcript = await next_data(
+            environment, "mllm_server_output_transcript"
+        )
+        assert transcript["content"] == "The generated reply"
+        assert transcript["final"]
+        assert environment.audio.qsize() == 1
+
+        await extension.connection._dispatch(
+            {"type": "input_audio_buffer.speech_started"}
+        )
+        await next_data(environment, "mllm_server_interrupted")
+        await extension.connection._dispatch(
+            {
+                "type": "response.audio.delta",
+                "response_id": "reply",
+                "delta": audio,
+            }
+        )
+        await extension.connection._dispatch(
+            {
+                "type": "response.text.done",
+                "response_id": "reply",
+                "text": "Late text from the interrupted reply",
+            }
+        )
+        assert environment.data.empty()
+        assert environment.audio.qsize() == 1
+    finally:
+        await extension.on_stop(environment)
+
+
+@pytest.mark.asyncio
 async def test_audio_backlog_is_fatal_and_clears_stale_input(peer, ten_modules):
     environment = ten_modules.environment(
         {"endpoint": peer.url, "api_key": "test-only"}
