@@ -2,16 +2,6 @@
 
 `rime_mllm_python` connects TEN's standard MLLM interface to [Rime Prism](https://docs.rime.ai/docs/prism/overview), a speech-to-speech model. It uses `aiohttp` WebSockets and supports Python 3.10.
 
-## Scope
-
-- Continuous microphone input: headerless, little-endian PCM16, 16 kHz, mono. The extension sends 20 ms frames, padding silence between microphone frames so server turn detection continues while muted.
-- Spoken replies: headerless, little-endian PCM16, 24 kHz, mono, delivered through TEN's MLLM audio helper.
-- Automatic server turn detection and standard TEN interruption notifications.
-- Final caller and assistant captions through the existing controller and `message_collector2`.
-- Standard TEN user-text and create-response messages, including the controller's greeting. Greetings wait for Prism's typed-input readiness; new caller speech supersedes queued greetings.
-
-Tools, history loading, partial captions, live configuration, manual turn controls, response review, and recording controls are outside this version. Tool registration/results and history loading report recoverable errors rather than simulating support.
-
 ## Add to an existing realtime app
 
 Start with `ai_agents/agents/examples/voice-assistant-realtime`. Keep its controller, caption collector, and audio connections. No shared extensions or predefined graphs need to change in the repository.
