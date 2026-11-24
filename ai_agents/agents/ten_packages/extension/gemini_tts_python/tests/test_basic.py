@@ -379,7 +379,7 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
 
     async def send_audio_data(extension, audio_data):
         nonlocal clock_ms
-        request_id = extension.current_audio_request_id
+        request_id = extension.current_request_id
         sent_audio_requests.append(request_id)
         clock_ms += 20
         await original_send_audio_data(extension, audio_data)
@@ -669,7 +669,10 @@ def test_extension_lifecycle_accounting_and_recovery(
 
     class FakeClient:
         def __init__(self, **_kwargs):
-            self.aio = SimpleNamespace(interactions=FakeAsyncInteractions())
+            self.aio = SimpleNamespace(
+                interactions=FakeAsyncInteractions(),
+                aclose=AsyncMock(),
+            )
 
     original_send_audio_data = (
         tts2_http.AsyncTTS2HttpExtension.send_tts_audio_data
