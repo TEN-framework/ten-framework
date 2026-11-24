@@ -16,6 +16,12 @@ use std::path::Path;
 use anyhow::Result;
 use json5;
 use jsonschema::Validator;
+use once_cell::sync::{Lazy, OnceCell};
+
+static MANIFEST_VALIDATOR: OnceCell<Validator> = OnceCell::new();
+static INTERFACE_VALIDATOR: OnceCell<Validator> = OnceCell::new();
+static PROPERTY_VALIDATOR: Lazy<Validator> =
+    Lazy::new(|| load_schema(definition::PROPERTY_SCHEMA_DEFINITION));
 
 fn load_schema(content: &str) -> Validator {
     // Use json5 to strip comments from the json string.
@@ -53,9 +59,7 @@ fn load_schema_with_shared_definitions(
     Ok(jsonschema::validator_for(&main_schema)?)
 }
 
-fn validate_json_object(json: &serde_json::Value, schema_str: &str) -> Result<()> {
-    let validator = load_schema(schema_str);
-
+fn validate_json_object(json: &serde_json::Value, validator: &Validator) -> Result<()> {
     match validator.validate(json) {
         Ok(()) => Ok(()),
         Err(_) => {
@@ -71,20 +75,12 @@ fn validate_json_object(json: &serde_json::Value, schema_str: &str) -> Result<()
 fn validate_json_object_with_shared_definitions(
     json: &serde_json::Value,
     schema_str: &str,
-    shared_definitions: &str,
+    validator: &OnceCell<Validator>,
 ) -> Result<()> {
-    let validator = load_schema_with_shared_definitions(schema_str, shared_definitions)?;
-
-    match validator.validate(json) {
-        Ok(()) => Ok(()),
-        Err(_) => {
-            let mut msgs = String::new();
-            for error in validator.iter_errors(json) {
-                msgs.push_str(&format!("{} @ {}\n", error, error.instance_path));
-            }
-            Err(anyhow::anyhow!("{}", msgs))
-        }
-    }
+    let validator = validator.get_or_try_init(|| {
+        load_schema_with_shared_definitions(schema_str, definition::SHARED_DEFINITIONS_SCHEMA)
+    })?;
+    validate_json_object(json, validator)
 }
 
 pub fn ten_validate_manifest_json_string(data: &str) -> Result<()> {
@@ -92,7 +88,7 @@ pub fn ten_validate_manifest_json_string(data: &str) -> Result<()> {
     validate_json_object_with_shared_definitions(
         &manifest_json,
         definition::MANIFEST_SCHEMA_DEFINITION,
-        definition::SHARED_DEFINITIONS_SCHEMA,
+        &MANIFEST_VALIDATOR,
     )
 }
 
@@ -104,13 +100,16 @@ pub fn ten_validate_manifest_json_file(file_path: &str) -> Result<()> {
     validate_json_object_with_shared_definitions(
         &manifest_json,
         definition::MANIFEST_SCHEMA_DEFINITION,
-        definition::SHARED_DEFINITIONS_SCHEMA,
+        &MANIFEST_VALIDATOR,
     )
 }
 
 pub fn validate_manifest_lock_json_string(data: &str) -> Result<()> {
     let manifest_lock_json: serde_json::Value = serde_json::from_str(data)?;
-    validate_json_object(&manifest_lock_json, definition::MANIFEST_LOCK_SCHEMA_DEFINITION)
+    validate_json_object(
+        &manifest_lock_json,
+        &load_schema(definition::MANIFEST_LOCK_SCHEMA_DEFINITION),
+    )
 }
 
 pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
@@ -118,12 +117,15 @@ pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
     let reader = std::io::BufReader::new(file);
     let manifest_lock_json: serde_json::Value = serde_json::from_reader(reader)?;
 
-    validate_json_object(&manifest_lock_json, definition::MANIFEST_LOCK_SCHEMA_DEFINITION)
+    validate_json_object(
+        &manifest_lock_json,
+        &load_schema(definition::MANIFEST_LOCK_SCHEMA_DEFINITION),
+    )
 }
 
 pub fn ten_validate_property_json_string(data: &str) -> Result<()> {
     let property_json: serde_json::Value = serde_json::from_str(data)?;
-    validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
+    validate_json_object(&property_json, &PROPERTY_VALIDATOR)
 }
 
 pub fn ten_validate_property_json_file<P: AsRef<Path>>(file_path: P) -> Result<()> {
@@ -131,7 +133,7 @@ pub fn ten_validate_property_json_file<P: AsRef<Path>>(file_path: P) -> Result<(
     let reader = std::io::BufReader::new(file);
     let property_json: serde_json::Value = serde_json::from_reader(reader)?;
 
-    validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
+    validate_json_object(&property_json, &PROPERTY_VALIDATOR)
 }
 
 pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {
@@ -139,7 +141,7 @@ pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {
     validate_json_object_with_shared_definitions(
         &interface_json,
         definition::INTERFACE_SCHEMA_DEFINITION,
-        definition::SHARED_DEFINITIONS_SCHEMA,
+        &INTERFACE_VALIDATOR,
     )
 }
 
@@ -151,6 +153,6 @@ pub fn ten_validate_interface_json_file<P: AsRef<Path>>(file_path: P) -> Result<
     validate_json_object_with_shared_definitions(
         &interface_json,
         definition::INTERFACE_SCHEMA_DEFINITION,
-        definition::SHARED_DEFINITIONS_SCHEMA,
+        &INTERFACE_VALIDATOR,
     )
 }

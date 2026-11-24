@@ -30,6 +30,7 @@
 #include "include_internal/ten_runtime/timer/timer.h"
 #include "ten_runtime/app/app.h"
 #include "ten_utils/io/runloop.h"
+#include "ten_utils/lib/time.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -102,22 +103,6 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
 
   TEN_LOGI("[%s] on_configure() done", ten_extension_get_name(extension, true));
 
-#if defined(TEN_ENABLE_TEN_RUST_APIS)
-  // Record the duration from on_configure to on_configure_done
-  if (extension->lifecycle_on_configure_start_time_us > 0) {
-    int64_t duration_us =
-        ten_current_time_us() - extension->lifecycle_on_configure_start_time_us;
-    ten_extension_record_lifecycle_duration(extension, "on_configure",
-                                            duration_us);
-
-    // Warn if the lifecycle stage took too long
-    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
-      TEN_LOGW("[%s] on_configure() took %" PRId64 " us",
-               ten_extension_get_name(extension, true), duration_us);
-    }
-  }
-#endif
-
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
   ten_extension_thread_t *extension_thread = extension->extension_thread;
@@ -141,9 +126,11 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
+  int64_t started_us = ten_current_time_us();
   bool rc = ten_handle_manifest_info_when_on_configure_done(
       &extension->manifest_info, ten_extension_get_base_dir(extension),
       &extension->manifest, &err);
+  int64_t manifest_loaded_us = ten_current_time_us();
   if (!rc) {
     TEN_LOGW("Failed to load extension manifest data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
@@ -153,6 +140,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   rc = ten_handle_property_info_when_on_configure_done(
       &extension->property_info, ten_extension_get_base_dir(extension),
       &extension->property, &err);
+  int64_t property_loaded_us = ten_current_time_us();
   if (!rc) {
     TEN_LOGW("Failed to load extension property data, FATAL ERROR");
     // NOLINTNEXTLINE(concurrency-mt-unsafe)
@@ -160,8 +148,10 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   }
 
   ten_extension_merge_properties_from_graph(extension);
+  int64_t property_merged_us = ten_current_time_us();
 
   rc = ten_extension_resolve_properties(extension, &err);
+  int64_t property_resolved_us = ten_current_time_us();
   if (!rc) {
     TEN_LOGW(
         "Failed to resolve properties in graph: %s, use the raw property data "
@@ -180,11 +170,14 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   // thread-check: This function is called on the extension thread.
   TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
+  int64_t schema_started_us = ten_current_time_us();
   ten_metadata_init_schema_store(&extension->manifest, &extension->schema_store,
                                  ten_extension_get_base_dir(extension),
                                  ten_app_get_base_dir(app));
+  int64_t schema_built_us = ten_current_time_us();
 
   ten_extension_adjust_and_validate_property_on_configure_done(extension);
+  int64_t property_checked_us = ten_current_time_us();
 
   // Create timers for automatically cleaning expired IN_PATHs and OUT_PATHs.
   ten_timer_t *in_path_timer =
@@ -207,6 +200,35 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   }
 
   ten_error_deinit(&err);
+
+  int64_t finished_us = ten_current_time_us();
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  if (!rc && extension->lifecycle_on_configure_start_time_us > 0) {
+    int64_t duration_us =
+        finished_us - extension->lifecycle_on_configure_start_time_us;
+    ten_extension_record_lifecycle_duration(extension, "on_configure",
+                                            duration_us);
+
+    if (duration_us > TEN_EXTENSION_ON_XXX_WARNING_THRESHOLD_US) {
+      TEN_LOGW("[%s] on_configure() took %" PRId64 " us",
+               ten_extension_get_name(extension, true), duration_us);
+    }
+  }
+#endif
+
+  TEN_LOGD(
+      "[%s] on_configure_done() timing: total_us=%" PRId64
+      " manifest_load_us=%" PRId64 " property_load_us=%" PRId64
+      " graph_property_merge_us=%" PRId64 " property_resolve_us=%" PRId64
+      " ten_namespace_setup_us=%" PRId64 " schema_build_us=%" PRId64
+      " property_check_us=%" PRId64 " timers_and_init_enqueue_us=%" PRId64,
+      ten_extension_get_name(extension, true), finished_us - started_us,
+      manifest_loaded_us - started_us, property_loaded_us - manifest_loaded_us,
+      property_merged_us - property_loaded_us,
+      property_resolved_us - property_merged_us,
+      schema_started_us - property_resolved_us,
+      schema_built_us - schema_started_us,
+      property_checked_us - schema_built_us, finished_us - property_checked_us);
 
   return true;
 }

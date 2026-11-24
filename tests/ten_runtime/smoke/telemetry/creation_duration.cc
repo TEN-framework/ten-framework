@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include <cstdio>
 #include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -221,6 +222,10 @@ TEST(RuntimeStatsTest, CreationIncludesAsyncWaitForEachInstance) {
     std::set<std::string> stages;
     for (const auto &stage : durations[name]) {
       stages.insert(stage.first);
+      if (stage.first == "on_configure") {
+        std::printf("[%s] extension_lifecycle_duration on_configure=%.0f us\n",
+                    name, stage.second);
+      }
     }
     EXPECT_EQ(stages, expected_stages) << name;
     if (durations[name].count("creation")) {
