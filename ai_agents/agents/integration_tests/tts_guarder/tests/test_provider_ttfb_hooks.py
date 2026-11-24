@@ -47,6 +47,35 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
+def test_gemini_public_interactions_boundary(monkeypatch, clock):
+    sdk = import_module("google.genai._gaos.google_genai")
+
+    class Interactions:
+        def create(self, **kwargs):
+            clock[0] = 150_000_000
+            assert kwargs["input"][0]["content"][0]["text"] == "Hello"
+            return SimpleNamespace(
+                output_audio=SimpleNamespace(data="base64-audio")
+            )
+
+    original_create = Interactions.create
+    monkeypatch.setattr(sdk, "GeminiNextGenInteractions", Interactions)
+    with install_hook("gemini_tts_python", {}, monkeypatch) as reference:
+        reference.begin_request("first")
+        create = Interactions().create
+        outputs = create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": "Hello"}],
+                }
+            ]
+        )
+        assert outputs.output_audio.data == "base64-audio"
+        assert reference.elapsed_ms("first") == 150
+    assert Interactions.create is original_create
+
+
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
     reference = Reference()
     reference.begin_request("first")
@@ -110,8 +139,9 @@ def test_azure_live_sdk_is_not_claimed_as_independent_reference():
 async def test_http_adapter_hook_tracks_input_and_first_audio(
     monkeypatch, clock
 ):
-    from .provider_ttfb_hooks.http import HttpAdapterHook
     from ten_ai_base.struct import TTS2HttpResponseEventType as Event
+
+    from .provider_ttfb_hooks.http import HttpAdapterHook
 
     class Client:
         async def get(self, text, request_id):

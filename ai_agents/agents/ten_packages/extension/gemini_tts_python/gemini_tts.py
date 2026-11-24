@@ -1,5 +1,7 @@
+import asyncio
 import base64
-from typing import Any, AsyncIterator, Tuple
+from collections.abc import AsyncIterator
+from typing import Any
 
 from google import genai
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -24,12 +26,10 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
 
     async def get(
         self, text: str, request_id: str
-    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
+    ) -> AsyncIterator[tuple[bytes | None, TTS2HttpResponseEventType]]:
         """Generate TTS audio for the given text using Gemini API"""
 
-        if self._is_cancelled:
-            self.ten_env.log_debug("Request cancelled before starting")
-            return
+        self._is_cancelled = False
 
         try:
             # Initialize Gemini client
@@ -54,16 +54,22 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             )
 
             # Prepare contents
-            contents = text
+            text_content: dict[str, Any] = {"type": "text", "text": text}
             if style_prompt:
-                contents = f"{style_prompt}\n\n{text}"
+                text_content["annotations"] = [
+                    {
+                        "type": "speech_metadata",
+                        "style": style_prompt,
+                    }
+                ]
 
-            response = self.client.interactions.create(
+            response = await asyncio.to_thread(
+                self.client.interactions.create,
                 model=model,
                 input=[
                     {
                         "type": "user_input",
-                        "content": [{"type": "text", "text": contents}],
+                        "content": [text_content],
                     }
                 ],
                 response_format={
@@ -100,7 +106,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 self.ten_env.log_error(error_msg)
                 yield error_msg.encode("utf-8"), TTS2HttpResponseEventType.ERROR
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - classify all provider failures
             error_message = str(e)
             self.ten_env.log_error(
                 f"vendor_error: reason: {error_message}",
