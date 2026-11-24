@@ -43,10 +43,6 @@ class OpenAIGPTImageConfig(BaseModel):
         if model in RETIRED_IMAGE_MODELS:
             raise ValueError(f"Retired model: {model}")
 
-        fallback_model = self.params.get("fallback_model")
-        if fallback_model and fallback_model in RETIRED_IMAGE_MODELS:
-            raise ValueError(f"Retired fallback_model: {fallback_model}")
-
         # Validate size if present
         if "size" in self.params:
             valid_sizes = ["1024x1024", "1792x1024", "1024x1792"]
@@ -70,6 +66,13 @@ class OpenAIGPTImageConfig(BaseModel):
         params.setdefault("quality", "standard")
         params.setdefault("n", 1)
         params.setdefault("response_format", "url")
+
+        fallback_model = params.get("fallback_model")
+        if (
+            isinstance(fallback_model, str)
+            and fallback_model in RETIRED_IMAGE_MODELS
+        ):
+            params.pop("fallback_model")
 
         # Remove vendor param if exists (internal only)
         params.pop("vendor", None)

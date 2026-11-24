@@ -72,17 +72,20 @@ def test_retired_models_are_rejected(model):
         config.validate()
 
 
-def test_retired_fallback_model_is_rejected():
+def test_retired_fallback_is_disabled_for_supported_primary():
     config = OpenAIGPTImageConfig(
         params={
             "api_key": "sk-test",
-            "model": "gpt-image-2.6-sunburst",
+            "model": "gpt-image-1.5",
             "fallback_model": "dall-e-3",
         }
     )
 
-    with pytest.raises(ValueError, match="Retired fallback_model"):
-        config.validate()
+    config.validate()
+    config.update_params()
+
+    assert config.params["model"] == "gpt-image-1.5"
+    assert "fallback_model" not in config.params
 
 
 @pytest.mark.parametrize("field", ["model", "fallback_model"])
