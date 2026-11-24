@@ -545,6 +545,8 @@ def test_extension_flush_cancels_audio_and_recovers(
             self.flush_ends = []
             self.errors = []
             self.received_audio_bytes = 0
+            self.audio_frames = []
+            self.ttfb_values = []
 
         def send_request(self, ten_env, request_id):
             request = TTSTextInput(
@@ -565,6 +567,14 @@ def test_extension_flush_cancels_audio_and_recovers(
             buf = audio_frame.lock_buf()
             try:
                 self.received_audio_bytes += len(buf)
+                self.audio_frames.append(
+                    {
+                        "data": bytes(buf),
+                        "sample_rate": audio_frame.get_sample_rate(),
+                        "sample_width": audio_frame.get_bytes_per_sample(),
+                        "channels": audio_frame.get_number_of_channels(),
+                    }
+                )
             finally:
                 audio_frame.unlock_buf(buf)
 
@@ -595,6 +605,8 @@ def test_extension_flush_cancels_audio_and_recovers(
             elif name == "tts_flush_end":
                 self.flush_ends.append(event)
                 self.send_request(ten_env, "second")
+            elif name == "metrics" and "ttfb" in event.get("metrics", {}):
+                self.ttfb_values.append(event["metrics"]["ttfb"])
 
     tester = FlushTester()
 
@@ -678,6 +690,15 @@ def test_extension_flush_cancels_audio_and_recovers(
         def now(cls):
             return base_time + dt.timedelta(milliseconds=clock_ms)
 
+    class ControlledTime:
+        @staticmethod
+        def monotonic():
+            return clock_ms / 1000
+
+        @staticmethod
+        def time():
+            return clock_ms / 1000
+
     monkeypatch.setattr(
         gemini_tts_module,
         "genai",
@@ -689,6 +710,7 @@ def test_extension_flush_cancels_audio_and_recovers(
         send_audio_data,
     )
     monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
+    monkeypatch.setattr(tts2_http, "time", ControlledTime)
     tester.set_test_mode_single(
         "gemini_tts_python",
         json.dumps(
@@ -710,6 +732,16 @@ def test_extension_flush_cancels_audio_and_recovers(
     if not blocked:
         assert created_streams[0].closed
     assert len(tester.flush_ends) == 1
+    assert tester.ttfb_values == ([10] if blocked else [10, 10])
+    assert all(
+        frame["sample_rate"] == 24000
+        and frame["sample_width"] == 2
+        and frame["channels"] == 1
+        for frame in tester.audio_frames
+    )
+    assert b"".join(frame["data"] for frame in tester.audio_frames) == (
+        pcm if blocked else pcm * 2
+    )
     if blocked:
         assert tester.starts == ["second"]
         assert sent_audio_requests == ["second"]
@@ -892,17 +924,17 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [1, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             0,
         ),
-        ((False, True), ["second"], [3, 1], [0, 100], [0, 20], 1),
-        (("error", True), ["second"], [3, 1], [0, 100], [0, 20], 1),
+        ((False, True), ["second"], [3, 1], [0, 100], [0, 40], 1),
+        (("error", True), ["second"], [3, 1], [0, 100], [0, 40], 1),
         (
             ("transient", True),
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 20],
+            [0, 40],
             1,
         ),
         (
@@ -910,7 +942,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 20],
+            [0, 40],
             1,
         ),
         (
@@ -918,7 +950,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 20],
+            [0, 40],
             1,
         ),
         (
@@ -926,7 +958,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             1,
         ),
         (
@@ -934,7 +966,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             1,
         ),
         (
@@ -942,7 +974,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             1,
         ),
         (
@@ -950,7 +982,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             1,
         ),
         (
@@ -958,7 +990,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [20, 20],
+            [40, 40],
             1,
         ),
     ],
@@ -985,6 +1017,7 @@ def test_extension_lifecycle_accounting_and_recovery(
     )
 
     pcm = b"\x00\x01" * 2400
+    pcm_chunks = (pcm[:2400], pcm[2400:])
     clock_ms = 0
     request_index = 0
     created_streams = []
@@ -996,6 +1029,8 @@ def test_extension_lifecycle_accounting_and_recovery(
             self.ends = []
             self.errors = []
             self.received_audio_bytes = 0
+            self.audio_frames = []
+            self.ttfb_values = []
 
         def send_request(self, ten_env, request_id):
             tts_input = TTSTextInput(
@@ -1016,6 +1051,14 @@ def test_extension_lifecycle_accounting_and_recovery(
             buf = audio_frame.lock_buf()
             try:
                 self.received_audio_bytes += len(buf)
+                self.audio_frames.append(
+                    {
+                        "data": bytes(buf),
+                        "sample_rate": audio_frame.get_sample_rate(),
+                        "sample_width": audio_frame.get_bytes_per_sample(),
+                        "channels": audio_frame.get_number_of_channels(),
+                    }
+                )
             finally:
                 audio_frame.unlock_buf(buf)
 
@@ -1029,6 +1072,12 @@ def test_extension_lifecycle_accounting_and_recovery(
                 payload, _ = data.get_property_to_json(None)
                 self.starts.append(json.loads(payload)["request_id"])
                 return
+            if name == "metrics":
+                payload, _ = data.get_property_to_json(None)
+                event = json.loads(payload)
+                if "ttfb" in event.get("metrics", {}):
+                    self.ttfb_values.append(event["metrics"]["ttfb"])
+                return
             if name != "tts_audio_end":
                 return
             payload, _ = data.get_property_to_json(None)
@@ -1039,16 +1088,17 @@ def test_extension_lifecycle_accounting_and_recovery(
     class RaisingStream:
         def __init__(self, error):
             self.error = error
-            self.first = True
+            self.index = 0
             self.closed = False
 
         def __aiter__(self):
             return self
 
         async def __anext__(self):
-            if self.first:
-                self.first = False
-                return audio_event(base64.b64encode(pcm).decode("ascii"))
+            if self.index < len(pcm_chunks):
+                chunk = pcm_chunks[self.index]
+                self.index += 1
+                return audio_event(base64.b64encode(chunk).decode("ascii"))
             raise self.error
 
         async def close(self):
@@ -1082,7 +1132,8 @@ def test_extension_lifecycle_accounting_and_recovery(
                 created_streams.append(stream)
                 return stream
             events = [
-                audio_event(base64.b64encode(pcm).decode("ascii")),
+                audio_event(base64.b64encode(chunk).decode("ascii"))
+                for chunk in pcm_chunks
             ]
             if has_audio == "stream-error":
                 events.append(
@@ -1122,6 +1173,15 @@ def test_extension_lifecycle_accounting_and_recovery(
         def now(cls):
             return base_time + dt.timedelta(milliseconds=clock_ms)
 
+    class ControlledTime:
+        @staticmethod
+        def monotonic():
+            return clock_ms / 1000
+
+        @staticmethod
+        def time():
+            return clock_ms / 1000
+
     monkeypatch.setattr(
         gemini_tts_module,
         "genai",
@@ -1133,6 +1193,7 @@ def test_extension_lifecycle_accounting_and_recovery(
         send_audio_data,
     )
     monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
+    monkeypatch.setattr(tts2_http, "time", ControlledTime)
     tester = LifecycleTester()
     tester.set_test_mode_single(
         "gemini_tts_python",
@@ -1171,6 +1232,18 @@ def test_extension_lifecycle_accounting_and_recovery(
         for audio in audio_cycles
     )
     assert tester.received_audio_bytes == len(pcm) * emitted_cycles
+    assert len(tester.audio_frames) == 2 * emitted_cycles
+    assert (
+        b"".join(frame["data"] for frame in tester.audio_frames)
+        == pcm * emitted_cycles
+    )
+    assert all(
+        frame["sample_rate"] == 24000
+        and frame["sample_width"] == 2
+        and frame["channels"] == 1
+        for frame in tester.audio_frames
+    )
+    assert tester.ttfb_values == [10] * emitted_cycles
     assert [end["request_id"] for end in tester.ends] == [
         "first",
         "second",
