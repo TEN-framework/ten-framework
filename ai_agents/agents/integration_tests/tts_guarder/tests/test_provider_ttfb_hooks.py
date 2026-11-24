@@ -47,23 +47,44 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
-def test_gemini_public_interactions_boundary(monkeypatch, clock):
+@pytest.mark.asyncio
+async def test_gemini_public_interactions_boundary(monkeypatch, clock):
     sdk = import_module("google.genai._gaos.google_genai")
 
     class Interactions:
-        def create(self, **kwargs):
-            clock[0] = 150_000_000
-            assert kwargs["input"][0]["content"][0]["text"] == "Hello"
+        async def create(self, **kwargs):
+            text = kwargs["input"][0]["content"][0]["text"]
+            if not text:
+                clock[0] += 5_000_000
+                return SimpleNamespace(output_audio=None)
+            clock[0] += 20_000_000
             return SimpleNamespace(
                 output_audio=SimpleNamespace(data="base64-audio")
             )
 
     original_create = Interactions.create
-    monkeypatch.setattr(sdk, "GeminiNextGenInteractions", Interactions)
+    monkeypatch.setattr(
+        sdk,
+        "AsyncGeminiNextGenInteractions",
+        Interactions,
+    )
     with install_hook("gemini_tts_python", {}, monkeypatch) as reference:
+        interactions = Interactions()
+        reference.begin_request("empty")
+        empty = await interactions.create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": ""}],
+                }
+            ]
+        )
+        assert empty.output_audio is None
+        assert reference.elapsed_ms("empty") is None
+
         reference.begin_request("first")
-        create = Interactions().create
-        outputs = create(
+        clock[0] = 100_000_000
+        outputs = await interactions.create(
             input=[
                 {
                     "type": "user_input",
@@ -72,7 +93,19 @@ def test_gemini_public_interactions_boundary(monkeypatch, clock):
             ]
         )
         assert outputs.output_audio.data == "base64-audio"
-        assert reference.elapsed_ms("first") == 150
+        assert reference.elapsed_ms("first") == 20
+
+        reference.begin_request("second")
+        clock[0] = 200_000_000
+        await interactions.create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": "Again"}],
+                }
+            ]
+        )
+        assert reference.elapsed_ms("second") == 20
     assert Interactions.create is original_create
 
 

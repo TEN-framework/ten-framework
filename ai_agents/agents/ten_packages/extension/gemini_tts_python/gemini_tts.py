@@ -23,6 +23,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         self.ten_env: AsyncTenEnv = ten_env
         self.client = None
         self._is_cancelled = False
+        self._request_task: asyncio.Task | None = None
 
     async def get(
         self, text: str, request_id: str
@@ -63,26 +64,34 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                     }
                 ]
 
-            response = await asyncio.to_thread(
-                self.client.interactions.create,
-                model=model,
-                input=[
-                    {
-                        "type": "user_input",
-                        "content": [text_content],
-                    }
-                ],
-                response_format={
-                    "type": "audio",
-                    "mime_type": "audio/l16",
-                    "sample_rate": 24000,
-                },
-                generation_config={
-                    "speech_config": [
-                        {"voice": voice, "language": language_code}
-                    ]
-                },
+            self._request_task = asyncio.create_task(
+                self.client.aio.interactions.create(
+                    model=model,
+                    input=[
+                        {
+                            "type": "user_input",
+                            "content": [text_content],
+                        }
+                    ],
+                    response_format={
+                        "type": "audio",
+                        "mime_type": "audio/l16",
+                        "sample_rate": 24000,
+                    },
+                    generation_config={
+                        "speech_config": [
+                            {"voice": voice, "language": language_code}
+                        ]
+                    },
+                )
             )
+            try:
+                response = await self._request_task
+            except asyncio.CancelledError:
+                self.ten_env.log_debug("Request cancelled while waiting")
+                return
+            finally:
+                self._request_task = None
 
             output_audio = getattr(response, "output_audio", None)
             audio_data = getattr(output_audio, "data", None)
@@ -135,6 +144,12 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         """Cancel ongoing request"""
         self.ten_env.log_info("Cancelling Gemini TTS request")
         self._is_cancelled = True
+        if self._request_task and not self._request_task.done():
+            self._request_task.cancel()
+            await asyncio.gather(
+                self._request_task,
+                return_exceptions=True,
+            )
 
     async def clean(self):
         """Clean up resources"""

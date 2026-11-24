@@ -6,7 +6,6 @@ import asyncio
 import base64
 import datetime as dt
 import json
-import threading
 from types import SimpleNamespace
 
 import pytest
@@ -77,7 +76,7 @@ def test_client_requests_raw_pcm_from_interactions():
         def __init__(self):
             self.payload = None
 
-        def create(self, **kwargs):
+        async def create(self, **kwargs):
             self.payload = kwargs
             return SimpleNamespace(
                 output_audio=SimpleNamespace(
@@ -96,7 +95,9 @@ def test_client_requests_raw_pcm_from_interactions():
     )
     client = GeminiTTSClient(config, FakeTenEnv())
     interactions = FakeInteractions()
-    client.client = SimpleNamespace(interactions=interactions)
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=interactions)
+    )
 
     events = asyncio.run(_collect_events(client))
 
@@ -134,10 +135,12 @@ def test_client_reports_missing_audio():
 
     config = GeminiTTSConfig(params={"api_key": "test_key"})
     client = GeminiTTSClient(config, FakeTenEnv())
+
+    async def create(**_kwargs):
+        return SimpleNamespace(output_audio=None)
+
     client.client = SimpleNamespace(
-        interactions=SimpleNamespace(
-            create=lambda **_kwargs: SimpleNamespace(output_audio=None)
-        )
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
     )
 
     events = asyncio.run(_collect_events(client))
@@ -156,12 +159,12 @@ def test_client_classifies_authentication_error():
 
     config = GeminiTTSConfig(params={"api_key": "bad_key"})
     client = GeminiTTSClient(config, FakeTenEnv())
+
+    async def create(**_kwargs):
+        raise RuntimeError("401 unauthorized")
+
     client.client = SimpleNamespace(
-        interactions=SimpleNamespace(
-            create=lambda **_kwargs: (_ for _ in ()).throw(
-                RuntimeError("401 unauthorized")
-            )
-        )
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
     )
 
     events = asyncio.run(_collect_events(client))
@@ -171,8 +174,8 @@ def test_client_classifies_authentication_error():
 
 def test_cancel_during_request_and_recovery():
     pcm = b"\x00\x01\x02\x03"
-    started = threading.Event()
-    release = threading.Event()
+    started = asyncio.Event()
+    release = asyncio.Event()
     calls = 0
 
     class FakeTenEnv:
@@ -186,12 +189,12 @@ def test_cancel_during_request_and_recovery():
             pass
 
     class FakeInteractions:
-        def create(self, **_kwargs):
+        async def create(self, **_kwargs):
             nonlocal calls
             calls += 1
             if calls == 1:
                 started.set()
-                release.wait(timeout=2)
+                await release.wait()
             return SimpleNamespace(
                 output_audio=SimpleNamespace(
                     data=base64.b64encode(pcm).decode("ascii")
@@ -200,11 +203,13 @@ def test_cancel_during_request_and_recovery():
 
     config = GeminiTTSConfig(params={"api_key": "test_key"})
     client = GeminiTTSClient(config, FakeTenEnv())
-    client.client = SimpleNamespace(interactions=FakeInteractions())
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=FakeInteractions())
+    )
 
     async def scenario():
         first = asyncio.create_task(_collect_events(client))
-        assert await asyncio.to_thread(started.wait, 1)
+        await asyncio.wait_for(started.wait(), 1)
         await client.cancel()
         release.set()
         assert await first == []
@@ -228,7 +233,7 @@ def test_client_handles_sequential_requests():
             pass
 
     class FakeInteractions:
-        def create(self, **_kwargs):
+        async def create(self, **_kwargs):
             nonlocal calls
             calls += 1
             return SimpleNamespace(
@@ -239,7 +244,9 @@ def test_client_handles_sequential_requests():
 
     config = GeminiTTSConfig(params={"api_key": "test_key"})
     client = GeminiTTSClient(config, FakeTenEnv())
-    client.client = SimpleNamespace(interactions=FakeInteractions())
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=FakeInteractions())
+    )
 
     async def scenario():
         first = await _collect_events(client)
