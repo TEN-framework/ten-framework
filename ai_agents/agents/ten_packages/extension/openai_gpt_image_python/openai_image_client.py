@@ -154,7 +154,8 @@ class OpenAIImageClient:
                 self._dump_response(prompt, image_url)
 
             self.ten_env.log_info(
-                f"Image generated successfully: {image_url[:100]}...",
+                "Image generated successfully: "
+                f"payload_bytes={len(image_url)}",
                 category=LOG_CATEGORY_VENDOR,
             )
 

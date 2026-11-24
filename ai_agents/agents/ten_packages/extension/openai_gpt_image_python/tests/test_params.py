@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from openai_gpt_image_python.config import OpenAIGPTImageConfig
+from openai_gpt_image_python.extension import OpenAIGPTImageExtension
 
 CURRENT_IMAGE_MODELS = (
     "gpt-image-2.6-sunburst",
@@ -81,3 +83,19 @@ def test_retired_fallback_model_is_rejected():
 
     with pytest.raises(ValueError, match="Invalid fallback_model"):
         config.validate()
+
+
+@pytest.mark.asyncio
+async def test_send_image_logs_size_without_payload_data():
+    extension = OpenAIGPTImageExtension("openai_gpt_image_python")
+    ten_env = AsyncMock()
+    ten_env.log_info = Mock()
+    image_data = "data:image/png;base64,private-image-bytes"
+
+    await extension.send_image(ten_env, image_data)
+
+    logged = " ".join(
+        str(call.args[0]) for call in ten_env.log_info.call_args_list
+    )
+    assert "private-image-bytes" not in logged
+    assert f"data_url_bytes={len(image_data)}" in logged

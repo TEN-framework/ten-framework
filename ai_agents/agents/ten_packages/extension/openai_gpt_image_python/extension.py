@@ -119,7 +119,9 @@ class OpenAIGPTImageExtension(AsyncLLMToolBaseExtension):
         self, async_ten_env: AsyncTenEnv, image_url: str
     ) -> None:
         """Send generated image URL to frontend"""
-        async_ten_env.log_info(f"Sending image URL: {image_url}")
+        async_ten_env.log_info(
+            f"Sending image payload: data_url_bytes={len(image_url)}"
+        )
 
         try:
             payload_obj = {
