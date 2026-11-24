@@ -64,11 +64,11 @@ def test_doodler_graph_uses_supported_models():
     assert params["fallback_model"] in CURRENT_IMAGE_MODELS
 
 
-@pytest.mark.parametrize("model", ["gpt-image-1", "gpt-image-1.5", "dall-e-3"])
+@pytest.mark.parametrize("model", ["gpt-image-1", "dall-e-3", "dall-e-2"])
 def test_retired_models_are_rejected(model):
     config = OpenAIGPTImageConfig(params={"api_key": "sk-test", "model": model})
 
-    with pytest.raises(ValueError, match="Invalid model"):
+    with pytest.raises(ValueError, match="Retired model"):
         config.validate()
 
 
@@ -81,8 +81,20 @@ def test_retired_fallback_model_is_rejected():
         }
     )
 
-    with pytest.raises(ValueError, match="Invalid fallback_model"):
+    with pytest.raises(ValueError, match="Retired fallback_model"):
         config.validate()
+
+
+@pytest.mark.parametrize("field", ["model", "fallback_model"])
+def test_gpt_image_1_5_remains_valid_until_shutdown(field):
+    params = {
+        "api_key": "sk-test",
+        "model": "gpt-image-2.6-sunburst",
+    }
+    params[field] = "gpt-image-1.5"
+    config = OpenAIGPTImageConfig(params=params)
+
+    config.validate()
 
 
 @pytest.mark.asyncio

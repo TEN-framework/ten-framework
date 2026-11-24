@@ -9,10 +9,11 @@ from typing import Any
 from pydantic import BaseModel, Field
 from ten_ai_base import utils
 
-SUPPORTED_IMAGE_MODELS = (
+DEFAULT_IMAGE_MODELS = (
     "gpt-image-2.6-sunburst",
     "gpt-image-2.6-flare",
 )
+RETIRED_IMAGE_MODELS = {"gpt-image-1", "dall-e-3", "dall-e-2"}
 
 
 class OpenAIGPTImageConfig(BaseModel):
@@ -38,17 +39,13 @@ class OpenAIGPTImageConfig(BaseModel):
         if "model" not in self.params:
             raise ValueError("Model is required (params.model)")
 
-        if self.params["model"] not in SUPPORTED_IMAGE_MODELS:
-            raise ValueError(
-                f"Invalid model. Must be one of: {list(SUPPORTED_IMAGE_MODELS)}"
-            )
+        model = self.params["model"]
+        if model in RETIRED_IMAGE_MODELS:
+            raise ValueError(f"Retired model: {model}")
 
         fallback_model = self.params.get("fallback_model")
-        if fallback_model and fallback_model not in SUPPORTED_IMAGE_MODELS:
-            raise ValueError(
-                "Invalid fallback_model. Must be one of: "
-                f"{list(SUPPORTED_IMAGE_MODELS)}"
-            )
+        if fallback_model and fallback_model in RETIRED_IMAGE_MODELS:
+            raise ValueError(f"Retired fallback_model: {fallback_model}")
 
         # Validate size if present
         if "size" in self.params:
