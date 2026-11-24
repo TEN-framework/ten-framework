@@ -251,7 +251,9 @@ def test_extension_reports_numeric_abnormal_closure_code():
 
     assert close_code == 1006
     assert "1006" in close_message
-    extension._on_asr_error.assert_called_once_with(1006, close_message)
+    extension._on_asr_error.assert_called_once_with(
+        1006, close_message, client=None
+    )
 
 
 @pytest.mark.asyncio

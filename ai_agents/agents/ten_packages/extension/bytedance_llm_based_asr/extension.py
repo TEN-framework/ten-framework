@@ -10,6 +10,7 @@ import json
 import os
 import websockets
 from dataclasses import asdict, dataclass
+from functools import partial
 from ten_ai_base.message import ModuleMetrics
 from typing import Any, cast
 from typing_extensions import override
@@ -186,6 +187,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # >0 means a stop/start swap is in progress: is_connected() is False so
         # the base class Keep-buffers audio instead of racing send_audio.
         self._connection_swap_depth: int = 0
+        # Keep the latest non-final result so a disconnect can close the
+        # current turn without changing the base ASR ID.
+        self._pending_non_final_result: ASRResult | None = None
+        self._asr_result_lock: asyncio.Lock = asyncio.Lock()
 
     @override
     def vendor(self) -> str:
@@ -322,16 +327,23 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 ten_env=self.ten_env,
             )
 
-            # Set up callbacks
-            self.client.set_on_result_callback(self._on_asr_result)
+            # Capture the owner so late callbacks cannot affect a new client.
+            client = self.client
+            client.set_on_result_callback(
+                partial(self._on_asr_result, client=client)
+            )
             self.client.set_on_connection_error_callback(
-                self._on_connection_error
+                partial(self._on_connection_error, client=client)
             )
             self.client.set_on_asr_error_callback(
-                self._on_asr_communication_error
+                partial(self._on_asr_communication_error, client=client)
             )
-            self.client.set_on_connected_callback(self._on_connected)
-            self.client.set_on_disconnected_callback(self._on_disconnected)
+            self.client.set_on_connected_callback(
+                partial(self._on_connected, client=client)
+            )
+            self.client.set_on_disconnected_callback(
+                partial(self._on_disconnected, client=client)
+            )
         except Exception as e:
             self.ten_env.log_error(f"Failed to create ASR client: {e}")
             self.connected = False
@@ -374,7 +386,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if self.log_id_dumper_manager:
             await self.log_id_dumper_manager.stop()
 
-    async def _replace_connection(self) -> None:
+    async def _replace_connection(
+        self, client: VolcengineASRClient | None = None
+    ) -> None:
         """Stop then start the ASR connection under the swap gate.
 
         ``_swap_lock`` makes stop+start atomic end-to-end so update_configs and
@@ -389,7 +403,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             self._connection_swap_depth += 1
             try:
                 async with self._send_lock:
-                    if self.stopped:
+                    if self.stopped or (
+                        client is not None and client is not self.client
+                    ):
                         return
                     await self.stop_connection()
                 if self.stopped:
@@ -565,7 +581,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
         await self._on_asr_error(error_code, str(error))
 
-    async def _handle_reconnect(self) -> None:
+    async def _handle_reconnect(
+        self, client: VolcengineASRClient | None = None
+    ) -> None:
         """Handle reconnection logic with exponential backoff (min delay: 0.5s, max delay: max_retry_delay).
 
         - First retry: 0.5s delay
@@ -573,7 +591,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         - One attempt per call; further retries require another error callback
           (send_audio no longer starts connections while disconnected)
         """
-        if self._reconnecting:
+        if self._reconnecting or (
+            client is not None and client is not self.client
+        ):
             return
 
         self._reconnecting = True
@@ -603,7 +623,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 return
 
             try:
-                await self._replace_connection()
+                await self._replace_connection(client=client)
             except Exception as e:
                 self.ten_env.log_error(f"Reconnection failed: {e}")
         finally:
@@ -777,6 +797,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         duration_ms: int,
         language: str,
         metadata: dict[str, Any],
+        client: VolcengineASRClient | None = None,
     ) -> bool:
         """Send ASR result with given text and metadata.
 
@@ -798,8 +819,41 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             words=[],
             metadata=metadata,
         )
-        await self.send_asr_result(asr_result)
+        async with self._asr_result_lock:
+            if client is not None and client is not self.client:
+                return False
+            # Capture the base-class ID before a final result resets it.
+            asr_result.id = self.uuid
+            await self.send_asr_result(asr_result)
+            if is_final:
+                self._pending_non_final_result = None
+            else:
+                self._pending_non_final_result = copy.deepcopy(asr_result)
         return True
+
+    async def _finalize_pending_non_final_result(
+        self, client: VolcengineASRClient | None = None
+    ) -> None:
+        """Emit the current non-final result as final after a disconnect."""
+        async with self._asr_result_lock:
+            if client is not None and client is not self.client:
+                return
+            pending = self._pending_non_final_result
+            self._pending_non_final_result = None
+            if pending is None:
+                return
+
+            pending.final = True
+            if pending.id:
+                # send_asr_result() assigns self.uuid. The pending result is
+                # the active turn, so restore its ID before the fallback send.
+                self.uuid = pending.id
+            try:
+                await self.send_asr_result(pending)
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Failed to finalize pending ASR result on disconnect: {e}"
+                )
 
     async def _track_utterance_timestamps(self, result: ASRResponse) -> None:
         """Track utterance timestamps and send two-pass delay metrics."""
@@ -836,8 +890,16 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 case _:
                     pass  # Other combinations don't need timestamp recording
 
-    async def _on_asr_result(self, result: ASRResponse) -> None:
+    async def _on_asr_result(
+        self,
+        result: ASRResponse,
+        *,
+        client: VolcengineASRClient | None = None,
+    ) -> None:
         """Handle ASR result from client."""
+        client = self.client if client is None else client
+        if client is not self.client:
+            return
         try:
             # Extract log_id from result.additions.log_id (only process the first one)
             if (
@@ -870,7 +932,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     self.ten_env.log_error(f"Error dumping vendor result: {e}")
 
             # Check if this is an error response
-            if result.code != 0:
+            if result.code != 0 or client is not self.client:
                 return
 
             # Create ASR result data for successful response
@@ -904,6 +966,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     duration_ms=result.duration_ms,
                     language=result.language,
                     metadata=metadata,
+                    client=client,
                 )
                 return
 
@@ -951,6 +1014,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         duration_ms=duration_ms,
                         language=result.language,
                         metadata=metadata,
+                        client=client,
                     )
                     if is_final and sent:
                         has_final_result = True
@@ -1019,12 +1083,13 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         duration_ms=merged["duration_ms"],
                         language=result.language,
                         metadata=merged["metadata"],
+                        client=client,
                     )
                     if is_final and sent:
                         has_final_result = True
 
             # finalize end signal if there was any final result
-            if has_final_result:
+            if has_final_result and client is self.client:
                 await self._finalize_end()
 
         except Exception as e:
@@ -1043,8 +1108,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # After finalize end, connection is expected to be closed by server
             # This is normal behavior, so we don't need to reconnect
 
-    async def _on_asr_error(self, error_code: int, error_message: str) -> None:
+    async def _on_asr_error(
+        self,
+        error_code: int,
+        error_message: str,
+        client: VolcengineASRClient | None = None,
+    ) -> None:
         """Handle ASR error from client."""
+        if client is not None and client is not self.client:
+            return
         self.ten_env.log_error(
             f"vendor_error: code: {error_code}, reason: {error_message}",
             category=LOG_CATEGORY_VENDOR,
@@ -1067,10 +1139,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         # If error is reconnectable and not stopped, attempt reconnection
         if is_reconnectable_error(error_code) and not self.stopped:
-            await self._handle_reconnect()
+            await self._handle_reconnect(client=client)
 
-    def _on_connection_error(self, exception: Exception) -> tuple[int, str]:
+    def _on_connection_error(
+        self,
+        exception: Exception,
+        *,
+        client: VolcengineASRClient | None = None,
+    ) -> tuple[int, str] | None:
         """Handle connection-level errors (HTTP stage)."""
+        if client is not None and client is not self.client:
+            return None
         # Connection error handling logic
         error_message = str(exception)
 
@@ -1086,13 +1165,20 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 error_code = int(http_match.group(1))
 
         # Create task to report error to TEN framework
-        asyncio.create_task(self._on_asr_error(error_code, error_message))
+        asyncio.create_task(
+            self._on_asr_error(error_code, error_message, client=client)
+        )
         return error_code, error_message
 
     def _on_asr_communication_error(
-        self, exception: Exception
-    ) -> tuple[int, str]:
+        self,
+        exception: Exception,
+        *,
+        client: VolcengineASRClient | None = None,
+    ) -> tuple[int, str] | None:
         """Handle ASR communication errors (WebSocket stage)."""
+        if client is not None and client is not self.client:
+            return None
         if isinstance(exception, websockets.exceptions.ConnectionClosed):
             close_frame = exception.rcvd or exception.sent
             error_code = int(close_frame.code) if close_frame else 1006
@@ -1117,7 +1203,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
 
-        asyncio.create_task(self._on_asr_error(error_code, error_message))
+        asyncio.create_task(
+            self._on_asr_error(error_code, error_message, client=client)
+        )
         return int(error_code), error_message
 
     def _on_asr_exception(self, exception: Exception) -> None:
@@ -1161,13 +1249,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             "Successfully connected to Volcengine ASR service"
         )
 
-    async def _on_connected(self) -> None:
+    async def _on_connected(
+        self, *, client: VolcengineASRClient | None = None
+    ) -> None:
         """Handle connection established (callback-driven state change).
 
         Called by client when server sends MESSAGE_TYPE_SERVER_FULL_RESPONSE with code=0.
         This matches azure_asr_python pattern where _azure_event_handler_on_session_started()
         sets connected=True.
         """
+        if client is not None and client is not self.client:
+            return
         self.ten_env.log_info(
             f"vendor_status_changed: session_id: {self.session_id}",
             category=LOG_CATEGORY_VENDOR,
@@ -1185,8 +1277,15 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         vendor_close_message: str = "closed",
         vendor_code: str = "",
         vendor_message: str = "",
+        *,
+        client: VolcengineASRClient | None = None,
     ) -> None:
         """Handle connection lost."""
+        if client is not None and client is not self.client:
+            return
+        await self._finalize_pending_non_final_result(client=client)
+        if client is not None and client is not self.client:
+            return
         self.ten_env.log_info(
             f"vendor connection closed, session_id: {self.session_id}, "
             f"vendor_close_code={vendor_close_code}, "
