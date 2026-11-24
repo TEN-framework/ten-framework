@@ -26,10 +26,10 @@ class ModelNotFoundError(Exception):
 
 class OpenAIImageClient:
     """
-    Client for OpenAI Images API (GPT Image 1.5 / DALL-E)
+    Client for the OpenAI Images API.
 
-    Handles image generation requests with proper error handling
-    and fallback support.
+    Handles image generation requests with proper error handling and fallback
+    support.
     """
 
     def __init__(self, config: OpenAIGPTImageConfig, ten_env: AsyncTenEnv):
@@ -123,8 +123,7 @@ class OpenAIImageClient:
             "n": 1,  # Always generate 1 image
         }
 
-        # GPT Image models (gpt-image-1, gpt-image-1.5) don't support response_format
-        # Only add it for DALL-E models
+        # GPT Image models do not support response_format.
         response_format = self.config.params.get("response_format", "url")
         if response_format and not is_gpt_image_model:
             request_params["response_format"] = response_format

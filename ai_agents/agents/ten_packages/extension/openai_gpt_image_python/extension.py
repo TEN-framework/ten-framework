@@ -31,11 +31,10 @@ from .openai_image_client import (
 
 class OpenAIGPTImageExtension(AsyncLLMToolBaseExtension):
     """
-    OpenAI GPT Image 1.5 Extension
+    OpenAI GPT Image extension.
 
-    Provides AI image generation using OpenAI's GPT Image 1.5 model
-    with fallback to DALL-E 3. Integrates as an LLM tool for
-    conversational image creation.
+    Provides AI image generation through OpenAI's Images API, with a second
+    current GPT Image model as the fallback.
     """
 
     def __init__(self, name: str):

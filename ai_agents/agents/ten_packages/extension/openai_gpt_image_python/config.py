@@ -3,14 +3,20 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from typing import Any
 import copy
+from typing import Any
+
 from pydantic import BaseModel, Field
 from ten_ai_base import utils
 
+SUPPORTED_IMAGE_MODELS = (
+    "gpt-image-2.6-sunburst",
+    "gpt-image-2.6-flare",
+)
+
 
 class OpenAIGPTImageConfig(BaseModel):
-    """OpenAI GPT Image 1.5 Configuration"""
+    """OpenAI GPT Image configuration."""
 
     params: dict[str, Any] = Field(
         default_factory=dict, description="OpenAI Images API parameters"
@@ -32,10 +38,10 @@ class OpenAIGPTImageConfig(BaseModel):
         if "model" not in self.params:
             raise ValueError("Model is required (params.model)")
 
-        # Validate model
-        valid_models = ["gpt-image-1", "gpt-image-1.5", "dall-e-3", "dall-e-2"]
-        if self.params["model"] not in valid_models:
-            raise ValueError(f"Invalid model. Must be one of: {valid_models}")
+        if self.params["model"] not in SUPPORTED_IMAGE_MODELS:
+            raise ValueError(
+                f"Invalid model. Must be one of: {list(SUPPORTED_IMAGE_MODELS)}"
+            )
 
         # Validate size if present
         if "size" in self.params:
