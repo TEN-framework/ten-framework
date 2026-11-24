@@ -47,7 +47,9 @@ class ReconnectManager:
         return {
             "current_attempts": self.attempts,
             "max_attempts": (
-                self.max_attempts if self.max_attempts is not None else "unlimited"
+                self.max_attempts
+                if self.max_attempts is not None
+                else "unlimited"
             ),
         }
 
