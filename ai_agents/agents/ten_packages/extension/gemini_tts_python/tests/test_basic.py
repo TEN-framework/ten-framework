@@ -609,20 +609,38 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
         "expected_reasons",
         "expected_durations",
         "expected_intervals",
+        "expected_error_count",
     ),
     [
-        ((True, True), ["first", "second"], [1, 1], [100, 100], [20, 20]),
-        ((False, True), ["second"], [3, 1], [0, 100], [0, 20]),
-        (("error", True), ["second"], [3, 1], [0, 100], [0, 20]),
+        (
+            (True, True),
+            ["first", "second"],
+            [1, 1],
+            [100, 100],
+            [20, 20],
+            0,
+        ),
+        ((False, True), ["second"], [3, 1], [0, 100], [0, 20], 1),
+        (("error", True), ["second"], [3, 1], [0, 100], [0, 20], 1),
+        (
+            ("transient", True),
+            ["second"],
+            [3, 1],
+            [0, 100],
+            [0, 20],
+            1,
+        ),
     ],
 )
 def test_extension_lifecycle_accounting_and_recovery(
     monkeypatch,
+    tmp_path,
     audio_cycles,
     expected_starts,
     expected_reasons,
     expected_durations,
     expected_intervals,
+    expected_error_count,
 ):
     runtime = pytest.importorskip("ten_runtime")
     if not hasattr(runtime, "ExtensionTester"):
@@ -644,6 +662,7 @@ def test_extension_lifecycle_accounting_and_recovery(
             super().__init__()
             self.starts = []
             self.ends = []
+            self.errors = []
             self.received_audio_bytes = 0
 
         def send_request(self, ten_env, request_id):
@@ -670,6 +689,10 @@ def test_extension_lifecycle_accounting_and_recovery(
 
         def on_data(self, ten_env, data):
             name = data.get_name()
+            if name == "error":
+                payload, _ = data.get_property_to_json(None)
+                self.errors.append(json.loads(payload))
+                return
             if name == "tts_audio_start":
                 payload, _ = data.get_property_to_json(None)
                 self.starts.append(json.loads(payload)["request_id"])
@@ -690,6 +713,8 @@ def test_extension_lifecycle_accounting_and_recovery(
             request_index += 1
             if has_audio == "error":
                 raise RuntimeError("401 unauthorized")
+            if has_audio == "transient":
+                raise RuntimeError("429 rate limit")
             if not has_audio:
                 return SimpleNamespace(output_audio=None)
             return SimpleNamespace(
@@ -737,12 +762,14 @@ def test_extension_lifecycle_accounting_and_recovery(
         "gemini_tts_python",
         json.dumps(
             {
+                "dump": True,
+                "dump_path": str(tmp_path),
                 "params": {
                     "api_key": "test-key",
                     "model": "gemini-3.8-flash-tts",
                     "voice": "Kore",
                     "language_code": "en-US",
-                }
+                },
             }
         ),
     )
@@ -751,6 +778,7 @@ def test_extension_lifecycle_accounting_and_recovery(
 
     assert tester.starts == expected_starts
     assert len(tester.ends) == 2
+    assert len(tester.errors) == expected_error_count
     emitted_cycles = sum(audio is True for audio in audio_cycles)
     assert tester.received_audio_bytes == len(pcm) * emitted_cycles
     assert [end["request_id"] for end in tester.ends] == [
@@ -764,3 +792,7 @@ def test_extension_lifecycle_accounting_and_recovery(
     assert [
         end["request_event_interval_ms"] for end in tester.ends
     ] == expected_intervals
+    for request_id, has_audio in zip(("first", "second"), audio_cycles):
+        dump = tmp_path / f"gemini_dump_{request_id}.pcm"
+        assert dump.exists()
+        assert dump.read_bytes() == (pcm if has_audio is True else b"")
