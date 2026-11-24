@@ -529,7 +529,15 @@ def test_extension_flush_cancels_audio_and_recovers(
         "ten_packages.extension.gemini_tts_python.gemini_tts"
     )
 
+    pcm_lengths = (1002, 1202, 998, 1198, 400)
     pcm = b"\x00\x01" * 2400
+    pcm_chunks = []
+    offset = 0
+    for length in pcm_lengths:
+        pcm_chunks.append(pcm[offset : offset + length])
+        offset += length
+    assert offset == len(pcm)
+    assert all((len(chunk) * 1000) % (24000 * 2) for chunk in pcm_chunks)
     clock_ms = 0
     provider_calls = 0
     provider_cancelled = False
@@ -623,7 +631,9 @@ def test_extension_flush_cancels_audio_and_recovers(
             nonlocal provider_cancelled
             if self.first:
                 self.first = False
-                return audio_event(base64.b64encode(pcm).decode("ascii"))
+                return audio_event(
+                    base64.b64encode(pcm_chunks[0]).decode("ascii")
+                )
             next_read_started.set()
             try:
                 await self.release.wait()
@@ -658,7 +668,10 @@ def test_extension_flush_cancels_audio_and_recovers(
             else:
                 stream = FakeAsyncStream(
                     [
-                        audio_event(base64.b64encode(pcm).decode("ascii")),
+                        audio_event(base64.b64encode(chunk).decode("ascii"))
+                        for chunk in pcm_chunks
+                    ]
+                    + [
                         completed_event(),
                     ]
                 )
@@ -740,7 +753,7 @@ def test_extension_flush_cancels_audio_and_recovers(
         for frame in tester.audio_frames
     )
     assert b"".join(frame["data"] for frame in tester.audio_frames) == (
-        pcm if blocked else pcm * 2
+        pcm if blocked else pcm_chunks[0] + pcm
     )
     if blocked:
         assert tester.starts == ["second"]
@@ -750,6 +763,7 @@ def test_extension_flush_cancels_audio_and_recovers(
         assert tester.ends[0]["request_id"] == "second"
         assert tester.ends[0]["reason"] == 1
         assert tester.ends[0]["request_total_audio_duration_ms"] == 100
+        assert tester.ends[0]["request_event_interval_ms"] == 100
         assert tester.received_audio_bytes == len(pcm)
     else:
         assert tester.starts == ["first", "second"]
@@ -757,14 +771,15 @@ def test_extension_flush_cancels_audio_and_recovers(
         assert len(tester.ends) == 2
         assert tester.ends[0]["request_id"] == "first"
         assert tester.ends[0]["reason"] == 2
-        assert tester.ends[0]["request_total_audio_duration_ms"] == 100
+        assert tester.ends[0]["request_total_audio_duration_ms"] == 20
         assert tester.ends[0]["request_event_interval_ms"] == 20
         assert tester.ends[1]["request_id"] == "second"
         assert tester.ends[1]["reason"] == 1
         assert tester.ends[1]["request_total_audio_duration_ms"] == 100
-        assert tester.received_audio_bytes == len(pcm) * 2
+        assert tester.ends[1]["request_event_interval_ms"] == 100
+        assert tester.received_audio_bytes == len(pcm_chunks[0]) + len(pcm)
     assert (tmp_path / "gemini_dump_first.pcm").read_bytes() == (
-        b"" if blocked else pcm
+        b"" if blocked else pcm_chunks[0]
     )
     assert (tmp_path / "gemini_dump_second.pcm").read_bytes() == pcm
     assert provider_calls == 2
@@ -924,17 +939,17 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [1, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             0,
         ),
-        ((False, True), ["second"], [3, 1], [0, 100], [0, 40], 1),
-        (("error", True), ["second"], [3, 1], [0, 100], [0, 40], 1),
+        ((False, True), ["second"], [3, 1], [0, 100], [0, 100], 1),
+        (("error", True), ["second"], [3, 1], [0, 100], [0, 100], 1),
         (
             ("transient", True),
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 40],
+            [0, 100],
             1,
         ),
         (
@@ -942,7 +957,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 40],
+            [0, 100],
             1,
         ),
         (
@@ -950,7 +965,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 40],
+            [0, 100],
             1,
         ),
         (
@@ -958,7 +973,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             1,
         ),
         (
@@ -966,7 +981,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             1,
         ),
         (
@@ -974,7 +989,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             1,
         ),
         (
@@ -982,7 +997,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             1,
         ),
         (
@@ -990,7 +1005,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["first", "second"],
             [3, 1],
             [100, 100],
-            [40, 40],
+            [100, 100],
             1,
         ),
     ],
@@ -1016,8 +1031,15 @@ def test_extension_lifecycle_accounting_and_recovery(
         "ten_packages.extension.gemini_tts_python.gemini_tts"
     )
 
+    pcm_lengths = (1002, 1202, 998, 1198, 400)
     pcm = b"\x00\x01" * 2400
-    pcm_chunks = (pcm[:2400], pcm[2400:])
+    pcm_chunks = []
+    offset = 0
+    for length in pcm_lengths:
+        pcm_chunks.append(pcm[offset : offset + length])
+        offset += length
+    assert offset == len(pcm)
+    assert all((len(chunk) * 1000) % (24000 * 2) for chunk in pcm_chunks)
     clock_ms = 0
     request_index = 0
     created_streams = []
@@ -1232,7 +1254,7 @@ def test_extension_lifecycle_accounting_and_recovery(
         for audio in audio_cycles
     )
     assert tester.received_audio_bytes == len(pcm) * emitted_cycles
-    assert len(tester.audio_frames) == 2 * emitted_cycles
+    assert len(tester.audio_frames) == len(pcm_chunks) * emitted_cycles
     assert (
         b"".join(frame["data"] for frame in tester.audio_frames)
         == pcm * emitted_cycles
