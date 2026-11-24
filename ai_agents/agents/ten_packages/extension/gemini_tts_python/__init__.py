@@ -1,5 +1,4 @@
-from . import extension
+from . import addon, extension
 from .extension import GeminiTTSExtension
 
-
-__all__ = ["extension", "GeminiTTSExtension"]
+__all__ = ["GeminiTTSExtension", "addon", "extension"]

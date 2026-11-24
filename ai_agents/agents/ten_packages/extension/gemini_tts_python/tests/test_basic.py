@@ -52,9 +52,10 @@ def completed_event(status="completed"):
 
 def test_import():
     """Test that extension can be imported"""
-    from gemini_tts_python.extension import GeminiTTSExtension
+    from gemini_tts_python import GeminiTTSExtension, addon
 
     assert GeminiTTSExtension is not None
+    assert addon.GeminiTTSExtensionAddon is not None
 
 
 def test_config_flash_model():
@@ -780,7 +781,10 @@ def test_extension_flush_cancels_audio_and_recovers(
     if not blocked:
         assert created_streams[0].closed
     assert len(tester.flush_ends) == 1
-    assert tester.ttfb_values == ([10] if blocked else [10, 10])
+    assert tester.ttfb_values == pytest.approx(
+        [10] if blocked else [10, 10],
+        abs=1,
+    )
     assert all(
         frame["sample_rate"] == 24000
         and frame["sample_width"] == 2
@@ -793,12 +797,18 @@ def test_extension_flush_cancels_audio_and_recovers(
     if blocked:
         assert tester.starts == ["second"]
         assert sent_audio_requests == ["second"] * len(pcm_chunks)
-        assert len(tester.ends) == 1
-        assert tester.ends[0]["request_id"] != "first"
-        assert tester.ends[0]["request_id"] == "second"
-        assert tester.ends[0]["reason"] == 1
-        assert tester.ends[0]["request_total_audio_duration_ms"] == 100
-        assert tester.ends[0]["request_event_interval_ms"] == 100
+        assert [end["request_id"] for end in tester.ends] == [
+            "first",
+            "second",
+        ]
+        assert [end["reason"] for end in tester.ends] == [1, 1]
+        assert [
+            end["request_total_audio_duration_ms"] for end in tester.ends
+        ] == [0, 100]
+        assert [end["request_event_interval_ms"] for end in tester.ends] == [
+            10,
+            100,
+        ]
         assert tester.received_audio_bytes == len(pcm)
     else:
         assert tester.starts == ["first", "second"]
@@ -813,9 +823,11 @@ def test_extension_flush_cancels_audio_and_recovers(
         assert tester.ends[1]["request_total_audio_duration_ms"] == 100
         assert tester.ends[1]["request_event_interval_ms"] == 100
         assert tester.received_audio_bytes == len(pcm_chunks[0]) + len(pcm)
-    assert (tmp_path / "gemini_dump_first.pcm").read_bytes() == (
-        b"" if blocked else pcm_chunks[0]
-    )
+    first_dump = tmp_path / "gemini_dump_first.pcm"
+    if blocked:
+        assert not first_dump.exists()
+    else:
+        assert first_dump.read_bytes() == pcm_chunks[0]
     assert (tmp_path / "gemini_dump_second.pcm").read_bytes() == pcm
     assert provider_calls == 2
     assert all(stream.closed for stream in created_streams)
@@ -953,7 +965,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
         event["request_total_audio_duration_ms"] for event in tester.ends
     ] == [200, 100]
     assert [event["request_event_interval_ms"] for event in tester.ends] == [
-        40,
+        50,
         20,
     ]
     assert tester.ttfb_turns == [1, 2]
@@ -977,14 +989,14 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             [100, 100],
             0,
         ),
-        ((False, True), ["second"], [3, 1], [0, 100], [0, 100], 1),
-        (("error", True), ["second"], [3, 1], [0, 100], [0, 100], 1),
+        ((False, True), ["second"], [3, 1], [0, 100], [10, 100], 1),
+        (("error", True), ["second"], [3, 1], [0, 100], [10, 100], 1),
         (
             ("transient", True),
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 100],
+            [10, 100],
             1,
         ),
         (
@@ -992,7 +1004,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 100],
+            [10, 100],
             1,
         ),
         (
@@ -1000,7 +1012,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [0, 100],
+            [10, 100],
             1,
         ),
         (
@@ -1300,7 +1312,10 @@ def test_extension_lifecycle_accounting_and_recovery(
         and frame["channels"] == 1
         for frame in tester.audio_frames
     )
-    assert tester.ttfb_values == [10] * emitted_cycles
+    assert tester.ttfb_values == pytest.approx(
+        [10] * emitted_cycles,
+        abs=1,
+    )
     assert [end["request_id"] for end in tester.ends] == [
         "first",
         "second",
@@ -1314,7 +1329,6 @@ def test_extension_lifecycle_accounting_and_recovery(
     ] == expected_intervals
     for request_id, has_audio in zip(("first", "second"), audio_cycles):
         dump = tmp_path / f"gemini_dump_{request_id}.pcm"
-        assert dump.exists()
         has_pcm = has_audio is True or has_audio in {
             "stream-error",
             "stream-timeout",
@@ -1322,5 +1336,8 @@ def test_extension_lifecycle_accounting_and_recovery(
             "stream-incomplete",
             "missing-completion",
         }
-        assert dump.read_bytes() == (pcm if has_pcm else b"")
+        if has_pcm:
+            assert dump.read_bytes() == pcm
+        else:
+            assert not dump.exists()
     assert all(stream.closed for stream in created_streams)

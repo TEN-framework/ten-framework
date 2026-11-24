@@ -208,13 +208,15 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         self._is_cancelled = True
         request_task = self._request_task
         if request_task:
-            if not request_task.done():
+            if request_task.done():
+                await self._close_completed_request()
+            else:
                 request_task.cancel()
-            await asyncio.gather(
-                request_task,
-                return_exceptions=True,
-            )
-            await self._close_completed_request()
+                await asyncio.gather(
+                    request_task,
+                    return_exceptions=True,
+                )
+                await self._close_completed_request()
         if self._request_stream:
             await self._release_stream()
 
@@ -223,13 +225,15 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         self.ten_env.log_info("Cleaning up Gemini TTS client")
         request_task = self._request_task
         if request_task:
-            if not request_task.done():
+            if request_task.done():
+                await self._close_completed_request()
+            else:
                 request_task.cancel()
-            await asyncio.gather(
-                request_task,
-                return_exceptions=True,
-            )
-            await self._close_completed_request()
+                await asyncio.gather(
+                    request_task,
+                    return_exceptions=True,
+                )
+                await self._close_completed_request()
         if self._request_stream:
             await self._release_stream()
         if self.client:
