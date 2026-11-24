@@ -3,16 +3,16 @@
 import asyncio
 import base64
 import json
-from importlib import import_module
 import struct
+from importlib import import_module
 
 import httpx
 import pytest
-
-from .boundary import ProviderReference
 from integration_tests.tts_guarder.tests.test_metrics import (
     SequentialTTFBTester,
 )
+
+from .boundary import ProviderReference
 
 SUPPORTED = {
     "generic_tts_http_python",
