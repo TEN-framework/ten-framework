@@ -67,6 +67,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             self._request_task = asyncio.create_task(
                 self.client.aio.interactions.create(
                     model=model,
+                    store=False,
                     input=[
                         {
                             "type": "user_input",

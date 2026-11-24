@@ -102,6 +102,7 @@ def test_client_requests_raw_pcm_from_interactions():
     events = asyncio.run(_collect_events(client))
 
     assert interactions.payload["model"] == "gemini-3.8-flash-tts"
+    assert interactions.payload["store"] is False
     text_content = interactions.payload["input"][0]["content"][0]
     assert text_content["text"] == "Hello"
     assert text_content["annotations"] == [
@@ -268,6 +269,8 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
     from ten_ai_base.struct import TTSTextInput
     from ten_runtime import Data, ExtensionTester
 
+    from gemini_tts_python import gemini_tts as gemini_tts_module
+
     pcm = b"\x00\x01" * 2400
     clock_ms = 0
 
@@ -290,6 +293,7 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
 
         def on_start(self, ten_env_tester):
             self.send_request(ten_env_tester, "first")
+            self.send_request(ten_env_tester, "second")
             ten_env_tester.on_start_done()
 
         def on_audio_frame(self, _ten_env, audio_frame):
@@ -309,27 +313,50 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
                 return
             payload, _ = data.get_property_to_json(None)
             self.ends.append(json.loads(payload))
-            if len(self.ends) == 1:
-                self.send_request(ten_env, "second")
-            else:
+            if len(self.ends) == 2:
                 ten_env.stop_test()
 
-    async def fake_get(_self, _text, request_id):
-        nonlocal clock_ms
-        clock_ms += 10
-        yield pcm, TTS2HttpResponseEventType.RESPONSE
-        assert request_id in {"first", "second"}
-        clock_ms += 20
-        yield None, TTS2HttpResponseEventType.END
+    class FakeAsyncInteractions:
+        async def create(self, **kwargs):
+            nonlocal clock_ms
+            assert kwargs["store"] is False
+            clock_ms += 10
+            return SimpleNamespace(
+                output_audio=SimpleNamespace(
+                    data=base64.b64encode(pcm).decode("ascii")
+                )
+            )
 
-    real_datetime = tts2_http.datetime
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.aio = SimpleNamespace(interactions=FakeAsyncInteractions())
+
+    original_send_audio_data = (
+        tts2_http.AsyncTTS2HttpExtension.send_tts_audio_data
+    )
+
+    async def send_audio_data(extension, audio_data):
+        nonlocal clock_ms
+        clock_ms += 20
+        return await original_send_audio_data(extension, audio_data)
+
+    base_time = dt.datetime(2026, 1, 1)
 
     class ControlledDateTime:
         @classmethod
         def now(cls):
-            return real_datetime.now() + dt.timedelta(milliseconds=clock_ms)
+            return base_time + dt.timedelta(milliseconds=clock_ms)
 
-    monkeypatch.setattr(GeminiTTSClient, "get", fake_get)
+    monkeypatch.setattr(
+        gemini_tts_module,
+        "genai",
+        SimpleNamespace(Client=FakeClient),
+    )
+    monkeypatch.setattr(
+        tts2_http.AsyncTTS2HttpExtension,
+        "send_tts_audio_data",
+        send_audio_data,
+    )
     monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
     tester = LifecycleTester()
     tester.set_test_mode_single(
