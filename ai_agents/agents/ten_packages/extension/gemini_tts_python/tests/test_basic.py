@@ -649,8 +649,10 @@ def test_extension_flush_cancels_audio_and_recovers(
     tester.run()
 
     assert tester.errors == []
-    assert provider_cancelled
-    if not blocked:
+    if blocked:
+        assert provider_cancelled
+    else:
+        assert provider_cancelled is False
         assert created_streams[0].closed
     assert len(tester.flush_ends) == 1
     if blocked:
