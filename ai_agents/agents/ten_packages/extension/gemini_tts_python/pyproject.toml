@@ -1,6 +1,6 @@
 [project]
 name = "gemini-tts-python"
-version = "0.1.2"
+version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
     "google-genai>=2.25.0",
