@@ -261,7 +261,27 @@ def test_client_handles_sequential_requests():
     assert second[0][0] == pcm + b"\x02"
 
 
-def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
+@pytest.mark.parametrize(
+    (
+        "audio_cycles",
+        "expected_starts",
+        "expected_reasons",
+        "expected_durations",
+        "expected_intervals",
+    ),
+    [
+        ((True, True), ["first", "second"], [1, 1], [100, 100], [20, 20]),
+        ((False, True), ["second"], [3, 1], [0, 100], [0, 20]),
+    ],
+)
+def test_extension_lifecycle_accounting_and_recovery(
+    monkeypatch,
+    audio_cycles,
+    expected_starts,
+    expected_reasons,
+    expected_durations,
+    expected_intervals,
+):
     runtime = pytest.importorskip("ten_runtime")
     if not hasattr(runtime, "ExtensionTester"):
         pytest.skip("TEN runtime test harness is not installed")
@@ -273,6 +293,7 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
 
     pcm = b"\x00\x01" * 2400
     clock_ms = 0
+    request_index = 0
 
     class LifecycleTester(ExtensionTester):
         def __init__(self):
@@ -318,9 +339,13 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
 
     class FakeAsyncInteractions:
         async def create(self, **kwargs):
-            nonlocal clock_ms
+            nonlocal clock_ms, request_index
             assert kwargs["store"] is False
             clock_ms += 10
+            has_audio = audio_cycles[request_index]
+            request_index += 1
+            if not has_audio:
+                return SimpleNamespace(output_audio=None)
             return SimpleNamespace(
                 output_audio=SimpleNamespace(
                     data=base64.b64encode(pcm).decode("ascii")
@@ -375,10 +400,17 @@ def test_extension_emits_sequential_audio_end_accounting(monkeypatch):
 
     tester.run()
 
-    assert tester.starts == ["first", "second"]
+    assert tester.starts == expected_starts
     assert len(tester.ends) == 2
-    assert tester.received_audio_bytes == len(pcm) * 2
-    for end in tester.ends:
-        assert end["reason"] == 1
-        assert end["request_total_audio_duration_ms"] == 100
-        assert end["request_event_interval_ms"] == 20
+    assert tester.received_audio_bytes == len(pcm) * sum(audio_cycles)
+    assert [end["request_id"] for end in tester.ends] == [
+        "first",
+        "second",
+    ]
+    assert [end["reason"] for end in tester.ends] == expected_reasons
+    assert [
+        end["request_total_audio_duration_ms"] for end in tester.ends
+    ] == expected_durations
+    assert [
+        end["request_event_interval_ms"] for end in tester.ends
+    ] == expected_intervals
