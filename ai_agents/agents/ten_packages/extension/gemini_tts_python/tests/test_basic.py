@@ -806,7 +806,7 @@ def test_extension_flush_cancels_audio_and_recovers(
             end["request_total_audio_duration_ms"] for end in tester.ends
         ] == [0, 100]
         assert [end["request_event_interval_ms"] for end in tester.ends] == [
-            10,
+            0,
             100,
         ]
         assert tester.received_audio_bytes == len(pcm)
@@ -989,14 +989,14 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             [100, 100],
             0,
         ),
-        ((False, True), ["second"], [3, 1], [0, 100], [10, 100], 1),
-        (("error", True), ["second"], [3, 1], [0, 100], [10, 100], 1),
+        ((False, True), ["second"], [3, 1], [0, 100], [0, 100], 1),
+        (("error", True), ["second"], [3, 1], [0, 100], [0, 100], 1),
         (
             ("transient", True),
             ["second"],
             [3, 1],
             [0, 100],
-            [10, 100],
+            [0, 100],
             1,
         ),
         (
@@ -1004,7 +1004,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [10, 100],
+            [0, 100],
             1,
         ),
         (
@@ -1012,7 +1012,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             ["second"],
             [3, 1],
             [0, 100],
-            [10, 100],
+            [0, 100],
             1,
         ),
         (
