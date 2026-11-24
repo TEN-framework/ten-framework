@@ -14,7 +14,9 @@ class XfyunDialectASRConfig(BaseModel):
     host: str = "office-api-ast-dx.iflyaisol.com"
 
     lang: str = "autodialect"  # Languages to recognize when lang is autominor
-    recognized_language: str = ""  # Target languages, only valid when lang is autominor*
+    recognized_language: str = (
+        ""  # Target languages, only valid when lang is autominor*
+    )
     audio_encode: str = "pcm"  # Audio encoding format
     samplerate: int = 16000  # Sample rate
     codec: str = "pcm"
