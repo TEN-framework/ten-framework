@@ -122,7 +122,10 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                         interaction = getattr(event, "interaction", None)
                         status = getattr(interaction, "status", None)
                         terminal_status = getattr(status, "value", status)
-                        break
+                        if str(terminal_status).lower() != (
+                            "requires_continuation"
+                        ):
+                            break
 
                     audio_data = self._audio_delta_data(event)
                     if not audio_data:

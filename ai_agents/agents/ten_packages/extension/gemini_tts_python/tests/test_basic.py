@@ -399,6 +399,39 @@ def test_client_handles_sequential_requests():
     assert second[0][0] == pcm + b"\x02"
 
 
+def test_client_continues_after_requires_continuation():
+    first_pcm = b"\x01\x00"
+    second_pcm = b"\x02\x00"
+
+    class FakeTenEnv:
+        def log_debug(self, *_args, **_kwargs):
+            pass
+
+    async def create(**_kwargs):
+        return FakeAsyncStream(
+            [
+                audio_event(base64.b64encode(first_pcm).decode("ascii")),
+                completed_event("requires_continuation"),
+                audio_event(base64.b64encode(second_pcm).decode("ascii")),
+                completed_event(),
+            ]
+        )
+
+    client = GeminiTTSClient(
+        GeminiTTSConfig(params={"api_key": "test_key"}),
+        FakeTenEnv(),
+    )
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
+    )
+
+    assert asyncio.run(_collect_events(client)) == [
+        (first_pcm, TTS2HttpResponseEventType.RESPONSE),
+        (second_pcm, TTS2HttpResponseEventType.RESPONSE),
+        (None, TTS2HttpResponseEventType.END),
+    ]
+
+
 def test_clean_closes_async_sdk_client():
     class FakeTenEnv:
         def log_info(self, *_args, **_kwargs):
