@@ -71,11 +71,10 @@
               "property": {
                 "params": {
                   "api_key": "${env:OPENAI_API_KEY}",
-                  "model": "dall-e-3",
+                  "model": "gpt-image-2.6-sunburst",
                   "size": "1024x1024",
                   "quality": "standard",
-                  "response_format": "url",
-                  "fallback_model": "dall-e-3"
+                  "fallback_model": "gpt-image-2.6-flare"
                 }
               }
             },

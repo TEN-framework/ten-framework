@@ -43,6 +43,13 @@ class OpenAIGPTImageConfig(BaseModel):
                 f"Invalid model. Must be one of: {list(SUPPORTED_IMAGE_MODELS)}"
             )
 
+        fallback_model = self.params.get("fallback_model")
+        if fallback_model and fallback_model not in SUPPORTED_IMAGE_MODELS:
+            raise ValueError(
+                "Invalid fallback_model. Must be one of: "
+                f"{list(SUPPORTED_IMAGE_MODELS)}"
+            )
+
         # Validate size if present
         if "size" in self.params:
             valid_sizes = ["1024x1024", "1792x1024", "1024x1792"]
