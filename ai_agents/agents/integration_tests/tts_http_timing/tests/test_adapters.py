@@ -28,10 +28,7 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     import_module(f"ten_packages.extension.{extension_name}")
     reference = ProviderReference()
     pcm = base64.b64encode(b"\x01\x00" * 1600).decode()
-    is_sse = extension_name in {
-        "gemini_tts_python",
-        "mistral_tts_python",
-    }
+    is_sse = extension_name == "mistral_tts_python"
 
     class AudioStream(httpx.AsyncByteStream):
         async def __aiter__(self):
@@ -45,20 +42,21 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
                 payload = {"type": "speech.audio.delta", "audio_data": encoded}
             elif extension_name == "gemini_tts_python":
                 payload = {
-                    "candidates": [
+                    "status": "completed",
+                    "steps": [
                         {
-                            "content": {
-                                "parts": [
-                                    {
-                                        "inlineData": {
-                                            "data": pcm,
-                                            "mimeType": "audio/L16;rate=24000",
-                                        }
-                                    }
-                                ]
-                            }
+                            "type": "model_output",
+                            "content": [
+                                {
+                                    "type": "audio",
+                                    "data": pcm,
+                                    "mime_type": "audio/l16",
+                                    "sample_rate": 24000,
+                                    "channels": 1,
+                                }
+                            ],
                         }
-                    ]
+                    ],
                 }
             else:
                 reference.audio_received()
@@ -78,7 +76,12 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             trace = request.extensions.get("trace")
             if trace:
                 await trace("http11.send_request_body.started", {})
-            content_type = "text/event-stream" if is_sse else "audio/pcm"
+            if extension_name == "gemini_tts_python":
+                content_type = "application/json"
+            elif is_sse:
+                content_type = "text/event-stream"
+            else:
+                content_type = "audio/pcm"
             return httpx.Response(
                 200,
                 headers={"content-type": content_type},
