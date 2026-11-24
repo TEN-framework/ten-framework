@@ -68,7 +68,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                     }
                 ]
 
-            self._request_task = asyncio.create_task(
+            request_task = asyncio.create_task(
                 self.client.aio.interactions.create(
                     model=model,
                     store=False,
@@ -92,13 +92,16 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                     },
                 )
             )
+            self._request_task = request_task
             try:
-                stream = await self._request_task
+                stream = await request_task
             except asyncio.CancelledError:
+                await self._close_completed_request()
                 self.ten_env.log_debug("Request cancelled while waiting")
                 return
             finally:
-                self._request_task = None
+                if self._request_task is request_task:
+                    self._request_task = None
 
             self._request_stream = stream
             emitted_audio = False
@@ -198,24 +201,30 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         """Cancel ongoing request"""
         self.ten_env.log_info("Cancelling Gemini TTS request")
         self._is_cancelled = True
-        if self._request_task and not self._request_task.done():
-            self._request_task.cancel()
+        request_task = self._request_task
+        if request_task:
+            if not request_task.done():
+                request_task.cancel()
             await asyncio.gather(
-                self._request_task,
+                request_task,
                 return_exceptions=True,
             )
+            await self._close_completed_request()
         if self._request_stream:
             await self._release_stream()
 
     async def clean(self):
         """Clean up resources"""
         self.ten_env.log_info("Cleaning up Gemini TTS client")
-        if self._request_task and not self._request_task.done():
-            self._request_task.cancel()
+        request_task = self._request_task
+        if request_task:
+            if not request_task.done():
+                request_task.cancel()
             await asyncio.gather(
-                self._request_task,
+                request_task,
                 return_exceptions=True,
             )
+            await self._close_completed_request()
         if self._request_stream:
             await self._release_stream()
         if self.client:
@@ -231,6 +240,19 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         finally:
             if self._stream_read_task is task and task.done():
                 self._stream_read_task = None
+
+    async def _close_completed_request(self) -> None:
+        task = self._request_task
+        if task is None or not task.done():
+            return
+        self._request_task = None
+        if task.cancelled():
+            return
+        try:
+            stream = task.result()
+        except Exception:  # noqa: BLE001 - failed requests have no stream
+            return
+        await self._close_stream(stream)
 
     async def _release_stream(self, expected_stream=None) -> None:
         async with self._stream_lock:

@@ -371,6 +371,50 @@ def test_cancel_during_stream_discards_late_audio():
     asyncio.run(scenario())
 
 
+def test_cancel_during_stream_handoff_closes_completed_request():
+    class Stream:
+        def __init__(self):
+            self.closed = False
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            raise AssertionError("cancelled handoff must not start a read")
+
+        async def close(self):
+            self.closed = True
+
+    class FakeTenEnv:
+        def log_debug(self, *_args, **_kwargs):
+            pass
+
+        def log_info(self, *_args, **_kwargs):
+            pass
+
+    client = GeminiTTSClient(
+        GeminiTTSConfig(params={"api_key": "test_key"}),
+        FakeTenEnv(),
+    )
+
+    async def scenario():
+        stream = Stream()
+
+        async def create():
+            return stream
+
+        request_task = asyncio.create_task(create())
+        await request_task
+        client._request_task = request_task
+
+        await client.cancel()
+
+        assert stream.closed
+        assert client._request_task is None
+
+    asyncio.run(scenario())
+
+
 def test_client_handles_sequential_requests():
     pcm = b"\x10\x20\x30\x40"
     calls = 0
