@@ -155,6 +155,14 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
     async def clean(self):
         """Clean up resources"""
         self.ten_env.log_info("Cleaning up Gemini TTS client")
+        if self._request_task and not self._request_task.done():
+            self._request_task.cancel()
+            await asyncio.gather(
+                self._request_task,
+                return_exceptions=True,
+            )
+        if self.client:
+            await self.client.aio.aclose()
         self._is_cancelled = False
         self.client = None
 

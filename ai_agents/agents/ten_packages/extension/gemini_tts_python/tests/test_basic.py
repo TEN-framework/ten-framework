@@ -8,6 +8,7 @@ import datetime as dt
 import json
 from importlib import import_module
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from ten_ai_base.struct import TTS2HttpResponseEventType
@@ -262,6 +263,24 @@ def test_client_handles_sequential_requests():
     assert second[0][0] == pcm + b"\x02"
 
 
+def test_clean_closes_async_sdk_client():
+    class FakeTenEnv:
+        def log_info(self, *_args, **_kwargs):
+            pass
+
+    client = GeminiTTSClient(
+        GeminiTTSConfig(params={"api_key": "test_key"}),
+        FakeTenEnv(),
+    )
+    close = AsyncMock()
+    client.client = SimpleNamespace(aio=SimpleNamespace(aclose=close))
+
+    asyncio.run(client.clean())
+
+    close.assert_awaited_once()
+    assert client.client is None
+
+
 @pytest.mark.parametrize(
     (
         "audio_cycles",
@@ -408,7 +427,8 @@ def test_extension_lifecycle_accounting_and_recovery(
 
     assert tester.starts == expected_starts
     assert len(tester.ends) == 2
-    assert tester.received_audio_bytes == len(pcm) * sum(audio_cycles)
+    emitted_cycles = sum(audio is True for audio in audio_cycles)
+    assert tester.received_audio_bytes == len(pcm) * emitted_cycles
     assert [end["request_id"] for end in tester.ends] == [
         "first",
         "second",
