@@ -523,7 +523,9 @@ def test_extension_flush_cancels_audio_and_recovers(
             raise StopAsyncIteration
 
         async def close(self):
+            nonlocal provider_cancelled
             self.closed = True
+            provider_cancelled = True
             self.release.set()
 
     class FakeAsyncInteractions:
@@ -808,6 +810,22 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             1,
         ),
         (
+            ("timeout", True),
+            ["second"],
+            [3, 1],
+            [0, 100],
+            [0, 20],
+            1,
+        ),
+        (
+            ("network", True),
+            ["second"],
+            [3, 1],
+            [0, 100],
+            [0, 20],
+            1,
+        ),
+        (
             ("stream-error", True),
             ["first", "second"],
             [3, 1],
@@ -917,6 +935,10 @@ def test_extension_lifecycle_accounting_and_recovery(
                 raise RuntimeError("401 unauthorized")
             if has_audio == "transient":
                 raise RuntimeError("429 rate limit")
+            if has_audio == "timeout":
+                raise TimeoutError("request timed out")
+            if has_audio == "network":
+                raise ConnectionError("network unavailable")
             if not has_audio:
                 stream = FakeAsyncStream([completed_event()])
                 created_streams.append(stream)
