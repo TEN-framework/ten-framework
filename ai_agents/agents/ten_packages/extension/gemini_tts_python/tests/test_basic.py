@@ -155,6 +155,7 @@ def test_client_requests_raw_pcm_from_interactions():
     assert interactions.payload["model"] == "gemini-3.8-flash-tts"
     assert interactions.payload["store"] is False
     assert interactions.payload["stream"] is True
+    assert interactions.payload["automatic_continuation"] is True
     text_content = interactions.payload["input"][0]["content"][0]
     assert text_content["text"] == "Hello"
     assert text_content["annotations"] == [
@@ -327,16 +328,25 @@ def test_cancel_during_stream_discards_late_audio():
         def __init__(self):
             self.started = asyncio.Event()
             self.closed = asyncio.Event()
+            self.reading = False
 
         def __aiter__(self):
             return self
 
         async def __anext__(self):
             self.started.set()
-            await self.closed.wait()
+            self.reading = True
+            try:
+                await self.closed.wait()
+            finally:
+                self.reading = False
             raise StopAsyncIteration
 
         async def close(self):
+            if self.reading:
+                raise RuntimeError(
+                    "aclose(): asynchronous generator is already running"
+                )
             self.closed.set()
 
     async def create(**_kwargs):
@@ -352,8 +362,11 @@ def test_cancel_during_stream_discards_late_audio():
     async def scenario():
         pending = asyncio.create_task(_collect_events(client))
         await asyncio.wait_for(stream.started.wait(), 1)
+        pending.cancel()
         await client.cancel()
-        assert await pending == []
+        with pytest.raises(asyncio.CancelledError):
+            await pending
+        assert stream.closed.is_set()
 
     asyncio.run(scenario())
 

@@ -26,6 +26,8 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         self._is_cancelled = False
         self._request_task: asyncio.Task | None = None
         self._request_stream = None
+        self._stream_read_task: asyncio.Task | None = None
+        self._stream_lock = asyncio.Lock()
 
     async def get(
         self, text: str, request_id: str
@@ -71,6 +73,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                     model=model,
                     store=False,
                     stream=True,
+                    automatic_continuation=True,
                     input=[
                         {
                             "type": "user_input",
@@ -101,7 +104,12 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             emitted_audio = False
             terminal_status = None
             try:
-                async for event in stream:
+                while True:
+                    try:
+                        event = await self._next_stream_event(stream)
+                    except StopAsyncIteration:
+                        break
+
                     if self._is_cancelled:
                         self.ten_env.log_debug(
                             "Request cancelled while receiving audio"
@@ -138,9 +146,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                     )
                     yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
             finally:
-                if self._request_stream is stream:
-                    self._request_stream = None
-                await self._close_stream(stream)
+                await self._release_stream(stream)
 
             if self._is_cancelled:
                 self.ten_env.log_debug("Request cancelled after stream closed")
@@ -199,9 +205,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 return_exceptions=True,
             )
         if self._request_stream:
-            stream = self._request_stream
-            self._request_stream = None
-            await self._close_stream(stream)
+            await self._release_stream()
 
     async def clean(self):
         """Clean up resources"""
@@ -213,13 +217,38 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 return_exceptions=True,
             )
         if self._request_stream:
-            stream = self._request_stream
-            self._request_stream = None
-            await self._close_stream(stream)
+            await self._release_stream()
         if self.client:
             await self.client.aio.aclose()
         self._is_cancelled = False
         self.client = None
+
+    async def _next_stream_event(self, stream):
+        task = asyncio.create_task(anext(stream))
+        self._stream_read_task = task
+        try:
+            return await task
+        finally:
+            if self._stream_read_task is task and task.done():
+                self._stream_read_task = None
+
+    async def _release_stream(self, expected_stream=None) -> None:
+        async with self._stream_lock:
+            stream = self._request_stream
+            if stream is None:
+                return
+            if expected_stream is not None and stream is not expected_stream:
+                return
+
+            self._request_stream = None
+            read_task = self._stream_read_task
+            if read_task is not None:
+                if not read_task.done():
+                    read_task.cancel()
+                await asyncio.gather(read_task, return_exceptions=True)
+                if self._stream_read_task is read_task:
+                    self._stream_read_task = None
+            await self._close_stream(stream)
 
     @staticmethod
     def _audio_delta_data(event) -> str | None:
