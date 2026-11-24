@@ -51,15 +51,42 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
 async def test_gemini_public_interactions_boundary(monkeypatch, clock):
     sdk = import_module("google.genai._gaos.google_genai")
 
+    class Stream:
+        def __init__(self, events, delay_ms):
+            self.events = iter(events)
+            self.delay_ms = delay_ms
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            try:
+                event = next(self.events)
+            except StopIteration as exc:
+                raise StopAsyncIteration from exc
+            clock[0] += self.delay_ms * 1_000_000
+            return event
+
+        async def close(self):
+            pass
+
     class Interactions:
         async def create(self, **kwargs):
             text = kwargs["input"][0]["content"][0]["text"]
             if not text:
-                clock[0] += 5_000_000
-                return SimpleNamespace(output_audio=None)
-            clock[0] += 20_000_000
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(data="base64-audio")
+                return Stream([], 5)
+            delay_ms = 20 if text == "Hello" else 25
+            return Stream(
+                [
+                    SimpleNamespace(
+                        event_type="step.delta",
+                        delta=SimpleNamespace(
+                            type="audio",
+                            data="base64-audio",
+                        ),
+                    )
+                ],
+                delay_ms,
             )
 
     original_create = Interactions.create
@@ -77,9 +104,10 @@ async def test_gemini_public_interactions_boundary(monkeypatch, clock):
                     "type": "user_input",
                     "content": [{"type": "text", "text": ""}],
                 }
-            ]
+            ],
+            stream=True,
         )
-        assert empty.output_audio is None
+        assert [event async for event in empty] == []
         assert reference.elapsed_ms("empty") is None
 
         reference.begin_request("first")
@@ -90,22 +118,26 @@ async def test_gemini_public_interactions_boundary(monkeypatch, clock):
                     "type": "user_input",
                     "content": [{"type": "text", "text": "Hello"}],
                 }
-            ]
+            ],
+            stream=True,
         )
-        assert outputs.output_audio.data == "base64-audio"
+        events = [event async for event in outputs]
+        assert events[0].delta.data == "base64-audio"
         assert reference.elapsed_ms("first") == 20
 
         reference.begin_request("second")
         clock[0] = 200_000_000
-        await interactions.create(
+        outputs = await interactions.create(
             input=[
                 {
                     "type": "user_input",
                     "content": [{"type": "text", "text": "Again"}],
                 }
-            ]
+            ],
+            stream=True,
         )
-        assert reference.elapsed_ms("second") == 20
+        assert [event async for event in outputs]
+        assert reference.elapsed_ms("second") == 25
     assert Interactions.create is original_create
 
 

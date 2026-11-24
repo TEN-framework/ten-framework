@@ -17,6 +17,31 @@ from gemini_tts_python.config import GeminiTTSConfig
 from gemini_tts_python.gemini_tts import GeminiTTSClient
 
 
+class FakeAsyncStream:
+    def __init__(self, events):
+        self.events = iter(events)
+        self.closed = False
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self.events)
+        except StopIteration as exc:
+            raise StopAsyncIteration from exc
+
+    async def close(self):
+        self.closed = True
+
+
+def audio_event(data):
+    return SimpleNamespace(
+        event_type="step.delta",
+        delta=SimpleNamespace(type="audio", data=data),
+    )
+
+
 def test_import():
     """Test that extension can be imported"""
     from gemini_tts_python.extension import GeminiTTSExtension
@@ -80,10 +105,10 @@ def test_client_requests_raw_pcm_from_interactions():
 
         async def create(self, **kwargs):
             self.payload = kwargs
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm).decode("ascii")
-                )
+            return FakeAsyncStream(
+                [
+                    audio_event(base64.b64encode(pcm).decode("ascii")),
+                ]
             )
 
     config = GeminiTTSConfig(
@@ -105,6 +130,7 @@ def test_client_requests_raw_pcm_from_interactions():
 
     assert interactions.payload["model"] == "gemini-3.8-flash-tts"
     assert interactions.payload["store"] is False
+    assert interactions.payload["stream"] is True
     text_content = interactions.payload["input"][0]["content"][0]
     assert text_content["text"] == "Hello"
     assert text_content["annotations"] == [
@@ -140,7 +166,7 @@ def test_client_reports_missing_audio():
     client = GeminiTTSClient(config, FakeTenEnv())
 
     async def create(**_kwargs):
-        return SimpleNamespace(output_audio=None)
+        return FakeAsyncStream([])
 
     client.client = SimpleNamespace(
         aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
@@ -198,10 +224,10 @@ def test_cancel_during_request_and_recovery():
             if calls == 1:
                 started.set()
                 await release.wait()
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm).decode("ascii")
-                )
+            return FakeAsyncStream(
+                [
+                    audio_event(base64.b64encode(pcm).decode("ascii")),
+                ]
             )
 
     config = GeminiTTSConfig(params={"api_key": "test_key"})
@@ -239,10 +265,12 @@ def test_client_handles_sequential_requests():
         async def create(self, **_kwargs):
             nonlocal calls
             calls += 1
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm + bytes([calls])).decode("ascii")
-                )
+            return FakeAsyncStream(
+                [
+                    audio_event(
+                        base64.b64encode(pcm + bytes([calls])).decode("ascii")
+                    ),
+                ]
             )
 
     config = GeminiTTSConfig(params={"api_key": "test_key"})
@@ -385,10 +413,10 @@ def test_extension_flush_cancels_audio_and_recovers(
                 except asyncio.CancelledError:
                     provider_cancelled = True
                     raise
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm).decode("ascii")
-                )
+            return FakeAsyncStream(
+                [
+                    audio_event(base64.b64encode(pcm).decode("ascii")),
+                ]
             )
 
     class FakeClient:
@@ -542,10 +570,10 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             nonlocal clock_ms
             clock_ms += 10
             request_texts.append(kwargs["input"][0]["content"][0]["text"])
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm).decode("ascii")
-                )
+            return FakeAsyncStream(
+                [
+                    audio_event(base64.b64encode(pcm).decode("ascii")),
+                ]
             )
 
     class FakeClient:
@@ -727,11 +755,11 @@ def test_extension_lifecycle_accounting_and_recovery(
             if has_audio == "transient":
                 raise RuntimeError("429 rate limit")
             if not has_audio:
-                return SimpleNamespace(output_audio=None)
-            return SimpleNamespace(
-                output_audio=SimpleNamespace(
-                    data=base64.b64encode(pcm).decode("ascii")
-                )
+                return FakeAsyncStream([])
+            return FakeAsyncStream(
+                [
+                    audio_event(base64.b64encode(pcm).decode("ascii")),
+                ]
             )
 
     class FakeClient:

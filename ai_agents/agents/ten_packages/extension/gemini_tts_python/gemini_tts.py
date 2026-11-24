@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import inspect
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -24,6 +25,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
         self.client = None
         self._is_cancelled = False
         self._request_task: asyncio.Task | None = None
+        self._request_stream = None
 
     async def get(
         self, text: str, request_id: str
@@ -68,6 +70,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 self.client.aio.interactions.create(
                     model=model,
                     store=False,
+                    stream=True,
                     input=[
                         {
                             "type": "user_input",
@@ -87,29 +90,46 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 )
             )
             try:
-                response = await self._request_task
+                stream = await self._request_task
             except asyncio.CancelledError:
                 self.ten_env.log_debug("Request cancelled while waiting")
                 return
             finally:
                 self._request_task = None
 
-            output_audio = getattr(response, "output_audio", None)
-            audio_data = getattr(output_audio, "data", None)
-            if audio_data:
-                audio_bytes = base64.b64decode(audio_data)
+            self._request_stream = stream
+            emitted_audio = False
+            try:
+                async for event in stream:
+                    if self._is_cancelled:
+                        self.ten_env.log_debug(
+                            "Request cancelled while receiving audio"
+                        )
+                        return
 
-                if self._is_cancelled:
+                    if getattr(event, "event_type", None) == "error":
+                        error = getattr(event, "error", None)
+                        raise RuntimeError(
+                            getattr(error, "message", None)
+                            or "Gemini Interactions stream failed"
+                        )
+
+                    audio_data = self._audio_delta_data(event)
+                    if not audio_data:
+                        continue
+
+                    audio_bytes = base64.b64decode(audio_data)
+                    emitted_audio = True
                     self.ten_env.log_debug(
-                        "Request cancelled after receiving response"
+                        f"Received {len(audio_bytes)} bytes of audio data"
                     )
-                    return
+                    yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
+            finally:
+                if self._request_stream is stream:
+                    self._request_stream = None
+                await self._close_stream(stream)
 
-                self.ten_env.log_debug(
-                    f"Received {len(audio_bytes)} bytes of audio data"
-                )
-
-                yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
+            if emitted_audio:
                 yield None, TTS2HttpResponseEventType.END
             else:
                 error_msg = "No audio data in response from Gemini TTS"
@@ -151,6 +171,10 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 self._request_task,
                 return_exceptions=True,
             )
+        if self._request_stream:
+            stream = self._request_stream
+            self._request_stream = None
+            await self._close_stream(stream)
 
     async def clean(self):
         """Clean up resources"""
@@ -161,10 +185,35 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 self._request_task,
                 return_exceptions=True,
             )
+        if self._request_stream:
+            stream = self._request_stream
+            self._request_stream = None
+            await self._close_stream(stream)
         if self.client:
             await self.client.aio.aclose()
         self._is_cancelled = False
         self.client = None
+
+    @staticmethod
+    def _audio_delta_data(event) -> str | None:
+        if getattr(event, "event_type", None) != "step.delta":
+            return None
+        delta = getattr(event, "delta", None)
+        if getattr(delta, "type", None) != "audio":
+            return None
+        data = getattr(delta, "data", None)
+        return data if isinstance(data, str) and data else None
+
+    @staticmethod
+    async def _close_stream(stream) -> None:
+        close = getattr(stream, "aclose", None) or getattr(
+            stream, "close", None
+        )
+        if close is None:
+            return
+        result = close()
+        if inspect.isawaitable(result):
+            await result
 
     def get_extra_metadata(self) -> dict[str, Any]:
         """Return model/voice for TTFB metrics"""
