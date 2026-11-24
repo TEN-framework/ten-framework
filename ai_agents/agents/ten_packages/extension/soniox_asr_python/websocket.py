@@ -338,7 +338,9 @@ class SonioxWebsocketClient:
             self._last_audio_time = time.time()
         await self._send_queue.put(audio)
 
-    async def send_agent_text(self, text: str, *, end_of_segment: bool = False) -> None:
+    async def send_agent_text(
+        self, text: str, *, end_of_segment: bool = False
+    ) -> None:
         frame = json.dumps(
             {
                 "type": "agent_text",
