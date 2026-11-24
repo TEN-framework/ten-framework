@@ -286,7 +286,11 @@ def test_clean_closes_async_sdk_client():
     [True, False],
     ids=["before-audio", "after-audio"],
 )
-def test_extension_flush_cancels_audio_and_recovers(monkeypatch, blocked):
+def test_extension_flush_cancels_audio_and_recovers(
+    monkeypatch,
+    tmp_path,
+    blocked,
+):
     runtime = pytest.importorskip("ten_runtime")
     if not hasattr(runtime, "ExtensionTester"):
         pytest.skip("TEN runtime test harness is not installed")
@@ -429,10 +433,12 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch, blocked):
         "gemini_tts_python",
         json.dumps(
             {
+                "dump": True,
+                "dump_path": str(tmp_path),
                 "params": {
                     "api_key": "test-key",
                     "model": "gemini-3.8-flash-tts",
-                }
+                },
             }
         ),
     )
@@ -446,6 +452,7 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch, blocked):
         assert tester.starts == ["second"]
         assert sent_audio_requests == ["second"]
         assert len(tester.ends) == 1
+        assert tester.ends[0]["request_id"] != "first"
         assert tester.ends[0]["request_id"] == "second"
         assert tester.ends[0]["reason"] == 1
         assert tester.ends[0]["request_total_audio_duration_ms"] == 100
@@ -462,6 +469,10 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch, blocked):
         assert tester.ends[1]["reason"] == 1
         assert tester.ends[1]["request_total_audio_duration_ms"] == 100
         assert tester.received_audio_bytes == len(pcm) * 2
+    assert (tmp_path / "gemini_dump_first.pcm").read_bytes() == (
+        b"" if blocked else pcm
+    )
+    assert (tmp_path / "gemini_dump_second.pcm").read_bytes() == pcm
     assert provider_calls == 2
 
 
