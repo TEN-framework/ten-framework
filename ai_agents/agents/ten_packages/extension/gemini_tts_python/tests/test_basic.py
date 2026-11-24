@@ -281,6 +281,296 @@ def test_clean_closes_async_sdk_client():
     assert client.client is None
 
 
+def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
+    runtime = pytest.importorskip("ten_runtime")
+    if not hasattr(runtime, "ExtensionTester"):
+        pytest.skip("TEN runtime test harness is not installed")
+    from ten_ai_base import tts2_http
+    from ten_ai_base.struct import TTSFlush, TTSTextInput
+    from ten_runtime import Data, ExtensionTester
+
+    gemini_tts_module = import_module(
+        "ten_packages.extension.gemini_tts_python.gemini_tts"
+    )
+
+    pcm = b"\x00\x01" * 2400
+    clock_ms = 0
+    provider_calls = 0
+    sent_audio_requests = []
+
+    class FlushTester(ExtensionTester):
+        def __init__(self):
+            super().__init__()
+            self.starts = []
+            self.ends = []
+            self.flush_ends = []
+            self.errors = []
+            self.received_audio_bytes = 0
+
+        def send_request(self, ten_env, request_id):
+            request = TTSTextInput(
+                request_id=request_id,
+                text="Hello",
+                text_input_end=True,
+            )
+            data = Data.create("tts_text_input")
+            data.set_property_from_json(None, request.model_dump_json())
+            ten_env.send_data(data)
+
+        def on_start(self, ten_env_tester):
+            self.send_request(ten_env_tester, "first")
+            ten_env_tester.on_start_done()
+
+        def on_audio_frame(self, ten_env, audio_frame):
+            buf = audio_frame.lock_buf()
+            try:
+                self.received_audio_bytes += len(buf)
+            finally:
+                audio_frame.unlock_buf(buf)
+
+            if len(sent_audio_requests) == 1:
+                flush = Data.create("tts_flush")
+                flush.set_property_from_json(
+                    None,
+                    TTSFlush(flush_id="flush-first").model_dump_json(),
+                )
+                ten_env.send_data(flush)
+
+        def on_data(self, ten_env, data):
+            name = data.get_name()
+            if name == "error":
+                payload, _ = data.get_property_to_json(None)
+                self.errors.append(json.loads(payload))
+                return
+
+            payload, _ = data.get_property_to_json(None)
+            event = json.loads(payload) if payload else {}
+            if name == "tts_audio_start":
+                self.starts.append(event["request_id"])
+            elif name == "tts_audio_end":
+                self.ends.append(event)
+                if event["request_id"] == "second":
+                    ten_env.stop_test()
+            elif name == "tts_flush_end":
+                self.flush_ends.append(event)
+                self.send_request(ten_env, "second")
+
+    class FakeAsyncInteractions:
+        async def create(self, **_kwargs):
+            nonlocal clock_ms, provider_calls
+            provider_calls += 1
+            clock_ms += 10
+            return SimpleNamespace(
+                output_audio=SimpleNamespace(
+                    data=base64.b64encode(pcm).decode("ascii")
+                )
+            )
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.aio = SimpleNamespace(
+                interactions=FakeAsyncInteractions(),
+                aclose=AsyncMock(),
+            )
+
+    original_send_audio_data = (
+        tts2_http.AsyncTTS2HttpExtension.send_tts_audio_data
+    )
+
+    async def send_audio_data(extension, audio_data):
+        nonlocal clock_ms
+        request_id = extension.current_audio_request_id
+        sent_audio_requests.append(request_id)
+        clock_ms += 20
+        await original_send_audio_data(extension, audio_data)
+        if request_id == "first":
+            await asyncio.sleep(1)
+
+    base_time = dt.datetime(2026, 1, 1)
+
+    class ControlledDateTime:
+        @classmethod
+        def now(cls):
+            return base_time + dt.timedelta(milliseconds=clock_ms)
+
+    monkeypatch.setattr(
+        gemini_tts_module,
+        "genai",
+        SimpleNamespace(Client=FakeClient),
+    )
+    monkeypatch.setattr(
+        tts2_http.AsyncTTS2HttpExtension,
+        "send_tts_audio_data",
+        send_audio_data,
+    )
+    monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
+    tester = FlushTester()
+    tester.set_test_mode_single(
+        "gemini_tts_python",
+        json.dumps(
+            {
+                "params": {
+                    "api_key": "test-key",
+                    "model": "gemini-3.8-flash-tts",
+                }
+            }
+        ),
+    )
+
+    tester.run()
+
+    assert tester.errors == []
+    assert tester.starts == ["first", "second"]
+    assert sent_audio_requests == ["first", "second"]
+    assert len(tester.flush_ends) == 1
+    assert len(tester.ends) == 2
+    assert tester.ends[0]["request_id"] == "first"
+    assert tester.ends[0]["reason"] == 2
+    assert tester.ends[0]["request_total_audio_duration_ms"] == 100
+    assert tester.ends[1]["request_id"] == "second"
+    assert tester.ends[1]["reason"] == 1
+    assert tester.ends[1]["request_total_audio_duration_ms"] == 100
+    assert tester.received_audio_bytes == len(pcm) * 2
+    assert provider_calls == 2
+
+
+def test_extension_interleaved_requests_keep_metrics(monkeypatch):
+    runtime = pytest.importorskip("ten_runtime")
+    if not hasattr(runtime, "ExtensionTester"):
+        pytest.skip("TEN runtime test harness is not installed")
+    from ten_ai_base import tts2_http
+    from ten_ai_base.struct import TTSTextInput
+    from ten_runtime import Data, ExtensionTester
+
+    gemini_tts_module = import_module(
+        "ten_packages.extension.gemini_tts_python.gemini_tts"
+    )
+
+    pcm = b"\x00\x01" * 2400
+    clock_ms = 0
+    request_texts = []
+
+    class InterleavedTester(ExtensionTester):
+        def __init__(self):
+            super().__init__()
+            self.starts = []
+            self.ends = []
+            self.ttfb_turns = []
+
+        def send_request(
+            self,
+            ten_env,
+            request_id,
+            text,
+            text_input_end,
+            turn_id,
+        ):
+            request = TTSTextInput(
+                request_id=request_id,
+                text=text,
+                text_input_end=text_input_end,
+                metadata={"turn_id": turn_id},
+            )
+            data = Data.create("tts_text_input")
+            data.set_property_from_json(None, request.model_dump_json())
+            ten_env.send_data(data)
+
+        def on_start(self, ten_env_tester):
+            self.send_request(ten_env_tester, "first", "Hello", False, 1)
+            self.send_request(ten_env_tester, "second", "Second", True, 2)
+            self.send_request(ten_env_tester, "first", ", world", True, 1)
+            ten_env_tester.on_start_done()
+
+        def on_data(self, ten_env, data):
+            payload, _ = data.get_property_to_json(None)
+            event = json.loads(payload) if payload else {}
+            if data.get_name() == "tts_audio_start":
+                self.starts.append(event["request_id"])
+            elif data.get_name() == "tts_audio_end":
+                self.ends.append(event)
+                if len(self.ends) == 2:
+                    ten_env.stop_test()
+            elif data.get_name() == "metrics" and "ttfb" in event.get(
+                "metrics", {}
+            ):
+                self.ttfb_turns.append(event["metadata"]["turn_id"])
+
+    class FakeAsyncInteractions:
+        async def create(self, **kwargs):
+            nonlocal clock_ms
+            clock_ms += 10
+            request_texts.append(kwargs["input"][0]["content"][0]["text"])
+            return SimpleNamespace(
+                output_audio=SimpleNamespace(
+                    data=base64.b64encode(pcm).decode("ascii")
+                )
+            )
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.aio = SimpleNamespace(
+                interactions=FakeAsyncInteractions(),
+                aclose=AsyncMock(),
+            )
+
+    original_send_audio_data = (
+        tts2_http.AsyncTTS2HttpExtension.send_tts_audio_data
+    )
+
+    async def send_audio_data(extension, audio_data):
+        nonlocal clock_ms
+        clock_ms += 20
+        await original_send_audio_data(extension, audio_data)
+
+    base_time = dt.datetime(2026, 1, 1)
+
+    class ControlledDateTime:
+        @classmethod
+        def now(cls):
+            return base_time + dt.timedelta(milliseconds=clock_ms)
+
+    monkeypatch.setattr(
+        gemini_tts_module,
+        "genai",
+        SimpleNamespace(Client=FakeClient),
+    )
+    monkeypatch.setattr(
+        tts2_http.AsyncTTS2HttpExtension,
+        "send_tts_audio_data",
+        send_audio_data,
+    )
+    monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
+    tester = InterleavedTester()
+    tester.set_test_mode_single(
+        "gemini_tts_python",
+        json.dumps(
+            {
+                "params": {
+                    "api_key": "test-key",
+                    "model": "gemini-3.8-flash-tts",
+                }
+            }
+        ),
+    )
+
+    tester.run()
+
+    assert request_texts == ["Hello", ", world", "Second"]
+    assert tester.starts == ["first", "second"]
+    assert [event["request_id"] for event in tester.ends] == [
+        "first",
+        "second",
+    ]
+    assert [
+        event["request_total_audio_duration_ms"] for event in tester.ends
+    ] == [200, 100]
+    assert [event["request_event_interval_ms"] for event in tester.ends] == [
+        40,
+        20,
+    ]
+    assert tester.ttfb_turns == [1, 2]
+
+
 @pytest.mark.parametrize(
     (
         "audio_cycles",
