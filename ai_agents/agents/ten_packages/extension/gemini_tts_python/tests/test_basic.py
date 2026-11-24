@@ -281,7 +281,12 @@ def test_clean_closes_async_sdk_client():
     assert client.client is None
 
 
-def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
+@pytest.mark.parametrize(
+    "blocked",
+    [True, False],
+    ids=["before-audio", "after-audio"],
+)
+def test_extension_flush_cancels_audio_and_recovers(monkeypatch, blocked):
     runtime = pytest.importorskip("ten_runtime")
     if not hasattr(runtime, "ExtensionTester"):
         pytest.skip("TEN runtime test harness is not installed")
@@ -330,6 +335,14 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
             finally:
                 audio_frame.unlock_buf(buf)
 
+            if not blocked and len(sent_audio_requests) == 1:
+                flush = Data.create("tts_flush")
+                flush.set_property_from_json(
+                    None,
+                    TTSFlush(flush_id="flush-first").model_dump_json(),
+                )
+                ten_env.send_data(flush)
+
         def on_data(self, ten_env, data):
             name = data.get_name()
             if name == "error":
@@ -356,13 +369,13 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
             nonlocal clock_ms, provider_calls, provider_cancelled
             provider_calls += 1
             clock_ms += 10
-            if provider_calls == 1:
+            if blocked and provider_calls == 1:
                 flush = Data.create("tts_flush")
                 flush.set_property_from_json(
                     None,
                     TTSFlush(flush_id="flush-first").model_dump_json(),
                 )
-                await tester.ten_env.send_data(flush)
+                tester.ten_env.send_data(flush)
                 try:
                     await asyncio.Event().wait()
                 except asyncio.CancelledError:
@@ -391,6 +404,8 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
         sent_audio_requests.append(request_id)
         clock_ms += 20
         await original_send_audio_data(extension, audio_data)
+        if not blocked and request_id == "first":
+            await asyncio.sleep(1)
 
     base_time = dt.datetime(2026, 1, 1)
 
@@ -425,15 +440,28 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
     tester.run()
 
     assert tester.errors == []
-    assert provider_cancelled
-    assert tester.starts == ["second"]
-    assert sent_audio_requests == ["second"]
+    assert provider_cancelled is blocked
     assert len(tester.flush_ends) == 1
-    assert len(tester.ends) == 1
-    assert tester.ends[0]["request_id"] == "second"
-    assert tester.ends[0]["reason"] == 1
-    assert tester.ends[0]["request_total_audio_duration_ms"] == 100
-    assert tester.received_audio_bytes == len(pcm)
+    if blocked:
+        assert tester.starts == ["second"]
+        assert sent_audio_requests == ["second"]
+        assert len(tester.ends) == 1
+        assert tester.ends[0]["request_id"] == "second"
+        assert tester.ends[0]["reason"] == 1
+        assert tester.ends[0]["request_total_audio_duration_ms"] == 100
+        assert tester.received_audio_bytes == len(pcm)
+    else:
+        assert tester.starts == ["first", "second"]
+        assert sent_audio_requests == ["first", "second"]
+        assert len(tester.ends) == 2
+        assert tester.ends[0]["request_id"] == "first"
+        assert tester.ends[0]["reason"] == 2
+        assert tester.ends[0]["request_total_audio_duration_ms"] == 100
+        assert tester.ends[0]["request_event_interval_ms"] == 20
+        assert tester.ends[1]["request_id"] == "second"
+        assert tester.ends[1]["reason"] == 1
+        assert tester.ends[1]["request_total_audio_duration_ms"] == 100
+        assert tester.received_audio_bytes == len(pcm) * 2
     assert provider_calls == 2
 
 
