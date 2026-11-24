@@ -757,7 +757,7 @@ def test_extension_flush_cancels_audio_and_recovers(
     )
     if blocked:
         assert tester.starts == ["second"]
-        assert sent_audio_requests == ["second"]
+        assert sent_audio_requests == ["second"] * len(pcm_chunks)
         assert len(tester.ends) == 1
         assert tester.ends[0]["request_id"] != "first"
         assert tester.ends[0]["request_id"] == "second"
@@ -767,7 +767,7 @@ def test_extension_flush_cancels_audio_and_recovers(
         assert tester.received_audio_bytes == len(pcm)
     else:
         assert tester.starts == ["first", "second"]
-        assert sent_audio_requests == ["first", "second"]
+        assert sent_audio_requests == ["first"] + ["second"] * len(pcm_chunks)
         assert len(tester.ends) == 2
         assert tester.ends[0]["request_id"] == "first"
         assert tester.ends[0]["reason"] == 2
