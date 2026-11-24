@@ -1,4 +1,8 @@
-"""Observe Gemini Interactions request and first-audio boundaries."""
+"""Observe Gemini's unary request and complete-audio SDK boundaries.
+
+Interactions is unary here, so the provider exposes no first-audio callback
+before the complete response is available.
+"""
 
 from functools import wraps
 from importlib import import_module
