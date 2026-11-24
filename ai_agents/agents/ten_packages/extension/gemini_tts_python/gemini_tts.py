@@ -1,11 +1,13 @@
 import base64
-from typing import AsyncIterator, Tuple, Any
+from typing import Any, AsyncIterator, Tuple
+
 from google import genai
-from ten_runtime import AsyncTenEnv
-from ten_ai_base.tts2_http import AsyncTTS2HttpClient
-from ten_ai_base.struct import TTS2HttpResponseEventType
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
-from .config import GeminiTTSConfig
+from ten_ai_base.struct import TTS2HttpResponseEventType
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
+from ten_runtime import AsyncTenEnv
+
+from .config import DEFAULT_MODEL, GeminiTTSConfig
 
 
 class GeminiTTSClient(AsyncTTS2HttpClient):
@@ -33,27 +35,17 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             # Initialize Gemini client
             if not self.client:
                 api_key = self.config.params.get("api_key")
-                self.client = genai.Client(api_key=api_key)
+                self.client = genai.Client(
+                    api_key=api_key,
+                    http_options={"api_version": "v1beta"},
+                )
                 self.ten_env.log_debug("Gemini TTS client initialized")
 
             # Prepare request parameters
-            model = self.config.params.get(
-                "model", "gemini-2.5-flash-preview-tts"
-            )
+            model = self.config.params.get("model", DEFAULT_MODEL)
             voice = self.config.params.get("voice", "Kore")
             language_code = self.config.params.get("language_code", "en-US")
             style_prompt = self.config.params.get("style_prompt", "")
-
-            # Build speech config
-            speech_config = {
-                "voice_config": {"prebuilt_voice_config": {"voice_name": voice}}
-            }
-
-            # Build generation config
-            generation_config = {
-                "response_modalities": ["AUDIO"],
-                "speech_config": speech_config,
-            }
 
             self.ten_env.log_debug(
                 f"Generating speech for text: '{text[:100]}...' "
@@ -66,49 +58,45 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
             if style_prompt:
                 contents = f"{style_prompt}\n\n{text}"
 
-            # Make API request
-            response = self.client.models.generate_content(
+            response = self.client.interactions.create(
                 model=model,
-                contents=contents,
-                config=generation_config,
+                input=[
+                    {
+                        "type": "user_input",
+                        "content": [{"type": "text", "text": contents}],
+                    }
+                ],
+                response_format={
+                    "type": "audio",
+                    "mime_type": "audio/l16",
+                    "sample_rate": 24000,
+                },
+                generation_config={
+                    "speech_config": [
+                        {"voice": voice, "language": language_code}
+                    ]
+                },
             )
 
-            # Extract audio data from response
-            if (
-                response.candidates
-                and len(response.candidates) > 0
-                and response.candidates[0].content.parts
-                and len(response.candidates[0].content.parts) > 0
-            ):
-                part = response.candidates[0].content.parts[0]
+            output_audio = getattr(response, "output_audio", None)
+            audio_data = getattr(output_audio, "data", None)
+            if audio_data:
+                audio_bytes = base64.b64decode(audio_data)
 
-                if hasattr(part, "inline_data") and part.inline_data:
-                    # Decode base64 audio data
-                    audio_bytes = base64.b64decode(part.inline_data.data)
-
-                    if self._is_cancelled:
-                        self.ten_env.log_debug(
-                            "Request cancelled after receiving response"
-                        )
-                        return
-
+                if self._is_cancelled:
                     self.ten_env.log_debug(
-                        f"Received {len(audio_bytes)} bytes of audio data"
+                        "Request cancelled after receiving response"
                     )
+                    return
 
-                    # Yield audio data
-                    yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
+                self.ten_env.log_debug(
+                    f"Received {len(audio_bytes)} bytes of audio data"
+                )
 
-                    # Signal completion
-                    yield None, TTS2HttpResponseEventType.END
-                else:
-                    error_msg = "No audio data in response from Gemini TTS"
-                    self.ten_env.log_error(error_msg)
-                    yield error_msg.encode(
-                        "utf-8"
-                    ), TTS2HttpResponseEventType.ERROR
+                yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
+                yield None, TTS2HttpResponseEventType.END
             else:
-                error_msg = "Empty response received from Gemini TTS"
+                error_msg = "No audio data in response from Gemini TTS"
                 self.ten_env.log_error(error_msg)
                 yield error_msg.encode("utf-8"), TTS2HttpResponseEventType.ERROR
 
@@ -127,13 +115,15 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 or "api_key" in error_message.lower()
                 or "unauthorized" in error_message.lower()
             ):
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                yield (
+                    error_message.encode("utf-8"),
+                    TTS2HttpResponseEventType.INVALID_KEY_ERROR,
+                )
             else:
-                yield error_message.encode(
-                    "utf-8"
-                ), TTS2HttpResponseEventType.ERROR
+                yield (
+                    error_message.encode("utf-8"),
+                    TTS2HttpResponseEventType.ERROR,
+                )
 
     async def cancel(self):
         """Cancel ongoing request"""
