@@ -6,6 +6,7 @@ import asyncio
 import base64
 import datetime as dt
 import json
+from importlib import import_module
 from types import SimpleNamespace
 
 import pytest
@@ -272,6 +273,7 @@ def test_client_handles_sequential_requests():
     [
         ((True, True), ["first", "second"], [1, 1], [100, 100], [20, 20]),
         ((False, True), ["second"], [3, 1], [0, 100], [0, 20]),
+        (("error", True), ["second"], [3, 1], [0, 100], [0, 20]),
     ],
 )
 def test_extension_lifecycle_accounting_and_recovery(
@@ -289,7 +291,9 @@ def test_extension_lifecycle_accounting_and_recovery(
     from ten_ai_base.struct import TTSTextInput
     from ten_runtime import Data, ExtensionTester
 
-    from gemini_tts_python import gemini_tts as gemini_tts_module
+    gemini_tts_module = import_module(
+        "ten_packages.extension.gemini_tts_python.gemini_tts"
+    )
 
     pcm = b"\x00\x01" * 2400
     clock_ms = 0
@@ -344,6 +348,8 @@ def test_extension_lifecycle_accounting_and_recovery(
             clock_ms += 10
             has_audio = audio_cycles[request_index]
             request_index += 1
+            if has_audio == "error":
+                raise RuntimeError("401 unauthorized")
             if not has_audio:
                 return SimpleNamespace(output_audio=None)
             return SimpleNamespace(
