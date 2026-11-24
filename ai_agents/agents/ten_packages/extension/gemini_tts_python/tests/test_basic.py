@@ -296,6 +296,7 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
     pcm = b"\x00\x01" * 2400
     clock_ms = 0
     provider_calls = 0
+    provider_cancelled = False
     sent_audio_requests = []
 
     class FlushTester(ExtensionTester):
@@ -318,6 +319,7 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
             ten_env.send_data(data)
 
         def on_start(self, ten_env_tester):
+            self.ten_env = ten_env_tester
             self.send_request(ten_env_tester, "first")
             ten_env_tester.on_start_done()
 
@@ -327,14 +329,6 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
                 self.received_audio_bytes += len(buf)
             finally:
                 audio_frame.unlock_buf(buf)
-
-            if len(sent_audio_requests) == 1:
-                flush = Data.create("tts_flush")
-                flush.set_property_from_json(
-                    None,
-                    TTSFlush(flush_id="flush-first").model_dump_json(),
-                )
-                ten_env.send_data(flush)
 
         def on_data(self, ten_env, data):
             name = data.get_name()
@@ -355,11 +349,25 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
                 self.flush_ends.append(event)
                 self.send_request(ten_env, "second")
 
+    tester = FlushTester()
+
     class FakeAsyncInteractions:
         async def create(self, **_kwargs):
-            nonlocal clock_ms, provider_calls
+            nonlocal clock_ms, provider_calls, provider_cancelled
             provider_calls += 1
             clock_ms += 10
+            if provider_calls == 1:
+                flush = Data.create("tts_flush")
+                flush.set_property_from_json(
+                    None,
+                    TTSFlush(flush_id="flush-first").model_dump_json(),
+                )
+                await tester.ten_env.send_data(flush)
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    provider_cancelled = True
+                    raise
             return SimpleNamespace(
                 output_audio=SimpleNamespace(
                     data=base64.b64encode(pcm).decode("ascii")
@@ -383,8 +391,6 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
         sent_audio_requests.append(request_id)
         clock_ms += 20
         await original_send_audio_data(extension, audio_data)
-        if request_id == "first":
-            await asyncio.sleep(1)
 
     base_time = dt.datetime(2026, 1, 1)
 
@@ -404,7 +410,6 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
         send_audio_data,
     )
     monkeypatch.setattr(tts2_http, "datetime", ControlledDateTime)
-    tester = FlushTester()
     tester.set_test_mode_single(
         "gemini_tts_python",
         json.dumps(
@@ -420,17 +425,15 @@ def test_extension_flush_cancels_audio_and_recovers(monkeypatch):
     tester.run()
 
     assert tester.errors == []
-    assert tester.starts == ["first", "second"]
-    assert sent_audio_requests == ["first", "second"]
+    assert provider_cancelled
+    assert tester.starts == ["second"]
+    assert sent_audio_requests == ["second"]
     assert len(tester.flush_ends) == 1
-    assert len(tester.ends) == 2
-    assert tester.ends[0]["request_id"] == "first"
-    assert tester.ends[0]["reason"] == 2
+    assert len(tester.ends) == 1
+    assert tester.ends[0]["request_id"] == "second"
+    assert tester.ends[0]["reason"] == 1
     assert tester.ends[0]["request_total_audio_duration_ms"] == 100
-    assert tester.ends[1]["request_id"] == "second"
-    assert tester.ends[1]["reason"] == 1
-    assert tester.ends[1]["request_total_audio_duration_ms"] == 100
-    assert tester.received_audio_bytes == len(pcm) * 2
+    assert tester.received_audio_bytes == len(pcm)
     assert provider_calls == 2
 
 
