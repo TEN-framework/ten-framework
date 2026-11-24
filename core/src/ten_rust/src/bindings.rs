@@ -295,6 +295,10 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
         }
     };
 
+    if manifest_api.interface.as_ref().is_none_or(Vec::is_empty) {
+        return manifest_api_json_str_c_str.to_owned().into_raw();
+    }
+
     let runtime = Runtime::new().unwrap();
     let flattened_api = runtime
         .block_on(manifest_api.get_flattened_api(current_base_dir_rust_str, app_base_dir_rust_str));
