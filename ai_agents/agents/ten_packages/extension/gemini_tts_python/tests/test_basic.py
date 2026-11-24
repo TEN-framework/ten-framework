@@ -6,6 +6,7 @@ import asyncio
 import base64
 import datetime as dt
 import json
+import threading
 from importlib import import_module
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -477,6 +478,7 @@ def test_extension_flush_cancels_audio_and_recovers(
     provider_cancelled = False
     sent_audio_requests = []
     created_streams = []
+    next_read_started = threading.Event()
 
     class FlushTester(ExtensionTester):
         def __init__(self):
@@ -510,6 +512,7 @@ def test_extension_flush_cancels_audio_and_recovers(
                 audio_frame.unlock_buf(buf)
 
             if not blocked and len(sent_audio_requests) == 1:
+                assert next_read_started.wait(timeout=1)
                 flush = Data.create("tts_flush")
                 flush.set_property_from_json(
                     None,
@@ -552,13 +555,16 @@ def test_extension_flush_cancels_audio_and_recovers(
             if self.first:
                 self.first = False
                 return audio_event(base64.b64encode(pcm).decode("ascii"))
-            await self.release.wait()
+            next_read_started.set()
+            try:
+                await self.release.wait()
+            except asyncio.CancelledError:
+                provider_cancelled = True
+                raise
             raise StopAsyncIteration
 
         async def close(self):
-            nonlocal provider_cancelled
             self.closed = True
-            provider_cancelled = True
             self.release.set()
 
     class FakeAsyncInteractions:
@@ -867,6 +873,22 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             1,
         ),
         (
+            ("stream-timeout", True),
+            ["first", "second"],
+            [3, 1],
+            [100, 100],
+            [20, 20],
+            1,
+        ),
+        (
+            ("stream-network", True),
+            ["first", "second"],
+            [3, 1],
+            [100, 100],
+            [20, 20],
+            1,
+        ),
+        (
             ("stream-incomplete", True),
             ["first", "second"],
             [3, 1],
@@ -957,6 +979,24 @@ def test_extension_lifecycle_accounting_and_recovery(
             if len(self.ends) == 2:
                 ten_env.stop_test()
 
+    class RaisingStream:
+        def __init__(self, error):
+            self.error = error
+            self.first = True
+            self.closed = False
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self.first:
+                self.first = False
+                return audio_event(base64.b64encode(pcm).decode("ascii"))
+            raise self.error
+
+        async def close(self):
+            self.closed = True
+
     class FakeAsyncInteractions:
         async def create(self, **kwargs):
             nonlocal clock_ms, request_index
@@ -972,6 +1012,14 @@ def test_extension_lifecycle_accounting_and_recovery(
                 raise TimeoutError("request timed out")
             if has_audio == "network":
                 raise ConnectionError("network unavailable")
+            if has_audio == "stream-timeout":
+                stream = RaisingStream(TimeoutError("stream timed out"))
+                created_streams.append(stream)
+                return stream
+            if has_audio == "stream-network":
+                stream = RaisingStream(ConnectionError("stream disconnected"))
+                created_streams.append(stream)
+                return stream
             if not has_audio:
                 stream = FakeAsyncStream([completed_event()])
                 created_streams.append(stream)
@@ -1055,7 +1103,14 @@ def test_extension_lifecycle_accounting_and_recovery(
         assert tester.errors[0]["code"] == expected_code
     emitted_cycles = sum(
         audio is True
-        or audio in {"stream-error", "stream-incomplete", "missing-completion"}
+        or audio
+        in {
+            "stream-error",
+            "stream-timeout",
+            "stream-network",
+            "stream-incomplete",
+            "missing-completion",
+        }
         for audio in audio_cycles
     )
     assert tester.received_audio_bytes == len(pcm) * emitted_cycles
@@ -1075,6 +1130,8 @@ def test_extension_lifecycle_accounting_and_recovery(
         assert dump.exists()
         has_pcm = has_audio is True or has_audio in {
             "stream-error",
+            "stream-timeout",
+            "stream-network",
             "stream-incomplete",
             "missing-completion",
         }
