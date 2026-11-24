@@ -372,21 +372,32 @@ def test_cancel_during_stream_discards_late_audio():
 
 
 def test_cancel_during_stream_handoff_closes_completed_request():
-    class Stream:
+    second_pcm = b"\x02\x00"
+    calls = 0
+    request_created = asyncio.Event()
+
+    class FirstStream:
         def __init__(self):
             self.closed = False
+            self.close_count = 0
+            self.read_started = False
 
         def __aiter__(self):
             return self
 
         async def __anext__(self):
+            self.read_started = True
             raise AssertionError("cancelled handoff must not start a read")
 
         async def close(self):
             self.closed = True
+            self.close_count += 1
 
     class FakeTenEnv:
         def log_debug(self, *_args, **_kwargs):
+            pass
+
+        def log_error(self, *_args, **_kwargs):
             pass
 
         def log_info(self, *_args, **_kwargs):
@@ -396,23 +407,47 @@ def test_cancel_during_stream_handoff_closes_completed_request():
         GeminiTTSConfig(params={"api_key": "test_key"}),
         FakeTenEnv(),
     )
+    first_stream = FirstStream()
 
-    async def scenario():
-        stream = Stream()
+    async def create(**_kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            request_created.set()
+            return first_stream
+        return FakeAsyncStream(
+            [
+                audio_event(base64.b64encode(second_pcm).decode("ascii")),
+                completed_event(),
+            ]
+        )
 
-        async def create():
-            return stream
-
-        request_task = asyncio.create_task(create())
-        await request_task
-        client._request_task = request_task
-
+    async def cancel_at_handoff():
+        await request_created.wait()
         await client.cancel()
 
-        assert stream.closed
-        assert client._request_task is None
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
+    )
 
-    asyncio.run(scenario())
+    async def scenario():
+        cancel_task = asyncio.create_task(cancel_at_handoff())
+        first = await _collect_events(client)
+        await cancel_task
+        second = await _collect_events(client)
+        return first, second
+
+    first, second = asyncio.run(scenario())
+
+    assert first == []
+    assert not first_stream.read_started
+    assert first_stream.closed
+    assert first_stream.close_count == 1
+    assert second == [
+        (second_pcm, TTS2HttpResponseEventType.RESPONSE),
+        (None, TTS2HttpResponseEventType.END),
+    ]
+    assert calls == 2
 
 
 def test_client_handles_sequential_requests():

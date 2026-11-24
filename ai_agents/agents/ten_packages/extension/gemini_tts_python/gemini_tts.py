@@ -99,9 +99,14 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 await self._close_completed_request()
                 self.ten_env.log_debug("Request cancelled while waiting")
                 return
-            finally:
+            except Exception:
                 if self._request_task is request_task:
                     self._request_task = None
+                raise
+
+            if self._request_task is not request_task:
+                return
+            self._request_task = None
 
             self._request_stream = stream
             emitted_audio = False
