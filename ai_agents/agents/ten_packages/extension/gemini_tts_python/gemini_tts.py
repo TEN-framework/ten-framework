@@ -99,6 +99,7 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
 
             self._request_stream = stream
             emitted_audio = False
+            terminal_status = None
             try:
                 async for event in stream:
                     if self._is_cancelled:
@@ -114,6 +115,15 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                             or "Gemini Interactions stream failed"
                         )
 
+                    if (
+                        getattr(event, "event_type", None)
+                        == "interaction.completed"
+                    ):
+                        interaction = getattr(event, "interaction", None)
+                        status = getattr(interaction, "status", None)
+                        terminal_status = getattr(status, "value", status)
+                        break
+
                     audio_data = self._audio_delta_data(event)
                     if not audio_data:
                         continue
@@ -128,6 +138,20 @@ class GeminiTTSClient(AsyncTTS2HttpClient):
                 if self._request_stream is stream:
                     self._request_stream = None
                 await self._close_stream(stream)
+
+            if self._is_cancelled:
+                self.ten_env.log_debug("Request cancelled after stream closed")
+                return
+
+            if str(terminal_status).lower() != "completed":
+                if terminal_status is None:
+                    raise RuntimeError(
+                        "Gemini Interactions stream ended without completion"
+                    )
+                raise RuntimeError(
+                    "Gemini Interactions stream ended with status "
+                    f"'{terminal_status}'"
+                )
 
             if emitted_audio:
                 yield None, TTS2HttpResponseEventType.END

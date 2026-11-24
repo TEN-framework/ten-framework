@@ -5,6 +5,7 @@ import base64
 import json
 import struct
 from importlib import import_module
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -65,6 +66,14 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             reference.audio_received()
             yield b"data: " + encoded + b"\n\n" if is_sse else encoded
             await asyncio.sleep(0.01)
+            if extension_name == "gemini_tts_python":
+                completed = json.dumps(
+                    {
+                        "event_type": "interaction.completed",
+                        "interaction": {"status": "completed"},
+                    }
+                ).encode()
+                yield b"data: " + completed + b"\n\n"
 
     class Provider(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):
@@ -100,7 +109,37 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
     module = import_module(
         f"ten_packages.extension.{extension_name}.{filenames[extension_name]}"
     )
-    if extension_name != "gemini_tts_python":
+    sync_client = None
+    if extension_name == "gemini_tts_python":
+        original_genai = module.genai
+        async_client = Client()
+        sync_client = httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(500, request=request)
+            )
+        )
+
+        class GeminiClient:
+            def __init__(self, *args, **kwargs):
+                http_options = dict(kwargs.pop("http_options", {}) or {})
+                http_options["httpx_client"] = sync_client
+                http_options["httpx_async_client"] = async_client
+                self.inner = original_genai.Client(
+                    *args,
+                    http_options=http_options,
+                    **kwargs,
+                )
+                self.aio = self.inner.aio
+
+            def __getattr__(self, name):
+                return getattr(self.inner, name)
+
+        monkeypatch.setattr(
+            module,
+            "genai",
+            SimpleNamespace(Client=GeminiClient),
+        )
+    else:
         monkeypatch.setattr(module, "AsyncClient", Client)
     config = {
         "url": "https://mock.example/tts",
@@ -133,6 +172,8 @@ def test_http_adapter_ttfb_at_provider_boundary(extension_name, monkeypatch):
             assert hook_reference.elapsed_ms(
                 request_id
             ) >= reference.elapsed_ms(request_id)
+    if sync_client:
+        sync_client.close()
 
 
 pytestmark = pytest.mark.api

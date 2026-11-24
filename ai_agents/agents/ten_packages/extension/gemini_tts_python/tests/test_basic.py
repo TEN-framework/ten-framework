@@ -42,6 +42,13 @@ def audio_event(data):
     )
 
 
+def completed_event(status="completed"):
+    return SimpleNamespace(
+        event_type="interaction.completed",
+        interaction=SimpleNamespace(status=status),
+    )
+
+
 def test_import():
     """Test that extension can be imported"""
     from gemini_tts_python.extension import GeminiTTSExtension
@@ -86,6 +93,21 @@ def test_default_model_uses_current_tts_model():
     assert config.params["model"] == "gemini-3.8-flash-tts"
 
 
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"api_key": "test_key", "model": ""},
+    ],
+)
+def test_config_rejects_missing_required_settings(params):
+    config = GeminiTTSConfig(params=params)
+    config.update_params()
+
+    with pytest.raises(ValueError):
+        config.validate()
+
+
 def test_client_requests_raw_pcm_from_interactions():
     pcm = b"\x00\x01\x02\x03"
 
@@ -108,6 +130,7 @@ def test_client_requests_raw_pcm_from_interactions():
             return FakeAsyncStream(
                 [
                     audio_event(base64.b64encode(pcm).decode("ascii")),
+                    completed_event(),
                 ]
             )
 
@@ -166,7 +189,7 @@ def test_client_reports_missing_audio():
     client = GeminiTTSClient(config, FakeTenEnv())
 
     async def create(**_kwargs):
-        return FakeAsyncStream([])
+        return FakeAsyncStream([completed_event()])
 
     client.client = SimpleNamespace(
         aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
@@ -176,6 +199,46 @@ def test_client_reports_missing_audio():
 
     assert events[0][1] == TTS2HttpResponseEventType.ERROR
     assert b"No audio data" in events[0][0]
+
+
+@pytest.mark.parametrize("failure", ["missing", "incomplete", "error"])
+def test_client_requires_successful_stream_completion(failure):
+    class FakeTenEnv:
+        def log_debug(self, *_args, **_kwargs):
+            pass
+
+        def log_error(self, *_args, **_kwargs):
+            pass
+
+    pcm = b"\x00\x01\x02\x03"
+    events = [audio_event(base64.b64encode(pcm).decode("ascii"))]
+    if failure == "incomplete":
+        events.append(completed_event("incomplete"))
+    elif failure == "error":
+        events.append(
+            SimpleNamespace(
+                event_type="error",
+                error=SimpleNamespace(message="429 rate limit"),
+            )
+        )
+    stream = FakeAsyncStream(events)
+    client = GeminiTTSClient(
+        GeminiTTSConfig(params={"api_key": "test_key"}),
+        FakeTenEnv(),
+    )
+
+    async def create(**_kwargs):
+        return stream
+
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
+    )
+
+    outputs = asyncio.run(_collect_events(client))
+
+    assert outputs[0] == (pcm, TTS2HttpResponseEventType.RESPONSE)
+    assert outputs[1][1] == TTS2HttpResponseEventType.ERROR
+    assert stream.closed
 
 
 def test_client_classifies_authentication_error():
@@ -227,6 +290,7 @@ def test_cancel_during_request_and_recovery():
             return FakeAsyncStream(
                 [
                     audio_event(base64.b64encode(pcm).decode("ascii")),
+                    completed_event(),
                 ]
             )
 
@@ -250,6 +314,49 @@ def test_cancel_during_request_and_recovery():
     ]
 
 
+def test_cancel_during_stream_discards_late_audio():
+    class FakeTenEnv:
+        def log_debug(self, *_args, **_kwargs):
+            pass
+
+        def log_info(self, *_args, **_kwargs):
+            pass
+
+    class BlockingStream:
+        def __init__(self):
+            self.started = asyncio.Event()
+            self.closed = asyncio.Event()
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            self.started.set()
+            await self.closed.wait()
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.closed.set()
+
+    async def create(**_kwargs):
+        return stream
+
+    config = GeminiTTSConfig(params={"api_key": "test_key"})
+    client = GeminiTTSClient(config, FakeTenEnv())
+    stream = BlockingStream()
+    client.client = SimpleNamespace(
+        aio=SimpleNamespace(interactions=SimpleNamespace(create=create))
+    )
+
+    async def scenario():
+        pending = asyncio.create_task(_collect_events(client))
+        await asyncio.wait_for(stream.started.wait(), 1)
+        await client.cancel()
+        assert await pending == []
+
+    asyncio.run(scenario())
+
+
 def test_client_handles_sequential_requests():
     pcm = b"\x10\x20\x30\x40"
     calls = 0
@@ -270,6 +377,7 @@ def test_client_handles_sequential_requests():
                     audio_event(
                         base64.b64encode(pcm + bytes([calls])).decode("ascii")
                     ),
+                    completed_event(),
                 ]
             )
 
@@ -335,6 +443,7 @@ def test_extension_flush_cancels_audio_and_recovers(
     provider_calls = 0
     provider_cancelled = False
     sent_audio_requests = []
+    created_streams = []
 
     class FlushTester(ExtensionTester):
         def __init__(self):
@@ -396,6 +505,27 @@ def test_extension_flush_cancels_audio_and_recovers(
 
     tester = FlushTester()
 
+    class BlockingStream:
+        def __init__(self):
+            self.first = True
+            self.closed = False
+            self.release = asyncio.Event()
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            nonlocal provider_cancelled
+            if self.first:
+                self.first = False
+                return audio_event(base64.b64encode(pcm).decode("ascii"))
+            await self.release.wait()
+            raise StopAsyncIteration
+
+        async def close(self):
+            self.closed = True
+            self.release.set()
+
     class FakeAsyncInteractions:
         async def create(self, **_kwargs):
             nonlocal clock_ms, provider_calls, provider_cancelled
@@ -413,11 +543,17 @@ def test_extension_flush_cancels_audio_and_recovers(
                 except asyncio.CancelledError:
                     provider_cancelled = True
                     raise
-            return FakeAsyncStream(
-                [
-                    audio_event(base64.b64encode(pcm).decode("ascii")),
-                ]
-            )
+            if not blocked and provider_calls == 1:
+                stream = BlockingStream()
+            else:
+                stream = FakeAsyncStream(
+                    [
+                        audio_event(base64.b64encode(pcm).decode("ascii")),
+                        completed_event(),
+                    ]
+                )
+            created_streams.append(stream)
+            return stream
 
     class FakeClient:
         def __init__(self, **_kwargs):
@@ -436,8 +572,6 @@ def test_extension_flush_cancels_audio_and_recovers(
         sent_audio_requests.append(request_id)
         clock_ms += 20
         await original_send_audio_data(extension, audio_data)
-        if not blocked and request_id == "first":
-            await asyncio.sleep(1)
 
     base_time = dt.datetime(2026, 1, 1)
 
@@ -474,7 +608,9 @@ def test_extension_flush_cancels_audio_and_recovers(
     tester.run()
 
     assert tester.errors == []
-    assert provider_cancelled is blocked
+    assert provider_cancelled
+    if not blocked:
+        assert created_streams[0].closed
     assert len(tester.flush_ends) == 1
     if blocked:
         assert tester.starts == ["second"]
@@ -502,6 +638,7 @@ def test_extension_flush_cancels_audio_and_recovers(
     )
     assert (tmp_path / "gemini_dump_second.pcm").read_bytes() == pcm
     assert provider_calls == 2
+    assert all(stream.closed for stream in created_streams)
 
 
 def test_extension_interleaved_requests_keep_metrics(monkeypatch):
@@ -573,6 +710,7 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             return FakeAsyncStream(
                 [
                     audio_event(base64.b64encode(pcm).decode("ascii")),
+                    completed_event(),
                 ]
             )
 
@@ -669,6 +807,30 @@ def test_extension_interleaved_requests_keep_metrics(monkeypatch):
             [0, 20],
             1,
         ),
+        (
+            ("stream-error", True),
+            ["first", "second"],
+            [3, 1],
+            [100, 100],
+            [20, 20],
+            1,
+        ),
+        (
+            ("stream-incomplete", True),
+            ["first", "second"],
+            [3, 1],
+            [100, 100],
+            [20, 20],
+            1,
+        ),
+        (
+            ("missing-completion", True),
+            ["first", "second"],
+            [3, 1],
+            [100, 100],
+            [20, 20],
+            1,
+        ),
     ],
 )
 def test_extension_lifecycle_accounting_and_recovery(
@@ -695,6 +857,7 @@ def test_extension_lifecycle_accounting_and_recovery(
     pcm = b"\x00\x01" * 2400
     clock_ms = 0
     request_index = 0
+    created_streams = []
 
     class LifecycleTester(ExtensionTester):
         def __init__(self):
@@ -755,12 +918,26 @@ def test_extension_lifecycle_accounting_and_recovery(
             if has_audio == "transient":
                 raise RuntimeError("429 rate limit")
             if not has_audio:
-                return FakeAsyncStream([])
-            return FakeAsyncStream(
-                [
-                    audio_event(base64.b64encode(pcm).decode("ascii")),
-                ]
-            )
+                stream = FakeAsyncStream([completed_event()])
+                created_streams.append(stream)
+                return stream
+            events = [
+                audio_event(base64.b64encode(pcm).decode("ascii")),
+            ]
+            if has_audio == "stream-error":
+                events.append(
+                    SimpleNamespace(
+                        event_type="error",
+                        error=SimpleNamespace(message="429 rate limit"),
+                    )
+                )
+            elif has_audio == "stream-incomplete":
+                events.append(completed_event("incomplete"))
+            elif has_audio != "missing-completion":
+                events.append(completed_event())
+            stream = FakeAsyncStream(events)
+            created_streams.append(stream)
+            return stream
 
     class FakeClient:
         def __init__(self, **_kwargs):
@@ -818,7 +995,14 @@ def test_extension_lifecycle_accounting_and_recovery(
     assert tester.starts == expected_starts
     assert len(tester.ends) == 2
     assert len(tester.errors) == expected_error_count
-    emitted_cycles = sum(audio is True for audio in audio_cycles)
+    if expected_error_count:
+        expected_code = -1000 if audio_cycles[0] == "error" else 1000
+        assert tester.errors[0]["code"] == expected_code
+    emitted_cycles = sum(
+        audio is True
+        or audio in {"stream-error", "stream-incomplete", "missing-completion"}
+        for audio in audio_cycles
+    )
     assert tester.received_audio_bytes == len(pcm) * emitted_cycles
     assert [end["request_id"] for end in tester.ends] == [
         "first",
@@ -834,4 +1018,10 @@ def test_extension_lifecycle_accounting_and_recovery(
     for request_id, has_audio in zip(("first", "second"), audio_cycles):
         dump = tmp_path / f"gemini_dump_{request_id}.pcm"
         assert dump.exists()
-        assert dump.read_bytes() == (pcm if has_audio is True else b"")
+        has_pcm = has_audio is True or has_audio in {
+            "stream-error",
+            "stream-incomplete",
+            "missing-completion",
+        }
+        assert dump.read_bytes() == (pcm if has_pcm else b"")
+    assert all(stream.closed for stream in created_streams)
