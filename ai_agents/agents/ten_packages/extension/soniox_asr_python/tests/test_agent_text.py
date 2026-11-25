@@ -7,7 +7,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from ..agent_text import build_agent_text_frame, chunk_agent_text, parse_agent_text_update
+from ..agent_text import (
+    build_agent_text_frame,
+    chunk_agent_text,
+    parse_agent_text_update,
+)
 from ..config import SonioxASRConfig
 from ..const import AGENT_TEXT_MAX_CHUNK_CHARS
 from ..extension import SonioxASRExtension

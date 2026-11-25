@@ -2,6 +2,7 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from .. import extension as extension_module
 from ..config import AzureASRConfig
 from ..extension import AzureASRExtension
 from ..reconnect_manager import ReconnectManager
@@ -66,6 +67,39 @@ def make_extension_with_real_stop(
     extension._transport_connected = False
     extension._recognizer_epoch = 1
     return extension
+
+
+def test_fatal_start_error_stops_transport_recovery():
+    async def run_test() -> None:
+        extension = AzureASRExtension("azure_asr_python")
+        extension.ten_env = MagicMock()
+        extension.ten_env.send_data = AsyncMock()
+        extension.config = AzureASRConfig(key="key", region="region")
+        extension.send_asr_error = AsyncMock()  # type: ignore[method-assign]
+        extension.on_disconnected = AsyncMock()  # type: ignore[method-assign]
+        extension.reconnect_manager = ReconnectManager(base_delay=0)
+        extension._wait_for_transport_handshake = AsyncMock()  # type: ignore[method-assign]
+        extension._schedule_transport_recovery = AsyncMock()  # type: ignore[method-assign]
+
+        with patch.object(
+            extension_module.speechsdk,
+            "SpeechConfig",
+            side_effect=ValueError("invalid vendor config"),
+        ) as speech_config:
+            assert await extension._handle_reconnect() is False
+            assert await extension._handle_reconnect() is False
+            await extension.start_connection()
+            speech_config.assert_called_once()
+
+        assert extension.stopped is True
+        assert extension.reconnect_manager.max_attempts is None
+        extension._wait_for_transport_handshake.assert_not_awaited()  # type: ignore[attr-defined]
+        extension._schedule_transport_recovery.assert_not_awaited()  # type: ignore[attr-defined]
+        extension.send_asr_error.assert_awaited_once()  # type: ignore[attr-defined]
+        error = extension.send_asr_error.await_args.args[0]  # type: ignore[attr-defined]
+        assert error.code == -1000
+
+    asyncio.run(run_test())
 
 
 def test_transport_recovery_runs_after_grace_when_sdk_does_not_reconnect():

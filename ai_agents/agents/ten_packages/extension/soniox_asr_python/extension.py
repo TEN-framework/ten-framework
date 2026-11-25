@@ -26,7 +26,14 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     ModuleErrorVendorInfo,
 )
-from ten_runtime import AsyncTenEnv, AudioFrame, Cmd, CmdResult, Data, StatusCode
+from ten_runtime import (
+    AsyncTenEnv,
+    AudioFrame,
+    Cmd,
+    CmdResult,
+    Data,
+    StatusCode,
+)
 from typing_extensions import override
 
 from .config import (
@@ -36,7 +43,12 @@ from .config import (
     SonioxASRConfig,
 )
 from .agent_text import chunk_agent_text, parse_agent_text_update
-from .const import AGENT_TEXT_MAX_CHUNK_CHARS, DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
+from .const import (
+    AGENT_TEXT_MAX_CHUNK_CHARS,
+    DUMP_FILE_NAME,
+    MODULE_NAME_ASR,
+    map_language_code,
+)
 from .reconnect_manager import ReconnectManager
 from .dumper import Dumper
 from .text_utils import SentenceBoundaryDetector
@@ -227,7 +239,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             return
         await self._handle_update_configs(ten_env, cmd)
 
-    async def _handle_update_configs(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+    async def _handle_update_configs(
+        self, ten_env: AsyncTenEnv, cmd: Cmd
+    ) -> None:
         result = CmdResult.create(StatusCode.OK, cmd)
         try:
             payload_json, payload_error = cmd.get_property_to_json(None)

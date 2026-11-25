@@ -30,6 +30,8 @@ class UtteranceGroupingTester(AsyncExtensionTester):
         self.stopped: bool = False
         self.received_results: list[dict[str, Any]] = []
         self.expected_results: list[dict[str, Any]] = []
+        self.stop_requested = False
+        self.disconnect_final_received = asyncio.Event()
 
     async def audio_sender(self, ten_env: AsyncTenEnvTester):
         """Send audio frames to the extension."""
@@ -89,6 +91,10 @@ class UtteranceGroupingTester(AsyncExtensionTester):
 
             # Store received result
             self.received_results.append(data_dict)
+            # stop_test() closes the client, which finalizes the last interim.
+            if self.stop_requested:
+                self.disconnect_final_received.set()
+                return
 
             # Check required fields
             self.stop_test_if_checking_failed(
@@ -146,7 +152,17 @@ class UtteranceGroupingTester(AsyncExtensionTester):
             # Check if we've received all expected results
             if len(self.received_results) >= len(self.expected_results):
                 self.verify_results(ten_env_tester)
+                self.stop_requested = True
                 ten_env_tester.stop_test()
+
+    def verify_disconnect_final(self) -> None:
+        """Check the shutdown final without weakening grouping assertions."""
+        assert self.stop_requested
+        assert len(self.received_results) == len(self.expected_results) + 1
+        interim = self.received_results[-2]
+        assert interim["final"] is False
+        assert interim["id"]
+        assert self.received_results[-1] == {**interim, "final": True}
 
     def verify_results(self, ten_env_tester: AsyncTenEnvTester) -> None:
         """Verify that received results match expected results."""
@@ -236,6 +252,8 @@ class UtteranceGroupingTester(AsyncExtensionTester):
                 await self.sender_task
             except asyncio.CancelledError:
                 pass
+        # Keep the tester alive until the extension's shutdown result arrives.
+        await asyncio.wait_for(self.disconnect_final_received.wait(), timeout=5)
 
 
 def test_utterance_grouping_enable(patch_volcengine_ws_grouping):  # type: ignore
@@ -319,10 +337,7 @@ def test_utterance_grouping_enable(patch_volcengine_ws_grouping):  # type: ignor
         except Exception:
             assert False, f"test_utterance_grouping err: {err}"
 
-    # Verify we got the expected number of results
-    assert len(tester.received_results) == len(
-        tester.expected_results
-    ), f"Expected {len(tester.expected_results)} results, got {len(tester.received_results)}"
+    tester.verify_disconnect_final()
 
 
 def test_utterance_grouping_disable(patch_volcengine_ws_grouping):  # type: ignore
@@ -377,7 +392,4 @@ def test_utterance_grouping_disable(patch_volcengine_ws_grouping):  # type: igno
         except Exception:
             assert False, f"test_utterance_grouping err: {err}"
 
-    # Verify we got the expected number of results
-    assert len(tester.received_results) == len(
-        tester.expected_results
-    ), f"Expected {len(tester.expected_results)} results, got {len(tester.received_results)}"
+    tester.verify_disconnect_final()
