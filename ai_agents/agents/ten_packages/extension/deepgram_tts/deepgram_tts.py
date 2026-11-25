@@ -122,7 +122,9 @@ class DeepgramTTSClient:
             try:
                 await socket.close()
             except Exception as e:
-                self.ten_env.log_debug(f"Closing cancelled TTS socket failed: {e}")
+                self.ten_env.log_debug(
+                    f"Closing cancelled TTS socket failed: {e}"
+                )
             self._needs_reconnect = True
         await self.discard_pending()
 
