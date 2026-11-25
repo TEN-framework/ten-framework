@@ -115,6 +115,15 @@ class DeepgramTTSClient:
         self.ten_env.log_debug("Cancelling current TTS task.")
         self._is_cancelled = True
         self.reset_ttfb()
+        socket = self._ws if self._pending_text else None
+        if socket is not None:
+            self._ws = None
+        if socket is not None:
+            try:
+                await socket.close()
+            except Exception as e:
+                self.ten_env.log_debug(f"Closing cancelled TTS socket failed: {e}")
+            self._needs_reconnect = True
         await self.discard_pending()
 
     async def discard_pending(self) -> None:
@@ -249,6 +258,12 @@ class DeepgramTTSClient:
                     try:
                         data = json.loads(message)
                         msg_type = data.get("type", "")
+
+                        if self._is_cancelled:
+                            self.ten_env.log_debug(
+                                "Dropping control message after cancellation"
+                            )
+                            break
 
                         if msg_type == end_event:
                             self.ten_env.log_debug(f"DeepgramTTS: {end_event}")

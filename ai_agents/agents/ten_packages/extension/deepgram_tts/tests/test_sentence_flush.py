@@ -41,6 +41,7 @@ def test_fragments_flush_only_at_request_end():
     async def run():
         ws = MagicMock()
         ws.send = AsyncMock()
+        ws.close = AsyncMock()
         responses = iter([b"first", b"second", '{"type":"Flushed"}'])
 
         async def recv():
@@ -87,9 +88,10 @@ def test_cancel_clears_buffered_text():
 
         await client.cancel()
 
-        ws.send.assert_awaited_once_with(json.dumps({"type": "Clear"}))
+        ws.close.assert_awaited_once()
+        ws.send.assert_not_awaited()
         assert client._pending_text is False
-        assert client._needs_reconnect is False
+        assert client._needs_reconnect is True
 
     asyncio.run(run())
 
