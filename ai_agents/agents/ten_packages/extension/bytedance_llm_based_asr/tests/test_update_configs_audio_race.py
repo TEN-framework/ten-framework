@@ -426,6 +426,132 @@ async def test_reconnect_waits_for_in_flight_update_configs_replace():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "outcome",
+    ["retry", "recovered", "replaced", "latest", "stopped", "cancelled"],
+)
+async def test_new_client_failure_during_old_retry(outcome):
+    old_client = MagicMock()
+    old_client.connected = False
+    extension = _new_extension(old_client)
+    extension.connected = False
+    stop_mock, start_mock = _install_restart_mocks(extension, old_client)
+    sleeping = asyncio.Event()
+    resume = asyncio.Event()
+    sleep_calls = 0
+
+    async def controlled_sleep(_delay):
+        nonlocal sleep_calls
+        sleep_calls += 1
+        if sleep_calls == 1:
+            sleeping.set()
+            await resume.wait()
+
+    with patch.object(
+        extension_module.asyncio, "sleep", side_effect=controlled_sleep
+    ):
+        task = asyncio.create_task(
+            extension._handle_reconnect(client=old_client)
+        )
+        try:
+            await asyncio.wait_for(sleeping.wait(), timeout=1)
+            await extension._handle_reconnect(client=old_client)
+            assert extension._pending_reconnect_client is None
+            ok, _ = await extension._run_update_configs(
+                {"params": {"request": {"enable_nonstream": False}}}
+            )
+            assert ok
+            new_client = extension.client
+            assert new_client is not old_client
+            new_client.connected = False
+            extension.connected = False
+
+            # Coalesce repeated current-client errors without letting stale
+            # callbacks overwrite the retained recovery request.
+            await extension._on_asr_error(1000, "failed", client=new_client)
+            await extension._on_asr_error(1000, "failed", client=new_client)
+            await extension._handle_reconnect(client=old_client)
+            assert extension._pending_reconnect_client is new_client
+            assert start_mock.await_count == 1
+
+            if outcome == "recovered":
+                new_client.connected = True
+                extension.connected = True
+            elif outcome in ("replaced", "latest"):
+                await extension._run_update_configs(
+                    {"params": {"request": {"enable_nonstream": True}}}
+                )
+                if outcome == "latest":
+                    extension.client.connected = False
+                    extension.connected = False
+                    await extension._on_asr_error(
+                        1000, "latest failed", client=extension.client
+                    )
+            elif outcome == "stopped":
+                extension.stopped = True
+            elif outcome == "cancelled":
+                task.cancel()
+
+            resume.set()
+            if outcome == "cancelled":
+                with pytest.raises(asyncio.CancelledError):
+                    await asyncio.wait_for(task, timeout=1)
+            else:
+                await asyncio.wait_for(task, timeout=1)
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+    expected_starts = {
+        "retry": 2,
+        "recovered": 1,
+        "replaced": 2,
+        "latest": 3,
+        "stopped": 1,
+        "cancelled": 1,
+    }
+    assert start_mock.await_count == expected_starts[outcome]
+    assert stop_mock.await_count == expected_starts[outcome]
+    assert extension._reconnecting is False
+    assert extension._reconnecting_client is None
+    assert extension._pending_reconnect_client is None
+    if outcome in ("retry", "latest"):
+        assert extension.is_connected()
+
+
+@pytest.mark.asyncio
+async def test_replacement_failure_inside_reconnect_retains_recovery():
+    old_client = MagicMock()
+    old_client.connected = False
+    extension = _new_extension(old_client)
+    extension.min_retry_delay = 0
+    stop_mock, _ = _install_restart_mocks(extension, old_client)
+    started_clients = []
+
+    async def start_connection():
+        client = MagicMock()
+        started_clients.append(client)
+        extension.client = client
+        client.connected = len(started_clients) > 1
+        extension.connected = client.connected
+        if not client.connected:
+            # This callback runs while _replace_connection holds _swap_lock.
+            await extension._on_asr_error(1000, "connect failed", client=client)
+
+    extension.start_connection = AsyncMock(side_effect=start_connection)
+    await asyncio.wait_for(
+        extension._handle_reconnect(client=old_client), timeout=1
+    )
+
+    assert len(started_clients) == 2
+    assert stop_mock.await_count == 2
+    assert extension.client is started_clients[-1]
+    assert extension.is_connected()
+    assert extension._reconnecting is False
+    assert extension._pending_reconnect_client is None
+
+
+@pytest.mark.asyncio
 async def test_reconnect_does_not_run_after_stop_while_waiting_for_send_lock():
     client = MagicMock()
     client.connected = False

@@ -159,6 +159,8 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         self.stopped: bool = False
         self.last_fatal_error: int | None = None
         self._reconnecting: bool = False
+        self._reconnecting_client: VolcengineASRClient | None = None
+        self._pending_reconnect_client: VolcengineASRClient | None = None
 
         # Session tracking
         self.session_id: str | None = None
@@ -590,46 +592,61 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
         - First retry: 0.5s delay
         - Subsequent retries: exponential backoff (base 0.5s) with min 0.5s and cap at max_retry_delay
-        - One attempt per call; further retries require another error callback
+        - One attempt per client request; replacement-client failures are retained
           (send_audio no longer starts connections while disconnected)
         """
-        if self._reconnecting or (
-            client is not None and client is not self.client
-        ):
+        client = self.client if client is None else client
+        if self.stopped or client is not self.client:
+            return
+        if self._reconnecting:
+            if client is not self._reconnecting_client:
+                self._pending_reconnect_client = client
             return
 
         self._reconnecting = True
-
         try:
-            self.attempts += 1
-
-            # Calculate delay with exponential backoff
-            # First attempt: 0.5s delay
-            # Subsequent attempts: exponential backoff (base 0.5s) with min 0.5s and cap at max_retry_delay
-            if self.attempts == 1:
-                delay = self.min_retry_delay
-            else:
-                delay = self.min_retry_delay * (2 ** (self.attempts - 2))
-                delay = max(
-                    self.min_retry_delay, min(delay, self.max_retry_delay)
-                )
-
-            self.ten_env.log_info(
-                f"Reconnecting... Attempt {self.attempts}, delay: {delay:.2f}s"
-            )
-
-            if delay > 0:
-                await asyncio.sleep(delay)
-
-            if self.stopped:
-                return
-
-            try:
-                await self._replace_connection(client=client)
-            except Exception as e:
-                self.ten_env.log_error(f"Reconnection failed: {e}")
+            while True:
+                self._reconnecting_client = client
+                await self._reconnect_once(client)
+                pending = self._pending_reconnect_client
+                self._pending_reconnect_client = None
+                if (
+                    self.stopped
+                    or pending is None
+                    or pending is not self.client
+                    or self.is_connected()
+                ):
+                    return
+                client = pending
         finally:
             self._reconnecting = False
+            self._reconnecting_client = None
+            self._pending_reconnect_client = None
+
+    async def _reconnect_once(self, client: VolcengineASRClient | None) -> None:
+        """Run one attempt; the caller owns recovery across client replacements."""
+        self.attempts += 1
+
+        if self.attempts == 1:
+            delay = self.min_retry_delay
+        else:
+            delay = self.min_retry_delay * (2 ** (self.attempts - 2))
+            delay = max(self.min_retry_delay, min(delay, self.max_retry_delay))
+
+        self.ten_env.log_info(
+            f"Reconnecting... Attempt {self.attempts}, delay: {delay:.2f}s"
+        )
+
+        if delay > 0:
+            await asyncio.sleep(delay)
+
+        if self.stopped:
+            return
+
+        try:
+            await self._replace_connection(client=client)
+        except Exception as e:
+            self.ten_env.log_error(f"Reconnection failed: {e}")
 
     def _result_level_asr_info_fields(
         self, result: ASRResponse
