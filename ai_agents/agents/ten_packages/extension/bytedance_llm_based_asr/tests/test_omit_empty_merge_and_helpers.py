@@ -34,7 +34,7 @@ from bytedance_llm_based_asr.extension import (
     _deep_merge_dict,
     _strip_empty_request_corpus_context,
 )
-from bytedance_llm_based_asr.volcengine_asr_client import ASRResponse
+from bytedance_llm_based_asr.volcengine_asr_client import ASRResponse, Utterance
 
 
 def _minimal_config(
@@ -164,7 +164,7 @@ async def test_send_asr_result_from_text_omit_on_sends_non_empty(
 
 
 @pytest.mark.asyncio
-async def test_send_asr_result_from_text_omit_off_sends_whitespace_only(
+async def test_send_asr_result_from_text_omit_off_skips_whitespace_only(
     mock_ten_env,
 ) -> None:
     ext = BytedanceASRLLMExtension("t")
@@ -180,12 +180,14 @@ async def test_send_asr_result_from_text_omit_off_sends_whitespace_only(
         language="zh-CN",
         metadata={},
     )
-    assert sent is True
-    ext.send_asr_result.assert_awaited_once()
+    assert sent is False
+    ext.send_asr_result.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_send_asr_result_from_text_no_config_sends(mock_ten_env) -> None:
+async def test_send_asr_result_from_text_no_config_skips_empty(
+    mock_ten_env,
+) -> None:
     ext = BytedanceASRLLMExtension("t")
     ext.ten_env = mock_ten_env
     ext.config = None
@@ -199,8 +201,39 @@ async def test_send_asr_result_from_text_no_config_sends(mock_ten_env) -> None:
         language="zh-CN",
         metadata={},
     )
-    assert sent is True
-    ext.send_asr_result.assert_awaited_once()
+    assert sent is False
+    ext.send_asr_result.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_empty_non_final_result_does_not_replace_pending_text(
+    mock_ten_env,
+) -> None:
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.send_asr_result = _send_result_mock(ext)
+
+    await ext._send_asr_result_from_text(
+        text="hello",
+        is_final=False,
+        start_ms=0,
+        duration_ms=100,
+        language="zh-CN",
+        metadata={},
+    )
+    sent = await ext._send_asr_result_from_text(
+        text="",
+        is_final=False,
+        start_ms=0,
+        duration_ms=100,
+        language="zh-CN",
+        metadata={},
+    )
+
+    assert sent is False
+    assert ext._pending_non_final_result is not None
+    assert ext._pending_non_final_result.text == "hello"
 
 
 async def _send_result_and_advance_uuid(ext, result) -> None:
@@ -311,6 +344,75 @@ async def test_disconnect_sends_cached_non_final_as_same_id_final(
 
     await ext._on_disconnected()
     assert ext.send_asr_result.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_in_flight_final_is_ignored_after_disconnect(mock_ten_env):
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.on_connected = AsyncMock()
+    ext.on_disconnected = AsyncMock()
+    client = await _start_mock_connection(ext)
+    await client._handle_response(ASRResponse(text="hello"))
+    turn_id = ext.uuid
+    entered = asyncio.Event()
+    resume = asyncio.Event()
+
+    async def pause_metrics(_result):
+        entered.set()
+        await resume.wait()
+
+    ext._track_utterance_timestamps = pause_metrics
+    final = ASRResponse(
+        utterances=[
+            Utterance(
+                text="hello world",
+                start_time=0,
+                end_time=100,
+                definite=True,
+            )
+        ]
+    )
+    task = asyncio.create_task(client._handle_response(final))
+    await asyncio.wait_for(entered.wait(), timeout=1)
+    await client._notify_disconnected(1000, "closed")
+    assert ext.client is client
+    resume.set()
+    await asyncio.wait_for(task, timeout=1)
+
+    results = []
+    for call in mock_ten_env.send_data.await_args_list:
+        data = call.args[0]
+        if data.get_name() == "asr_result":
+            payload, error = data.get_property_to_json()
+            assert error is None
+            results.append(json.loads(payload))
+    assert len(results) == 2
+    assert results[-1]["id"] == turn_id
+    assert results[-1]["text"] == "hello"
+    assert results[-1]["final"] is True
+    assert ext._pending_non_final_result is None
+
+
+@pytest.mark.asyncio
+async def test_empty_vendor_response_does_not_emit_disconnect_final(
+    mock_ten_env,
+):
+    ext = BytedanceASRLLMExtension("t")
+    ext.ten_env = mock_ten_env
+    ext.config = _minimal_config()
+    ext.on_connected = AsyncMock()
+    ext.on_disconnected = AsyncMock()
+    client = await _start_mock_connection(ext)
+    await client._handle_response(ASRResponse())
+    await client._notify_disconnected(1000, "closed")
+
+    assert ext._pending_non_final_result is None
+    assert all(
+        call.args[0].get_name() != "asr_result"
+        for call in mock_ten_env.send_data.await_args_list
+    )
 
 
 async def _start_mock_connection(ext):

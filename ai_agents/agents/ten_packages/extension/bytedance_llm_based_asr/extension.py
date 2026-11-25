@@ -191,6 +191,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # current turn without changing the base ASR ID.
         self._pending_non_final_result: ASRResult | None = None
         self._asr_result_lock: asyncio.Lock = asyncio.Lock()
+        self._result_client_closed = False
 
     @override
     def vendor(self) -> str:
@@ -329,6 +330,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
             # Capture the owner so late callbacks cannot affect a new client.
             client = self.client
+            self._result_client_closed = False
             client.set_on_result_callback(
                 partial(self._on_asr_result, client=client)
             )
@@ -801,13 +803,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     ) -> bool:
         """Send ASR result with given text and metadata.
 
-        Returns False when the result is not sent (e.g. empty text with omit enabled).
+        Returns False when the result is not sent because the text is empty.
         """
-        if (
-            self.config
-            and self.config.get_omit_empty_text_results()
-            and not text.strip()
-        ):
+        if not text.strip():
             return False
 
         asr_result = ASRResult(
@@ -820,7 +818,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             metadata=metadata,
         )
         async with self._asr_result_lock:
-            if client is not None and client is not self.client:
+            if client is not None and (
+                client is not self.client or self._result_client_closed
+            ):
                 return False
             # Capture the base-class ID before a final result resets it.
             asr_result.id = self.uuid
@@ -838,9 +838,11 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         async with self._asr_result_lock:
             if client is not None and client is not self.client:
                 return
+            # Retire in-flight result callbacks before publishing the fallback.
+            self._result_client_closed = True
             pending = self._pending_non_final_result
             self._pending_non_final_result = None
-            if pending is None:
+            if pending is None or not pending.text.strip():
                 return
 
             pending.final = True
