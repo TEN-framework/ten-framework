@@ -1,5 +1,5 @@
 # ABOUTME: Tests update_configs to Soniox agent_text WebSocket forwarding.
-# ABOUTME: Covers config gating, chunking, and no reconnect side effects.
+# ABOUTME: Covers config-independent forwarding, chunking, and no reconnect side effects.
 from __future__ import annotations
 
 import json
@@ -16,26 +16,6 @@ from ..config import SonioxASRConfig
 from ..const import AGENT_TEXT_MAX_CHUNK_CHARS
 from ..extension import SonioxASRExtension
 from ..websocket import SonioxWebsocketClient
-
-
-def test_config_enables_agent_text_for_v6():
-    cfg = SonioxASRConfig(
-        params={
-            "model": "stt-rt-v6",
-            "enable_agent_text_input": True,
-        }
-    )
-    assert cfg.supports_agent_text_input() is True
-
-
-def test_config_skips_agent_text_for_non_v6_model():
-    cfg = SonioxASRConfig(
-        params={
-            "model": "stt-rt-v3",
-            "enable_agent_text_input": True,
-        }
-    )
-    assert cfg.supports_agent_text_input() is False
 
 
 def test_parse_agent_text_update():
@@ -66,15 +46,20 @@ async def test_websocket_send_agent_text_payload():
 
 
 @pytest.mark.asyncio
-async def test_extension_forwards_agent_text_when_connected():
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"model": "stt-rt-v6", "enable_agent_text_input": True},
+        {"model": "stt-rt-v3", "enable_agent_text_input": True},
+        {"model": "stt-rt-v6", "enable_agent_text_input": False},
+        {"model": "stt-rt-v3"},
+        {},
+        None,
+    ],
+)
+async def test_extension_forwards_agent_text_when_connected(params):
     ext = SonioxASRExtension("asr")
-    ext.config = SonioxASRConfig(
-        params={
-            "model": "stt-rt-v6",
-            "enable_agent_text_input": True,
-            "api_key": "k",
-        }
-    )
+    ext.config = SonioxASRConfig(params=params) if params is not None else None
     ext.connected = True
     ext.websocket = MagicMock()
     ext.websocket.send_agent_text = AsyncMock()
