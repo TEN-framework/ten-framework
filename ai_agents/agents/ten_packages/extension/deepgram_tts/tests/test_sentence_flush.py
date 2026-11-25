@@ -41,6 +41,7 @@ def test_fragments_flush_only_at_request_end():
     async def run():
         ws = MagicMock()
         ws.send = AsyncMock()
+        ws.close = AsyncMock()
         responses = iter([b"first", b"second", '{"type":"Flushed"}'])
 
         async def recv():
@@ -80,6 +81,7 @@ def test_cancel_clears_buffered_text():
     async def run():
         ws = MagicMock()
         ws.send = AsyncMock()
+        ws.close = AsyncMock()
         ws.recv = AsyncMock(return_value='{"type":"Cleared"}')
         client = DeepgramTTSClient(DeepgramTTSConfig(), MagicMock())
         client._ws = ws
@@ -87,9 +89,110 @@ def test_cancel_clears_buffered_text():
 
         await client.cancel()
 
-        ws.send.assert_awaited_once_with(json.dumps({"type": "Clear"}))
+        ws.close.assert_awaited_once()
+        ws.send.assert_not_awaited()
         assert client._pending_text is False
-        assert client._needs_reconnect is False
+        assert client._needs_reconnect is True
+
+    asyncio.run(run())
+
+
+def test_flux_flush_keeps_each_turns_audio_on_the_same_connection():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.recv = AsyncMock(
+            side_effect=[
+                '{"type":"Flushed"}',
+                b"first",
+                '{"type":"SpeechMetadata"}',
+                b"second",
+                '{"type":"Flushed"}',
+                '{"type":"SpeechMetadata"}',
+            ]
+        )
+        config = DeepgramTTSConfig(
+            base_url="wss://api.deepgram.com/v2/speak",
+            model="flux-alexis-en",
+        )
+        client = DeepgramTTSClient(config, MagicMock())
+        client._ws = ws
+
+        for text, audio in (
+            ("First turn.", b"first"),
+            ("Second turn.", b"second"),
+        ):
+            client.reset_ttfb()
+            events = [
+                event
+                async for event in client.get(text)
+                if event[1] != EVENT_TTS_TTFB_METRIC
+            ]
+            assert events == [
+                (audio, EVENT_TTS_RESPONSE),
+                (None, EVENT_TTS_END),
+            ]
+
+    asyncio.run(run())
+
+
+def test_cancel_ignores_receive_failure_after_socket_close():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.close = AsyncMock()
+        blocked = asyncio.Event()
+        closed = asyncio.Event()
+        ws.close.side_effect = closed.set
+
+        async def receive():
+            blocked.set()
+            await closed.wait()
+            raise RuntimeError("connection closed")
+
+        ws.recv = receive
+        client = DeepgramTTSClient(
+            DeepgramTTSConfig(base_url="wss://api.deepgram.com/v2/speak"),
+            MagicMock(),
+        )
+        client._ws = ws
+        client._pending_text = True
+        task = asyncio.create_task(client.get("cancel me").__anext__())
+        await blocked.wait()
+        await client.cancel()
+        with pytest.raises(StopAsyncIteration):
+            await task
+
+    asyncio.run(run())
+
+
+def test_cancel_ignores_send_failure_after_socket_close():
+    async def run():
+        ws = MagicMock()
+        started = asyncio.Event()
+        closed = asyncio.Event()
+
+        async def send(_message):
+            started.set()
+            await closed.wait()
+            raise RuntimeError("connection closed")
+
+        async def close():
+            closed.set()
+
+        ws.send = send
+        ws.close = close
+        client = DeepgramTTSClient(
+            DeepgramTTSConfig(base_url="wss://api.deepgram.com/v2/speak"),
+            MagicMock(),
+        )
+        client._ws = ws
+        client._pending_text = True
+        task = asyncio.create_task(client.get("cancel me").__anext__())
+        await started.wait()
+        await client.cancel()
+        with pytest.raises(StopAsyncIteration):
+            await task
 
     asyncio.run(run())
 
