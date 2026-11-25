@@ -81,6 +81,7 @@ def test_cancel_clears_buffered_text():
     async def run():
         ws = MagicMock()
         ws.send = AsyncMock()
+        ws.close = AsyncMock()
         ws.recv = AsyncMock(return_value='{"type":"Cleared"}')
         client = DeepgramTTSClient(DeepgramTTSConfig(), MagicMock())
         client._ws = ws
@@ -131,6 +132,36 @@ def test_flux_flush_keeps_each_turns_audio_on_the_same_connection():
                 (audio, EVENT_TTS_RESPONSE),
                 (None, EVENT_TTS_END),
             ]
+
+    asyncio.run(run())
+
+
+def test_cancel_ignores_receive_failure_after_socket_close():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.close = AsyncMock()
+        blocked = asyncio.Event()
+        closed = asyncio.Event()
+        ws.close.side_effect = closed.set
+
+        async def receive():
+            blocked.set()
+            await closed.wait()
+            raise RuntimeError("connection closed")
+
+        ws.recv = receive
+        client = DeepgramTTSClient(
+            DeepgramTTSConfig(base_url="wss://api.deepgram.com/v2/speak"),
+            MagicMock(),
+        )
+        client._ws = ws
+        client._pending_text = True
+        task = asyncio.create_task(client.get("cancel me").__anext__())
+        await blocked.wait()
+        await client.cancel()
+        with pytest.raises(StopAsyncIteration):
+            await task
 
     asyncio.run(run())
 

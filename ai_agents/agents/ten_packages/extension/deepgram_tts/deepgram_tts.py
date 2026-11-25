@@ -300,6 +300,12 @@ class DeepgramTTSClient:
                 self.ten_env.log_debug("DeepgramTTS: complete")
 
         except Exception as e:
+            if self._is_cancelled:
+                self.ten_env.log_debug(
+                    "Ignoring receive failure after cancellation"
+                )
+                self._pending_text = False
+                return
             self.ten_env.log_error(
                 f"vendor_error: {e}",
                 category=LOG_CATEGORY_VENDOR,
