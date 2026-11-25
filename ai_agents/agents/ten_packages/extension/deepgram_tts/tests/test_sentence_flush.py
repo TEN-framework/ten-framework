@@ -94,6 +94,45 @@ def test_cancel_clears_buffered_text():
     asyncio.run(run())
 
 
+def test_flux_flush_keeps_each_turns_audio_on_the_same_connection():
+    async def run():
+        ws = MagicMock()
+        ws.send = AsyncMock()
+        ws.recv = AsyncMock(
+            side_effect=[
+                '{"type":"Flushed"}',
+                b"first",
+                '{"type":"SpeechMetadata"}',
+                b"second",
+                '{"type":"Flushed"}',
+                '{"type":"SpeechMetadata"}',
+            ]
+        )
+        config = DeepgramTTSConfig(
+            base_url="wss://api.deepgram.com/v2/speak",
+            model="flux-alexis-en",
+        )
+        client = DeepgramTTSClient(config, MagicMock())
+        client._ws = ws
+
+        for text, audio in (
+            ("First turn.", b"first"),
+            ("Second turn.", b"second"),
+        ):
+            client.reset_ttfb()
+            events = [
+                event
+                async for event in client.get(text)
+                if event[1] != EVENT_TTS_TTFB_METRIC
+            ]
+            assert events == [
+                (audio, EVENT_TTS_RESPONSE),
+                (None, EVENT_TTS_END),
+            ]
+
+    asyncio.run(run())
+
+
 def test_cancel_without_buffered_text_does_not_touch_websocket():
     async def run():
         ws = MagicMock()

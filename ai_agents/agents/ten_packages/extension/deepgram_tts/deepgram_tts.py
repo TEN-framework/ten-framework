@@ -7,7 +7,7 @@ import asyncio
 import json
 from datetime import datetime
 from typing import AsyncIterator
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import websockets
 from websockets.asyncio.client import ClientConnection
@@ -43,7 +43,7 @@ class DeepgramTTSClient:
     """WebSocket client for Deepgram TTS.
 
     Calls with flush=False buffer text server-side. Calls with flush=True
-    send Flush and drain responses until Flushed.
+    send Flush and drain responses until the protocol's audio end event.
     """
 
     def __init__(
@@ -64,6 +64,9 @@ class DeepgramTTSClient:
         self._ttfb_sent: bool = False
 
         self._ws_url = self._build_ws_url()
+        self._uses_v2 = (
+            urlsplit(self._ws_url).path.rstrip("/").endswith("/v2/speak")
+        )
 
     def _build_ws_url(self) -> str:
         base = self.config.base_url
@@ -120,6 +123,12 @@ class DeepgramTTSClient:
             return
 
         self._pending_text = False
+        if self._uses_v2:
+            # V2 uses Interrupt, which may be ignored before audio starts.
+            # Replace the socket before sending any more text.
+            self._needs_reconnect = True
+            return
+
         if self._ws:
             try:
                 await self._ws.send(json.dumps({"type": "Clear"}))
@@ -196,7 +205,8 @@ class DeepgramTTSClient:
             yield str(e).encode("utf-8"), EVENT_TTS_ERROR
             return
 
-        # Drain all pending audio through the final Flushed marker.
+        # V2 can acknowledge Flush before returning all the audio.
+        end_event = "SpeechMetadata" if self._uses_v2 else "Flushed"
         try:
             while True:
                 if self._is_cancelled:
@@ -240,8 +250,8 @@ class DeepgramTTSClient:
                         data = json.loads(message)
                         msg_type = data.get("type", "")
 
-                        if msg_type == "Flushed":
-                            self.ten_env.log_debug("DeepgramTTS: Flushed")
+                        if msg_type == end_event:
+                            self.ten_env.log_debug(f"DeepgramTTS: {end_event}")
                             self._pending_text = False
                             yield None, EVENT_TTS_END
                             break
