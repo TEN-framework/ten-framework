@@ -166,6 +166,37 @@ def test_cancel_ignores_receive_failure_after_socket_close():
     asyncio.run(run())
 
 
+def test_cancel_ignores_send_failure_after_socket_close():
+    async def run():
+        ws = MagicMock()
+        started = asyncio.Event()
+        closed = asyncio.Event()
+
+        async def send(_message):
+            started.set()
+            await closed.wait()
+            raise RuntimeError("connection closed")
+
+        async def close():
+            closed.set()
+
+        ws.send = send
+        ws.close = close
+        client = DeepgramTTSClient(
+            DeepgramTTSConfig(base_url="wss://api.deepgram.com/v2/speak"),
+            MagicMock(),
+        )
+        client._ws = ws
+        client._pending_text = True
+        task = asyncio.create_task(client.get("cancel me").__anext__())
+        await started.wait()
+        await client.cancel()
+        with pytest.raises(StopAsyncIteration):
+            await task
+
+    asyncio.run(run())
+
+
 def test_cancel_without_buffered_text_does_not_touch_websocket():
     async def run():
         ws = MagicMock()

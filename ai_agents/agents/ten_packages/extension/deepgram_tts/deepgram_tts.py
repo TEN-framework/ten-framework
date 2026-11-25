@@ -205,6 +205,12 @@ class DeepgramTTSClient:
                 return
             await self._ws.send(json.dumps({"type": "Flush"}))
         except Exception as e:
+            if self._is_cancelled:
+                self.ten_env.log_debug(
+                    "Ignoring send failure after cancellation"
+                )
+                self._pending_text = False
+                return
             self._needs_reconnect = True
             self._pending_text = False
             self.ten_env.log_error(
