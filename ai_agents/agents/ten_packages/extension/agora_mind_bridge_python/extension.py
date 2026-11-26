@@ -22,13 +22,14 @@ from ten_runtime import (
 )
 
 from .config import AgoraMindBridgeConfig
+from .completion import Completion
 from .protocol import (
     asr_final_key,
     pure_text_input,
     session_id_from_response,
     speech_final_from_payload,
-    turn_key,
-    turn_text_from_event,
+    input_sequence_from_response,
+    turn_from_event,
 )
 
 FORWARDED_COMMANDS = {
@@ -56,6 +57,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._pending_asr_text: list[str] = []
         self._pending_asr_created_at: Any = None
         self._finalize_id: str | None = None
+        self._completion = Completion()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -98,6 +100,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._pending_asr_text.clear()
         self._pending_asr_created_at = None
         self._finalize_id = None
+        self._completion = Completion()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         name = cmd.get_name()
@@ -132,12 +135,13 @@ class AgoraMindBridgeExtension(AsyncExtension):
                     ten_env, cmd, "finalize_id is required"
                 )
                 return
-            if self._finalize_id is not None:
+            if self._completion.finalize_id is not None:
                 await self._return_error(
                     ten_env, cmd, "Audio finalize is pending"
                 )
                 return
             self._finalize_id = finalize_id
+            self._completion.finalize_id = finalize_id
             data = Data.create("asr_finalize")
             data.set_dests([Loc("", "", self.config.stt_extension)])
             data.set_property_string("finalize_id", finalize_id)
@@ -226,11 +230,37 @@ class AgoraMindBridgeExtension(AsyncExtension):
             ):
                 return
             self._finalize_id = None
+            self._completion.asr_finalized = True
             await self._submit_pending_asr(ten_env)
         elif name == "agora_mind_event":
             await self._handle_agora_event(ten_env, payload)
+        await self._report_completion(ten_env)
 
-    async def _submit_pending_asr(self, ten_env: AsyncTenEnv) -> None:
+    async def _report_completion(self, ten_env: AsyncTenEnv) -> None:
+        completion = self._completion
+        if self._pending_asr_text or not completion.ready():
+            return
+        completion.reported = True
+        output = Data.create("processing_completed")
+        output.set_property_from_json(
+            None,
+            json.dumps(
+                {
+                    "example_id": self.config.example_id,
+                    "session_id": self.session_id,
+                    "finalize_id": completion.finalize_id,
+                    "last_input_sequence": max(
+                        completion.accepted_inputs, default=0
+                    ),
+                    "tts_request_ids": completion.tts_request_ids,
+                }
+            ),
+        )
+        await ten_env.send_data(output)
+
+    async def _submit_pending_asr(
+        self, ten_env: AsyncTenEnv, suppress_repeated_text: bool = False
+    ) -> None:
         if not self._pending_asr_text:
             return
         text = " ".join(self._pending_asr_text)
@@ -238,7 +268,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._pending_asr_text.clear()
         self._pending_asr_created_at = None
         await self._submit_asr_text(
-            ten_env, text, {"created_at": created_at}, False
+            ten_env, text, {"created_at": created_at}, suppress_repeated_text
         )
 
     async def _handle_asr_result(
@@ -258,6 +288,13 @@ class AgoraMindBridgeExtension(AsyncExtension):
             if key in self._submitted_finals:
                 return
             self._submitted_finals.add(key)
+        if normalized and self._completion.asr_finalized:
+            await self._report_input_error(
+                ten_env,
+                self.session_id,
+                "ASR produced new text after finalization",
+            )
+            return
         metadata = payload.get("metadata")
         metadata = metadata if isinstance(metadata, dict) else {}
         if normalized:
@@ -269,15 +306,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
             or self._finalize_id is not None
         ):
             return
-        if not self._pending_asr_text:
-            return
-        text = " ".join(self._pending_asr_text)
-        created_at = self._pending_asr_created_at
-        self._pending_asr_text.clear()
-        self._pending_asr_created_at = None
-        await self._submit_asr_text(
-            ten_env, text, {"created_at": created_at}, key is None
-        )
+        await self._submit_pending_asr(ten_env, key is None)
 
     async def _submit_asr_text(
         self,
@@ -299,6 +328,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
         self._last_final_text = normalized
         session_id = self.session_id
         session_epoch = self._session_epoch
+        completion = self._completion
+        completion.pending_submissions += 1
         result, error = await self._send_command(
             "submit_user_input",
             {
@@ -306,6 +337,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 "input_json": json.dumps(input_payload, ensure_ascii=False),
             },
         )
+        completion.pending_submissions -= 1
         if session_epoch != self._session_epoch:
             return
         if error is not None or result is None:
@@ -322,6 +354,16 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 "Agora Mind rejected ASR final",
                 self._result_property(result, "response_json"),
             )
+            return
+        try:
+            completion.accepted_inputs.add(
+                input_sequence_from_response(
+                    self._result_property(result, "response_json") or "",
+                    session_id,
+                )
+            )
+        except (ValueError, KeyError, TypeError) as error:
+            await self._report_input_error(ten_env, session_id, str(error))
 
     async def _report_input_error(
         self,
@@ -330,6 +372,7 @@ class AgoraMindBridgeExtension(AsyncExtension):
         message: str,
         response_json: str | None = None,
     ) -> None:
+        self._completion.failed = True
         ten_env.log_error(message)
         metadata = {
             "session_id": str(session_id),
@@ -381,28 +424,40 @@ class AgoraMindBridgeExtension(AsyncExtension):
         if self.session_id is None:
             return
 
-        key = turn_key(event_json)
-        if key is None:
+        try:
+            completed = turn_from_event(event, self.session_id)
+        except ValueError as error:
+            await self._report_input_error(ten_env, self.session_id, str(error))
             return
+        if completed is None:
+            return
+        first, last, text = completed
+        session_id = self.session_id
+        key = (session_id, first, last)
         if key in self._completed_turns:
             ten_env.log_debug("duplicate Agora Mind turn ignored")
             return
-        completed = turn_text_from_event(event_json, self.session_id)
-        if completed is None:
-            return
-        session_id, text = completed
         self.session_id = session_id
         turn_index = len(self._completed_turns) + 1
+        completion = self._completion
+        self._completed_turns.add(key)
+        self._last_final_text = None
+        if not text.strip():
+            completion.completed_ranges.append((first, last))
+            return
+        request_id = f"fdb-tts-{session_id}-{turn_index}"
+        completion.tts_request_ids.append(request_id)
         output = Data.create("tts_text_input")
         output.set_dests([Loc("", "", self.config.tts_extension)])
         output.set_property_from_json(
             None,
             json.dumps(
                 {
-                    "request_id": f"fdb-tts-{session_id}-{turn_index}",
+                    "request_id": request_id,
                     "text": text,
                     "text_input_end": True,
                     "metadata": {
+                        "request_id": request_id,
                         "session_id": str(session_id),
                         "example_id": self.config.example_id,
                         "turn_id": turn_index,
@@ -411,11 +466,8 @@ class AgoraMindBridgeExtension(AsyncExtension):
                 ensure_ascii=False,
             ),
         )
-        # Reserve before sending so overlapping or delayed completion events
-        # cannot synthesize a response twice.
-        self._completed_turns.add(key)
-        self._last_final_text = None
         await ten_env.send_data(output)
+        completion.completed_ranges.append((first, last))
 
     async def _send_command(
         self, name: str, properties: dict[str, Any]

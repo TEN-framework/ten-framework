@@ -71,76 +71,52 @@ def session_id_from_response(response_json: str) -> int | None:
     return None
 
 
-def turn_text_from_event(
-    event_json: str, expected_session_id: int | None = None
-) -> tuple[int, str] | None:
-    """Extract final top-level text from a Workspace event envelope.
-
-    Agora Mind publishes model output as a list of typed result items. Only
-    top-level ``session_turn_completed`` events are user-visible responses;
-    monitoring events must not be sent to the TTS path.
-    """
-
-    try:
-        envelope = json.loads(event_json)
-    except (TypeError, ValueError):
-        return None
+def input_sequence_from_response(response_json: str, session_id: int) -> int:
+    """Validate the acceptance receipt before counting a submitted input."""
+    response = json.loads(response_json)
+    if not isinstance(response, dict):
+        raise ValueError("invalid input acceptance receipt")
+    sequence = response.get("input_sequence")
     if (
-        not isinstance(envelope, dict)
-        or envelope.get("type") != "workspace.event"
+        response.get("type") != "session.user_input.accepted"
+        or response.get("session_id") != session_id
+        or not _positive_integer(sequence)
+    ):
+        raise ValueError("invalid input acceptance receipt")
+    return sequence
+
+
+def turn_from_event(
+    event: Any, expected_session_id: int
+) -> tuple[int, int, str] | None:
+    """Read one normal top-level completion, including an empty reply."""
+    if (
+        not isinstance(event, dict)
+        or event.get("type") != "session_turn_completed"
+        or event.get("session_id") != expected_session_id
+        or event.get("source") != {"type": "top_level"}
     ):
         return None
-
-    event = envelope.get("event")
-    if not isinstance(event, dict):
-        return None
-    if event.get("type") != "session_turn_completed":
-        return None
-
-    session_id = event.get("session_id")
-    if isinstance(session_id, bool) or not isinstance(session_id, int):
-        return None
-    if expected_session_id is not None and session_id != expected_session_id:
-        return None
-
-    source = event.get("source")
-    if isinstance(source, dict) and source.get("type") != "top_level":
-        return None
-
+    sequence_range = event.get("input_sequence_range")
+    if not isinstance(sequence_range, dict):
+        raise ValueError("Turn omitted its input range")
+    first, last = sequence_range.get("first"), sequence_range.get("last")
+    if not all(_positive_integer(value) for value in (first, last)):
+        raise ValueError("Turn has an invalid input range")
+    if first > last or event.get("stop_reason") is not None:
+        raise ValueError("Turn did not complete normally")
     result = event.get("result")
     if not isinstance(result, list):
-        return None
+        raise ValueError("Turn omitted its result")
     text = "".join(
-        item.get("text", "")
+        item["text"]
         for item in result
         if isinstance(item, dict)
         and item.get("type") == "text"
         and isinstance(item.get("text"), str)
     )
-    if not text.strip():
-        return None
-    return session_id, text
+    return first, last, text
 
 
-def turn_key(event_json: str) -> tuple[Any, ...] | None:
-    """Return a stable key for suppressing duplicate turn-completed events."""
-
-    try:
-        envelope = json.loads(event_json)
-    except (TypeError, ValueError):
-        return None
-    event = envelope.get("event") if isinstance(envelope, dict) else None
-    if not isinstance(event, dict):
-        return None
-    if event.get("type") != "session_turn_completed":
-        return None
-    session_id = event.get("session_id")
-    sequence_range = event.get("input_sequence_range")
-    if isinstance(sequence_range, dict):
-        return (
-            session_id,
-            sequence_range.get("first"),
-            sequence_range.get("last"),
-        )
-    result = event.get("result")
-    return (session_id, json.dumps(result, sort_keys=True))
+def _positive_integer(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
