@@ -1,0 +1,3 @@
+{
+  "api_key": "${env:RIME_API_KEY|}"
+}
