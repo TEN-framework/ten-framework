@@ -187,6 +187,8 @@ class XfyunWSRecognition:
         params["audio_encode"] = self.config.get("audio_encode", "pcm")
         params["samplerate"] = self.config.get("samplerate", "16000")
         params["lang"] = self.config.get("lang", "autodialect")
+        if self.config.get("recognized_language"):
+            params["recognized_language"] = self.config["recognized_language"]
         params["codec"] = self.config.get("codec", "pcm")
         params["accent"] = self.config.get("accent", "mandarin")
         params["multiFuncData"] = self.config.get("multiFuncData", "false")

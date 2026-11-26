@@ -15,6 +15,7 @@ def make_config(language: str = "zh-CN", **params):
         language=language,
         params={"api_key": "secret", **params},
     )
+    config.update(config.params)
     config.apply_defaults()
     config.validate_config()
     return config
@@ -78,6 +79,7 @@ def test_context_is_nested_under_input():
 def test_invalid_configuration_is_rejected(params, message):
     config = QwenASRConfig(params=params)
     with pytest.raises(ValueError, match=message):
+        config.update(config.params)
         config.apply_defaults()
         config.validate_config()
 
@@ -146,6 +148,7 @@ def test_vendor_language_maps_to_asr_result_language(
 def test_property_json_uses_top_level_language():
     fixture = Path(__file__).parent / "configs" / "property_en.json"
     config = QwenASRConfig.model_validate_json(fixture.read_text())
+    config.update(config.params)
     config.apply_defaults()
     config.validate_config()
     assert config.language == "en-US"
@@ -166,7 +169,34 @@ def test_sensitive_config_redacts_url_query_credentials():
 def test_guarder_invalid_credentials_pass_local_config_validation():
     fixture = Path(__file__).parent / "configs" / "property_invalid.json"
     config = QwenASRConfig.model_validate_json(fixture.read_text())
+    config.update(config.params)
     config.apply_defaults()
     config.validate_config()
     assert config.api_key == "invalid"
     assert config.url.startswith("wss://")
+
+
+@pytest.mark.parametrize(
+    "language,hints,expected_language,expected_hints",
+    [
+        ("en-US", ["en"], "en-US", ["en"]),
+        ("en", None, "en-US", ["en"]),
+        ("ja-JP", None, "ja-JP", ["ja"]),
+        ("en-US", ["ja"], "en-US", ["ja"]),
+    ],
+)
+def test_params_language_sets_result_fallback_and_default_hints(
+    language, hints, expected_language, expected_hints
+):
+    params = {"api_key": "secret", "language": language}
+    if hints is not None:
+        params["language_hints"] = hints
+    config = QwenASRConfig(language="zh-CN", params=params)
+    config.update(config.params)
+    config.apply_defaults()
+    config.validate_config()
+
+    assert config.normalized_language == expected_language
+    request_params = config.build_run_task("task-1")["payload"]["parameters"]
+    assert request_params["language_hints"] == expected_hints
+    assert "language" not in request_params

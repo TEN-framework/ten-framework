@@ -9,7 +9,7 @@ from .const import (
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
-    ASRBufferConfigModeDiscard,
+    ASRBufferConfigModeKeep,
     ASRResult,
     AsyncASRBaseExtension,
 )
@@ -168,6 +168,7 @@ class XfyunDialectASRExtension(
                 "multiFuncData": self.config.multiFuncData,
                 "use_tts": self.config.use_tts,
                 "nrtMode": self.config.nrtMode,
+                "recognized_language": self.config.recognized_language,
             }
 
             # Create recognition instance with new API
@@ -449,8 +450,7 @@ class XfyunDialectASRExtension(
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        """Buffer strategy configuration"""
-        return ASRBufferConfigModeDiscard()
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
     def input_audio_sample_rate(self) -> int:
