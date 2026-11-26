@@ -1,12 +1,15 @@
 {
-    "params": {
-        "api_url": "${env:BLAZE_TTS_API_URL}",
-        "api_key": "${env:BLAZE_TTS_API_KEY}",
-        "language": "vi",
-        "speaker_id": null,
-        "audio_speed": 1.0,
-        "audio_quality": 64,
-        "timeout": 3600
-    }
+  "dump": false,
+  "dump_path": "/tmp",
+  "params": {
+    "base_url": "${env:BLAZE_TTS_API_URL|https://api.blaze.vn}",
+    "api_key": "${env:BLAZE_TTS_API_KEY|}",
+    "speaker_id": "${env:BLAZE_TTS_SPEAKER_ID|HN-Nu-CSKH-HuongGiang}",
+    "language": "vi",
+    "model": "2.0-realtime",
+    "audio_speed": 1.0,
+    "audio_quality": 64,
+    "normalization": "basic",
+    "sample_rate": 24000
+  }
 }
-

@@ -1,2 +1,2 @@
-httpx>=0.24.0
+websockets>=15.0.1
 pydantic>=2.0.0

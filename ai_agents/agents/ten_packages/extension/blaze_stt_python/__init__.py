@@ -1,11 +1,6 @@
-"""
-Blaze STT Extension for TEN Framework
-
-This extension provides Speech-to-Text (STT) functionality using Blaze API.
-Implements TEN framework extension interface.
-"""
-
-from .blaze_stt import BlazeSTTExtension, BlazeSTTConfig
-
-__all__ = ["BlazeSTTExtension", "BlazeSTTConfig"]
-__version__ = "1.0.0"
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+from . import addon

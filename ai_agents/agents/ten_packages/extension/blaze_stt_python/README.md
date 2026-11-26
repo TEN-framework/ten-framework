@@ -1,118 +1,80 @@
-# Blaze STT Extension for TEN Framework
+# Blaze STT Extension
 
-Blaze Speech-to-Text (STT) extension for [TEN Framework](https://github.com/TEN-framework/ten-framework).
+TEN ASR extension for [Blaze](https://blaze.vn) realtime Speech-to-Text
+(model `stt-stream-1.5`).
 
-## Installation
+## Features
 
-```bash
-pip install -r requirements.txt
-```
+- Streams `pcm_frame` audio to Blaze over one WebSocket
+- Interim (`final: false`) and final (`final: true`) `asr_result` output
+- Server-side end-of-speech detection, with `start_ms` / `duration_ms` mapped
+  to the session's audio timeline
+- Reports `connecting` / `connected` / `disconnected`; `connected` only after
+  Blaze's `ready` message
+- Reconnects on its own task with capped exponential backoff (0.5 s to 8 s,
+  unlimited retries); auth failures are fatal and never retried. Audio kept
+  during an outage (up to 10 MB) is sent as soon as the new socket is ready
+- Connect-delay metrics and optional input audio dump
 
-Or install dependencies directly:
+## Protocol
 
-```bash
-pip install httpx pydantic
-```
+Endpoint: `wss://api.blaze.vn/v1/stt/realtime` (derived from `base_url`).
+
+1. Send `{"token", "language", "model", ["topic"], ["context"]}`.
+2. Receive `successful-authentication`, then `ready`. A bad token gets
+   `failed-authentication` and close code 1008, reported as a fatal error.
+3. Stream binary PCM16 mono at 16 kHz.
+4. Receive `{"type": "partial", "text"}` and
+   `{"type": "final", "text", "start_ms", "end_ms"}`. Errors arrive as
+   `{"type": "error", "code", "text"}` and are reported as non-fatal.
+
+Blaze has no flush message. On `asr_finalize` the extension sends
+`finalize_silence_ms` of silence so Blaze closes the current utterance. If the
+input stream then goes idle, it keeps sending silence in real-time 100 ms
+steps, because Blaze's endpointing only advances while audio arrives. It waits
+up to `finalize_timeout_ms` for a final that covers the pending speech, then
+sends exactly one `asr_finalize_end` echoing that request's `finalize_id` and
+session. Finalize requests are handled one at a time.
+
+Pending speech is tracked on Blaze's stream clock: frames with speech-level
+energy are compared with the latest final's `end_ms`, so a late final for an
+earlier utterance never acknowledges newer speech. When nothing is pending, or
+the socket is down, finalize ends immediately.
 
 ## Configuration
 
-### Environment Variables
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `params.base_url` | string | `https://api.blaze.vn` | Blaze base URL (`http(s)` is converted to `ws(s)`); credentials, query and fragment are rejected |
+| `params.api_key` | string | Required | Blaze API token |
+| `params.language` | string | `vi` | Recognition language, e.g. `vi`, `en` |
+| `params.model` | string | `stt-stream-1.5` | Realtime STT model |
+| `params.sample_rate` | int | `16000` | Input sample rate; Blaze realtime accepts 16000 only |
+| `params.topic` | string | empty | Optional domain hint |
+| `params.context` | string | empty | Optional free-form context |
+| `params.result_language_default` | string | empty | Overrides `asr_result.language` |
+| `finalize_silence_ms` | int | `800` | Silence sent on `asr_finalize` |
+| `finalize_timeout_ms` | int | `2000` | Wait for the final result after `asr_finalize` |
+| `dump` | bool | `false` | Dump incoming PCM |
+| `dump_path` | string | `/tmp` | Directory for the dump file |
 
-Set the following environment variables:
+`asr_result.language` is normalized: `vi` → `vi-VN`, `en` → `en-US`.
+
+## Environment Variables
+
+- `BLAZE_STT_API_URL` - Blaze base URL
+- `BLAZE_STT_API_KEY` - Blaze API token (the same token works for TTS)
+
+## Running Tests
+
+Inside the `ten_agent_dev` container:
 
 ```bash
-export BLAZE_STT_API_URL="http://localhost:8000"
-export BLAZE_STT_API_KEY="your-api-key-here"  # Optional
+cd /app
+task test-extension EXTENSION=agents/ten_packages/extension/blaze_stt_python
+task asr-guarder-test EXTENSION=blaze_stt_python CONFIG_DIR=tests/configs
 ```
 
-### Property.json (TEN Framework)
-
-The extension includes a `property.json` file with default configuration that TEN framework can use:
-
-```json
-{
-    "params": {
-        "api_url": "${env:BLAZE_STT_API_URL}",
-        "api_key": "${env:BLAZE_STT_API_KEY}",
-        "language": "vi",
-        "timeout": 3600
-    }
-}
-```
-
-TEN framework will automatically read this file and use environment variables for configuration.
-
-## Usage
-
-### As TEN Framework Extension
-
-```python
-from blaze_stt_python import BlazeSTTExtension
-
-# Initialize extension (can accept dict config from TEN framework)
-stt = BlazeSTTExtension(config={
-    "api_url": "http://localhost:8000",
-    "api_key": "your-api-key",
-    "language": "vi",
-})
-
-# Process audio using TEN framework interface
-result = stt.process({
-    "audio_data": audio_bytes,
-    "audio_content_type": "audio/wav",
-    "language": "vi",
-})
-
-print(result["transcription"])
-
-# Get extension metadata
-metadata = stt.get_metadata()
-print(metadata)
-```
-
-### As Direct Extension
-
-```python
-from blaze_stt_python import BlazeSTTExtension, BlazeSTTConfig
-
-# Initialize extension
-config = BlazeSTTConfig(
-    api_url="http://localhost:8000",
-    api_key="your-api-key",
-    default_language="vi",
-)
-stt = BlazeSTTExtension(config=config)
-
-# Transcribe audio
-result = stt.transcribe(
-    audio_data=audio_bytes,
-    audio_content_type="audio/wav",
-    language="vi",
-)
-
-print(result["transcription"])
-```
-
-## API Reference
-
-### BlazeSTTExtension
-
-**TEN Framework Interface Methods:**
-- `process(input_data)` - Process audio and return transcription (TEN framework interface)
-- `get_metadata()` - Get extension metadata (TEN framework interface)
-
-**Direct Methods:**
-
-- `transcribe(audio_data, audio_file, audio_content_type, language)` - Transcribe audio data (bytes) or file (UploadFile)
-- `get_job_status(job_id)` - Get transcription job status
-
-## Supported Formats
-
-- `audio/wav` - WAV format
-- `audio/mpeg` - MP3 format
-- `audio/webm` - WebM format
-- `audio/ogg` - OGG format
-
-## License
-
-This extension is provided as-is for use with the TEN Framework and Blaze services.
+Guarder configs: `property_en.json`, `property_vi.json`,
+`property_invalid.json`, `property_dump.json`. There is no `property_zh.json`,
+so the guarder's Chinese multi-language case is expected to fail.
