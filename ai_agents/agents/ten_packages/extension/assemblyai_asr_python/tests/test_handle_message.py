@@ -137,3 +137,133 @@ def test_connection_closed_passes_string_args_to_on_error():
     assert isinstance(error_msg, str)
     assert isinstance(error_code, str)
     assert error_code == "4001"
+
+
+class _FakeSendWebSocket:
+    """Fake open websocket recording sent JSON control payloads."""
+
+    def __init__(self) -> None:
+        from websockets.protocol import State
+
+        self.state = State.OPEN
+        self.sent: list[str] = []
+
+    async def send(self, payload: str) -> None:
+        self.sent.append(payload)
+
+
+def test_error_message_routed_to_on_error_with_string_code():
+    """In-band Error frames must route to on_error with string args."""
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+
+    message = json.dumps(
+        {
+            "type": "Error",
+            "error_code": 3005,
+            "error": "Session duration exceeded",
+        }
+    )
+
+    asyncio.run(recognition._handle_message(message))
+
+    assert callback.events == []
+    assert callback.errors == [("Session duration exceeded", "3005")]
+    error_msg, error_code = callback.errors[0]
+    assert isinstance(error_msg, str)
+    assert isinstance(error_code, str)
+
+
+def test_untyped_error_message_routed_to_on_error():
+    """Error payloads without a type or error_code still route to on_error."""
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+
+    message = json.dumps({"error": "Invalid API key"})
+
+    asyncio.run(recognition._handle_message(message))
+
+    assert callback.events == []
+    assert callback.errors == [("Invalid API key", None)]
+
+
+def test_nested_error_message_routed_to_on_error():
+    """Nested dict error payloads coerce message and code to strings."""
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+
+    message = json.dumps(
+        {
+            "type": "Error",
+            "error": {"message": "Rate limit exceeded", "code": 4029},
+        }
+    )
+
+    asyncio.run(recognition._handle_message(message))
+
+    assert callback.events == []
+    assert callback.errors == [("Rate limit exceeded", "4029")]
+
+
+def test_force_endpoint_sends_pascal_case_type():
+    """AssemblyAI v3 expects PascalCase 'ForceEndpoint' control frames."""
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+    ws = _FakeSendWebSocket()
+    recognition.websocket = ws
+    recognition.is_started = True
+
+    asyncio.run(recognition.force_endpoint())
+
+    assert len(ws.sent) == 1
+    assert json.loads(ws.sent[0]) == {"type": "ForceEndpoint"}
+
+
+def test_send_update_configuration_sends_pascal_case_type():
+    """AssemblyAI v3 expects PascalCase 'UpdateConfiguration' control frames."""
+    callback = _RecordingCallback()
+    recognition = _make_recognition(callback)
+    ws = _FakeSendWebSocket()
+    recognition.websocket = ws
+    recognition.is_started = True
+
+    asyncio.run(
+        recognition.send_update_configuration(
+            {"keyterms_prompt": ["AssemblyAI"], "type": "override"}
+        )
+    )
+
+    assert len(ws.sent) == 1
+    assert json.loads(ws.sent[0]) == {
+        "type": "UpdateConfiguration",
+        "keyterms_prompt": ["AssemblyAI"],
+    }
+
+
+def test_build_websocket_url_encodes_keyterms_and_default_path():
+    """WebSocket URL must use /v3/ws and URL-encode keyterms safely."""
+    from urllib.parse import parse_qs, urlparse
+
+    callback = _RecordingCallback()
+    recognition = AssemblyAIWSRecognition(
+        api_key="fake_key",
+        ten_env=_FakeTenEnv(),
+        config={
+            "sample_rate": 16000,
+            "encoding": "pcm_s16le",
+            "format_turns": True,
+            "keyterms_prompt": ["AssemblyAI", "Voice AI", "A&B=C"],
+        },
+        callback=callback,
+    )
+
+    url = recognition._build_websocket_url()
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+
+    assert parsed.scheme == "wss"
+    assert parsed.netloc == "streaming.assemblyai.com"
+    assert parsed.path == "/v3/ws"
+    assert qs["sample_rate"] == ["16000"]
+    assert qs["format_turns"] == ["true"]
+    assert qs["keyterms_prompt"] == ["AssemblyAI", "Voice AI", "A&B=C"]

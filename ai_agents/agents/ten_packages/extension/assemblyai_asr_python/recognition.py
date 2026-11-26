@@ -1,8 +1,8 @@
 import asyncio
 import json
 import re
-
 from typing import Optional, Dict, Any
+from urllib.parse import urlencode
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
@@ -47,7 +47,7 @@ class AssemblyAIWSRecognition:
     def __init__(
         self,
         api_key: str,
-        ws_url: str = "wss://streaming.assemblyai.com/v3/",
+        ws_url: str = "wss://streaming.assemblyai.com/v3/ws",
         audio_timeline=AudioTimeline,
         ten_env=AsyncTenEnv,
         config: Optional[Dict[str, Any]] = None,
@@ -110,6 +110,18 @@ class AssemblyAIWSRecognition:
                 )
                 if self.callback:
                     await self.callback.on_event(message_data)
+
+            elif message_type == "Error" or (
+                not message_type and "error" in message_data
+            ):
+                error_msg, error_code = self._extract_error_details(
+                    message_data
+                )
+                self.ten_env.log_error(
+                    f"[AssemblyAI] Server error (code={error_code}): {error_msg}"
+                )
+                if self.callback:
+                    await self.callback.on_error(error_msg, error_code)
 
             else:
                 # Unrecognized message types (e.g. "SpeechStarted") are
@@ -176,51 +188,82 @@ class AssemblyAIWSRecognition:
             if self.callback:
                 await self.callback.on_close()
 
+    @staticmethod
+    def _extract_error_details(
+        message_data: Dict[str, Any],
+    ) -> tuple[str, Optional[str]]:
+        """Extract string error message and optional code from an error payload."""
+        raw_error = message_data.get("error")
+        raw_code = message_data.get("error_code")
+        if raw_code is None:
+            raw_code = message_data.get("code")
+
+        if isinstance(raw_error, dict):
+            if raw_code is None:
+                raw_code = raw_error.get("error_code") or raw_error.get("code")
+            error_msg = str(raw_error.get("message") or json.dumps(raw_error))
+        elif raw_error not in (None, ""):
+            error_msg = str(raw_error)
+        else:
+            error_msg = str(
+                message_data.get("message") or json.dumps(message_data)
+            )
+
+        error_code = str(raw_code) if raw_code is not None else None
+        return error_msg, error_code
+
     def _build_websocket_url(self) -> str:
         """Build WebSocket URL with query parameters"""
         base_url = self.ws_url
-        params = []
+        query_params: list[tuple[str, str]] = []
 
         sample_rate = self.config.get("sample_rate", 16000)
-        params.append(f"sample_rate={sample_rate}")
+        query_params.append(("sample_rate", str(sample_rate)))
         encoding = self.config.get("encoding", "pcm_s16le")
         if encoding:
-            params.append(f"encoding={encoding}")
+            query_params.append(("encoding", str(encoding)))
 
         end_of_turn_confidence_threshold = self.config.get(
             "end_of_turn_confidence_threshold"
         )
         if end_of_turn_confidence_threshold is not None:
-            params.append(
-                f"end_of_turn_confidence_threshold={end_of_turn_confidence_threshold}"
+            query_params.append(
+                (
+                    "end_of_turn_confidence_threshold",
+                    str(end_of_turn_confidence_threshold),
+                )
             )
 
         format_turns = self.config.get("format_turns")
         if format_turns is not None:
-            params.append(f"format_turns={str(format_turns).lower()}")
+            query_params.append(("format_turns", str(format_turns).lower()))
 
         keyterms_prompt = self.config.get("keyterms_prompt", [])
         if keyterms_prompt:
-            keyterms_str = ",".join(keyterms_prompt)
-            params.append(f"keyterms_prompt={keyterms_str}")
+            for term in keyterms_prompt:
+                query_params.append(("keyterms_prompt", str(term)))
 
         min_end_of_turn_silence_when_confident = self.config.get(
             "min_end_of_turn_silence_when_confident"
         )
         if min_end_of_turn_silence_when_confident is not None:
-            params.append(
-                f"min_end_of_turn_silence_when_confident={min_end_of_turn_silence_when_confident}"
+            query_params.append(
+                (
+                    "min_end_of_turn_silence_when_confident",
+                    str(min_end_of_turn_silence_when_confident),
+                )
             )
 
         max_turn_silence = self.config.get("max_turn_silence")
         if max_turn_silence is not None:
-            params.append(f"max_turn_silence={max_turn_silence}")
+            query_params.append(("max_turn_silence", str(max_turn_silence)))
 
         self.ten_env.log_info(
-            f"[AssemblyAI] Building websocket url with params: {params}"
+            f"[AssemblyAI] Building websocket url with params: {query_params}"
         )
-        if params:
-            url = f"{base_url}?{'&'.join(params)}"
+        if query_params:
+            separator = "&" if "?" in base_url else "?"
+            url = f"{base_url}{separator}{urlencode(query_params)}"
         else:
             url = base_url
 
@@ -318,10 +361,11 @@ class AssemblyAIWSRecognition:
             return
 
         try:
-            message = {"type": "updateConfiguration", **config_update}
+            payload = {k: v for k, v in config_update.items() if k != "type"}
+            message = {"type": "UpdateConfiguration", **payload}
             await self.websocket.send(json.dumps(message))
             self.ten_env.log_info(
-                f"[AssemblyAI] Sent configuration update: {config_update}"
+                f"[AssemblyAI] Sent configuration update: {payload}"
             )
 
         except ConnectionClosed:
@@ -343,7 +387,7 @@ class AssemblyAIWSRecognition:
             return
 
         try:
-            message = {"type": "forceEndpoint"}
+            message = {"type": "ForceEndpoint"}
             await self.websocket.send(json.dumps(message))
             self.ten_env.log_info("[AssemblyAI] Sent force endpoint signal")
 
