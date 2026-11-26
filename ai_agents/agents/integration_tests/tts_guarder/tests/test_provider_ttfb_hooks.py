@@ -1,5 +1,9 @@
 """Public transport/SDK fixture checks for every second-stage provider hook."""
 
+import asyncio
+import io
+import struct
+import wave
 from importlib import import_module
 from types import SimpleNamespace
 
@@ -45,6 +49,91 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
         assert [item.audio_content for item in outputs] == [b"", b"audio"]
         assert reference.elapsed_ms("first") == 20
     assert module.texttospeech.TextToSpeechClient is Client
+
+
+def test_gmicloud_http_boundary(monkeypatch, clock):
+    module = import_module(
+        "ten_packages.extension.gmicloud_tts2_python.client"
+    )
+
+    class FakeResponse:
+        def __init__(self, status_code=200, json_data=None, content=b""):
+            self.status_code = status_code
+            self._json = json_data or {}
+            self.content = content
+
+        def json(self):
+            return self._json
+
+        @property
+        def text(self):
+            return ""
+
+    def make_wav():
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as pcm:
+            pcm.setnchannels(1)
+            pcm.setsampwidth(2)
+            pcm.setframerate(24000)
+            pcm.writeframes(struct.pack("<2h", 1, -1))
+        return buf.getvalue()
+
+    state = {"download": make_wav()}
+
+    async def fake_post(url, json=None, headers=None):
+        clock[0] += 10_000_000
+        return FakeResponse(
+            json_data={"status": "success",
+                       "outcome": {"audio_url": "https://a/wav"}}
+        )
+
+    async def fake_get(url, **kwargs):
+        clock[0] += 15_000_000
+        return FakeResponse(content=state["download"])
+
+    options = module.GmicloudTTSOptions(
+        api_key="k",
+        base_url="https://console.gmicloud.ai",
+        model="inworld-tts-2",
+        voice="Dennis",
+        audio_format="WAV",
+        speed=1.0,
+        sample_rate=24000,
+        text_chunk_chars=1000,
+        request_timeout_sec=5.0,
+        poll_interval_sec=0.01,
+        poll_attempts=3,
+    )
+    with install_hook("gmicloud_tts2_python", {}, monkeypatch) as reference:
+        client = module.GmicloudTTSClient(options)
+        client._client.post = fake_post
+        client._client.get = fake_get
+
+        def run(text, request_id):
+            async def collect():
+                return [event async for event in client.get(text, request_id)]
+            return asyncio.run(collect())
+
+        # sequential requests: each measures submission -> WAV arrival at
+        # the HTTP boundary (10ms submit + 15ms download = 25ms)
+        reference.begin_request("first")
+        events = run("Hello", "first")
+        assert events[-1][1].name == "END"
+        assert reference.elapsed_ms("first") == 25
+
+        clock[0] += 100_000_000
+        reference.begin_request("second")
+        run("Again", "second")
+        assert reference.elapsed_ms("second") == 25
+
+        # an empty WAV arrival is not audio and must not close the interval
+        state["download"] = b""
+        clock[0] += 100_000_000
+        reference.begin_request("empty")
+        run("Hello", "empty")
+        assert reference.elapsed_ms("empty") is None
+
+        asyncio.run(client.clean())
 
 
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):

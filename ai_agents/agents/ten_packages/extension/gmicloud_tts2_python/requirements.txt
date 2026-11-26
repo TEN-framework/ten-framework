@@ -1,0 +1,3 @@
+httpx>=0.27
+numpy>=1.26
+pydantic>=2.13.4
