@@ -1,11 +1,11 @@
 # gemini_tts_python
 
-A Google Gemini 2.5 TTS extension for the TEN framework, supporting both Flash (low latency) and Pro (high quality) models.
+A Google Gemini 3.8 TTS extension for the TEN framework.
 
 ## Features
 
-- Integration with Google Gemini 2.5 TTS API
-- Support for both Flash and Pro models via configuration
+- Integration with the Google Gemini 3.8 TTS API
+- Support for Flash and Flash Lite models via configuration
 - Full compatibility with the TEN TTS interface
 - 30 prebuilt voices with distinct characteristics
 - 24 language support
@@ -19,7 +19,7 @@ Refer to the `api` definition in [manifest.json](manifest.json) and default valu
 | **Property** | **Type** | **Description** |
 |---|---|---|
 | `api_key` | `string` | API key for authenticating with Google Gemini |
-| `model` | `string` | Model identifier (default: `gemini-2.5-flash-preview-tts`) |
+| `model` | `string` | Model identifier (default: `gemini-3.8-flash-tts`) |
 | `voice` | `string` | Voice name (e.g., `Kore`, `Puck`, `Charon`) |
 | `language_code` | `string` | Language code in BCP-47 format (e.g., `en-US`) |
 | `style_prompt` | `string` | Style instructions for delivery (e.g., "cheerful and optimistic") |
@@ -34,21 +34,20 @@ export GEMINI_API_KEY=your_api_key
 
 ## Supported Models
 
-### gemini-2.5-flash-preview-tts (Default)
+### gemini-3.8-flash-tts (Default)
 - **Optimization**: Low latency
 - **Best for**: Real-time applications, voice assistants, chatbots
 - **Speed**: Faster response times
 
-### gemini-2.5-pro-preview-tts
-- **Optimization**: High quality
-- **Best for**: Podcasts, audiobooks, professional content creation
-- **Speed**: Slower, but higher fidelity
+### gemini-3.8-flash-lite-tts
+- **Optimization**: Lower resource usage
+- **Best for**: High-volume voice assistants and lightweight deployments
 
-To use the Pro model, set:
+To use the Flash Lite model, set:
 ```json
 {
   "params": {
-    "model": "gemini-2.5-pro-preview-tts"
+    "model": "gemini-3.8-flash-lite-tts"
   }
 }
 ```
@@ -83,19 +82,19 @@ To use the Pro model, set:
 {
   "params": {
     "api_key": "your-gemini-api-key",
-    "model": "gemini-2.5-flash-preview-tts",
+    "model": "gemini-3.8-flash-tts",
     "voice": "Kore",
     "language_code": "en-US"
   }
 }
 ```
 
-### High Quality (Pro Model)
+### Lower Resource Usage (Flash Lite Model)
 ```json
 {
   "params": {
     "api_key": "your-gemini-api-key",
-    "model": "gemini-2.5-pro-preview-tts",
+    "model": "gemini-3.8-flash-lite-tts",
     "voice": "Charon",
     "language_code": "en-US",
     "style_prompt": "professional and authoritative, suitable for a podcast"

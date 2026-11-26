@@ -1,8 +1,11 @@
 import copy
 from typing import Any
+
 from pydantic import Field
 from ten_ai_base import utils
 from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
+
+DEFAULT_MODEL = "gemini-3.8-flash-tts"
 
 
 class GeminiTTSConfig(AsyncTTS2HttpConfig):
@@ -12,9 +15,8 @@ class GeminiTTSConfig(AsyncTTS2HttpConfig):
 
     def update_params(self) -> None:
         """Transform params for Gemini API compatibility"""
-        # Ensure model is set (default to Flash for low latency)
         if "model" not in self.params:
-            self.params["model"] = "gemini-2.5-flash-preview-tts"
+            self.params["model"] = DEFAULT_MODEL
 
         # Ensure voice is set
         if "voice" not in self.params:

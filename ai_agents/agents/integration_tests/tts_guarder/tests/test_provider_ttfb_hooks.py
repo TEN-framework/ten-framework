@@ -47,6 +47,100 @@ def test_google_public_lazy_iterator(monkeypatch, clock):
     assert module.texttospeech.TextToSpeechClient is Client
 
 
+@pytest.mark.asyncio
+async def test_gemini_public_interactions_boundary(monkeypatch, clock):
+    sdk = import_module("google.genai._gaos.google_genai")
+
+    class Stream:
+        def __init__(self, events, delay_ms):
+            self.events = iter(events)
+            self.delay_ms = delay_ms
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            try:
+                event = next(self.events)
+            except StopIteration as exc:
+                raise StopAsyncIteration from exc
+            clock[0] += self.delay_ms * 1_000_000
+            return event
+
+        async def close(self):
+            pass
+
+    class Interactions:
+        async def create(self, **kwargs):
+            text = kwargs["input"][0]["content"][0]["text"]
+            if not text:
+                return Stream([], 5)
+            delay_ms = 20 if text == "Hello" else 25
+            return Stream(
+                [
+                    SimpleNamespace(
+                        event_type="step.delta",
+                        delta=SimpleNamespace(
+                            type="audio",
+                            data="base64-audio",
+                        ),
+                    )
+                ],
+                delay_ms,
+            )
+
+    original_create = Interactions.create
+    monkeypatch.setattr(
+        sdk,
+        "AsyncGeminiNextGenInteractions",
+        Interactions,
+    )
+    with install_hook("gemini_tts_python", {}, monkeypatch) as reference:
+        interactions = Interactions()
+        reference.begin_request("empty")
+        empty = await interactions.create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": ""}],
+                }
+            ],
+            stream=True,
+        )
+        assert [event async for event in empty] == []
+        assert reference.elapsed_ms("empty") is None
+
+        reference.begin_request("first")
+        clock[0] = 100_000_000
+        outputs = await interactions.create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": "Hello"}],
+                }
+            ],
+            stream=True,
+        )
+        events = [event async for event in outputs]
+        assert events[0].delta.data == "base64-audio"
+        assert reference.elapsed_ms("first") == 20
+
+        reference.begin_request("second")
+        clock[0] = 200_000_000
+        outputs = await interactions.create(
+            input=[
+                {
+                    "type": "user_input",
+                    "content": [{"type": "text", "text": "Again"}],
+                }
+            ],
+            stream=True,
+        )
+        assert [event async for event in outputs]
+        assert reference.elapsed_ms("second") == 25
+    assert Interactions.create is original_create
+
+
 def test_reference_uses_capture_request_and_ignores_empty_chunks(clock):
     reference = Reference()
     reference.begin_request("first")
@@ -110,8 +204,9 @@ def test_azure_live_sdk_is_not_claimed_as_independent_reference():
 async def test_http_adapter_hook_tracks_input_and_first_audio(
     monkeypatch, clock
 ):
-    from .provider_ttfb_hooks.http import HttpAdapterHook
     from ten_ai_base.struct import TTS2HttpResponseEventType as Event
+
+    from .provider_ttfb_hooks.http import HttpAdapterHook
 
     class Client:
         async def get(self, text, request_id):

@@ -1,9 +1,10 @@
-from ten_runtime import AsyncTenEnv
 from ten_ai_base.tts2_http import (
-    AsyncTTS2HttpExtension,
-    AsyncTTS2HttpConfig,
     AsyncTTS2HttpClient,
+    AsyncTTS2HttpConfig,
+    AsyncTTS2HttpExtension,
 )
+from ten_runtime import AsyncTenEnv
+
 from .config import GeminiTTSConfig
 from .gemini_tts import GeminiTTSClient
 
@@ -26,3 +27,8 @@ class GeminiTTSExtension(AsyncTTS2HttpExtension):
     def synthesize_audio_sample_rate(self) -> int:
         """Return fixed sample rate (Gemini = 24000 Hz)"""
         return 24000
+
+    def _calculate_request_event_interval_ms(self) -> int:
+        if self.request_ts is None:
+            return 0
+        return super()._calculate_request_event_interval_ms()
