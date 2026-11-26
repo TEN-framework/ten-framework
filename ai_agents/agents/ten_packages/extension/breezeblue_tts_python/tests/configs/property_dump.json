@@ -1,0 +1,9 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:BREEZE_API_KEY}",
+        "voice_id": "${env:BREEZE_TTS_VOICE_ID}",
+        "language_code": "en"
+    }
+}

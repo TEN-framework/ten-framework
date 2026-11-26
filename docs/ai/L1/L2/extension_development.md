@@ -297,7 +297,8 @@ class MyVendorTTSClient(AsyncTTS2HttpClient):
 `Authorization` header in the constructor; classify 401/403 (and vendor
 `invalid_api_key` codes) as `INVALID_KEY_ERROR`, everything else as `ERROR`.
 For a complete reference implementation see `mistral_tts_python` (streaming
-httpx, error classification, audio conversion) or `rime_http_tts`.
+httpx, error classification, audio conversion) `breezeblue_tts_python` (whitelisted
+request body, text chunking, PCM16 passthrough), or `rime_http_tts`.
 
 ### ASR Extension
 
