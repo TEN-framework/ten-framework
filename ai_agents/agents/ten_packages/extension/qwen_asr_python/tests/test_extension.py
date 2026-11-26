@@ -39,6 +39,7 @@ def configured_extension():
         language="zh-CN",
         params={"api_key": "secret"},
     )
+    extension.config.update(extension.config.params)
     extension.config.apply_defaults()
     extension.config.validate_config()
     extension.metadata = {"session_id": "session-1", "turn_id": 7}
@@ -1228,5 +1229,101 @@ def test_stop_cancels_pending_reconnect(monkeypatch):
         extension._schedule_reconnect()
         assert extension._reconnect_task is None
         factory.assert_called_once()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "final,vendor_language,expected_language",
+    [
+        (False, None, "en-US"),
+        (True, None, "en-US"),
+        (True, "ja", "ja-JP"),
+    ],
+    ids=["interim-fallback", "final-fallback", "vendor-language"],
+)
+def test_emitted_result_language_with_nested_language_config(
+    final, vendor_language, expected_language
+):
+    async def run():
+        extension = configured_extension()
+        extension.ten_env.get_property_bool = AsyncMock(
+            return_value=(False, None)
+        )
+        extension.ten_env.get_property_to_json = AsyncMock(
+            return_value=(
+                json.dumps(
+                    {
+                        "language": "zh-CN",
+                        "params": {
+                            "api_key": "secret",
+                            "language": "en-US",
+                            "language_hints": ["en"],
+                        },
+                    }
+                ),
+                None,
+            )
+        )
+        await extension.on_init(extension.ten_env)
+        extension.metadata = {
+            "session_id": "100",
+            "source_languages": "en-US",
+        }
+        extension.ten_env.send_data = AsyncMock()
+        extension.send_asr_result = (
+            AsyncASRBaseExtension.send_asr_result.__get__(extension)
+        )
+        sentence = {
+            "text": "The silver train carries eleven small boxes.",
+            "sentence_end": final,
+        }
+        if vendor_language is not None:
+            sentence["language"] = vendor_language
+
+        await extension._handle_result(
+            {"payload": {"output": {"sentence": sentence}}}
+        )
+
+        emitted = [
+            call.args[0]
+            for call in extension.ten_env.send_data.await_args_list
+            if call.args[0].get_name() == "asr_result"
+        ]
+        assert len(emitted) == 1
+        payload = json.loads(emitted[0].get_property_to_json(None)[0])
+        assert payload["text"] == sentence["text"]
+        assert payload["final"] is final
+        assert payload["language"] == expected_language
+        assert payload["metadata"]["source_languages"] == "en-US"
+        assert payload["metadata"]["session_id"] == "100"
+
+    asyncio.run(run())
+
+
+def test_nested_timeout_is_validated_during_initialization():
+    async def run():
+        extension = QwenASRExtension("qwen_asr_python")
+        ten_env = MagicMock()
+        ten_env.get_property_bool = AsyncMock(return_value=(False, None))
+        ten_env.get_property_to_json = AsyncMock(
+            return_value=(
+                json.dumps(
+                    {"params": {"api_key": "secret", "connect_timeout_s": 0}}
+                ),
+                None,
+            )
+        )
+        ten_env.send_data = AsyncMock()
+
+        await extension.on_init(ten_env)
+
+        errors = [
+            json.loads(call.args[0].get_property_to_json(None)[0])
+            for call in ten_env.send_data.await_args_list
+            if call.args[0].get_name() == "error"
+        ]
+        assert len(errors) == 1
+        assert errors[0]["code"] == int(ModuleErrorCode.FATAL_ERROR.value)
 
     asyncio.run(run())

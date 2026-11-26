@@ -56,6 +56,11 @@ class QwenASRConfig(BaseModel):
     language: str = "zh-CN"
     params: dict[str, Any] = Field(default_factory=dict)
 
+    def update(self, params: dict[str, Any]) -> None:
+        for key in self.model_dump():
+            if key in params:
+                setattr(self, key, params[key])
+
     def apply_defaults(self) -> None:
         normalized = dict(self.params or {})
         defaults = {
@@ -199,7 +204,7 @@ class QwenASRConfig(BaseModel):
         return None
 
     def _sync_language_hints_from_language(self) -> None:
-        """Fill language_hints from property.language when params has none."""
+        """Fill language_hints from the effective language when params has none."""
         explicit = self.params.get("language_hints")
         if isinstance(explicit, list) and len(explicit) > 0:
             return
@@ -208,7 +213,7 @@ class QwenASRConfig(BaseModel):
 
     @property
     def normalized_language(self) -> str:
-        """TEN-facing asr.language (property.language), normalized to BCP-47."""
+        """Configured result fallback language, normalized to BCP-47."""
         return self._map_language_code_to_bcp47(str(self.language or "zh-CN"))
 
     @staticmethod

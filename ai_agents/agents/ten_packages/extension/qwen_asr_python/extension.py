@@ -125,6 +125,7 @@ class QwenASRExtension(AsyncASRBaseExtension):
             if error:
                 raise ValueError(str(error))
             self.config = QwenASRConfig.model_validate_json(config_json)
+            self.config.update(self.config.params)
             self.config.apply_defaults()
             self.config.validate_config()
             ten_env.log_info(
