@@ -51,6 +51,21 @@ CASES = [
         {"params": {"api_key": "k", "base_url": "http://127.0.0.1:8080"}},
         "ws://127.0.0.1:8080/v1/tts/stream",
     ),
+    (
+        "kalpa_tts_python",
+        {"url": "wss://top.test/ws", "params": {"url": "wss://nested.test/ws"}},
+        "wss://nested.test/ws",
+    ),
+    (
+        "kalpa_tts_python",
+        {"params": {"url": "wss://nested.test/{voice_id}", "voice_id": "v1"}},
+        "wss://nested.test/v1",
+    ),
+    (
+        "kalpa_tts_python",
+        {"params": {"base_url": "wss://base.test", "voice_id": "v1"}},
+        "wss://base.test/v1/tts/v1/stream",
+    ),
 ]
 
 # Normalization of these extensions also validates a required credential.

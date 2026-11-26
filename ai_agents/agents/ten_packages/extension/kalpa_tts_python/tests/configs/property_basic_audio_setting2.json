@@ -1,0 +1,10 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:KALPA_TTS_API_KEY}",
+        "voice_id": "18c26f49-9f9c-400c-bec9-7467f28e1db5",
+        "model": "kalpa-tts-1",
+        "sample_rate": 24000
+    }
+}
