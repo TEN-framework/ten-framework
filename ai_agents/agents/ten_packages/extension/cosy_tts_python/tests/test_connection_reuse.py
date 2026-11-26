@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 from pytest_ten import TenTestContext, ten_test
+from ten_ai_base.message import TTSAudioEndReason
 from ten_ai_base.struct import TTSFlush, TTSTextInput
 from ten_runtime import Data
 from websockets.sync.server import Server, ServerConnection, serve
@@ -32,6 +33,7 @@ class FakeDashScopeServer:
     def __init__(self, port: int) -> None:
         self.port = port
         self.connection_count = 0
+        self.reject_connections = False
         self.task_ids: list[str] = []
         self.fail_next_task = False
         self.fail_error_code = "InvalidParameter"
@@ -75,13 +77,18 @@ class FakeDashScopeServer:
 
     def _run(self) -> None:
         try:
-            with serve(self._handle, "127.0.0.1", self.port) as server:
+            with serve(self._handle, "127.0.0.1", self.port, process_request=self._handshake) as server:
                 self._server = server
                 self._ready.set()
                 server.serve_forever()
         except Exception as exc:
             self._error = exc
             self._ready.set()
+
+    def _handshake(self, connection, request):
+        if self.reject_connections:
+            return connection.respond(503, "temporarily unavailable")
+        return None
 
     def _handle(self, websocket: ServerConnection) -> None:
         self.connection_count += 1
@@ -990,3 +997,77 @@ async def test_socket_close_without_task_finished_reports_error(
         audio_timeout=1.0,
     )
     assert len(dashscope_server.task_ids) == 2
+
+
+@ten_test(
+    "cosy_tts_python",
+    property_json_str=json.dumps({**json.loads(PROPERTY_JSON), "enable_words": True}),
+    timeout=1.5,
+)
+async def test_failed_request_does_not_send_subtitle_result(
+    ctx: TenTestContext,
+    dashscope_server: FakeDashScopeServer,
+) -> None:
+    dashscope_server.fail_next_task = True
+    request = TTSTextInput(
+        request_id="failed-subtitle-request",
+        text="保持手机尾号二八三七畅通，",
+        text_input_end=True,
+        metadata={"turn_id": 19, "turn_seq_id": 1},
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+    received = set()
+    while received != {"tts_audio_end", "error"}:
+        result = await ctx.expect_data(timeout=0.5)
+        name = result.get_name()
+        assert name != "tts_text_result"
+        if name == "tts_audio_end":
+            payload, error = result.get_property_to_json("")
+            assert error is None
+            assert json.loads(payload)["reason"] == int(TTSAudioEndReason.ERROR)
+        if name in {"tts_audio_end", "error"}:
+            received.add(name)
+    await ctx.assert_no_data("tts_text_result", timeout=0.1)
+
+
+@pytest.fixture
+def recovering_server(monkeypatch: pytest.MonkeyPatch):
+    from dashscope.audio.tts_v2 import SpeechSynthesizer
+    from .. import cosy_tts
+
+    monkeypatch.setattr(cosy_tts, "TTS_STARTUP_RETRY_DELAYS_SECONDS", (0, 0))
+
+    connect = SpeechSynthesizer._SpeechSynthesizer__connect
+
+    def bounded_connect(synthesizer, timeout_seconds=5):
+        return connect(synthesizer, timeout_seconds=0.1)
+
+    monkeypatch.setattr(
+        SpeechSynthesizer, "_SpeechSynthesizer__connect", bounded_connect
+    )
+    server = FakeDashScopeServer(SERVER_PORT)
+    server.reject_connections = True
+    server.start()
+    try:
+        yield server
+    finally:
+        server.stop()
+
+
+@ten_test("cosy_tts_python", property_json_str=PROPERTY_JSON, timeout=1.5)
+async def test_startup_failure_recovers_for_next_request(
+    ctx: TenTestContext,
+    recovering_server: FakeDashScopeServer,
+) -> None:
+    request = TTSTextInput(
+        request_id="startup-failure", text="first", text_input_end=True
+    )
+    data = Data.create("tts_text_input")
+    data.set_property_from_json("", request.model_dump_json())
+    await ctx.send_data(data)
+    await ctx.expect_data("error", timeout=0.5)
+    recovering_server.reject_connections = False
+    result = await _synthesize(ctx, "recovered-request", "second")
+    assert result["reason"] == int(TTSAudioEndReason.REQUEST_END)
