@@ -1,3 +1,24 @@
 {
-    "params": {}
+    "dump": false,
+    "dump_path": "/tmp",
+    "language": "en-US",
+    "params": {
+        "api_key": "${env:ELEVENLABS_ASR_KEY|}",
+        "ws_url": "wss://api.elevenlabs.io/v1/speech-to-text/realtime",
+        "sample_rate": 16000,
+        "audio_format": "pcm_16000",
+        "model_id": "scribe_v2_realtime",
+        "include_timestamps": false,
+        "include_language_detection": false,
+        "secondary_languages": [],
+        "commit_strategy": "vad",
+        "vad_threshold": 0.4,
+        "vad_silence_threshold_secs": 0.35,
+        "min_speech_duration_ms": 100,
+        "min_silence_duration_ms": 100,
+        "keyterms": [],
+        "enable_logging": true,
+        "connect_timeout": 10,
+        "finalize_timeout": 2
+    }
 }
