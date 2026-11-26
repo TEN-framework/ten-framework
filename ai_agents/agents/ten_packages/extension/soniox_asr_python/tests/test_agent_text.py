@@ -1,5 +1,5 @@
 # ABOUTME: Tests update_configs to Soniox agent_text WebSocket forwarding.
-# ABOUTME: Covers config-independent forwarding, chunking, and no reconnect side effects.
+# ABOUTME: Covers config gating, chunking, and no reconnect side effects.
 from __future__ import annotations
 
 import json
@@ -26,6 +26,20 @@ def test_parse_agent_text_update():
     assert parse_agent_text_update({}) is None
 
 
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        ({"model": "stt-rt-v6", "enable_agent_text_input": True}, True),
+        ({"model": "stt-rt-v3", "enable_agent_text_input": True}, True),
+        ({"model": "stt-rt-v6", "enable_agent_text_input": False}, False),
+        ({"model": "stt-rt-v3"}, False),
+        ({}, False),
+    ],
+)
+def test_config_supports_agent_text_input(params, expected):
+    assert SonioxASRConfig(params=params).supports_agent_text_input() is expected
+
+
 def test_chunk_agent_text_sets_end_only_on_last():
     long_text = "a" * (AGENT_TEXT_MAX_CHUNK_CHARS + 10)
     chunks = chunk_agent_text(long_text, AGENT_TEXT_MAX_CHUNK_CHARS, True)
@@ -47,17 +61,19 @@ async def test_websocket_send_agent_text_payload():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "params",
+    "params, should_forward",
     [
-        {"model": "stt-rt-v6", "enable_agent_text_input": True},
-        {"model": "stt-rt-v3", "enable_agent_text_input": True},
-        {"model": "stt-rt-v6", "enable_agent_text_input": False},
-        {"model": "stt-rt-v3"},
-        {},
-        None,
+        ({"model": "stt-rt-v6", "enable_agent_text_input": True}, True),
+        ({"model": "stt-rt-v3", "enable_agent_text_input": True}, True),
+        ({"model": "stt-rt-v6", "enable_agent_text_input": False}, False),
+        ({"model": "stt-rt-v3"}, False),
+        ({}, False),
+        (None, False),
     ],
 )
-async def test_extension_forwards_agent_text_when_connected(params):
+async def test_extension_forwards_agent_text_when_connected(
+    params, should_forward
+):
     ext = SonioxASRExtension("asr")
     ext.config = SonioxASRConfig(params=params) if params is not None else None
     ext.connected = True
@@ -71,10 +87,13 @@ async def test_extension_forwards_agent_text_when_connected(params):
         ten_env, "River Roast?", end_of_segment=True
     )
 
-    ext.websocket.send_agent_text.assert_awaited_once_with(
-        "River Roast?",
-        end_of_segment=True,
-    )
+    if should_forward:
+        ext.websocket.send_agent_text.assert_awaited_once_with(
+            "River Roast?",
+            end_of_segment=True,
+        )
+    else:
+        ext.websocket.send_agent_text.assert_not_awaited()
     ext.websocket.stop.assert_not_called()
     assert ext._needs_reconnect is False
 

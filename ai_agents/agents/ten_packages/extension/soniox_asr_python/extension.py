@@ -274,6 +274,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         *,
         end_of_segment: bool,
     ) -> None:
+        if self.config is None or not self.config.supports_agent_text_input():
+            ten_env.log_warn(
+                "agent_text update_configs skipped: "
+                "enable_agent_text_input is not enabled",
+            )
+            return
         if self.websocket is None or not self.connected:
             ten_env.log_warn(
                 "agent_text update_configs skipped: websocket not connected",
