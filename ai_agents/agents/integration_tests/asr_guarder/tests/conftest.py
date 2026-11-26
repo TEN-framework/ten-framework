@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+from pathlib import Path
 import json
 import threading
 from typing import Any
@@ -125,3 +126,12 @@ def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
 @pytest.fixture
 def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
     return request.config.getoption("--config_dir")
+
+
+@pytest.fixture
+def expected_english_locale(config_dir: str) -> str:
+    """Allow providers to return their native locale for the English fixture."""
+    path = Path(config_dir) / "guarder.json"
+    if path.exists():
+        return json.loads(path.read_text())["expected_english_locale"]
+    return "en-US"

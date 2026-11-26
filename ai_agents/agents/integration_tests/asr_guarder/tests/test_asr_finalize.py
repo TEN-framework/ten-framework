@@ -517,7 +517,9 @@ class AsrFinalizeTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_asr_finalize(extension_name: str, config_dir: str) -> None:
+def test_asr_finalize(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify ASR extension finalize functionality with single audio send and finalize validation."""
 
     # Audio file path
@@ -536,7 +538,7 @@ def test_asr_finalize(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": ASR_FINALIZE_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": ASR_FINALIZE_SESSION_ID,
     }
 

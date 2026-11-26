@@ -279,7 +279,9 @@ class ConnectionTimingAsrTester(AsyncExtensionTester):
         ten_env.log_info("Test stopped")
 
 
-def test_connection_timing(extension_name: str, config_dir: str) -> None:
+def test_connection_timing(
+    extension_name: str, config_dir: str, expected_english_locale: str
+) -> None:
     """Verify extension establishes connection after startup."""
 
     # Audio file path
@@ -298,7 +300,7 @@ def test_connection_timing(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
     expected_result = {
-        "language": CONNECTION_TIMING_EXPECTED_LANGUAGE,
+        "language": expected_english_locale,
         "session_id": CONNECTION_TIMING_SESSION_ID,
     }
 
