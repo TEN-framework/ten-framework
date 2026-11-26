@@ -37,7 +37,9 @@ def test_parse_agent_text_update():
     ],
 )
 def test_config_supports_agent_text_input(params, expected):
-    assert SonioxASRConfig(params=params).supports_agent_text_input() is expected
+    assert (
+        SonioxASRConfig(params=params).supports_agent_text_input() is expected
+    )
 
 
 def test_chunk_agent_text_sets_end_only_on_last():
