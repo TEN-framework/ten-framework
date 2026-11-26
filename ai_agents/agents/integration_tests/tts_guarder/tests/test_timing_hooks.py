@@ -344,5 +344,5 @@ def test_cosy_reference_deduplicates_request_scoped_indexes_across_sentences():
 
     reference = hook.reference("req-cosy")
     assert [[word.word for word in group] for group in reference.captions] == [
-        ["今道"]
+        ["今", "道"]
     ]

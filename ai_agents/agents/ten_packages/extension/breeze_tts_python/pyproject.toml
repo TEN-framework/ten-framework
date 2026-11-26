@@ -1,0 +1,9 @@
+[project]
+name = "breeze-tts-ten"
+version = "0.1.0"
+description = "Breeze TTS extension for the TEN Framework"
+requires-python = ">=3.10"
+dependencies = ["aiohttp>=3.9", "pydantic>=2.5", "typing-extensions>=4.8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
