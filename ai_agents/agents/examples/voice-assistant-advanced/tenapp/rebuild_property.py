@@ -489,6 +489,33 @@ anam_avatar_apollo = {
     },
 }
 
+# SpatialReal avatar: audio plus animation (SEI) into the channel, no video.
+# `channel` stays empty on purpose: the server fills it in per call.
+spatialreal_avatar = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "spatialreal_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "channel": "",
+        "params": {
+            "spatialreal_api_key": "${env:SPATIALREAL_API_KEY|}",
+            "spatialreal_avatar_id": "${env:SPATIALREAL_AVATAR_ID|}",
+            "spatialreal_app_id": "${env:SPATIALREAL_APP_ID|}",
+            "environment": "us-west",
+            "console_endpoint_url": "",
+            "ingress_endpoint_url": "",
+            "sample_rate": 24000,
+            "egress_idle_reconnect_ms": 1080000,
+            "agora_uid": "12345",
+            "agora_token": "",
+            "agora_appid": "${env:AGORA_APP_ID|}",
+            "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+            "agora_channel": "",
+        },
+    },
+}
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -581,10 +608,12 @@ def create_basic_voice_assistant(
 
     connections = copy.deepcopy(basic_connections)
 
-    if has_avatar and avatar_type in ["heygen", "anam"]:
+    if has_avatar and avatar_type in ["heygen", "anam", "spatialreal"]:
         # Add appropriate avatar node
         if avatar_type == "heygen":
             nodes.append(copy.deepcopy(heygen_avatar))
+        elif avatar_type == "spatialreal":
+            nodes.append(copy.deepcopy(spatialreal_avatar))
         else:  # anam
             nodes.append(copy.deepcopy(anam_avatar))
 
@@ -966,6 +995,17 @@ new_graphs.append(
         avatar_config=anam_avatar_apollo,
         thymia_config=thymia_analyzer_hellos,
         main_control_config=main_control_hellos,
+    )
+)
+
+# Group 6: SpatialReal avatar (basic voice assistant, no tools)
+print("Creating SpatialReal avatar graph...")
+
+new_graphs.append(
+    create_basic_voice_assistant(
+        "voice_assistant_spatialreal",
+        has_avatar=True,
+        avatar_type="spatialreal",
     )
 )
 
