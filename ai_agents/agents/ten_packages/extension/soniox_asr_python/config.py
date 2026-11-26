@@ -99,3 +99,7 @@ class SonioxASRConfig(BaseModel):
 
     def to_str(self, sensitive_handling: bool = False) -> str:
         return self.to_json(sensitive_handling)
+
+    def supports_agent_text_input(self) -> bool:
+        """Return whether agent text input is enabled by configuration."""
+        return bool(self.params.get("enable_agent_text_input", False))
