@@ -23,6 +23,7 @@ A configurable voice assistant with real-time conversation capabilities using Ag
 4. **TTS Provider**: choose the graph you want to run
    - `ELEVENLABS_TTS_KEY` for the default `voice_assistant` graph or `voice_assistant_xai_asr`
    - `GRADIUM_API_KEY` for `voice_assistant_gradium`
+   - `GNANI_API_KEY` for Gnani AI Timbre. In Designer, replace the TTS node with `gnani_tts_python` and select a matching Timbre model and voice.
    - `XAI_API_KEY` for `voice_assistant_xai_tts` or `voice_assistant_xai_full`
 
 5. **Optional Jev routing graph**: `voice_assistant_jev_router` needs

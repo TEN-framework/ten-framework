@@ -6,6 +6,7 @@ from importlib import import_module
 from .reference import Reference
 
 HOOKS = {
+    "gnani_tts_python": "gnani",
     "azure_tts": "azure",
     "gemini_tts_python": "gemini",
     "generic_tts_http_python": "generic_http",
