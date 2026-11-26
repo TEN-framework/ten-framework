@@ -7,6 +7,7 @@
 
 import argparse
 import platform
+import shlex
 import subprocess
 import sys
 import os
@@ -49,12 +50,12 @@ def detect_arch() -> str:
     raise RuntimeError(f"Unsupported architecture: {machine}")
 
 
-def run_cmd(cmd: str, env: dict[str, str] | None = None) -> int:
-    """Run a shell command."""
+def run_cmd(cmd: list[str], env: dict[str, str] | None = None) -> int:
+    """Run a command without spawning a shell."""
     if env is None:
         env = os.environ.copy()
-    print(f"Running: {cmd}")
-    result = subprocess.run(cmd, shell=True, check=True, env=env)
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True, env=env)
     return result.returncode
 
 
@@ -66,36 +67,29 @@ def run_cmd_test(os_str: str, _arch: str) -> int:
         env["PATH"] = (
             env["PATH"] + ";" + ".ten/app/ten_packages/system/ten_runtime/lib"
         )
-        command = "bin/{{package_name}}_test.exe"
+        command = ["bin/{{package_name}}_test.exe"]
     else:
-        command = "bin/{{package_name}}_test"
+        command = ["bin/{{package_name}}_test"]
 
     return run_cmd(command, env)
 
 
 def run_cmd_build(os: str, arch: str) -> int:
     """Build the application."""
-    if os == "win":
-        command = (
-            f"tgn.bat gen {os} {arch} {BUILD_TYPE} "
-            "-- ten_enable_standalone_test=true"
-        )
-    else:
-        command = (
-            f"tgn gen {os} {arch} {BUILD_TYPE} "
-            "-- ten_enable_standalone_test=true"
-        )
+    tgn = "tgn.bat" if os == "win" else "tgn"
 
-    rc = run_cmd(command)
+    # Kept as a single string so extra args can be appended to it in place
+    # (CI does this to add vs_version=2022); shlex.split then turns it back
+    # into separate arguments.
+    gn_args = "ten_enable_standalone_test=true"
+
+    rc = run_cmd(
+        [tgn, "gen", os, arch, BUILD_TYPE, "--", *shlex.split(gn_args)]
+    )
     if rc != 0:
         return rc
 
-    if os == "win":
-        command = f"tgn.bat build {os} {arch} {BUILD_TYPE}"
-    else:
-        command = f"tgn build {os} {arch} {BUILD_TYPE}"
-
-    return run_cmd(command)
+    return run_cmd([tgn, "build", os, arch, BUILD_TYPE])
 
 
 def main():
