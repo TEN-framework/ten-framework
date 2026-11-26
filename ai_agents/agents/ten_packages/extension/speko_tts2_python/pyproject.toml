@@ -1,8 +1,8 @@
 [project]
 name = "speko-tts2-python"
-version = "0.1.0"
+version = "0.1.1"
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.13.4",
-    "websockets>=14.0,<16",
+    "websockets>=14.0",
 ]

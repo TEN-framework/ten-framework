@@ -144,7 +144,7 @@ wheels = [
 
 [[package]]
 name = "speko-tts2-python"
-version = "0.1.0"
+version = "0.1.1"
 source = { virtual = "." }
 dependencies = [
     { name = "pydantic" },
@@ -154,7 +154,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "websockets", specifier = ">=14.0,<16" },
+    { name = "websockets", specifier = ">=14.0" },
 ]
 
 [[package]]
