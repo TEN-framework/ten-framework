@@ -3,14 +3,21 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-from typing import Any
 import copy
+from typing import Any
+
 from pydantic import BaseModel, Field
 from ten_ai_base import utils
 
+DEFAULT_IMAGE_MODELS = (
+    "gpt-image-2.6-sunburst",
+    "gpt-image-2.6-flare",
+)
+RETIRED_IMAGE_MODELS = {"gpt-image-1", "dall-e-3", "dall-e-2"}
+
 
 class OpenAIGPTImageConfig(BaseModel):
-    """OpenAI GPT Image 1.5 Configuration"""
+    """OpenAI GPT Image configuration."""
 
     params: dict[str, Any] = Field(
         default_factory=dict, description="OpenAI Images API parameters"
@@ -32,10 +39,9 @@ class OpenAIGPTImageConfig(BaseModel):
         if "model" not in self.params:
             raise ValueError("Model is required (params.model)")
 
-        # Validate model
-        valid_models = ["gpt-image-1", "gpt-image-1.5", "dall-e-3", "dall-e-2"]
-        if self.params["model"] not in valid_models:
-            raise ValueError(f"Invalid model. Must be one of: {valid_models}")
+        model = self.params["model"]
+        if model in RETIRED_IMAGE_MODELS:
+            raise ValueError(f"Retired model: {model}")
 
         # Validate size if present
         if "size" in self.params:
@@ -60,6 +66,13 @@ class OpenAIGPTImageConfig(BaseModel):
         params.setdefault("quality", "standard")
         params.setdefault("n", 1)
         params.setdefault("response_format", "url")
+
+        fallback_model = params.get("fallback_model")
+        if (
+            isinstance(fallback_model, str)
+            and fallback_model in RETIRED_IMAGE_MODELS
+        ):
+            params.pop("fallback_model")
 
         # Remove vendor param if exists (internal only)
         params.pop("vendor", None)

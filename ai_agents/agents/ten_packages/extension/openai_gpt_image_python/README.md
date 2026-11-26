@@ -1,11 +1,11 @@
-# OpenAI GPT Image 1.5 Extension
+# OpenAI GPT Image Extension
 
-A TEN Framework extension for generating images using OpenAI's GPT Image 1.5 model with automatic fallback to DALL-E 3.
+A TEN Framework extension for generating images with OpenAI's GPT Image models.
 
 ## Features
 
-- **GPT Image 1.5 Support**: Uses OpenAI's latest and fastest image generation model
-- **Automatic Fallback**: Falls back to DALL-E 3 if GPT Image 1.5 is unavailable
+- **Current GPT Image Support**: Uses `gpt-image-2.6-sunburst` by default
+- **Automatic Fallback**: Falls back to `gpt-image-2.6-flare`
 - **LLM Tool Integration**: Works as a callable tool within conversational flows
 - **Kid-Friendly Error Messages**: Provides gentle, appropriate error responses
 - **Azure OpenAI Support**: Compatible with Azure OpenAI endpoints
@@ -47,10 +47,10 @@ Add to your agent's `property.json`:
   "property": {
     "params": {
       "api_key": "${env:OPENAI_API_KEY}",
-      "model": "gpt-image-1.5",
+      "model": "gpt-image-2.6-sunburst",
       "size": "1024x1024",
       "quality": "standard",
-      "fallback_model": "dall-e-3"
+      "fallback_model": "gpt-image-2.6-flare"
     }
   }
 }
@@ -61,10 +61,10 @@ Add to your agent's `property.json`:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `params.api_key` | string | - | OpenAI API key (required) |
-| `params.model` | string | `gpt-image-1.5` | Image model to use |
+| `params.model` | string | `gpt-image-2.6-sunburst` | Image model to use |
 | `params.size` | string | `1024x1024` | Image dimensions (1024x1024, 1792x1024, 1024x1792) |
 | `params.quality` | string | `standard` | Image quality (standard, hd) |
-| `params.fallback_model` | string | `dall-e-3` | Fallback model if primary unavailable |
+| `params.fallback_model` | string | `gpt-image-2.6-flare` | Fallback model if primary unavailable |
 | `params.vendor` | string | `openai` | API vendor (openai, azure) |
 | `params.base_url` | string | - | Custom API base URL (optional) |
 | `dump` | boolean | `false` | Enable response logging for debugging |
@@ -137,7 +137,7 @@ The extension provides user-friendly error messages:
 
 - **Content Policy Violation**: "I can't create that image. Let's try something different!"
 - **Invalid API Key**: "API key is invalid. Please check your configuration."
-- **Model Not Found**: Automatically falls back to DALL-E 3
+- **Model Not Found**: Automatically falls back to the configured secondary model
 - **Rate Limit**: "Rate limit exceeded. Please try again later."
 - **Generic Error**: "Something went wrong. Please try again."
 
@@ -145,9 +145,8 @@ The extension provides user-friendly error messages:
 
 ### Supported Models
 
-- `gpt-image-1.5` (Primary) - Latest, fastest, 4x speed improvement
-- `dall-e-3` (Fallback) - Previous generation, proven reliability
-- `dall-e-2` (Legacy) - Older model, basic functionality
+- `gpt-image-2.6-sunburst` (Primary)
+- `gpt-image-2.6-flare` (Fallback)
 
 ### Image Sizes
 
@@ -187,7 +186,7 @@ This will save all requests and responses to the specified file.
 ### Image Generation Fails
 
 1. **Check API Key**: Ensure `OPENAI_API_KEY` is set correctly
-2. **Verify Model Access**: GPT Image 1.5 requires API access
+2. **Verify Model Access**: The configured GPT Image model requires API access
 3. **Check Prompt**: Ensure prompt doesn't violate content policies
 4. **Review Logs**: Check TEN runtime logs for detailed error messages
 
@@ -218,4 +217,4 @@ This extension is part of the TEN Framework, licensed under the Apache License, 
 
 - [OpenAI Images API Documentation](https://platform.openai.com/docs/guides/image-generation)
 - [TEN Framework Documentation](https://doc.theten.ai)
-- [GPT Image 1.5 Announcement](https://openai.com/index/new-chatgpt-images-is-here/)
+- [OpenAI model deprecations](https://developers.openai.com/api/docs/deprecations)
