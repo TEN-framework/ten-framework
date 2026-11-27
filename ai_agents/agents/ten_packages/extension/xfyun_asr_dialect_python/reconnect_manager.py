@@ -6,18 +6,18 @@ from .const import MODULE_NAME_ASR
 
 class ReconnectManager:
     """
-    Manages reconnection attempts with fixed retry limit and exponential backoff strategy.
+    Manages reconnection attempts with capped exponential backoff.
 
     Features:
-    - Fixed retry limit (default: 5 attempts)
-    - Exponential backoff strategy: 300ms, 600ms, 1.2s, 2.4s, 4.8s
+    - Optional retry limit; None allows retries until stopped
+    - Exponential backoff capped at 4.8 seconds
     - Automatic counter reset after successful connection
     - Detailed logging for monitoring and debugging
     """
 
     def __init__(
         self,
-        max_attempts: int = 5,
+        max_attempts: int | None = 5,
         base_delay: float = 0.3,  # 300 milliseconds
         logger=None,
     ):
@@ -42,7 +42,7 @@ class ReconnectManager:
 
     def can_retry(self) -> bool:
         """Check if more reconnection attempts are allowed"""
-        return self.attempts < self.max_attempts
+        return self.max_attempts is None or self.attempts < self.max_attempts
 
     def get_attempts_info(self) -> dict:
         """Get current reconnection attempts information"""
@@ -89,7 +89,7 @@ class ReconnectManager:
         self.attempts += 1
 
         # Calculate exponential backoff delay: 2^(attempts-1) * base_delay
-        delay = self.base_delay * (2 ** (self.attempts - 1))
+        delay = min(self.base_delay * (2 ** min(self.attempts - 1, 16)), 4.8)
 
         if self.logger:
             self.logger.log_warn(
@@ -116,7 +116,10 @@ class ReconnectManager:
                 )
 
             # If this was the last attempt, send error
-            if self.attempts >= self.max_attempts:
+            if (
+                self.max_attempts is not None
+                and self.attempts >= self.max_attempts
+            ):
                 if error_handler:
                     await error_handler(
                         ModuleError(

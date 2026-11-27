@@ -23,7 +23,6 @@ from ten_runtime import (
 )
 from .audio_buffer_manager import AudioBufferManager
 
-
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
 STATUS_LAST_FRAME = 2  # Last frame identifier
@@ -424,7 +423,11 @@ class XfyunWSRecognition:
 
         await self.stop_consumer()
 
-        if self._message_task and not self._message_task.done():
+        if (
+            self._message_task
+            and self._message_task is not asyncio.current_task()
+            and not self._message_task.done()
+        ):
             self._message_task.cancel()
             try:
                 await self._message_task

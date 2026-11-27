@@ -179,6 +179,111 @@ async def test_incomplete_handshake_reports_asr_error(phase):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("report_error_raises", [False, True])
+async def test_1011_close_reconnects_even_if_exception_callback_fails(
+    report_error_raises,
+):
+    ext = SonioxASRExtension("test")
+    ext.ten_env = MagicMock()
+    ext.on_disconnected = AsyncMock()
+    ext._handle_reconnect = AsyncMock()
+    ext.send_asr_error = AsyncMock(
+        side_effect=(
+            RuntimeError("error delivery failed")
+            if report_error_raises
+            else None
+        )
+    )
+    failure = _connection_closed_error(1011, "internal server error")
+    client = SonioxWebsocketClient("wss://example.invalid", "{}", "fake_key")
+    client.on(SonioxWebsocketEvents.EXCEPTION, ext._handle_exception)
+    client.on(SonioxWebsocketEvents.CLOSE, ext._handle_close)
+
+    class FailedSocket:
+        send = AsyncMock()
+
+        async def recv(self):
+            raise failure
+
+    class Connection:
+        async def __aenter__(self):
+            return FailedSocket()
+
+        async def __aexit__(self, *_args):
+            return False
+
+    with patch(
+        "soniox_asr_python.websocket.websockets.connect",
+        return_value=Connection(),
+    ):
+        await client.connect()
+
+    # A later close notification must not start another reconnect.
+    await client._call(SonioxWebsocketEvents.CLOSE, 1011, "late close")
+    ext.send_asr_error.assert_awaited_once()
+    ext.on_disconnected.assert_awaited_once()
+    ext._handle_reconnect.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_stop_timeout_notifies_close_once():
+    client = SonioxWebsocketClient("wss://example.invalid", "{}", "fake_key")
+    exception = AsyncMock()
+    close = AsyncMock()
+    client.on(SonioxWebsocketEvents.EXCEPTION, exception)
+    client.on(SonioxWebsocketEvents.CLOSE, close)
+
+    async def timeout(awaitable, **_kwargs):
+        awaitable.close()
+        raise asyncio.TimeoutError
+
+    with patch(
+        "soniox_asr_python.websocket.asyncio.wait_for", side_effect=timeout
+    ):
+        await client.stop()
+
+    await client._call(SonioxWebsocketEvents.CLOSE, 0, "late close")
+    exception.assert_awaited_once()
+    close.assert_awaited_once_with(0, "closed")
+    assert client.state == client.State.STOPPED
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", ["STOPPING", "STOPPED"])
+async def test_1011_after_stop_does_not_notify_discarded_client(state):
+    client = SonioxWebsocketClient("wss://example.invalid", "{}", "fake_key")
+    exception = AsyncMock()
+    close = AsyncMock()
+    client.on(SonioxWebsocketEvents.EXCEPTION, exception)
+    client.on(SonioxWebsocketEvents.CLOSE, close)
+
+    async def work(_ws):
+        client.state = getattr(client.State, state)
+        raise _connection_closed_error(1011, "late failure")
+
+    class Connection:
+        async def __aenter__(self):
+            ws = MagicMock()
+            ws.send = AsyncMock()
+            return ws
+
+        async def __aexit__(self, *_args):
+            return False
+
+    with (
+        patch(
+            "soniox_asr_python.websocket.websockets.connect",
+            return_value=Connection(),
+        ),
+        patch.object(client, "_work", work),
+    ):
+        await client.connect()
+
+    exception.assert_not_awaited()
+    close.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("code", [1000, 1001])
 async def test_connect_normal_close_emits_close_not_exception(code):
     """Actual connect()/recv path: ConnectionClosedOK emits CLOSE only."""

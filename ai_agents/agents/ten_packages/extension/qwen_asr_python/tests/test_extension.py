@@ -115,6 +115,91 @@ def test_result_language_uses_vendor_language_hints():
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("final", [False, True])
+@pytest.mark.parametrize("legacy_request_id", [None, "legacy-request"])
+def test_emitted_result_extracts_nested_vendor_request_details(
+    final, legacy_request_id
+):
+    async def run():
+        extension = connection_extension()
+        extension.send_asr_result = (
+            AsyncASRBaseExtension.send_asr_result.__get__(extension)
+        )
+        client = fake_client()
+        client.task_id = "task-1"
+        client.task_uuid = "vendor-task-1"
+        client.connection_request_id = "connection-request"
+        extension.client = client
+        event = {
+            "header": {
+                "task_id": "task-1",
+                "task_uuid": "vendor-task-1",
+                "event": "result-generated",
+            },
+            "payload": {
+                "request_id": legacy_request_id,
+                "output": {
+                    "request_id": "vendor-request",
+                    "sentence": {"text": "hello", "sentence_end": final},
+                },
+            },
+        }
+
+        await extension._handle_event(event, extension._generation)
+
+        info = emitted_payloads(extension, "asr_result")[0]["metadata"][
+            "asr_info"
+        ]
+        assert info["request_id"] == "vendor-request"
+        assert info["task_id"] == "task-1"
+        assert info["task_uuid"] == "vendor-task-1"
+        assert info["connection_request_id"] == "connection-request"
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("failure_path", ["recovery", "close", "connect"])
+def test_error_keeps_request_details_after_client_cleanup(failure_path):
+    async def run():
+        extension = connection_extension()
+        client = fake_client()
+        details = {
+            "task_id": "task-1",
+            "task_uuid": "vendor-task-1",
+            "request_id": "vendor-request",
+            "connection_request_id": "connection-request",
+        }
+        for name, value in details.items():
+            setattr(client, name, value)
+        extension.client = client
+        extension.connected = True
+        extension._schedule_reconnect = MagicMock()
+
+        async def close():
+            for name in details:
+                setattr(client, name, None)
+
+        client.close = AsyncMock(side_effect=close)
+        error = QwenProtocolError("failed", "test-error")
+        match failure_path:
+            case "recovery":
+                await extension._recover_client(client, error, False)
+            case "close":
+                await extension._handle_close(
+                    "failed", extension._generation, error
+                )
+            case "connect":
+                await extension._abort_connection_attempt(
+                    extension._generation, error
+                )
+
+        payload = emitted_payloads(extension, "error")[0]
+        assert payload["metadata"]["asr_info"] == details
+        assert extension.client is None
+
+    asyncio.run(run())
+
+
 def test_emitted_result_preserves_authoritative_vendor_metadata():
     async def run():
         extension = configured_extension()
@@ -408,6 +493,199 @@ def test_connection_status_serializes_redacted_vendor_metadata():
     asyncio.run(run())
 
 
+def test_startup_and_stop_complete_while_buffered_send_is_blocked(monkeypatch):
+    async def run():
+        extension = connection_extension()
+        frame = make_audio_frame(b"aaaa")
+        await extension._handle_audio_frame(extension.ten_env, frame)
+        send_started = asyncio.Event()
+        send_cancelled = asyncio.Event()
+        client = fake_client()
+
+        async def blocked_send(_audio):
+            send_started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                send_cancelled.set()
+
+        client.send_audio = AsyncMock(side_effect=blocked_send)
+        monkeypatch.setattr(
+            "qwen_asr_python.extension.QwenASRClient",
+            MagicMock(return_value=client),
+        )
+
+        await asyncio.wait_for(extension.on_start(extension.ten_env), timeout=1)
+        await asyncio.wait_for(send_started.wait(), timeout=1)
+        assert [
+            event["current"]
+            for event in emitted_payloads(
+                extension, "connection_status_changed"
+            )
+        ] == ["connecting", "connected"]
+
+        await asyncio.wait_for(extension.on_stop(extension.ten_env), timeout=1)
+
+        assert send_cancelled.is_set()
+        client.close.assert_awaited_once()
+        assert [
+            event["current"]
+            for event in emitted_payloads(
+                extension, "connection_status_changed"
+            )
+        ] == ["connecting", "connected", "disconnected"]
+        assert emitted_payloads(extension, "error") == []
+        assert extension._reconnect_task is None
+        assert extension._buffer_flush_task is None
+
+    asyncio.run(run())
+
+
+def test_startup_flush_preserves_order_with_live_audio(monkeypatch):
+    async def run():
+        extension = connection_extension()
+        for audio in (b"aaaa", b"bbbb"):
+            await extension._handle_audio_frame(
+                extension.ten_env, make_audio_frame(audio)
+            )
+        send_started = asyncio.Event()
+        release_send = asyncio.Event()
+        all_sent = asyncio.Event()
+        sent = []
+        client = fake_client()
+
+        async def send_audio(audio):
+            if not sent:
+                send_started.set()
+                await release_send.wait()
+            sent.append(audio)
+            if len(sent) == 3:
+                all_sent.set()
+
+        client.send_audio = AsyncMock(side_effect=send_audio)
+        monkeypatch.setattr(
+            "qwen_asr_python.extension.QwenASRClient",
+            MagicMock(return_value=client),
+        )
+
+        await asyncio.wait_for(extension.on_start(extension.ten_env), timeout=1)
+        await asyncio.wait_for(send_started.wait(), timeout=1)
+        await extension._handle_audio_frame(
+            extension.ten_env, make_audio_frame(b"cccc")
+        )
+        release_send.set()
+        await asyncio.wait_for(all_sent.wait(), timeout=1)
+
+        assert sent == [b"aaaa", b"bbbb", b"cccc"]
+        assert extension.buffered_frames_size == 0
+        assert extension.is_connected()
+        await extension.on_stop(extension.ten_env)
+
+    asyncio.run(run())
+
+
+def test_replacement_cancels_blocked_flush_and_preserves_remaining_audio(
+    monkeypatch,
+):
+    async def run():
+        extension = connection_extension()
+        for audio in (b"aaaa", b"bbbb"):
+            await extension._handle_audio_frame(
+                extension.ten_env, make_audio_frame(audio)
+            )
+        send_blocked = asyncio.Event()
+        all_sent = asyncio.Event()
+        sent = []
+        old_client = fake_client()
+        new_client = fake_client()
+
+        async def old_send(audio):
+            if audio == b"bbbb":
+                send_blocked.set()
+                await asyncio.Event().wait()
+            sent.append(audio)
+
+        async def new_send(audio):
+            sent.append(audio)
+            if len(sent) == 3:
+                all_sent.set()
+
+        old_client.send_audio = AsyncMock(side_effect=old_send)
+        new_client.send_audio = AsyncMock(side_effect=new_send)
+        monkeypatch.setattr(
+            "qwen_asr_python.extension.QwenASRClient",
+            MagicMock(side_effect=[old_client, new_client]),
+        )
+
+        await asyncio.wait_for(extension.on_start(extension.ten_env), timeout=1)
+        await asyncio.wait_for(send_blocked.wait(), timeout=1)
+        await extension._handle_audio_frame(
+            extension.ten_env, make_audio_frame(b"cccc")
+        )
+        await asyncio.wait_for(extension.start_connection(), timeout=1)
+        await asyncio.wait_for(all_sent.wait(), timeout=1)
+
+        assert sent == [b"aaaa", b"bbbb", b"cccc"]
+        assert extension.buffered_frames_size == 0
+        assert extension._buffer_flush_head is None
+        old_client.close.assert_awaited_once()
+        assert [
+            call.args[0] for call in new_client.send_audio.await_args_list
+        ] == [b"bbbb", b"cccc"]
+        assert emitted_payloads(extension, "error") == []
+        await extension.on_stop(extension.ten_env)
+
+    asyncio.run(run())
+
+
+def test_live_audio_is_sent_while_flushed_audio_dump_is_blocked(monkeypatch):
+    async def run():
+        extension = connection_extension()
+        await extension._handle_audio_frame(
+            extension.ten_env, make_audio_frame(b"aaaa")
+        )
+        dump_started = asyncio.Event()
+        release_dump = asyncio.Event()
+        live_sent = asyncio.Event()
+        client = fake_client()
+
+        async def dump_audio(_audio):
+            dump_started.set()
+            await release_dump.wait()
+
+        async def send_audio(audio):
+            if audio == b"bbbb":
+                live_sent.set()
+
+        extension.audio_dumper = MagicMock()
+        extension.audio_dumper.push_bytes = AsyncMock(side_effect=dump_audio)
+        client.send_audio = AsyncMock(side_effect=send_audio)
+        monkeypatch.setattr(
+            "qwen_asr_python.extension.QwenASRClient",
+            MagicMock(return_value=client),
+        )
+
+        await asyncio.wait_for(extension.on_start(extension.ten_env), timeout=1)
+        await asyncio.wait_for(dump_started.wait(), timeout=1)
+        live_send = asyncio.create_task(
+            extension._handle_audio_frame(
+                extension.ten_env, make_audio_frame(b"bbbb")
+            )
+        )
+        await asyncio.wait_for(live_sent.wait(), timeout=1)
+        release_dump.set()
+        await live_send
+
+        assert [call.args[0] for call in client.send_audio.await_args_list] == [
+            b"aaaa",
+            b"bbbb",
+        ]
+        assert extension.buffered_frames_size == 0
+        await extension.on_stop(extension.ten_env)
+
+    asyncio.run(run())
+
+
 def test_post_connect_flush_failure_reports_disconnect_and_reconnects(
     monkeypatch,
 ):
@@ -428,6 +706,9 @@ def test_post_connect_flush_failure_reports_disconnect_and_reconnects(
         )
 
         await extension.start_connection()
+        await extension._buffer_flush_task
+        if extension._task_recovery_task is not None:
+            await extension._task_recovery_task
 
         statuses = [
             event["current"]
@@ -435,7 +716,7 @@ def test_post_connect_flush_failure_reports_disconnect_and_reconnects(
                 extension, "connection_status_changed"
             )
         ]
-        assert statuses == ["connecting", "disconnected"]
+        assert statuses == ["connecting", "connected", "disconnected"]
         assert extension._buffer_flush_head is frame
         assert extension.buffered_frames_size == 320
         assert extension._reconnect_task is not None
@@ -734,6 +1015,7 @@ def test_recovery_flushes_each_buffered_frame_with_its_session_metadata(
             MagicMock(return_value=client),
         )
         await extension.start_connection()
+        await extension._buffer_flush_task
 
         assert client.send_audio.await_count == 2
         assert extension.session_id == "session-2"

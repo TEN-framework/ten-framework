@@ -1,4 +1,5 @@
 from datetime import datetime
+import asyncio
 import os
 from typing import Optional, Dict, Any
 
@@ -33,6 +34,24 @@ from .recognition import XfyunWSRecognition, XfyunWSRecognitionCallback
 from .config import XfyunDialectASRConfig
 
 
+class _RecognitionCallback(XfyunWSRecognitionCallback):
+    def __init__(self, extension: "XfyunDialectASRExtension", epoch: int):
+        self.extension = extension
+        self.epoch = epoch
+
+    async def on_open(self):
+        await self.extension.on_open(self.epoch)
+
+    async def on_result(self, message_data):
+        await self.extension.on_result(message_data, self.epoch)
+
+    async def on_error(self, error_msg, error_code=None):
+        await self.extension.on_error(error_msg, error_code, self.epoch)
+
+    async def on_close(self):
+        await self.extension.on_close(self.epoch)
+
+
 class XfyunDialectASRExtension(
     AsyncASRBaseExtension, XfyunWSRecognitionCallback
 ):
@@ -53,9 +72,21 @@ class XfyunDialectASRExtension(
 
         # Reconnection manager
         self.reconnect_manager: Optional[ReconnectManager] = None
+        self._reconnect_task: asyncio.Task[None] | None = None
+        self._recognition_lock = asyncio.Lock()
+        self._recognition_epoch = 0
+        self._init_failed = False
+
+    @override
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        self.stopped = True
+        await self._cancel_reconnect_task()
+        await super().on_stop(ten_env)
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
+        self.stopped = True
+        await self._cancel_reconnect_task()
         await super().on_deinit(ten_env)
         if self.audio_dumper:
             await self.audio_dumper.stop()
@@ -71,7 +102,9 @@ class XfyunDialectASRExtension(
         await super().on_init(ten_env)
 
         # Initialize reconnection manager
-        self.reconnect_manager = ReconnectManager(logger=ten_env)
+        self.reconnect_manager = ReconnectManager(
+            logger=ten_env, max_attempts=None
+        )
 
         config_json, _ = await ten_env.get_property_to_json("")
 
@@ -91,6 +124,8 @@ class XfyunDialectASRExtension(
         except Exception as e:
             ten_env.log_error(f"Invalid Xfyun ASR config: {e}")
             self.config = XfyunDialectASRConfig.model_validate_json("{}")
+            self._init_failed = True
+            self.auto_connect = False
             await self.send_asr_error(
                 ModuleError(
                     module=MODULE_NAME_ASR,
@@ -102,6 +137,13 @@ class XfyunDialectASRExtension(
     @override
     async def start_connection(self) -> None:
         """Start ASR connection"""
+        if self.stopped or self._init_failed:
+            return
+        async with self._recognition_lock:
+            if not self.stopped and not self._init_failed:
+                await self._start_connection()
+
+    async def _start_connection(self) -> None:
         assert self.config is not None
         self.ten_env.log_info("Starting Xfyun ASR connection")
 
@@ -119,6 +161,10 @@ class XfyunDialectASRExtension(
                         message=error_msg,
                     ),
                 )
+                self._init_failed = True
+                await self.on_disconnected(
+                    code=ModuleErrorCode.FATAL_ERROR.value, message=error_msg
+                )
                 return
 
             if (
@@ -133,6 +179,10 @@ class XfyunDialectASRExtension(
                         code=ModuleErrorCode.FATAL_ERROR.value,
                         message=error_msg,
                     ),
+                )
+                self._init_failed = True
+                await self.on_disconnected(
+                    code=ModuleErrorCode.FATAL_ERROR.value, message=error_msg
                 )
                 return
 
@@ -149,11 +199,14 @@ class XfyunDialectASRExtension(
                         message=error_msg,
                     ),
                 )
+                self._init_failed = True
+                await self.on_disconnected(
+                    code=ModuleErrorCode.FATAL_ERROR.value, message=error_msg
+                )
                 return
 
             # Stop existing connection
-            if self.is_connected():
-                await self.stop_connection()
+            await self.stop_connection()
 
             # Start audio dumper
             if self.audio_dumper:
@@ -179,7 +232,7 @@ class XfyunDialectASRExtension(
                 audio_timeline=self.audio_timeline,
                 ten_env=self.ten_env,
                 config=xfyun_config,
-                callback=self,
+                callback=_RecognitionCallback(self, self._recognition_epoch),
             )
 
             # Start recognition
@@ -198,20 +251,21 @@ class XfyunDialectASRExtension(
                         message=error_msg,
                     ),
                 )
+                await self.on_disconnected(
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=error_msg,
+                )
+                self._schedule_reconnect()
 
         except Exception as e:
             self.ten_env.log_error(f"Failed to start Xfyun ASR connection: {e}")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    message=str(e),
-                ),
-            )
+            await self.on_error(str(e))
 
     @override
-    async def on_open(self) -> None:
+    async def on_open(self, epoch: int | None = None) -> None:
         """Handle callback when connection is established"""
+        if not self._callback_is_current(epoch):
+            return
         self.ten_env.log_info(
             "vendor_status_changed: on_open",
             category=LOG_CATEGORY_VENDOR,
@@ -229,10 +283,15 @@ class XfyunDialectASRExtension(
         # Reset WPGS status variables
         self.wpgs_buffer.clear()
         self.ten_env.log_debug("Xfyun ASR WPGS state reset")
+        await self.on_connected()
 
     @override
-    async def on_result(self, message_data: dict) -> None:
+    async def on_result(
+        self, message_data: dict, epoch: int | None = None
+    ) -> None:
         """Handle recognition result callback for new API"""
+        if not self._callback_is_current(epoch):
+            return
         # self.ten_env.log_debug(f"Xfyun ASR result: {message_data}")
         try:
             # New API response structure
@@ -293,7 +352,7 @@ class XfyunDialectASRExtension(
                 )
 
             # If this is the last frame, close connection
-            if ls and self.recognition:
+            if ls and self.recognition and self._callback_is_current(epoch):
                 await self.recognition.close()
 
         except Exception as e:
@@ -301,9 +360,14 @@ class XfyunDialectASRExtension(
 
     @override
     async def on_error(
-        self, error_msg: str, error_code: Optional[int] = None
+        self,
+        error_msg: str,
+        error_code: int | None = None,
+        epoch: int | None = None,
     ) -> None:
         """Handle error callback"""
+        if not self._callback_is_current(epoch):
+            return
 
         self.ten_env.log_error(
             f"vendor_error: code: {error_code}, reason: {error_msg}",
@@ -323,10 +387,24 @@ class XfyunDialectASRExtension(
                 message=error_msg,
             ),
         )
+        if self._callback_is_current(epoch) and not self.is_connected():
+            await self.on_disconnected(
+                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                message=error_msg,
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code=str(error_code) if error_code else "unknown",
+                    message=error_msg,
+                ),
+            )
+            if self._callback_is_current(epoch):
+                self._schedule_reconnect()
 
     @override
-    async def on_close(self) -> None:
+    async def on_close(self, epoch: int | None = None) -> None:
         """Handle callback when connection is closed"""
+        if not self._callback_is_current(epoch):
+            return
         self.ten_env.log_info(
             "vendor_status_changed: on_close",
             category=LOG_CATEGORY_VENDOR,
@@ -334,12 +412,55 @@ class XfyunDialectASRExtension(
 
         # Clear WPGS status variables
         self.wpgs_buffer.clear()
+        await self.on_disconnected(code=0, message="closed")
 
-        if not self.stopped:
+        if self._callback_is_current(epoch):
             self.ten_env.log_warn(
                 "Xfyun ASR connection closed unexpectedly. Reconnecting..."
             )
-            await self._handle_reconnect()
+            self._schedule_reconnect()
+
+    def _callback_is_current(self, epoch: int | None) -> bool:
+        return (
+            not self.stopped
+            and not self._init_failed
+            and (epoch is None or epoch == self._recognition_epoch)
+        )
+
+    def _schedule_reconnect(self) -> None:
+        if self.stopped or self._init_failed or self.reconnect_manager is None:
+            return
+        if self._reconnect_task is not None and not self._reconnect_task.done():
+            return
+        self._reconnect_task = asyncio.create_task(self._reconnect_loop())
+
+    async def _reconnect_loop(self) -> None:
+        try:
+            while not self.stopped and not self._init_failed:
+                await self._handle_reconnect()
+                if self.is_connected():
+                    return
+                if not self.reconnect_manager.can_retry():
+                    self._init_failed = True
+                    await self.send_asr_error(
+                        ModuleError(
+                            module=MODULE_NAME_ASR,
+                            code=ModuleErrorCode.FATAL_ERROR.value,
+                            message="Xfyun ASR reconnection attempts exhausted",
+                        )
+                    )
+                    return
+        finally:
+            if self._reconnect_task is asyncio.current_task():
+                self._reconnect_task = None
+
+    async def _cancel_reconnect_task(self) -> None:
+        task = self._reconnect_task
+        if task is None or task is asyncio.current_task():
+            return
+        self._reconnect_task = None
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
     @override
     async def finalize(self, session_id: str | None) -> None:
@@ -431,10 +552,14 @@ class XfyunDialectASRExtension(
 
     async def stop_connection(self) -> None:
         """Stop ASR connection"""
+        await self._cancel_reconnect_task()
+        self._recognition_epoch += 1
         try:
-            if self.recognition:
-                await self.recognition.close()
-                self.recognition = None
+            recognition = self.recognition
+            self.recognition = None
+            if recognition is not None:
+                recognition.callback = None
+                await recognition.close()
             self.ten_env.log_info("Xfyun ASR connection stopped")
 
         except Exception as e:

@@ -1,10 +1,12 @@
 import asyncio
 import json
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
 from qwen_asr_python.client import QwenASRClient, QwenProtocolError
 from websockets.protocol import State
+from websockets.datastructures import Headers
 
 
 class FakeWebSocket:
@@ -86,16 +88,95 @@ def test_client_ignores_stale_task_events():
             timeout_s=1,
         )
         client.task_id = "task-b"
+        client.task_uuid = "vendor-task-b"
+        client.request_id = "request-b"
 
         await client._handle_event(
             {
-                "header": {"event": "task-failed", "task_id": "task-a"},
-                "payload": {"error": {"code": "old", "message": "stale"}},
+                "header": {
+                    "event": "task-failed",
+                    "task_id": "task-a",
+                    "task_uuid": "vendor-task-a",
+                },
+                "payload": {
+                    "error": {"code": "old", "message": "stale"},
+                    "output": {"request_id": "request-a"},
+                },
             }
         )
 
         assert callbacks == []
         assert not client._task_failed.is_set()
+        assert client.task_uuid == "vendor-task-b"
+        assert client.request_id == "request-b"
+
+    asyncio.run(run())
+
+
+def test_client_extracts_connection_and_task_ids_and_resets_next_task(
+    monkeypatch,
+):
+    async def run():
+        fake = FakeWebSocket([])
+        fake.response = SimpleNamespace(
+            headers=Headers({"X-Request-Id": "connection-request"})
+        )
+        started_tasks = []
+
+        async def send(payload):
+            message = json.loads(payload)
+            started_tasks.append(message["run"])
+            await fake.incoming.put(
+                json.dumps(
+                    {
+                        "header": {
+                            "event": "task-started",
+                            "task_id": message["run"],
+                            "task_uuid": f"vendor-task-{len(started_tasks)}",
+                        },
+                        "payload": {},
+                    }
+                )
+            )
+
+        fake.send = AsyncMock(side_effect=send)
+        client = QwenASRClient(
+            "wss://example.test",
+            "secret",
+            lambda task_id: {"run": task_id},
+            lambda task_id: {"finish": task_id},
+            lambda event: asyncio.sleep(0),
+            lambda reason, exc: asyncio.sleep(0),
+            timeout_s=1,
+        )
+        monkeypatch.setattr(
+            "qwen_asr_python.client.websockets.connect",
+            AsyncMock(return_value=fake),
+        )
+        await client.connect()
+        assert client.connection_request_id == "connection-request"
+        assert client.task_uuid == "vendor-task-1"
+        await client._handle_event(
+            {
+                "header": {
+                    "event": "result-generated",
+                    "task_id": client.task_id,
+                },
+                "payload": {
+                    "request_id": "legacy-request",
+                    "output": {"request_id": "result-request"},
+                },
+            }
+        )
+        assert client.request_id == "result-request"
+
+        await client.start_task()
+
+        assert started_tasks[0] != started_tasks[1]
+        assert client.task_uuid == "vendor-task-2"
+        assert client.request_id is None
+        assert client.connection_request_id == "connection-request"
+        await client.close()
 
     asyncio.run(run())
 

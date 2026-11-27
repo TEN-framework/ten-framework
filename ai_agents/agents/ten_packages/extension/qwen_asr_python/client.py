@@ -14,6 +14,14 @@ class QwenProtocolError(RuntimeError):
         self.code = code
 
 
+def get_request_id(payload: dict[str, Any]) -> str | None:
+    output = payload.get("output") or {}
+    for request_id in (output.get("request_id"), payload.get("request_id")):
+        if isinstance(request_id, str) and request_id:
+            return request_id
+    return None
+
+
 class QwenASRClient:
     def __init__(
         self,
@@ -35,6 +43,9 @@ class QwenASRClient:
         self.websocket: Any = None
         self.reader_task: asyncio.Task[None] | None = None
         self.task_id: str | None = None
+        self.task_uuid: str | None = None
+        self.request_id: str | None = None
+        self.connection_request_id: str | None = None
         self.task_ready = False
         self._task_started = asyncio.Event()
         self._task_finished = asyncio.Event()
@@ -53,11 +64,15 @@ class QwenASRClient:
         return self._waiting_for_task_event
 
     async def connect(self) -> None:
+        self.connection_request_id = None
         self.websocket = await websockets.connect(
             self.url,
             additional_headers={"Authorization": f"Bearer {self.api_key}"},
             open_timeout=self.timeout_s,
         )
+        response = getattr(self.websocket, "response", None)
+        if response is not None:
+            self.connection_request_id = response.headers.get("x-request-id")
         self._expected_close = False
         self.reader_task = asyncio.create_task(self._read_loop())
         try:
@@ -72,6 +87,8 @@ class QwenASRClient:
                 "Qwen WebSocket is not connected", "not_connected"
             )
         self.task_id = str(uuid4())
+        self.task_uuid = None
+        self.request_id = None
         self.task_ready = False
         self._task_started.clear()
         self._task_finished.clear()
@@ -164,6 +181,12 @@ class QwenASRClient:
         event_task_id = header.get("task_id")
         if event_task_id is not None and event_task_id != self.task_id:
             return
+        task_uuid = header.get("task_uuid")
+        if isinstance(task_uuid, str) and task_uuid:
+            self.task_uuid = task_uuid
+        request_id = get_request_id(event.get("payload") or {})
+        if request_id is not None:
+            self.request_id = request_id
         event_name = header.get("event")
         if event_name == "task-started":
             self._task_started.set()

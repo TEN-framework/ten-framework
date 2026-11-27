@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -7,6 +8,8 @@ from typing import Callable, Optional, Any
 
 import websockets
 from websockets.exceptions import ConnectionClosed, ConnectionClosedOK
+
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass
@@ -92,6 +95,7 @@ class SonioxWebsocketClient:
         self._send_queue = asyncio.Queue()
         self._stop_event = asyncio.Event()
         self._event_callbacks = {}
+        self._close_emitted = False
 
         # Keepalive parameters
         self.enable_keepalive = enable_keepalive
@@ -129,28 +133,46 @@ class SonioxWebsocketClient:
                 if self.enable_keepalive:
                     self._start_keepalive_task(ws)
                 await self._work(ws)
-            if self.state != self.State.STOPPING:
+            if self.state not in (self.State.STOPPING, self.State.STOPPED):
                 await self._call(SonioxWebsocketEvents.CLOSE, 0, "closed")
         except Exception as e:
             # Completed normal close handshakes are not ASR failures.
-            if self.state != self.State.STOPPING and not self.is_normal_close(
-                e
-            ):
-                await self._call(SonioxWebsocketEvents.EXCEPTION, e)
             close_code, close_message = self._extract_close_info(e)
-            if self.state != self.State.STOPPING:
-                await self._call(
-                    SonioxWebsocketEvents.CLOSE, close_code, close_message
-                )
+            if self.state not in (self.State.STOPPING, self.State.STOPPED):
+                if self.is_normal_close(e):
+                    await self._call(
+                        SonioxWebsocketEvents.CLOSE, close_code, close_message
+                    )
+                else:
+                    await self._emit_exception_and_close(
+                        e, close_code, close_message
+                    )
         finally:
             if self.state == self.State.STOPPING:
                 self._stop_event.set()
+
+    async def _emit_exception_and_close(
+        self,
+        exception: Exception,
+        close_code: int = 0,
+        close_message: str = "closed",
+    ) -> None:
+        """Always notify CLOSE after EXCEPTION, even if reporting fails."""
+        try:
+            await self._call(SonioxWebsocketEvents.EXCEPTION, exception)
+        except Exception:
+            _LOG.exception("Failed to deliver exception event")
+        finally:
+            await self._call(
+                SonioxWebsocketEvents.CLOSE, close_code, close_message
+            )
 
     def _reset_client_state(self):
         self.state = self.State.INIT
 
     def _reset_session_state(self):
         self._stop_event.clear()
+        self._close_emitted = False
         if self.enable_keepalive:
             self._last_audio_time = 0.0
             self._stop_keepalive_task()
@@ -329,7 +351,7 @@ class SonioxWebsocketClient:
             try:
                 await asyncio.wait_for(self._stop_event.wait(), timeout=5.0)
             except asyncio.TimeoutError as e:
-                await self._call(SonioxWebsocketEvents.EXCEPTION, e)
+                await self._emit_exception_and_close(e)
             finally:
                 self.state = self.State.STOPPED
 
@@ -377,5 +399,11 @@ class SonioxWebsocketClient:
         self._event_callbacks[event] = callback
 
     async def _call(self, event: SonioxWebsocketEvents, *args, **kwargs):
+        if event == SonioxWebsocketEvents.CLOSE:
+            if self._close_emitted:
+                return
+            # Mark before callbacks, which may stop this client or reconnect.
+            self._close_emitted = True
+            self._stop_event.set()
         if event in self._event_callbacks:
             await self._event_callbacks[event](*args, **kwargs)
